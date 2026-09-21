@@ -135,6 +135,67 @@ export function extractBlocks(workflow: any): any[] {
 export const isAccountsPayableWorkflow = (workflow: any): boolean =>
   extractBlocks(workflow).some((block: any) => block?.type === 'AP_AGENT')
 
+/**
+ * Checks if PO Source SAP is configured in the workflow JSON AP Agent Node settings
+ */
+export const isSapPoSourceConfigured = (workflow: any): boolean => {
+  if (!workflow) return false
+  const blocks = extractBlocks(workflow)
+  const apBlock = blocks.find(
+    (block: any) =>
+      block?.type === 'AP_AGENT' ||
+      block?.type === 'ap_agent' ||
+      block?.toolType === 'ap_agent' ||
+      block?.data?.toolType === 'ap_agent',
+  )
+  if (!apBlock) return false
+
+  const apAgent =
+    apBlock.settings?.apAgent ||
+    apBlock.data?.apAgent ||
+    apBlock.data ||
+    apBlock.settings ||
+    {}
+
+  const resource = String(
+    apAgent.resource ||
+      apBlock.data?.resource ||
+      apBlock.settings?.resource ||
+      '',
+  )
+    .toUpperCase()
+    .trim()
+
+  const poMasterSourceType = String(
+    apAgent.poMasterSourceType ||
+      apBlock.data?.poMasterSourceType ||
+      apAgent.poMasterType ||
+      apBlock.data?.poMasterType ||
+      apAgent.poMaster?.sourceType ||
+      apBlock.data?.poMaster?.sourceType ||
+      '',
+  )
+    .toLowerCase()
+    .trim()
+
+  const connectorId = String(
+    apAgent.connectorId ||
+      apBlock.data?.connectorId ||
+      apBlock.data?.poMasterSapAccount?.id ||
+      apAgent.poMasterSapAccount?.id ||
+      '',
+  )
+    .toLowerCase()
+    .trim()
+
+  return (
+    resource === 'SAP' ||
+    resource.includes('SAP') ||
+    poMasterSourceType === 'sap' ||
+    connectorId.startsWith('sap')
+  )
+}
+
 // Same shape-normalization as extractBlocks, but also returns `rules` —
 // needed to look up the step that preceded a given activity (rule.toBlockId
 // === activityId) for list/grid "previous stage" displays.

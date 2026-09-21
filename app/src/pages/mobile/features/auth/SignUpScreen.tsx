@@ -37,7 +37,7 @@ export function SignUpScreen({
     try {
       setError(null)
       if (!email) {
-        setError('Email is required')
+        setError('Please enter your email address.')
         return
       }
 
@@ -82,7 +82,8 @@ export function SignUpScreen({
 
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
-    onError: () => setError('Google sign-up was cancelled or failed'),
+    onError: () =>
+      setError("We couldn't create your account with Google. Please try again."),
     onSuccess: async (tokenResponse) => {
       try {
         setError(null)
@@ -187,7 +188,7 @@ export function SignUpScreen({
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError('Microsoft sign-up was cancelled.')
+        setError("We couldn't create your account with Microsoft. Please try again.")
       } else {
         setError(errorMsg || 'Microsoft sign-up failed')
       }

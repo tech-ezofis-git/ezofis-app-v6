@@ -126,7 +126,7 @@ type FolderTableDataTableSplitProps = {
 
   onUpload?: () => void
 
-  onUploadFile?: (file: File) => void
+  onUploadFile?: (files: File[]) => void
 
   permissions?: {
     delete?: boolean
@@ -538,7 +538,7 @@ function EmptyState({
   uploadDisabled = false,
 }: {
   onUpload?: () => void
-  onUploadFile?: (file: File) => void
+  onUploadFile?: (files: File[]) => void
   uploadDisabled?: boolean
 }) {
   const { t } = useLingui()

@@ -97,6 +97,7 @@ import { Route as AuthRecoverIndexRouteImport } from './routes/_auth/recover/ind
 import { Route as AuthNewuserIndexRouteImport } from './routes/_auth/newuser/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
+import { Route as PortalsTenantIdPortalIdRouteImport } from './routes/portals_.$tenantId.$portalId'
 import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports_.$reportId'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
@@ -543,6 +544,11 @@ const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
   path: '/forgot-password/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const PortalsTenantIdPortalIdRoute = PortalsTenantIdPortalIdRouteImport.update({
+  id: '/portals_/$tenantId/$portalId',
+  path: '/portals/$tenantId/$portalId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
   id: '/reports_/$reportId',
   path: '/reports/$reportId',
@@ -641,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/stories/': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/reports/$reportId': typeof AppReportsReportIdRoute
+  '/portals/$tenantId/$portalId': typeof PortalsTenantIdPortalIdRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/newuser': typeof AuthNewuserIndexRoute
@@ -731,6 +738,7 @@ export interface FileRoutesByTo {
   '/stories': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/reports/$reportId': typeof AppReportsReportIdRoute
+  '/portals/$tenantId/$portalId': typeof PortalsTenantIdPortalIdRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/newuser': typeof AuthNewuserIndexRoute
@@ -825,6 +833,7 @@ export interface FileRoutesById {
   '/stories/': typeof StoriesIndexRoute
   '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/_app/reports_/$reportId': typeof AppReportsReportIdRoute
+  '/portals_/$tenantId/$portalId': typeof PortalsTenantIdPortalIdRoute
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/newuser/': typeof AuthNewuserIndexRoute
@@ -918,6 +927,7 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/my-account/{-$slug}'
     | '/reports/$reportId'
+    | '/portals/$tenantId/$portalId'
     | '/forgot-password'
     | '/login'
     | '/newuser'
@@ -1008,6 +1018,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/my-account/{-$slug}'
     | '/reports/$reportId'
+    | '/portals/$tenantId/$portalId'
     | '/forgot-password'
     | '/login'
     | '/newuser'
@@ -1101,6 +1112,7 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/_app/my-account/{-$slug}'
     | '/_app/reports_/$reportId'
+    | '/portals_/$tenantId/$portalId'
     | '/_auth/forgot-password/'
     | '/_auth/login/'
     | '/_auth/newuser/'
@@ -1128,6 +1140,7 @@ export interface RootRouteChildren {
   WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
   FormBuilderIndexRoute: typeof FormBuilderIndexRoute
   OnBoardingIndexRoute: typeof OnBoardingIndexRoute
+  PortalsTenantIdPortalIdRoute: typeof PortalsTenantIdPortalIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1748,6 +1761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/portals_/$tenantId/$portalId': {
+      id: '/portals_/$tenantId/$portalId'
+      path: '/portals/$tenantId/$portalId'
+      fullPath: '/portals/$tenantId/$portalId'
+      preLoaderRoute: typeof PortalsTenantIdPortalIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/reports_/$reportId': {
       id: '/_app/reports_/$reportId'
       path: '/reports/$reportId'
@@ -1980,6 +2000,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
   FormBuilderIndexRoute: FormBuilderIndexRoute,
   OnBoardingIndexRoute: OnBoardingIndexRoute,
+  PortalsTenantIdPortalIdRoute: PortalsTenantIdPortalIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

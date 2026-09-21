@@ -1467,7 +1467,7 @@ const Request = ({
     )
     if (missingChecklistItem) {
       showToast({
-        message: t`Please complete the checklist item "${missingChecklistItem.label}" before proceeding.`,
+        message: t`Please complete "${missingChecklistItem.label}" before continuing.`,
         variant: 'error',
       })
       return
@@ -1477,14 +1477,14 @@ const Request = ({
       genericAttachments.length === 0
     ) {
       showToast({
-        message: t`At least one attachment is required before proceeding.`,
+        message: t`Please attach at least one file before continuing.`,
         variant: 'error',
       })
       return
     }
     if (currentBlockSettings.userSignature && !signatureConfirmed) {
       showToast({
-        message: t`Please confirm your signature before proceeding.`,
+        message: t`Please confirm your signature before continuing.`,
         variant: 'error',
       })
       return
@@ -1502,7 +1502,7 @@ const Request = ({
       })
       if (missingField) {
         showToast({
-          message: t`Please fill all mandatory fields before proceeding.`,
+          message: t`Please complete all required fields before continuing.`,
           variant: 'error',
         })
         return

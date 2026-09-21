@@ -15,6 +15,7 @@ import {
   useReportBuilderListQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { formatDatetime } from '@/utils/dayjs'
+import ReportShareButton from './ReportShareButton'
 import RowActionsMenu from './RowActionsMenu'
 import Table from './Table'
 
@@ -30,26 +31,25 @@ const matchesOwnershipScope = (
 }
 
 interface ReportsListViewProps {
+  showCreateButton?: boolean
+  variant?: 'standalone' | 'settings'
   onCreateReport: () => void
   onEditReport: (report: Report) => void
   onOpenReport: (report: Report) => void
   onScheduleReport: (report: Report) => void
-  showCreateButton?: boolean
-  variant?: 'standalone' | 'settings'
 }
 
 const ReportsListView = ({
+  showCreateButton,
+  variant = 'standalone',
   onCreateReport,
   onEditReport,
   onOpenReport,
   onScheduleReport,
-  showCreateButton,
-  variant = 'standalone',
 }: ReportsListViewProps) => {
   const { t } = useLingui()
 
-  const shouldShowCreate =
-    showCreateButton ?? (variant === 'settings')
+  const shouldShowCreate = showCreateButton ?? variant === 'settings'
 
   const {
     data: reports = [],
@@ -134,8 +134,7 @@ const ReportsListView = ({
           id: 'modifiedAt',
           label: t`Modified At`,
           size: 180,
-          renderCell: (row: Report) =>
-            formatDatetime(row.modified, 'datetime'),
+          renderCell: (row: Report) => formatDatetime(row.modified, 'datetime'),
         },
         {
           id: 'modifiedBy',
@@ -210,7 +209,8 @@ const ReportsListView = ({
         showMenu: false,
         size: 40,
         renderCell: (row: Report) => (
-          <div className='flex items-center justify-center'>
+          <div className='flex items-center justify-center gap-1'>
+            <ReportShareButton reportId={row.id} iconOnly />
             <RowActionsMenu
               report={row}
               onDelete={setDeletingReport}
@@ -221,13 +221,7 @@ const ReportsListView = ({
         ),
       },
     ]
-  }, [
-    variant,
-    t,
-    onEditReport,
-    onOpenReport,
-    onScheduleReport,
-  ])
+  }, [variant, t, onEditReport, onOpenReport, onScheduleReport])
 
   const { table } = useDataTable({
     columns,
@@ -323,6 +317,13 @@ const ReportsListView = ({
       <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <div className='mb-3'>
           <CustomFilter
+            searchPlaceholder={t`Search reports...`}
+            searchQuery={search}
+            showReset={Boolean(search || domainFilter || ownershipFilter)}
+            activeFilters={{
+              ...(domainFilter ? { domain: domainFilter } : {}),
+              ...(ownershipFilter ? { ownership: ownershipFilter } : {}),
+            }}
             addButton={
               shouldShowCreate
                 ? {
@@ -332,13 +333,6 @@ const ReportsListView = ({
                   }
                 : undefined
             }
-            searchPlaceholder={t`Search reports...`}
-            searchQuery={search}
-            showReset={Boolean(search || domainFilter || ownershipFilter)}
-            activeFilters={{
-              ...(domainFilter ? { domain: domainFilter } : {}),
-              ...(ownershipFilter ? { ownership: ownershipFilter } : {}),
-            }}
             filters={[
               {
                 id: 'ownership',

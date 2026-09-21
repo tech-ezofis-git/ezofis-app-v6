@@ -309,7 +309,7 @@ export default function GenericFormImportModal({
     const lower = file.name.toLowerCase()
     if (!lower.endsWith('.csv') && !lower.endsWith('.xlsx')) {
       showToast({
-        message: t`Please upload only CSV or XLSX files`,
+        message: t`Please upload a CSV or Excel file.`,
         variant: 'error',
       })
       return

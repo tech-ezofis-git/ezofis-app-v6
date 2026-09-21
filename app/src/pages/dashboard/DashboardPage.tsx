@@ -1,15 +1,18 @@
 import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useEffect, useState } from 'react'
+import type { Option } from '@/types/option'
+import dashboardApiV6 from '@/api/v6/dashboard'
 import { getRepositorys } from '@/api/v6/folder/folder'
 import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import Skeleton from '@/components/base/Skeleton'
+import showToast from '@/components/base/toast/showToast'
+import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
-import type { Option } from '@/types/option'
+import FolderSharePopover from '@/pages/folders/components/FolderSharePopover'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import DashboardApiBuilder, {
@@ -73,6 +76,9 @@ const DashboardPage = () => {
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
   const [savedHtmlHeader, setSavedHtmlHeader] =
     useState<SavedHtmlHeaderActions | null>(null)
+  const [dashboardSharedEmails, setDashboardSharedEmails] = useState<string[]>(
+    [],
+  )
 
   useEffect(() => {
     let active = true
@@ -145,9 +151,7 @@ const DashboardPage = () => {
         if (!active) return
         setSourceOptions(mapped)
 
-        const currentRepoKey = repositoryId
-          ? `repository:${repositoryId}`
-          : ''
+        const currentRepoKey = repositoryId ? `repository:${repositoryId}` : ''
         const existing = mapped.find((opt) => opt.selectId === currentRepoKey)
         if (existing) {
           setSelectedSourceId(existing.selectId)
@@ -184,10 +188,10 @@ const DashboardPage = () => {
   }, [])
 
   const selectOptions: Array<
-    Option & { kind: DashboardSourceKind; iconKey: string }
+    Option & { iconKey: string; kind: DashboardSourceKind }
   > = sourceOptions.map((opt) => ({
-    id: opt.selectId,
     iconKey: opt.kind === 'workflow' ? WORKFLOW_ICON : REPO_ICON,
+    id: opt.selectId,
     kind: opt.kind,
     name: opt.label,
     value: opt.selectId,
@@ -214,6 +218,29 @@ const DashboardPage = () => {
     ? ''
     : selectedSource?.value || repositoryId || ''
   const activeWorkflowId = isWorkflowSource ? selectedSource?.value || '' : ''
+
+  useEffect(() => {
+    if (!savedHtmlHeader || (!activeRepositoryId && !activeWorkflowId)) {
+      setDashboardSharedEmails([])
+      return
+    }
+    let active = true
+    dashboardApiV6
+      .getDashboardShares({
+        repositoryId: activeRepositoryId || undefined,
+        tenantId: session?.tenantId || '',
+        workflowId: activeWorkflowId || undefined,
+      })
+      .then((res) => {
+        if (!active) return
+        setDashboardSharedEmails(
+          (res.data || []).map((share) => share.email.toLowerCase()),
+        )
+      })
+    return () => {
+      active = false
+    }
+  }, [activeRepositoryId, activeWorkflowId, savedHtmlHeader, session?.tenantId])
 
   const isApDashboard =
     !isWorkflowSource &&
@@ -285,8 +312,8 @@ const DashboardPage = () => {
                       options={selectOptions}
                       placeholder={t`Repository or workflow`}
                       value={selectedOption}
-                      searchable
                       width={340}
+                      searchable
                       onChange={(selected) => {
                         const nextId = String(
                           selected?.value || selected?.id || '',
@@ -306,6 +333,54 @@ const DashboardPage = () => {
                   </div>
                   {savedHtmlHeader ? (
                     <>
+                      {isAdminUser ? (
+                        <FolderSharePopover
+                          allowSign={false}
+                          sharedIds={dashboardSharedEmails}
+                          successMessage={t`Dashboard shared`}
+                          title={t`Share Dashboard`}
+                          triggerLabel={t`Share`}
+                          iconOnly
+                          roleOptions={[
+                            { icon: 'lucide:eye', id: 'View', name: t`View` },
+                          ]}
+                          onShare={async (shares, message) => {
+                            try {
+                              for (const share of shares) {
+                                const { error } =
+                                  await dashboardApiV6.shareDashboard({
+                                    action: 0,
+                                    email: share.email,
+                                    message,
+                                    repositoryId:
+                                      activeRepositoryId || undefined,
+                                    tenantId: session?.tenantId,
+                                    workflowId: activeWorkflowId || undefined,
+                                  })
+                                if (error) throw new Error(error)
+                              }
+                              setDashboardSharedEmails((prev) => [
+                                ...new Set([
+                                  ...prev,
+                                  ...shares.map((share) =>
+                                    share.email.trim().toLowerCase(),
+                                  ),
+                                ]),
+                              ])
+                              return true
+                            } catch (error) {
+                              showToast({
+                                message:
+                                  error instanceof Error
+                                    ? error.message
+                                    : t`Failed to share dashboard`,
+                                variant: 'error',
+                              })
+                              return false
+                            }
+                          }}
+                        />
+                      ) : null}
                       <IconButton
                         ariaLabel={t`Refresh`}
                         className='text-gray-12'

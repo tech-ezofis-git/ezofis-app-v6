@@ -25,6 +25,50 @@ const getTenantHeaders = () => {
   return { 'X-Tenant-Id': tenantId }
 }
 
+export interface ReportBuilderDomainOption {
+  formId: string
+  name: string
+  workflowId: string
+  description?: string | null
+}
+
+export interface ReportBuilderFieldOption {
+  id: string
+  label: string
+  type: string
+  isMandatory?: boolean
+}
+
+export interface ReportBuilderFormOption {
+  formId: string
+  formName: string
+  type?: string
+}
+
+/** Fields shared by the create/update/preview payload — a `Report` row, an
+ * in-progress `ReportDraft`, or any other shape carrying the wizard state
+ * all satisfy this structurally, so callers don't need to build a full
+ * `Report` (with id/owner/runs/etc.) just to hit /preview. */
+export interface ReportBuilderPayloadSource {
+  description: string
+  domain: string
+  fields: string[]
+  fieldSettings: Record<string, ReportFieldSetting>
+  filters: ReportFilter[]
+  name: string
+  schedule: ReportSchedule
+  scheduled: boolean
+  sharedGroups: string[]
+  sharedUsers: string[]
+  visibility: ReportVisibility
+  customFields?: unknown[]
+  id?: string
+  sourceFormId?: string
+  sourceId?: string
+  sourceType?: string
+  status?: ReportStatus
+}
+
 export interface ReportRunColumn {
   calc: string
   colType: string
@@ -41,58 +85,14 @@ export interface ReportRunResult {
   reportId: string | null
   rowCount: number
   rows: Record<string, string>[]
-  sourceFormId?: string
   totals: Record<string, string> | null
+  sourceFormId?: string
   workflowId?: string
 }
 
-export interface ReportBuilderFormOption {
-  formId: string
-  formName: string
-  type?: string
-}
+const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : [])
 
-export interface ReportBuilderFieldOption {
-  id: string
-  isMandatory?: boolean
-  label: string
-  type: string
-}
-
-export interface ReportBuilderDomainOption {
-  description?: string | null
-  formId: string
-  name: string
-  workflowId: string
-}
-
-/** Fields shared by the create/update/preview payload — a `Report` row, an
- * in-progress `ReportDraft`, or any other shape carrying the wizard state
- * all satisfy this structurally, so callers don't need to build a full
- * `Report` (with id/owner/runs/etc.) just to hit /preview. */
-export interface ReportBuilderPayloadSource {
-  customFields?: unknown[]
-  description: string
-  domain: string
-  fields: string[]
-  fieldSettings: Record<string, ReportFieldSetting>
-  filters: ReportFilter[]
-  id?: string
-  name: string
-  schedule: ReportSchedule
-  scheduled: boolean
-  sharedGroups: string[]
-  sharedUsers: string[]
-  sourceFormId?: string
-  sourceId?: string
-  sourceType?: string
-  status?: ReportStatus
-  visibility: ReportVisibility
-}
-
-const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : [])
-
-const asRecord = <T,>(value: unknown): Record<string, T> =>
+const asRecord = <T>(value: unknown): Record<string, T> =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, T>)
     : {}
@@ -136,7 +136,8 @@ export const fromReportBuilderConfig = (data: unknown): Report => {
     fieldSettings: asRecord<ReportFieldSetting>(record.fieldSettings),
     filters: asArray<Record<string, unknown>>(record.filters).map((f) => ({
       field: (f.fieldId as string) || (f.field as string) || '',
-      id: (f.id as string) || (f.fieldId as string) || (f.field as string) || '',
+      id:
+        (f.id as string) || (f.fieldId as string) || (f.field as string) || '',
       operator: (f.operator as ReportFilter['operator']) || 'equals',
       value: (f.value as string) ?? '',
     })),
@@ -153,7 +154,8 @@ export const fromReportBuilderConfig = (data: unknown): Report => {
     sharedGroups: asArray<string>(record.sharedGroups),
     sharedUsers: asArray<string>(record.sharedUsers),
     sourceFormId: (record.sourceFormId as string) || '',
-    sourceId: (record.sourceId as string) || (record.workflowId as string) || '',
+    sourceId:
+      (record.sourceId as string) || (record.workflowId as string) || '',
     sourceType: (record.sourceType as Report['sourceType']) || '',
     status: (record.status as ReportStatus) || 'Draft',
     visibility: (record.visibility as ReportVisibility) || 'Private',
@@ -174,13 +176,19 @@ export const listReportBuilderReports = async (params?: {
       skipCancellation: true,
       url: BASE,
     })
-    return { data: asArray<unknown>(data).map(fromReportBuilderConfig), error: '' }
+    return {
+      data: asArray<unknown>(data).map(fromReportBuilderConfig),
+      error: '',
+    }
   } catch (error: unknown) {
     const err = error as { response?: { data?: unknown } }
     console.error(error)
     return {
       data: [] as Report[],
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to load reports'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to load reports',
+      ),
     }
   }
 }
@@ -199,7 +207,10 @@ export const getReportBuilderDomains = async () => {
     console.error(error)
     return {
       data: [] as ReportBuilderDomainOption[],
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to load domains'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to load domains',
+      ),
     }
   }
 }
@@ -269,7 +280,10 @@ export const previewReportBuilderReport = async (
     console.error(error)
     return {
       data: null as ReportRunResult | null,
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to generate preview'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to generate preview',
+      ),
     }
   }
 }
@@ -320,7 +334,10 @@ export const updateReportBuilderReport = async (
     }
     return {
       data: null as Report | null,
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to update report'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to update report',
+      ),
     }
   }
 }
@@ -339,7 +356,10 @@ export const publishReportBuilderReport = async (id: string) => {
     console.error(error)
     return {
       data: null as Report | null,
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to publish report'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to publish report',
+      ),
     }
   }
 }
@@ -357,7 +377,10 @@ export const deleteReportBuilderReport = async (id: string) => {
     const err = error as { response?: { data?: unknown } }
     console.error(error)
     return {
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to delete report'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to delete report',
+      ),
     }
   }
 }
@@ -401,7 +424,111 @@ export const getReportBuilderReportData = async (id: string) => {
     console.error(error)
     return {
       data: null as ReportRunResult | null,
-      error: getV6ApiErrorMessage(err?.response?.data, 'Failed to load report data'),
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to load report data',
+      ),
+    }
+  }
+}
+
+export interface ReportBuilderShare {
+  action: number
+  email: string
+  shareId: string
+  sharedAt?: string
+}
+
+const asReportShare = (value: unknown): ReportBuilderShare | null => {
+  const record = asRecord<unknown>(value)
+  const shareId = String(record.shareId || record.share_id || record.id || '')
+  const email = String(record.email || record.Email || '')
+  if (!shareId || !email) return null
+  return {
+    action: Number(record.action ?? 0),
+    email,
+    sharedAt:
+      (record.sharedAt as string) || (record.shared_at as string) || undefined,
+    shareId,
+  }
+}
+
+/** Invite-link share for a report, independent of its visibility ACL. */
+export const shareReportBuilderReport = async (payload: {
+  action: number
+  email: string
+  id: string
+  message?: string
+}) => {
+  try {
+    const { data } = await axiosV6({
+      data: {
+        action: payload.action,
+        email: payload.email,
+        message: payload.message || '',
+      },
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `${BASE}/${encodeURIComponent(payload.id)}/share`,
+    })
+    return { data: asReportShare(data), error: '' }
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: unknown } }
+    console.error(error)
+    return {
+      data: null as ReportBuilderShare | null,
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to share report',
+      ),
+    }
+  }
+}
+
+export const getReportBuilderReportShares = async (id: string) => {
+  try {
+    const { data } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      skipCancellation: true,
+      url: `${BASE}/${encodeURIComponent(id)}/shares`,
+    })
+    const list = asArray<unknown>(data)
+    return {
+      data: list
+        .map(asReportShare)
+        .filter((item): item is ReportBuilderShare => Boolean(item)),
+      error: '',
+    }
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: unknown } }
+    console.error(error)
+    return {
+      data: [] as ReportBuilderShare[],
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to load report shares',
+      ),
+    }
+  }
+}
+
+export const revokeReportBuilderShare = async (shareId: string) => {
+  try {
+    await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'DELETE',
+      url: `${BASE}/share/${encodeURIComponent(shareId)}`,
+    })
+    return { error: '' }
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: unknown } }
+    console.error(error)
+    return {
+      error: getV6ApiErrorMessage(
+        err?.response?.data,
+        'Failed to revoke share',
+      ),
     }
   }
 }

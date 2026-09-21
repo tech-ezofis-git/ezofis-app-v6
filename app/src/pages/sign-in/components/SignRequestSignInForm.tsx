@@ -134,15 +134,15 @@ const SignRequestSignInForm = ({
 
   const handlePasswordSetup = async () => {
     if (!password) {
-      setError(t`Password is required`)
+      setError(t`Please enter a password.`)
       return
     }
     if (password.length < 6) {
-      setError(t`Password must be at least 6 characters`)
+      setError(t`Your password must be at least 6 characters long.`)
       return
     }
     if (password !== confirmPassword) {
-      setError(t`Passwords do not match`)
+      setError(t`The passwords don't match. Please try again.`)
       return
     }
 
@@ -169,7 +169,7 @@ const SignRequestSignInForm = ({
 
   const handlePasswordLogin = async () => {
     if (!password) {
-      setError(t`Password is required`)
+      setError(t`Please enter a password.`)
       return
     }
     setSubmitting(true)
@@ -194,7 +194,7 @@ const SignRequestSignInForm = ({
     const normalized = socialEmail.trim().toLowerCase()
     if (normalized !== email.trim().toLowerCase()) {
       setError(
-        `Please sign in with ${email} — the email this request was sent to.`,
+        t`Please sign in using the email address this request was sent to: ${email}.`,
       )
       setSubmitting(false)
       return
@@ -221,7 +221,8 @@ const SignRequestSignInForm = ({
 
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
-    onError: () => setError('Google sign-in was cancelled or failed'),
+    onError: () =>
+      setError(t`We couldn't sign you in with Google. Please try again.`),
     onSuccess: async (tokenResponse) => {
       try {
         setSubmitting(true)
@@ -238,7 +239,7 @@ const SignRequestSignInForm = ({
         setError(e?.message ?? 'Google sign-in failed')
         setSubmitting(false)
       }
-    },
+    }
   })
 
   const handleMicrosoftLogin = async () => {
@@ -256,7 +257,7 @@ const SignRequestSignInForm = ({
     } catch (e: any) {
       const errorMsg = e?.message || ''
       if (errorMsg.includes('user_cancelled')) {
-        setError('Microsoft sign-in was cancelled.')
+        setError(t`We couldn't sign you in with Microsoft. Please try again.`)
       } else {
         setError(errorMsg || 'Microsoft sign-in failed')
       }

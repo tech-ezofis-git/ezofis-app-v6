@@ -36,7 +36,12 @@ export type ClassicLoginResult = {
 }
 
 export const loginClassic = async (
-  payload: { email: string; password: string },
+  payload: {
+    email: string
+    loggedFrom?: string
+    password: string
+    portalId?: string
+  },
   tenantId?: number | string,
 ): Promise<ClassicLoginResult> => {
   const response: ClassicLoginResult = {
@@ -50,8 +55,9 @@ export const loginClassic = async (
     const { data, status } = await getClient()({
       data: JSON.stringify({
         email: payload.email,
-        loggedFrom: 'WEB',
+        loggedFrom: payload.loggedFrom || 'WEB',
         password: payload.password,
+        ...(payload.portalId ? { portalId: payload.portalId } : {}),
       }),
       headers: {
         Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,
@@ -97,7 +103,7 @@ export const loginClassic = async (
 }
 
 export const socialLoginClassic = async (
-  payload: { email: string; loginType: string },
+  payload: { email: string; loggedFrom?: string; loginType: string },
   tenantId?: number | string,
 ): Promise<ClassicLoginResult> => {
   const response: ClassicLoginResult = {
@@ -111,8 +117,9 @@ export const socialLoginClassic = async (
     const { data, status } = await getClient()({
       data: JSON.stringify({
         email: payload.email,
-        loggedFrom: 'WEB',
+        loggedFrom: payload.loggedFrom || 'WEB',
         loginType: payload.loginType,
+        ...(tenantId ? { tenantId: String(tenantId) } : {}),
       }),
       headers: {
         Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,

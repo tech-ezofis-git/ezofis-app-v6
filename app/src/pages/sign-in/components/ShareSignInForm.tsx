@@ -56,8 +56,10 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
         authUserStore.getState().setShareContext({
           action: preview.action,
           permission: preview.permission,
+          resourceType: preview.resourceType,
           shareToken: preview.shareToken,
           sourceItemId: preview.sourceItemId,
+          sourceReportId: preview.sourceReportId,
           sourceRepositoryId: preview.sourceRepositoryId,
           sourceTenantId: preview.sourceTenantId,
           workflowInstanceId: preview.workflowInstanceId,
@@ -82,11 +84,13 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   const handlePasswordSetup = async () => {
     if (!password) {
-      setError(t`Password is required`)
+      setError(t`Please enter a password.`)
       return
     }
     if (password !== confirmPassword) {
-      setError(t`Passwords do not match`)
+      setError(
+        t`The passwords don't match. Please enter the same password in both fields.`,
+      )
       return
     }
 
@@ -111,7 +115,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   const handlePasswordLogin = async () => {
     if (!password) {
-      setError(t`Password is required`)
+      setError(t`Please enter a password.`)
       return
     }
 
@@ -120,7 +124,9 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
     // For password login, use normal login but tenant is resolved from share preview
     const shareCtx = authUserStore.getState().shareContext
     if (!shareCtx) {
-      setError(t`Missing share context`)
+      setError(
+        t`This link is incomplete or no longer valid. Please ask for a new link.`,
+      )
       setSubmitting(false)
       return
     }
@@ -141,7 +147,8 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
-    onError: () => setError(t`Google sign-in was cancelled or failed`),
+    onError: () =>
+      setError(t`We couldn't sign you in with Google. Please try again.`),
     onSuccess: async (tokenResponse) => {
       try {
         setSubmitting(true)

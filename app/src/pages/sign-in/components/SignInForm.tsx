@@ -520,11 +520,11 @@ const SignInForm = ({
     setLoginType('')
 
     if (!email) {
-      setError(t`Email is required`)
+      setError(t`Please enter your email address.`)
       return
     }
     if (!password) {
-      setError(t`Password is required`)
+      setError(t`Please enter your password.`)
       return
     }
 
@@ -538,7 +538,7 @@ const SignInForm = ({
       setLoading(true)
 
       if (!email) {
-        setError(t`Email is required`)
+        setError(t`Please enter your email address.`)
         setLoading(false)
         return
       }
@@ -569,7 +569,7 @@ const SignInForm = ({
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onError: () => {
-      setError(t`Google sign-in was cancelled or failed`)
+      setError(t`We couldn't sign you in with Google. Please try again.`)
     },
     onSuccess: async (tokenResponse) => {
       try {
@@ -589,7 +589,7 @@ const SignInForm = ({
 
         const gEmail: string = profile.email
         if (!gEmail) {
-          throw new Error(t`No email returned from Google`)
+          throw new Error(t`We couldn't get your email address from Google. Please try again.`)
         }
 
         setSocialEmail(gEmail)
@@ -641,7 +641,7 @@ const SignInForm = ({
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError(t`Microsoft sign-in was cancelled.`)
+        setError(t`We couldn't sign you in with Microsoft. Please try again.`)
       } else {
         setError(errorMsg || t`Microsoft sign-in failed`)
       }

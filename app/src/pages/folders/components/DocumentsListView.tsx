@@ -98,7 +98,7 @@ type DocumentsListViewProps = {
   onShare: (id: string) => void
   onShareFilter?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
-  onUploadFile?: (file: File) => void
+  onUploadFile?: (files: File[]) => void
   onWorkflow: (id: string) => void
   setView: (view: ExplorerView) => void
 }

@@ -13,6 +13,8 @@ export const persistShareContext = (context: ShareContext | null) => {
     sessionStorage.removeItem('itemId')
     sessionStorage.removeItem('shareAction')
     sessionStorage.removeItem('sharePermission')
+    sessionStorage.removeItem('shareResourceType')
+    sessionStorage.removeItem('shareReportId')
     return
   }
 
@@ -26,6 +28,12 @@ export const persistShareContext = (context: ShareContext | null) => {
   }
   if (context.permission) {
     sessionStorage.setItem('sharePermission', context.permission)
+  }
+  if (context.resourceType) {
+    sessionStorage.setItem('shareResourceType', context.resourceType)
+  }
+  if (context.sourceReportId) {
+    sessionStorage.setItem('shareReportId', context.sourceReportId)
   }
 }
 
@@ -42,7 +50,7 @@ export const readPersistedShareContext = (): ShareContext | null => {
         parsed?.sourceRepositoryId &&
         parsed?.sourceTenantId
       ) {
-        return parsed
+        return { resourceType: 'folder-item', ...parsed }
       }
     }
   } catch {
@@ -59,12 +67,20 @@ export const readPersistedShareContext = (): ShareContext | null => {
 
   const actionRaw = sessionStorage.getItem('shareAction')
   const permission = sessionStorage.getItem('sharePermission') || undefined
+  const resourceType =
+    (sessionStorage.getItem(
+      'shareResourceType',
+    ) as ShareContext['resourceType']) || 'folder-item'
+  const sourceReportId = sessionStorage.getItem('shareReportId') || undefined
 
   return {
-    action: actionRaw != null && actionRaw !== '' ? Number(actionRaw) : undefined,
+    action:
+      actionRaw != null && actionRaw !== '' ? Number(actionRaw) : undefined,
     permission,
+    resourceType,
     shareToken,
     sourceItemId,
+    sourceReportId,
     sourceRepositoryId,
     sourceTenantId,
   }

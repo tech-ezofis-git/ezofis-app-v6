@@ -6,13 +6,11 @@ import apiRouter from '@/api/apiRouter'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPin from '@/components/base/inputs/InputPin'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import {
-  AnimateEntrancePop,
-  AnimateFadeIn,
-} from '@/components/common/animations'
+import Title from '@/components/base/Title'
 import ThemeSwitcher from '@/layouts/auth/components/ThemeSwitcher'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import SignInForm from '@/pages/sign-in/components/SignInForm'
@@ -95,21 +93,23 @@ export default function PortalLogin({
     )
 
     return (
-      <div className='flex min-h-svh flex-col bg-surface p-6'>
+      <div className='relative min-h-svh bg-surface p-6'>
         <header className='flex items-center justify-between'>
           <PortalBrandMark branding={portal.branding} fallbackName={brandName} />
           <ThemeSwitcher />
         </header>
 
-        <main className='flex flex-1 items-center justify-center py-10'>
-          <div className='w-105'>
+        <div
+          className='flex items-center justify-center py-10'
+          style={{ minHeight: 'calc(100dvh - 120px)' }}
+        >
+          <div className='mx-auto w-105'>
             <SignInForm
               persistIdentity={false}
               showForgotPassword={false}
               showSocial={auth.signInType}
               tenantId={portal.tenantId || undefined}
               branding={{
-                favicon: portal.branding?.favicon,
                 name: brandName,
               }}
               socialProviders={
@@ -130,7 +130,7 @@ export default function PortalLogin({
               }}
             />
           </div>
-        </main>
+        </div>
 
         <footer className='text-center text-12 text-gray-9'>
           {t`Powered by`}{' '}
@@ -183,6 +183,7 @@ export default function PortalLogin({
   }
 
   const handleCredentials = async () => {
+    if (loading) return
     setError('')
     const nextIdentifier = identifier.trim()
     if (!nextIdentifier) {
@@ -232,6 +233,7 @@ export default function PortalLogin({
   }
 
   const handleVerifyOtp = async () => {
+    if (loading) return
     setError('')
     if (String(otp).trim().length !== 6) {
       setError(t`Enter the 6-digit OTP.`)
@@ -270,137 +272,157 @@ export default function PortalLogin({
   }
 
   return (
-    <div className='flex min-h-svh flex-col bg-surface px-4 py-6 sm:px-6'>
-      <AnimateFadeIn>
-        <header className='flex items-center justify-between gap-3'>
-          <PortalBrandMark branding={portal.branding} fallbackName={brandName} />
-          <ThemeSwitcher />
-        </header>
-      </AnimateFadeIn>
+    <div className='relative min-h-svh bg-surface p-6'>
+      <header className='flex items-center justify-between'>
+        <PortalBrandMark branding={portal.branding} fallbackName={brandName} />
+        <ThemeSwitcher />
+      </header>
 
-      <main className='flex flex-1 items-center justify-center py-10'>
-        <AnimateEntrancePop className='flex w-full max-w-md flex-col items-center gap-6'>
+      <div
+        className='flex items-center justify-center py-10'
+        style={{ minHeight: 'calc(100dvh - 120px)' }}
+      >
+        <div className='mx-auto w-105'>
           {step === 'otp' ? (
-            <span className='flex size-14 items-center justify-center rounded-full bg-primary-3 text-primary-11'>
+            <span className='mx-auto flex size-14 items-center justify-center rounded-full bg-primary-3 text-primary-11'>
               <Icon className='size-7' name='lucide:shield-check' />
             </span>
           ) : (
-            <PortalBrandMark
-              branding={portal.branding}
-              className='justify-center'
-              fallbackName={brandName}
-              size='lg'
-            />
+            <IconIllustrated icon='tabler:user' />
           )}
 
-          <div className='text-center'>
-            <h1 className='text-xl font-semibold text-gray-13 sm:text-2xl'>
-              {step === 'otp' ? t`Verify OTP` : welcome}
-            </h1>
-            <p className='mt-1 text-13 text-gray-10 sm:text-14'>
-              {step === 'otp'
+          <Title
+            className='text-center'
+            description={
+              step === 'otp'
                 ? t`Code sent to ${identifier}`
-                : t`Log in to submit and track your requests`}
-            </p>
-          </div>
+                : t`Log in to submit and track your requests`
+            }
+            descriptionClassName='text-center'
+            level={1}
+            title={step === 'otp' ? t`Verify OTP` : welcome}
+            titleClassName='text-center'
+          />
 
-          <div className='w-full rounded-2xl border border-gray-4 bg-surface p-5 shadow-2xs sm:p-6'>
-            {error ? (
-              <Alert className='mb-4' text={error} variant='red' />
-            ) : null}
+          {error ? (
+            <Alert className='mt-4' text={error} variant='primary' />
+          ) : null}
 
-            {step === 'credentials' ? (
-              <div className='flex flex-col gap-4'>
-                <InputText
-                  autoComplete='username'
-                  autoFocus
-                  label={identifierLabel}
-                  placeholder={identifierPlaceholder}
-                  type='text'
-                  value={identifier}
-                  onChange={setIdentifier}
-                />
-                {usesPassword ? (
-                  <InputPassword
-                    autoComplete='current-password'
-                    label={t`Password`}
-                    showPlaceholder
-                    value={password}
-                    onChange={setPassword}
-                  />
-                ) : null}
-                <Button
-                  className='w-full justify-center'
-                  color='primary'
-                  label={usesPassword ? t`Sign in` : t`Send OTP`}
-                  loading={loading}
-                  size='xl'
-                  suffixIcon={
-                    usesPassword ? 'lucide:log-in' : 'lucide:arrow-right'
-                  }
-                  variant='solid'
-                  onClick={() => void handleCredentials()}
-                />
-              </div>
-            ) : (
-              <div className='flex flex-col gap-5'>
-                <p className='text-center text-13 text-gray-10'>
-                  {t`Enter the 6-digit OTP to verify your identity`}
-                </p>
-                <InputPin
-                  length={6}
-                  value={otp}
-                  onChange={(value) => setOtp(String(value))}
-                />
-                <Button
-                  className='w-full justify-center'
-                  color='primary'
-                  label={t`Verify & Sign in`}
-                  loading={loading}
-                  size='xl'
-                  variant='solid'
-                  onClick={() => void handleVerifyOtp()}
-                />
-                <div className='flex flex-col items-center gap-2'>
-                  <button
-                    className='inline-flex items-center gap-1 text-13 font-semibold text-gray-10 transition hover:text-gray-13'
-                    type='button'
-                    onClick={() => {
-                      setStep('credentials')
-                      setOtp('')
-                      setPendingUser(null)
-                      setError('')
+          {step === 'credentials' ? (
+            <>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void handleCredentials()
+                }}
+              >
+                <div className='mt-4 space-y-4'>
+                  <InputText
+                    autoComplete='username'
+                    autoFocus
+                    label={identifierLabel}
+                    placeholder={identifierPlaceholder}
+                    type='text'
+                    value={identifier}
+                    leftSection={
+                      <Icon className='text-gray-8' name='tabler:mail' />
+                    }
+                    onChange={setIdentifier}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void handleCredentials()
+                      }
                     }}
-                  >
-                    <Icon className='size-3.5' name='lucide:arrow-left' />
-                    {t`Use a different ${identifierLabel.toLowerCase()}`}
-                  </button>
-                  <button
-                    className={cn(
-                      'text-13 font-semibold',
-                      elapsed > 0
-                        ? 'cursor-not-allowed text-gray-8'
-                        : 'text-primary-11 hover:text-primary-9',
-                    )}
-                    disabled={elapsed > 0}
-                    type='button'
-                    onClick={() => void handleResend()}
-                  >
-                    {resendLabel}
-                  </button>
+                  />
+                  {usesPassword ? (
+                    <InputPassword
+                      autoComplete='current-password'
+                      label={t`Password`}
+                      showPlaceholder
+                      value={password}
+                      leftSection={
+                        <Icon className='text-gray-8' name='tabler:lock' />
+                      }
+                      onChange={setPassword}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          void handleCredentials()
+                        }
+                      }}
+                    />
+                  ) : null}
                 </div>
-              </div>
-            )}
-          </div>
-        </AnimateEntrancePop>
-      </main>
+                <Button
+                  className='mt-4 w-full justify-center'
+                  label={usesPassword ? t`Sign In` : t`Send OTP`}
+                  loading={loading}
+                  size='lg'
+                  type='submit'
+                />
+              </form>
+            </>
+          ) : (
+            <form
+              className='mt-4 space-y-4'
+              onSubmit={(event) => {
+                event.preventDefault()
+                void handleVerifyOtp()
+              }}
+            >
+              <InputPin
+                length={6}
+                value={otp}
+                onChange={(value) => setOtp(String(value))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void handleVerifyOtp()
+                  }
+                }}
+              />
+              <Button
+                className='w-full justify-center'
+                label={t`Verify & Sign in`}
+                loading={loading}
+                size='lg'
+                type='submit'
+              />
+              <button
+                className='mx-auto flex items-center gap-1 text-13 text-gray-11 underline hover:text-gray-12'
+                type='button'
+                onClick={() => {
+                  setStep('credentials')
+                  setOtp('')
+                  setPendingUser(null)
+                  setError('')
+                }}
+              >
+                {t`Use a different ${identifierLabel.toLowerCase()}`}
+              </button>
+              <button
+                className={cn(
+                  'mx-auto block text-13',
+                  elapsed > 0
+                    ? 'cursor-not-allowed text-gray-8'
+                    : 'text-primary-11 underline hover:text-primary-12',
+                )}
+                disabled={elapsed > 0}
+                type='button'
+                onClick={() => void handleResend()}
+              >
+                {resendLabel}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
 
-      <AnimateFadeIn>
-        <footer className='text-center text-12 text-gray-9'>
-          {t`Powered by`}{' '}
-          <span className='font-semibold text-primary-11'>EZOFIS</span>
-        </footer>
-      </AnimateFadeIn>
+      <footer className='text-center text-12 text-gray-9'>
+        {t`Powered by`}{' '}
+        <span className='font-semibold text-primary-11'>EZOFIS</span>
+      </footer>
     </div>
   )
 }

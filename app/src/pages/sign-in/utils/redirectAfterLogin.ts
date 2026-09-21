@@ -5,11 +5,11 @@ import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/u
 import authUserStore from '@/stores/authUserStore'
 
 type RedirectAfterLoginOptions = {
+  /** Optional return path (e.g. sign-request invite URL) */
+  redirectTo?: string | null
   shareTenantId?: string | null
   /** SPA navigate — avoids full reload blank screen after sign-in */
   navigate: (opts: NavigateOptions) => Promise<void> | void
-  /** Optional return path (e.g. sign-request invite URL) */
-  redirectTo?: string | null
 }
 
 const safeInternalRedirect = (value?: string | null): string | null => {
@@ -25,9 +25,9 @@ const safeInternalRedirect = (value?: string | null): string | null => {
  * Keeps the app mounted (no white flash from location.replace).
  */
 export const redirectAfterLogin = async ({
-  shareTenantId,
   navigate,
   redirectTo,
+  shareTenantId,
 }: RedirectAfterLoginOptions) => {
   const explicitRedirect = safeInternalRedirect(redirectTo)
   let destination: NavigateOptions['to'] = (explicitRedirect ||
@@ -52,7 +52,15 @@ export const redirectAfterLogin = async ({
           })
         }
       }
-      destination = shareCtx?.workflowInstanceId ? '/requests' : '/folders'
+      if (shareCtx?.resourceType === 'dashboard') {
+        destination = '/'
+      } else if (shareCtx?.resourceType === 'report') {
+        destination = shareCtx.sourceReportId
+          ? (`/reports/${shareCtx.sourceReportId}` as NavigateOptions['to'])
+          : '/reports'
+      } else {
+        destination = shareCtx?.workflowInstanceId ? '/requests' : '/folders'
+      }
     } else if (
       String(configuration) === '0' ||
       !useSetupStore.getState().isApSetUpCompleted
@@ -77,8 +85,8 @@ export const redirectAfterLogin = async ({
     const search = Object.fromEntries(new URLSearchParams(query).entries())
     await navigate({
       replace: true,
-      to: pathname as NavigateOptions['to'],
       search,
+      to: pathname as NavigateOptions['to'],
     })
     return
   }

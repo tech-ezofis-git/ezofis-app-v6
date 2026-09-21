@@ -19,9 +19,9 @@ const protocolOptions = [
 ]
 
 const validateHost = (host: string) => {
-  if (!host) return 'Host is required'
+  if (!host) return 'Please enter the server address.'
   const hostRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$|^(?:\d{1,3}\.){3}\d{1,3}$/
-  if (!hostRegex.test(host)) return 'Invalid host format'
+  if (!hostRegex.test(host)) return 'Please enter a valid server address.'
   return undefined
 }
 
@@ -60,16 +60,18 @@ const buildConnectionOptions = (
 
 const validateConnectForm = (formData: any) => {
   const newErrors: any = {}
-  if (!formData.name.trim()) newErrors.name = 'Name is required'
+  if (!formData.name.trim()) newErrors.name = 'Please enter a connection name.'
   const hostErr = validateHost(formData.host)
   if (hostErr) newErrors.host = hostErr
   if (!formData.port) {
-    newErrors.port = 'Port is required'
+    newErrors.port = 'Please enter the port number.'
   } else if (Number.parseInt(formData.port, 10) > 65535) {
-    newErrors.port = 'Invalid Port'
+    newErrors.port = 'Please enter a valid port number between 1 and 65535.'
   }
-  if (!formData.username.trim()) newErrors.username = 'Username is required'
-  if (!formData.password.trim()) newErrors.password = 'Password is required'
+  if (!formData.username.trim())
+    newErrors.username = 'Please enter your username.'
+  if (!formData.password.trim())
+    newErrors.password = 'Please enter your password.'
   return newErrors
 }
 
@@ -167,7 +169,10 @@ export default function FTPAgentSettingsPanel({
       setFormData((prev) => ({ ...prev, port: val }))
       if (val) {
         if (Number.parseInt(val, 10) > 65535) {
-          setErrors((prev) => ({ ...prev, port: 'Max 65535' }))
+          setErrors((prev) => ({
+            ...prev,
+            port: 'Please enter a valid port number between 1 and 65535.',
+          }))
         } else {
           setErrors((prev) => ({ ...prev, port: undefined }))
         }
@@ -179,9 +184,12 @@ export default function FTPAgentSettingsPanel({
 
   const handlePortBlur = () => {
     if (!formData.port) {
-      setErrors((prev) => ({ ...prev, port: 'Port is required' }))
+      setErrors((prev) => ({ ...prev, port: 'Please enter the port number.' }))
     } else if (Number.parseInt(formData.port, 10) > 65535) {
-      setErrors((prev) => ({ ...prev, port: 'Max 65535' }))
+      setErrors((prev) => ({
+        ...prev,
+        port: 'Please enter a valid port number between 1 and 65535.',
+      }))
     } else {
       setErrors((prev) => ({ ...prev, port: undefined }))
     }
