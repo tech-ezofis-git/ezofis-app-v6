@@ -14,8 +14,8 @@ import {
 type EmptyFolderUploadDropzoneProps = {
   className?: string
   disabled?: boolean
-  /** Opens the full upload flow when a valid file is chosen. */
-  onFileSelected: (file: File) => void
+  /** Opens the full upload flow with the chosen (one or more) valid files. */
+  onFilesSelected: (files: File[]) => void
   /** Opens the upload screen without a preselected file (click-only fallback). */
   onOpenUpload?: () => void
 }
@@ -23,7 +23,7 @@ type EmptyFolderUploadDropzoneProps = {
 export function EmptyFolderUploadDropzone({
   className = '',
   disabled = false,
-  onFileSelected,
+  onFilesSelected,
   onOpenUpload,
 }: EmptyFolderUploadDropzoneProps) {
   const { t } = useLingui()
@@ -51,7 +51,7 @@ export function EmptyFolderUploadDropzone({
       const tooLarge = files.some((file) => file.size > MAX_SIZE)
       showToast({
         message: tooLarge
-          ? t`File is too large. Max size is 4MB.`
+          ? t`File is too large. Max size is 50MB.`
           : t`Invalid file type. Please upload a PDF or Image.`,
         variant: 'error',
       })
@@ -59,7 +59,14 @@ export function EmptyFolderUploadDropzone({
       return
     }
 
-    onFileSelected(validFiles[0])
+    if (validFiles.length < files.length) {
+      showToast({
+        message: t`Some files were skipped (unsupported type or too large).`,
+        variant: 'error',
+      })
+    }
+
+    onFilesSelected(validFiles)
     resetInput()
   }
 
@@ -108,7 +115,7 @@ export function EmptyFolderUploadDropzone({
               <span className='text-[var(--primary-9)]'>{t`browse`}</span>
             </h2>
             <p className='text-xs font-medium text-[var(--gray-9)]'>
-              {t`Supports PDF and Images · Max 4 MB`}
+              {t`Supports PDF and Images · Max 50 MB`}
             </p>
           </div>
         </AnimateStagger>
@@ -117,6 +124,7 @@ export function EmptyFolderUploadDropzone({
           accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
           className='hidden'
           disabled={disabled}
+          multiple
           ref={inputRef}
           type='file'
           onChange={(event) => acceptFiles(event.target.files)}

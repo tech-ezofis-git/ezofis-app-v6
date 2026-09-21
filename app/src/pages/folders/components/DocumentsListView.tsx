@@ -97,7 +97,7 @@ type DocumentsListViewProps = {
   onSearchChange?: (value: string) => void
   onShare: (id: string) => void
   onUpload?: () => void
-  onUploadFile?: (file: File) => void
+  onUploadFile?: (files: File[]) => void
   onWorkflow: (id: string) => void
   setView: (view: ExplorerView) => void
 }

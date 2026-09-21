@@ -87,7 +87,7 @@ export function FolderExplorer() {
   const setPageContext = useAskAiActionStore((state) => state.setPageContext)
   const clearPending = useAskAiActionStore((state) => state.clearPending)
   const applyingAskAiRef = useRef(false)
-  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null)
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([])
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     id: string
@@ -111,7 +111,7 @@ export function FolderExplorer() {
     const sourceFolder = folderBeforeUploadRef.current || activeFolder
     const folderToSelect = resolveUploadReturnFolder(sourceFolder)
 
-    setPendingUploadFile(null)
+    setPendingUploadFiles([])
 
     if (folderToSelect) selectFolder(folderToSelect)
     else setAppView('explorer')
@@ -338,7 +338,7 @@ export function FolderExplorer() {
   const handleBreadcrumbNavigate = useCallback(
     (key: string) => {
       if (appView === 'Upload') {
-        setPendingUploadFile(null)
+        setPendingUploadFiles([])
       }
 
       if (key === 'folders-root') {
@@ -407,11 +407,11 @@ export function FolderExplorer() {
       return
     }
     folderBeforeUploadRef.current = activeFolder
-    setPendingUploadFile(null)
+    setPendingUploadFiles([])
     setAppView('Upload')
   }
 
-  const handleUploadFile = (file: File) => {
+  const handleUploadFiles = (files: File[]) => {
     if (!resolvedRepositoryId) {
       showToast({
         message: t`Select a repository before uploading.`,
@@ -420,7 +420,7 @@ export function FolderExplorer() {
       return
     }
     folderBeforeUploadRef.current = activeFolder
-    setPendingUploadFile(file)
+    setPendingUploadFiles(files)
     setAppView('Upload')
   }
 
@@ -506,7 +506,7 @@ export function FolderExplorer() {
     return (
       <Upload
         folderId={activeFolder}
-        initialFile={pendingUploadFile}
+        initialFiles={pendingUploadFiles}
         repositoryData={selectedRepository}
         repositoryId={resolvedRepositoryId || null}
         onBack={exitUpload}
@@ -633,7 +633,7 @@ export function FolderExplorer() {
           }}
           onShare={openShareForFile}
           onUpload={canUpload ? handleUpload : undefined}
-          onUploadFile={canUpload ? handleUploadFile : undefined}
+          onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
         />
       </div>
@@ -731,7 +731,7 @@ export function FolderExplorer() {
               onPageSizeChange={changePageSize}
               onShare={openShareForFile}
               onUpload={canUpload ? handleUpload : undefined}
-              onUploadFile={canUpload ? handleUploadFile : undefined}
+              onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => openFileAction(id, 'workflow')}
             />
           </div>
