@@ -62,7 +62,7 @@ export function EmbedTopbar({
   )
 
   return (
-    <header className='flex h-14 shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary pl-4 pr-6 shadow-2xs transition-colors duration-200'>
+    <header className='relative z-[20000] flex h-14 shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary pl-4 pr-6 shadow-2xs transition-colors duration-200'>
       <div className='flex items-center gap-3 min-w-0 overflow-hidden'>
         {showLogo && (
           <>

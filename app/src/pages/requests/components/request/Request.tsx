@@ -1810,7 +1810,7 @@ const Request = ({
             document: docInfo,
             endpoint:
               action?.endpoint ||
-              'https://demo.ezofis.com/V6Playground/apikey.html',
+              'https://v6playground.onrender.com/',
             requestPayload: docInfo,
           }
           setPlaygroundContext(context)
