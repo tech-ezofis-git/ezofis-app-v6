@@ -144,8 +144,6 @@ class ResponseComposer:
         pdf_result: Optional[dict] = None,
         global_search_result: Optional[dict] = None,
         chatbot_result: Optional[dict] = None,
-        dashboard_result: Optional[dict] = None,
-        html: Optional[str] = None,
     ) -> ChatResponse:
         return ChatResponse(
             session_id=session_id,
@@ -167,8 +165,6 @@ class ResponseComposer:
             pdf_result=pdf_result,
             global_search_result=global_search_result,
             chatbot_result=chatbot_result,
-            dashboard_result=dashboard_result,
-            html=html,
         )
 
     async def _llm_synthesize(self, *, system_prompt: str, user_content: str) -> dict:

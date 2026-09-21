@@ -11,13 +11,9 @@ public static class CatalogServiceCollectionExtensions
 {
     public static IServiceCollection AddCatalog(this IServiceCollection services, IConfiguration configuration)
     {
-        var rawConnectionString = configuration.GetConnectionString("DefaultConnection")
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? configuration.GetConnectionString("CatalogConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' or 'CatalogConnection' not found for catalog.");
-
-        var catalogMaxPool = configuration.GetValue<int?>("Catalog:MaxPoolSize")
-            ?? CatalogConnectionPool.DefaultMaxPoolSize;
-        var connectionString = CatalogConnectionPool.Apply(rawConnectionString, catalogMaxPool);
 
         services.AddDbContextFactory<CatalogDbContext>(options =>
         {

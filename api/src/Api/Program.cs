@@ -102,7 +102,6 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 builder.Services.AddScoped<ITwoFactorService, TwoFactorService>();
-builder.Services.AddScoped<ILoginEmailOtpService, LoginEmailOtpService>();
 builder.Services.AddScoped<IEzofisAuthService, EzofisAuthService>();
 builder.Services.AddScoped<SaaSApp.Users.Application.Contracts.IUserTenantRoleSync, UserTenantRoleSync>();
 
@@ -218,9 +217,7 @@ if (hangfireEnabled)
 {
     // Hangfire must not inherit Command Timeout=0 / unbounded pool from DefaultConnection —
     // that lets workers hold catalog connections forever and makes BackgroundJob.Enqueue hang.
-    // Keep Hangfire's own pool small — it shares Azure Postgres with catalog EF + tenant pools.
-    var hangfireCsBuilder = new Npgsql.NpgsqlConnectionStringBuilder(
-        SaaSApp.Catalog.CatalogConnectionPool.Apply(connectionString!))
+    var hangfireCsBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
     {
         MaxPoolSize = Math.Clamp(builder.Configuration.GetValue("Hangfire:MaxPoolSize", 5), 2, 15),
         Timeout = Math.Clamp(builder.Configuration.GetValue("Hangfire:ConnectionTimeoutSeconds", 10), 5, 60),
@@ -389,7 +386,7 @@ if (hangfireEnabled)
         IgnoreAntiforgeryToken = true
     });
 
-    var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", false);
+    var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", true);
     try
     {
         if (emailIngestHangfire)
