@@ -234,14 +234,14 @@ export default function FolderRetentionPolicyWizard({
     if (!isDemoAppOrigin()) {
       if (nextStep > step && step === 0 && !policy.name.trim()) {
         showToast({
-          message: t`Enter a policy name to continue.`,
+          message: t`Please enter a policy name.`,
           variant: 'error',
         })
         return
       }
       if (nextStep > step && step === 1 && ruleStage !== 'form') {
         showToast({
-          message: t`Choose a destination action and how to build the rule to continue.`,
+          message: t`Please choose what should happen and how the rule should work.`,
           variant: 'error',
         })
         return
@@ -253,7 +253,7 @@ export default function FolderRetentionPolicyWizard({
   const savePolicy = () => {
     if (!policy.name.trim()) {
       showToast({
-        message: t`Enter a policy name to continue.`,
+        message: t`Please enter a policy name.`,
         variant: 'error',
       })
       setStep(0)
@@ -261,7 +261,7 @@ export default function FolderRetentionPolicyWizard({
     }
     if (!policy.triggerField) {
       showToast({
-        message: t`Select a retention trigger field.`,
+        message: t`Please select the field that determines when this rule should apply.`,
         variant: 'error',
       })
       setStep(1)

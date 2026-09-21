@@ -792,11 +792,17 @@ function BrandAssetDropzone({
   const readFile = (file: File | undefined) => {
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      showToast({ message: t`Please upload an image file`, variant: 'error' })
+      showToast({
+        message: t`Please upload an image file such as PNG or JPG.`,
+        variant: 'error',
+      })
       return
     }
     if (file.size > MAX_ASSET_BYTES) {
-      showToast({ message: t`Files must be under 5MB`, variant: 'error' })
+      showToast({
+        message: t`This file is too large. Please upload a file smaller than 5 MB.`,
+        variant: 'error',
+      })
       return
     }
     const reader = new FileReader()

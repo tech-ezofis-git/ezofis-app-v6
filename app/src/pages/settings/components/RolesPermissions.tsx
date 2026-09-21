@@ -1007,7 +1007,7 @@ function CreateRolePage({
                     searchable
                     error={
                       showErrors && !selectedUsers.length
-                        ? t`Please fill the required field: Select Users`
+                        ? t`Please select at least one user.`
                         : undefined
                     }
                     onChange={(value) =>

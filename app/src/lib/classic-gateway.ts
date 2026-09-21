@@ -1,7 +1,13 @@
-import { setToLocalStorage } from '@/utils/local-storage'
+import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 
+const CLASSIC_PORTAL_SCOPE_KEY = 'classicPortalScope'
 const CLASSIC_RUNTIME_COOKIE = 'ezofis-runtime'
 const CLASSIC_RUNTIME_VALUE = 'v5'
+
+export type ClassicPortalScope = {
+  portalId: string
+  tenantId: string
+}
 
 type IdentityLike = {
   accessToken?: unknown
@@ -84,10 +90,61 @@ export const clearClassicRuntimeCookie = () => {
   document.cookie = `${CLASSIC_RUNTIME_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
 }
 
-export const persistClassicIdentity = (identity: unknown) => {
+const asPortalScope = (value: unknown): ClassicPortalScope | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  const tenantId = String(record.tenantId || '').trim()
+  const portalId = String(record.portalId || '').trim()
+  if (!tenantId || !portalId) return null
+  return { portalId, tenantId }
+}
+
+export const getClassicPortalScope = () =>
+  asPortalScope(getFromLocalStorage(CLASSIC_PORTAL_SCOPE_KEY))
+
+export const persistClassicPortalScope = (
+  tenantId: string,
+  portalId: string,
+) => {
+  const scope = asPortalScope({ portalId, tenantId })
+  if (!scope) return false
+  setToLocalStorage(scope, CLASSIC_PORTAL_SCOPE_KEY)
+  return true
+}
+
+export const hasClassicPortalSession = (tenantId: string, portalId: string) => {
+  if (!isClassicIdentity(getFromLocalStorage('identity'))) return false
+  const scope = getClassicPortalScope()
+  return (
+    String(scope?.tenantId || '') === String(tenantId) &&
+    String(scope?.portalId || '') === String(portalId)
+  )
+}
+
+export const clearClassicPortalSession = () => {
+  if (globalThis.window === undefined) return
+  const identity = getFromLocalStorage('identity')
+  if (isV6Identity(identity)) {
+    globalThis.localStorage.removeItem(CLASSIC_PORTAL_SCOPE_KEY)
+    return
+  }
+  globalThis.localStorage.removeItem('identity')
+  globalThis.localStorage.removeItem('session')
+  globalThis.localStorage.removeItem(CLASSIC_PORTAL_SCOPE_KEY)
+}
+
+export const persistClassicIdentity = (
+  identity: unknown,
+  portal?: ClassicPortalScope,
+) => {
   if (!isClassicIdentity(identity)) return false
   setToLocalStorage(identity, 'identity')
   globalThis.localStorage.removeItem('session')
+  if (portal?.tenantId && portal?.portalId) {
+    persistClassicPortalScope(portal.tenantId, portal.portalId)
+  } else {
+    globalThis.localStorage.removeItem(CLASSIC_PORTAL_SCOPE_KEY)
+  }
   return true
 }
 

@@ -20,7 +20,7 @@ const BuilderHeader = () => {
   const handleSave = async (targetStatus?: 'draft' | 'published') => {
     if (!workflowId) {
       showToast({
-        message: 'No active workflow ID found to save.',
+        message: "We couldn't save your changes. Please try again.",
         variant: 'error',
       })
       return

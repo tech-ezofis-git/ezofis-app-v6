@@ -71,7 +71,9 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
     try {
       setError(null)
       if (!email) {
-        setError('Email missing. Please restart signup.')
+        setError(
+          "We couldn't find your email address. Please start the sign-up process again.",
+        )
         return
       }
 
@@ -97,13 +99,15 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
     try {
       setError(null)
       if (!email) {
-        setError('Email missing. Please restart signup.')
+        setError(
+          "We couldn't find your email address. Please start the sign-up process again.",
+        )
         return
       }
 
       const otp = otpValue.trim()
       if (otp.length !== OTP_LENGTH) {
-        setError('Please enter a valid 6-digit OTP')
+        setError('Please enter the 6-digit verification code sent to your email.')
         return
       }
 

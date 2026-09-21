@@ -1445,7 +1445,7 @@ export default function DmsFolderConfiguration({
   }) => {
     const trimmedName = payload.folderName.trim()
     if (!trimmedName) {
-      showToast({ message: t`Folder name is required.`, variant: 'error' })
+      showToast({ message: t`Please enter a folder name.`, variant: 'error' })
       return
     }
 
@@ -1586,7 +1586,7 @@ export default function DmsFolderConfiguration({
   const handleCreateRepository = async () => {
     const trimmedName = folderName.trim()
     if (!trimmedName) {
-      showToast({ message: t`Folder name is required.`, variant: 'error' })
+      showToast({ message: t`Please enter a folder name.`, variant: 'error' })
       setStep(1)
       return
     }
@@ -4252,7 +4252,10 @@ function WizardContent({
       setMasterFormTitle(fileNameWithoutExt)
     } catch (e) {
       setMasterFormUploadState('error')
-      showToast({ message: t`Failed to parse Excel file`, variant: 'error' })
+      showToast({
+        message: t`We couldn't read this Excel file. Please check the file and try again.`,
+        variant: 'error',
+      })
     }
   }
 
@@ -4979,7 +4982,7 @@ function WizardContent({
                 required
                 error={
                   showConnectorError
-                    ? 'Please fill the required field: Connector'
+                    ? t`Please select a storage connection.`
                     : undefined
                 }
                 onConnectorChange={onStorageConnectorChange}

@@ -1271,7 +1271,7 @@ export default function Upload({
     if (missingField) {
       const fieldName = missingField.name
       showToast({
-        message: t`${fieldName} is mandatory.`,
+        message: t`Please enter ${fieldName}.`,
         variant: 'error',
       })
       return false
@@ -1289,7 +1289,7 @@ export default function Upload({
 
   const uploadFile = async () => {
     if (!fileData) {
-      showToast({ message: t`Please select a file first.`, variant: 'error' })
+      showToast({ message: t`Please select a file to upload.`, variant: 'error' })
       return null
     }
 
@@ -1297,7 +1297,7 @@ export default function Upload({
 
     if (!activeRepositoryId) {
       showToast({
-        message: t`Repository ID is missing. Cannot upload.`,
+        message: t`We couldn't upload your file. Please try again.`,
         variant: 'error',
       })
       return null

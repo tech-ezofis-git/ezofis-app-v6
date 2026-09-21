@@ -49,16 +49,19 @@ export function CompleteSetupScreen() {
   }, [firstName, lastName, organisation, password, isSocial, loginType])
 
   const validateForm = (): string | null => {
-    if (!signUpUserData.email) return 'Email missing. Please restart signup.'
-    if (!firstName.trim()) return 'First name is required'
-    if (!lastName.trim()) return 'Last name is required'
-    if (!organisation.trim()) return 'Organisation is required'
+    if (!signUpUserData.email)
+      return "We couldn't find your email address. Please start the sign-up process again."
+    if (!firstName.trim() || !lastName.trim() || !organisation.trim()) {
+      return 'Please complete all required fields before continuing.'
+    }
 
     if (!isSocial) {
-      if (!password) return 'Password is required'
+      if (!password) return 'Please enter a password.'
       const unmet = requirementsConfig.find((req) => !req.regex.test(password))
-      if (unmet) return `Password must meet: ${i18n._(unmet.label)}`
-      if (password !== confirmPassword) return 'Passwords do not match'
+      if (unmet) {
+        return "Your password doesn't meet the requirements. Please check the password requirements and try again."
+      }
+      if (password !== confirmPassword) return "The passwords don't match. Please try again."
     }
     return null
   }

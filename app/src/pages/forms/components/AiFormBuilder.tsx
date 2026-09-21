@@ -86,7 +86,7 @@ export default function AiFormBuilder({
     const text = prompt.trim()
     if (!text || !formType) {
       showToast({
-        message: t`Please describe what form you want to create`,
+        message: t`Please describe the form you want to create.`,
         variant: 'error',
       })
       return

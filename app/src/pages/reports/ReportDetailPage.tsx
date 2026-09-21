@@ -3,10 +3,11 @@ import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import { useReportBuilderByIdQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { AnimateFadeIn } from '@/components/common/animations'
+import { useReportBuilderByIdQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import OverviewTab from './components/OverviewTab'
 import ReportKpiCards from './components/ReportKpiCards'
+import ReportShareButton from './components/ReportShareButton'
 
 interface Props {
   reportId: string
@@ -64,6 +65,7 @@ const ReportDetailPage = ({ reportId }: Props) => {
             {report.domain}
           </span>
         </div>
+        <ReportShareButton reportId={report.id} />
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
@@ -76,4 +78,3 @@ const ReportDetailPage = ({ reportId }: Props) => {
 
 ReportDetailPage.displayName = 'ReportDetailPage'
 export default ReportDetailPage
-

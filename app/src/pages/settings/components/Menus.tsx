@@ -653,7 +653,7 @@ function MenuSetup({
       if (missingLabels.length) {
         setShowErrors(true)
         showToast({
-          message: getRequiredFieldErrorMessage(missingLabels),
+          message: t`Please complete all required menu details before continuing.`,
           variant: 'error',
         })
         return
@@ -681,7 +681,7 @@ function MenuSetup({
         onStepChange(1)
       }
       showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
+        message: t`Please complete all required menu details before continuing.`,
         variant: 'error',
       })
       return
@@ -700,7 +700,7 @@ function MenuSetup({
           setShowErrors(true)
           onStepChange(index)
           showToast({
-            message: getRequiredFieldErrorMessage(missingLabels),
+            message: t`Please complete all required menu details before continuing.`,
             variant: 'error',
           })
           return
@@ -803,7 +803,7 @@ function MenuSetup({
             value={formState.sortOrder}
             error={
               showErrors && !(formState.sortOrder >= 0)
-                ? t`Please fill the required field: Sort Order`
+                ? t`Please enter Sort Order.`
                 : undefined
             }
             onChange={(value) =>
