@@ -871,7 +871,7 @@ function GroupSetup({
                     searchable
                     error={
                       showErrors && !selectedMembers.length
-                        ? t`Please fill the required field: Group Members`
+                        ? t`Please select at least one group member.`
                         : undefined
                     }
                     onChange={(value) =>

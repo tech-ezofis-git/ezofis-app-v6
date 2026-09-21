@@ -146,15 +146,15 @@ const RequestDemoForm = () => {
     e.preventDefault()
 
     const newErrors: FormErrors = {}
-    if (!form.category) newErrors.category = 'Required'
-    if (!form.priority) newErrors.priority = 'Required'
-    if (!form.contactMethod) newErrors.contactMethod = 'Required'
-    if (!form.description.trim()) newErrors.description = 'Required'
+    if (!form.category) newErrors.category = 'Please complete this field.'
+    if (!form.priority) newErrors.priority = 'Please complete this field.'
+    if (!form.contactMethod) newErrors.contactMethod = 'Please complete this field.'
+    if (!form.description.trim()) newErrors.description = 'Please complete this field.'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       showToast({
-        message: 'Please fill in all required fields.',
+        message: 'Please complete all required fields before submitting.',
         variant: 'error',
       })
       return

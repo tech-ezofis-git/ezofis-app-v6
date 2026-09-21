@@ -143,7 +143,10 @@ export default function FolderStorageConnectorPanel({
 
   const handleAuthorize = () => {
     if (!session?.tenantId) {
-      showToast({ message: t`Tenant ID is missing.`, variant: 'error' })
+      showToast({
+        message: t`We couldn't connect to the service. Please try again or contact your administrator.`,
+        variant: 'error',
+      })
       return
     }
 

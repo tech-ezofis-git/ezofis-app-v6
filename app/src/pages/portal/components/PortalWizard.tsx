@@ -382,7 +382,7 @@ const PortalWizard = ({
     const accepted = incoming.filter((file) => file.size <= MAX_FILE_SIZE)
     if (accepted.length !== incoming.length) {
       showToast({
-        message: t`Each file must be 10 MB or smaller.`,
+        message: t`This file is too large. Please upload a file smaller than 10 MB.`,
         variant: 'error',
       })
     }
@@ -682,7 +682,7 @@ const PortalWizard = ({
     }
     if (!source?.repositoryId) {
       showToast({
-        message: t`Can't upload: this workflow has no repository configured.`,
+        message: t`File upload isn't available for this request. Please contact your administrator.`,
         variant: 'error',
       })
       return
@@ -834,9 +834,8 @@ const PortalWizard = ({
 
     const missing = collectMissingRequiredLabels()
     if (missing.length > 0) {
-      const list = missing.join(', ')
       showToast({
-        message: t`Please fill in required field(s): ${list}`,
+        message: t`Please complete all required fields before continuing.`,
         variant: 'error',
       })
       return

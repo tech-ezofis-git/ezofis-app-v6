@@ -69,7 +69,7 @@ export default function AiWorkflowBuilder({
     const text = prompt.trim()
     if (!text) {
       showToast({
-        message: t`Please describe what workflow you want to create`,
+        message: t`Please describe the workflow you want to create.`,
         variant: 'error',
       })
       return

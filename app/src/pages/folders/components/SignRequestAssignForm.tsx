@@ -158,7 +158,9 @@ export function SignRequestAssignForm({
       .trim()
       .toLowerCase()
     if (!email) {
-      setError(t`Selected user needs an email address.`)
+      setError(
+        t`This person doesn't have an email address. Please select another person or add an email address.`,
+      )
       return
     }
     const already = selectedSigners.some(
@@ -168,7 +170,7 @@ export function SignRequestAssignForm({
           .toLowerCase() === email,
     )
     if (already) {
-      setError(t`That user is already in the signing list.`)
+      setError(t`This person has already been added.`)
       return
     }
     setSelectedSigners((previous) => [...previous, option])
@@ -185,11 +187,11 @@ export function SignRequestAssignForm({
     const name = newUserName.trim()
     const email = newUserEmail.trim().toLowerCase()
     if (!name) {
-      setAddUserError(t`Enter the user’s name.`)
+      setAddUserError(t`Please enter the person's name.`)
       return
     }
     if (!emailPattern.test(email)) {
-      setAddUserError(t`Enter a valid email address.`)
+      setAddUserError(t`Please enter a valid email address.`)
       return
     }
     const already = selectedSigners.some(
@@ -199,7 +201,7 @@ export function SignRequestAssignForm({
           .toLowerCase() === email,
     )
     if (already) {
-      setAddUserError(t`That email is already in the signing list.`)
+      setAddUserError(t`This email address has already been added.`)
       return
     }
 
@@ -229,15 +231,15 @@ export function SignRequestAssignForm({
   const handleSubmit = async () => {
     setError('')
     if (!repositoryId || !itemId) {
-      setError(t`Repository and document are required.`)
+      setError(t`Please select the document you want to send for signing.`)
       return
     }
     if (!orderedSigners.length) {
-      setError(t`Add at least one user to assign.`)
+      setError(t`Please add at least one person who needs to sign.`)
       return
     }
     if (orderedSigners.some((signer) => !signer.email || !signer.name)) {
-      setError(t`Each signer needs a name and email.`)
+      setError(t`Please enter a name and email address for each signer.`)
       return
     }
 

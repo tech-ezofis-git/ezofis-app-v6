@@ -852,7 +852,7 @@ const FieldRenderer = ({
 
         if (!repositoryId) {
           showToast({
-            message: t`Can't upload: this workflow has no repository configured.`,
+            message: t`File upload isn't available for this request. Please contact your administrator.`,
             variant: 'error',
           })
           return
