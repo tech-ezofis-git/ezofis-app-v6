@@ -409,7 +409,7 @@ const GlobalSearch = () => {
         {opened && (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
-            className='absolute top-[calc(100%+8px)] right-0 z-50 w-[460px] overflow-hidden rounded-xl border border-gray-3 bg-surface-raised shadow-md'
+            className='absolute top-[calc(100%+8px)] right-0 z-[100000] w-[460px] overflow-hidden rounded-xl border border-gray-3 bg-surface-raised shadow-xl'
             exit={{ opacity: 0, y: -4 }}
             initial={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
@@ -494,14 +494,10 @@ const GlobalSearch = () => {
                       <Icon className='size-5' name='lucide:search' />
                     </div>
                     <p className='text-sm font-medium text-gray-12'>
-                      {resultsSource === 'cache'
-                        ? t`No Results Found`
-                        : t`No matching results found`}
+                      {t`No matching results found`}
                     </p>
                     <p className='max-w-[300px] text-xs leading-5 text-gray-10'>
-                      {resultsSource === 'cache'
-                        ? t`No local matches for “${searchLabel}”. API search starts when you stop typing.`
-                        : t`We couldn't find any records matching “${searchLabel}”. Try searching with different keywords or check spelling.`}
+                      {t`We couldn't find any records matching “${searchLabel}”. Try searching with different keywords or check spelling.`}
                     </p>
                   </motion.div>
                 )}
@@ -683,9 +679,7 @@ const GlobalSearch = () => {
                         name='lucide:search'
                       />
                       <span className='min-w-0 flex-1 truncate text-[13px] text-gray-12'>
-                        {resultsSource === 'cache'
-                          ? t`All search results for  “${searchLabel}”`
-                          : t`All search results for “${searchLabel}”`}
+                        {t`All search results for “${searchLabel}”`}
                       </span>
                       <span className='shrink-0 text-[12px] text-gray-9'>
                         {t`Press`} <span>ENTER</span>

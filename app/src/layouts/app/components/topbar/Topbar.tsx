@@ -26,7 +26,7 @@ const Topbar = () => {
   }
 
   return (
-    <header className='flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 pr-6 pl-4'>
+    <header className='relative z-[20000] flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 pr-6 pl-4'>
       <div className='flex items-center gap-2'>
         <div className='flex items-center xl:hidden'>
           <SidebarToggle />

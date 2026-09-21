@@ -140,7 +140,7 @@ export default function SettingsMain() {
 
   useEffect(() => {
     if (activePage !== 'playground') return
-    window.open('https://demo.ezofis.com/V6Playground/apikey.html', '_blank')
+    window.open('https://v6playground.onrender.com/', '_blank')
     setActivePage('settings')
   }, [activePage])
 

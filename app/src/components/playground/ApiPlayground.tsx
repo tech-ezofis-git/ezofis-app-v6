@@ -49,8 +49,7 @@ interface ApiPlaygroundProps {
   onClose: () => void
 }
 
-const DEFAULT_PLAYGROUND_URL =
-  'https://demo.ezofis.com/V6Playground/apikey.html'
+const DEFAULT_PLAYGROUND_URL = 'https://v6playground.onrender.com/'
 
 const DEFAULT_DOCUMENT: Required<
   Pick<
