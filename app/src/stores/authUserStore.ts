@@ -41,12 +41,17 @@ export type SessionPermission = {
 export type ShareContext = {
   action?: number
   permission?: string
+  /** Discriminates what sourceItemId/sourceRepositoryId mean. Defaults to 'folder-item' when absent. */
+  resourceType?: ShareResourceType
   shareToken: string
   sourceItemId: string
+  /** Only set when resourceType === 'report'. */
+  sourceReportId?: string
   sourceRepositoryId: string
   sourceTenantId: string
   workflowInstanceId?: string
 }
+export type ShareResourceType = 'folder-item' | 'dashboard' | 'report'
 export type SignUpUserData = {
   email: string
   firstName: string

@@ -56,8 +56,10 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
         authUserStore.getState().setShareContext({
           action: preview.action,
           permission: preview.permission,
+          resourceType: preview.resourceType,
           shareToken: preview.shareToken,
           sourceItemId: preview.sourceItemId,
+          sourceReportId: preview.sourceReportId,
           sourceRepositoryId: preview.sourceRepositoryId,
           sourceTenantId: preview.sourceTenantId,
           workflowInstanceId: preview.workflowInstanceId,
