@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import { encodeRepositoryNodeId } from '../api/folderApi'
+import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
@@ -87,7 +87,7 @@ export function FolderExplorer() {
   const setPageContext = useAskAiActionStore((state) => state.setPageContext)
   const clearPending = useAskAiActionStore((state) => state.clearPending)
   const applyingAskAiRef = useRef(false)
-  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null)
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([])
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     id: string
@@ -111,7 +111,7 @@ export function FolderExplorer() {
     const sourceFolder = folderBeforeUploadRef.current || activeFolder
     const folderToSelect = resolveUploadReturnFolder(sourceFolder)
 
-    setPendingUploadFile(null)
+    setPendingUploadFiles([])
 
     if (folderToSelect) selectFolder(folderToSelect)
     else setAppView('explorer')
@@ -338,7 +338,7 @@ export function FolderExplorer() {
   const handleBreadcrumbNavigate = useCallback(
     (key: string) => {
       if (appView === 'Upload') {
-        setPendingUploadFile(null)
+        setPendingUploadFiles([])
       }
 
       if (key === 'folders-root') {
@@ -386,6 +386,30 @@ export function FolderExplorer() {
 
   useFoldersTopbar(foldersTopbar)
 
+  const handleShareFilter = useCallback(
+    async (shares: any[], message: string) => {
+      if (!resolvedRepositoryId) return false
+      try {
+        let successCount = 0
+        for (const share of shares) {
+          const result = await folderApi.shareFilter({
+            action: share.action,
+            email: share.email,
+            filters: { ...fileFilters, ...folderContextFilters },
+            message,
+            repositoryId: resolvedRepositoryId,
+          })
+          if (!result.error) successCount++
+        }
+        return successCount === shares.length
+      } catch (err) {
+        console.error(err)
+        return false
+      }
+    },
+    [fileFilters, folderContextFilters, resolvedRepositoryId],
+  )
+
   const handleIntelligentUpload = () => {
     if (isDemoAppOrigin()) return
     if (!resolvedRepositoryId) {
@@ -407,11 +431,11 @@ export function FolderExplorer() {
       return
     }
     folderBeforeUploadRef.current = activeFolder
-    setPendingUploadFile(null)
+    setPendingUploadFiles([])
     setAppView('Upload')
   }
 
-  const handleUploadFile = (file: File) => {
+  const handleUploadFiles = (files: File[]) => {
     if (!resolvedRepositoryId) {
       showToast({
         message: t`Select a repository before uploading.`,
@@ -420,7 +444,7 @@ export function FolderExplorer() {
       return
     }
     folderBeforeUploadRef.current = activeFolder
-    setPendingUploadFile(file)
+    setPendingUploadFiles(files)
     setAppView('Upload')
   }
 
@@ -506,7 +530,7 @@ export function FolderExplorer() {
     return (
       <Upload
         folderId={activeFolder}
-        initialFile={pendingUploadFile}
+        initialFiles={pendingUploadFiles}
         repositoryData={selectedRepository}
         repositoryId={resolvedRepositoryId || null}
         onBack={exitUpload}
@@ -632,13 +656,15 @@ export function FolderExplorer() {
             setFolderSearch(value, { manual: true })
           }}
           onShare={openShareForFile}
+          onShareFilter={handleShareFilter}
           onUpload={canUpload ? handleUpload : undefined}
-          onUploadFile={canUpload ? handleUploadFile : undefined}
+          onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
         />
       </div>
     )
   }
+
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
@@ -683,6 +709,7 @@ export function FolderExplorer() {
           canIntelligentUpload ? handleIntelligentUpload : undefined
         }
         onRefresh={handleRefresh}
+        onShare={handleShareFilter}
         onUpload={canUpload ? handleUpload : undefined}
       />
 
@@ -731,7 +758,7 @@ export function FolderExplorer() {
               onPageSizeChange={changePageSize}
               onShare={openShareForFile}
               onUpload={canUpload ? handleUpload : undefined}
-              onUploadFile={canUpload ? handleUploadFile : undefined}
+              onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => openFileAction(id, 'workflow')}
             />
           </div>

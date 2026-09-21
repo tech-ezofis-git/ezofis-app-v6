@@ -37,11 +37,22 @@ import {
   type SharedWithMeItem,
   revokeRepositoryShare,
   saveRepositoryItemRelated,
+  shareFilter,
   shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
 import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
 import { splitFilterValues } from '../utils/multiFilterValues'
 import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
+
+const getErrorMessage = (error: any): string => {
+  if (!error) return 'Unknown error'
+  if (typeof error === 'string') return error
+  if (typeof error === 'object') {
+    return error.error || error.message || error.title || error.detail || JSON.stringify(error)
+  }
+  return String(error)
+}
+
 
 export type { RepositoryItemFacet, RepositoryItemFilterField }
 
@@ -485,7 +496,7 @@ const getRepositoryBrowseStructure = async (repositoryId: string) => {
 
   const result = await authApiV6.getRepositoryBrowseStructure(repositoryId)
   throwIfCanceled(result)
-  if (result.error) throw new Error(String(result.error))
+  if (result.error) throw new Error(getErrorMessage(result.error))
 
   const structure = (result.data || {
     browsePaths: [],
@@ -616,7 +627,7 @@ const fetchRepositoryById = async (
   const request = (async () => {
     const result = await authApiV6.getRepositoryById(repositoryId)
     throwIfCanceled(result)
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     const repository = result.data as RepositoryDto
     repositoryByIdCache.set(repositoryId, repository)
     return repository
@@ -840,7 +851,7 @@ export const folderApi = {
       repositoryId,
     })
 
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data
   },
 
@@ -865,7 +876,7 @@ export const folderApi = {
     }
 
     if (result.error || !result.data) {
-      throw new Error(String(result.error || 'Failed to load AI summary.'))
+      throw new Error(getErrorMessage(result.error) || 'Failed to load AI summary.')
     }
 
     return mapAiSummaryResponse({
@@ -886,7 +897,7 @@ export const folderApi = {
       pageSize: request.pageSize ?? 50,
       repositoryId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return (
       result.data || {
         comments: [],
@@ -933,7 +944,7 @@ export const folderApi = {
     itemId: string,
   ): Promise<any> {
     const result = await getRepositoryItemTimeline({ itemId, repositoryId })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data || { events: [], totalCount: 0 }
   },
 
@@ -948,7 +959,7 @@ export const folderApi = {
       pageSize: request.pageSize ?? 50,
       repositoryId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return (
       result.data || {
         data: [],
@@ -971,7 +982,7 @@ export const folderApi = {
       items,
       repositoryId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return (
       result.data || {
         data: [],
@@ -995,7 +1006,7 @@ export const folderApi = {
       relatedRepositoryId: related.relatedRepositoryId,
       repositoryId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
   },
 
   async getFolderChildren(
@@ -1080,7 +1091,7 @@ export const folderApi = {
       throw cancelError
     }
 
-    if (childrenResult.error) throw new Error(String(childrenResult.error))
+    if (childrenResult.error) throw new Error(getErrorMessage(childrenResult.error))
 
     const folders = normalizeChildren(
       childrenResult.data,
@@ -1188,7 +1199,7 @@ export const folderApi = {
         sortOrder: request.sortOrder || 'desc',
       })
 
-      if (itemResult.error) throw new Error(String(itemResult.error))
+      if (itemResult.error) throw new Error(getErrorMessage(itemResult.error))
 
       const rawFiles = getPagedData<Record<string, any>>(itemResult.data)
       return {
@@ -1269,7 +1280,7 @@ export const folderApi = {
         throw cancelError
       }
 
-      if (childrenResult.error) throw new Error(String(childrenResult.error))
+      if (childrenResult.error) throw new Error(getErrorMessage(childrenResult.error))
       currentFolderGroupField = resolveCurrentFolderGroupField(
         structure,
         folderParentFilters,
@@ -1335,7 +1346,7 @@ export const folderApi = {
     repositoryId: string,
   ): Promise<RepositoryItemFilterField[]> {
     const result = await getRepositoryItemFilterFields(repositoryId)
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data?.fields || []
   },
 
@@ -1353,7 +1364,7 @@ export const folderApi = {
       repositoryId,
       scopeFilters: options?.scopeFilters,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data || []
   },
 
@@ -1475,24 +1486,24 @@ export const folderApi = {
       message: payload.message,
       repositoryId: payload.repositoryId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data || {}
   },
 
   async revokeShare(shareId: string): Promise<void> {
     const result = await revokeRepositoryShare({ shareId })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
   },
 
   async getSharedWithMeItems(): Promise<SharedWithMeItem[]> {
     const result = await getSharedWithMe()
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data || []
   },
 
   async getTree(): Promise<TreeNode[]> {
     const result = await authApiV6.getRepositorys()
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) throw new Error(getErrorMessage(result.error))
 
     const repositories = (
       Array.isArray(result.data) ? result.data : []
@@ -1547,6 +1558,20 @@ export const folderApi = {
       // },
     ]
   },
+  async shareFilter(params: {
+    action?: number
+    email: string
+    filters: Record<string, string>
+    message?: string
+    repositoryId: string
+  }): Promise<{ data?: RepositoryShareResult | null; error?: any }> {
+    const response = await shareFilter({
+      ...params,
+      action: params.action as any,
+    })
+    return response
+  },
+
   async getWorkflowData(): Promise<WorkflowData> {
     return {
       approvers: [],

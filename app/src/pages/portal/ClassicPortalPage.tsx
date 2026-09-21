@@ -4,6 +4,7 @@ import {
   getClassicPortal,
   getClassicTenantLogoUrl,
 } from '@/api/v5/classicPortal'
+import Icon from '@/components/base/icon/Icon'
 import {
   clearClassicPortalSession,
   getClassicPath,
@@ -21,6 +22,20 @@ type ClassicPortalPageProps = {
 const portalKeyFor = (tenantId: string, portalId: string) =>
   `${tenantId}/${portalId}`
 
+const ClassicBootScreen = ({
+  description,
+  title,
+}: {
+  description: string
+  title: string
+}) => (
+  <div className='flex min-h-svh flex-col items-center justify-center gap-3 bg-surface px-6 text-center'>
+    <Icon className='size-7 animate-spin text-primary-11' name='fa:spinner' />
+    <p className='text-15 font-semibold text-gray-13'>{title}</p>
+    <p className='max-w-sm text-13 text-gray-10'>{description}</p>
+  </div>
+)
+
 const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
   const { t } = useLingui()
   const portalKey = portalKeyFor(tenantId, portalId)
@@ -31,11 +46,60 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
   const [activePortalKey, setActivePortalKey] = useState<string | null>(() =>
     hasClassicPortalSession(tenantId, portalId) ? portalKey : null,
   )
+  const [iframeReady, setIframeReady] = useState(false)
   const opened = activePortalKey === portalKey
 
   const auth = useMemo(() => classicAuthFromSettings(settings), [settings])
   const logoUrl = getClassicTenantLogoUrl(tenantId)
   const classicSrc = `${getClassicPath()}/portals/${encodeURIComponent(tenantId)}/${encodeURIComponent(portalId)}`
+
+  useEffect(() => {
+    setIframeReady(false)
+  }, [classicSrc])
+
+  useEffect(() => {
+    if (!opened || iframeReady) return
+    const timeout = window.setTimeout(() => setIframeReady(true), 12000)
+    return () => window.clearTimeout(timeout)
+  }, [iframeReady, opened])
+
+  useEffect(() => {
+    const closePortalSession = () => {
+      if (hasClassicPortalSession(tenantId, portalId)) return
+      setActivePortalKey(null)
+    }
+
+    const onMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin &&
+        event.origin !== 'https://cloud.ezofis.com' &&
+        event.origin !== 'https://trial.ezofis.com'
+      ) {
+        return
+      }
+      if (!event.data || typeof event.data !== 'object') return
+      const type = (event.data as { type?: string }).type
+      if (type === 'ezofis:classic-ready') {
+        setIframeReady(true)
+        return
+      }
+      if (type !== 'ezofis:classic-portal-logout') return
+      clearClassicPortalSession()
+      setActivePortalKey(null)
+    }
+
+    window.addEventListener('message', onMessage)
+    window.addEventListener('storage', closePortalSession)
+    const interval = opened
+      ? window.setInterval(closePortalSession, 400)
+      : undefined
+
+    return () => {
+      window.removeEventListener('message', onMessage)
+      window.removeEventListener('storage', closePortalSession)
+      if (interval) window.clearInterval(interval)
+    }
+  }, [opened, portalId, tenantId])
 
   useEffect(() => {
     if (hasClassicPortalSession(tenantId, portalId)) {
@@ -73,12 +137,10 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
 
   if (loading) {
     return (
-      <div className='flex min-h-svh flex-col items-center justify-center gap-2 bg-surface px-6 text-center'>
-        <p className='text-15 font-semibold text-gray-13'>{t`Loading portal`}</p>
-        <p className='max-w-sm text-13 text-gray-10'>
-          {t`Fetching the latest portal configuration.`}
-        </p>
-      </div>
+      <ClassicBootScreen
+        description={t`Fetching the latest portal configuration.`}
+        title={t`Loading portal`}
+      />
     )
   }
 
@@ -108,12 +170,22 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
   }
 
   return (
-    <iframe
-      className='h-svh w-full border-0 bg-surface'
-      key={portalKey}
-      src={classicSrc}
-      title={portalName || t`Portal`}
-    />
+    <div className='relative h-svh w-full bg-surface'>
+      {iframeReady ? null : (
+        <div className='absolute inset-0 z-10'>
+          <ClassicBootScreen
+            description={t`Opening EZOFIS Classic`}
+            title={t`Loading portal`}
+          />
+        </div>
+      )}
+      <iframe
+        className='h-svh w-full border-0 bg-surface'
+        key={portalKey}
+        src={classicSrc}
+        title={portalName || t`Portal`}
+      />
+    </div>
   )
 }
 

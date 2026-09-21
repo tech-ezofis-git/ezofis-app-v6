@@ -64,6 +64,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import FolderFieldSettingsPanel from './FolderFieldSettingsPanel'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
 import BrandCard from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/BrandCard'
@@ -1437,6 +1438,7 @@ export default function DmsFolderConfiguration({
       iconKey?: string
       includeInFolderStructure: boolean
       isMandatory: boolean
+      settings?: Record<string, any>
     }>
     folderName: string
     integrations?: string
@@ -1462,6 +1464,7 @@ export default function DmsFolderConfiguration({
         includeInFolderStructure,
         isMandatory: Boolean(field.isMandatory),
         level: 0,
+        optionsJson: field.settings ? JSON.stringify(field.settings) : null,
         orderId: index + 1,
       }
     })
@@ -2700,19 +2703,35 @@ function FieldOptionsConfiguration({
   row: FieldRow
   updateField: (id: string, updates: Partial<FieldRow>) => void
 }) {
+  const isNewPanelType = ['TABLE', 'LINK', 'URL', 'OMR', 'BARCODE'].includes(row.dataType)
+
   return (
     <tr className='bg-gray-1/50 shadow-inner'>
       <td
         className='border-b border-[var(--gray-3)] px-12 py-5'
         colSpan={columnsLength}
       >
-        <OptionsConfigurationContent
-          fieldName={row.fieldName}
-          optionsJson={row.optionsJson}
-          onChangeOptionsJson={(nextJson) =>
-            updateField(row.id, { optionsJson: nextJson })
-          }
-        />
+        {isNewPanelType ? (
+          <div className='w-full'>
+            <FolderFieldSettingsPanel
+              field={{ ...row, settings: row.optionsJson ? JSON.parse(row.optionsJson) : {} } as any}
+              onUpdate={(patch) => {
+                if (patch.settings) {
+                  updateField(row.id, { optionsJson: JSON.stringify(patch.settings) })
+                }
+              }}
+              onClose={() => {}}
+            />
+          </div>
+        ) : (
+          <OptionsConfigurationContent
+            fieldName={row.fieldName}
+            optionsJson={row.optionsJson}
+            onChangeOptionsJson={(nextJson) =>
+              updateField(row.id, { optionsJson: nextJson })
+            }
+          />
+        )}
       </td>
     </tr>
   )
@@ -3110,6 +3129,11 @@ function FieldsTable({
           'SINGLE_SELECT',
           'MULTI_SELECT',
           'BOOLEAN',
+          'TABLE',
+          'LINK',
+          'URL',
+          'OMR',
+          'BARCODE'
         ].includes(row.dataType)
         if (!hasOptions) return null
 
@@ -4508,9 +4532,12 @@ function WizardContent({
     void loadFieldTypes()
   }, [loadFieldTypes, step])
 
+  const hasFetchedFormsRef = useRef(false)
+
   useEffect(() => {
     if (step === 5 && selectedIntegration === 'MasterForm') {
-      if ((formsList ?? []).length > 0) return
+      if ((formsList ?? []).length > 0 || hasFetchedFormsRef.current) return
+      hasFetchedFormsRef.current = true
       void formApi.listAllForms().then((res) => {
         if (!res.data) {
           setFormsList([])
@@ -4711,6 +4738,8 @@ function WizardContent({
     if (['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(newFieldType)) {
       optionsJsonToSave =
         newFieldOptionsJson || JSON.stringify({ type: 'predefined', values: [] })
+    } else if (['TABLE', 'LINK', 'URL', 'OMR', 'BARCODE'].includes(newFieldType)) {
+      optionsJsonToSave = newFieldOptionsJson || '{}'
     }
 
     setFields((prev) =>
@@ -4830,14 +4859,38 @@ function WizardContent({
                     />
                   </div>
 
-                  {['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(
-                    newFieldType,
-                  ) && (
+                  {['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(newFieldType) && (
                     <div className='rounded-lg border border-gray-3 bg-gray-1/30 p-4'>
                       <OptionsConfigurationContent
                         fieldName={newFieldName}
                         optionsJson={newFieldOptionsJson}
                         onChangeOptionsJson={setNewFieldOptionsJson}
+                      />
+                    </div>
+                  )}
+
+                  {['TABLE', 'LINK', 'URL', 'OMR', 'BARCODE'].includes(newFieldType) && (
+                    <div className='rounded-lg border border-gray-3 bg-gray-1/30 p-4 w-full'>
+                      <FolderFieldSettingsPanel
+                        field={{
+                          id: 'new',
+                          fieldName: newFieldName || 'New Field',
+                          dataType: newFieldType,
+                          settings: (() => {
+                            if (!newFieldOptionsJson) return {}
+                            try {
+                              return JSON.parse(newFieldOptionsJson)
+                            } catch {
+                              return {}
+                            }
+                          })(),
+                        } as any}
+                        onUpdate={(patch) => {
+                          if (patch.settings) {
+                            setNewFieldOptionsJson(JSON.stringify(patch.settings))
+                          }
+                        }}
+                        onClose={() => {}}
                       />
                     </div>
                   )}
@@ -5142,34 +5195,46 @@ function WizardContent({
               return (
                 <AnimateFadeIn delay={0.15 + idx * 0.05} key={item.id}>
                   <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setSelectedIntegration(item.id)
+                      if (item.id === 'None') {
+                        setConnectedIntegrationId(null)
+                      } else if (item.id === 'MasterForm') {
+                        setConnectedIntegrationId('MasterForm')
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setSelectedIntegration(item.id)
+                        if (item.id === 'None') {
+                          setConnectedIntegrationId(null)
+                        } else if (item.id === 'MasterForm') {
+                          setConnectedIntegrationId('MasterForm')
+                        }
+                      }
+                    }}
                     className={cn(
-                      'rounded-[12px] border p-3.5 transition',
+                      'cursor-pointer rounded-[12px] border p-3.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-7',
                       isConnected
                         ? 'border-green-8 bg-green-1'
-                        : isConfiguring
+                        : isConfiguring || (isSelected && item.id === 'None')
                           ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
                           : 'border-gray-3 bg-surface hover:border-primary-5',
                     )}
                   >
-                    <div className='flex items-start gap-3'>
-                      <button
-                        type='button'
+                    <div className='flex items-start gap-3 pointer-events-none'>
+                      <div
                         className={cn(
                           'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition',
                           isConnected
                             ? 'bg-green-3 shadow-sm'
-                            : isConfiguring
+                            : isConfiguring || (isSelected && item.id === 'None')
                               ? 'bg-surface shadow-sm'
                               : 'bg-gray-2',
                         )}
-                        onClick={() => {
-                          setSelectedIntegration(item.id)
-                          if (item.id === 'None') {
-                            setConnectedIntegrationId(null)
-                          } else if (item.id === 'MasterForm') {
-                            setConnectedIntegrationId('MasterForm')
-                          }
-                        }}
                       >
                         <Icon
                           name={item.icon}
@@ -5177,42 +5242,32 @@ function WizardContent({
                             'size-4',
                             isConnected
                               ? 'text-green-11'
-                              : isConfiguring
+                              : isConfiguring || (isSelected && item.id === 'None')
                                 ? 'text-primary-9'
                                 : 'text-gray-11',
                           )}
                         />
-                      </button>
+                      </div>
 
                       <div className='min-w-0 flex-1'>
                         <div className='flex items-center justify-between gap-2'>
-                          <button
-                            className='min-w-0 truncate text-left text-13 font-medium text-gray-12'
-                            type='button'
-                            onClick={() => {
-                              setSelectedIntegration(item.id)
-                              if (item.id === 'None') {
-                                setConnectedIntegrationId(null)
-                              } else if (item.id === 'MasterForm') {
-                                setConnectedIntegrationId('MasterForm')
-                              }
-                            }}
-                          >
+                          <div className='min-w-0 truncate text-left text-13 font-medium text-gray-12'>
                             {item.title}
-                          </button>
+                          </div>
 
                           {canConnect ? (
                             <button
                               type='button'
                               className={cn(
-                                'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
+                                'pointer-events-auto inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
                                 isConnected
                                   ? 'bg-green-3 text-green-11'
                                   : isConfiguring
                                     ? 'bg-primary-3 text-primary-11 hover:bg-primary-4'
                                     : 'bg-gray-3 text-gray-12 hover:bg-gray-4',
                               )}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 if (isConnected) {
                                   setConnectedIntegrationId(null)
                                   if (item.id === 'SAP') setSapTested(false)
@@ -5244,6 +5299,11 @@ function WizardContent({
                                   ? 'Configuring'
                                   : 'Connect'}
                             </button>
+                          ) : isSelected ? (
+                            <span className='inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium bg-primary-3 text-primary-11'>
+                              <Icon className='size-3.5' name='lucide:check' />
+                              Selected
+                            </span>
                           ) : (
                             <span
                               className='inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium opacity-0'
@@ -5255,20 +5315,9 @@ function WizardContent({
                           )}
                         </div>
 
-                        <button
-                          className='mt-0.5 w-full text-left text-12 text-gray-11'
-                          type='button'
-                          onClick={() => {
-                            setSelectedIntegration(item.id)
-                            if (item.id === 'None') {
-                              setConnectedIntegrationId(null)
-                            } else if (item.id === 'MasterForm') {
-                              setConnectedIntegrationId('MasterForm')
-                            }
-                          }}
-                        >
+                        <div className='mt-0.5 w-full text-left text-12 text-gray-11'>
                           {item.description}
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </div>

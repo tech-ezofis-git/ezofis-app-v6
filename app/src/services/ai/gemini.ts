@@ -111,6 +111,7 @@ export type FolderConfigField = {
   iconKey?: string
   includeInFolderStructure: boolean
   isMandatory: boolean
+  settings?: Record<string, any>
 }
 
 export type FolderConfigSuggestion = {
@@ -562,6 +563,7 @@ Return a practical folder setup for this use case.
           iconKey: field.iconKey ? String(field.iconKey) : 'document',
           includeInFolderStructure: Boolean(field.includeInFolderStructure),
           isMandatory: Boolean(field.isMandatory),
+          settings: (field as any).settings,
         })),
         folderName: String(result.folderName).trim(),
         reply:

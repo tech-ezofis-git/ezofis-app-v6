@@ -38,6 +38,9 @@ import {
   matchesFieldKey,
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
+import FolderSharePopover from './FolderSharePopover'
+import authUserStore from '@/stores/authUserStore'
+import { resolveShareContext } from '../utils/shareContextStorage'
 
 type AnyFileItem = Record<string, any>
 
@@ -345,6 +348,7 @@ type FolderFilterBarProps = {
   onRefresh?: () => void
   onResetFilters: () => void
   onSearchChange: (value: string) => void
+  onShare?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
   setView: (view: ExplorerView) => void
 }
@@ -374,6 +378,7 @@ export function FolderFilterBar({
   onRefresh,
   onResetFilters,
   onSearchChange,
+  onShare,
   onUpload,
 }: FolderFilterBarProps) {
   const { t } = useLingui()
@@ -384,6 +389,20 @@ export function FolderFilterBar({
   const folderBaseline =
     folderFilterOptionSource.length > 0 ? folderFilterOptionSource : folders
   const useApiItemFilters = itemFilterFields.length > 0
+
+  const shareCtx = resolveShareContext(authUserStore.getState().shareContext)
+  const isGuestShare = Boolean(shareCtx?.shareToken)
+
+  const handleFilterChange = (id: string, value: string) => {
+    if (isGuestShare) return
+    onFilterChange(id, value)
+  }
+
+  const handleResetFilters = () => {
+    if (isGuestShare) return
+    onResetFilters()
+  }
+
   const [facetOptionsByField, setFacetOptionsByField] = useState<
     Record<string, FilterOption[]>
   >({})
@@ -694,12 +713,12 @@ export function FolderFilterBar({
     <CustomFilter
       activeFilters={activeFilters}
       afterSearchActions={afterSearchActions}
-      filters={defaultFilters}
+      filters={isGuestShare ? [] : defaultFilters}
       isLoading={isBusy || Boolean(loadingFacetField)}
-      moreFilters={moreFilters}
+      moreFilters={isGuestShare ? [] : moreFilters}
       searchPlaceholder={effectivePlaceholder}
       searchQuery={searchQuery}
-      showReset={hasActiveFilters}
+      showReset={hasActiveFilters && !isGuestShare}
       viewMode={view === 'list' ? 'table' : 'grid'}
       multiSelect
       actionButtons={[
@@ -737,6 +756,21 @@ export function FolderFilterBar({
               },
             ]
           : []),
+        ...(onShare && repositoryId && !isGuestShare
+          ? [
+              {
+                id: 'share',
+                node: (
+                  <FolderSharePopover
+                    allowSign={false}
+                    iconOnly={true}
+                    triggerLabel={t`Share`}
+                    onShare={onShare}
+                  />
+                ),
+              },
+            ]
+          : []),
         {
           color: 'gray',
           disabled: isBusy,
@@ -748,9 +782,9 @@ export function FolderFilterBar({
           onClick: () => onRefresh?.(),
         },
       ]}
-      onFilterChange={onFilterChange}
+      onFilterChange={handleFilterChange}
       onFilterMenuOpenChange={handleFilterMenuOpenChange}
-      onReset={onResetFilters}
+      onReset={handleResetFilters}
       onSearchChange={onSearchChange}
       onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
     />
