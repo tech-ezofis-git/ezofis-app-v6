@@ -51,7 +51,6 @@ class Intent(str, Enum):
     OCR = "ocr"
     MAIL = "mail"
     AP = "ap"
-    DASHBOARD = "dashboard"
     PROMPT = "prompt"
     PDF = "pdf"
     GLOBAL_SEARCH = "global_search"
@@ -60,12 +59,6 @@ class Intent(str, Enum):
 
 # Keyword/phrase triggers per intent. Checked as substrings of the
 # lowercased message — simple and deterministic, not ML-based.
-_DASHBOARD_TRIGGERS = (
-    "dashboard",
-    "need a dashboard",
-    "build a dashboard",
-)
-
 _CHATBOT_TRIGGERS = (
     "open chatbot",
     "use chatbot",
@@ -141,11 +134,6 @@ _FORECAST_TRIGGERS = (
     "project the",
 )
 
-_DASHBOARD_TRIGGERS = (
-    "dashboard",
-    "dashboards",
-)
-
 _AP_TRIGGERS = (
     "invoice",
     "accounts payable",
@@ -204,9 +192,9 @@ class IntentRouter:
         """Return the Intent for `message`.
 
         Checked in order: `search`, `summary`, `insight`, `ocr`,
-        `forecast`, `dashboard`, `ap`, `mail`; everything else resolves
-        to `chat`. `prompt` is explicit-only (`intent: "prompt"`) so the
-        word "prompt" never steals another job. No branch is a hardcoded
+        `forecast`, `ap`, `mail`; everything else resolves to `chat`.
+        `prompt` is explicit-only (`intent: "prompt"`) so the word
+        "prompt" never steals another job. No branch is a hardcoded
         bypass — a message genuinely has to match (or not match) each
         trigger set in turn. See the module docstring's CAUTION/NOTE
         before touching `_MAIL_TRIGGERS` or adding another send-capable
@@ -217,8 +205,6 @@ class IntentRouter:
             return Intent.CHAT
         if any(trigger in normalized for trigger in _CHATBOT_TRIGGERS):
             return Intent.CHATBOT
-        if any(trigger in normalized for trigger in _DASHBOARD_TRIGGERS):
-            return Intent.DASHBOARD
         if any(trigger in normalized for trigger in _PDF_TRIGGERS):
             return Intent.PDF
         if any(trigger in normalized for trigger in _GLOBAL_SEARCH_TRIGGERS):
@@ -233,8 +219,6 @@ class IntentRouter:
             return Intent.OCR
         if any(trigger in normalized for trigger in _FORECAST_TRIGGERS):
             return Intent.FORECAST
-        if any(trigger in normalized for trigger in _DASHBOARD_TRIGGERS):
-            return Intent.DASHBOARD
         if any(trigger in normalized for trigger in _AP_TRIGGERS):
             return Intent.AP
         if any(trigger in normalized for trigger in _MAIL_TRIGGERS):

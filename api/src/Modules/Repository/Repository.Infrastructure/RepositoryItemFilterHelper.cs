@@ -5,7 +5,7 @@ using SaaSApp.Repository.Application.Contracts;
 
 namespace SaaSApp.Repository.Infrastructure;
 
-public static class RepositoryItemFilterHelper
+internal static class RepositoryItemFilterHelper
 {
     private static readonly string[] BuiltInOperationalColumns =
     [

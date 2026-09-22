@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -62,61 +61,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             request.WorkflowInstanceId,
             request.Action == 0 ? 0 : 1,
             applyDocumentSecurity: true,
-            filtersJson: null,
-            shareKind: ShareKinds.Item,
-            sourceDashboardId: null,
-            sourceWorkflowId: null,
             cancellationToken);
-
-    public async Task<CreateRepositoryItemShareResult> CreateFilterShareAsync(
-        Guid sourceTenantId,
-        Guid repositoryId,
-        Guid sharedByUserId,
-        CreateRepositoryFilterShareRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        var filtersText = ResolveFiltersJson(request);
-        if (string.IsNullOrWhiteSpace(filtersText))
-            throw new ArgumentException("Filters are required for filter share.");
-
-        var parsed = RepositoryItemFilterHelper.ParseItemFilters(filtersText);
-        if (parsed.Count == 0)
-            throw new ArgumentException("Filters must include at least one field value.");
-
-        // Canonical JSON for storage / preview.
-        var filtersJson = JsonSerializer.Serialize(
-            parsed.ToDictionary(kv => kv.Key, kv => kv.Value.Count == 1 ? (object)kv.Value[0] : kv.Value));
-
-        return await CreateShareInternalAsync(
-            sourceTenantId,
-            repositoryId,
-            itemId: null,
-            sharedByUserId,
-            request.Email,
-            request.Message,
-            request.ProvisionGuestUser,
-            workflowInstanceId: null,
-            request.Action == 0 ? 0 : 1,
-            applyDocumentSecurity: true,
-            filtersJson,
-            ShareKinds.Filter,
-            sourceDashboardId: null,
-            sourceWorkflowId: null,
-            cancellationToken);
-    }
-
-    private static string? ResolveFiltersJson(CreateRepositoryFilterShareRequest request)
-    {
-        if (request.Filters is { } filters)
-        {
-            if (filters.ValueKind == JsonValueKind.Object)
-                return filters.GetRawText();
-            if (filters.ValueKind == JsonValueKind.String)
-                return filters.GetString();
-        }
-
-        return request.FiltersJson;
-    }
 
     public Task<CreateRepositoryItemShareResult> CreateWorkflowInboxShareAsync(
         Guid sourceTenantId,
@@ -137,41 +82,12 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             workflowInstanceId,
             action: request.Action == 0 ? 0 : 1,
             applyDocumentSecurity: true,
-            filtersJson: null,
-            shareKind: ShareKinds.Item,
-            sourceDashboardId: null,
-            sourceWorkflowId: null,
-            cancellationToken);
-
-    public Task<CreateRepositoryItemShareResult> CreateDashboardShareAsync(
-        Guid sourceTenantId,
-        Guid sharedByUserId,
-        CreateDashboardShareRequest request,
-        Guid dashboardId,
-        Guid repositoryId,
-        Guid? workflowId,
-        CancellationToken cancellationToken = default) =>
-        CreateShareInternalAsync(
-            sourceTenantId,
-            repositoryId,
-            itemId: null,
-            sharedByUserId,
-            request.Email,
-            request.Message,
-            request.ProvisionGuestUser,
-            workflowInstanceId: null,
-            request.Action == 0 ? 0 : 1,
-            applyDocumentSecurity: true,
-            filtersJson: null,
-            ShareKinds.Dashboard,
-            dashboardId,
-            workflowId,
             cancellationToken);
 
     private async Task<CreateRepositoryItemShareResult> CreateShareInternalAsync(
         Guid sourceTenantId,
         Guid repositoryId,
-        Guid? itemId,
+        Guid itemId,
         Guid sharedByUserId,
         string email,
         string? message,
@@ -179,31 +95,13 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
         Guid? workflowInstanceId,
         int action,
         bool applyDocumentSecurity,
-        string? filtersJson,
-        string shareKind,
-        Guid? sourceDashboardId,
-        Guid? sourceWorkflowId,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(email) || email.IndexOf('@') < 1)
             throw new ArgumentException("A valid recipient email is required.");
 
-        var isFilterShare = string.Equals(shareKind, ShareKinds.Filter, StringComparison.OrdinalIgnoreCase);
-        var isDashboardShare = string.Equals(shareKind, ShareKinds.Dashboard, StringComparison.OrdinalIgnoreCase);
-        RepositoryItemDetailDto? item = null;
-        if (isFilterShare || isDashboardShare)
-        {
-            // Ensure repository exists (throws not found).
-            _ = await _itemQuery.GetItemListFilterSchemaAsync(repositoryId, sourceTenantId, cancellationToken);
-        }
-        else
-        {
-            if (itemId is null || itemId == Guid.Empty)
-                throw new ArgumentException("Item id is required for file share.");
-
-            item = await _itemQuery.GetItemAsync(repositoryId, sourceTenantId, itemId.Value, cancellationToken)
-                ?? throw new InvalidOperationException("Repository item not found.");
-        }
+        var item = await _itemQuery.GetItemAsync(repositoryId, sourceTenantId, itemId, cancellationToken)
+            ?? throw new InvalidOperationException("Repository item not found.");
 
         var recipientEmail = email.Trim().ToLowerInvariant();
         Guid? guestUserId = null;
@@ -221,11 +119,6 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
         var expiresAt = DateTime.UtcNow.AddDays(_options.DefaultExpiryDays <= 0 ? 30 : _options.DefaultExpiryDays);
         var shareId = Guid.NewGuid();
         var normalizedAction = action == 0 ? 0 : 1;
-        var resolvedShareKind = isDashboardShare
-            ? ShareKinds.Dashboard
-            : isFilterShare
-                ? ShareKinds.Filter
-                : ShareKinds.Item;
 
         await RepositoryItemShareCatalogStore.EnsureTableAsync(_catalogFactory, cancellationToken);
 
@@ -237,7 +130,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
                 ShareToken = shareToken,
                 SourceTenantId = sourceTenantId,
                 SourceRepositoryId = repositoryId,
-                SourceItemId = isFilterShare || isDashboardShare ? null : itemId,
+                SourceItemId = itemId,
                 SharedByUserId = sharedByUserId,
                 RecipientEmail = recipientEmail,
                 Message = string.IsNullOrWhiteSpace(message) ? null : message.Trim(),
@@ -246,73 +139,38 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
                 CreatedAtUtc = DateTime.UtcNow,
                 AutoProvisionGuest = provisionGuestUser,
                 WorkflowInstanceId = workflowInstanceId,
-                Action = normalizedAction,
-                ShareKind = resolvedShareKind,
-                FiltersJson = isFilterShare ? filtersJson : null,
-                SourceDashboardId = isDashboardShare ? sourceDashboardId : null
+                Action = normalizedAction
             });
             await catalog.SaveChangesAsync(cancellationToken);
         }
 
         if (applyDocumentSecurity && guestUserId is { } recipientId && recipientId != Guid.Empty)
         {
-            if (isDashboardShare)
-            {
-                await _security.EnsureShareRecipientRepositoryAccessAsync(
-                    repositoryId,
-                    sourceTenantId,
-                    recipientId,
-                    canUpload: normalizedAction == 1,
-                    sharedByUserId,
-                    cancellationToken);
-            }
-            else if (isFilterShare)
-            {
-                var parsedFilters = RepositoryItemFilterHelper.ParseItemFilters(filtersJson);
-                await _security.EnsureShareRecipientFilterAccessAsync(
-                    repositoryId,
-                    sourceTenantId,
-                    recipientId,
-                    parsedFilters,
-                    canUpload: normalizedAction == 1,
-                    sharedByUserId,
-                    cancellationToken);
-            }
-            else
-            {
-                await _security.EnsureShareRecipientAccessAsync(
-                    repositoryId,
-                    sourceTenantId,
-                    recipientId,
-                    itemId!.Value,
-                    canUpload: normalizedAction == 1,
-                    sharedByUserId,
-                    cancellationToken);
-            }
+            await _security.EnsureShareRecipientAccessAsync(
+                repositoryId,
+                sourceTenantId,
+                recipientId,
+                itemId,
+                canUpload: normalizedAction == 1,
+                sharedByUserId,
+                cancellationToken);
         }
 
         var shareUrl = BuildShareUrl(shareToken, recipientEmail, isNew);
-        var label = isDashboardShare
-            ? "dashboard"
-            : isFilterShare
-                ? "filtered repository view"
-                : item?.FileName;
         await TrySendShareEmailAsync(
             recipientEmail,
-            label,
+            item.FileName,
             shareUrl,
             message,
             provisionGuestUser,
             isNew,
-            isFilterShare,
-            isDashboardShare,
             cancellationToken);
 
         return new CreateRepositoryItemShareResult(
             shareId,
             shareToken,
             repositoryId,
-            isFilterShare || isDashboardShare ? null : itemId,
+            itemId,
             recipientEmail,
             expiresAt,
             shareUrl,
@@ -322,11 +180,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             inviteAuth.RequiresPasswordSetup,
             inviteAuth.AllowedAuthMethods,
             sourceTenantId,
-            PermissionLabel(normalizedAction),
-            resolvedShareKind,
-            isFilterShare ? filtersJson : null,
-            isDashboardShare ? sourceDashboardId : null,
-            isDashboardShare ? sourceWorkflowId : null);
+            PermissionLabel(normalizedAction));
     }
 
     public async Task<bool> RecipientRequiresPasswordSetupAsync(
@@ -361,11 +215,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             share.SourceTenantId,
             share.SourceRepositoryId,
             share.SourceItemId,
-            share.ShareToken,
-            ReadOnly: true,
-            share.FiltersJson,
-            share.ShareKind,
-            share.SourceDashboardId);
+            share.ShareToken);
     }
 
     public async Task<RepositoryItemSharePreviewDto?> GetPreviewAsync(
@@ -385,22 +235,8 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
         if (repo == null)
             return null;
 
-        var isFilterShare = string.Equals(share.ShareKind, ShareKinds.Filter, StringComparison.OrdinalIgnoreCase)
-            || !string.IsNullOrWhiteSpace(share.FiltersJson);
-        var isDashboardShare = string.Equals(share.ShareKind, ShareKinds.Dashboard, StringComparison.OrdinalIgnoreCase)
-            || share.SourceDashboardId is Guid;
-
-        string? fileName = null;
-        if (!isFilterShare && !isDashboardShare && share.SourceItemId is Guid itemId && itemId != Guid.Empty)
-        {
-            var item = await RepositoryCrossTenantItemReader.GetItemAsync(
-                connectionString, repo, share.SourceRepositoryId, itemId, cancellationToken);
-            fileName = item?.FileName;
-        }
-        else if (isDashboardShare)
-        {
-            fileName = "Dashboard";
-        }
+        var item = await RepositoryCrossTenantItemReader.GetItemAsync(
+            connectionString, repo, share.SourceRepositoryId, share.SourceItemId, cancellationToken);
 
         var orgName = await GetTenantNameAsync(share.SourceTenantId, cancellationToken);
         var authInfo = share.AutoProvisionGuest
@@ -420,7 +256,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             share.SourceTenantId,
             share.SourceRepositoryId,
             share.SourceItemId,
-            fileName,
+            item?.FileName,
             orgName,
             share.RecipientEmail,
             share.ExpiresAtUtc,
@@ -432,11 +268,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             share.AutoProvisionGuest,
             share.WorkflowInstanceId,
             share.Action == 0 ? 0 : 1,
-            PermissionLabel(share.Action),
-            isDashboardShare ? ShareKinds.Dashboard : isFilterShare ? ShareKinds.Filter : ShareKinds.Item,
-            share.FiltersJson,
-            repo.Name,
-            share.SourceDashboardId);
+            PermissionLabel(share.Action));
     }
 
     public async Task<IReadOnlyList<SharedWithMeItemDto>> ListSharesForRecipientAsync(
@@ -477,42 +309,24 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
             }
 
             string? fileName = null;
-            var isFilterShare = string.Equals(share.ShareKind, ShareKinds.Filter, StringComparison.OrdinalIgnoreCase)
-                || !string.IsNullOrWhiteSpace(share.FiltersJson);
-            var isDashboardShare = string.Equals(share.ShareKind, ShareKinds.Dashboard, StringComparison.OrdinalIgnoreCase)
-                || share.SourceDashboardId is Guid;
             try
             {
-                if (!isFilterShare
-                    && !isDashboardShare
-                    && share.SourceItemId is Guid sharedItemId
-                    && sharedItemId != Guid.Empty)
+                if (!connectionCache.TryGetValue(share.SourceTenantId, out var connectionString))
                 {
-                    if (!connectionCache.TryGetValue(share.SourceTenantId, out var connectionString))
-                    {
-                        connectionString = await _connectionResolver.GetConnectionStringAsync(share.SourceTenantId, cancellationToken);
-                        connectionCache[share.SourceTenantId] = connectionString;
-                    }
+                    connectionString = await _connectionResolver.GetConnectionStringAsync(share.SourceTenantId, cancellationToken);
+                    connectionCache[share.SourceTenantId] = connectionString;
+                }
 
-                    if (!string.IsNullOrWhiteSpace(connectionString))
+                if (!string.IsNullOrWhiteSpace(connectionString))
+                {
+                    var repo = await RepositoryCrossTenantItemReader.GetRepositoryAsync(
+                        connectionString, share.SourceTenantId, share.SourceRepositoryId, cancellationToken);
+                    if (repo != null)
                     {
-                        var repo = await RepositoryCrossTenantItemReader.GetRepositoryAsync(
-                            connectionString, share.SourceTenantId, share.SourceRepositoryId, cancellationToken);
-                        if (repo != null)
-                        {
-                            var item = await RepositoryCrossTenantItemReader.GetItemAsync(
-                                connectionString, repo, share.SourceRepositoryId, sharedItemId, cancellationToken);
-                            fileName = item?.FileName;
-                        }
+                        var item = await RepositoryCrossTenantItemReader.GetItemAsync(
+                            connectionString, repo, share.SourceRepositoryId, share.SourceItemId, cancellationToken);
+                        fileName = item?.FileName;
                     }
-                }
-                else if (isDashboardShare)
-                {
-                    fileName = "Dashboard";
-                }
-                else if (isFilterShare)
-                {
-                    fileName = "Filtered view";
                 }
             }
             catch (Exception ex)
@@ -530,10 +344,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
                 share.CreatedAtUtc,
                 share.ExpiresAtUtc,
                 share.Action == 0 ? 0 : 1,
-                PermissionLabel(share.Action),
-                isDashboardShare ? ShareKinds.Dashboard : isFilterShare ? ShareKinds.Filter : ShareKinds.Item,
-                share.FiltersJson,
-                share.SourceDashboardId));
+                PermissionLabel(share.Action)));
         }
 
         return results;
@@ -674,8 +485,6 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
         string? message,
         bool guestInvite,
         bool isNew,
-        bool isFilterShare,
-        bool isDashboardShare,
         CancellationToken cancellationToken)
     {
         try
@@ -697,21 +506,16 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
                 return;
             }
 
-            var subjectKind = isDashboardShare ? "dashboard" : isFilterShare ? "filtered repository" : "document";
-            var docLabel = isDashboardShare
-                ? "a dashboard"
-                : isFilterShare
-                    ? "a filtered repository view"
-                    : string.IsNullOrWhiteSpace(fileName) ? "a document" : $"'{fileName}'";
+            var docLabel = string.IsNullOrWhiteSpace(fileName) ? "a document" : $"'{fileName}'";
             var guestNote = !guestInvite
                 ? "<p>If you do not have an account, sign up with this email address, then open the link again after login.</p>"
                 : isNew
-                    ? "<p>An account has been prepared for you. Open the link to <strong>set your password</strong> or sign in with Google/Microsoft, then view the shared content.</p>"
-                    : "<p>Open the link and <strong>sign in</strong> with your existing account to view the shared content.</p>";
+                    ? "<p>An account has been prepared for you. Open the link to <strong>set your password</strong> or sign in with Google/Microsoft, then view the shared file.</p>"
+                    : "<p>Open the link and <strong>sign in</strong> with your existing account to view the shared file.</p>";
             var body = $"""
-                <p>A {subjectKind} has been shared with you: <strong>{WebUtility.HtmlEncode(docLabel)}</strong>.</p>
+                <p>A document has been shared with you: <strong>{WebUtility.HtmlEncode(docLabel)}</strong>.</p>
                 {(string.IsNullOrWhiteSpace(message) ? "" : $"<p>{WebUtility.HtmlEncode(message)}</p>")}
-                <p><a href="{WebUtility.HtmlEncode(shareUrl)}">Open shared {(isDashboardShare ? "dashboard" : isFilterShare ? "view" : "document")}</a></p>
+                <p><a href="{WebUtility.HtmlEncode(shareUrl)}">Open shared document</a></p>
                 <p style="word-break:break-all;color:#555;font-size:12px">{WebUtility.HtmlEncode(shareUrl)}</p>
                 {guestNote}
                 """;
@@ -731,9 +535,7 @@ public sealed class RepositoryItemShareService : IRepositoryItemShareService
                 Credentials = new NetworkCredential(settings.EmailId, settings.Password)
             };
             await smtp.SendMailAsync(mail, cancellationToken);
-            _logger.LogInformation(
-                "Share invite email sent to {Email} (isNew={IsNew}, filter={IsFilter}, dashboard={IsDashboard})",
-                recipientEmail, isNew, isFilterShare, isDashboardShare);
+            _logger.LogInformation("Share invite email sent to {Email} (isNew={IsNew})", recipientEmail, isNew);
         }
         catch (Exception ex)
         {
