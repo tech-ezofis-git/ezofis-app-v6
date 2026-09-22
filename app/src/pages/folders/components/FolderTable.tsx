@@ -841,6 +841,11 @@ function FileDataTableSection({
                   label={t`Share`}
                   onClick={() => onShare(fileId)}
                 />
+                <MenuItem
+                  icon='lucide:play'
+                  label={t`Start Workflow`}
+                  onClick={() => onWorkflow(fileId)}
+                />
                 {permissions?.delete !== false ? (
                   <>
                     <MenuDivider />

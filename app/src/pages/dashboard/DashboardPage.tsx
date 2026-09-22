@@ -25,7 +25,7 @@ import DocumentRepositorySetup from './workflows/document-repository/DocumentRep
 import useDmsSetupStore from './workflows/document-repository/stores/useDmsSetupStore'
 import { openApSetupPreview } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
-
+import customerDocumentsHtml from './components/Customer Documents.html?raw'
 type DashboardSourceKind = 'repository' | 'workflow'
 
 type DashboardSourceOption = {
@@ -106,10 +106,10 @@ const DashboardPage = () => {
             )
             const label = String(
               item?.name ||
-                item?.repositoryName ||
-                item?.title ||
-                item?.label ||
-                id,
+              item?.repositoryName ||
+              item?.title ||
+              item?.label ||
+              id,
             )
             const rawDesc = item?.description || item?.details || item?.subtitle
             const description = rawDesc
@@ -249,6 +249,10 @@ const DashboardPage = () => {
       selectedName.toLowerCase() === 'ap' ||
       activeRepositoryId === 'ap')
 
+  const isCustomerDocuments =
+    !isWorkflowSource &&
+    (!activeRepositoryId ||
+      selectedName.toLowerCase() === 'customer documents')
   const displayTitle =
     selectedSource?.label || selectedName || t`Accounts Payable Automation`
 
@@ -285,7 +289,7 @@ const DashboardPage = () => {
     <div
       className={cn(
         'flex h-full flex-col bg-gray-1',
-        isDmsSetupStarted || isSetupStarted || savedHtmlHeader
+        isDmsSetupStarted || isSetupStarted || savedHtmlHeader || isCustomerDocuments
           ? 'overflow-hidden'
           : 'overflow-y-auto',
       )}
@@ -427,8 +431,8 @@ const DashboardPage = () => {
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'min-h-0 flex-1',
-                (isSetupStarted || isDmsSetupStarted || savedHtmlHeader) &&
-                  'flex h-full flex-col',
+                (isSetupStarted || isDmsSetupStarted || savedHtmlHeader || isCustomerDocuments) &&
+                'flex h-full flex-col',
               )}
             >
               {isApDashboard ? (
@@ -440,6 +444,12 @@ const DashboardPage = () => {
                   )}
                   <AccountsPayable />
                 </>
+              ) : isCustomerDocuments ? (
+                <iframe
+                  className="flex-1 w-full border-0 bg-white rounded-xl shadow-xs"
+                  srcDoc={customerDocumentsHtml}
+                  title="Customer Documents Dashboard"
+                />
               ) : (
                 <DashboardApiBuilder
                   repositoryId={activeRepositoryId}

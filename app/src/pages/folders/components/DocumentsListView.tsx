@@ -1043,6 +1043,11 @@ export function DocumentsListView({
             label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
+          <MenuItem
+            icon='play'
+            label={t`Start Workflow`}
+            onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
+          />
 
           {permissions?.delete === true ? (
             <>
