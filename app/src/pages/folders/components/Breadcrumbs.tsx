@@ -11,7 +11,7 @@ export function Breadcrumbs({
   onSelect: (id: string) => void
 }) {
   return (
-    <div className='flex h-[56px] items-center gap-3 border-b border-gray-3 bg-surface-primary px-5 text-sm'>
+    <div className='flex h-[56px] items-center gap-3 border-b border-gray-3 bg-surface-primary px-6 text-sm'>
       {items.map((item, index) => {
         const isLast = index === items.length - 1
 
