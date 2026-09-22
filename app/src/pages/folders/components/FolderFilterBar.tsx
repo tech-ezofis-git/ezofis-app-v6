@@ -722,6 +722,16 @@ export function FolderFilterBar({
       viewMode={view === 'list' ? 'table' : 'grid'}
       multiSelect
       actionButtons={[
+        {
+          color: 'gray',
+          disabled: isBusy,
+          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
+          id: 'refresh',
+          isIconButton: true,
+          tooltip: refreshing ? t`Refreshing...` : t`Refresh`,
+          variant: 'outline',
+          onClick: () => onRefresh?.(),
+        },
         ...(onUpload && String(repositoryId || '').trim()
           ? [
               {
@@ -763,7 +773,7 @@ export function FolderFilterBar({
                 node: (
                   <FolderSharePopover
                     allowSign={false}
-                    iconOnly={true}
+                    iconOnly={false}
                     triggerLabel={t`Share`}
                     onShare={onShare}
                   />
@@ -771,16 +781,6 @@ export function FolderFilterBar({
               },
             ]
           : []),
-        {
-          color: 'gray',
-          disabled: isBusy,
-          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
-          id: 'refresh',
-          isIconButton: true,
-          tooltip: refreshing ? t`Refreshing...` : t`Refresh`,
-          variant: 'outline',
-          onClick: () => onRefresh?.(),
-        },
       ]}
       onFilterChange={handleFilterChange}
       onFilterMenuOpenChange={handleFilterMenuOpenChange}

@@ -788,36 +788,45 @@ const SignInForm = ({
         {showingVersion ? (
           <>
             <Title
-              description={t`${accountEmail} can open Current or Classic. Choose the version you want.`}
+              description={t`Your account has access to both versions. Pick the one you want to continue with.`}
               level={2}
               title={t`Choose a version`}
             />
 
-            <div className='space-y-2'>
+            <div className='space-y-3 pt-1'>
               <button
                 disabled={loading}
                 type='button'
                 className={cn(
-                  'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
-                  'hover:border-primary-6 hover:bg-primary-1 active:bg-primary-2',
+                  'group flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border-2 bg-surface-primary p-4 text-left transition-all duration-200',
+                  'border-purple-9 shadow-xs hover:border-purple-10 hover:shadow-sm active:scale-[0.995]',
                   loading && versionFilter === 'v6'
-                    ? 'border-primary-8 bg-primary-1'
-                    : 'border-gray-4',
+                    ? 'border-purple-10 bg-purple-1'
+                    : 'border-purple-9',
                 )}
                 onClick={() => handleVersionSelect('v6')}
               >
-                <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-3'>
+                <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-purple-3'>
                   <AiBrandIcon className='size-5' variant='outline-purple' />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <div className='flex items-center gap-2'>
-                    <span className='truncate text-14 font-medium text-gray-13'>
+                    <span className='truncate text-15 font-bold text-gray-13'>
                       {t`EZOFIS`}
                     </span>
-                    <Badge color='purple' label={t`Current`} />
+                    <Badge
+                      className='rounded-full px-2.5 py-0.5 text-11 font-medium'
+                      color='purple'
+                      label={t`Current`}
+                    />
+                    <Badge
+                      className='rounded-full px-2.5 py-0.5 text-11 font-medium'
+                      color='blue'
+                      label={t`Recommended`}
+                    />
                   </div>
-                  <p className='mt-0.5 text-12 text-gray-11'>
-                    {t`AI-powered workspace`}
+                  <p className='mt-1 text-13 text-gray-11'>
+                    {t`AI-powered workspace with smart search and agents`}
                   </p>
                 </div>
                 {renderRowAction(loading && versionFilter === 'v6')}
@@ -827,25 +836,34 @@ const SignInForm = ({
                 disabled={loading}
                 type='button'
                 className={cn(
-                  'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
-                  'hover:border-primary-6 hover:bg-primary-1 active:bg-primary-2',
+                  'group flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border bg-surface-primary p-4 text-left transition-all duration-200',
+                  'border-gray-4 hover:border-gray-6 hover:shadow-xs active:scale-[0.995]',
                   loading && versionFilter === 'v5'
                     ? 'border-primary-8 bg-primary-1'
                     : 'border-gray-4',
                 )}
                 onClick={() => handleVersionSelect('v5')}
               >
-                <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-3'>
-                  <Icon className='size-5 text-gray-11' name='tabler:stack-2' />
+                <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-gray-3'>
+                  <Icon
+                    className='size-5 text-gray-11'
+                    name='tabler:layers-intersect'
+                  />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <div className='flex items-center gap-2'>
-                    <span className='truncate text-14 font-medium text-gray-13'>
+                    <span className='truncate text-15 font-bold text-gray-13'>
                       {t`EZOFIS`}
                     </span>
-                    <Badge color='gray' label={t`Classic`} />
+                    <Badge
+                      className='rounded-full px-2.5 py-0.5 text-11 font-medium'
+                      color='gray'
+                      label={t`Classic`}
+                    />
                   </div>
-                  <p className='mt-0.5 text-12 text-gray-11'>{t`Version 5`}</p>
+                  <p className='mt-1 text-13 text-gray-11'>
+                    {t`The familiar EZOFIS experience, unchanged`}
+                  </p>
                 </div>
                 {renderRowAction(loading && versionFilter === 'v5')}
               </button>
@@ -904,7 +922,7 @@ const SignInForm = ({
         )}
 
         <button
-          className='cursor-pointer text-12 font-medium text-gray-11 underline hover:text-primary-11 active:text-primary-12'
+          className='mt-2 cursor-pointer text-13 font-medium text-gray-11 underline hover:text-primary-11 active:text-primary-12'
           type='button'
           onClick={handleBackToSignIn}
         >
