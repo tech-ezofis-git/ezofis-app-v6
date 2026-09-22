@@ -139,6 +139,25 @@ jobs:
             echo "EzofisAuth.SigningKey missing from api/src/Api/appsettings.Production.json" >&2
             exit 1
           fi
+          # Pin to sha-* tags and re-apply compose so App Service pulls new images
+          # (restart alone often keeps a cached :latest).
+          COMPOSE=docker-compose.azure.yml
+          if [ "${{ needs.build-and-push-app.result }}" = "success" ]; then
+            sed -i "s|ezofis-app-v6/app:latest|ezofis-app-v6/app:sha-${SHORT_SHA}|g" "$COMPOSE"
+          fi
+          if [ "${{ needs.build-and-push-api.result }}" = "success" ]; then
+            sed -i "s|ezofis-app-v6/api:latest|ezofis-app-v6/api:sha-${SHORT_SHA}|g" "$COMPOSE"
+          fi
+          if [ "${{ needs.build-and-push-agents.result }}" = "success" ]; then
+            sed -i "s|ezofis-app-v6/agents:latest|ezofis-app-v6/agents:sha-${SHORT_SHA}|g" "$COMPOSE"
+          fi
+          echo "Applying multicontainer config:"
+          grep 'image:' "$COMPOSE" || true
+          az webapp config container set \
+            --resource-group rg-v6 \
+            --name ezofis-app-v6 \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file "$COMPOSE"
           az webapp config appsettings set \
             --resource-group rg-v6 \
             --name ezofis-app-v6 \
