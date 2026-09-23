@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
@@ -526,11 +527,23 @@ const FieldRenderer = ({
     },
   })
 
+  const { data: userFieldOptions = [] } = useQuery({
+    enabled: optionsType === 'USER_LIST',
+    queryKey: ['userListForDropdown'],
+    queryFn: async () => {
+      const res = await getUsers()
+      return res.data.map((user) => ({ id: user.email, name: user.email }))
+    },
+  })
+
   const selectOptions = withExtraFieldOptions(
-    optionsType === 'DYNAMIC'
-      ? getFieldOptions(field)
-      : getConfiguredFieldOptions(field),
-    uniqueFieldOptions,
+    withExtraFieldOptions(
+      optionsType === 'DYNAMIC'
+        ? getFieldOptions(field)
+        : getConfiguredFieldOptions(field),
+      uniqueFieldOptions,
+    ),
+    userFieldOptions,
   )
 
   const common = {

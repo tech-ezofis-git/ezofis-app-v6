@@ -154,21 +154,18 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     if (isStartNode) {
       const existingMailInitiate = settings.mailInitiate || data.mailInitiate || {}
       const connId = data.connectorId || data.connection || existingMailInitiate.connectorId || ''
-      const connType =
-        toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK
-          ? toolType.toUpperCase()
-          : existingMailInitiate.connectorType || ''
+      
+      let connType = existingMailInitiate.connectorType || ''
+      if (toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK) {
+        connType = toolType.toUpperCase()
+      } else if (connType === 'GMAIL' || connType === 'OUTLOOK') {
+        connType = ''
+      }
 
       settings.mailInitiate = {
+        ...existingMailInitiate,
         connectorId: connId,
         connectorType: connType,
-        ...existingMailInitiate,
-        ...(toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK
-          ? {
-              connectorId: connId,
-              connectorType: connType,
-            }
-          : {}),
       }
     }
 
@@ -452,6 +449,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           required: false,
         },
         previewValues: storeState.previewValues,
+        requestTitleField: storeState.requestTitleField,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
         requestTabs: storeState.requestTabs || [],
         scheduleReport: {},

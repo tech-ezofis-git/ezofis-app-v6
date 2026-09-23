@@ -43,7 +43,14 @@ interface FormRecord {
 //  2. On submit: block if any repository-mandatory field is still empty;
 //     otherwise uploadWithOcr each pending file (this is what actually
 //     stages it) to get the real fileId used in `stagedFiles`.
-export const useWorkflowForm = (workflow: any) => {
+export interface UseWorkflowFormOptions {
+  viewerRepositoryId?: string
+  viewerItemId?: string
+  isRaiseTicket?: boolean
+  fileName?: string
+}
+
+export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions) => {
   const [form, setForm] = useState<FormRecord | null>(null)
   const [isLoadingForm, setIsLoadingForm] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -59,7 +66,7 @@ export const useWorkflowForm = (workflow: any) => {
     RepositoryFieldDto[]
   >([])
 
-  const repositoryId = workflow?.repositoryId
+  const repositoryId = options?.viewerRepositoryId ?? workflow?.repositoryId
 
   const formId =
     workflow?.formId ??
@@ -567,19 +574,40 @@ export const useWorkflowForm = (workflow: any) => {
       stagedAttachmentFiles,
       context,
     )
-    const { data, error } = await workflowsApiV6.startWorkflowJson(
-      String(workflow.id),
-      payload,
-    )
+    
+    let resData, resError
+    
+    if (options?.isRaiseTicket && options.viewerRepositoryId && options.viewerItemId) {
+      const { data, error } = await workflowsApiV6.raiseTicket(
+        String(workflow.id),
+        {
+          repositoryId: options.viewerRepositoryId,
+          itemId: options.viewerItemId,
+          formData: payload.formData,
+          fileName: options.fileName,
+          context: context || null,
+          envType: null,
+        }
+      )
+      resData = data
+      resError = error
+    } else {
+      const { data, error } = await workflowsApiV6.startWorkflowJson(
+        String(workflow.id),
+        payload,
+      )
+      resData = data
+      resError = error
+    }
 
     setIsSubmitting(false)
 
-    if (error) {
-      setSubmitError(error)
+    if (resError) {
+      setSubmitError(resError)
       return { success: false }
     }
 
-    return { data, success: true }
+    return { data: resData, success: true }
   }
 
   return {

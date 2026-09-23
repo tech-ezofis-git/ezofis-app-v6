@@ -258,7 +258,7 @@ const formatDecision = (decision: string) => {
     .join(' ')
 }
 
-const extractPONumber = (row: any): string => {
+export const extractPONumber = (row: any): string => {
   if (!row) return 'N/A'
   const agentData = row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
@@ -285,6 +285,10 @@ const extractPONumber = (row: any): string => {
 
   const fromSelected = findPONumberInObject(row)
   if (fromSelected) return fromSelected
+
+  if (row.repositoryItem?.fields?.PONumber) {
+    return String(row.repositoryItem.fields.PONumber).trim()
+  }
 
   return 'N/A'
 }
@@ -347,6 +351,10 @@ const findInvoiceNumber = (row: any): string | null => {
   if (invoiceHeader) {
     const fromHeader = searchInObj(invoiceHeader)
     if (fromHeader) return fromHeader
+  }
+
+  if (row.repositoryItem?.fields?.InvoiceNo) {
+    return String(row.repositoryItem.fields.InvoiceNo).trim()
   }
 
   return null
@@ -454,7 +462,7 @@ const findInvoiceAmount = (row: any): string | null => {
   return null
 }
 
-const findSupplierName = (row: any): string | null => {
+export const findSupplierName = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
 
@@ -518,6 +526,10 @@ const findSupplierName = (row: any): string | null => {
   if (invoiceHeader) {
     const fromHeader = searchInObj(invoiceHeader)
     if (fromHeader) return fromHeader
+  }
+
+  if (row.repositoryItem?.fields?.Supplier) {
+    return String(row.repositoryItem.fields.Supplier).trim()
   }
 
   return null
@@ -760,7 +772,7 @@ export const extractGenericRequestNumber = (row: any): string => {
   return row.requestNo || '-'
 }
 
-const extractInvoiceNumber = (row: any): string => {
+export const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
 
   const fromResolved = findInvoiceNumber(row)
@@ -944,10 +956,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-      agentData?.decision ||
-      row.decision ||
-      row.status ||
-      '',
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1291,6 +1303,60 @@ export const getFormPanels = (form: any) => {
   return [...rootPanels, ...panels, ...secondaryPanels]
 }
 
+
+export const getFieldKeyByLabel = (workflow: WorkflowOption | null, label: string): string | null => {
+  const form = resolveFormJson(workflow)
+  if (!form) return null
+
+  const panels = getFormPanels(form)
+  for (const panel of panels) {
+    if (panel.fields) {
+      const field = panel.fields.find((f: any) => (f.label || f.name || f.id) === label)
+      if (field) {
+        return field.name || field.id
+      }
+    }
+  }
+  return null
+}
+
+export const resolveConfiguredTitle = (
+  row: any,
+  workflow: WorkflowOption | null,
+  isDocumentApproval: boolean,
+): string | null => {
+  const titleField = workflow?.workflowJson?.settings?.general?.requestTitleField || (workflow as any)?.wSettings?.general?.requestTitleField
+  if (!titleField && !isDocumentApproval) return null
+  if (isDocumentApproval) {
+    const val = row?.repositoryItem?.fields?.[titleField]
+    if (val !== undefined && val !== null && val !== '') return String(val)
+  }
+
+  const actualFieldKey = getFieldKeyByLabel(workflow, titleField) || titleField
+
+  // If we found the actual field key, look it up in formData
+  if (actualFieldKey) {
+    try {
+      const parsedData = typeof row?.formData === 'string' ? JSON.parse(row.formData) : row?.formData
+      const val = parsedData?.fields?.[actualFieldKey] ?? parsedData?.[actualFieldKey]
+      if (val !== undefined && val !== null && val !== '') return String(val)
+    } catch {
+      // ignore
+    }
+  }
+
+  // fallback to trying titleField directly as key just in case
+  try {
+    const parsedData = typeof row?.formData === 'string' ? JSON.parse(row.formData) : row?.formData
+    const val = parsedData?.fields?.[titleField] ?? parsedData?.[titleField]
+    if (val !== undefined && val !== null && val !== '') return String(val)
+  } catch {
+    // ignore
+  }
+
+  return null
+}
+
 const getBaseColumns = (
   selectedItem: any,
   activeTab: string | undefined,
@@ -1298,10 +1364,12 @@ const getBaseColumns = (
   isAccountsPayable: boolean,
   workflow: WorkflowOption | null,
 ): Column[] => {
+  const isDocumentApproval = workflow?.name === 'Document Approval'
+
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: isAccountsPayable ? t`Invoice Number` : t`Request No`,
+      label: isAccountsPayable ? t`Invoice Number` : isDocumentApproval ? t`File Name` : t`Request No`,
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1327,9 +1395,14 @@ const getBaseColumns = (
                     }
                   }}
                 >
-                  {isAccountsPayable
-                    ? extractInvoiceNumber(row)
-                    : extractGenericRequestNumber(row)}
+                  {(() => {
+                    const configuredTitle = resolveConfiguredTitle(row, workflow, isDocumentApproval)
+                    return configuredTitle || (isAccountsPayable
+                      ? extractInvoiceNumber(row)
+                      : isDocumentApproval
+                        ? (row?.repositoryItem?.fileName || extractGenericRequestNumber(row))
+                        : extractGenericRequestNumber(row))
+                  })()}
                 </button>
               }
             />
@@ -1347,6 +1420,34 @@ const getBaseColumns = (
   }
 
   if (!isAccountsPayable) {
+    if (isDocumentApproval) {
+      columns.push({
+        id: 'poNumber',
+        label: t`PO Number`,
+        size: 140,
+        renderCell: (row: any) => {
+          const poNumber = extractPONumber(row)
+          return <WrapOnHoverCell value={poNumber} />
+        }
+      })
+      columns.push({
+        id: 'supplier',
+        label: t`Supplier`,
+        size: 200,
+        renderCell: (row: any) => {
+          const supplier = findSupplierName(row) || '-'
+          return (
+            <HoverExpandableText
+              className='text-[13px] font-medium text-[var(--gray-11)]'
+              fallbackText='-'
+              normalMaxWidthClass='max-w-[180px]'
+              text={supplier}
+            />
+          )
+        }
+      })
+    }
+
     columns.push(
       {
         id: 'status',

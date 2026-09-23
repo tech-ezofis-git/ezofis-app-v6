@@ -14,7 +14,7 @@ import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { extractGenericRequestNumber } from '@/pages/requests/components/columns/useDynamicColumns'
+import { extractGenericRequestNumber, getFieldKeyByLabel } from '@/pages/requests/components/columns/useDynamicColumns'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -1151,13 +1151,13 @@ const Request = ({
     queryKey: ['v6-users'],
     queryFn: getUsers,
   })
-  const allUsersForAssignee = usersResponse?.data
+  const allUsersForAssignee = (usersResponse as any)?.data
 
   const { data: groupsResponse } = useQuery({
     queryKey: ['v6-groups'],
     queryFn: getGroups,
   })
-  const allGroupsForAssignee = groupsResponse?.data
+  const allGroupsForAssignee = (groupsResponse as any)?.data
 
   const assigneeLabel = useMemo(() => {
     if (!currentBlock) return undefined
@@ -1231,12 +1231,42 @@ const Request = ({
   const [genericFormModel, setGenericFormModel] = useState<Record<string, any>>(
     {},
   )
+  const [isForwardModalOpen, setIsForwardModalOpen] = useState(false)
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
-    if (isGenericWorkflow) {
-      const genericNo = extractGenericRequestNumber(selectedItem)
-      raw = genericNo === '-' ? 'REQ - ...' : genericNo
+    const titleField = rawWorkflowData?.settings?.general?.requestTitleField
+    const isDocumentApproval = selectedWorkflow?.name === 'Document Approval'
+
+    let configuredTitle = null
+    if (titleField) {
+      if (isDocumentApproval) {
+        configuredTitle = selectedItem?.repositoryItem?.fields?.[titleField]
+      }
+      
+      if (!configuredTitle) {
+        const actualFieldKey = getFieldKeyByLabel(rawWorkflowData || selectedWorkflow, titleField) || titleField
+        configuredTitle = isGenericWorkflow ? genericFormModel?.[actualFieldKey] : formModel?.[actualFieldKey]
+        if (!configuredTitle) {
+          let parsedData = selectedItem?.formData
+          if (typeof parsedData === 'string') {
+            try { parsedData = JSON.parse(parsedData) } catch {}
+          }
+          const formDataFields = parsedData?.fields || parsedData
+          configuredTitle = formDataFields?.[actualFieldKey] || formDataFields?.[titleField]
+        }
+      }
+    }
+
+    if (configuredTitle) {
+      raw = configuredTitle
+    } else if (isGenericWorkflow) {
+      if (isDocumentApproval) {
+        raw = selectedItem?.repositoryItem?.fileName || extractGenericRequestNumber(selectedItem)
+      } else {
+        const genericNo = extractGenericRequestNumber(selectedItem)
+        raw = genericNo === '-' ? 'REQ - ...' : genericNo
+      }
     } else {
       raw =
         formModel?.['Invoice Number'] ||
@@ -1585,6 +1615,13 @@ const Request = ({
           null,
       }
 
+      if (action === 'Forward') {
+        Object.assign(payload, {
+          internalForwardUserId: [(window as any)._selectedForwardUserId],
+          assignToUserId: (window as any)._selectedForwardUserId
+        })
+      }
+
       console.log('MoveNext Payload:', payload)
 
       const instanceId =
@@ -1629,10 +1666,16 @@ const Request = ({
       console.error(e)
     } finally {
       setSubmitting(false)
+      delete (window as any)._selectedForwardUserId
     }
   }
 
   const handleVerifier = async (action: string) => {
+    if (action === 'Forward' && !(window as any)._selectedForwardUserId) {
+      setIsForwardModalOpen(true)
+      return
+    }
+
     if (action !== 'Save' && ruleActions.length > 0) {
       await handleMoveNext(action)
       return

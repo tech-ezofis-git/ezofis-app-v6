@@ -585,7 +585,17 @@ export function FolderExplorer() {
   }
 
   if (appView === 'workflow') {
-    return <StartWorkflowView onBack={() => setAppView('details')} />
+    return (
+      <StartWorkflowView
+        id={selectedFile}
+        repositoryId={String(
+          selectedRepository?.id ||
+            getRepositoryIdFromFolder(activeFolder) ||
+            '',
+        )}
+        onBack={() => setAppView('details')}
+      />
+    )
   }
 
   const displayFolders = activeFolder

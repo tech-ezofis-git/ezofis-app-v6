@@ -279,12 +279,17 @@ export const importWorkflow = (
     const isEmailStart =
       block.type === 'START' &&
       (initiateByList.includes('EMAIL') ||
-        Boolean(block.settings?.mailInitiate))
+        toolType === NODE_TOOL_TYPE.GMAIL ||
+        toolType === NODE_TOOL_TYPE.OUTLOOK ||
+        (Boolean(block.settings?.mailInitiate) &&
+          toolType !== NODE_TOOL_TYPE.MANUAL_USER &&
+          toolType !== NODE_TOOL_TYPE.FORM_SUBMISSION))
     const isManualStart =
       block.type === 'START' &&
       !isEmailStart &&
       (initiateByList.includes('USER') ||
         block.settings?.initiateMode === 'MANUAL' ||
+        toolType === NODE_TOOL_TYPE.MANUAL_USER ||
         initiateByList.length === 0)
 
     // Override Start Node for email-initiated workflows

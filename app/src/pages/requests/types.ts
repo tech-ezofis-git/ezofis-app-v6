@@ -79,4 +79,6 @@ export interface WorkflowOption {
   // block-shape checks like isAccountsPayableWorkflow() need this to work
   // off real data, not just the (often-empty) flowJson string.
   workflowJson?: any
+  settings?: any
+  wSettings?: any
 }

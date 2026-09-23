@@ -147,6 +147,7 @@ export interface V6WorkflowDetail {
   name?: string
   wFormId?: string | number
   workflowJson?: any
+  steps?: any[]
   settings?: {
     general?: {
       initiateUsing?: { formId?: string | number }
@@ -291,6 +292,26 @@ const startWorkflowJson = async (
     const err = e as { message?: string; response?: { data?: string } }
     response.error =
       err?.response?.data || err?.message || 'error starting workflow'
+  }
+  return response
+}
+
+const raiseTicket = async (workflowId: string, payload: any) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/workflows/${workflowId}/raise-ticket`,
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error raising ticket'
   }
   return response
 }
@@ -847,6 +868,7 @@ export const workflowsApiV6 = {
   createWorkflow,
   deleteWorkflow,
   moveNext,
+  raiseTicket,
   searchTickets,
   shareFile,
   startWorkflow,

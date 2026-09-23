@@ -347,6 +347,7 @@ const QuestionSettings = ({
     { id: 'MASTER_TABLE', name: 'Master Table (Dynamic)' },
     { id: 'REPOSITORY', name: 'Data Repository' },
     { id: 'PREDEFINED', name: 'Predefined Lists' },
+    { id: 'USER_LIST', name: 'User List' },
   ]
 
   const separatorOptions = [
@@ -867,13 +868,17 @@ const QuestionSettings = ({
                   />
                 </div>
 
-                {(activeQuestion.settings.specific.optionsType ===
-                  'MASTER_TABLE' ||
+                {(activeQuestion.settings.specific.optionsType === 'MASTER_TABLE' ||
                   activeQuestion.settings.specific.optionsType ===
                     'PREDEFINED') && (
-                  <div className='bg-amber-500/5 border-amber-500/20 text-amber-700 rounded-lg border p-3 text-xs font-medium'>
-                    Master Table and Predefined sources require a backend
-                    endpoint — coming soon.
+                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
+                    Master Table and Predefined sources require a backend endpoint
+                    — coming soon.
+                  </div>
+                )}
+                {activeQuestion.settings.specific.optionsType === 'USER_LIST' && (
+                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
+                    Options will be dynamically populated with user emails.
                   </div>
                 )}
 
