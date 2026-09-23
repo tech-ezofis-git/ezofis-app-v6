@@ -9,6 +9,7 @@ import DocumentPreviewViewer from '@/components/common/document-preview/Document
 import { importWorkflow } from '@/pages/workflows/utils/importWorkflow'
 import { useWorkflowForm } from '@/pages/requests/components/workflow-request/hooks/useWorkflowForm'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import showToast from '@/components/base/toast/showToast'
 import type { WorkflowData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
 import {
@@ -36,6 +37,9 @@ export function StartWorkflowView({
   const [loading, setLoading] = useState(true)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
+  const [isApproversOpen, setIsApproversOpen] = useState(true)
+  const [isDocDetailsOpen, setIsDocDetailsOpen] = useState(true)
+
   const prefilledFields = useRef<Set<string>>(new Set())
   const session = authUserStore((state) => state.session)
   const fileName = documentInfo?.fileName || 'Document'
@@ -77,6 +81,37 @@ export function StartWorkflowView({
       }))
     }
     return []
+  }, [workflowDetail])
+
+  const connectionName = useMemo(() => {
+    if (!workflowDetail) return ''
+    let parsedWorkflowJson = workflowDetail.workflowJson
+    if (typeof parsedWorkflowJson === 'string') {
+      try {
+        parsedWorkflowJson = JSON.parse(parsedWorkflowJson)
+      } catch (e) { }
+    }
+
+    const blocks = parsedWorkflowJson?.blocks || []
+    const rules = parsedWorkflowJson?.rules || []
+
+    const startBlock = blocks.find((b: any) => b.type === 'START')
+
+    if (startBlock) {
+      // First check if there's a custom action defined in the start block's settings
+      const configuredActions = startBlock.settings?.actions || []
+      if (configuredActions.length > 0 && configuredActions[0].actionName) {
+        return configuredActions[0].actionName
+      }
+
+      // Fallback to rules coming out of the start block
+      const startRule = rules.find((r: any) => r.fromBlockId === startBlock.id)
+      if (startRule && (startRule.proceedAction || startRule.action)) {
+        return startRule.proceedAction || startRule.action
+      }
+    }
+
+    return parsedWorkflowJson?.settings?.general?.connectionName || workflowDetail.name || 'Workflow'
   }, [workflowDetail])
 
   useEffect(() => {
@@ -244,112 +279,107 @@ export function StartWorkflowView({
           <ScrollArea className='flex-1 pr-3 -mr-3' height='100%'>
             <div className='space-y-5 pb-5'>
               <Card className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-                <div className='border-b border-gray-3 p-5'>
+                <button
+                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
+                  onClick={() => setIsApproversOpen(!isApproversOpen)}
+                >
                   <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
-                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
-                    {t`Document Details`}
-                  </h2>
-                </div>
-                <div className='flex flex-col'>
-                  {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
-                    <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
-                      <span className='flex items-center gap-2 text-[12px] text-gray-9'>
-                        <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
-                        {row.label}
-                      </span>
-                      <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
-                        {row.value || '-'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-                <div className='border-b border-gray-3 p-5'>
-                  <h2 className='mb-4 flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
                       className='h-4 w-4 text-blue-11'
                       name='users'
                     />
                     {t`Configure Approvers`}
                   </h2>
-
-                  <div className='flex flex-wrap items-center gap-2 rounded-xl bg-gray-2 p-3'>
-                    {workflowNodes.map((node: any, idx: number) => {
-                      let tone: 'blue' | 'orange' | 'green' = 'blue'
-                      if (node.data?.type === 'trigger') tone = 'green'
-                      else if (node.data?.toolType === 'manual_user')
-                        tone = 'orange'
-
-                      const iconName = String(
-                        node.data?.icon || 'lucide:settings',
-                      )
-                        .replace('lucide:', '')
-                        .replace(/-([a-z])/g, (_, letter) =>
-                          letter.toUpperCase(),
-                        )
-                      return (
-                        <div className='flex items-center gap-2' key={node.id}>
-                          <WorkflowStep
-                            icon={iconName}
-                            label={node.data?.label || 'Step'}
-                            tone={tone}
-                          />
-                          {idx < workflowNodes.length - 1 && <StepArrow />}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className='border-t border-gray-2 pt-2 pb-2 px-3'>
-                  <WorkflowFormRenderer
-                    attachments={formState.attachments}
-                    disableOwnScroll={true}
-                    formModel={formState.formModel}
-                    hasAttemptedSubmit={formState.hasAttemptedSubmit}
-                    hidePanels={true}
-                    panels={formState.panels}
-                    repositoryId={repositoryId}
-                    missingMandatoryFieldIds={
-                      formState.missingMandatoryFieldIds
-                    }
-                    onFieldChange={formState.setFieldValue}
+                  <DynamicIcon
+                    className={`h-4 w-4 text-gray-10 transition-transform ${isApproversOpen ? 'rotate-180' : ''}`}
+                    name='chevronDown'
                   />
-                </div>
+                </button>
 
-                {formState.submitError && (
-                  <div className='px-5 pb-3 text-right text-[13px] font-semibold text-red-9'>
-                    {formState.submitError}
+                {isApproversOpen && (
+                  <div className='p-3'>
+                    <WorkflowFormRenderer
+                      attachments={formState.attachments}
+                      disableOwnScroll={true}
+                      formModel={formState.formModel}
+                      hasAttemptedSubmit={formState.hasAttemptedSubmit}
+                      hidePanels={true}
+                      panels={formState.panels}
+                      repositoryId={repositoryId}
+                      missingMandatoryFieldIds={
+                        formState.missingMandatoryFieldIds
+                      }
+                      onFieldChange={formState.setFieldValue}
+                    />
                   </div>
                 )}
-
-                <div className='flex justify-end gap-3 border-t border-gray-3 bg-gray-1 p-5'>
-                  <Button
-                    className='h-9 px-4 text-[13px]'
-                    disabled={formState.isSubmitting}
-                    onClick={onBack}
-                  >{t`Cancel`}</Button>
-
-                  <PrimaryButton
-                    className='h-9 px-4 text-[13px]'
-                    disabled={formState.isSubmitting}
-                    onClick={async () => {
-                      const res = await formState.submit()
-                      if (res.success) {
-                        onBack()
-                      }
-                    }}
-                  >
-                    <DynamicIcon
-                      className='h-4 w-4'
-                      name={formState.isSubmitting ? 'loader' : 'check'}
-                    />
-                    {t`Launch Workflow`}
-                  </PrimaryButton>
-                </div>
               </Card>
+
+              <Card className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+                <button
+                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
+                  onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
+                >
+                  <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
+                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                    {t`Document Details`}
+                  </h2>
+                  <DynamicIcon
+                    className={`h-4 w-4 text-gray-10 transition-transform ${isDocDetailsOpen ? 'rotate-180' : ''}`}
+                    name='chevronDown'
+                  />
+                </button>
+                {isDocDetailsOpen && (
+                  <div className='flex flex-col'>
+                    {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
+                      <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
+                        <span className='flex items-center gap-2 text-[12px] text-gray-9'>
+                          <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
+                          {row.label}
+                        </span>
+                        <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
+                          {row.value || '-'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              {formState.submitError && (
+                <div className='px-5 pb-3 text-right text-[13px] font-semibold text-red-9'>
+                  {formState.submitError}
+                </div>
+              )}
+
+              <div className='flex justify-end gap-3 p-5'>
+                <Button
+                  className='h-9 px-4 text-[13px]'
+                  disabled={formState.isSubmitting}
+                  onClick={onBack}
+                >{t`Cancel`}</Button>
+
+                <PrimaryButton
+                  className='h-9 px-4 text-[13px]'
+                  disabled={formState.isSubmitting}
+                  onClick={async () => {
+                    const res = await formState.submit()
+                    if (res.success) {
+                      showToast({
+                        message: t`Request created successfully`,
+                        variant: 'success',
+                      })
+                      onBack()
+                    }
+                  }}
+                >
+                  <DynamicIcon
+                    className='h-4 w-4'
+                    name={formState.isSubmitting ? 'loader' : 'check'}
+                  />
+                  {connectionName}
+                </PrimaryButton>
+              </div>
             </div>
           </ScrollArea>
         </div>

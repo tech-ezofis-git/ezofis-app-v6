@@ -165,21 +165,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           />
         </div>
 
-        {isDocumentApproval && (
-          <div className='mt-2 flex flex-col gap-1.5'>
-            <div className='flex flex-wrap items-center gap-2 text-[12px] font-medium text-gray-11'>
-              <span className='flex items-center gap-1.5'>
-                 <Icon className='size-3.5 text-gray-8' name='tabler:hash' />
-                 {extractPONumber(row) !== 'N/A' ? extractPONumber(row) : (row?.repositoryItem?.fields?.PONumber || '-')}
-              </span>
-              <span className='text-gray-6'>·</span>
-              <span className='flex items-center gap-1.5'>
-                 <Icon className='size-3.5 text-gray-8' name='tabler:building-store' />
-                 {findSupplierName(row) || row?.repositoryItem?.fields?.Supplier || '-'}
-              </span>
-            </div>
-          </div>
-        )}
+
 
         {dynamicFieldRows.length > 0 && (
           <div className='mt-1.5 flex flex-col gap-1'>

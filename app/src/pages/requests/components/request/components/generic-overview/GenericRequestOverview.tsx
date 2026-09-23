@@ -46,6 +46,8 @@ import DocumentPreviewViewer from '@/components/common/document-preview/Document
 import folderApi from '@/pages/folders/api/folderApi'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import AgentSummaryBoxes, { type AgentBlock } from './AgentSummaryBoxes'
+import AgentDetailPlaceholder from './AgentDetailPlaceholder'
 
 interface ChecklistItem {
   id: string
@@ -142,6 +144,9 @@ const DocumentApprovalSplitLayout = ({
   const { t } = useLingui()
   const firstAttachment = attachments[0]
   const [documentInfo, setDocumentInfo] = useState<any>(null)
+  
+  const [isApproversOpen, setIsApproversOpen] = useState(true)
+  const [isDocDetailsOpen, setIsDocDetailsOpen] = useState(true)
 
   const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
   const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
@@ -199,49 +204,166 @@ const DocumentApprovalSplitLayout = ({
       <div className='flex w-[400px] xl:w-[480px] shrink-0 flex-col gap-5 overflow-hidden'>
         <ScrollArea className='flex-1 pr-3 -mr-3' height='100%'>
           <div className='space-y-5 pb-5'>
-            <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-              <div className='border-b border-gray-3 p-5'>
-                <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
-                  <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
-                  {t`Document Details`}
-                </h2>
-              </div>
-              <div className='flex flex-col'>
-                {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).length > 0 ? (
-                  documentInfo.infoCards.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
-                    <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
-                      <span className='flex items-center gap-2 text-[12px] text-gray-9'>
-                        <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
-                        {row.label}
-                      </span>
-                      <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
-                        {row.value || '-'}
-                      </span>
+              <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+                <button
+                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
+                  onClick={() => setIsApproversOpen(!isApproversOpen)}
+                >
+                  <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
+                    <DynamicIcon className='h-4 w-4 text-blue-11' name='users' />
+                    {t`Configure Approvers`}
+                  </h2>
+                  <DynamicIcon
+                    className={`h-4 w-4 text-gray-10 transition-transform ${isApproversOpen ? 'rotate-180' : ''}`}
+                    name='chevronDown'
+                  />
+                </button>
+                {isApproversOpen && (
+                  <div className='flex flex-col p-5 space-y-4'>
+                    {taskNode}
+                    <div className='border-t border-gray-2 pt-2 -mx-2'>
+                      {formNode}
                     </div>
-                  ))
-                ) : (
-                  <div className='px-5 py-4 text-center text-13 text-gray-9'>
-                    {t`No document details available.`}
+                  </div>
+                )}
+              </div>
+              
+              <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+                <button
+                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
+                  onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
+                >
+                  <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
+                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                    {t`Document Details`}
+                  </h2>
+                  <DynamicIcon
+                    className={`h-4 w-4 text-gray-10 transition-transform ${isDocDetailsOpen ? 'rotate-180' : ''}`}
+                    name='chevronDown'
+                  />
+                </button>
+                {isDocDetailsOpen && (
+                  <div className='flex flex-col'>
+                    {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).length > 0 ? (
+                      documentInfo.infoCards.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
+                        <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
+                          <span className='flex items-center gap-2 text-[12px] text-gray-9'>
+                            <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
+                            {row.label}
+                          </span>
+                          <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
+                            {row.value || '-'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className='px-5 py-4 text-center text-13 text-gray-9'>
+                        {t`No document details available.`}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
+        </ScrollArea>
+      </div>
+    </div>
+  )
+}
 
-            <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-              <div className='border-b border-gray-3 p-5'>
-                <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
-                  <DynamicIcon className='h-4 w-4 text-blue-11' name='users' />
-                  {t`Configure Approvers`}
-                </h2>
-              </div>
-              <div className='flex flex-col p-5 space-y-4'>
-                {taskNode}
-                <div className='border-t border-gray-2 pt-2 -mx-2'>
-                  {formNode}
-                </div>
-              </div>
-            </div>
+const DocumentFormSplitLayout = ({
+  attachments,
+  repositoryId,
+  formNode,
+  taskNode,
+  selectedItem,
+  rawWorkflowData,
+}: {
+  attachments: AttachmentItem[]
+  repositoryId: string | number | undefined
+  formNode: React.ReactNode
+  taskNode: React.ReactNode
+  selectedItem: any
+  rawWorkflowData: any
+}) => {
+  const { t } = useLingui()
+  const firstAttachment = attachments[0]
+
+  const agentBlocks: AgentBlock[] = useMemo(() => {
+    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
+  }, [rawWorkflowData])
+
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const selectedAgentBlock = useMemo(() => {
+    if (!selectedAgentBlockId) return null
+    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+  }, [selectedAgentBlockId, agentBlocks])
+
+  const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
+  const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
+
+  const previewAttachment = firstAttachment
+    ? {
+        ...firstAttachment,
+        itemId: targetItemId,
+        repositoryId: targetRepoId,
+      }
+    : selectedItem?.itemId
+      ? {
+          itemId: selectedItem.itemId,
+          repositoryId: selectedItem.repositoryId,
+          fileName: selectedItem.repositoryItem?.fileName,
+          name: selectedItem.repositoryItem?.fileName,
+          fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
+        }
+      : null
+
+  const { previewUrl } = useAttachmentPreviewUrl(
+    previewAttachment as any,
+    targetRepoId,
+  )
+
+  return (
+    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1 p-5 gap-5'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+        {previewAttachment ? (
+          <DocumentPreviewViewer
+            fileName={previewAttachment.fileName || previewAttachment.name || (previewAttachment.fileExtension ? `file.${previewAttachment.fileExtension}` : undefined)}
+            fileUrl={previewUrl || null}
+          />
+        ) : (
+          <div className='flex h-full items-center justify-center text-13 text-gray-9'>
+            {t`No document attached`}
           </div>
+        )}
+      </div>
+
+      <div className='flex w-[500px] xl:w-[650px] 2xl:w-[800px] shrink-0 flex-col overflow-hidden'>
+        {agentBlocks.length > 0 && (
+          <div className='pb-5'>
+            <AgentSummaryBoxes
+              agentBlocks={agentBlocks}
+              selectedAgentBlockId={selectedAgentBlockId}
+              onAgentClick={setSelectedAgentBlockId}
+              requestData={selectedItem}
+            />
+          </div>
+        )}
+        
+        <ScrollArea className='flex-1 pr-3 -mr-3' height='100%'>
+          {selectedAgentBlock ? (
+            <AgentDetailPlaceholder
+              agentBlock={selectedAgentBlock}
+              onBack={() => setSelectedAgentBlockId(null)}
+              requestData={selectedItem}
+            />
+          ) : (
+            <div className='flex flex-col'>
+              {taskNode}
+              {formNode}
+            </div>
+          )}
         </ScrollArea>
       </div>
     </div>
@@ -415,6 +537,17 @@ const GenericRequestOverview = ({
   const instanceId = selectedItem?.workflowInstanceId || selectedItem?.processId
   const processId = selectedItem?.processId
   const repositoryId = rawWorkflowData?.repositoryId
+
+  const agentBlocks: AgentBlock[] = useMemo(() => {
+    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
+  }, [rawWorkflowData])
+
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const selectedAgentBlock = useMemo(() => {
+    if (!selectedAgentBlockId) return null
+    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+  }, [selectedAgentBlockId, agentBlocks])
 
   const showSidePanel = rightView !== 'overview'
 
@@ -756,44 +889,114 @@ const GenericRequestOverview = ({
               />
             }
           />
+        ) : rawWorkflowData?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
+          rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ? (
+          <DocumentFormSplitLayout
+            attachments={attachments}
+            repositoryId={repositoryId}
+            selectedItem={selectedItem || storeSelectedItem}
+            rawWorkflowData={rawWorkflowData}
+            taskNode={
+              <TaskRequirements
+                attachmentCount={attachments.length}
+                checklistChecked={checklistChecked}
+                checklistItems={checklistItems}
+                documentRequired={documentRequired}
+                signatureConfirmed={signatureConfirmed}
+                userSignatureRequired={userSignatureRequired}
+                onChecklistToggle={onChecklistToggle}
+                onSignatureToggle={onSignatureToggle}
+              />
+            }
+            formNode={
+              <WorkflowFormRenderer
+                attachments={attachments}
+                disableOwnScroll={true}
+                formModel={formModel}
+                hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                hiddenFieldIds={hiddenFieldIds}
+                hidePanels={false}
+                instanceId={instanceId}
+                missingMandatoryFieldIds={
+                  missingMandatoryFieldIds.size > 0
+                    ? missingMandatoryFieldIds
+                    : undefined
+                }
+                panels={panels}
+                preparePhase={preparePhase}
+                preparingFieldId={preparingFieldId}
+                readOnlyFieldIds={readOnlyFieldIds}
+                repositoryId={repositoryId}
+                viewOnly={viewOnly}
+                onFieldChange={onFieldChange}
+                onOpenAttachment={setOpenedAttachment}
+                onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+              />
+            }
+          />
         ) : (
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            <TaskRequirements
-              attachmentCount={attachments.length}
-              checklistChecked={checklistChecked}
-              checklistItems={checklistItems}
-              documentRequired={documentRequired}
-              signatureConfirmed={signatureConfirmed}
-              userSignatureRequired={userSignatureRequired}
-              onChecklistToggle={onChecklistToggle}
-              onSignatureToggle={onSignatureToggle}
-            />
-            {/* {missingRequiredLabels.length > 0 ? (
-              <div className='mx-6 mt-3 rounded-lg border border-red-4 bg-red-1 px-3 py-2 text-12 font-medium text-red-11'>
-                {t`Please fill required field(s): ${missingRequiredLabels.join(', ')}`}
+            {agentBlocks.length > 0 && (
+              <div className='px-6 pt-5 pb-1'>
+                <AgentSummaryBoxes
+                  agentBlocks={agentBlocks}
+                  selectedAgentBlockId={selectedAgentBlockId}
+                  onAgentClick={setSelectedAgentBlockId}
+                  requestData={selectedItem}
+                />
               </div>
-            ) : null} */}
-            <WorkflowFormRenderer
-              attachments={attachments}
-              formModel={formModel}
-              hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-              hiddenFieldIds={hiddenFieldIds}
-              instanceId={instanceId}
-              missingMandatoryFieldIds={
-                missingMandatoryFieldIds.size > 0
-                  ? missingMandatoryFieldIds
-                  : undefined
-              }
-              panels={panels}
-              preparePhase={preparePhase}
-              preparingFieldId={preparingFieldId}
-              readOnlyFieldIds={readOnlyFieldIds}
-              repositoryId={repositoryId}
-              viewOnly={viewOnly}
-              onFieldChange={onFieldChange}
-              onOpenAttachment={setOpenedAttachment}
-              onRequestUpload={viewOnly ? undefined : handleRequestUpload}
-            />
+            )}
+            
+            <ScrollArea className='flex-1' height='100%'>
+              {selectedAgentBlock ? (
+                <div className='p-6 pt-2'>
+                  <AgentDetailPlaceholder
+                    agentBlock={selectedAgentBlock}
+                    onBack={() => setSelectedAgentBlockId(null)}
+                    requestData={selectedItem}
+                  />
+                </div>
+              ) : (
+                <div className='flex flex-col'>
+                  <TaskRequirements
+                    attachmentCount={attachments.length}
+                    checklistChecked={checklistChecked}
+                    checklistItems={checklistItems}
+                    documentRequired={documentRequired}
+                    signatureConfirmed={signatureConfirmed}
+                    userSignatureRequired={userSignatureRequired}
+                    onChecklistToggle={onChecklistToggle}
+                    onSignatureToggle={onSignatureToggle}
+                  />
+                  {/* {missingRequiredLabels.length > 0 ? (
+                    <div className='mx-6 mt-3 rounded-lg border border-red-4 bg-red-1 px-3 py-2 text-12 font-medium text-red-11'>
+                      {t`Please fill required field(s): ${missingRequiredLabels.join(', ')}`}
+                    </div>
+                  ) : null} */}
+                  <WorkflowFormRenderer
+                    attachments={attachments}
+                    formModel={formModel}
+                    hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                    hiddenFieldIds={hiddenFieldIds}
+                    instanceId={instanceId}
+                    missingMandatoryFieldIds={
+                      missingMandatoryFieldIds.size > 0
+                        ? missingMandatoryFieldIds
+                        : undefined
+                    }
+                    panels={panels}
+                    preparePhase={preparePhase}
+                    preparingFieldId={preparingFieldId}
+                    readOnlyFieldIds={readOnlyFieldIds}
+                    repositoryId={repositoryId}
+                    viewOnly={viewOnly}
+                    onFieldChange={onFieldChange}
+                    onOpenAttachment={setOpenedAttachment}
+                    onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+                  />
+                </div>
+              )}
+            </ScrollArea>
           </div>
         )}
 
