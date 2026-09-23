@@ -645,12 +645,11 @@ const Header: React.FC<HeaderProps> = ({
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
-                return (
+                const btn = (
                   <Button
                     color={btnColor}
                     icon={defaultIcon}
                     iconClass='size-4'
-                    key={action?.value}
                     label={action?.label}
                     loading={approveLoading}
                     size='md'
@@ -659,8 +658,20 @@ const Header: React.FC<HeaderProps> = ({
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
                     )}
-                    onClick={() => onApprove?.(action?.value)}
+                    onClick={action.onClick || (() => onApprove?.(action?.value))}
                   />
+                )
+
+                return (
+                  <div
+                    className='flex items-center gap-1.5'
+                    key={action?.value}
+                  >
+                    {action.renderWrapper ? (() => {
+                      console.log('Rendering custom wrapper for action:', action.value)
+                      return action.renderWrapper(btn)
+                    })() : btn}
+                  </div>
                 )
               })}
             </div>
@@ -1561,25 +1572,32 @@ const Header: React.FC<HeaderProps> = ({
                       'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                   }
 
+                  const btn = (
+                    <Button
+                      color={btnColor}
+                      icon={defaultIcon}
+                      iconClass='size-4'
+                      label={action?.label}
+                      loading={approveLoading}
+                      size='md'
+                      variant={btnVariant}
+                      className={cn(
+                        borderClass,
+                        'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      )}
+                      onClick={action.onClick || (() => onApprove?.(action?.value))}
+                    />
+                  )
+
                   return (
                     <div
                       className='flex items-center gap-1.5'
                       key={action?.value}
                     >
-                      <Button
-                        color={btnColor}
-                        icon={defaultIcon}
-                        iconClass='size-4'
-                        label={action?.label}
-                        loading={approveLoading}
-                        size='md'
-                        variant={btnVariant}
-                        className={cn(
-                          borderClass,
-                          'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                        )}
-                        onClick={() => onApprove?.(action?.value)}
-                      />
+                      {action.renderWrapper ? (() => {
+                        console.log('Rendering custom wrapper for action:', action.value)
+                        return action.renderWrapper(btn)
+                      })() : btn}
                     </div>
                   )
                 })}

@@ -43,6 +43,7 @@ import {
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
+import ForwardPopover from './ForwardPopover'
 
 const cleanKey = (s: string) =>
   s
@@ -852,6 +853,7 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
 }) => {
+  console.log('--- REQUEST COMPONENT IS RENDERING ---')
   const { t } = useLingui()
   const {
     activeTabValue,
@@ -1092,15 +1094,52 @@ const Request = ({
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
   }, [rawWorkflowData, currentActivityId])
 
+  const currentBlock = useMemo(() => {
+    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    if (!currentActivityId) {
+      return blocks.find((b: any) => b.type === 'START') || null
+    }
+    return blocks.find((b: any) => b.id === currentActivityId) || null
+  }, [rawWorkflowData, currentActivityId])
+
+  const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
+  console.log('currentBlock', currentBlockSettings)
   const ruleActions = useMemo(() => {
-    return dynamicRules.map((rule: any) => {
-      const actionName = rule.proceedAction || rule.action || 'Submit'
-      return {
-        label: actionName,
-        value: actionName,
-      }
-    })
-  }, [dynamicRules])
+    const configuredActions = currentBlockSettings?.actions || []
+    let derivedActions: any[] = []
+
+    if (configuredActions.length > 0) {
+      derivedActions = configuredActions.map((a: any) => ({
+        label: a.actionName || 'Submit',
+        value: a.actionName || 'Submit',
+      }))
+    } else {
+      derivedActions = dynamicRules.map((rule: any) => {
+        const actionName = rule.proceedAction || rule.action || 'Submit'
+        return {
+          label: actionName,
+          value: actionName,
+        }
+      })
+    }
+
+    if (
+      currentBlockSettings?.isForwardEnabled ||
+      currentBlockSettings?.isForwardUserEnabled ||
+      currentBlockSettings?.forwardEnabled ||
+      currentBlockSettings?.isForward ||
+      currentBlockSettings?.internalForward
+    ) {
+      derivedActions.push({
+        label: 'Forward',
+        value: 'Forward',
+        color: 'gray',
+        variant: 'outline',
+      })
+    }
+
+    return derivedActions
+  }, [dynamicRules, currentBlockSettings])
 
   // Steps carry per-activity assignment (assignedToUserId); block
   // settings.users is the same data as authored in the workflow builder.
@@ -1129,18 +1168,9 @@ const Request = ({
   // The current activity's block carries the Manual User (INTERNAL_ACTOR)
   // settings authored in the workflow builder - assignment mode, checklist
   // items, document/signature requirements, mandatory fields.
-  const currentBlock = useMemo(() => {
-    if (!currentActivityId) return null
-    return (
-      (rawWorkflowData?.workflowJson?.blocks || []).find(
-        (b: any) => b.id === currentActivityId,
-      ) || null
-    )
-  }, [rawWorkflowData, currentActivityId])
 
   console.log('[Pending with] activityId:', currentActivityId)
   console.log('[Pending with] matched block:', currentBlock)
-  const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
 
   const assignedGroupIds = useMemo(
     () => (currentBlockSettings.groups || []).map(String),
@@ -1231,11 +1261,10 @@ const Request = ({
   const [genericFormModel, setGenericFormModel] = useState<Record<string, any>>(
     {},
   )
-  const [isForwardModalOpen, setIsForwardModalOpen] = useState(false)
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
-    const titleField = rawWorkflowData?.settings?.general?.requestTitleField
+    const titleField = rawWorkflowData?.settings?.general?.requestTitleField || rawWorkflowData?.workflowJson?.settings?.general?.requestTitleField
     const isDocumentApproval = selectedWorkflow?.name === 'Document Approval'
 
     let configuredTitle = null
@@ -1243,14 +1272,14 @@ const Request = ({
       if (isDocumentApproval) {
         configuredTitle = selectedItem?.repositoryItem?.fields?.[titleField]
       }
-      
+
       if (!configuredTitle) {
         const actualFieldKey = getFieldKeyByLabel(rawWorkflowData || selectedWorkflow, titleField) || titleField
         configuredTitle = isGenericWorkflow ? genericFormModel?.[actualFieldKey] : formModel?.[actualFieldKey]
         if (!configuredTitle) {
           let parsedData = selectedItem?.formData
           if (typeof parsedData === 'string') {
-            try { parsedData = JSON.parse(parsedData) } catch {}
+            try { parsedData = JSON.parse(parsedData) } catch { }
           }
           const formDataFields = parsedData?.fields || parsedData
           configuredTitle = formDataFields?.[actualFieldKey] || formDataFields?.[titleField]
@@ -1672,7 +1701,6 @@ const Request = ({
 
   const handleVerifier = async (action: string) => {
     if (action === 'Forward' && !(window as any)._selectedForwardUserId) {
-      setIsForwardModalOpen(true)
       return
     }
 
@@ -1994,7 +2022,32 @@ const Request = ({
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
-          actions={headerActions}
+          actions={headerActions.map((a: any) => {
+            console.log('Header action being mapped:', a.value, a.label)
+            if (String(a.value).toLowerCase() === 'forward' || String(a.label).toLowerCase() === 'forward') {
+              console.log('Found Forward action!',)
+              return {
+                ...a,
+                onClick: (e: any) => {
+                  e?.preventDefault?.()
+                },
+                renderWrapper: (btn: React.ReactNode) => (
+                  <ForwardPopover
+                    target={btn}
+                    users={allUsersForAssignee || []}
+                    onConfirm={(userId) => {
+                      (window as any)._selectedForwardUserId = userId
+                      handleVerifier(a.value)
+                    }}
+                  />
+                )
+              }
+            }
+            return {
+              ...a,
+              onClick: a.onClick || (() => handleVerifier(a.value))
+            }
+          })}
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
@@ -2129,7 +2182,30 @@ const Request = ({
               />
             ) : (
               <Overview
-                actions={headerActions}
+                actions={headerActions.map((a: any) => {
+                  if (String(a.value).toLowerCase() === 'forward' || String(a.label).toLowerCase() === 'forward') {
+                    return {
+                      ...a,
+                      onClick: (e: any) => {
+                        e?.preventDefault?.()
+                      },
+                      renderWrapper: (btn: React.ReactNode) => (
+                        <ForwardPopover
+                          target={btn}
+                          users={allUsersForAssignee || []}
+                          onConfirm={(userId) => {
+                            (window as any)._selectedForwardUserId = userId
+                            handleVerifier(a.value)
+                          }}
+                        />
+                      )
+                    }
+                  }
+                  return {
+                    ...a,
+                    onClick: a.onClick || (() => handleVerifier(a.value))
+                  }
+                })}
                 agentData={currentAgentData}
                 allowedLabels={allowedLabels}
                 formDefinition={request?._formDefinition}
