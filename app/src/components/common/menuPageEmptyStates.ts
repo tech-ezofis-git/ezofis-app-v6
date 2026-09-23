@@ -21,6 +21,7 @@ type EmptyContent = {
   // raise a new request). Falls back to `description` when omitted.
   descriptionWithoutAction?: string
   icon: string
+  primaryActionIcon?: string
   primaryActionLabel?: string
   secondaryActionLabel?: string
   title: string
@@ -58,11 +59,12 @@ export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
     },
     initial: {
       description:
-        'Start a request from any workflow. New items will appear here so you can review and track them.',
+        'Nothing is here yet. Use New to raise a submission, then review and track it here.',
       descriptionWithoutAction:
-        "There's nothing waiting for you right now. Requests assigned to you will appear here when they need your attention.",
+        'Nothing needs your action right now. Submissions that need your attention will appear in this list.',
       icon: 'tabler:inbox',
-      primaryActionLabel: 'New Request',
+      primaryActionIcon: 'tabler:plus',
+      primaryActionLabel: 'New',
       title: 'Your inbox is empty',
       titleWithoutAction: 'Nothing assigned to you',
     },

@@ -592,7 +592,7 @@ export default function GroupManagement({
           onBack={onBack}
         />
 
-        <div className='flex flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={groupTable as any} />}
@@ -639,7 +639,7 @@ export default function GroupManagement({
               tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
             }}
           />
-          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription={t`Create a group to organize users by team, department, or function.`}

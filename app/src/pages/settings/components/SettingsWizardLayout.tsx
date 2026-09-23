@@ -146,7 +146,7 @@ export default function SettingsWizardLayout({
     >
       {/* Top Header */}
       <div
-        className='mb-4 border-b border-gray-3 px-6 py-4 md:px-8'
+        className='mb-4 border-b border-gray-3 px-6 py-4'
         key={i18n.locale}
       >
         <div className='flex min-w-0 items-start justify-between gap-4'>

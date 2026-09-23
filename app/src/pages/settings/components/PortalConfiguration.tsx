@@ -655,7 +655,7 @@ export default function PortalConfiguration({
           title={t`Portal Configuration`}
           onBack={onBack}
         />
-        <div className='flex flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={portalTable as never} />}
@@ -714,7 +714,7 @@ export default function PortalConfiguration({
               tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
             }}
           />
-          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription={t`Create a portal to configure login methods and connected workflows.`}

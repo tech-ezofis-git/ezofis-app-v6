@@ -562,7 +562,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     <div className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <SettingsPageHeader title={t`Credit Usage`} onBack={onBack} />
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
         <CustomFilter
           activeQuickFilters={[period]}
           customSearchComponent={<div />}
@@ -639,7 +639,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
           }}
         />
 
-        <div className='mt-4 flex-1 overflow-y-auto'>
+        <div className='flex-1 overflow-y-auto'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5'>
             {/* Card 1: Credits consumed Consolidated Card */}
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
@@ -937,7 +937,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 onPageChange(1)
               }}
             />
-            <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
+            <div className='mt-4 min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 isLoading={isLoading}
                 isReLoading={isFetching}

@@ -826,7 +826,7 @@ const RequestsPage = () => {
       selectedWorkflow?.id === 'procurement'
     )
       return false
-    // AP workflows always allow "+ New Request"
+    // AP workflows always allow "+ New"
     if (isAccountsPayable) return true
 
     if (!selectedWorkflow) return true
@@ -889,7 +889,7 @@ const RequestsPage = () => {
                         color: 'primary',
                         icon: 'tabler:plus',
                         id: 'new-request',
-                        label: t`New Request`,
+                        label: t`New`,
                         variant: 'solid',
                         onClick: () => {
                           console.log('am running')
