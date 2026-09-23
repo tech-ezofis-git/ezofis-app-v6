@@ -251,7 +251,7 @@ export function ExplorerToolbar({
   }
 
   return (
-    <div className='relative z-40 border-b border-gray-3 bg-surface-primary px-5 py-2'>
+    <div className='relative z-40 border-b border-gray-3 bg-surface-primary px-6 py-2'>
       <FolderFilterBar
         activeFilters={activeFilters}
         currentFolderGroupField={currentFolderGroupField}

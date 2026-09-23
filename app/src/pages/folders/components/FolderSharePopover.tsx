@@ -513,8 +513,8 @@ export default function FolderSharePopover({
         aria-label={triggerLabel || t`Share`}
         type='button'
         className={cn(
-          'flex cursor-pointer items-center justify-center gap-2 rounded-lg border font-semibold transition-all hover:shadow-sm active:scale-95',
-          iconOnly ? 'h-8 w-8 px-0' : 'h-8 px-3.5 text-[13px]',
+          'flex h-8 shrink-0 box-border cursor-pointer items-center justify-center gap-2 rounded-md border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+          iconOnly ? 'w-8 px-0' : 'px-3.5',
           showShare
             ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
             : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',

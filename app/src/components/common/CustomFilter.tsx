@@ -30,7 +30,7 @@ const VIEWPORT_GAP = 8
 
 /** Shared chip shell — same size across all pages (dashboard, workflow, forms, settings) */
 const FILTER_CHIP_SHELL =
-  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-normal transition-all'
+  'inline-flex h-8 max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-normal transition-all'
 const FILTER_CHIP_ACTIVE = 'border-primary-9 bg-primary-3/50 text-primary-9'
 const FILTER_CHIP_INACTIVE =
   'border-border-default bg-surface text-text-secondary'
@@ -105,6 +105,8 @@ export interface CustomFilterProps {
   /** Rendered immediately after the search control (before view mode / actions). */
   afterSearchActions?: React.ReactNode
   customSearchComponent?: React.ReactNode
+  /** Whether search control starts expanded or minimized (defaults to false). */
+  defaultSearchExpanded?: boolean
   isLoading?: boolean
   moreFilters?: FilterGroup[]
   moreFiltersLabel?: string
@@ -165,6 +167,7 @@ export default function CustomFilter({
   addButton,
   afterSearchActions,
   customSearchComponent,
+  defaultSearchExpanded = false,
   filters,
   isLoading = false,
   moreFilters,
@@ -191,7 +194,15 @@ export default function CustomFilter({
     moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null,
   )
   const [filterSearchQuery, setFilterSearchQuery] = useState('')
-  const [isSearchExpanded, setIsSearchExpanded] = useState(true)
+  const [isSearchExpanded, setIsSearchExpanded] = useState(
+    () => defaultSearchExpanded || Boolean(searchQuery),
+  )
+
+  useEffect(() => {
+    if (searchQuery) {
+      setIsSearchExpanded(true)
+    }
+  }, [searchQuery])
   const [morePanelPos, setMorePanelPos] = useState<{
     left: number
     top: number
@@ -878,7 +889,7 @@ export default function CustomFilter({
               ref={moreFiltersButtonRef}
               type='button'
               className={cn(
-                'inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all',
+                'inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all',
                 activeFilterDropdown === 'more'
                   ? 'border-primary-9 bg-primary-3/50 text-primary-9'
                   : 'border-border-default bg-surface text-text-secondary hover:bg-gray-2',
@@ -898,7 +909,7 @@ export default function CustomFilter({
 
         {showReset && (
           <button
-            className='shrink-0 cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
+            className='inline-flex h-8 shrink-0 items-center justify-center cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
             type='button'
             onClick={() => {
               onReset()
@@ -920,14 +931,14 @@ export default function CustomFilter({
             className={cn(
               'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
               isSearchExpanded || searchQuery
-                ? 'w-72 justify-start border-[var(--border-default)] bg-surface pr-1 pl-3'
+                ? 'w-72 justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3'
                 : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
             onClick={() => {
-              if (!isSearchExpanded && !searchQuery) {
+              if (!isSearchExpanded) {
                 setIsSearchExpanded(true)
-                setTimeout(() => searchInputRef.current?.focus(), 50)
               }
+              setTimeout(() => searchInputRef.current?.focus(), 30)
             }}
           >
             <Tooltip
@@ -949,7 +960,7 @@ export default function CustomFilter({
 
             <div
               className={cn(
-                'h-full transition-[width] duration-300',
+                'flex h-full items-center transition-[width] duration-300',
                 isSearchExpanded || searchQuery
                   ? 'w-full flex-1'
                   : 'w-0 flex-none overflow-hidden',
@@ -973,6 +984,20 @@ export default function CustomFilter({
                 onChange={(e) => onSearchChange(e.target.value)}
                 onFocus={() => setIsSearchExpanded(true)}
               />
+              {searchQuery ? (
+                <button
+                  aria-label={t`Clear search`}
+                  className='flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-11 transition-colors hover:bg-gray-3 hover:text-gray-13'
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSearchChange('')
+                    setTimeout(() => searchInputRef.current?.focus(), 30)
+                  }}
+                >
+                  <X className='size-3.5' />
+                </button>
+              ) : null}
             </div>
           </div>
         )}
@@ -984,14 +1009,14 @@ export default function CustomFilter({
         ) : null}
 
         {viewMode && onViewModeChange && (
-          <div className='flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+          <div className='flex h-8 shrink-0 box-border items-center gap-[2px] rounded-md border border-[var(--border-default)] bg-[var(--gray-1)] p-[2px]'>
             <Tooltip content={t`Grid View`} openDelay={500}>
               <button
                 type='button'
                 className={cn(
-                  'cursor-pointer rounded-md px-2 py-1 transition-all duration-200',
+                  'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'grid'
-                    ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                    ? 'bg-surface text-[var(--primary-9)] shadow-xs'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('grid')}
@@ -1003,9 +1028,9 @@ export default function CustomFilter({
               <button
                 type='button'
                 className={cn(
-                  'cursor-pointer rounded-md px-2 py-1 transition-all duration-200',
+                  'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'table'
-                    ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                    ? 'bg-surface text-[var(--primary-9)] shadow-xs'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('table')}
@@ -1020,21 +1045,28 @@ export default function CustomFilter({
           <div className='flex shrink-0 items-center gap-1.5'>
             {actionButtons.map((btn) => {
               if (btn.node) {
-                return <span key={btn.id}>{btn.node}</span>
+                return (
+                  <span className='inline-flex h-8 items-center' key={btn.id}>
+                    {btn.node}
+                  </span>
+                )
               }
 
               const btnEl = btn.isIconButton ? (
                 <IconButton
                   aria-label={btn.tooltip || btn.label || btn.id}
+                  className='h-8 w-8 shrink-0 box-border rounded-md border border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95'
                   color={(btn.color as any) || 'gray'}
                   disabled={btn.disabled}
                   icon={btn.icon!}
                   key={btn.id}
+                  size='md'
                   variant={btn.variant || 'outline'}
                   onClick={btn.onClick}
                 />
               ) : (
                 <Button
+                  className='h-8 rounded-md text-[13px] font-semibold'
                   color={btn.color || 'primary'}
                   disabled={btn.disabled}
                   icon={btn.iconNode ? undefined : btn.icon}
