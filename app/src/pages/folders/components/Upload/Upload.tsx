@@ -2,8 +2,18 @@ import { useLingui } from '@lingui/react/macro'
 import { useDebouncedValue } from '@mantine/hooks'
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type {
+  BulkUploadJobStatus,
+  IndexStageFileRequest,
+  StageFileStatus,
+} from '@/api/v6/uploadAndIndex'
 import formApi from '@/api/form/form'
-import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
+import {
+  bulkUpload,
+  indexStageFile,
+  listStagedFiles,
+  loadStageFile,
+} from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -39,6 +49,7 @@ import {
   AnimateStagger,
 } from './../../../../components/common/animations'
 import UploadQueueFileCard from './UploadQueueFileCard'
+import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
 
@@ -229,7 +240,6 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
 const PROCESS_STEP_KEYS = ['Received', 'Analysis', 'Fields', 'Done'] as const
 type ProcessStepKey = (typeof PROCESS_STEP_KEYS)[number]
 
-const OCR_CONCURRENCY_LIMIT = 2
 const QUEUE_VERTICAL_THRESHOLD = 6
 
 const getFieldKey = (field: RepositoryField) => field.sqlColumnName || field.id
@@ -288,6 +298,29 @@ const getActiveStepIndex = (
   if (ocrStatus === 'analyzing') return 1
   if (hasFile) return 0
   return -1
+}
+
+// The queue's own status (kept live by staging/polling) is the source of
+// truth for whether OCR is still running - the legacy per-entry ocrStatus
+// field is only updated once OCR finishes, so deriving loading state from
+// it would never show a loader while staging/OCR is actually in progress.
+const deriveOcrStatus = (
+  entry: Pick<QueuedUploadFile, 'status'> | null,
+): OcrStatus => {
+  if (!entry) return 'idle'
+  switch (entry.status) {
+    case 'queued':
+    case 'analyzing':
+      return 'analyzing'
+    case 'error':
+      return 'error'
+    case 'ready':
+    case 'indexing':
+    case 'indexed':
+      return 'complete'
+    default:
+      return 'idle'
+  }
 }
 
 const isStepComplete = (
@@ -369,6 +402,14 @@ const extractOcrFieldMap = (response: unknown) => {
   if (!response || typeof response !== 'object') return fieldMap
 
   const payload = response as Record<string, unknown>
+  const dataObj = payload.data as Record<string, unknown> | undefined
+
+  // load/{fileId} (and some OCR responses) return `fields` as a flat array
+  // of {name, value, type} items directly, rather than nested under an
+  // ocrFieldList/ocrResult key inside a `fields` object.
+  appendOcrFieldItems(fieldMap, payload.fields)
+  appendOcrFieldItems(fieldMap, dataObj?.fields)
+
   const sources = [
     payload,
     payload.data,
@@ -577,6 +618,7 @@ const createQueueEntry = (
   repositoryFields: RepositoryField[],
 ): QueuedUploadFile => ({
   activeTab: 'fields',
+  backendStatus: null,
   exportStatus: 'idle',
   fieldValues: applyFilenamePreFill(
     getInitialValues(repositoryFields),
@@ -584,18 +626,40 @@ const createQueueEntry = (
     file.name,
   ),
   file,
+  fileName: file.name,
+  fileSize: file.size,
   focusedFieldKey: null,
   id: `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   isSyncing: false,
+  jobId: null,
   masterSyncedValues: {},
   ocrExtractedValues: {},
   ocrStatus: 'idle',
   previewUrl: URL.createObjectURL(file),
   rawOcrJson: {},
   rawOcrText: '',
+  restoredFromServer: false,
+  stageFileId: null,
   status: 'queued',
   syncingField: null,
 })
+
+const backendStatusToQueueStatus = (
+  backendStatus: StageFileStatus,
+): QueuedFileStatus => {
+  switch (backendStatus) {
+    case 'OCR':
+      return 'ready'
+    case 'OCRFailed':
+      return 'error'
+    case 'ARCHIVED':
+      return 'indexed'
+    case 'Queued':
+    case 'PendingOCR':
+    default:
+      return 'analyzing'
+  }
+}
 
 const fileFingerprint = (file: File) =>
   `${file.name}:${file.size}:${file.lastModified}`
@@ -620,20 +684,17 @@ export default function Upload({
     Received: t`Received`,
   }
   const invoiceInputRef = useRef<HTMLInputElement>(null)
-  const ocrRequestIdMapRef = useRef<Map<string, number>>(new Map())
-  const activeOcrCountRef = useRef(0)
   const activeSyncCountMapRef = useRef<Map<string, number>>(new Map())
   const lastBatchSelectionRef = useRef<{
     at: number
     fingerprint: string
   } | null>(null)
-  const indexAllQueueRef = useRef<string[]>([])
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
   const [openFileId, setOpenFileId] = useState<string | null>(null)
-  const [isIndexingAll, setIsIndexingAll] = useState(false)
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
+  const [isRestoringQueue, setIsRestoringQueue] = useState(false)
 
   const repositoryFields = useMemo(() => {
     return [...(repositoryData?.fields ?? [])].sort((a, b) => {
@@ -967,10 +1028,10 @@ export default function Upload({
     [masterFormSyncData, repositoryFields, updateEntry],
   )
 
-  const isAnalyzing = activeEntry?.ocrStatus === 'analyzing'
+  const isAnalyzing = deriveOcrStatus(activeEntry) === 'analyzing'
   const isExporting = activeEntry?.exportStatus === 'exporting'
   const isFieldsPhase =
-    activeEntry?.ocrStatus === 'complete' &&
+    deriveOcrStatus(activeEntry) === 'complete' &&
     activeEntry?.exportStatus === 'idle' &&
     Boolean(activeEntry)
 
@@ -996,158 +1057,227 @@ export default function Upload({
     }
   }, [])
 
-  const runOcrExtraction = useCallback(
-    async (fileId: string, selectedFile: File, activeRepositoryId: string) => {
-      const requestId = (ocrRequestIdMapRef.current.get(fileId) ?? 0) + 1
-      ocrRequestIdMapRef.current.set(fileId, requestId)
+  const triggerAutoSync = useCallback(
+    (fileId: string, mappedValues: Record<string, string>) => {
+      if (!masterFormSyncData || masterFormSyncData.syncFields.length === 0) {
+        return
+      }
 
-      updateEntry(fileId, {
-        exportStatus: 'idle',
-        fieldValues: applyFilenamePreFill(
-          getInitialValues(repositoryFields),
-          repositoryFields,
-          selectedFile.name,
-        ),
-        focusedFieldKey: null,
-        ocrStatus: 'analyzing',
-        status: 'analyzing',
+      const activeSyncs: Array<{
+        fieldName: string
+        fieldValue: string
+        formId: string
+      }> = []
+
+      masterFormSyncData.syncFields.forEach((syncField) => {
+        const { formId, repoField: name } = syncField
+        const normalizedName = name.trim().toLowerCase()
+        const repoField = repositoryFields.find((f) => {
+          const fieldName = String(f.name || '')
+            .trim()
+            .toLowerCase()
+          const sqlColumnName = String(f.sqlColumnName || '')
+            .trim()
+            .toLowerCase()
+          return (
+            fieldName === normalizedName || sqlColumnName === normalizedName
+          )
+        })
+
+        if (repoField) {
+          const targetKey = getFieldKey(repoField)
+          const val = mappedValues[targetKey]
+          if (val?.trim()) {
+            activeSyncs.push({ fieldName: name, fieldValue: val, formId })
+          }
+        }
       })
+
+      const uniqueSyncsToTrigger: typeof activeSyncs = []
+      const triggeredFormIds = new Set<string>()
+
+      activeSyncs.forEach((sync) => {
+        if (!triggeredFormIds.has(sync.formId)) {
+          triggeredFormIds.add(sync.formId)
+          uniqueSyncsToTrigger.push(sync)
+        }
+      })
+
+      uniqueSyncsToTrigger.forEach((sync) => {
+        // We use setTimeout to allow state to settle before firing the sync
+        setTimeout(() => {
+          void handleSync(
+            fileId,
+            sync.fieldValue,
+            sync.fieldName,
+            sync.formId,
+            mappedValues,
+          )
+        }, 0)
+      })
+    },
+    [masterFormSyncData, repositoryFields, handleSync],
+  )
+
+  // Batches every newly-added 'queued' entry into a single bulkUpload call
+  // (one network call per drop/selection, not one per file) and stores the
+  // returned stageFileId/jobId on each entry so the poller (below) can pick
+  // up OCR progress for the whole batch.
+  const stageFilesForOcr = useCallback(
+    async (entries: QueuedUploadFile[], activeRepositoryId: string) => {
+      const filesToStage = entries.filter(
+        (entry): entry is QueuedUploadFile & { file: File } =>
+          Boolean(entry.file),
+      )
+      if (!filesToStage.length || !activeRepositoryId) return
 
       const ocrFields = repositoryFields
         .map((field) => formatOcrFieldDescriptor(field))
         .filter(Boolean)
 
-      try {
-        const { data, error } = await uploadForOcr(
-          activeRepositoryId,
-          selectedFile,
-          ocrFields,
-        )
+      const { data, error } = await bulkUpload({
+        fields: ocrFields,
+        files: filesToStage.map((entry) => entry.file),
+        repositoryId: activeRepositoryId,
+      })
 
-        if (requestId !== ocrRequestIdMapRef.current.get(fileId)) return
+      if (error || !data) {
+        filesToStage.forEach((entry) => {
+          updateEntry(entry.id, {
+            errorMessage: String(error || 'Upload failed'),
+            status: 'error',
+          })
+        })
+        showToast({
+          message: t`Failed to stage files for upload.`,
+          variant: 'error',
+        })
+        return
+      }
 
-        if (error) {
-          console.warn(
-            '[uploadForOcr] OCR extraction failed/unavailable:',
-            error,
-          )
-          updateEntry(fileId, { ocrStatus: 'idle', status: 'ready' })
+      data.files.forEach((result, index) => {
+        const entry = filesToStage[index]
+        if (!entry) return
+
+        if (!result.succeeded) {
+          updateEntry(entry.id, {
+            errorMessage: result.error || t`Staging failed.`,
+            status: 'error',
+          })
           return
         }
 
-        const { ocrJson, ocrText } = extractOcrJsonAndText(data)
-
-        const mappedValues = mapOcrResponseToFieldValues(
-          data,
-          repositoryFields,
-          selectedFile.name,
-        )
-
-        updateEntry(fileId, {
-          fieldValues: mappedValues,
-          ocrExtractedValues: mappedValues,
-          ocrStatus: 'complete',
-          rawOcrJson: ocrJson,
-          rawOcrText: ocrText,
-          status: 'ready',
+        updateEntry(entry.id, {
+          backendStatus: 'Queued',
+          errorMessage: undefined,
+          jobId: data.jobId,
+          stageFileId: result.fileId,
+          status: 'analyzing',
         })
-
-        // Auto-sync trigger
-        if (masterFormSyncData && masterFormSyncData.syncFields.length > 0) {
-          const activeSyncs: Array<{
-            fieldName: string
-            fieldValue: string
-            formId: string
-          }> = []
-
-          masterFormSyncData.syncFields.forEach((syncField) => {
-            const { formId, repoField: name } = syncField
-            const normalizedName = name.trim().toLowerCase()
-            const repoField = repositoryFields.find((f) => {
-              const fieldName = String(f.name || '')
-                .trim()
-                .toLowerCase()
-              const sqlColumnName = String(f.sqlColumnName || '')
-                .trim()
-                .toLowerCase()
-              return (
-                fieldName === normalizedName || sqlColumnName === normalizedName
-              )
-            })
-
-            if (repoField) {
-              const targetKey = getFieldKey(repoField)
-              const val = mappedValues[targetKey]
-              if (val?.trim()) {
-                activeSyncs.push({
-                  fieldName: name,
-                  fieldValue: val,
-                  formId: formId,
-                })
-              }
-            }
-          })
-
-          const uniqueSyncsToTrigger: typeof activeSyncs = []
-          const triggeredFormIds = new Set<string>()
-
-          activeSyncs.forEach((sync) => {
-            if (!triggeredFormIds.has(sync.formId)) {
-              triggeredFormIds.add(sync.formId)
-              uniqueSyncsToTrigger.push(sync)
-            }
-          })
-
-          uniqueSyncsToTrigger.forEach((sync) => {
-            // We use setTimeout to allow state to settle before firing the sync
-            setTimeout(() => {
-              void handleSync(
-                fileId,
-                sync.fieldValue,
-                sync.fieldName,
-                sync.formId,
-                mappedValues,
-              )
-            }, 0)
-          })
-        }
-      } catch (error: any) {
-        if (requestId !== ocrRequestIdMapRef.current.get(fileId)) return
-        const detail = error?.message || error
-        updateEntry(fileId, {
-          errorMessage: String(detail),
-          ocrStatus: 'error',
-          status: 'error',
-        })
-        showToast({
-          message: t`OCR extraction failed: ${detail}`,
-          variant: 'error',
-        })
-      }
+      })
     },
-    [repositoryFields, t, masterFormSyncData, handleSync, updateEntry],
+    [repositoryFields, t, updateEntry],
   )
 
-  // Eagerly run OCR for newly queued files, capped at OCR_CONCURRENCY_LIMIT concurrent requests.
-  useEffect(() => {
-    const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
-    if (!activeRepositoryId) return
+  // Tracks which entries already had loadStageFile called for their current
+  // stage, so a repeated 'OCR' status in later polls doesn't re-fetch.
+  const loadedStageFileIdsRef = useRef<Set<string>>(new Set())
 
-    const capacity = OCR_CONCURRENCY_LIMIT - activeOcrCountRef.current
-    if (capacity <= 0) return
+  const loadAndPopulateFields = useCallback(
+    async (entry: QueuedUploadFile) => {
+      if (!entry.stageFileId) return
+      const { data, error } = await loadStageFile(entry.stageFileId)
 
-    const pending = queue.filter((entry) => entry.status === 'queued')
-    if (!pending.length) return
+      if (error || !data) {
+        updateEntry(entry.id, { status: 'ready' })
+        return
+      }
 
-    pending.slice(0, capacity).forEach((entry) => {
-      activeOcrCountRef.current += 1
-      void runOcrExtraction(entry.id, entry.file, activeRepositoryId).finally(
-        () => {
-          activeOcrCountRef.current = Math.max(0, activeOcrCountRef.current - 1)
-        },
+      const { ocrJson, ocrText } = extractOcrJsonAndText(data)
+      const mappedValues = mapOcrResponseToFieldValues(
+        data,
+        repositoryFields,
+        entry.fileName,
       )
-    })
-  }, [queue, repositoryId, repositoryData?.id, runOcrExtraction])
+
+      updateEntry(entry.id, {
+        fieldValues: mappedValues,
+        fileName: data.name || entry.fileName,
+        fileSize: typeof data.size === 'number' ? data.size : entry.fileSize,
+        ocrExtractedValues: mappedValues,
+        ocrStatus: 'complete',
+        // load/{fileId} returns `fields` as the flat OCR result array
+        // directly - show that in the JSON tab when the generic extractor
+        // didn't find a nested ocrJson/ocrResult payload.
+        rawOcrJson:
+          Array.isArray(ocrJson) && ocrJson.length === 0 && data.fields
+            ? data.fields
+            : ocrJson,
+        rawOcrText: ocrText,
+        status: 'ready',
+      })
+
+      triggerAutoSync(entry.id, mappedValues)
+    },
+    [repositoryFields, triggerAutoSync, updateEntry],
+  )
+
+  const handleBulkUploadJobUpdate = useCallback(
+    (_jobId: string, jobStatus: BulkUploadJobStatus) => {
+      jobStatus.files.forEach((fileEntry) => {
+        const entry = queueRef.current.find(
+          (item) => item.stageFileId === fileEntry.fileId,
+        )
+        if (!entry) return
+
+        if (fileEntry.status === 'OCRFailed') {
+          if (entry.status !== 'error') {
+            updateEntry(entry.id, {
+              backendStatus: fileEntry.status,
+              errorMessage: fileEntry.error || t`OCR failed for this file.`,
+              status: 'error',
+            })
+          }
+          return
+        }
+
+        if (fileEntry.status === 'OCR') {
+          if (
+            entry.status !== 'indexed' &&
+            entry.status !== 'indexing' &&
+            !loadedStageFileIdsRef.current.has(entry.stageFileId as string)
+          ) {
+            loadedStageFileIdsRef.current.add(entry.stageFileId as string)
+            updateEntry(entry.id, { backendStatus: fileEntry.status })
+            void loadAndPopulateFields(entry)
+          }
+          return
+        }
+
+        if (entry.backendStatus !== fileEntry.status) {
+          updateEntry(entry.id, {
+            backendStatus: fileEntry.status,
+            status: backendStatusToQueueStatus(fileEntry.status),
+          })
+        }
+      })
+    },
+    [loadAndPopulateFields, t, updateEntry],
+  )
+
+  const activeJobIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          queue
+            .filter((entry) => entry.status === 'analyzing' && entry.jobId)
+            .map((entry) => entry.jobId as string),
+        ),
+      ),
+    [queue],
+  )
+
+  useBulkUploadJobPolling(activeJobIds, handleBulkUploadJobUpdate)
 
   const resetInput = () => {
     if (invoiceInputRef.current) invoiceInputRef.current.value = ''
@@ -1172,11 +1302,29 @@ export default function Upload({
   }
 
   const handleRetryOcr = (id: string) => {
+    const entry = queue.find((item) => item.id === id)
+    if (!entry) return
+
+    if (!entry.file) {
+      showToast({
+        message: t`This file can't be retried automatically — remove it and add it again.`,
+        variant: 'error',
+      })
+      return
+    }
+
+    loadedStageFileIdsRef.current.delete(entry.stageFileId ?? '')
     updateEntry(id, {
+      backendStatus: null,
       errorMessage: undefined,
+      jobId: null,
       ocrStatus: 'idle',
-      status: 'queued',
+      stageFileId: null,
+      status: 'analyzing',
     })
+
+    const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
+    void stageFilesForOcr([{ ...entry }], activeRepositoryId)
   }
 
   const updateFieldValue = (field: RepositoryField, value: string) => {
@@ -1237,7 +1385,11 @@ export default function Upload({
       }
 
       const existingFingerprints = new Set(
-        queue.map((entry) => fileFingerprint(entry.file)),
+        queue
+          .filter((entry): entry is QueuedUploadFile & { file: File } =>
+            Boolean(entry.file),
+          )
+          .map((entry) => fileFingerprint(entry.file)),
       )
       const newFiles = validFiles.filter(
         (file) => !existingFingerprints.has(fileFingerprint(file)),
@@ -1253,7 +1405,13 @@ export default function Upload({
           return next
         })
 
-        setOpenFileId((prev) => prev ?? newEntries[0].id)
+        // Auto-open the first file only when the resulting queue will stay
+        // in the compact horizontal layout — a larger (vertical) queue
+        // should land on the list, with the user clicking a file to open it.
+        const resultingCount = queue.length + newEntries.length
+        if (resultingCount <= QUEUE_VERTICAL_THRESHOLD) {
+          setOpenFileId((prev) => prev ?? newEntries[0].id)
+        }
 
         if (newFiles.length < validFiles.length) {
           showToast({
@@ -1261,6 +1419,8 @@ export default function Upload({
             variant: 'error',
           })
         }
+
+        void stageFilesForOcr(newEntries, activeRepositoryId)
       }
     }
 
@@ -1277,15 +1437,79 @@ export default function Upload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const buildUploadMetadataFor = (entry: QueuedUploadFile) => {
-    const meta = repositoryFields.reduce<Record<string, any>>((acc, field) => {
-      const key = field.sqlColumnName || field.name
-      acc[key] = entry.fieldValues[getFieldKey(field)] ?? ''
-      return acc
-    }, {})
+  // Restore any files staged (but not yet exported) in a previous session
+  // for this repository, so leaving/reopening Upload doesn't lose work.
+  const restoreAppliedRef = useRef(false)
+  useEffect(() => {
+    if (restoreAppliedRef.current) return
+    const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
+    if (!activeRepositoryId) return
+    restoreAppliedRef.current = true
 
-    return meta
-  }
+    const restore = async () => {
+      setIsRestoringQueue(true)
+      try {
+        const { data } = await listStagedFiles({
+          repositoryId: activeRepositoryId,
+        })
+        const staged = (data ?? []).filter(
+          (summary) => summary.status !== 'ARCHIVED',
+        )
+        if (!staged.length) return
+
+        const restoredEntries: QueuedUploadFile[] = staged.map((summary) => ({
+          activeTab: 'fields',
+          backendStatus: summary.status,
+          exportStatus: 'idle',
+          fieldValues: applyFilenamePreFill(
+            getInitialValues(repositoryFields),
+            repositoryFields,
+            summary.name,
+          ),
+          file: null,
+          fileName: summary.name,
+          fileSize: summary.size ?? 0,
+          focusedFieldKey: null,
+          id: `staged-${summary.id}`,
+          isSyncing: false,
+          // index/all doesn't return the originating bulkUpload jobId, so a
+          // still-processing restored file won't resume live polling until
+          // the user retries it.
+          jobId: null,
+          masterSyncedValues: {},
+          ocrExtractedValues: {},
+          ocrStatus: 'idle',
+          previewUrl: null,
+          rawOcrJson: {},
+          rawOcrText: '',
+          restoredFromServer: true,
+          stageFileId: summary.id,
+          status: backendStatusToQueueStatus(summary.status),
+          syncingField: null,
+        }))
+
+        setQueue((prev) => [...restoredEntries, ...prev])
+        // Same rule as new drops: only auto-open when it stays compact.
+        if (restoredEntries.length <= QUEUE_VERTICAL_THRESHOLD) {
+          setOpenFileId((prev) => prev ?? restoredEntries[0]?.id ?? null)
+        }
+
+        // Populate fields for restored files whose OCR already finished.
+        restoredEntries
+          .filter((entry) => entry.status === 'ready')
+          .forEach((entry) => {
+            loadedStageFileIdsRef.current.add(entry.stageFileId as string)
+            void loadAndPopulateFields(entry)
+          })
+      } finally {
+        setIsRestoringQueue(false)
+      }
+    }
+
+    void restore()
+    // Runs once on mount for the resolved repository id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repositoryId, repositoryData?.id])
 
   const buildMetadataFor = (entry: QueuedUploadFile) => {
     const fields = repositoryFields.map((field) => {
@@ -1316,6 +1540,22 @@ export default function Upload({
     }
   }
 
+  // Mirrors the {name, value, type} field shape the confirmed
+  // load/{fileId} response uses, for the PUT index/{fileId} body.
+  const buildIndexPayload = (
+    entry: QueuedUploadFile,
+  ): IndexStageFileRequest => ({
+    fields: repositoryFields.map((field) => ({
+      name: field.name,
+      type: String(field.dataType || 'text').trim(),
+      value: entry.fieldValues[getFieldKey(field)] ?? '',
+    })),
+    itemId: null,
+    ocrResult: null,
+    repositoryId: String(repositoryId || repositoryData?.id || ''),
+    status: 'Indexing',
+  })
+
   const validateMandatoryFieldsFor = (entry: QueuedUploadFile) => {
     const missingField = repositoryFields.find((field) => {
       const value = entry.fieldValues[getFieldKey(field)]
@@ -1342,15 +1582,6 @@ export default function Upload({
     }).length
   }, [repositoryFields, activeEntry])
 
-  const advanceIndexAll = useCallback(() => {
-    const nextId = indexAllQueueRef.current.shift()
-    if (!nextId) {
-      setIsIndexingAll(false)
-      return
-    }
-    setOpenFileId(nextId)
-  }, [])
-
   const indexEntry = useCallback(
     async (id: string): Promise<any | null> => {
       const entry = queue.find((item) => item.id === id)
@@ -1374,33 +1605,20 @@ export default function Upload({
 
       if (!validateMandatoryFieldsFor(entry)) return null
 
+      if (!entry.stageFileId) {
+        showToast({
+          message: t`This file hasn't finished staging yet. Please wait a moment and try again.`,
+          variant: 'error',
+        })
+        return null
+      }
+
       try {
         updateEntry(id, { exportStatus: 'exporting', status: 'indexing' })
 
-        const formData = new FormData()
-        formData.append('file', entry.file, entry.file.name)
-        formData.append(
-          'metadata',
-          JSON.stringify(buildUploadMetadataFor(entry)),
-        )
-
-        const ocrJsonStr =
-          typeof entry.rawOcrJson === 'string'
-            ? entry.rawOcrJson
-            : JSON.stringify(entry.rawOcrJson ?? [])
-        formData.append('ocrJson', ocrJsonStr)
-
-        const ocrTextStr =
-          typeof entry.rawOcrText === 'string'
-            ? entry.rawOcrText
-            : typeof entry.rawOcrText === 'object' && entry.rawOcrText !== null
-              ? JSON.stringify(entry.rawOcrText)
-              : String(entry.rawOcrText ?? '')
-        formData.append('ocrText', ocrTextStr)
-
-        const { data, error } = await UploadFiles(
-          String(activeRepositoryId),
-          formData,
+        const { data, error } = await indexStageFile(
+          entry.stageFileId,
+          buildIndexPayload(entry),
         )
 
         if (error) {
@@ -1413,7 +1631,6 @@ export default function Upload({
             message: t`Error uploading file: ${error}`,
             variant: 'error',
           })
-          if (isIndexingAll) setIsIndexingAll(false)
           return null
         }
 
@@ -1423,8 +1640,6 @@ export default function Upload({
           variant: 'success',
         })
         await onSuccess?.()
-
-        if (isIndexingAll) advanceIndexAll()
 
         return data
       } catch (error: any) {
@@ -1438,35 +1653,12 @@ export default function Upload({
           message: t`Exception uploading file: ${detail}`,
           variant: 'error',
         })
-        if (isIndexingAll) setIsIndexingAll(false)
         return null
       }
     },
-    [
-      queue,
-      repositoryId,
-      repositoryData?.id,
-      t,
-      updateEntry,
-      onSuccess,
-      isIndexingAll,
-      advanceIndexAll,
-    ],
+    [queue, repositoryId, repositoryData?.id, t, updateEntry, onSuccess],
   )
 
-  const handleIndexAll = () => {
-    const remaining = queue
-      .filter((entry) => entry.status !== 'indexed')
-      .map((entry) => entry.id)
-    if (!remaining.length) return
-    indexAllQueueRef.current = remaining
-    setIsIndexingAll(true)
-    advanceIndexAll()
-  }
-
-  const pendingCount = queue.filter(
-    (entry) => entry.status !== 'indexed',
-  ).length
   const indexedCount = queue.filter(
     (entry) => entry.status === 'indexed',
   ).length
@@ -1498,7 +1690,7 @@ export default function Upload({
 
   const activeStepIndex = getActiveStepIndex(
     Boolean(activeEntry),
-    activeEntry?.ocrStatus ?? 'idle',
+    deriveOcrStatus(activeEntry),
     activeEntry?.exportStatus ?? 'idle',
   )
 
@@ -1850,10 +2042,22 @@ export default function Upload({
     updateEntry(activeEntry.id, { activeTab: tab })
   }
 
-  const queueStrip = queue.length > 0 && (
-    <div className='flex flex-col gap-3 rounded-2xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm'>
-      <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--gray-10)]'>
+  // In vertical mode, opening a file replaces the list with a dedicated
+  // review "page" (see the header Back button) rather than showing the
+  // list and the review panel stacked together. With no file open, the
+  // list itself fills the available screen height with its own scroll.
+  const showQueueList = !(isVerticalQueueLayout && activeEntry)
+  const isListOnlyPage = isVerticalQueueLayout && !activeEntry
+
+  const queueStrip = queue.length > 0 && showQueueList && (
+    <div
+      className={cn(
+        'flex flex-col gap-2 rounded-2xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm',
+        isListOnlyPage && 'min-h-0 flex-1',
+      )}
+    >
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <div className='flex flex-wrap items-center gap-1.5 text-xs font-medium text-[var(--gray-10)]'>
           <span className='font-semibold text-[var(--gray-13)]'>
             {t`${queue.length} files`}
           </span>
@@ -1867,38 +2071,20 @@ export default function Upload({
           )}
         </div>
 
-        <div className='flex shrink-0 items-center gap-2'>
+        <div className='flex shrink-0 items-center gap-1.5'>
           {isVerticalQueueLayout && (
             <button
-              className='flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-[var(--gray-4)] px-3 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
+              className='flex h-7 items-center gap-1 rounded-md border border-dashed border-[var(--gray-4)] px-2 text-11 font-semibold text-[var(--gray-11)] transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
               type='button'
               onClick={() => invoiceInputRef.current?.click()}
             >
               <Icon
-                className='size-4 text-[var(--primary-9)]'
+                className='size-3.5 text-[var(--primary-9)]'
                 name='tabler:plus'
               />
               {t`Add files`}
             </button>
           )}
-
-          <Button
-            className='!h-9 !px-4 !text-xs disabled:!opacity-50'
-            disabled={isIndexingAll || pendingCount === 0}
-            onClick={handleIndexAll}
-          >
-            {isIndexingAll ? (
-              <>
-                <Icon
-                  className='size-3.5 animate-spin'
-                  name='tabler:loader-2'
-                />
-                {t`Indexing... (${indexedCount}/${queue.length})`}
-              </>
-            ) : (
-              t`Index All (${pendingCount})`
-            )}
-          </Button>
 
           <Tooltip
             content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
@@ -1906,7 +2092,7 @@ export default function Upload({
           >
             <IconButton
               color='gray'
-              size='sm'
+              size='xs'
               variant='ghost'
               ariaLabel={
                 isQueueCollapsed ? t`Show file list` : t`Hide file list`
@@ -1922,11 +2108,15 @@ export default function Upload({
 
       {!isQueueCollapsed &&
         (isVerticalQueueLayout ? (
-          <div className='ez-scrollbar flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1'>
+          <div
+            className={cn(
+              'ez-scrollbar flex flex-col gap-1.5 overflow-y-auto pr-1',
+              isListOnlyPage ? 'min-h-0 flex-1' : 'max-h-[320px]',
+            )}
+          >
             {sortedQueueForDisplay.map((entry) => (
               <UploadQueueFileCard
                 className='w-full'
-                disabled={isIndexingAll}
                 entry={entry}
                 isOpen={entry.id === openFileId}
                 key={entry.id}
@@ -1937,11 +2127,10 @@ export default function Upload({
             ))}
           </div>
         ) : (
-          <div className='ez-scrollbar flex items-stretch gap-3 overflow-x-auto pb-1'>
+          <div className='ez-scrollbar flex items-stretch gap-2 overflow-x-auto pb-1'>
             {sortedQueueForDisplay.map((entry) => (
               <UploadQueueFileCard
-                className='w-60 shrink-0'
-                disabled={isIndexingAll}
+                className='w-44 shrink-0 !p-2'
                 entry={entry}
                 isOpen={entry.id === openFileId}
                 key={entry.id}
@@ -1951,22 +2140,36 @@ export default function Upload({
               />
             ))}
             <button
-              className='flex w-40 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[var(--gray-4)] px-3 py-4 text-center transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
+              className='flex w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[var(--gray-4)] px-2 py-2 text-center transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
               type='button'
               onClick={() => invoiceInputRef.current?.click()}
             >
               <Icon
-                className='size-5 text-[var(--primary-9)]'
+                className='size-4 text-[var(--primary-9)]'
                 name='tabler:plus'
               />
-              <span className='text-xs font-semibold text-[var(--gray-11)]'>
-                {t`Add files`}
+              <span className='text-11 font-semibold text-[var(--gray-11)]'>
+                {t`Add`}
               </span>
             </button>
           </div>
         ))}
     </div>
   )
+
+  if (queue.length === 0 && isRestoringQueue) {
+    return (
+      <div className='flex h-full flex-col items-center justify-center gap-3 bg-surface-muted'>
+        <Icon
+          className='size-8 animate-spin text-[var(--primary-9)]'
+          name='tabler:loader-2'
+        />
+        <p className='text-sm font-medium text-[var(--gray-10)]'>
+          {t`Checking for previously staged files...`}
+        </p>
+      </div>
+    )
+  }
 
   if (queue.length === 0) {
     return (
@@ -2128,16 +2331,26 @@ export default function Upload({
 
   return (
     <AnimateFadeIn className='relative flex h-full max-h-[calc(100vh-80px)] flex-col overflow-x-hidden overflow-y-auto bg-surface-muted px-6 py-5'>
-      <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
+      <div className='mx-auto flex h-full w-full max-w-7xl flex-col gap-4'>
         <div className='flex items-center justify-between gap-3'>
           <div className='flex items-center gap-3'>
             <IconButton
-              ariaLabel={t`Back`}
               color='gray'
               icon='lucide:arrow-left'
               size='sm'
               variant='ghost'
-              onClick={onBack}
+              ariaLabel={
+                isVerticalQueueLayout && activeEntry
+                  ? t`Back to files`
+                  : t`Back`
+              }
+              onClick={() => {
+                if (isVerticalQueueLayout && activeEntry) {
+                  setOpenFileId(null)
+                  return
+                }
+                onBack()
+              }}
             />
             <div>
               <h1 className='text-base font-semibold tracking-tight text-gray-13'>
@@ -2164,26 +2377,20 @@ export default function Upload({
         {queueStrip}
 
         {!activeEntry ? (
-          <div className='flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--gray-4)] bg-surface p-12 text-center'>
-            {allIndexed ? (
-              <>
-                <Icon
-                  className='size-8 text-[var(--green-9)]'
-                  name='lucide:check-circle-2'
-                />
-                <p className='text-sm font-semibold text-[var(--gray-13)]'>
-                  {t`All files indexed`}
-                </p>
-                <Button className='!h-9 !px-4 !text-xs' onClick={onBack}>
-                  {t`Back to folder`}
-                </Button>
-              </>
-            ) : (
-              <p className='text-sm font-medium text-[var(--gray-10)]'>
-                {t`Select a file from the list above to review it.`}
+          allIndexed && (
+            <div className='flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--gray-4)] bg-surface p-12 text-center'>
+              <Icon
+                className='size-8 text-[var(--green-9)]'
+                name='lucide:check-circle-2'
+              />
+              <p className='text-sm font-semibold text-[var(--gray-13)]'>
+                {t`All files indexed`}
               </p>
-            )}
-          </div>
+              <Button className='!h-9 !px-4 !text-xs' onClick={onBack}>
+                {t`Back to folder`}
+              </Button>
+            </div>
+          )
         ) : (
           <>
             <div className='flex items-center justify-between gap-4 rounded-2xl border border-[var(--gray-3)] bg-surface px-5 py-4 shadow-sm'>
@@ -2285,8 +2492,9 @@ export default function Upload({
                         {t`Document Preview`}
                       </h2>
                       <p className='truncate text-xs font-medium text-[var(--gray-9)]'>
-                        {activeEntry.file.name} (
-                        {formatFileSize(activeEntry.file.size)})
+                        {activeEntry.fileName}
+                        {activeEntry.fileSize > 0 &&
+                          ` (${formatFileSize(activeEntry.fileSize)})`}
                       </p>
                     </div>
                   </div>
@@ -2312,13 +2520,15 @@ export default function Upload({
                 >
                   <DocumentPreviewViewer
                     fileBlob={activeEntry.file}
-                    fileName={activeEntry.file.name}
+                    fileName={activeEntry.fileName}
                     fileUrl={activeEntry.previewUrl}
                     highlightTerms={highlightTerms}
-                    isImage={isImage(activeEntry.file)}
-                    isPdf={isPdf(activeEntry.file)}
+                    isPdf={activeEntry.file ? isPdf(activeEntry.file) : false}
                     showScanOverlay={isAnalyzing}
                     enableHighlight
+                    isImage={
+                      activeEntry.file ? isImage(activeEntry.file) : false
+                    }
                   />
                 </div>
               </AnimateSlideUp>

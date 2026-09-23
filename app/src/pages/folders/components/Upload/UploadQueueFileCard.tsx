@@ -31,8 +31,8 @@ export default function UploadQueueFileCard({
   const { t } = useLingui()
 
   const iconMeta = useMemo(
-    () => getFileIconMeta(entry.file.name),
-    [entry.file.name],
+    () => getFileIconMeta(entry.fileName),
+    [entry.fileName],
   )
 
   const canOpen = !disabled && entry.status !== 'indexing'
@@ -75,13 +75,15 @@ export default function UploadQueueFileCard({
             <div className='flex items-baseline gap-2'>
               <p
                 className='truncate text-12 font-semibold text-text-primary'
-                title={entry.file.name}
+                title={entry.fileName}
               >
-                {entry.file.name}
+                {entry.fileName}
               </p>
-              <span className='shrink-0 text-11 text-text-muted'>
-                {formatBytes(entry.file.size)}
-              </span>
+              {entry.fileSize > 0 && (
+                <span className='shrink-0 text-11 text-text-muted'>
+                  {formatBytes(entry.fileSize)}
+                </span>
+              )}
             </div>
             <div className='mt-1'>{renderStatusBadge()}</div>
           </div>
