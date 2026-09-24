@@ -401,8 +401,33 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
   })
 
   const rawRules = edges.map((edge) => {
-    const edgeData = edge.data || {}
-    const actionName = edgeData.action || edgeData.proceedAction || 'Submit'
+    const edgeData = (edge.data || {}) as any
+    const sourceNode = nodes.find(n => n.id === edge.source)
+    const sourceToolType = sourceNode ? normalizeNodeToolType((sourceNode.data || {}).toolType) : ''
+    
+    let actionName = String(edgeData.action || edgeData.proceedAction || 'Submit')
+
+    if (sourceToolType === NODE_TOOL_TYPE.QUALIFY_AGENT || sourceToolType?.includes('qualify')) {
+      actionName = actionName.toUpperCase() === 'DISQUALIFY' ? 'DISQUALIFY' : 'QUALIFY'
+    } else if (sourceToolType === NODE_TOOL_TYPE.CONDITION) {
+      const norm = actionName.toUpperCase().replace(/_/g, ' ')
+      actionName = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'
+    } else if (sourceToolType === NODE_TOOL_TYPE.AP_AGENT) {
+      const norm = actionName.toUpperCase().replace(/[\s_-]+/g, ' ')
+      if (norm.includes('PARTIAL')) {
+        actionName = 'PARTIALLY MATCHED'
+      } else if (norm.includes('NOT') || norm.includes('UNMATCH')) {
+        actionName = 'NOT MATCHED'
+      } else if (norm.includes('NON')) {
+        actionName = 'NON-INVOICE'
+      } else {
+        actionName = 'MATCHED'
+      }
+    } else if (sourceToolType === NODE_TOOL_TYPE.FTP_AGENT) {
+      const norm = actionName.toUpperCase()
+      actionName = norm.includes('FAIL') || norm.includes('ERROR') ? 'FAILED' : 'SUCCESS'
+    }
+
     return {
       ...edgeData,
       action: actionName,

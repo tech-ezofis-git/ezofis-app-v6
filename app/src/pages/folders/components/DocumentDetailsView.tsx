@@ -38,6 +38,18 @@ import {
   type RepositoryFieldDto,
   type UploadArchiveResponse,
 } from '@/api/v6/folder/folder'
+import { axiosV6 } from '@/api/axios'
+
+const getMilestoneIcon = (milestone?: string) => {
+  switch (String(milestone || '').toLowerCase()) {
+    case 'start': return 'play'
+    case 'approved': return 'checkCircle'
+    case 'forwarded': return 'arrowRight'
+    case 'pending': return 'clock'
+    case 'completed': return 'check'
+    default: return 'circle'
+  }
+}
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
 import {
@@ -387,6 +399,7 @@ export function DocumentDetailsView({
     [initialSignatureFields],
   )
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
+  const [ticketData, setTicketData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'timeline' | 'comments' | 'relatedDocs'>(
@@ -766,6 +779,7 @@ export function DocumentDetailsView({
       setLoading(true)
       setError('')
       setData(null)
+      setTicketData(null)
       setFileLoadFailed(false)
       setTimeline([])
       setComments([])
@@ -820,17 +834,30 @@ export function DocumentDetailsView({
           String(shareCtx.sourceItemId) === String(id) &&
           String(shareCtx.sourceRepositoryId) === String(repositoryId)
 
-        const response = await folderApi.getDocumentDetail(
-          repositoryId,
-          id,
-          useShareToken
-            ? {
-                shareToken: shareCtx.shareToken,
-                tenantId: shareCtx.sourceTenantId,
-              }
-            : undefined,
-        )
-        if (mounted) setData(response as WorkspaceDocumentDetail)
+        const [response, ticketRes] = await Promise.allSettled([
+          folderApi.getDocumentDetail(
+            repositoryId,
+            id,
+            useShareToken
+              ? {
+                  shareToken: shareCtx.shareToken,
+                  tenantId: shareCtx.sourceTenantId,
+                }
+              : undefined,
+          ),
+          !useShareToken ? axiosV6({ url: `/repositories/${repositoryId}/items/${id}/ticket`, method: 'GET' }) : Promise.resolve(null)
+        ])
+
+        if (mounted) {
+          if (response.status === 'fulfilled') {
+            setData(response.value as WorkspaceDocumentDetail)
+          } else {
+            throw response.reason
+          }
+          if (ticketRes.status === 'fulfilled' && ticketRes.value?.data?.hasTicket) {
+            setTicketData(ticketRes.value.data.ticket)
+          }
+        }
       } catch (exception: any) {
         if (mounted)
           setError(
@@ -2912,8 +2939,73 @@ export function DocumentDetailsView({
             ) : null}
           </main>
 
-          {infoCards.length > 0 ? (
+          {infoCards.length > 0 || ticketData ? (
             <aside className='min-w-0 space-y-4'>
+              {ticketData ? (
+                <Card className='overflow-hidden p-0' key='ticket-info'>
+                  <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
+                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                    Ticket Information
+                  </h3>
+                  <div className='space-y-3 p-4'>
+                    {ticketData.referenceNumber && (
+                      <div className='flex items-center justify-between gap-4'>
+                        <span className='text-[13px] text-gray-10'>Reference No</span>
+                        <span className='text-[13px] font-semibold text-gray-13 truncate'>{ticketData.referenceNumber}</span>
+                      </div>
+                    )}
+                    {ticketData.ticketStatus && (
+                      <div className='flex items-center justify-between gap-4'>
+                        <span className='text-[13px] text-gray-10'>Status</span>
+                        <StatusPill status={ticketData.ticketStatus} />
+                      </div>
+                    )}
+                    {ticketData.assigneeEmail && (
+                      <div className='flex items-center justify-between gap-4'>
+                        <span className='text-[13px] text-gray-10'>Assignee</span>
+                        <span className='text-[13px] font-semibold text-gray-13 truncate' title={ticketData.assigneeEmail}>{ticketData.assigneeEmail}</span>
+                      </div>
+                    )}
+
+                    {ticketData.history?.length > 0 && (
+                      <div className='mt-2 space-y-3 border-t border-gray-3 pt-3'>
+                        <h4 className='text-[12px] font-semibold text-gray-11'>Workflow History</h4>
+                        <div className='flex flex-col gap-3'>
+                          {ticketData.history.map((hist: any, index: number) => (
+                            <div
+                              key={index}
+                              className={`relative z-10 flex gap-3 ${
+                                index < ticketData.history.length - 1
+                                  ? 'before:absolute before:-bottom-3 before:left-[11px] before:top-6 before:w-[2px] before:bg-gray-3'
+                                  : ''
+                              }`}
+                            >
+                              <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-surface-primary bg-gray-2 text-gray-10'>
+                                <DynamicIcon className='h-3 w-3 text-gray-11' name={getMilestoneIcon(hist.milestone)} />
+                              </div>
+                              <div className='flex-1 pb-1'>
+                                <p className='leading-tight text-[13px] font-medium text-gray-13'>
+                                  {hist.title}
+                                </p>
+                                {hist.description && (
+                                  <p className='mt-0.5 leading-tight text-[12px] text-gray-9'>
+                                    {hist.description}
+                                  </p>
+                                )}
+                                {hist.occurredAtUtc && (
+                                  <p className='mt-1 text-[11px] text-gray-8'>
+                                    {formatDateTime(hist.occurredAtUtc)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : null}
               {infoCards.map((card) => (
                 <Card className='overflow-hidden p-0' key={card.id}>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>

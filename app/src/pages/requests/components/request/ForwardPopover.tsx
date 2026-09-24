@@ -5,6 +5,23 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import { Textarea } from '@mantine/core'
 import authUserStore from '@/stores/authUserStore'
+import Avatar from '@/components/base/Avatar'
+
+const getInitials = (fullNameOrEmail: string): string => {
+  const clean = String(fullNameOrEmail || '').trim()
+  if (!clean) return 'U'
+  if (clean.includes('@')) {
+    const part = clean.split('@')[0]
+    const parts = part.split(/[._-]/).filter(Boolean)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : part.slice(0, 2).toUpperCase()
+  }
+  const parts = clean.split(/\s+/).filter(Boolean)
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : clean.slice(0, 2).toUpperCase()
+}
 
 interface ForwardPopoverProps {
   target: React.ReactNode
@@ -181,10 +198,11 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
               disabled={!selectedUserId}
               onClick={() => {
                 if (selectedUserId) {
-                  onConfirm(selectedUserId)
+                  onConfirm(selectedUserId, comments)
                   setOpened(false)
                   setSearch('')
                   setSelectedUserId(null)
+                  setComments('')
                 }
               }}
             />
