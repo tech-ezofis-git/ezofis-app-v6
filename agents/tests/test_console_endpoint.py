@@ -29,6 +29,18 @@ def test_console_serves_html(client):
     assert "summary-code" in response.text
     assert "cURL" in response.text
     assert "intent: 'summary'" in response.text
+    assert "intent: 'classification'" in response.text
+    assert "Classification agent" in response.text
+    assert 'id="classificationFields"' in response.text
+    assert "intent: 'document_intelligent'" in response.text
+    assert "Document Intelligent" in response.text
+    assert 'id="documentIntelligentFields"' in response.text
+    assert "FTL Qualifier" in response.text
+    assert "FTL Quote Estimator" in response.text
+    assert 'id="ftlQualPanel"' in response.text
+    assert 'id="ftlQuotePanel"' in response.text
+    assert "intent: 'ftl_qualifier'" in response.text
+    assert "intent: 'ftl_quote_estimator'" in response.text
     assert "intent: 'ocr'" in response.text
     assert "intent: 'ap'" in response.text
     assert "intent: 'prompt'" in response.text

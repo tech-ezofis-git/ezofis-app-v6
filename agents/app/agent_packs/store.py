@@ -18,6 +18,8 @@ _MAX_BODY_CHARS = 64 * 1024
 _CUSTOM_SLUG_RE = re.compile(r"^custom(\d+)$")
 _PACK_AGENTS = (
     "summary",
+    "classification",
+    "document_intelligent",
     "ocr",
     "insight",
     "prompt",
