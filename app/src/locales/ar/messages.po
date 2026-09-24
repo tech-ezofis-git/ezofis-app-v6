@@ -2436,7 +2436,7 @@ msgstr "أكمل الإعداد لبدء أتمتة حسابات المدفوع�
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:710
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Completed"
 msgstr "المكتمل"
@@ -4518,7 +4518,7 @@ msgid "Exception uploading file: {detail}"
 msgstr "استثناء أثناء رفع الملف: {detail}"
 
 #: src/pages/requests/components/InboxList.tsx:2061
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Exceptions"
@@ -5943,7 +5943,7 @@ msgid "Inactive"
 msgstr "غير نشط"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/requests/utils/localizeRequestUi.ts:35
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Inbox"
@@ -6266,7 +6266,7 @@ msgstr "تم تقليل قيمة الفاتورة."
 msgid "invoices"
 msgstr "فواتير"
 
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Invoices"
 msgstr "الفواتير"
@@ -7647,7 +7647,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:705
 #: src/pages/requests/components/request/components/Header.tsx:1428
-#: src/pages/requests/RequestsPage.tsx:892
+#: src/pages/requests/RequestsPage.tsx:947
 msgid "New"
 msgstr "جديد"
 
@@ -9708,7 +9708,7 @@ msgid "Process Overview"
 msgstr "نظرة عامة على العملية"
 
 #: src/pages/requests/components/InboxList.tsx:2063
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Processed"
@@ -11605,7 +11605,7 @@ msgstr "يرسل تنبيهًا إلى المالك المدرج في البيا
 msgid "Sends OTP to the Email"
 msgstr "يرسل OTP إلى البريد الإلكتروني"
 
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Sent"
 msgstr "المرسل"
