@@ -1,19 +1,14 @@
 import React, { useState } from 'react'
 import { Popover } from '@mantine/core'
 import { t } from '@lingui/macro'
-import Avatar from '@/components/base/Avatar'
+import Icon from '@/components/base/icon/Icon'
 import Button from '@/components/base/button/Button'
-
-const getInitials = (name: string): string => {
-  if (!name) return ''
-  const parts = name.trim().split(' ')
-  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-  return name.slice(0, 2).toUpperCase()
-}
+import { Textarea } from '@mantine/core'
+import authUserStore from '@/stores/authUserStore'
 
 interface ForwardPopoverProps {
   target: React.ReactNode
-  onConfirm: (userId: string) => void
+  onConfirm: (userId: string, comments: string) => void
   users: any[]
 }
 
@@ -25,8 +20,20 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
   const [opened, setOpened] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [comments, setComments] = useState('')
+
+  const currentUserEmail = authUserStore.getState().session?.email
+  const currentUserId = authUserStore.getState().session?.id
 
   const filteredUsers = users?.filter((u) => {
+    if (
+      (currentUserEmail && u.email?.toLowerCase() === currentUserEmail.toLowerCase()) ||
+      u.id === currentUserId ||
+      u.value === currentUserId
+    ) {
+      return false
+    }
+
     const term = search.toLowerCase()
     return (
       u.name?.toLowerCase().includes(term) ||
@@ -44,6 +51,7 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           // Reset state when closing without confirming
           setSearch('')
           setSelectedUserId(null)
+          setComments('')
         }
       }}
       width={320}
@@ -67,7 +75,7 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
         </div>
       </Popover.Target>
       <Popover.Dropdown>
-      <div className='flex flex-col max-h-[400px] bg-surface rounded-lg overflow-hidden'>
+      <div className='flex flex-col max-h-[500px] bg-surface rounded-lg overflow-hidden'>
         <div className='p-3 border-b border-[var(--gray-3)]'>
           <input
             autoFocus
@@ -78,7 +86,7 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           />
         </div>
 
-        <div className='flex-1 overflow-y-auto p-2 min-h-[200px] max-h-[250px]'>
+        <div className='flex-1 overflow-y-auto p-2 min-h-[150px] max-h-[200px]'>
           {filteredUsers.length === 0 ? (
             <div className='py-8 text-center text-sm text-[var(--gray-11)]'>
               {t`No users found`}
@@ -86,7 +94,7 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           ) : (
             filteredUsers.map((user) => {
               const id = String(user.id || user.value)
-              const name = user.name || user.value || user.loginName
+              const displayValue = user.email || user.name || user.loginName || user.value
               const isSelected = selectedUserId === id
 
               return (
@@ -94,28 +102,19 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                   key={id}
                   className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors ${
                     isSelected
-                      ? 'bg-[var(--primary-1)]'
-                      : 'hover:bg-[var(--gray-2)]'
+                      ? 'bg-primary-1'
+                      : 'hover:bg-gray-2'
                   }`}
                   onClick={() => setSelectedUserId(id)}
                 >
-                  <Avatar initials={getInitials(name)} size={32} />
+                  <Icon 
+                    name='tabler:user-circle' 
+                    className={`size-6 shrink-0 ${isSelected ? 'text-primary-9' : 'text-gray-11'}`} 
+                  />
                   <div className='flex-1 overflow-hidden'>
-                    <div className='flex items-center justify-between'>
-                      <div className={`truncate text-sm font-medium ${isSelected ? 'text-[var(--primary-11)]' : 'text-[var(--gray-12)]'}`}>
-                        {name}
-                      </div>
-                      {isSelected && (
-                        <div className='text-[var(--primary-9)]'>
-                          {/* Selected checkmark could go here, but background color is enough */}
-                        </div>
-                      )}
+                    <div className={`truncate text-[13px] font-medium ${isSelected ? 'text-primary-11' : 'text-gray-12'}`}>
+                      {displayValue}
                     </div>
-                    {user.email && (
-                      <div className={`truncate text-xs ${isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-11)]'}`}>
-                        {user.email}
-                      </div>
-                    )}
                   </div>
                 </div>
               )
@@ -123,6 +122,28 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           )}
         </div>
         
+        {/* Comments Input */}
+        <div className='p-3 border-t border-[var(--gray-3)]'>
+          <Textarea
+            placeholder={t`Add a comment (optional)`}
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            minRows={2}
+            maxRows={4}
+            size="sm"
+            styles={{
+              input: {
+                backgroundColor: 'transparent',
+                borderColor: 'var(--gray-4)',
+                color: 'var(--gray-12)',
+                '&:focus': {
+                  borderColor: 'var(--primary-9)',
+                }
+              }
+            }}
+          />
+        </div>
+
         {/* Footer with Forward Button */}
         <div className='border-t border-[var(--gray-3)] p-3 flex justify-end gap-2 bg-[var(--gray-1)]'>
           <Button
@@ -134,6 +155,7 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
               setOpened(false)
               setSearch('')
               setSelectedUserId(null)
+              setComments('')
             }}
           />
           <Button
@@ -144,10 +166,11 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
             disabled={!selectedUserId}
             onClick={() => {
               if (selectedUserId) {
-                onConfirm(selectedUserId)
+                onConfirm(selectedUserId, comments)
                 setOpened(false)
                 setSearch('')
                 setSelectedUserId(null)
+                setComments('')
               }
             }}
           />
