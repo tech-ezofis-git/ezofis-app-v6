@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import authUserStore from '@/stores/authUserStore'
+import { listStagedFiles } from '@/api/v6/uploadAndIndex'
 import type { BreadcrumbItem } from '../components/Breadcrumbs'
 import type {
   AppView,
@@ -423,25 +424,56 @@ export function useFolderExplorer() {
     setError('')
 
     try {
-      const response = await folderApi.getFolderContent(folderId, {
-        cursor,
-        folderFilters: folderFilters ?? folderFiltersRef.current,
-        fileFilters: fileFilters ?? fileFiltersRef.current,
-        includeFiles,
-        listAllFiles: listAllFiles ?? viewMode === 'list',
-        page,
-        pageSize: pageSizeValue,
-        folderSearch:
-          folderSearch !== undefined
-            ? folderSearch
-            : folderSearchRef.current.trim() || undefined,
-        fileSearch:
-          fileSearch !== undefined
-            ? fileSearch
-            : fileSearchRef.current.trim() || undefined,
-      })
+      const resolvedRepoId =
+        getRepositoryIdFromFolder(folderId) || selectedRepository?.id
+
+      const [response, stagedRes] = await Promise.all([
+        folderApi.getFolderContent(folderId, {
+          cursor,
+          folderFilters: folderFilters ?? folderFiltersRef.current,
+          fileFilters: fileFilters ?? fileFiltersRef.current,
+          includeFiles,
+          listAllFiles: listAllFiles ?? viewMode === 'list',
+          page,
+          pageSize: pageSizeValue,
+          folderSearch:
+            folderSearch !== undefined
+              ? folderSearch
+              : folderSearchRef.current.trim() || undefined,
+          fileSearch:
+            fileSearch !== undefined
+              ? fileSearch
+              : fileSearchRef.current.trim() || undefined,
+        }),
+        resolvedRepoId && !folderPageOnly && page === 1
+          ? listStagedFiles({
+              currentPage: 1,
+              itemsPerPage: 50,
+              mode: 'browse',
+              repositoryId: String(resolvedRepoId),
+            }).catch(() => ({ data: null, error: '' }))
+          : Promise.resolve({ data: null, error: '' }),
+      ])
 
       if (requestId !== requestSeqRef.current) return response
+
+      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map((summary) => {
+        const isArchived = summary.status === 'ARCHIVED'
+        return {
+          id: `staged-${summary.id}`,
+          stageFileId: summary.id,
+          isStaged: true,
+          isArchived,
+          name: summary.name,
+          status: isArchived ? 'Archived' : summary.status,
+          type: summary.name?.split('.').pop() || 'file',
+          size: summary.size,
+          date: summary.createdAt,
+          createdAt: summary.createdAt,
+          modified: summary.createdAt,
+          ...summary,
+        }
+      })
 
       const nextFolderPage = getFolderPageMeta(response)
 
@@ -484,13 +516,14 @@ export function useFolderExplorer() {
       setFiles((previous) => {
         if (folderPageOnly) return previous
         const apiFiles = response.files || []
+        const combinedFiles = [...stagedFiles, ...apiFiles]
         if (!activeFileSearch) {
-          return apiFiles
+          return combinedFiles
         }
         const clientMatched = previous.filter((file) =>
           matchesSearchText(file, activeFileSearch),
         )
-        return mergeFilesById(clientMatched, apiFiles)
+        return mergeFilesById(clientMatched, combinedFiles)
       })
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
@@ -1119,11 +1152,25 @@ export function useFolderExplorer() {
 
   const openFile = (id: string) => {
     setSelectedFile(id)
+    if (
+      id.startsWith('staged-') ||
+      files.some((f) => f.id === id && (f.isStaged || f.stageFileId))
+    ) {
+      setAppView('Upload')
+      return
+    }
     setAppView('details')
   }
 
   const openFileAction = (id: string, view: AppView) => {
     setSelectedFile(id)
+    if (
+      id.startsWith('staged-') ||
+      files.some((f) => f.id === id && (f.isStaged || f.stageFileId))
+    ) {
+      setAppView('Upload')
+      return
+    }
     setAppView(view)
   }
 

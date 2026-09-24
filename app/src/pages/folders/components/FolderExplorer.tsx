@@ -88,6 +88,9 @@ export function FolderExplorer() {
   const clearPending = useAskAiActionStore((state) => state.clearPending)
   const applyingAskAiRef = useRef(false)
   const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([])
+  const [pendingStagedFileId, setPendingStagedFileId] = useState<
+    string | undefined
+  >(undefined)
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     id: string
@@ -112,6 +115,7 @@ export function FolderExplorer() {
     const folderToSelect = resolveUploadReturnFolder(sourceFolder)
 
     setPendingUploadFiles([])
+    setPendingStagedFileId(undefined)
 
     if (folderToSelect) selectFolder(folderToSelect)
     else setAppView('explorer')
@@ -126,12 +130,45 @@ export function FolderExplorer() {
     [openFileAction],
   )
 
+  const handleFileAction = useCallback(
+    (fileId: string, targetView: AppView) => {
+      const trimmedId = String(fileId || '').trim()
+      if (!trimmedId) return
+      if (
+        trimmedId.startsWith('staged-') ||
+        files.some((f) => f.id === trimmedId && (f.isStaged || f.stageFileId))
+      ) {
+        folderBeforeUploadRef.current = activeFolder
+        setPendingUploadFiles([])
+        setPendingStagedFileId(
+          trimmedId.startsWith('staged-') ? trimmedId : `staged-${trimmedId}`,
+        )
+        setAppView('Upload')
+        return
+      }
+      openFileAction(trimmedId, targetView)
+    },
+    [activeFolder, files, openFileAction, setAppView],
+  )
+
   /** Prefer an explicit repositoryId (Ask AI / deep-link) so workspace fetch
    *  does not depend on activeFolder having finished switching. */
   const openDetailsFile = useCallback(
     (fileId: string, repositoryId?: string) => {
       const trimmedId = String(fileId || '').trim()
       if (!trimmedId) return
+      if (
+        trimmedId.startsWith('staged-') ||
+        files.some((f) => f.id === trimmedId && (f.isStaged || f.stageFileId))
+      ) {
+        folderBeforeUploadRef.current = activeFolder
+        setPendingUploadFiles([])
+        setPendingStagedFileId(
+          trimmedId.startsWith('staged-') ? trimmedId : `staged-${trimmedId}`,
+        )
+        setAppView('Upload')
+        return
+      }
       const trimmedRepo = String(repositoryId || '').trim()
       if (trimmedRepo) {
         setDetailsDocument({ id: trimmedId, repositoryId: trimmedRepo })
@@ -140,7 +177,7 @@ export function FolderExplorer() {
       }
       openFile(trimmedId)
     },
-    [openFile],
+    [activeFolder, files, openFile, setAppView],
   )
 
   const resolvedRepositoryId = String(
@@ -432,6 +469,7 @@ export function FolderExplorer() {
     }
     folderBeforeUploadRef.current = activeFolder
     setPendingUploadFiles([])
+    setPendingStagedFileId(undefined)
     setAppView('Upload')
   }
 
@@ -531,6 +569,7 @@ export function FolderExplorer() {
       <Upload
         folderId={activeFolder}
         initialFiles={pendingUploadFiles}
+        initialStagedFileId={pendingStagedFileId}
         repositoryData={selectedRepository}
         repositoryId={resolvedRepositoryId || null}
         onBack={exitUpload}
@@ -638,11 +677,11 @@ export function FolderExplorer() {
           uploadDisabled={!canUpload}
           view={viewMode}
           setView={changeViewMode}
-          onAiSummary={(id) => openFileAction(id, 'aiSummary')}
+          onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
           onEdit={
             folderPermissions.editMetadata
-              ? (id) => openFileAction(id, 'editMetadata')
+              ? (id) => handleFileAction(id, 'editMetadata')
               : undefined
           }
           onFilterMenuOpenChange={(id) => {
@@ -755,10 +794,10 @@ export function FolderExplorer() {
               folderTotalCount={
                 activeFolder ? folderPage?.totalCount : displayFolders.length
               }
-              onAiSummary={(id) => openFileAction(id, 'aiSummary')}
+              onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
               onEditMetadata={
                 folderPermissions.editMetadata
-                  ? (id) => openFileAction(id, 'editMetadata')
+                  ? (id) => handleFileAction(id, 'editMetadata')
                   : undefined
               }
               onLoadMoreFolders={loadMoreFolders}
@@ -769,7 +808,7 @@ export function FolderExplorer() {
               onShare={openShareForFile}
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
-              onWorkflow={(id) => openFileAction(id, 'workflow')}
+              onWorkflow={(id) => handleFileAction(id, 'workflow')}
             />
           </div>
         </main>

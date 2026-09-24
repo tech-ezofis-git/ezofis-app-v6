@@ -1,10 +1,23 @@
 import React, { useState } from 'react'
-import { Popover } from '@mantine/core'
+import { Popover, Textarea } from '@mantine/core'
 import { t } from '@lingui/macro'
+import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
-import { Textarea } from '@mantine/core'
 import authUserStore from '@/stores/authUserStore'
+
+const getInitials = (nameOrEmail: string): string => {
+  if (!nameOrEmail) return '?'
+  const clean = nameOrEmail.trim()
+  if (clean.includes('@')) {
+    return clean.slice(0, 2).toUpperCase()
+  }
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  return clean.slice(0, 2).toUpperCase()
+}
 
 interface ForwardPopoverProps {
   target: React.ReactNode
@@ -181,10 +194,11 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
               disabled={!selectedUserId}
               onClick={() => {
                 if (selectedUserId) {
-                  onConfirm(selectedUserId)
+                  onConfirm(selectedUserId, comments)
                   setOpened(false)
                   setSearch('')
                   setSelectedUserId(null)
+                  setComments('')
                 }
               }}
             />

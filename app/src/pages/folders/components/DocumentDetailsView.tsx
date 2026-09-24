@@ -2216,7 +2216,11 @@ export function DocumentDetailsView({
                       probeTerms={fieldProbeTerms}
                       permission={isEditingDoc ? 'edit' : 'readonly'}
                       isSigningMode={isSigning}
-                      permissions={permissions}
+                      permissions={
+                        permissions
+                          ? { ...permissions, sendForSignature: canSendForSignature }
+                          : { sendForSignature: canSendForSignature }
+                      }
                       signRequestId={activeSignRequestId}
                       signatureFields={(assignedFields || []).map((f, i) => ({
                         id: f.fieldId || `field-${i}`,

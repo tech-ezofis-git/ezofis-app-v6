@@ -12,15 +12,18 @@ export interface StagedFile {
   // Identify which FILE_UPLOAD/IMAGE_UPLOAD field this entry came from, so a
   // form with multiple file fields can be re-associated on the backend.
   // Undefined for extraAttachments (sidebar attachments aren't tied to a
-  // field). itemId mirrors fileId, matching the convention already used by
-  // FieldRenderer's onOpenAttachment call.
+  // field).
   fieldId?: string
   fieldName?: string
-  itemId?: string
   jsonId?: string
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
+
+const toStagedFile = (file: StagedFile & { itemId?: string }): StagedFile => {
+  const { itemId: _itemId, ...rest } = file
+  return rest
+}
 
 /**
  * Builds the body for POST /Workflows/{id}/start/json, per the "Normal
@@ -45,7 +48,7 @@ export const buildStartWorkflowPayload = (
   comment = '',
 ): StartWorkflowJsonPayload => {
   const formData: Record<string, any> = {}
-  const stagedFiles: StagedFile[] = [...extraAttachments]
+  const stagedFiles: StagedFile[] = extraAttachments.map(toStagedFile)
 
   for (const panel of panels || []) {
     for (const field of panel.fields || []) {
@@ -63,7 +66,6 @@ export const buildStartWorkflowPayload = (
             fieldName: field.label,
             fileId,
             fileName: value.fileName,
-            itemId: String(value.itemId || fileId),
             jsonId: field.id,
             repositoryId,
           })

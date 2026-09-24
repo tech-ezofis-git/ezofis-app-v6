@@ -13,7 +13,6 @@ import { uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
   indexStageFile,
-  listStagedFiles,
   loadStageFile,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
@@ -83,6 +82,7 @@ type ResultTab = 'fields' | 'json'
 type UploadProps = {
   folderId: string | number | null
   initialFiles?: File[]
+  initialStagedFileId?: string
   repositoryData: {
     fields?: RepositoryField[]
     id?: string
@@ -673,6 +673,7 @@ const batchFingerprint = (files: File[]) =>
 export default function Upload({
   folderId,
   initialFiles,
+  initialStagedFileId,
   repositoryData,
   repositoryId,
   onBack,
@@ -1234,6 +1235,7 @@ export default function Upload({
         return
       }
 
+      let hasSuccess = false
       data.files.forEach((result, index) => {
         const entry = filesToStage[index]
         if (!entry) return
@@ -1246,6 +1248,7 @@ export default function Upload({
           return
         }
 
+        hasSuccess = true
         updateEntry(entry.id, {
           backendStatus: 'Queued',
           errorMessage: undefined,
@@ -1254,8 +1257,17 @@ export default function Upload({
           status: 'analyzing',
         })
       })
+
+      if (hasSuccess) {
+        showToast({
+          message: t`Files uploaded successfully.`,
+          variant: 'success',
+        })
+        if (onSuccess) await onSuccess()
+        onBack()
+      }
     },
-    [repositoryFields, t, updateEntry, setOpenFileId],
+    [repositoryFields, t, updateEntry, setOpenFileId, onBack, onSuccess],
   )
 
   // Tracks which entries already had loadStageFile called for their current
@@ -1484,12 +1496,9 @@ export default function Upload({
           return next
         })
 
-        // Auto-open the first file only when the resulting queue will stay
-        // in the compact horizontal layout — a larger (vertical) queue
-        // should land on the list, with the user clicking a file to open it.
-        const resultingCount = queue.length + newEntries.length
-        if (resultingCount <= QUEUE_VERTICAL_THRESHOLD) {
-          setOpenFileId((prev) => prev ?? newEntries[0].id)
+        // Auto-open only if a single file is uploaded. For multiple files (>1), navigate back to previous screen.
+        if (newEntries.length === 1 && queue.length === 0) {
+          setOpenFileId(newEntries[0].id)
         }
 
         if (newFiles.length < validFiles.length) {
@@ -1516,79 +1525,63 @@ export default function Upload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Restore any files staged (but not yet exported) in a previous session
-  // for this repository, so leaving/reopening Upload doesn't lose work.
-  const restoreAppliedRef = useRef(false)
+  const initialStagedAppliedRef = useRef(false)
   useEffect(() => {
-    if (restoreAppliedRef.current) return
-    const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
-    if (!activeRepositoryId) return
-    restoreAppliedRef.current = true
+    if (initialStagedAppliedRef.current) return
+    if (!initialStagedFileId) return
+    initialStagedAppliedRef.current = true
 
-    const restore = async () => {
+    const loadSingleStaged = async () => {
       setIsRestoringQueue(true)
       try {
-        const { data } = await listStagedFiles({
-          repositoryId: activeRepositoryId,
-        })
-        const staged = (data ?? []).filter(
-          (summary) => summary.status !== 'ARCHIVED',
-        )
-        if (!staged.length) return
+        const stageId = initialStagedFileId.replace(/^staged-/, '')
+        const { data } = await loadStageFile(stageId)
+        if (!data) return
 
-        const restoredEntries: QueuedUploadFile[] = staged.map((summary) => ({
+        const { ocrJson, ocrText } = extractOcrJsonAndText(data)
+        const mappedValues = mapOcrResponseToFieldValues(
+          data,
+          repositoryFields,
+          data.name,
+        )
+
+        const entry: QueuedUploadFile = {
           activeTab: 'fields',
-          backendStatus: summary.status,
+          backendStatus: data.status || 'OCR',
           exportStatus: 'idle',
-          fieldValues: applyFilenamePreFill(
-            getInitialValues(repositoryFields),
-            repositoryFields,
-            summary.name,
-          ),
+          fieldValues: mappedValues,
           file: null,
-          fileName: summary.name,
-          fileSize: summary.size ?? 0,
+          fileName: data.name,
+          fileSize: typeof data.size === 'number' ? data.size : 0,
           focusedFieldKey: null,
-          id: `staged-${summary.id}`,
+          id: `staged-${data.id || stageId}`,
           isSyncing: false,
-          // index/all doesn't return the originating bulkUpload jobId, so a
-          // still-processing restored file won't resume live polling until
-          // the user retries it.
           jobId: null,
           masterSyncedValues: {},
-          ocrExtractedValues: {},
-          ocrStatus: 'idle',
+          ocrExtractedValues: mappedValues,
+          ocrStatus: 'complete',
           previewUrl: null,
-          rawOcrJson: {},
-          rawOcrText: '',
+          rawOcrJson: ocrJson,
+          rawOcrText: ocrText,
           restoredFromServer: true,
-          stageFileId: summary.id,
-          status: backendStatusToQueueStatus(summary.status),
+          stageFileId: data.id || stageId,
+          status: backendStatusToQueueStatus(data.status || 'OCR'),
           syncingField: null,
-        }))
-
-        setQueue((prev) => [...restoredEntries, ...prev])
-        // Same rule as new drops: only auto-open when it stays compact.
-        if (restoredEntries.length <= QUEUE_VERTICAL_THRESHOLD) {
-          setOpenFileId((prev) => prev ?? restoredEntries[0]?.id ?? null)
         }
 
-        // Populate fields for restored files whose OCR already finished.
-        restoredEntries
-          .filter((entry) => entry.status === 'ready')
-          .forEach((entry) => {
-            loadedStageFileIdsRef.current.add(entry.stageFileId as string)
-            void loadAndPopulateFields(entry)
-          })
+        setQueue([entry])
+        setOpenFileId(entry.id)
+        triggerAutoSync(entry.id, mappedValues)
       } finally {
         setIsRestoringQueue(false)
       }
     }
 
-    void restore()
-    // Runs once on mount for the resolved repository id.
+    void loadSingleStaged()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repositoryId, repositoryData?.id])
+  }, [initialStagedFileId, repositoryFields])
+
+
 
   const buildMetadataFor = (entry: QueuedUploadFile) => {
     const fields = repositoryFields.map((field) => {
@@ -1719,6 +1712,7 @@ export default function Upload({
           variant: 'success',
         })
         await onSuccess?.()
+        onBack?.()
 
         return data
       } catch (error: any) {
@@ -1735,7 +1729,7 @@ export default function Upload({
         return null
       }
     },
-    [queue, repositoryId, repositoryData?.id, t, updateEntry, onSuccess],
+    [queue, repositoryId, repositoryData?.id, t, updateEntry, onSuccess, onBack],
   )
 
   const indexedCount = queue.filter(
@@ -2368,57 +2362,16 @@ export default function Upload({
   }
 
   return (
-    <AnimateFadeIn className='relative flex h-full max-h-[calc(100vh-80px)] flex-col overflow-x-hidden overflow-y-auto bg-surface-muted px-6 py-5'>
-      <div className='mx-auto flex h-full w-full max-w-7xl flex-col gap-4'>
-        <div className='flex items-center justify-between gap-3'>
-          <div className='flex items-center gap-3'>
-            <IconButton
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              ariaLabel={
-                isVerticalQueueLayout && activeEntry
-                  ? t`Back to files`
-                  : t`Back`
-              }
-              onClick={() => {
-                if (isVerticalQueueLayout && activeEntry) {
-                  setOpenFileId(null)
-                  return
-                }
-                onBack()
-              }}
-            />
-            <div>
-              <h1 className='text-base font-semibold tracking-tight text-gray-13'>
-                {t`Upload Files`}
-              </h1>
-              <p className='text-xs text-gray-11'>
-                {allIndexed
-                  ? t`All files indexed.`
-                  : t`${indexedCount} of ${queue.length} files indexed`}
-              </p>
-            </div>
-          </div>
-
-          <Button
-            className='!h-9 shrink-0 !border-[var(--primary-9)] !bg-[var(--primary-9)] !px-4 !text-xs !font-semibold !text-white shadow-xs transition-all hover:!bg-[var(--primary-10)] active:scale-95'
-            onClick={() => invoiceInputRef.current?.click()}
-          >
-            <Icon className='size-4' name='tabler:plus' />
-            {t`Add files`}
-          </Button>
-
-          <input
-            accept={DOCUMENT_ACCEPT}
-            className='hidden'
-            ref={invoiceInputRef}
-            type='file'
-            multiple
-            onChange={(event) => handleInvoiceFiles(event.target.files)}
-          />
-        </div>
+    <AnimateFadeIn className='relative flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-muted px-4 pt-2 pb-3'>
+      <div className='mx-auto flex h-full w-full max-w-7xl min-h-0 flex-1 flex-col gap-3 overflow-hidden'>
+        <input
+          accept={DOCUMENT_ACCEPT}
+          className='hidden'
+          ref={invoiceInputRef}
+          type='file'
+          multiple
+          onChange={(event) => handleInvoiceFiles(event.target.files)}
+        />
 
         {queueStrip}
 
@@ -2439,7 +2392,7 @@ export default function Upload({
           )
         ) : (
           <>
-            <div className='flex items-center justify-between gap-4 rounded-2xl border border-[var(--gray-3)] bg-surface px-5 py-4 shadow-sm'>
+            <div className='flex shrink-0 items-center justify-between gap-4 rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-2.5 shadow-xs'>
               {PROCESS_STEP_KEYS.map((step, index, list) => {
                 const isComplete = isStepComplete(
                   index,
@@ -2526,8 +2479,8 @@ export default function Upload({
               })}
             </div>
 
-            <div className='grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
-              <AnimateSlideUp className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+            <div className='grid h-full min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
+              <AnimateSlideUp className='flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
                 <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
                   <div className='flex min-w-0 items-center gap-3'>
                     <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
@@ -2580,14 +2533,43 @@ export default function Upload({
               </AnimateSlideUp>
 
               <AnimateSlideUp
-                className='flex h-[900px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
+                className='flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
                 delay={0.08}
               >
                 <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
                   <div className='flex min-w-0 items-center gap-3'>
-                    <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
-                      <Icon className='size-5' name='tabler:code' />
-                    </div>
+                    <Tooltip
+                      content={
+                        activeTab === 'fields'
+                          ? t`Switch to JSON view`
+                          : t`Switch to Fields view`
+                      }
+                      position='top'
+                    >
+                      <button
+                        aria-label={
+                          activeTab === 'fields'
+                            ? t`Switch to JSON view`
+                            : t`Switch to Fields view`
+                        }
+                        className='flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-12)] shadow-xs transition-all hover:bg-[var(--gray-3)] active:scale-95'
+                        type='button'
+                        onClick={() =>
+                          setActiveTabForActiveEntry(
+                            activeTab === 'fields' ? 'json' : 'fields',
+                          )
+                        }
+                      >
+                        <Icon
+                          className='size-5 text-[var(--primary-9)]'
+                          name={
+                            activeTab === 'fields'
+                              ? 'tabler:code'
+                              : 'tabler:list-details'
+                          }
+                        />
+                      </button>
+                    </Tooltip>
                     <div>
                       <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
                       <p className='text-xs font-medium text-[var(--gray-9)]'>
@@ -2598,31 +2580,33 @@ export default function Upload({
                     </div>
                   </div>
 
-                  <div className='flex rounded-xl bg-[var(--gray-2)] p-1'>
-                    <button
-                      type='button'
-                      className={[
-                        'rounded-lg px-4 py-2 text-xs font-semibold transition',
-                        activeTab === 'fields'
-                          ? 'bg-surface text-[var(--gray-13)] shadow-sm'
-                          : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
-                      ].join(' ')}
-                      onClick={() => setActiveTabForActiveEntry('fields')}
+                  <div className='flex items-center gap-3'>
+                    {!isExporting ? (
+                      <button
+                        className='text-xs font-semibold text-[var(--gray-9)] transition-colors hover:text-[var(--primary-11)] disabled:cursor-not-allowed disabled:opacity-50'
+                        disabled={isExporting}
+                        type='button'
+                        onClick={() => handleRemoveFromQueue(activeEntry.id)}
+                      >
+                        {t`Cancel`}
+                      </button>
+                    ) : null}
+
+                    <Button
+                      className='!h-9 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-4 !text-xs !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50'
+                      disabled={isExporting || isAnalyzing}
+                      onClick={() => indexEntry(activeEntry.id)}
                     >
-                      {t`Fields`}
-                    </button>
-                    <button
-                      type='button'
-                      className={[
-                        'rounded-lg px-4 py-2 text-xs font-semibold transition',
-                        activeTab === 'json'
-                          ? 'bg-surface text-[var(--gray-13)] shadow-sm'
-                          : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
-                      ].join(' ')}
-                      onClick={() => setActiveTabForActiveEntry('json')}
-                    >
-                      {t`JSON`}
-                    </button>
+                      {isExporting ? (
+                        <Icon
+                          className='size-4 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                      ) : (
+                        <ArrowUpFromLine size={14} />
+                      )}
+                      {isExporting ? t`Exporting...` : t`Export`}
+                    </Button>
                   </div>
                 </div>
 
@@ -2721,36 +2705,7 @@ export default function Upload({
                   )}
                 </div>
 
-                <div className='flex shrink-0 items-center justify-between gap-3 border-t border-[var(--gray-3)] bg-surface px-5 py-4'>
-                  <div className='flex min-w-0 flex-1 items-center gap-3'>
-                    {!isExporting ? (
-                      <button
-                        className='text-xs font-semibold text-[var(--gray-9)] transition-colors hover:text-[var(--primary-11)] disabled:cursor-not-allowed disabled:opacity-50'
-                        disabled={isExporting}
-                        type='button'
-                        onClick={() => handleRemoveFromQueue(activeEntry.id)}
-                      >
-                        {t`Cancel`}
-                      </button>
-                    ) : null}
-                  </div>
 
-                  <Button
-                    className='!h-10 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-5 !text-sm !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50'
-                    disabled={isExporting || isAnalyzing}
-                    onClick={() => indexEntry(activeEntry.id)}
-                  >
-                    {isExporting ? (
-                      <Icon
-                        className='size-4 animate-spin'
-                        name='tabler:loader-2'
-                      />
-                    ) : (
-                      <ArrowUpFromLine size={15} />
-                    )}
-                    {isExporting ? t`Exporting...` : t`Export`}
-                  </Button>
-                </div>
               </AnimateSlideUp>
             </div>
           </>
