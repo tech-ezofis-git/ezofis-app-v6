@@ -127,16 +127,25 @@ export const getColumnSizeClass = (size?: string): string => {
 }
 
 export const isFieldRequired = (field: any): boolean =>
-  field?.settings?.validation?.fieldRule === 'REQUIRED'
+  field?.settings?.validation?.fieldRule === 'REQUIRED' ||
+  Boolean(
+    field?.isRequired ||
+      field?.required ||
+      field?.isMandatory ||
+      field?.settings?.validation?.required,
+  )
 
 export const isFieldHidden = (field: any): boolean =>
   Boolean(field?.settings?.general?.hidden) ||
-  field?.settings?.general?.visibility === 'HIDDEN'
+  field?.settings?.general?.visibility === 'HIDDEN' ||
+  field?.hidden === true
 
 export const isFieldReadOnly = (field: any): boolean =>
   field?.type === 'CALCULATED' ||
   Boolean(field?.settings?.general?.readOnly) ||
-  field?.settings?.general?.visibility === 'READ_ONLY'
+  field?.settings?.general?.visibility === 'READ_ONLY' ||
+  field?.readOnly === true ||
+  field?.disabled === true
 
 export interface FieldOption {
   id: string
@@ -677,37 +686,134 @@ const stringifyFieldValue = (value: any): string => {
   return String(value)
 }
 
-// Repository-mandatory fields that are still empty — covers both fields
-// matched to a real form field and synthetic (form-less) ones alike, since
-// descriptors already carry the resolved fieldId. The submit-blocking check.
+export interface MissingMandatoryField {
+  id: string
+  label: string
+}
+
+// Evaluates non-readonly, non-hidden mandatory fields across repository fields and form panels.
+export const getMissingMandatoryFieldsList = (
+  descriptors: RepoFieldDescriptor[],
+  panelsOrFormModel: any[] | Record<string, any>,
+  formModelArg?: Record<string, any>,
+  options?: { hasUploadedFile?: boolean },
+): MissingMandatoryField[] => {
+  let panels: any[] = []
+  let formModel: Record<string, any> = {}
+
+  if (Array.isArray(panelsOrFormModel)) {
+    panels = panelsOrFormModel
+    formModel = formModelArg || {}
+  } else {
+    formModel = panelsOrFormModel || {}
+  }
+
+  const missing: MissingMandatoryField[] = []
+  const processedIds = new Set<string>()
+
+  // 1. Process repository fields (unmatched repo fields are only required when indexing an uploaded file)
+  for (const descriptor of descriptors || []) {
+    if (!descriptor.repoField?.isMandatory) continue
+    if (!descriptor.matchedFieldId && !options?.hasUploadedFile) continue
+
+    let isReadOnly = false
+    let isHidden = false
+    let matchedField: any = null
+
+    if (descriptor.matchedFieldId) {
+      matchedField = findFormFieldById(panels, descriptor.matchedFieldId)
+      if (matchedField) {
+        isReadOnly = isFieldReadOnly(matchedField)
+        isHidden = isFieldHidden(matchedField)
+      }
+    }
+
+    // Read-only or hidden mandatory fields must not block submission
+    if (isReadOnly || isHidden) continue
+
+    const value = getRepoFieldValue(descriptor, formModel)
+    const filled = matchedField
+      ? isFieldFilled(matchedField, value)
+      : !isValueEmpty(value)
+
+    if (!filled) {
+      const label = descriptor.repoField.name || 'Required Field'
+      missing.push({ id: descriptor.fieldId, label })
+      processedIds.add(descriptor.fieldId)
+      if (descriptor.matchedFieldId) {
+        missing.push({ id: descriptor.matchedFieldId, label })
+        processedIds.add(descriptor.matchedFieldId)
+      }
+    }
+  }
+
+  // 2. Process form panel fields
+  for (const panel of panels || []) {
+    for (const field of panel.fields || []) {
+      const fieldId = String(field.id || field.jsonId || '')
+      if (!fieldId || processedIds.has(fieldId)) continue
+      if (PRESENTATIONAL_TYPES.has(field.type)) continue
+
+      if (isFieldHidden(field) || isFieldReadOnly(field)) continue
+
+      if (isFieldRequired(field)) {
+        const val =
+          formModel[field.id] ??
+          (field.jsonId ? formModel[field.jsonId] : undefined)
+        if (!isFieldFilled(field, val)) {
+          const label =
+            field.label || field.name || field.title || 'Required Field'
+          missing.push({ id: fieldId, label })
+          processedIds.add(fieldId)
+          if (field.id) processedIds.add(String(field.id))
+          if (field.jsonId) processedIds.add(String(field.jsonId))
+        }
+      }
+    }
+  }
+
+  return missing
+}
+
+// Repository and form-mandatory fields that are still empty (excluding read-only and hidden controls).
 export const getMissingMandatoryFields = (
   descriptors: RepoFieldDescriptor[],
-  formModel: Record<string, any>,
-): string[] =>
-  descriptors
-    .filter(
-      (d) =>
-        d.repoField.isMandatory &&
-        isValueEmpty(getRepoFieldValue(d, formModel)),
-    )
-    .map((d) => d.repoField.name!)
+  panelsOrFormModel: any[] | Record<string, any>,
+  formModelArg?: Record<string, any>,
+  options?: { hasUploadedFile?: boolean },
+): string[] => {
+  const list = getMissingMandatoryFieldsList(
+    descriptors,
+    panelsOrFormModel,
+    formModelArg,
+    options,
+  )
+  const labels = new Set<string>()
+  for (const item of list) {
+    labels.add(item.label)
+  }
+  return Array.from(labels)
+}
 
-// Same check as getMissingMandatoryFields, keyed by fieldId instead of
-// repository field name — what the field-level `error` prop and the
-// auto-stage trigger both key off.
+// Same check as getMissingMandatoryFields, returning a Set of field IDs.
 export const getMissingMandatoryFieldIds = (
   descriptors: RepoFieldDescriptor[],
-  formModel: Record<string, any>,
-): Set<string> =>
-  new Set(
-    descriptors
-      .filter(
-        (d) =>
-          d.repoField.isMandatory &&
-          isValueEmpty(getRepoFieldValue(d, formModel)),
-      )
-      .map((d) => d.fieldId),
+  panelsOrFormModel: any[] | Record<string, any>,
+  formModelArg?: Record<string, any>,
+  options?: { hasUploadedFile?: boolean },
+): Set<string> => {
+  const list = getMissingMandatoryFieldsList(
+    descriptors,
+    panelsOrFormModel,
+    formModelArg,
+    options,
   )
+  const set = new Set<string>()
+  for (const item of list) {
+    set.add(item.id)
+  }
+  return set
+}
 
 // uploadForOcr's `ocrJson` is a stringified blob of shape
 // `{ ocrResult: [...], ocrText: string, tokens: {...} }` — uploadWithOcr's

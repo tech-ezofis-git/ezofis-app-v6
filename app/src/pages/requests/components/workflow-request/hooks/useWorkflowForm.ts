@@ -142,11 +142,6 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
     () => buildRepoFieldDescriptors(repositoryFields, panels),
     [repositoryFields, panels],
   )
-  const missingMandatoryFieldIds = useMemo(
-    () => getMissingMandatoryFieldIds(repoFieldDescriptors, formModel),
-    [repoFieldDescriptors, formModel],
-  )
-
   // Every file the user has uploaded so far — sidebar attachments and
   // field-level FILE_UPLOAD/IMAGE_UPLOAD values alike — used to drive the
   // split-view file preview and to decide whether to show it at all.
@@ -177,6 +172,14 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
   const hasUploadedFile = uploadedFiles.length > 0
   const pendingUploadFileName =
     uploadedFiles.find((file) => file.rawFile)?.fileName || ''
+
+  const missingMandatoryFieldIds = useMemo(
+    () =>
+      getMissingMandatoryFieldIds(repoFieldDescriptors, panels, formModel, {
+        hasUploadedFile,
+      }),
+    [repoFieldDescriptors, panels, formModel, hasUploadedFile],
+  )
 
   // Same as folder / inbox indexing: fill empty Filename from the uploaded
   // file (without extension) so a mandatory filename field is ready in the
@@ -518,22 +521,21 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
     setHasAttemptedSubmit(true)
 
     if (!workflow?.id) {
-      setSubmitError('Workflow ID is missing. Cannot start workflow.')
-      return { success: false }
+      const errorMsg = 'Workflow ID is missing. Cannot start workflow.'
+      setSubmitError(errorMsg)
+      return { error: errorMsg, success: false }
     }
 
-    // Repository fields are metadata for an ATTACHED document — only worth
-    // enforcing once the user is actually filing one. A request with no
-    // file at all has nothing for Project/Document Type/... to describe,
-    // so it shouldn't be blocked on them.
-    if (hasUploadedFile) {
-      const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
-      if (missing.length > 0) {
-        setSubmitError(
-          `Please fill in required field(s): ${missing.join(', ')}`,
-        )
-        return { success: false }
-      }
+    const missing = getMissingMandatoryFields(
+      repoFieldDescriptors,
+      panels,
+      formModel,
+      { hasUploadedFile },
+    )
+    if (missing.length > 0) {
+      const errorMsg = `Please fill in required field(s): ${missing.join(', ')}`
+      setSubmitError(errorMsg)
+      return { error: errorMsg, success: false }
     }
 
     setIsSubmitting(true)
@@ -550,7 +552,7 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
       const message =
         e instanceof Error ? e.message : 'Failed to upload attachment(s).'
       setSubmitError(message)
-      return { success: false }
+      return { error: message, success: false }
     }
     setAttachments(staged.attachments)
     setFormModel(staged.formModel)
@@ -604,7 +606,7 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
 
     if (resError) {
       setSubmitError(resError)
-      return { success: false }
+      return { error: resError, success: false }
     }
 
     return { data: resData, success: true }

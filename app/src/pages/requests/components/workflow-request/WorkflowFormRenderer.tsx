@@ -10,6 +10,7 @@ import {
   getColumnSizeClass,
   isFieldFilled,
   isFieldHidden,
+  isFieldReadOnly,
   isFieldRequired,
 } from './utils/fieldRendering'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
@@ -140,7 +141,7 @@ const WorkflowFormRenderer = ({
 
   const renderVisibleFields = (visibleFields: any[]) => {
     return (
-      <div className='-mx-2 flex max-w-full min-w-0 flex-wrap'>
+      <div className='-mx-2 -mb-4 flex max-w-full min-w-0 flex-wrap'>
         {visibleFields.map((field: any) => {
           const isTableField =
             field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
@@ -166,7 +167,9 @@ const WorkflowFormRenderer = ({
                 value={formModel[field.id]}
                 error={
                   hasAttemptedSubmit &&
-                  missingMandatoryFieldIds?.has(field.id)
+                    (missingMandatoryFieldIds?.has(String(field.id)) ||
+                      (field.jsonId &&
+                        missingMandatoryFieldIds?.has(String(field.jsonId))))
                     ? t`This field is required.`
                     : undefined
                 }
@@ -183,8 +186,8 @@ const WorkflowFormRenderer = ({
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={
                   onRequestUpload &&
-                  !viewOnly &&
-                  !readOnlyFieldIds?.has(String(field.id))
+                    !viewOnly &&
+                    !readOnlyFieldIds?.has(String(field.id))
                     ? (file) => onRequestUpload(field.id, file)
                     : undefined
                 }
@@ -210,7 +213,9 @@ const WorkflowFormRenderer = ({
             {panels.map((panel: any, panelIndex: number) => {
               const visibleFields = (panel.fields || []).filter(
                 (field: any) =>
-                  !isFieldHidden(field) && !hiddenFieldIds?.has(field.id),
+                  !isFieldHidden(field) &&
+                  !hiddenFieldIds?.has(field.id) &&
+                  field.type !== 'DIVIDER',
               )
               if (visibleFields.length === 0) return null
 
@@ -265,7 +270,12 @@ const WorkflowFormRenderer = ({
             )
             if (visibleFields.length === 0) return null
 
-            const requiredFields = visibleFields.filter(isFieldRequired)
+            const requiredFields = visibleFields.filter(
+              (field: any) =>
+                isFieldRequired(field) &&
+                !isFieldReadOnly(field) &&
+                !readOnlyFieldIds?.has(String(field.id)),
+            )
             const completedCount = requiredFields.filter((field: any) =>
               isFieldFilled(field, formModel[field.id]),
             ).length
