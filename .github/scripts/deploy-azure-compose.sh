@@ -133,7 +133,8 @@ smoke() {
     local line=""
     for p in "${paths[@]}"; do
       url="${SMOKE_BASE}${p}"
-      code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 25 "$url" || echo "000")
+      # Follow redirects: /swagger returns 301 -> /swagger/index.html
+      code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 25 "$url" || echo "000")
       line+="${p}=${code} "
       if [[ "$code" != "200" ]]; then
         ok=0
