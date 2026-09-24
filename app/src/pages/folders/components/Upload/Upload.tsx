@@ -5,14 +5,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   BulkUploadJobStatus,
   IndexStageFileRequest,
+  OcrFieldResult,
   StageFileStatus,
 } from '@/api/v6/uploadAndIndex'
 import formApi from '@/api/form/form'
+import { uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -1135,6 +1138,82 @@ export default function Upload({
         .map((field) => formatOcrFieldDescriptor(field))
         .filter(Boolean)
 
+      if (filesToStage.length === 1) {
+        const singleEntry = filesToStage[0]
+        const { data, error } = await uploadForOcr(
+          activeRepositoryId,
+          singleEntry.file,
+          ocrFields,
+        )
+
+        if (error || !data) {
+          updateEntry(singleEntry.id, {
+            errorMessage: String(error || 'Upload failed'),
+            status: 'error',
+          })
+          showToast({
+            message: t`Failed to stage file for upload.`,
+            variant: 'error',
+          })
+          return
+        }
+
+        const ocrExtractedValues: Record<string, string> = {}
+        const fieldValues: Record<string, string> = {}
+        if (data.ocrFieldList && Array.isArray(data.ocrFieldList)) {
+          data.ocrFieldList.forEach((field: OcrFieldResult) => {
+            const matchedRepoField = repositoryFields.find(
+              (f) =>
+                f.name === field.name ||
+                f.sqlColumnName === field.name ||
+                f.name?.toLowerCase() === field.name?.toLowerCase(),
+            )
+            if (matchedRepoField) {
+              const key = getFieldKey(matchedRepoField)
+              ocrExtractedValues[key] = field.value ?? ''
+              fieldValues[key] = field.value ?? ''
+            }
+          })
+        }
+
+        updateEntry(singleEntry.id, {
+          backendStatus: 'OCR',
+          errorMessage: undefined,
+          fieldValues,
+          masterSyncedValues: fieldValues,
+          ocrExtractedValues,
+          ocrStatus: 'complete',
+          rawOcrJson: data.ocrJson || data.ocrResult,
+          rawOcrText: data.ocrText || '',
+          stageFileId: data.fileId || data.id,
+          status: 'ready',
+        })
+        setOpenFileId(singleEntry.id)
+
+        // Stage the file using uploadWithOcr carrying forward the extracted OCR data
+        const { data: stageData, error: stageError } = await uploadWithOcr({
+          file: singleEntry.file,
+          filename: singleEntry.file.name,
+          ocrFieldList: data.ocrFieldList,
+          ocrJson:
+            typeof data.ocrJson === 'string'
+              ? data.ocrJson
+              : JSON.stringify(data.ocrJson || {}),
+          ocrText: data.ocrText || '',
+          repositoryId: activeRepositoryId,
+        })
+
+        if (stageError || !stageData?.fileId) {
+          console.warn('[uploadWithOcr] Staging warning:', stageError)
+          return
+        }
+
+        updateEntry(singleEntry.id, {
+          stageFileId: stageData.fileId,
+        })
+        return
+      }
+
       const { data, error } = await bulkUpload({
         fields: ocrFields,
         files: filesToStage.map((entry) => entry.file),
@@ -1176,7 +1255,7 @@ export default function Upload({
         })
       })
     },
-    [repositoryFields, t, updateEntry],
+    [repositoryFields, t, updateEntry, setOpenFileId],
   )
 
   // Tracks which entries already had loadStageFile called for their current
@@ -1686,7 +1765,7 @@ export default function Upload({
     [queue],
   )
 
-  const isVerticalQueueLayout = queue.length > QUEUE_VERTICAL_THRESHOLD
+  const isVerticalQueueLayout = true
 
   const activeStepIndex = getActiveStepIndex(
     Boolean(activeEntry),
@@ -2072,19 +2151,6 @@ export default function Upload({
         </div>
 
         <div className='flex shrink-0 items-center gap-1.5'>
-          {isVerticalQueueLayout && (
-            <button
-              className='flex h-7 items-center gap-1 rounded-md border border-dashed border-[var(--gray-4)] px-2 text-11 font-semibold text-[var(--gray-11)] transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
-              type='button'
-              onClick={() => invoiceInputRef.current?.click()}
-            >
-              <Icon
-                className='size-3.5 text-[var(--primary-9)]'
-                name='tabler:plus'
-              />
-              {t`Add files`}
-            </button>
-          )}
 
           <Tooltip
             content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
@@ -2106,54 +2172,26 @@ export default function Upload({
         </div>
       </div>
 
-      {!isQueueCollapsed &&
-        (isVerticalQueueLayout ? (
-          <div
-            className={cn(
-              'ez-scrollbar flex flex-col gap-1.5 overflow-y-auto pr-1',
-              isListOnlyPage ? 'min-h-0 flex-1' : 'max-h-[320px]',
-            )}
-          >
-            {sortedQueueForDisplay.map((entry) => (
-              <UploadQueueFileCard
-                className='w-full'
-                entry={entry}
-                isOpen={entry.id === openFileId}
-                key={entry.id}
-                onOpen={setOpenFileId}
-                onRemove={handleRemoveFromQueue}
-                onRetryOcr={handleRetryOcr}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className='ez-scrollbar flex items-stretch gap-2 overflow-x-auto pb-1'>
-            {sortedQueueForDisplay.map((entry) => (
-              <UploadQueueFileCard
-                className='w-44 shrink-0 !p-2'
-                entry={entry}
-                isOpen={entry.id === openFileId}
-                key={entry.id}
-                onOpen={setOpenFileId}
-                onRemove={handleRemoveFromQueue}
-                onRetryOcr={handleRetryOcr}
-              />
-            ))}
-            <button
-              className='flex w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[var(--gray-4)] px-2 py-2 text-center transition-colors hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30'
-              type='button'
-              onClick={() => invoiceInputRef.current?.click()}
-            >
-              <Icon
-                className='size-4 text-[var(--primary-9)]'
-                name='tabler:plus'
-              />
-              <span className='text-11 font-semibold text-[var(--gray-11)]'>
-                {t`Add`}
-              </span>
-            </button>
-          </div>
-        ))}
+      {!isQueueCollapsed && (
+        <div
+          className={cn(
+            'ez-scrollbar flex flex-col gap-1.5 overflow-y-auto pr-1',
+            isListOnlyPage ? 'min-h-0 flex-1' : 'max-h-[320px]',
+          )}
+        >
+          {sortedQueueForDisplay.map((entry) => (
+            <UploadQueueFileCard
+              className='w-full'
+              entry={entry}
+              isOpen={entry.id === openFileId}
+              key={entry.id}
+              onOpen={setOpenFileId}
+              onRemove={handleRemoveFromQueue}
+              onRetryOcr={handleRetryOcr}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 
@@ -2363,6 +2401,14 @@ export default function Upload({
               </p>
             </div>
           </div>
+
+          <Button
+            className='!h-9 shrink-0 !border-[var(--primary-9)] !bg-[var(--primary-9)] !px-4 !text-xs !font-semibold !text-white shadow-xs transition-all hover:!bg-[var(--primary-10)] active:scale-95'
+            onClick={() => invoiceInputRef.current?.click()}
+          >
+            <Icon className='size-4' name='tabler:plus' />
+            {t`Add files`}
+          </Button>
 
           <input
             accept={DOCUMENT_ACCEPT}
