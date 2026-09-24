@@ -180,6 +180,7 @@ export interface LineItemTableProps {
   isDynamicTable: boolean
   LINE_ITEM_ACTION_WIDTH: number
   compareLines?: any[]
+  lineItems: any[]
   skeletonRows: string[]
   atEnd?: boolean
   hideFooter?: boolean

@@ -153,6 +153,8 @@ def _field_matching(invoice: dict[str, Any], po: dict[str, Any]) -> list[dict[st
     return rows
 
 
+# Invoice forms use Qty / Price / Amount. SAP and HANA lines use
+# Order Quantity / Net Price / Net Value. Read both or the line score stays 0.
 _LINE_DESC_KEYS = (
     "description",
     "Description",
