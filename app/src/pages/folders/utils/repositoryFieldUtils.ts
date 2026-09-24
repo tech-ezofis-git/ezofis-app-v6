@@ -12,16 +12,60 @@ export const normalizeFieldKey = (key: string) =>
 export const matchesFieldKey = (left: string, right: string) =>
   normalizeFieldKey(left) === normalizeFieldKey(right)
 
-const findValueInSource = (source: RepositoryRow, fieldKey: string) => {
-  if (!source || typeof source !== 'object') return undefined
+const findValueInSource = (source: any, fieldKey: string) => {
+  if (!source) return undefined
 
-  const matchedKey = Object.keys(source).find(
-    (key) => normalizeFieldKey(key) === normalizeFieldKey(fieldKey),
+  let parsed = source
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed)
+    } catch {
+      return undefined
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object') return undefined
+
+  if (Array.isArray(parsed)) {
+    const matchedItem = parsed.find((item) => {
+      if (!item || typeof item !== 'object') return false
+      const itemKey =
+        item.key ??
+        item.Key ??
+        item.name ??
+        item.Name ??
+        item.fieldId ??
+        item.FieldId ??
+        item.label ??
+        item.Label ??
+        item.fieldName ??
+        item.FieldName ??
+        item.sqlColumnName ??
+        item.SqlColumnName ??
+        item.columnName
+      return itemKey !== undefined && itemKey !== null && matchesFieldKey(String(itemKey), fieldKey)
+    })
+
+    if (!matchedItem) return undefined
+
+    const value =
+      matchedItem.value ??
+      matchedItem.Value ??
+      matchedItem.fieldValue ??
+      matchedItem.FieldValue ??
+      matchedItem.val
+
+    if (value === undefined || value === null || value === '') return undefined
+    return value
+  }
+
+  const matchedKey = Object.keys(parsed).find((key) =>
+    matchesFieldKey(key, fieldKey),
   )
 
   if (!matchedKey) return undefined
 
-  const value = source[matchedKey]
+  const value = parsed[matchedKey]
   if (value === undefined || value === null || value === '') return undefined
 
   return value
@@ -36,11 +80,10 @@ const getDetailsRowFieldValue = (row: RepositoryRow, fieldKey: string) => {
     if (!Array.isArray(fields)) continue
 
     const match = fields.find(
-      (field: { key?: string; label?: string }) =>
-        normalizeFieldKey(String(field?.key || '')) ===
-          normalizeFieldKey(fieldKey) ||
-        normalizeFieldKey(String(field?.label || '')) ===
-          normalizeFieldKey(fieldKey),
+      (field: { key?: string; label?: string; name?: string }) =>
+        matchesFieldKey(String(field?.key || ''), fieldKey) ||
+        matchesFieldKey(String(field?.label || ''), fieldKey) ||
+        matchesFieldKey(String(field?.name || ''), fieldKey),
     )
 
     if (
@@ -64,7 +107,12 @@ export const getRepositoryFieldSources = (row: RepositoryRow) =>
     row.Fields,
     row.values,
     row.Values,
-  ].filter((source) => source && typeof source === 'object') as RepositoryRow[]
+    row.details,
+    row.Details,
+  ].filter(
+    (source) =>
+      source && (typeof source === 'object' || typeof source === 'string'),
+  ) as RepositoryRow[]
 
 export const getRepositoryFieldRawValue = (
   row: RepositoryRow | undefined,
@@ -81,8 +129,8 @@ export const getRepositoryFieldRawValue = (
   const detailsValue = getDetailsRowFieldValue(row || {}, fieldKey)
   if (detailsValue !== undefined) return detailsValue
 
-  const contextKey = Object.keys(contextFilters).find(
-    (key) => normalizeFieldKey(key) === normalizeFieldKey(fieldKey),
+  const contextKey = Object.keys(contextFilters).find((key) =>
+    matchesFieldKey(key, fieldKey),
   )
 
   if (!contextKey) return undefined
@@ -104,3 +152,4 @@ export const getRepositoryFieldStringValue = (
   if (value === undefined || value === null || value === '') return ''
   return String(value).trim()
 }
+

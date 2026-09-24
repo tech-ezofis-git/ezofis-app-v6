@@ -329,8 +329,21 @@ const listStagedFiles = async ({
       url: '/uploadAndIndex/index/all',
     })
     if (status !== 200) throw new Error('invalid status code')
-    const payload = data as StageFileListResponse | null
-    response.data = (payload?.data ?? []).flatMap((group) => group.value ?? [])
+    const payload = data as any
+    if (Array.isArray(payload)) {
+      response.data = payload
+    } else if (Array.isArray(payload?.data)) {
+      const first = payload.data[0]
+      if (first && typeof first === 'object' && 'value' in first && Array.isArray(first.value)) {
+        response.data = payload.data.flatMap((group: any) => group.value ?? [])
+      } else {
+        response.data = payload.data
+      }
+    } else if (Array.isArray(payload?.items)) {
+      response.data = payload.items
+    } else if (Array.isArray(payload?.content)) {
+      response.data = payload.content
+    }
   } catch (e: unknown) {
     console.error(e)
     const err = e as { message?: string; response?: { data?: string } }
@@ -388,8 +401,50 @@ const indexStageFile = async (
   return response
 }
 
+const deleteStagedFiles = async (payload: {
+  fileIds: string[]
+  repositoryId: string
+}) => {
+  const response: { data: unknown; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: { ...getTenantHeaders() },
+      method: 'POST',
+      url: '/uploadAndIndex/index/deletefiles',
+    })
+    if (status !== 200 && status !== 201 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error deleting staged files'
+  }
+  return response
+}
+
+const fetchStageFileBlob = async (fileId: string) => {
+  try {
+    const { data } = await axiosV6({
+      headers: { ...getTenantHeaders() },
+      method: 'GET',
+      responseType: 'blob',
+      url: `/uploadAndIndex/files/${fileId}`,
+    })
+    return data as Blob
+  } catch (e) {
+    console.error('Error fetching stage file blob:', e)
+    return null
+  }
+}
+
 const uploadAndIndexApi = {
   bulkUpload,
+  deleteStagedFiles,
+  fetchStageFileBlob,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
@@ -400,6 +455,8 @@ const uploadAndIndexApi = {
 export default uploadAndIndexApi
 export {
   bulkUpload,
+  deleteStagedFiles,
+  fetchStageFileBlob,
   getBulkUploadJobStatus,
   indexStageFile,
   listStagedFiles,

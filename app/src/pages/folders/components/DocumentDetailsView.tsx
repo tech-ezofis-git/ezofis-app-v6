@@ -23,7 +23,6 @@ import {
   type SignRequestFieldDto,
   type SignRequestInvitePreview,
 } from '@/api/v6/folder/signRequest'
-import Modal from '@/components/base/Modal'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
@@ -1623,7 +1622,20 @@ export function DocumentDetailsView({
   if (!data) return null
 
   return (
-    <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col bg-surface-secondary text-[13px] text-gray-11 duration-300'>
+    <div className='animate-in fade-in relative flex h-full min-h-0 flex-1 flex-col bg-surface-secondary text-[13px] text-gray-11 duration-300'>
+      {isEditingDoc && previewBlobRef.current ? (
+        <div className='absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-surface-secondary'>
+          <CollaboraEditor
+            fileBlob={previewBlobRef.current}
+            fileName={data.fileName}
+            fileType={
+              getFileExtension(data.fileName) || getFileExtension(data.fileType)
+            }
+            onClose={handleCollaboraClose}
+            onSave={handleCollaboraSave}
+          />
+        </div>
+      ) : null}
       {previewUrl && (isPdfPreview || isImagePreview) && (isSigning || assignedFields.length > 0) ? (
         <DocumentSigningPage
           mode='inline'
@@ -3081,19 +3093,6 @@ export function DocumentDetailsView({
         </div>
       </div>
 
-      <Modal fullScreen opened={isEditingDoc} onClose={handleCollaboraClose}>
-        {isEditingDoc && previewBlobRef.current ? (
-          <CollaboraEditor
-            fileBlob={previewBlobRef.current}
-            fileName={data.fileName}
-            fileType={
-              getFileExtension(data.fileName) || getFileExtension(data.fileType)
-            }
-            onClose={handleCollaboraClose}
-            onSave={handleCollaboraSave}
-          />
-        ) : null}
-      </Modal>
     </div>
   )
 }

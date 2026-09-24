@@ -130,6 +130,7 @@ export function useFolderExplorer() {
     Record<string, Record<number, string | null>>
   >({})
   const requestSeqRef = useRef(0)
+  const stagedPollTimerRef = useRef<NodeJS.Timeout | null>(null)
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
   const loadedRepositoryIdRef = useRef<string | null>(null)
@@ -280,9 +281,17 @@ export function useFolderExplorer() {
     folderSearch,
     fileSearch,
     folderFilters,
-    fileFilters,
     pageSize,
   ])
+
+  useEffect(() => {
+    return () => {
+      if (stagedPollTimerRef.current) {
+        clearTimeout(stagedPollTimerRef.current)
+        stagedPollTimerRef.current = null
+      }
+    }
+  }, [activeFolder])
 
   const syncFilterOptionsCache = ({
     columns = [],
@@ -387,6 +396,7 @@ export function useFolderExplorer() {
     folderSearch,
     fileSearch,
     syncTree = true,
+    isPoll = false,
   }: {
     appendFolders?: boolean
     cursor?: string | null
@@ -402,6 +412,7 @@ export function useFolderExplorer() {
     folderSearch?: string
     fileSearch?: string
     syncTree?: boolean
+    isPoll?: boolean
   }) => {
     const requestId = ++requestSeqRef.current
 
@@ -416,7 +427,9 @@ export function useFolderExplorer() {
         ).trim(),
     )
 
-    if (folderPageOnly) setLoadingFolders(true)
+    if (isPoll) {
+      // Silent refresh for staged file status polling
+    } else if (folderPageOnly) setLoadingFolders(true)
     else if (pageOnly) setLoadingPage(true)
     else if (isSearchCall) setRefreshing(true)
     else setLoading(true)
@@ -457,23 +470,104 @@ export function useFolderExplorer() {
 
       if (requestId !== requestSeqRef.current) return response
 
-      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map((summary) => {
-        const isArchived = summary.status === 'ARCHIVED'
+      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map((summary: any) => {
+        let fieldsObj: Record<string, any> = {}
+        let rawFields = summary.fields ?? summary.Fields ?? summary.metadata ?? summary.Metadata
+        if (typeof rawFields === 'string') {
+          try {
+            rawFields = JSON.parse(rawFields)
+          } catch {}
+        }
+
+        if (Array.isArray(rawFields)) {
+          rawFields.forEach((item: any) => {
+            if (!item || typeof item !== 'object') return
+            const key =
+              item.key ??
+              item.Key ??
+              item.name ??
+              item.Name ??
+              item.fieldId ??
+              item.FieldId ??
+              item.label ??
+              item.Label ??
+              item.fieldName ??
+              item.FieldName ??
+              item.sqlColumnName
+            const val =
+              item.value ??
+              item.Value ??
+              item.fieldValue ??
+              item.FieldValue ??
+              item.val
+            if (key !== undefined && key !== null) {
+              fieldsObj[String(key)] = val
+            }
+          })
+        } else if (rawFields && typeof rawFields === 'object') {
+          fieldsObj = { ...rawFields }
+        }
+
+        const rawStatus = String(summary.status || '')
+        const isArchived = rawStatus === 'ARCHIVED'
+
         return {
           ...summary,
+          rawStatus,
+          fields: summary.fields ?? fieldsObj,
+          metadata: summary.metadata ?? fieldsObj,
+          ...fieldsObj,
           id: `staged-${summary.id}`,
+          repositoryId: summary.repositoryId || String(resolvedRepoId || ''),
           stageFileId: summary.id,
           isStaged: true,
           isArchived,
-          name: summary.name,
-          status: isArchived ? 'Archived' : summary.status,
-          type: summary.name?.split('.').pop() || 'file',
+          name:
+            summary.name ||
+            fieldsObj.name ||
+            fieldsObj.fileName ||
+            summary.fileName ||
+            summary.fileNameOnly ||
+            'Untitled',
+          status: isArchived
+            ? 'Archived'
+            : rawStatus.toUpperCase() === 'OCR'
+              ? 'Indexed'
+              : summary.status,
+          type: (summary.name || summary.fileName || fieldsObj.fileName || '').split('.').pop() || 'file',
           size: summary.size,
-          date: summary.createdAt,
-          createdAt: summary.createdAt,
-          modified: summary.createdAt,
+          date: summary.createdAt || summary.createdDate,
+          createdAt: summary.createdAt || summary.createdDate,
+          modified: summary.createdAt || summary.createdDate,
         }
       })
+
+      if (stagedPollTimerRef.current) {
+        clearTimeout(stagedPollTimerRef.current)
+        stagedPollTimerRef.current = null
+      }
+
+      const hasPendingQueueFile = stagedFiles.some((f: any) => {
+        const statusVal = String(f.rawStatus || f.status || '').toUpperCase()
+        return (
+          statusVal === 'QUEUED' ||
+          statusVal === 'PENDINGOCR' ||
+          statusVal === 'PENDING' ||
+          statusVal === 'PROCESSING' ||
+          statusVal === 'INDEXING' ||
+          statusVal.includes('QUEUE')
+        )
+      })
+
+      if (hasPendingQueueFile && resolvedRepoId && page === 1) {
+        stagedPollTimerRef.current = setTimeout(() => {
+          loadFolderContent({
+            folderId,
+            isPoll: true,
+            syncTree: false,
+          })
+        }, 10000)
+      }
 
       const nextFolderPage = getFolderPageMeta(response)
 
