@@ -37,7 +37,7 @@ const Notifications = () => {
   }
 
   const notificationsList: NotificationItem[] = useMemo(() => {
-    if (apiNotifications && Array.isArray(apiNotifications) && apiNotifications.length > 0) {
+    if (apiNotifications && Array.isArray(apiNotifications)) {
       return apiNotifications.map(mapApiNotificationToUi)
     }
     // Fall back to mock data if API is loading or not populated yet during dev
