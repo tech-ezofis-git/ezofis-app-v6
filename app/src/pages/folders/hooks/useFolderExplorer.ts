@@ -460,6 +460,7 @@ export function useFolderExplorer() {
       const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map((summary) => {
         const isArchived = summary.status === 'ARCHIVED'
         return {
+          ...summary,
           id: `staged-${summary.id}`,
           stageFileId: summary.id,
           isStaged: true,
@@ -471,7 +472,6 @@ export function useFolderExplorer() {
           date: summary.createdAt,
           createdAt: summary.createdAt,
           modified: summary.createdAt,
-          ...summary,
         }
       })
 

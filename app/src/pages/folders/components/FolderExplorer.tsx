@@ -5,6 +5,7 @@ import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBr
 import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
+import type { AppView } from '../types/folderTypes'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'

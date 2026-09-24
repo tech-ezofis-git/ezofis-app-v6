@@ -5,7 +5,6 @@ import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import authUserStore from '@/stores/authUserStore'
-import Avatar from '@/components/base/Avatar'
 
 const getInitials = (fullNameOrEmail: string): string => {
   const clean = String(fullNameOrEmail || '').trim()
@@ -23,18 +22,6 @@ const getInitials = (fullNameOrEmail: string): string => {
     : clean.slice(0, 2).toUpperCase()
 }
 
-const getInitials = (nameOrEmail: string): string => {
-  if (!nameOrEmail) return '?'
-  const clean = nameOrEmail.trim()
-  if (clean.includes('@')) {
-    return clean.slice(0, 2).toUpperCase()
-  }
-  const parts = clean.split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  }
-  return clean.slice(0, 2).toUpperCase()
-}
 
 interface ForwardPopoverProps {
   target: React.ReactNode
