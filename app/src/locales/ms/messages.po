@@ -1626,7 +1626,7 @@ msgstr "Pengesahan Azure AD"
 msgid "Azure Blob storage integration for organizations using Microsoft Azure."
 msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsoft Azure."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:780
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:791
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:90
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:165
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:96
@@ -3204,7 +3204,7 @@ msgstr ""
 msgid "Data Access"
 msgstr "Akses Data"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:807
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:818
 msgid "Data Destination"
 msgstr "Destinasi Data"
 
@@ -5869,7 +5869,7 @@ msgstr "tinggi"
 msgid "High Match"
 msgstr "Padanan Tinggi"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:817
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:828
 msgid "High Precision"
 msgstr "Ketepatan Tinggi"
 
@@ -6171,7 +6171,7 @@ msgstr "Integrasi"
 msgid "INTELLIGENCE"
 msgstr "KECERDASAN"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:815
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:826
 msgid "Intelligence Profile"
 msgstr "Profil Perisikan"
 
@@ -10622,7 +10622,7 @@ msgstr "Semakan"
 msgid "Review & Apply"
 msgstr "Semak & Mohon"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:773
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:784
 msgid "Review & Complete Setup"
 msgstr "Semak & Selesaikan Persediaan"
 
@@ -11351,7 +11351,7 @@ msgstr "Keselamatan & pengesahan"
 #~ msgid "Security policy saved successfully"
 #~ msgstr "Dasar keselamatan berjaya disimpan"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:823
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:834
 msgid "Security Protocol"
 msgstr "Protokol Keselamatan"
 
@@ -12260,7 +12260,7 @@ msgstr "Fail tidak disokong dilangkau: {fileName}"
 msgid "Smart PO Matching"
 msgstr "Padanan PO Pintar"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:825
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:836
 msgid "SOC2 Compliant"
 msgstr "Mematuhi SOC2"
 

@@ -1626,7 +1626,7 @@ msgstr "Azure AD authentication"
 msgid "Azure Blob storage integration for organizations using Microsoft Azure."
 msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:780
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:791
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:90
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:165
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:96
@@ -3204,7 +3204,7 @@ msgstr "Dashboard shared"
 msgid "Data Access"
 msgstr "Data Access"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:807
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:818
 msgid "Data Destination"
 msgstr "Data Destination"
 
@@ -5869,7 +5869,7 @@ msgstr "High"
 msgid "High Match"
 msgstr "High Match"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:817
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:828
 msgid "High Precision"
 msgstr "High Precision"
 
@@ -6171,7 +6171,7 @@ msgstr "Integrations"
 msgid "INTELLIGENCE"
 msgstr "INTELLIGENCE"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:815
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:826
 msgid "Intelligence Profile"
 msgstr "Intelligence Profile"
 
@@ -10618,7 +10618,7 @@ msgstr "Review"
 msgid "Review & Apply"
 msgstr "Review & Apply"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:773
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:784
 msgid "Review & Complete Setup"
 msgstr "Review & Complete Setup"
 
@@ -11347,7 +11347,7 @@ msgstr "Security & verification"
 #~ msgid "Security policy saved successfully"
 #~ msgstr "Security policy saved successfully"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:823
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:834
 msgid "Security Protocol"
 msgstr ""
 
@@ -12256,7 +12256,7 @@ msgstr "Skipped unsupported file: {fileName}"
 msgid "Smart PO Matching"
 msgstr "Smart PO Matching"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:825
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:836
 msgid "SOC2 Compliant"
 msgstr "SOC2 Compliant"
 

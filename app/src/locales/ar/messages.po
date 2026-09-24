@@ -1601,7 +1601,7 @@ msgstr "مصادقة Azure AD"
 msgid "Azure Blob storage integration for organizations using Microsoft Azure."
 msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم Microsoft Azure."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:780
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:791
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:90
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:165
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:96
@@ -3159,7 +3159,7 @@ msgstr ""
 msgid "Data Access"
 msgstr "الوصول إلى البيانات"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:807
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:818
 msgid "Data Destination"
 msgstr "وجهة البيانات"
 
@@ -5784,7 +5784,7 @@ msgstr "مرتفع"
 msgid "High Match"
 msgstr "تطابق عالٍ"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:817
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:828
 msgid "High Precision"
 msgstr "دقة عالية"
 
@@ -6086,7 +6086,7 @@ msgstr "التكامل"
 msgid "INTELLIGENCE"
 msgstr "الذكاء"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:815
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:826
 msgid "Intelligence Profile"
 msgstr "الملف الاستخباراتي"
 
@@ -10494,7 +10494,7 @@ msgstr "مراجعة"
 msgid "Review & Apply"
 msgstr "المراجعة والتطبيق"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:773
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:784
 msgid "Review & Complete Setup"
 msgstr "المراجعة والإعداد الكامل"
 
@@ -11211,7 +11211,7 @@ msgstr "سياسة الأمان والتدقيق"
 msgid "Security & verification"
 msgstr "الأمان والتحقق"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:823
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:834
 msgid "Security Protocol"
 msgstr "بروتوكول الأمان"
 
@@ -12081,7 +12081,7 @@ msgstr "تم تخطي ملف غير مدعوم: {fileName}"
 msgid "Smart PO Matching"
 msgstr "مطابقة PO ذكية"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:825
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:836
 msgid "SOC2 Compliant"
 msgstr "متوافق مع SOC2"
 

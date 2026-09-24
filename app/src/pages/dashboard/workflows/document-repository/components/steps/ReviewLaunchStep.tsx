@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { createRepository } from '@/api/createFolder'
 import apiRouter from '@/api/apiRouter'
+import { createRepository } from '@/api/createFolder'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -9,8 +9,9 @@ import {
   StepFooter,
   StepLayout,
 } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
-import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import SuccessCelebration from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/SuccessCelebration'
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
+import { createDocumentApprovalFormAndWorkflow } from '@/pages/dashboard/workflows/document-approval/createDocumentApproval'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
@@ -51,9 +52,7 @@ const buildCreateRepositoryPayload = ({
     dataType: field.dataType,
     includeInFolderStructure: field.includeInFolderStructure,
     isMandatory: field.isMandatory,
-    level:
-      field.level ||
-      (field.includeInFolderStructure ? index + 1 : 0),
+    level: field.level || (field.includeInFolderStructure ? index + 1 : 0),
     name: field.fieldName,
     orderId: field.orderId ?? index + 1,
   }))
@@ -139,6 +138,15 @@ const ReviewLaunchStep = () => {
       if (response.error) {
         showToast({
           message: `Failed to create folder: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      const documentApprovalRes = await createDocumentApprovalFormAndWorkflow()
+      if (documentApprovalRes.error) {
+        showToast({
+          message: documentApprovalRes.error,
           variant: 'error',
         })
         return
@@ -258,7 +266,6 @@ const ReviewLaunchStep = () => {
             icon='tabler:list-details'
             iconClassName='bg-blue-2 text-blue-11'
             label='Configured fields'
-            onEdit={() => setStep(1)}
             subtitle={
               fields.length === 0
                 ? 'No fields added yet'
@@ -276,6 +283,7 @@ const ReviewLaunchStep = () => {
                 ? '0 fields'
                 : `${fields.length} field${fields.length === 1 ? '' : 's'}`
             }
+            onEdit={() => setStep(1)}
           />
 
           <ReviewSummaryCard
@@ -283,9 +291,9 @@ const ReviewLaunchStep = () => {
             iconClassName='bg-green-2 text-green-11'
             label='Storage'
             logo={selectedStorage.logo}
-            onEdit={() => setStep(2)}
             subtitle={storageSubtitle}
             title={storageTitle}
+            onEdit={() => setStep(2)}
           />
         </div>
       </div>
@@ -298,17 +306,17 @@ function ReviewSummaryCard({
   iconClassName,
   label,
   logo,
-  onEdit,
   subtitle,
   title,
+  onEdit,
 }: {
   icon?: string
   iconClassName: string
   label: string
   logo?: string
-  onEdit: () => void
   subtitle: string
   title: string
+  onEdit: () => void
 }) {
   return (
     <div className='rounded-xl border border-gray-3 bg-surface p-4 shadow-sm'>
