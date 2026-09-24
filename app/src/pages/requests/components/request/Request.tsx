@@ -1107,7 +1107,7 @@ const Request = ({
   const ruleActions = useMemo(() => {
     const configuredActions = currentBlockSettings?.actions || []
     let derivedActions: any[] = []
-
+    console.log('current blocksd', currentBlock, dynamicRules)
     if (configuredActions.length > 0) {
       derivedActions = configuredActions.map((a: any) => ({
         label: a.actionName || 'Submit',

@@ -534,12 +534,16 @@ const TableFieldRenderer = ({
     <div className='w-full max-w-full min-w-0 space-y-2'>
       <div className='flex items-center justify-between gap-2'>
         <div>
-          <label className='block text-13 font-medium text-gray-12'>
+          <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
+            <Icon
+              className='h-4 w-4 text-[var(--primary-9)]'
+              name='tabler:table'
+            />
             {field.label}
             {required && <span className='ml-1 text-red-9'>*</span>}
-          </label>
+          </h4>
           {general.description && (
-            <p className='mt-0.5 text-12 text-gray-9'>{general.description}</p>
+            <p className='mt-0.5 ml-5 text-12 text-gray-9'>{general.description}</p>
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
@@ -633,7 +637,19 @@ const TableFieldRenderer = ({
         </div>
       )}
 
-      <div className='w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-gray-3 bg-white shadow-2xs'>
+      <div
+        className={cn(
+          'w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-gray-3 bg-white shadow-2xs',
+          // Spreadsheet-like borderless inputs
+          '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
+          '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
+          '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-white',
+          '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
+          // Vertical borders for columns matching AP style
+          '[&_th]:border-r [&_th]:border-gray-3 [&_td]:border-r [&_td]:border-gray-2',
+          '[&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0',
+        )}
+      >
         <Table className='w-max min-w-full border-collapse'>
           <Thead className='bg-gray-2/60'>
             <Tr className='border-b border-gray-3'>
@@ -664,8 +680,35 @@ const TableFieldRenderer = ({
             </Tr>
           </Thead>
           <Tbody>
-            {rows.map((row, rowIndex) => {
-              const rowId = row._rowId || `row-${rowIndex}`
+            {rows.length === 0 ? (
+              [0, 1, 2].map((i) => (
+                <Tr
+                  className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                  key={`skeleton-${i}`}
+                >
+                  {rowSelection !== 'NONE' && (
+                    <Td className='px-2.5 py-3 text-center align-middle'>
+                      <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                    </Td>
+                  )}
+                  <Td className='px-2.5 py-3 text-center'>
+                    <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                  </Td>
+                  {tableColumns.map((col) => (
+                    <Td className='px-3 py-3 align-middle' key={col.id}>
+                      <div className='h-4 animate-pulse rounded-full bg-[var(--gray-3)] w-5/6' />
+                    </Td>
+                  ))}
+                  {!readOnly && rowsType === 'ON_DEMAND' && (
+                    <Td className='px-2 py-3 text-center align-middle'>
+                      <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                    </Td>
+                  )}
+                </Tr>
+              ))
+            ) : (
+              rows.map((row, rowIndex) => {
+                const rowId = row._rowId || `row-${rowIndex}`
               const isSelected = selectedRowIds.has(rowId)
               const resolvedRow = resolvedRows[rowIndex] || row
               return (
@@ -714,7 +757,7 @@ const TableFieldRenderer = ({
                   )}
                 </Tr>
               )
-            })}
+            }))}
             {showSummaryRow && (
               <Tr className='border-t-2 border-gray-3 bg-gray-1/60'>
                 {rowSelection !== 'NONE' && <Td />}
