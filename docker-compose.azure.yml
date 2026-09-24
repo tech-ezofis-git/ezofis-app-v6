@@ -1,6 +1,12 @@
 version: '3.8'
 
 # Multi-container Azure stack. Secrets live in .env.azure (see .env.azure.example).
+#
+# Live pins are managed by CI (Way 2 / no ACR):
+#   .github/workflows/docker-ghcr.yml + .github/scripts/deploy-azure-compose.sh
+# - Only the service that changed is retagged to sha-<commit> and restarted.
+# - Unchanged services keep their current Azure tags (never reset to :latest).
+# This file's :latest tags are a local/reference default only.
 services:
   app:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/app:latest
