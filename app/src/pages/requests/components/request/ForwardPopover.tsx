@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Popover } from '@mantine/core'
 import { t } from '@lingui/macro'
-import Icon from '@/components/base/icon/Icon'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import { Textarea } from '@mantine/core'
@@ -120,8 +119,8 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                   <div
                     key={id}
                     className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-all ${isSelected
-                        ? 'border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-11)] shadow-xs'
-                        : 'border-transparent bg-transparent hover:bg-[var(--gray-2)] text-[var(--gray-12)]'
+                      ? 'border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-11)] shadow-xs'
+                      : 'border-transparent bg-transparent hover:bg-[var(--gray-2)] text-[var(--gray-12)]'
                       }`}
                     onClick={() =>
                       setSelectedUserId((prev) => (prev === id ? null : id))
@@ -132,8 +131,8 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                       <div className='flex items-center justify-between gap-2'>
                         <div
                           className={`truncate text-sm font-medium ${isSelected
-                              ? 'font-semibold text-[var(--primary-11)]'
-                              : 'text-[var(--gray-12)]'
+                            ? 'font-semibold text-[var(--primary-11)]'
+                            : 'text-[var(--gray-12)]'
                             }`}
                         >
                           {name}
@@ -147,8 +146,8 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                       {showEmailSubline && (
                         <div
                           className={`truncate text-xs ${isSelected
-                              ? 'text-[var(--primary-10)]'
-                              : 'text-[var(--gray-11)]'
+                            ? 'text-[var(--primary-10)]'
+                            : 'text-[var(--gray-11)]'
                             }`}
                         >
                           {user.email}
