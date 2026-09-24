@@ -16,6 +16,7 @@ import {
   getRepositorys,
   uploadForOcr,
 } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
@@ -398,11 +399,23 @@ const LivePreviewDropdown = ({
     enabled: facetSource.enabled,
   })
 
+  const { data: userFieldOptions = [] } = useQuery({
+    queryKey: ['livePreviewUserList'],
+    queryFn: async () => {
+      const res = await getUsers()
+      return res.data.map((user) => ({ id: user.email, name: user.email }))
+    },
+    enabled: optionsType === 'USER_LIST',
+  })
+
   const selectOptions = withExtraFieldOptions(
-    optionsType === 'DYNAMIC'
-      ? getSharedFieldOptions(field)
-      : getConfiguredFieldOptions(field),
-    uniqueFieldOptions,
+    withExtraFieldOptions(
+      optionsType === 'DYNAMIC'
+        ? getSharedFieldOptions(field)
+        : getConfiguredFieldOptions(field),
+      uniqueFieldOptions,
+    ),
+    userFieldOptions,
   )
 
   if (multiple) {

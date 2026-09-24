@@ -10,7 +10,7 @@ export default function SettingsSetupContent({
   children,
 }: SettingsSetupContentProps) {
   return (
-    <section className='ez-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-6 py-6 md:px-8'>
+    <section className='ez-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-6 py-6'>
       <div className='w-full min-w-0'>{children}</div>
     </section>
   )

@@ -2127,7 +2127,7 @@ export default function DmsFolderConfiguration({
           onBack={onBack}
         />
 
-        <div className='flex flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             actionButtons={[
@@ -2238,7 +2238,7 @@ export default function DmsFolderConfiguration({
             }}
           />
 
-          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 isLoading={isLoadingRepositories || isLoadingEditRepository}

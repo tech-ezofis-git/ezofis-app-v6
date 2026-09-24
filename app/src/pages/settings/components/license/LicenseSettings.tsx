@@ -82,7 +82,7 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
       />
 
       <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain'>
-        <div className='flex flex-col gap-4 p-4'>
+        <div className='flex flex-col gap-4 px-6 py-4'>
           <AnimateSlideUp>
             <LicenseTrialBanner summary={resolvedSummary} />
           </AnimateSlideUp>

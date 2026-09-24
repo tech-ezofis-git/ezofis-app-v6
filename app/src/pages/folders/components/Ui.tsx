@@ -123,14 +123,14 @@ export function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-flex max-w-full min-w-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}
     >
-      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-words'>
+      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-all'>
         {status}
       </span>
     </span>
   )
 }
 
-/** Single-line ellipsis; hover expands in place (no tooltip). For icon+text cells. */
+/** Single-line ellipsis; hover expands text below by wrapping lines (no system tooltip). */
 export function EllipsisText({
   className = '',
   inline = false,
@@ -148,7 +148,7 @@ export function EllipsisText({
     : 'block min-w-0 w-full max-w-full'
 
   const singleLineClass =
-    'overflow-hidden text-ellipsis whitespace-nowrap hover:overflow-visible hover:whitespace-normal hover:text-clip group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:text-clip'
+    'overflow-hidden text-ellipsis whitespace-nowrap hover:overflow-visible hover:whitespace-normal hover:break-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-all'
 
   const multiLineClass =
     'break-words [overflow-wrap:anywhere] line-clamp-2 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'

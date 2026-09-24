@@ -1,22 +1,17 @@
 import type { Node } from '@xyflow/react'
-import { useNodes } from '@xyflow/react'
-import ConnectionsRouting from './common/ConnectionsRouting'
+import AgentKnowledgeSkillPanel from './common/AgentKnowledgeSkillPanel'
 
-export default function QualifyAgentSettingsPanel({
-  node: initialNode,
-}: {
-  node?: Node
-}) {
-  const liveNodes = useNodes()
-
-  const currentNode = initialNode
-    ? liveNodes.find((n) => n.id === initialNode.id) || initialNode
-    : null
-
+export default function QualifyAgentSettingsPanel({ node }: { node?: Node }) {
   return (
-    <div className='flex h-full flex-col overflow-y-auto p-4 space-y-3.5 font-sans'>
-      {/* Connections & Routing */}
-      {currentNode && <ConnectionsRouting node={currentNode} />}
-    </div>
+    <AgentKnowledgeSkillPanel
+      node={node}
+      config={{
+        instructionPlaceholder:
+          'Must-have fields, disqualify conditions, and the score required to qualify.',
+        knowledgeHint:
+          'Upload the qualification policy, ICP, or product sheet. The lead itself comes from the previous step.',
+        skillPlaceholder: 'Describe how this agent should qualify the lead.',
+      }}
+    />
   )
 }

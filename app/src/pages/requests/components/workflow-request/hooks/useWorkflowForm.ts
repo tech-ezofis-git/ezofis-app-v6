@@ -43,7 +43,14 @@ interface FormRecord {
 //  2. On submit: block if any repository-mandatory field is still empty;
 //     otherwise uploadWithOcr each pending file (this is what actually
 //     stages it) to get the real fileId used in `stagedFiles`.
-export const useWorkflowForm = (workflow: any) => {
+export interface UseWorkflowFormOptions {
+  viewerRepositoryId?: string
+  viewerItemId?: string
+  isRaiseTicket?: boolean
+  fileName?: string
+}
+
+export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions) => {
   const [form, setForm] = useState<FormRecord | null>(null)
   const [isLoadingForm, setIsLoadingForm] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -59,7 +66,7 @@ export const useWorkflowForm = (workflow: any) => {
     RepositoryFieldDto[]
   >([])
 
-  const repositoryId = workflow?.repositoryId
+  const repositoryId = options?.viewerRepositoryId ?? workflow?.repositoryId
 
   const formId =
     workflow?.formId ??
@@ -135,11 +142,6 @@ export const useWorkflowForm = (workflow: any) => {
     () => buildRepoFieldDescriptors(repositoryFields, panels),
     [repositoryFields, panels],
   )
-  const missingMandatoryFieldIds = useMemo(
-    () => getMissingMandatoryFieldIds(repoFieldDescriptors, formModel),
-    [repoFieldDescriptors, formModel],
-  )
-
   // Every file the user has uploaded so far — sidebar attachments and
   // field-level FILE_UPLOAD/IMAGE_UPLOAD values alike — used to drive the
   // split-view file preview and to decide whether to show it at all.
@@ -170,6 +172,14 @@ export const useWorkflowForm = (workflow: any) => {
   const hasUploadedFile = uploadedFiles.length > 0
   const pendingUploadFileName =
     uploadedFiles.find((file) => file.rawFile)?.fileName || ''
+
+  const missingMandatoryFieldIds = useMemo(
+    () =>
+      getMissingMandatoryFieldIds(repoFieldDescriptors, panels, formModel, {
+        hasUploadedFile,
+      }),
+    [repoFieldDescriptors, panels, formModel, hasUploadedFile],
+  )
 
   // Same as folder / inbox indexing: fill empty Filename from the uploaded
   // file (without extension) so a mandatory filename field is ready in the
@@ -511,22 +521,21 @@ export const useWorkflowForm = (workflow: any) => {
     setHasAttemptedSubmit(true)
 
     if (!workflow?.id) {
-      setSubmitError('Workflow ID is missing. Cannot start workflow.')
-      return { success: false }
+      const errorMsg = 'Workflow ID is missing. Cannot start workflow.'
+      setSubmitError(errorMsg)
+      return { error: errorMsg, success: false }
     }
 
-    // Repository fields are metadata for an ATTACHED document — only worth
-    // enforcing once the user is actually filing one. A request with no
-    // file at all has nothing for Project/Document Type/... to describe,
-    // so it shouldn't be blocked on them.
-    if (hasUploadedFile) {
-      const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
-      if (missing.length > 0) {
-        setSubmitError(
-          `Please fill in required field(s): ${missing.join(', ')}`,
-        )
-        return { success: false }
-      }
+    const missing = getMissingMandatoryFields(
+      repoFieldDescriptors,
+      panels,
+      formModel,
+      { hasUploadedFile },
+    )
+    if (missing.length > 0) {
+      const errorMsg = `Please fill in required field(s): ${missing.join(', ')}`
+      setSubmitError(errorMsg)
+      return { error: errorMsg, success: false }
     }
 
     setIsSubmitting(true)
@@ -543,7 +552,7 @@ export const useWorkflowForm = (workflow: any) => {
       const message =
         e instanceof Error ? e.message : 'Failed to upload attachment(s).'
       setSubmitError(message)
-      return { success: false }
+      return { error: message, success: false }
     }
     setAttachments(staged.attachments)
     setFormModel(staged.formModel)
@@ -567,19 +576,40 @@ export const useWorkflowForm = (workflow: any) => {
       stagedAttachmentFiles,
       context,
     )
-    const { data, error } = await workflowsApiV6.startWorkflowJson(
-      String(workflow.id),
-      payload,
-    )
+    
+    let resData, resError
+    
+    if (options?.isRaiseTicket && options.viewerRepositoryId && options.viewerItemId) {
+      const { data, error } = await workflowsApiV6.raiseTicket(
+        String(workflow.id),
+        {
+          repositoryId: options.viewerRepositoryId,
+          itemId: options.viewerItemId,
+          formData: payload.formData,
+          fileName: options.fileName,
+          context: context || null,
+          envType: null,
+        }
+      )
+      resData = data
+      resError = error
+    } else {
+      const { data, error } = await workflowsApiV6.startWorkflowJson(
+        String(workflow.id),
+        payload,
+      )
+      resData = data
+      resError = error
+    }
 
     setIsSubmitting(false)
 
-    if (error) {
-      setSubmitError(error)
-      return { success: false }
+    if (resError) {
+      setSubmitError(resError)
+      return { error: resError, success: false }
     }
 
-    return { data, success: true }
+    return { data: resData, success: true }
   }
 
   return {

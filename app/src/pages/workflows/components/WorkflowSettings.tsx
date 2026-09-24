@@ -60,6 +60,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     kanbanSettings,
     prefixSegments,
     previewValues,
+    requestTitleField,
     requestTabs,
     workflowDescription,
     workflowName,
@@ -70,6 +71,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setKanbanSettings,
     setPrefixSegments,
     setPreviewValues,
+    setRequestTitleField,
     setRequestTabs,
     setWorkflowDescription,
     setWorkflowName,
@@ -169,6 +171,12 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const previewFieldOptions: Option[] = useMemo(
     () =>
       previewFields.map((field) => ({ id: field.label, name: field.label })),
+    [previewFields],
+  )
+
+  const titleFieldOptions: Option[] = useMemo(
+    () =>
+      previewFields.map((field) => ({ id: field.key, name: field.label })),
     [previewFields],
   )
 
@@ -415,6 +423,25 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   : undefined
             }
             onChange={handlePreviewValuesChange}
+          />
+
+          <InputSelect
+            label='Request Title'
+            options={titleFieldOptions}
+            placeholder='Select field for request title...'
+            value={
+              requestTitleField
+                ? {
+                    id: requestTitleField,
+                    name:
+                      titleFieldOptions.find((o) => o.id === requestTitleField)
+                        ?.name || requestTitleField,
+                  }
+                : null
+            }
+            clearable
+            searchable
+            onChange={(val: any) => setRequestTitleField(val?.id || null)}
           />
         </SettingsSection>
 

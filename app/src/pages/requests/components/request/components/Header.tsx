@@ -548,50 +548,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className='flex shrink-0 items-center gap-2 sm:gap-3 flex-wrap'>
-          {(raisedByDisplay || raisedAt || lastActionAt) && (
-            <div className='flex items-center gap-2.5 border-r border-gray-3 pr-3 text-[12px] text-gray-11 flex-wrap'>
-              {raisedByDisplay && (
-                <Tooltip
-                  className='min-w-0 max-w-[9rem] lg:max-w-[12rem]'
-                  content={String(raisedByDisplay)}
-                  position='bottom'
-                >
-                  <div className='flex items-center gap-1.5 min-w-0'>
-                    <Icon
-                      className='size-3.5 shrink-0 text-gray-9'
-                      name='lucide:user'
-                    />
-                    <span className='truncate font-medium text-gray-12'>
-                      {raisedByDisplay}
-                    </span>
-                  </div>
-                </Tooltip>
-              )}
-
-              {raisedAt && (
-                <div
-                  className='flex shrink-0 items-center gap-1.5 whitespace-nowrap'
-                  title={t`Raised Date`}
-                >
-                  <Icon
-                    className='size-3.5 shrink-0 text-gray-9'
-                    name='lucide:calendar'
-                  />
-                  <span>{formatRaisedDate(raisedAt)}</span>
-                </div>
-              )}
-
-              {(lastActionAt || raisedAt) && (
-                <div
-                  className='flex shrink-0 items-center gap-1.5 rounded-full border border-orange-4 bg-orange-2 px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-orange-11'
-                  title={t`Time running from last action`}
-                >
-                  <Icon className='size-3 shrink-0 text-orange-9' name='lucide:clock' />
-                  <span>{formatElapsedTime(lastActionAt || raisedAt)}</span>
-                </div>
-              )}
-            </div>
-          )}
           <div className='flex shrink-0 items-center gap-1'>
             {rightViewTabs.map((tab) => (
               <Tooltip content={tab.label} key={tab.id} position='bottom'>
@@ -645,12 +601,11 @@ const Header: React.FC<HeaderProps> = ({
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
-                return (
+                const btn = (
                   <Button
                     color={btnColor}
                     icon={defaultIcon}
                     iconClass='size-4'
-                    key={action?.value}
                     label={action?.label}
                     loading={approveLoading}
                     size='md'
@@ -659,8 +614,20 @@ const Header: React.FC<HeaderProps> = ({
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
                     )}
-                    onClick={() => onApprove?.(action?.value)}
+                    onClick={action.onClick || (() => onApprove?.(action?.value))}
                   />
+                )
+
+                return (
+                  <div
+                    className='flex items-center gap-1.5'
+                    key={action?.value}
+                  >
+                    {action.renderWrapper ? (() => {
+                      console.log('Rendering custom wrapper for action:', action.value)
+                      return action.renderWrapper(btn)
+                    })() : btn}
+                  </div>
                 )
               })}
             </div>
@@ -1561,25 +1528,32 @@ const Header: React.FC<HeaderProps> = ({
                       'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                   }
 
+                  const btn = (
+                    <Button
+                      color={btnColor}
+                      icon={defaultIcon}
+                      iconClass='size-4'
+                      label={action?.label}
+                      loading={approveLoading}
+                      size='md'
+                      variant={btnVariant}
+                      className={cn(
+                        borderClass,
+                        'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      )}
+                      onClick={action.onClick || (() => onApprove?.(action?.value))}
+                    />
+                  )
+
                   return (
                     <div
                       className='flex items-center gap-1.5'
                       key={action?.value}
                     >
-                      <Button
-                        color={btnColor}
-                        icon={defaultIcon}
-                        iconClass='size-4'
-                        label={action?.label}
-                        loading={approveLoading}
-                        size='md'
-                        variant={btnVariant}
-                        className={cn(
-                          borderClass,
-                          'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                        )}
-                        onClick={() => onApprove?.(action?.value)}
-                      />
+                      {action.renderWrapper ? (() => {
+                        console.log('Rendering custom wrapper for action:', action.value)
+                        return action.renderWrapper(btn)
+                      })() : btn}
                     </div>
                   )
                 })}

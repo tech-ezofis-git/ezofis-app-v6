@@ -8,9 +8,8 @@ import SidebarSmall from './sidebar-small/SidebarSmall'
 const Sidebar = () => {
   const { t } = useLingui()
 
-  const sessionPermissions = authUserStore(
-    (state) => state.session?.permissionKeys,
-  )
+  const session = authUserStore((state) => state.session)
+  const sessionPermissions = session?.permissionKeys
 
   const menus: Menus = [
     {
@@ -24,7 +23,7 @@ const Sidebar = () => {
         {
           icon: 'lucide:inbox',
           label: t`Workflows`,
-          permissionKey: 'request',
+          permissionKey: 'workflow-inbox',
           route: '/requests',
         },
         {
@@ -71,10 +70,16 @@ const Sidebar = () => {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) =>
-        isPermissionVisible(item.permissionKey, sessionPermissions),
+        isPermissionVisible(item.permissionKey, sessionPermissions, session?.role),
       ),
     }))
     .filter((section) => section.items.length > 0)
+
+  console.log('[Sidebar Menu Access Data]', {
+    filteredMenu,
+    role: session?.role,
+    sessionPermissions,
+  })
 
   return (
     <>

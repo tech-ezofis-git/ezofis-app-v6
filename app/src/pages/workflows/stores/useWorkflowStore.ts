@@ -81,6 +81,7 @@ type Store = {
   loadedNodes: Node[] | null
   prefixSegments: PrefixSegment[]
   previewValues: string[]
+  requestTitleField: string | null
   requestTabs: RequestTabConfig[]
   selectedEdge: Edge | null
   selectedNode: Node | null
@@ -107,6 +108,7 @@ type Store = {
   setKanbanSettings: (cards: KanbanCardSetting[]) => void
   setPrefixSegments: (segments: PrefixSegment[]) => void
   setPreviewValues: (values: string[]) => void
+  setRequestTitleField: (field: string | null) => void
   setRequestTabs: (tabs: RequestTabConfig[]) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
@@ -137,6 +139,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   loadedNodes: null,
   prefixSegments: defaultPrefixSegments,
   previewValues: [],
+  requestTitleField: null,
   requestTabs: [],
   selectedEdge: null,
   selectedNode: null,
@@ -245,6 +248,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: nodes,
       prefixSegments,
       previewValues,
+      requestTitleField: legacyJson.settings?.general?.requestTitleField || null,
       requestTabs,
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
@@ -273,6 +277,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: null,
       prefixSegments: defaultPrefixSegments,
       previewValues: [],
+      requestTitleField: null,
       requestTabs: [],
       selectedEdge: null,
       selectedNode: null,
@@ -316,6 +321,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   setKanbanSettings: (cards) => set({ kanbanSettings: cards }),
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
   setPreviewValues: (values) => set({ previewValues: values }),
+  setRequestTitleField: (field) => set({ requestTitleField: field }),
   setRequestTabs: (tabs) => set({ requestTabs: tabs }),
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),

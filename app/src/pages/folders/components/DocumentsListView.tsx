@@ -690,12 +690,12 @@ export function DocumentsListView({
 
           return (
             <button
-              className='flex max-w-full min-w-0 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40'
+              className='flex max-w-full min-w-0 items-start gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40'
               disabled={isBusy}
               type='button'
               onClick={() => onOpenFile(fileId)}
             >
-              <Icon className='size-5 shrink-0' name={iconName} />
+              <Icon className='size-5 shrink-0 pt-0.5' name={iconName} />
               <EllipsisText
                 className='font-semibold text-gray-13'
                 lines={1}

@@ -14,8 +14,12 @@ import { buildTableMeta } from '../utils/dynamicTable.utils'
 import {
   buildDynamicColumns,
   extractGenericRequestNumber,
+  extractInvoiceNumber,
+  extractPONumber,
+  findSupplierName,
   getFormPanels,
   resolveFormJson,
+  resolveConfiguredTitle,
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
 
@@ -87,7 +91,12 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     return rows
   }, [dynamicFields])
 
-  const requestNo = extractGenericRequestNumber(row)
+  const isDocumentApproval = workflow?.name === 'Document Approval'
+  const configuredTitle = resolveConfiguredTitle(row, workflow, isDocumentApproval)
+
+  const requestNo = configuredTitle || (isDocumentApproval 
+    ? (row?.repositoryItem?.fileName || extractGenericRequestNumber(row))
+    : extractGenericRequestNumber(row))
   const raisedBy =
     row?.createdByName ||
     row?.createdByEmail ||
@@ -143,9 +152,9 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         />
       </div>
 
-      <div className='min-w-0 flex-1'>
+      <div className='min-w-0 flex-1 overflow-hidden'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
-        <div className='flex flex-wrap items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2 min-w-0 max-w-full'>
           <span className='shrink-0 text-13 font-bold text-gray-13'>
             {requestNo}
           </span>
@@ -157,18 +166,18 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         </div>
 
         {dynamicFieldRows.length > 0 && (
-          <div className='mt-1.5 flex flex-col gap-1'>
+          <div className='mt-1.5 flex flex-col gap-1 min-w-0 max-w-full overflow-hidden'>
             {dynamicFieldRows.map((fieldRow, rowIdx) => (
               <div
-                className='flex flex-wrap items-center gap-1.5'
+                className='flex flex-wrap items-center gap-1.5 min-w-0 max-w-full overflow-hidden'
                 key={fieldRow.map((col) => col.id).join('-') || rowIdx}
               >
                 {fieldRow.map((col, idx) => (
-                  <span className='flex items-center gap-1.5' key={col.id}>
-                    {idx > 0 && <span className='text-gray-6'>·</span>}
-                    <span className='truncate text-11 font-medium text-gray-10'>
+                  <span className='flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden' key={col.id}>
+                    {idx > 0 && <span className='text-gray-6 shrink-0'>·</span>}
+                    <div className='min-w-0 max-w-full overflow-hidden text-11 font-medium text-gray-10'>
                       {col.renderCell?.(row) ?? '-'}
-                    </span>
+                    </div>
                   </span>
                 ))}
               </div>

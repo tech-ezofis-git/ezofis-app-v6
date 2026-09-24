@@ -179,7 +179,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           title={t`Audit & Monitoring`}
           onBack={onBack}
         />
-        <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             trailingActions={<TableExport table={eventsTable.table as any} />}
@@ -219,7 +219,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
             onReset={handleResetFilters}
           />
 
-          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription={t`No audit events or monitoring logs available.`}

@@ -10,6 +10,7 @@ import {
   getColumnSizeClass,
   isFieldFilled,
   isFieldHidden,
+  isFieldReadOnly,
   isFieldRequired,
 } from './utils/fieldRendering'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
@@ -35,6 +36,7 @@ interface Props {
   // Field ids hidden from the current acting user by the current stage's
   // Security & Form Access settings (formVisibilityAccess / formSecureControls).
   hiddenFieldIds?: Set<string>
+  hidePanels?: boolean
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
@@ -72,6 +74,7 @@ const WorkflowFormRenderer = ({
   formModel,
   hasAttemptedSubmit,
   hiddenFieldIds,
+  hidePanels,
   instanceId,
   missingMandatoryFieldIds,
   openValue,
@@ -136,6 +139,98 @@ const WorkflowFormRenderer = ({
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
 
+  const renderVisibleFields = (visibleFields: any[]) => {
+    return (
+      <div className='-mx-2 -mb-4 flex max-w-full min-w-0 flex-wrap'>
+        {visibleFields.map((field: any) => {
+          const isTableField =
+            field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
+          const sizeClass = getColumnSizeClass(
+            isTableField
+              ? field.settings?.general?.size || 'col-12'
+              : field.settings?.general?.size,
+          )
+          return (
+            <div
+              className={`${sizeClass} max-w-full min-w-0 px-2 pb-4`}
+              data-field-id={field.id}
+              key={field.id}
+            >
+              <FieldRenderer
+                fallbackAttachments={attachmentsByField[field.id]}
+                field={field}
+                formModel={formModel}
+                panels={panels}
+                preparePhase={preparePhase}
+                repoFieldHints={repoFieldHints}
+                repositoryId={repositoryId}
+                value={formModel[field.id]}
+                error={
+                  hasAttemptedSubmit &&
+                    (missingMandatoryFieldIds?.has(String(field.id)) ||
+                      (field.jsonId &&
+                        missingMandatoryFieldIds?.has(String(field.jsonId))))
+                    ? t`This field is required.`
+                    : undefined
+                }
+                isPreparing={
+                  Boolean(preparePhase) &&
+                  preparingFieldId === String(field.id)
+                }
+                viewOnly={
+                  viewOnly ||
+                  Boolean(readOnlyFieldIds?.has(String(field.id)))
+                }
+                onChange={(value) => onFieldChange(field.id, value)}
+                onOcrFieldList={onOcrFieldList}
+                onOpenAttachment={onOpenAttachment}
+                onRequestUpload={
+                  onRequestUpload &&
+                    !viewOnly &&
+                    !readOnlyFieldIds?.has(String(field.id))
+                    ? (file) => onRequestUpload(field.id, file)
+                    : undefined
+                }
+              />
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (hidePanels) {
+    return (
+      <div
+        className={
+          disableOwnScroll
+            ? 'w-full min-w-0 max-w-full'
+            : 'w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'
+        }
+      >
+        <AnimateFadeIn delay={0.1}>
+          <div className='flex flex-col gap-2'>
+            {panels.map((panel: any, panelIndex: number) => {
+              const visibleFields = (panel.fields || []).filter(
+                (field: any) =>
+                  !isFieldHidden(field) &&
+                  !hiddenFieldIds?.has(field.id) &&
+                  field.type !== 'DIVIDER',
+              )
+              if (visibleFields.length === 0) return null
+
+              return (
+                <div key={panel.id || panelIndex} className='min-w-0'>
+                  {renderVisibleFields(visibleFields)}
+                </div>
+              )
+            })}
+          </div>
+        </AnimateFadeIn>
+      </div>
+    )
+  }
+
   const content = (
     <div
       className={
@@ -175,7 +270,12 @@ const WorkflowFormRenderer = ({
             )
             if (visibleFields.length === 0) return null
 
-            const requiredFields = visibleFields.filter(isFieldRequired)
+            const requiredFields = visibleFields.filter(
+              (field: any) =>
+                isFieldRequired(field) &&
+                !isFieldReadOnly(field) &&
+                !readOnlyFieldIds?.has(String(field.id)),
+            )
             const completedCount = requiredFields.filter((field: any) =>
               isFieldFilled(field, formModel[field.id]),
             ).length
@@ -231,59 +331,7 @@ const WorkflowFormRenderer = ({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <div className='-mx-2 flex max-w-full min-w-0 flex-wrap'>
-                    {visibleFields.map((field: any) => {
-                      const isTableField =
-                        field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
-                      const sizeClass = getColumnSizeClass(
-                        isTableField
-                          ? field.settings?.general?.size || 'col-12'
-                          : field.settings?.general?.size,
-                      )
-                      return (
-                        <div
-                          className={`${sizeClass} max-w-full min-w-0 px-2 pb-4`}
-                          data-field-id={field.id}
-                          key={field.id}
-                        >
-                          <FieldRenderer
-                            fallbackAttachments={attachmentsByField[field.id]}
-                            field={field}
-                            formModel={formModel}
-                            panels={panels}
-                            preparePhase={preparePhase}
-                            repoFieldHints={repoFieldHints}
-                            repositoryId={repositoryId}
-                            value={formModel[field.id]}
-                            error={
-                              hasAttemptedSubmit &&
-                              missingMandatoryFieldIds?.has(field.id)
-                                ? t`This field is required.`
-                                : undefined
-                            }
-                            isPreparing={
-                              Boolean(preparePhase) &&
-                              preparingFieldId === String(field.id)
-                            }
-                            viewOnly={
-                              viewOnly ||
-                              Boolean(readOnlyFieldIds?.has(String(field.id)))
-                            }
-                            onChange={(value) => onFieldChange(field.id, value)}
-                            onOcrFieldList={onOcrFieldList}
-                            onOpenAttachment={onOpenAttachment}
-                            onRequestUpload={
-                              onRequestUpload &&
-                              !viewOnly &&
-                              !readOnlyFieldIds?.has(String(field.id))
-                                ? (file) => onRequestUpload(field.id, file)
-                                : undefined
-                            }
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
+                  {renderVisibleFields(visibleFields)}
                 </Accordion.Panel>
               </Accordion.Item>
             )

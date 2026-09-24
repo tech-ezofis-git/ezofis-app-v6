@@ -1,13 +1,10 @@
 import type { Node } from '@xyflow/react'
 import { useNodes, useReactFlow } from '@xyflow/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Option } from '@/types/option'
-import Icon from '@/components/base/icon/Icon'
-import InputLabel from '@/components/base/inputs/InputLabel'
-import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
+import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
-import InputText from '@/components/base/inputs/InputText'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
@@ -18,11 +15,26 @@ const outputFormatOptions: Option[] = [
   { id: 4, name: 'Rich Text Format (.rtf)' },
 ]
 
-const templateSourceOptions: Option[] = [
-  { id: 1, name: 'Custom Ezofis HTML Template' },
-  { id: 2, name: 'Uploaded Word Template (.docx)' },
-  { id: 3, name: 'Dynamic Request Form Mapping' },
-]
+const PDF_TEMPLATE_PLACEHOLDER = `{
+  "name": "",
+  "fields": []
+}`
+
+const toTemplateJsonString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2)
+    } catch {
+      return value
+    }
+  }
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value, null, 2)
+  }
+  return ''
+}
 
 export default function DocumentGenerateAgentSettingsPanel({
   node: initialNode,
@@ -35,33 +47,22 @@ export default function DocumentGenerateAgentSettingsPanel({
   const currentNode = initialNode
     ? liveNodes.find((n) => n.id === initialNode.id) || initialNode
     : null
-  const nodeData = (currentNode?.data || {}) as any
+  const nodeData = (currentNode?.data || {}) as Record<string, any>
 
   const [outputFormat, setOutputFormat] = useState<Option>(
     nodeData.outputFormat || outputFormatOptions[0],
   )
-  const [templateSourceId, setTemplateSourceId] = useState<number>(
-    nodeData.templateSourceId || 1,
-  )
-  const [documentTitlePattern, setDocumentTitlePattern] = useState<string>(
-    nodeData.documentTitlePattern || 'Generated_Doc_{{request_id}}',
-  )
-  const [watermarkText, setWatermarkText] = useState<string>(
-    nodeData.watermarkText || '',
-  )
 
-  const [embedDigitalSignature, setEmbedDigitalSignature] = useState<boolean>(
-    nodeData.embedDigitalSignature ?? true,
+  // Form Template JSON Input State
+  const [templateJson, setTemplateJson] = useState(() =>
+    toTemplateJsonString(
+      nodeData.templateJson ?? nodeData.pdfTemplateJson ?? nodeData.pdfTemplate,
+    ),
   )
-  const [autoStoreInVault, setAutoStoreInVault] = useState<boolean>(
-    nodeData.autoStoreInVault ?? true,
-  )
-  const [notifyRecipient, setNotifyRecipient] = useState<boolean>(
-    nodeData.notifyRecipient ?? false,
-  )
+  const [jsonError, setJsonError] = useState('')
+  const [jsonCopied, setJsonCopied] = useState(false)
 
   const [openBasic, setOpenBasic] = useState(true)
-  const [openSecurity, setOpenSecurity] = useState(false)
 
   const updateNodeData = (key: string, value: any) => {
     if (!currentNode) return
@@ -80,21 +81,41 @@ export default function DocumentGenerateAgentSettingsPanel({
     )
   }
 
+  // Sync state if node changes externally
+  useEffect(() => {
+    setTemplateJson(
+      toTemplateJsonString(
+        nodeData.templateJson ?? nodeData.pdfTemplateJson ?? nodeData.pdfTemplate,
+      ),
+    )
+    setJsonError('')
+  }, [currentNode?.id])
+
+  const handleTemplateJsonChange = (val: string) => {
+    setTemplateJson(val)
+    updateNodeData('templateJson', val)
+    updateNodeData('pdfTemplateJson', val)
+    if (!val.trim()) {
+      setJsonError('')
+      return
+    }
+    try {
+      JSON.parse(val)
+      setJsonError('')
+    } catch {
+      setJsonError('Enter valid JSON')
+    }
+  }
+
+  const handleCopyJson = async () => {
+    if (!templateJson.trim()) return
+    await navigator.clipboard?.writeText(templateJson)
+    setJsonCopied(true)
+    setTimeout(() => setJsonCopied(false), 1500)
+  }
+
   return (
     <div className='flex h-full flex-col overflow-y-auto p-4 space-y-3.5 font-sans'>
-      {/* Header Banner */}
-      <div className='flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 text-indigo-900 shadow-xs'>
-        <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs'>
-          <Icon className='h-5 w-5' name='lucide:file-text' />
-        </div>
-        <div>
-          <h3 className='text-sm font-bold text-indigo-950'>Document Generate Agent</h3>
-          <p className='text-xs text-indigo-700 font-medium leading-relaxed'>
-            Automated PDF & Word document generation from form templates & data.
-          </p>
-        </div>
-      </div>
-
       {/* Basic Configuration */}
       <SettingsSection
         icon='lucide:file-code'
@@ -103,8 +124,10 @@ export default function DocumentGenerateAgentSettingsPanel({
         onToggle={() => setOpenBasic(!openBasic)}
       >
         <div className='space-y-4'>
-          <div>
-            <InputLabel label='Output File Format' />
+          <div className='space-y-1.5'>
+            <span className='text-13 font-normal text-gray-12 block'>
+              Output File Format
+            </span>
             <InputSelect
               options={outputFormatOptions}
               value={outputFormat}
@@ -117,85 +140,34 @@ export default function DocumentGenerateAgentSettingsPanel({
             />
           </div>
 
-          <div>
-            <InputLabel label='Template Engine Source' />
-            <InputRadioGroup
-              options={templateSourceOptions}
-              value={templateSourceId}
-              onChange={(val) => {
-                setTemplateSourceId(val)
-                const opt = templateSourceOptions.find((o) => o.id === val)
-                if (opt) {
-                  updateNodeData('templateSourceId', val)
-                  updateNodeData('templateSource', opt.name)
-                }
-              }}
-            />
+          {/* Form Template JSON */}
+          <div className='space-y-2'>
+            <div className='flex items-center justify-between'>
+              <span className='text-13 font-normal text-gray-12'>
+                Form template JSON <span className='text-red-11'>*</span>
+              </span>
+              <IconButton
+                ariaLabel={jsonCopied ? 'Copied' : 'Copy JSON'}
+                color={jsonCopied ? 'green' : 'gray'}
+                disabled={!templateJson.trim()}
+                icon={jsonCopied ? 'lucide:check' : 'lucide:copy'}
+                size='xs'
+                tooltip={jsonCopied ? 'Copied' : 'Copy JSON'}
+                type='button'
+                variant='ghost'
+                onClick={handleCopyJson}
+              />
+            </div>
+
+            <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12 [&_textarea]:resize-none'>
+              <InputTextarea
+                error={jsonError || undefined}
+                placeholder={PDF_TEMPLATE_PLACEHOLDER}
+                value={templateJson}
+                onChange={handleTemplateJsonChange}
+              />
+            </div>
           </div>
-
-          <div>
-            <InputLabel label='Document Naming Pattern' />
-            <InputText
-              placeholder='Generated_Doc_{{request_id}}'
-              value={documentTitlePattern}
-              onChange={(val) => {
-                setDocumentTitlePattern(val)
-                updateNodeData('documentTitlePattern', val)
-              }}
-            />
-            <p className='mt-1 text-[11px] text-gray-500'>
-              Use tags like {'{{request_id}}'} or {'{{date}}'} to dynamically name generated files.
-            </p>
-          </div>
-        </div>
-      </SettingsSection>
-
-      {/* Security & Watermark */}
-      <SettingsSection
-        icon='lucide:lock'
-        isOpen={openSecurity}
-        title='Security, Signature & Storage'
-        onToggle={() => setOpenSecurity(!openSecurity)}
-      >
-        <div className='space-y-4'>
-          <div>
-            <InputLabel label='Document Watermark (Optional)' />
-            <InputText
-              placeholder='CONFIDENTIAL'
-              value={watermarkText}
-              onChange={(val) => {
-                setWatermarkText(val)
-                updateNodeData('watermarkText', val)
-              }}
-            />
-          </div>
-
-          <InputSwitch
-            checked={embedDigitalSignature}
-            label='Embed Digital Signature Placeholder Block'
-            onChange={(val) => {
-              setEmbedDigitalSignature(val)
-              updateNodeData('embedDigitalSignature', val)
-            }}
-          />
-
-          <InputSwitch
-            checked={autoStoreInVault}
-            label='Automatically Store in Document Repository / Vault'
-            onChange={(val) => {
-              setAutoStoreInVault(val)
-              updateNodeData('autoStoreInVault', val)
-            }}
-          />
-
-          <InputSwitch
-            checked={notifyRecipient}
-            label='Send Email Notification with Generated Document Attached'
-            onChange={(val) => {
-              setNotifyRecipient(val)
-              updateNodeData('notifyRecipient', val)
-            }}
-          />
         </div>
       </SettingsSection>
 

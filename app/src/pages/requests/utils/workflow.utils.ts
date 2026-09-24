@@ -77,8 +77,8 @@ export const getActionsForActivity = (
         actions.push({
           color: 'orange',
           icon: 'tabler:user-share',
-          label: 'Assign',
-          value: 'Assign',
+          label: 'Forward',
+          value: 'Forward',
         })
       }
     }
