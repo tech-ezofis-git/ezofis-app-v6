@@ -67,6 +67,98 @@ const getLineItemAmount = (item: any): any => {
   return 0
 }
 
+const parseLineNumber = (value: any): number | null => {
+  if (value === undefined || value === null || value === '') return null
+  const num = Number.parseFloat(String(value).replace(/[^0-9.-]+/g, ''))
+  return Number.isNaN(num) ? null : num
+}
+
+const descriptionSimilarity = (left: string, right: string): number => {
+  const a = left.trim().toLowerCase()
+  const b = right.trim().toLowerCase()
+  if (!a || !b) return 0
+  if (a === b) return 100
+  if (a.includes(b) || b.includes(a)) return 85
+  const tokensA = new Set(a.split(/\s+/).filter(Boolean))
+  const tokensB = new Set(b.split(/\s+/).filter(Boolean))
+  if (tokensA.size === 0 || tokensB.size === 0) return 0
+  let shared = 0
+  tokensA.forEach((token) => {
+    if (tokensB.has(token)) shared += 1
+  })
+  return Math.round((shared / Math.max(tokensA.size + tokensB.size - shared, 1)) * 100)
+}
+
+const numberMatchScore = (left: number | null, right: number | null): number | null => {
+  if (left === null && right === null) return null
+  if (left === null || right === null) return 0
+  if (right === 0) return left === 0 ? 100 : 0
+  const delta = Math.abs(left - right) / Math.abs(right)
+  if (delta <= 0.01) return 100
+  if (delta <= 0.05) return 80
+  return 0
+}
+
+const readLinePart = (
+  item: any,
+  kind: 'description' | 'qty' | 'rate' | 'amount',
+): string => {
+  const key =
+    kind === 'description'
+      ? 'Description'
+      : kind === 'qty'
+        ? 'Qty'
+        : kind === 'rate'
+          ? 'Price'
+          : 'Amount'
+  const direct = getRawVal(item, key)
+  if (direct !== undefined && direct !== null && direct !== '') return String(direct)
+  const aliases =
+    kind === 'description'
+      ? ['description', 'item_description', 'Material Description', 'item', 'name']
+      : kind === 'qty'
+        ? ['quantity', 'Quantity', 'qty', 'Order Quantity']
+        : kind === 'rate'
+          ? ['price', 'rate', 'unit_price', 'Unit Cost', 'Net Price']
+          : ['amount', 'line_amount', 'Line Amount', 'Extended', 'Net Value']
+  for (const alias of aliases) {
+    const value = getRawVal(item, alias)
+    if (value !== undefined && value !== null && value !== '') return String(value)
+  }
+  return ''
+}
+
+const scoreLineAgainstPo = (invoiceItem: any, poLines: any[], index: number): number | null => {
+  if (!Array.isArray(poLines) || poLines.length === 0) return null
+  const invoiceDesc = readLinePart(invoiceItem, 'description')
+  let best = index >= 0 && index < poLines.length ? poLines[index] : poLines[0]
+  let bestSim = descriptionSimilarity(invoiceDesc, readLinePart(best, 'description'))
+  poLines.forEach((poLine) => {
+    const sim = descriptionSimilarity(invoiceDesc, readLinePart(poLine, 'description'))
+    if (sim > bestSim) {
+      best = poLine
+      bestSim = sim
+    }
+  })
+  const parts = [
+    invoiceDesc || readLinePart(best, 'description') ? bestSim : null,
+    numberMatchScore(
+      parseLineNumber(readLinePart(invoiceItem, 'qty')),
+      parseLineNumber(readLinePart(best, 'qty')),
+    ),
+    numberMatchScore(
+      parseLineNumber(readLinePart(invoiceItem, 'rate')),
+      parseLineNumber(readLinePart(best, 'rate')),
+    ),
+    numberMatchScore(
+      parseLineNumber(readLinePart(invoiceItem, 'amount')),
+      parseLineNumber(readLinePart(best, 'amount')),
+    ),
+  ].filter((part): part is number => part !== null)
+  if (parts.length === 0) return null
+  return Math.round(parts.reduce((sum, part) => sum + part, 0) / parts.length)
+}
+
 const formatHeaderLabel = (key: string) => {
   if (isLineItemAmountColumn(key)) {
     return 'Amount'
@@ -87,7 +179,7 @@ export interface LineItemTableProps {
   isCurrentlyProcessing: boolean
   isDynamicTable: boolean
   LINE_ITEM_ACTION_WIDTH: number
-  lineItems: any[]
+  compareLines?: any[]
   skeletonRows: string[]
   atEnd?: boolean
   hideFooter?: boolean
@@ -109,6 +201,7 @@ interface ColumnConfig {
 export default function LineItemTable({
   agentData,
   atEnd = false,
+  compareLines = [],
   currentScoreWidth,
   dynamicColumns,
   dynamicWidths,
@@ -606,8 +699,19 @@ export default function LineItemTable({
           : lineItems.map((item: any, index: number) => {
               const matchData =
                 agentData?.debug?.['Side-by-side Line Item matching']?.[index]
-              const lineScore =
+              const storedScore =
                 matchData?.['Line Score'] ?? item['Line Score'] ?? item?.score
+              const storedNumber =
+                storedScore === undefined || storedScore === null || storedScore === ''
+                  ? null
+                  : Number(storedScore)
+              const comparedScore = scoreLineAgainstPo(item, compareLines, index)
+              const lineScore =
+                storedNumber !== null && !Number.isNaN(storedNumber) && storedNumber > 0
+                  ? storedNumber
+                  : comparedScore !== null
+                    ? comparedScore
+                    : storedNumber
               const isMatch =
                 (lineScore !== undefined && lineScore !== null
                   ? Number(lineScore) >= 90
@@ -817,10 +921,7 @@ export default function LineItemTable({
                   <span className='block w-full overflow-hidden px-1.5 text-right text-xs font-bold text-ellipsis whitespace-nowrap text-[var(--gray-13)]'>
                     {lineItems
                       .reduce((sum: number, item: any) => {
-                        const val =
-                          col.type === 'dynamic' && col.key
-                            ? getRawVal(item, col.key)
-                            : getLineItemAmount(item)
+                        const val = getCellVal(item, col)
                         const num = Number.parseFloat(
                           String(val).replace(/[^0-9.-]+/g, ''),
                         )
