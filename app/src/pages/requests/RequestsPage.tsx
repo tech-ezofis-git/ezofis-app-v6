@@ -51,6 +51,17 @@ const setManuallySelectedWorkflowId = (id: string | number) => {
   }
 }
 
+const isAccountsPayableWorkflowName = (name: string) =>
+  name.trim().toLowerCase().includes('accounts payable')
+
+const findAccountsPayableOption = (options: WorkflowOptionItem[]) =>
+  options.find((opt) => isAccountsPayableWorkflowName(String(opt.name || '')))
+
+const wait = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
 function flattenRows(groups: any[]): any[] {
   const out: any[] = []
   const walk = (node: any) => {
@@ -273,11 +284,27 @@ const RequestsPage = () => {
       id: 'procurement',
       name: 'Procurement',
     }
+    const preferAccountsPayable = requestStore.getState().pendingOpenNewRequest
     try {
       const { data, error } = await workflowsApiV6.getWorkflows()
       if (error) throw new Error(error)
 
-      const publishedOptions = mapPublishedWorkflowListToOptions(data)
+      let publishedOptions = mapPublishedWorkflowListToOptions(data)
+      let accountsPayableOption = findAccountsPayableOption(publishedOptions)
+
+      // The workflow created during onboarding can lag the first list response.
+      // Keep loading until Accounts Payable is present, then open the upload page.
+      if (preferAccountsPayable && !accountsPayableOption) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          await wait(1000)
+          const retry = await workflowsApiV6.getWorkflows()
+          if (retry.error || !retry.data) continue
+          publishedOptions = mapPublishedWorkflowListToOptions(retry.data)
+          accountsPayableOption = findAccountsPayableOption(publishedOptions)
+          if (accountsPayableOption) break
+        }
+      }
+
       const options = [...publishedOptions]
       if (
         !options.some((opt) => String(opt.id).toLowerCase() === 'procurement')
@@ -295,7 +322,9 @@ const RequestsPage = () => {
         const userSelectedId = getManuallySelectedWorkflowId()
 
         let selectedOpt: Option = defaultWorkflow
-        if (userSelectedId) {
+        if (preferAccountsPayable && accountsPayableOption) {
+          selectedOpt = accountsPayableOption
+        } else if (userSelectedId) {
           const match = options.find(
             (opt) => String(opt.id) === String(userSelectedId),
           )
@@ -769,13 +798,39 @@ const RequestsPage = () => {
     setupStore.getState().setIsActivatingAutomation(false)
   }, [])
 
-  // Open new request after AP setup activation
+  // Open the AP invoice upload only after the Accounts Payable workflow
+  // from the list has finished loading. Opening earlier renders the generic
+  // request sheet against an empty workflow ("no form configured").
   useEffect(() => {
     if (!pendingOpenNewRequest) return
 
+    const loadedWorkflowId = rawWorkflowData?.id
+    const selectedWorkflowId = workflow?.id
+    const accountsPayableReady =
+      workflowLoadStatus === 'ready' &&
+      isAccountsPayable &&
+      !!selectedWorkflowId &&
+      !!loadedWorkflowId &&
+      String(loadedWorkflowId) === String(selectedWorkflowId)
+
+    if (!accountsPayableReady) {
+      if (requestStore.getState().newRequest) {
+        requestStore.getState().closeNewRequest()
+      }
+      return
+    }
+
     openNewRequest('request')
     setPendingOpenNewRequest(false)
-  }, [pendingOpenNewRequest, openNewRequest, setPendingOpenNewRequest])
+  }, [
+    pendingOpenNewRequest,
+    workflowLoadStatus,
+    isAccountsPayable,
+    rawWorkflowData,
+    workflow?.id,
+    openNewRequest,
+    setPendingOpenNewRequest,
+  ])
 
   // --- 4. NAVIGATION & FLATTENING ---
 
