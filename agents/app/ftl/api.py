@@ -27,6 +27,17 @@ logger = logging.getLogger("orchestrator.ftl.api")
 router = APIRouter(tags=["ftl"])
 
 
+def _request_llm_overrides(request: Request, model: Optional[str] = None) -> Optional[dict[str, Any]]:
+    """Same frozen model/key the other agents use for this process."""
+    adapter = getattr(request.app.state, "llm_adapter", None)
+    overrides = None
+    if adapter is not None and hasattr(adapter, "snapshot_overrides"):
+        overrides = adapter.snapshot_overrides()
+    if model and str(model).strip():
+        overrides = {**(overrides or {}), "model": str(model).strip()}
+    return overrides
+
+
 @router.post("/api/ftl/qualify")
 async def ftl_qualify(request: Request) -> dict[str, Any]:
     """Qualify an elevator-parts RFQ against the Wittur pricelist."""
@@ -78,7 +89,7 @@ async def ftl_qualify(request: Request) -> dict[str, Any]:
             filepath=f_path,
             candidate_text=cand_text,
             raw_text=r_text,
-            model_override=m_override,
+            llm_overrides=_request_llm_overrides(request, m_override),
         )
         return {
             "status": "success",
@@ -196,7 +207,7 @@ async def ftl_quote(request: Request) -> dict[str, Any]:
             candidate_text=cand_text,
             raw_text=r_text,
             template_type=tpl_type,
-            model_override=m_override,
+            llm_overrides=_request_llm_overrides(request, m_override),
         )
         return {
             "status": "success",
