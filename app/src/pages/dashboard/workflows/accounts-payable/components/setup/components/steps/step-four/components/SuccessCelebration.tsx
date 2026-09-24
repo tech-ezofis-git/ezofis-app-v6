@@ -26,6 +26,7 @@ export default function SuccessCelebration({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   const navigate = useNavigate()
+  const closeNewRequest = requestStore((state) => state.closeNewRequest)
   const setPendingOpenNewRequest = requestStore(
     (state) => state.setPendingOpenNewRequest,
   )
@@ -63,6 +64,7 @@ export default function SuccessCelebration({
     if (onCreateRequest) {
       onCreateRequest()
     } else {
+      closeNewRequest()
       setPendingOpenNewRequest(true)
       apComplete(true)
       clearNavigationLock(false)

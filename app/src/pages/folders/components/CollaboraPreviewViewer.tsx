@@ -71,7 +71,7 @@ export default function CollaboraPreviewViewer({
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const canSendForSignature = permissions?.sendForSignature ?? true
+  const canSendForSignature = permissions?.sendForSignature === true
   const activeSigningMode = isSigningMode || internalSigning
 
   useEffect(() => {
@@ -263,7 +263,8 @@ export default function CollaboraPreviewViewer({
     }
   }
 
-  const showSigningOverlay = activeSigningMode && canSendForSignature
+  const showSigningOverlay =
+    activeSigningMode && (canSendForSignature || isSigningMode)
 
   return (
     <div

@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
-import { Popover } from '@mantine/core'
+import { Popover, Textarea } from '@mantine/core'
 import { t } from '@lingui/macro'
+import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
-import { Textarea } from '@mantine/core'
 import authUserStore from '@/stores/authUserStore'
-import Avatar from '@/components/base/Avatar'
 
 const getInitials = (fullNameOrEmail: string): string => {
   const clean = String(fullNameOrEmail || '').trim()
@@ -22,6 +21,7 @@ const getInitials = (fullNameOrEmail: string): string => {
     ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
     : clean.slice(0, 2).toUpperCase()
 }
+
 
 interface ForwardPopoverProps {
   target: React.ReactNode

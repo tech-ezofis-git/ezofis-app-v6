@@ -1,0 +1,538 @@
+{
+  "formPayload": {
+    "isDeleted": false,
+    "panels": [
+      {
+        "fields": [
+          {
+            "displayLabel": "",
+            "id": "03c459cb-404e-4acc-a897-3c61e1c8a44f",
+            "label": "Requested By",
+            "type": "SHORT_TEXT",
+            "settings": {
+              "aiSettings": {
+                "formControlValidate": {
+                  "masterFormColumn": [],
+                  "masterFormId": 0
+                },
+                "validateTypeKeyword": ""
+              },
+              "general": {
+                "hideLabel": false,
+                "placeholder": "",
+                "readOnly": false,
+                "size": "col-6",
+                "tooltip": "",
+                "url": "",
+                "visibility": "NORMAL",
+                "hidden": true
+              },
+              "lookupSettings": {
+                "columnName": "",
+                "connectionId": 0
+              },
+              "specific": {
+                "allowToAddNewOptions": false,
+                "autoGenerateValue": {
+                  "enabled": false,
+                  "prefix": "",
+                  "suffix": ""
+                },
+                "customDefaultValue": "",
+                "customOptions": "Option 1,Option 2,Option 3",
+                "defaultValue": "",
+                "dividerStyle": "SOLID",
+                "fibFields": [],
+                "matrixColumns": [],
+                "matrixRows": [],
+                "optionsPerLine": 0,
+                "optionsSource": "CUSTOM",
+                "optionsType": "CUSTOM",
+                "separateOptionsUsing": "COMMA"
+              },
+              "validation": {
+                "allowedFileTypes": [],
+                "contentRule": "",
+                "fieldRule": "OPTIONAL",
+                "isCalculationEnabled": false,
+                "maxFileSize": 10,
+                "maximum": "",
+                "minimum": ""
+              }
+            }
+          },
+          {
+            "displayLabel": "",
+            "id": "70f625fb-ca6e-4f43-b377-ebffbc402592",
+            "label": "Requested Date",
+            "type": "DATE",
+            "settings": {
+              "aiSettings": {
+                "formControlValidate": {
+                  "masterFormColumn": [],
+                  "masterFormId": 0
+                },
+                "validateTypeKeyword": ""
+              },
+              "general": {
+                "hideLabel": false,
+                "placeholder": "",
+                "readOnly": false,
+                "size": "col-6",
+                "tooltip": "",
+                "url": "",
+                "visibility": "HIDDEN"
+              },
+              "lookupSettings": {
+                "columnName": "",
+                "connectionId": 0
+              },
+              "specific": {
+                "allowToAddNewOptions": false,
+                "autoGenerateValue": {
+                  "enabled": false,
+                  "prefix": "",
+                  "suffix": ""
+                },
+                "customDefaultValue": "",
+                "customOptions": "Option 1,Option 2,Option 3",
+                "defaultValue": "",
+                "dividerStyle": "SOLID",
+                "fibFields": [],
+                "matrixColumns": [],
+                "matrixRows": [],
+                "optionsPerLine": 0,
+                "optionsSource": "CUSTOM",
+                "optionsType": "CUSTOM",
+                "separateOptionsUsing": "COMMA",
+                "dateDefaultValueType": "CUSTOM"
+              },
+              "validation": {
+                "allowedFileTypes": [],
+                "contentRule": "",
+                "fieldRule": "OPTIONAL",
+                "isCalculationEnabled": false,
+                "maxFileSize": 10,
+                "maximum": "",
+                "minimum": "",
+                "dateLimitType": "NONE"
+              }
+            }
+          },
+          {
+            "displayLabel": "",
+            "id": "5ed0585d-6de9-47cc-bfe3-975dddcbe512",
+            "label": "First Approver",
+            "type": "SINGLE_SELECT",
+            "settings": {
+              "aiSettings": {
+                "formControlValidate": {
+                  "masterFormColumn": [],
+                  "masterFormId": 0
+                },
+                "validateTypeKeyword": ""
+              },
+              "general": {
+                "hideLabel": false,
+                "placeholder": "",
+                "readOnly": false,
+                "size": "col-12",
+                "tooltip": "",
+                "url": "",
+                "visibility": "NORMAL"
+              },
+              "lookupSettings": {
+                "columnName": "",
+                "connectionId": 0
+              },
+              "specific": {
+                "allowToAddNewOptions": false,
+                "autoGenerateValue": {
+                  "enabled": false,
+                  "prefix": "",
+                  "suffix": ""
+                },
+                "customDefaultValue": "",
+                "customOptions": "",
+                "defaultValue": "",
+                "dividerStyle": "SOLID",
+                "fibFields": [],
+                "matrixColumns": [],
+                "matrixRows": [],
+                "optionsPerLine": 0,
+                "optionsSource": "CUSTOM",
+                "optionsType": "USER_LIST",
+                "separateOptionsUsing": "COMMA",
+                "repositoryField": "",
+                "repositoryId": "3565accf-51a1-4f11-b830-1cb2a2973e9d",
+                "parentFieldId": "none",
+                "defaultValueType": "NONE"
+              },
+              "validation": {
+                "allowedFileTypes": [],
+                "contentRule": "",
+                "fieldRule": "REQUIRED",
+                "isCalculationEnabled": false,
+                "maxFileSize": 10,
+                "maximum": "",
+                "minimum": ""
+              }
+            }
+          },
+          {
+            "displayLabel": "",
+            "id": "35e6bb53-60cd-4143-8954-38e18885ee3d",
+            "label": "Remarks",
+            "type": "LONG_TEXT",
+            "settings": {
+              "aiSettings": {
+                "formControlValidate": {
+                  "masterFormColumn": [],
+                  "masterFormId": 0
+                },
+                "validateTypeKeyword": ""
+              },
+              "general": {
+                "hideLabel": false,
+                "placeholder": "",
+                "readOnly": false,
+                "size": "col-12",
+                "tooltip": "",
+                "url": "",
+                "visibility": "NORMAL"
+              },
+              "lookupSettings": {
+                "columnName": "",
+                "connectionId": 0
+              },
+              "specific": {
+                "allowToAddNewOptions": false,
+                "autoGenerateValue": {
+                  "enabled": false,
+                  "prefix": "",
+                  "suffix": ""
+                },
+                "customDefaultValue": "",
+                "customOptions": "Option 1,Option 2,Option 3",
+                "defaultValue": "",
+                "dividerStyle": "SOLID",
+                "fibFields": [],
+                "matrixColumns": [],
+                "matrixRows": [],
+                "optionsPerLine": 0,
+                "optionsSource": "CUSTOM",
+                "optionsType": "CUSTOM",
+                "separateOptionsUsing": "COMMA"
+              },
+              "validation": {
+                "allowedFileTypes": [],
+                "contentRule": "",
+                "fieldRule": "REQUIRED",
+                "isCalculationEnabled": false,
+                "maxFileSize": 10,
+                "maximum": "",
+                "minimum": ""
+              }
+            }
+          }
+        ],
+        "id": "379ee690-977e-4778-8003-c2e85d9806f1",
+        "settings": {
+          "description": "",
+          "title": "Request Details"
+        }
+      }
+    ],
+    "secondaryPanels": [],
+    "uid": "be4c36e8-f240-4ea0-8724-2203369ec12f",
+    "settings": {
+      "general": {
+        "coordinator": "",
+        "description": "",
+        "layout": "SINGLE",
+        "name": "Document Approval",
+        "type": "WORKFLOW"
+      },
+      "hubLinkIds": [],
+      "publish": {
+        "publishOption": "PUBLISHED",
+        "publishSchedule": "",
+        "unpublishSchedule": ""
+      },
+      "rules": []
+    }
+  },
+  "workflowPayload": {
+    "blocks": [
+      {
+        "color": "#ec4899",
+        "height": 100,
+        "icon": "lucide:user",
+        "id": "qlU4TEhwjmqL20Cn5lDhP",
+        "left": 395,
+        "top": 50,
+        "type": "START",
+        "width": 388,
+        "settings": {
+          "label": "Create Document Approval",
+          "connectorId": "",
+          "fromDomainName": null,
+          "fromDomainNameEnabled": false,
+          "fromMailAddressEnabled": false,
+          "fromMailAddresses": [],
+          "generatePDF": false,
+          "hasAttachmentEnabled": false,
+          "isGroupEnabled": false,
+          "isUserEnabled": true,
+          "mailInitiate": {
+            "connectorId": "",
+            "connectorType": "",
+            "conditions": {
+              "fromAddress": [],
+              "fromDomain": [],
+              "hasAttachment": false,
+              "mailContent": [],
+              "mailSubject": []
+            }
+          },
+          "mailContentEnabled": false,
+          "mailContentToMonitor": "",
+          "mailSubjectEnabled": false,
+          "mailSubjectToMonitor": "",
+          "standardCondition": true,
+          "toolType": "manual_user",
+          "isManagerEnabled": false,
+          "isToRequesterEnabled": false,
+          "isDynamicUserEnabled": false,
+          "dynamicUserField": null,
+          "isMasterUserEnabled": false,
+          "masterUserColumn": "",
+          "isActedActivityEnabled": false,
+          "actedActivityBlockId": null,
+          "isCoordinatorEnabled": false,
+          "internalForward": true,
+          "forwardedUserAction": "",
+          "internalForwardUser": [],
+          "internalForwardGroup": [],
+          "partialApprove": "ALL",
+          "fullApprovalAction": "",
+          "documentRequired": false,
+          "userSignature": false,
+          "generatePDFFields": [],
+          "hasFooter": false,
+          "footerText": "",
+          "generateCSV": false,
+          "generateCSVFields": [],
+          "formEditAccess": "ALL",
+          "formEditControls": [],
+          "formVisibilityAccess": "ALL",
+          "formSecureControls": [],
+          "mandatoryFields": [],
+          "checklistItems": [],
+          "users": ["{{users}}"],
+          "groups": []
+        }
+      },
+      {
+        "color": "var(--color-secondary-9)",
+        "height": 100,
+        "icon": "lucide:party-popper",
+        "id": "OxwOFdwzJZT1jegMHD0zI",
+        "left": 396,
+        "top": 518,
+        "type": "END",
+        "width": 324,
+        "settings": {
+          "label": "Completed",
+          "fromDomainName": null,
+          "fromDomainNameEnabled": false,
+          "fromMailAddressEnabled": false,
+          "fromMailAddresses": [],
+          "generatePDF": false,
+          "hasAttachmentEnabled": false,
+          "isGroupEnabled": false,
+          "isUserEnabled": false,
+          "mailContentEnabled": false,
+          "mailContentToMonitor": "",
+          "mailSubjectEnabled": false,
+          "mailSubjectToMonitor": "",
+          "standardCondition": true,
+          "toolType": "end",
+          "isManagerEnabled": false,
+          "isToRequesterEnabled": false,
+          "isDynamicUserEnabled": false,
+          "dynamicUserField": null,
+          "isMasterUserEnabled": false,
+          "masterUserColumn": "",
+          "isActedActivityEnabled": false,
+          "actedActivityBlockId": null,
+          "isCoordinatorEnabled": false,
+          "internalForward": false,
+          "forwardedUserAction": "",
+          "internalForwardUser": [],
+          "internalForwardGroup": [],
+          "partialApprove": "ALL",
+          "fullApprovalAction": "",
+          "documentRequired": false,
+          "userSignature": false,
+          "generatePDFFields": [],
+          "hasFooter": false,
+          "footerText": "",
+          "generateCSV": false,
+          "generateCSVFields": [],
+          "formEditAccess": "ALL",
+          "formEditControls": [],
+          "formVisibilityAccess": "ALL",
+          "formSecureControls": [],
+          "mandatoryFields": [],
+          "checklistItems": [],
+          "users": [],
+          "groups": []
+        }
+      },
+      {
+        "color": "#ec4899",
+        "height": 100,
+        "icon": "lucide:user",
+        "id": "aXDBwy4ARoE3N7DqpIet2",
+        "left": 391,
+        "top": 274,
+        "type": "INTERNAL_ACTOR",
+        "width": 330,
+        "settings": {
+          "label": "Document Verifier",
+          "fromDomainName": null,
+          "fromDomainNameEnabled": false,
+          "fromMailAddressEnabled": false,
+          "fromMailAddresses": [],
+          "generatePDF": false,
+          "hasAttachmentEnabled": false,
+          "isGroupEnabled": false,
+          "isUserEnabled": false,
+          "mailContentEnabled": false,
+          "mailContentToMonitor": "",
+          "mailSubjectEnabled": false,
+          "mailSubjectToMonitor": "",
+          "standardCondition": true,
+          "toolType": "manual_user",
+          "isManagerEnabled": false,
+          "isToRequesterEnabled": false,
+          "isDynamicUserEnabled": true,
+          "dynamicUserField": "5ed0585d-6de9-47cc-bfe3-975dddcbe512",
+          "isMasterUserEnabled": false,
+          "masterUserColumn": "",
+          "isActedActivityEnabled": false,
+          "actedActivityBlockId": null,
+          "isCoordinatorEnabled": false,
+          "internalForward": true,
+          "forwardedUserAction": "",
+          "internalForwardUser": [],
+          "internalForwardGroup": [],
+          "partialApprove": "ALL",
+          "fullApprovalAction": "",
+          "documentRequired": false,
+          "userSignature": false,
+          "generatePDFFields": [],
+          "hasFooter": false,
+          "footerText": "",
+          "generateCSV": false,
+          "generateCSVFields": [],
+          "formEditAccess": "NONE",
+          "formEditControls": [
+            {
+              "formFields": [],
+              "userId": ""
+            }
+          ],
+          "formVisibilityAccess": "ALL",
+          "formSecureControls": [],
+          "mandatoryFields": [],
+          "checklistItems": [],
+          "users": [],
+          "groups": []
+        }
+      }
+    ],
+    "blockStatus": 0,
+    "hasSLASettings": 1,
+    "initiateUserDomain": [],
+    "layoutVersion": 2,
+    "masterFormIds": [],
+    "mlPredictions": [],
+    "modifiedBlockIds": [],
+    "rules": [
+      {
+        "action": "Submit",
+        "confirm": false,
+        "fromBlockId": "qlU4TEhwjmqL20Cn5lDhP",
+        "id": "A7n57V8LEru0XedOgtOB6",
+        "left": 0,
+        "passwordAccess": false,
+        "proceedAction": "Submit",
+        "remarks": false,
+        "signature": false,
+        "toBlockId": "aXDBwy4ARoE3N7DqpIet2",
+        "top": 0
+      },
+      {
+        "action": "Approve",
+        "confirm": false,
+        "fromBlockId": "aXDBwy4ARoE3N7DqpIet2",
+        "id": "Ikjbdx71setiHUstcbHi4",
+        "left": 0,
+        "passwordAccess": false,
+        "proceedAction": "Approve",
+        "remarks": false,
+        "signature": false,
+        "toBlockId": "OxwOFdwzJZT1jegMHD0zI",
+        "top": 0
+      }
+    ],
+    "settings": {
+      "general": {
+        "coordinator": [],
+        "description": "",
+        "fileSize": 20,
+        "initiateUsing": {
+          "formId": "{{formId}}",
+          "repositoryId": null,
+          "type": "document-form"
+        },
+        "kanbanSettings": [],
+        "linkMasterFormId": 0,
+        "name": "Document Approval",
+        "ocr": {
+          "credit": 0,
+          "required": false
+        },
+        "previewValues": ["Remarks"],
+        "requestTitleField": null,
+        "processNumberPrefix": "[{\"id\":\"1\",\"key\":\"seperator\",\"value\":\"-\"},{\"id\":\"2\",\"key\":\"prefix\",\"value\":\"REQ\"},{\"id\":\"3\",\"key\":\"autoIncrement\",\"value\":1}]",
+        "requestTabs": [],
+        "scheduleReport": {},
+        "slaRules": [],
+        "slaSettings": {
+          "emailNotify": true,
+          "slaMasterFormId": 0,
+          "slaType": "STANDARD",
+          "smsNotify": false,
+          "timeZone": "",
+          "workDays": [],
+          "workflowFormSLAFieldId": "",
+          "workHours": {
+            "from": "",
+            "to": ""
+          }
+        },
+        "smtpEmailId": 0,
+        "superuser": [],
+        "verifiedDocument": []
+      },
+      "publish": {
+        "publishOption": "PUBLISHED",
+        "publishSchedule": "",
+        "unpublishSchedule": ""
+      }
+    }
+  }
+}

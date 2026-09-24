@@ -2163,7 +2163,6 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         repositoryId: string
         fieldId?: string
         fieldName?: string
-        itemId?: string
         jsonId?: string
       }> = []
 
@@ -2219,7 +2218,6 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           fieldName: attachment.fieldName,
           fileId,
           fileName: attachment.fileName,
-          itemId: fileId,
           jsonId: attachment.fieldId || docId,
           repositoryId: stagedRepoId,
         }
@@ -2245,7 +2243,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           formModel[id] = {
             fileId: staged.fileId,
             fileName: staged.fileName,
-            itemId: staged.itemId || staged.fileId,
+            itemId: staged.fileId,
             repositoryId: staged.repositoryId,
           }
         } else {

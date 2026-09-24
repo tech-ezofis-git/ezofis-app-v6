@@ -37,7 +37,12 @@ import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
+import {
+  isUnarchivedStageFile,
+  StagedFileDeleteButton,
+} from './StagedFileDeleteButton'
 import { EllipsisText, StatusPill } from './Ui'
+import cn from '@/utils/cn'
 
 const HIDDEN_FILE_KEYS = new Set([
   'storageproviderid',
@@ -115,6 +120,8 @@ type FolderTableDataTableSplitProps = {
   onOpenFile: (id: string) => void
 
   onOpenFolder: (id: string) => void
+
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
 
   onPageChange?: (page: number, cursor?: string | null) => void
 
@@ -292,6 +299,8 @@ export default function FolderTableDataTableSplit({
 
   onOpenFolder,
 
+  onDeleteStagedFile,
+
   onPageChange,
 
   onPageSizeChange,
@@ -312,10 +321,29 @@ export default function FolderTableDataTableSplit({
 }: FolderTableDataTableSplitProps) {
   const { t } = useLingui()
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
+  const [fileCategory, setFileCategory] = useState<'all' | 'staged' | 'archived'>('all')
+
+  const stagedCount = useMemo(
+    () => files.filter((f: any) => f?.isStaged && !f?.isArchived && f?.status !== 'ARCHIVED').length,
+    [files],
+  )
+  const archivedCount = useMemo(
+    () => files.filter((f: any) => f?.isArchived || f?.status === 'ARCHIVED' || f?.status === 'Archived').length,
+    [files],
+  )
+
+  const activeDisplayFiles = useMemo(() => {
+    if (fileCategory === 'staged') {
+      return files.filter((f: any) => f?.isStaged && !f?.isArchived && f?.status !== 'ARCHIVED')
+    }
+    if (fileCategory === 'archived') {
+      return files.filter((f: any) => f?.isArchived || f?.status === 'ARCHIVED' || f?.status === 'Archived')
+    }
+    return files
+  }, [files, fileCategory])
 
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
-
     [fileColumns],
   )
 
@@ -386,28 +414,51 @@ export default function FolderTableDataTableSplit({
           onClick={handleLeftViewClick}
         />
 
-        <div className='inline-flex items-end gap-2 rounded-full border border-gray-3 bg-surface px-4 py-1.5 text-xs font-normal leading-none text-gray-10 shadow-sm'>
-          {splitViewMode === 'files-only' ? (
-            <>
-              <DynamicIcon
-                className='block size-3.5 shrink-0 text-gray-8'
-                name='folder'
-              />
-              <span className='leading-none text-gray-8'>{t`FOLDERS`}</span>
-              <span className='mb-[0.15em] inline-block h-px w-5 shrink-0 bg-gray-4' />
-              <span className='leading-none text-gray-8'>{folders.length}</span>
-            </>
-          ) : (
-            <>
-              <DynamicIcon
-                className='block size-3.5 shrink-0 text-gray-8'
-                name='fileText'
-              />
-              <span className='leading-none text-gray-8'>{t`FILES IN THIS FOLDER`}</span>
-              <span className='mb-[0.15em] inline-block h-px w-5 shrink-0 bg-gray-4' />
-              <span className='leading-none text-gray-8'>{files.length}</span>
-            </>
-          )}
+        <div className='inline-flex items-center gap-1 rounded-full border border-gray-3 bg-surface p-1 shadow-sm'>
+          <button
+            type='button'
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
+              fileCategory === 'all'
+                ? 'bg-[var(--primary-9)] text-white shadow-xs'
+                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+            )}
+            onClick={() => setFileCategory('all')}
+          >
+            <Icon name='lucide:files' className='size-3.5' />
+            <span>{t`All Files`}</span>
+            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{files.length}</span>
+          </button>
+
+          <button
+            type='button'
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
+              fileCategory === 'staged'
+                ? 'bg-[var(--primary-9)] text-white shadow-xs'
+                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+            )}
+            onClick={() => setFileCategory('staged')}
+          >
+            <Icon name='tabler:scan' className='size-3.5' />
+            <span>{t`Staged`}</span>
+            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'staged' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{stagedCount}</span>
+          </button>
+
+          <button
+            type='button'
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
+              fileCategory === 'archived'
+                ? 'bg-[var(--primary-9)] text-white shadow-xs'
+                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+            )}
+            onClick={() => setFileCategory('archived')}
+          >
+            <Icon name='lucide:archive' className='size-3.5' />
+            <span>{t`Archived`}</span>
+            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'archived' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{archivedCount}</span>
+          </button>
         </div>
 
         <IconButton
@@ -470,7 +521,7 @@ export default function FolderTableDataTableSplit({
             columns={visibleFileColumns}
             fileFilters={fileFilters}
             filePage={filePage}
-            files={files}
+            files={activeDisplayFiles}
             fileSearch={fileSearch || folderSearch}
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
@@ -492,6 +543,7 @@ export default function FolderTableDataTableSplit({
             onReload={onReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
+            onDeleteStagedFile={onDeleteStagedFile}
             permissions={permissions}
           />
         ) : null}
@@ -597,6 +649,7 @@ function FileDataTableSection({
   onReload,
   onShare,
   onWorkflow,
+  onDeleteStagedFile,
   permissions,
 }: {
   columns: DynamicRepositoryColumn[]
@@ -620,6 +673,7 @@ function FileDataTableSection({
   onReload?: () => void
   onShare: (id: string) => void
   onWorkflow: (id: string) => void
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
   permissions?: {
     delete?: boolean
     editMetadata?: boolean
@@ -799,6 +853,22 @@ function FileDataTableSection({
         size: 64,
         cell: ({ row }) => {
           const fileId = row.original.id
+          const file = row.original.raw as FileItem
+
+          if (isUnarchivedStageFile(file) && onDeleteStagedFile) {
+            return (
+              <div
+                className='flex items-center justify-end'
+                onClick={(event) => event.stopPropagation()}
+              >
+                <StagedFileDeleteButton
+                  disabled={loadingPage}
+                  fileName={String(file.name || row.original.__name || t`this file`)}
+                  onDelete={() => onDeleteStagedFile(file)}
+                />
+              </div>
+            )
+          }
 
           return (
             <div
@@ -868,6 +938,7 @@ function FileDataTableSection({
     hiddenFirstColumnKeys,
     loadingPage,
     onAiSummary,
+    onDeleteStagedFile,
     onEditMetadata,
     onOpenFile,
     onShare,

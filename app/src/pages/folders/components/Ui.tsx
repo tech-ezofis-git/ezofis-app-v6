@@ -102,8 +102,13 @@ export function PrimaryButton({
 }
 export const Header = PageHeader
 export function StatusPill({ status }: { status: string }) {
-  const s = status.toLowerCase()
+  const raw = String(status || '').trim()
+  const isOcr = raw.toUpperCase() === 'OCR'
+  const displayStatus = isOcr ? 'Indexed' : status
+  const s = displayStatus.toLowerCase()
   const tone =
+    isOcr ||
+    s.includes('indexed') ||
     s.includes('approved') ||
     s.includes('clean') ||
     s.includes('pass') ||
@@ -124,7 +129,7 @@ export function StatusPill({ status }: { status: string }) {
       className={`inline-flex max-w-full min-w-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}
     >
       <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-all'>
-        {status}
+        {displayStatus}
       </span>
     </span>
   )
