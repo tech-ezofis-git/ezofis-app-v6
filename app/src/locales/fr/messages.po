@@ -2465,7 +2465,7 @@ msgstr "Configuration complète pour démarrer votre automatisation des comptes 
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:710
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Completed"
 msgstr "Terminé"
@@ -4591,7 +4591,7 @@ msgid "Exception uploading file: {detail}"
 msgstr "Fichier d'importation d'exception : {detail}"
 
 #: src/pages/requests/components/InboxList.tsx:2061
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Exceptions"
@@ -6028,7 +6028,7 @@ msgid "Inactive"
 msgstr "Inactif"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/requests/utils/localizeRequestUi.ts:35
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Inbox"
@@ -6351,7 +6351,7 @@ msgstr "Valeur de la facture réduite."
 msgid "invoices"
 msgstr "factures"
 
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Invoices"
 msgstr "Factures"
@@ -7736,7 +7736,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:705
 #: src/pages/requests/components/request/components/Header.tsx:1428
-#: src/pages/requests/RequestsPage.tsx:892
+#: src/pages/requests/RequestsPage.tsx:947
 msgid "New"
 msgstr "Nouveau"
 
@@ -9824,7 +9824,7 @@ msgid "Process Overview"
 msgstr "Vue d'ensemble du processus"
 
 #: src/pages/requests/components/InboxList.tsx:2063
-#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Processed"
@@ -11780,7 +11780,7 @@ msgstr "Envoie un avertissement au propriétaire répertorié dans les métadonn
 msgid "Sends OTP to the Email"
 msgstr "Envoie OTP à l'e-mail"
 
-#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Sent"
 msgstr "Envoyé"
