@@ -1107,7 +1107,7 @@ const Request = ({
   const ruleActions = useMemo(() => {
     const configuredActions = currentBlockSettings?.actions || []
     let derivedActions: any[] = []
-
+    console.log('current blocksd', currentBlock, dynamicRules)
     if (configuredActions.length > 0) {
       derivedActions = configuredActions.map((a: any) => ({
         label: a.actionName || 'Submit',
@@ -1590,13 +1590,14 @@ const Request = ({
 
       const formDataStr = JSON.stringify(fields)
 
+      let targetUserId = selectedItem?.userId || request?.userId || authUserStore.getState().session?.id || null
+      if (action === 'Forward' && (window as any)._selectedForwardUserId) {
+        targetUserId = (window as any)._selectedForwardUserId
+      }
+
       const payload = {
         activityid: selectedItem?.activityId || request?.activityId || '',
-        activityUserId:
-          selectedItem?.userId ||
-          request?.userId ||
-          authUserStore.getState().session?.id ||
-          null,
+        activityUserId: targetUserId,
         AIAGENTHtml: selectedItem?.agentHtml || request?.agentHtml || '',
         AIAGENTResponse:
           typeof selectedItem?.agentResponse === 'string'
@@ -1604,7 +1605,7 @@ const Request = ({
             : JSON.stringify(
               selectedItem?.agentResponse || request?.agentResponse || {},
             ),
-        comments: '',
+        comments: action === 'Forward' && (window as any)._forwardComments ? (window as any)._forwardComments : '',
         formData: formDataStr,
         formEntryId: Number(
           selectedItem?.formEntryId || request?.formEntryId || 0,
@@ -1694,6 +1695,7 @@ const Request = ({
     } finally {
       setSubmitting(false)
       delete (window as any)._selectedForwardUserId
+      delete (window as any)._forwardComments
     }
   }
 
@@ -2033,8 +2035,9 @@ const Request = ({
                   <ForwardPopover
                     target={btn}
                     users={allUsersForAssignee || []}
-                    onConfirm={(userId) => {
+                    onConfirm={(userId, comments) => {
                       (window as any)._selectedForwardUserId = userId
+                      if (comments) (window as any)._forwardComments = comments
                       handleVerifier(a.value)
                     }}
                   />
@@ -2191,8 +2194,9 @@ const Request = ({
                         <ForwardPopover
                           target={btn}
                           users={allUsersForAssignee || []}
-                          onConfirm={(userId) => {
+                          onConfirm={(userId, comments) => {
                             (window as any)._selectedForwardUserId = userId
+                            if (comments) (window as any)._forwardComments = comments
                             handleVerifier(a.value)
                           }}
                         />

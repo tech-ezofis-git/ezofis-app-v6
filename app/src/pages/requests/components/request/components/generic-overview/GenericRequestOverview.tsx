@@ -5,7 +5,9 @@ import type { CommentItem } from '@/pages/requests/hooks/useComments'
 import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import cn from '@/utils/cn'
 import {
   buildMergedOcrFieldHints,
   buildRepoFieldHints,
@@ -276,6 +278,10 @@ const DocumentFormSplitLayout = ({
   taskNode,
   selectedItem,
   rawWorkflowData,
+  attachmentsNode,
+  commentsNode,
+  historyNode,
+  lineItemsNode,
 }: {
   attachments: AttachmentItem[]
   repositoryId: string | number | undefined
@@ -283,6 +289,10 @@ const DocumentFormSplitLayout = ({
   taskNode: React.ReactNode
   selectedItem: any
   rawWorkflowData: any
+  attachmentsNode?: React.ReactNode
+  commentsNode?: React.ReactNode
+  historyNode?: React.ReactNode
+  lineItemsNode?: React.ReactNode
 }) => {
   const { t } = useLingui()
   const firstAttachment = attachments[0]
@@ -297,6 +307,8 @@ const DocumentFormSplitLayout = ({
     if (!selectedAgentBlockId) return null
     return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
   }, [selectedAgentBlockId, agentBlocks])
+
+  const [activeTab, setActiveTab] = useState('summary')
 
   const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
   const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
@@ -348,21 +360,72 @@ const DocumentFormSplitLayout = ({
             />
           </div>
         )}
+        {!selectedAgentBlock && agentBlocks.length > 0 && (
+          <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+            <div className='flex items-center justify-between gap-4'>
+              <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
+                {[
+                  { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
+                  lineItemsNode ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
+                  { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments` },
+                  { icon: 'tabler:message-circle', id: 'comments', label: t`Comments` },
+                  { icon: 'tabler:history', id: 'history', label: t`History` },
+                ].filter(Boolean).map((tab: any) => (
+                  <button
+                    key={tab.id}
+                    className={cn(
+                      '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                      activeTab === tab.id
+                        ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                        : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                    )}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-        <ScrollArea className='flex-1 pr-3.5' height='100%' type='always'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {selectedAgentBlock ? (
-            <AgentDetailPlaceholder
-              agentBlock={selectedAgentBlock}
-              onBack={() => setSelectedAgentBlockId(null)}
-              requestData={selectedItem}
-            />
-          ) : (
-            <div className='flex flex-col'>
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+              <AgentDetailPlaceholder
+                agentBlock={selectedAgentBlock}
+                onBack={() => setSelectedAgentBlockId(null)}
+                requestData={selectedItem}
+              />
+            </div>
+          ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
               {taskNode}
               {formNode}
             </div>
+          ) : activeTab === 'attachments' && attachmentsNode ? (
+            <div className='flex min-h-0 flex-1 flex-col pt-2'>
+              {attachmentsNode}
+            </div>
+          ) : activeTab === 'comments' && commentsNode ? (
+            <div className='flex min-h-0 flex-1 flex-col pt-2 pb-0'>
+              {commentsNode}
+            </div>
+          ) : activeTab === 'history' && historyNode ? (
+            <div className='flex min-h-0 flex-1 flex-col pt-2'>
+              {historyNode}
+            </div>
+          ) : activeTab === 'line_items' && lineItemsNode ? (
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+              {lineItemsNode}
+            </div>
+          ) : (
+            <div className='flex h-32 items-center justify-center text-sm text-[var(--gray-9)]'>
+              {t`No data available yet.`}
+            </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
     </div>
   )
@@ -530,6 +593,31 @@ const GenericRequestOverview = ({
     const visible = new Set((rule.formFields || []).map(String))
     return new Set(allFieldIds.filter((id) => !visible.has(id)))
   }, [blockSettings, allFieldIds, currentUserId])
+
+  const summaryHiddenFieldIds = useMemo(() => {
+    const ids = new Set(hiddenFieldIds || [])
+    allFieldIds.forEach((id) => {
+      const field = panels.flatMap((p: any) => p.fields || []).find((f: any) => String(f.id) === id)
+      if (field && (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE')) {
+        ids.add(id)
+      }
+    })
+    return ids
+  }, [hiddenFieldIds, allFieldIds, panels])
+
+  const lineItemsHiddenFieldIds = useMemo(() => {
+    const ids = new Set(hiddenFieldIds || [])
+    let hasLineItems = false
+    allFieldIds.forEach((id) => {
+      const field = panels.flatMap((p: any) => p.fields || []).find((f: any) => String(f.id) === id)
+      if (field && (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE')) {
+        hasLineItems = true
+      } else {
+        ids.add(id)
+      }
+    })
+    return { ids, hasLineItems }
+  }, [hiddenFieldIds, allFieldIds, panels])
 
   const workflowId = rawWorkflowData?.id
   const instanceId = selectedItem?.workflowInstanceId || selectedItem?.processId
@@ -912,8 +1000,8 @@ const GenericRequestOverview = ({
                 disableOwnScroll={true}
                 formModel={formModel}
                 hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                hiddenFieldIds={hiddenFieldIds}
-                hidePanels={false}
+                hiddenFieldIds={summaryHiddenFieldIds}
+                hidePanels={agentBlocks.length > 0}
                 instanceId={instanceId}
                 missingMandatoryFieldIds={
                   missingMandatoryFieldIds.size > 0
@@ -929,6 +1017,71 @@ const GenericRequestOverview = ({
                 onFieldChange={onFieldChange}
                 onOpenAttachment={setOpenedAttachment}
                 onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+              />
+            }
+            lineItemsNode={
+              lineItemsHiddenFieldIds.hasLineItems ? (
+                <WorkflowFormRenderer
+                  attachments={attachments}
+                  disableOwnScroll={true}
+                  formModel={formModel}
+                  hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                  hiddenFieldIds={lineItemsHiddenFieldIds.ids}
+                  hidePanels={agentBlocks.length > 0}
+                  instanceId={instanceId}
+                  missingMandatoryFieldIds={
+                    missingMandatoryFieldIds.size > 0
+                      ? missingMandatoryFieldIds
+                      : undefined
+                  }
+                  panels={panels}
+                  preparePhase={preparePhase}
+                  preparingFieldId={preparingFieldId}
+                  readOnlyFieldIds={readOnlyFieldIds}
+                  repositoryId={repositoryId}
+                  viewOnly={viewOnly}
+                  onFieldChange={onFieldChange}
+                  onOpenAttachment={setOpenedAttachment}
+                  onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+                />
+              ) : undefined
+            }
+            attachmentsNode={
+              <Attachments
+                canUpload={!viewOnly}
+                initialData={attachments}
+                instanceId={instanceId}
+                processId={processId}
+                repositoryId={repositoryId}
+                workflowId={workflowId}
+                enabled
+                onSelect={setOpenedAttachment}
+              />
+            }
+            commentsNode={
+              <Comments
+                comments={comments}
+                instanceId={instanceId}
+                processId={processId}
+                refetch={onCommentsChanged}
+                workflowId={workflowId}
+                enabled
+              />
+            }
+            historyNode={
+              <History
+                instanceId={instanceId}
+                isCompleted={
+                  selectedItem?.isCompleted ||
+                  Boolean(selectedItem?.completedAtUtc) ||
+                  Boolean(selectedItem?.completedAt) ||
+                  ['completed', 'approved', 'closed', 'paid'].includes(
+                    String(selectedItem?.status || '').toLowerCase().trim(),
+                  )
+                }
+                processId={processId}
+                workflowId={workflowId}
+                enabled
               />
             }
           />
@@ -976,7 +1129,8 @@ const GenericRequestOverview = ({
                     disableOwnScroll={true}
                     formModel={formModel}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                    hiddenFieldIds={hiddenFieldIds}
+                    hiddenFieldIds={summaryHiddenFieldIds}
+                    hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
                     missingMandatoryFieldIds={
                       missingMandatoryFieldIds.size > 0

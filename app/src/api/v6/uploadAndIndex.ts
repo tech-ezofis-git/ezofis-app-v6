@@ -404,4 +404,5 @@ export {
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  uploadWithOcr,
 }

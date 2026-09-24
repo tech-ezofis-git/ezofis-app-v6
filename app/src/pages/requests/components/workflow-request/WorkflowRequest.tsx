@@ -1,8 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import cn from '@/utils/cn'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import Header from '../request/components/newrequest/Header'
@@ -10,7 +11,13 @@ import RepoFieldsPanel from './components/RepoFieldsPanel'
 import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
-import WorkflowRequestSidebar from './WorkflowRequestSidebar'
+import AttachmentsPanel from './components/AttachmentsPanel'
+import CommentsPanel from './components/CommentsPanel'
+import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
+import AgentSummaryBoxes from '../request/components/generic-overview/AgentSummaryBoxes'
+import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
+import ScrollArea from '@/components/base/scroll-area/ScrollArea'
+import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
 
 interface Props {
   workflow: any
@@ -26,7 +33,6 @@ type SidePanel = 'attachments' | 'comments'
 const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const { t } = useLingui()
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
-  const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
   const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
   // Clicking a repository field highlights its value in the file preview —
@@ -36,6 +42,24 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     null,
   )
   const [focusRequestId, setFocusRequestId] = useState(0)
+
+  const isDocumentForm =
+    workflow?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
+    workflow?.workflowJson?.settings?.general?.initiateUsing?.type ===
+      'DOCUMENT_FORM'
+
+  const agentBlocks = useMemo(() => {
+    const blocks = extractBlocks(workflow)
+    return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
+  }, [workflow])
+
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const selectedAgentBlock = useMemo(() => {
+    if (!selectedAgentBlockId) return null
+    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+  }, [selectedAgentBlockId, agentBlocks])
+
+  const [activeTab, setActiveTab] = useState('summary')
 
   const handleFieldFocus = (value: any) => {
     const str = value == null ? '' : String(value).trim()
@@ -55,6 +79,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     confirmUpload,
     formModel,
     hasAttemptedSubmit,
+    isExtractingOcr,
     isLoadingForm,
     isSubmitting,
     isUploadingAttachment,
@@ -72,9 +97,30 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setFieldValue,
   } = useWorkflowForm(workflow)
 
-  const handleTogglePanel = (panel: SidePanel) => {
-    setActivePanel((prev) => (prev === panel ? null : panel))
-  }
+  const summaryHiddenFieldIds = useMemo(() => {
+    const ids = new Set<string>()
+    panels.flatMap((p: any) => p.fields || []).forEach((field: any) => {
+      if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
+        ids.add(String(field.id))
+      }
+    })
+    return ids
+  }, [panels])
+
+  const lineItemsHiddenFieldIds = useMemo(() => {
+    const ids = new Set<string>()
+    let hasLineItems = false
+    panels.flatMap((p: any) => p.fields || []).forEach((field: any) => {
+      if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
+        hasLineItems = true
+      } else {
+        ids.add(String(field.id))
+      }
+    })
+    return { ids, hasLineItems }
+  }, [panels])
+
+
 
   const handleSubmit = async () => {
     const result = await submit()
@@ -121,7 +167,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   return (
     <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
       <Header
-        activePanel={activePanel}
         attachmentCount={attachments.length}
         commentCount={comments.length}
         isSubmitDisabled={isLoadingForm || !!loadError}
@@ -129,7 +174,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         title={t`New Request`}
         onClose={onClose}
         onSubmit={handleSubmit}
-        onTogglePanel={handleTogglePanel}
       />
 
       {isLoadingForm ? (
@@ -151,7 +195,129 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         </AnimateFadeIn>
       ) : (
         <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
-          {!needsManualUpload ? (
+          {isDocumentForm && uploadedFiles.length === 0 ? (
+            <DocumentFormUpload
+              isUploading={isUploadingAttachment || isExtractingOcr}
+              workflow={workflow}
+              onFilesSelected={addAttachment}
+            />
+          ) : isDocumentForm && uploadedFiles.length > 0 ? (
+            <div className='flex min-w-0 flex-1 gap-5 overflow-hidden p-5 bg-gray-1'>
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+                <UploadedFilePreview
+                  activeHighlightTerm={activeHighlightTerm}
+                  activeKey={activeFileKey}
+                  files={uploadedFiles}
+                  focusRequestId={focusRequestId}
+                  onSelectKey={setActiveFileKey}
+                />
+              </div>
+              <div className='flex w-[500px] xl:w-[650px] 2xl:w-[800px] shrink-0 flex-col overflow-hidden'>
+                {agentBlocks.length > 0 && (
+                  <div className='pb-5'>
+                    <AgentSummaryBoxes
+                      agentBlocks={agentBlocks}
+                      selectedAgentBlockId={selectedAgentBlockId}
+                      onAgentClick={setSelectedAgentBlockId}
+                      requestData={null}
+                    />
+                  </div>
+                )}
+                {!selectedAgentBlock && agentBlocks.length > 0 && (
+                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
+                        {[
+                          { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
+                          lineItemsHiddenFieldIds.hasLineItems ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
+                          { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments` },
+                          { icon: 'tabler:message-circle', id: 'comments', label: t`Comments` },
+                          { icon: 'tabler:history', id: 'history', label: t`History` },
+                        ].filter(Boolean).map((tab: any) => (
+                          <button
+                            key={tab.id}
+                            className={cn(
+                              '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                              activeTab === tab.id
+                                ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                                : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                            )}
+                            onClick={() => setActiveTab(tab.id)}
+                          >
+                            <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                            <span>{tab.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+                  {selectedAgentBlock ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                      <AgentDetailPlaceholder
+                        agentBlock={selectedAgentBlock}
+                        onBack={() => setSelectedAgentBlockId(null)}
+                        requestData={null}
+                      />
+                    </div>
+                  ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                      <WorkflowFormRenderer
+                        formModel={formModel}
+                        hasAttemptedSubmit={hasAttemptedSubmit}
+                        hiddenFieldIds={summaryHiddenFieldIds}
+                        hidePanels={agentBlocks.length > 0}
+                        missingMandatoryFieldIds={missingMandatoryFieldIds}
+                        panels={panels}
+                        repoFieldHints={repoFieldHints}
+                        repositoryId={workflow?.repositoryId}
+                        onFieldChange={setFieldValue}
+                        onOcrFieldList={applyOcrFieldList}
+                      />
+                    </div>
+                  ) : activeTab === 'line_items' && lineItemsHiddenFieldIds.hasLineItems ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                      <WorkflowFormRenderer
+                        formModel={formModel}
+                        hasAttemptedSubmit={hasAttemptedSubmit}
+                        hiddenFieldIds={lineItemsHiddenFieldIds.ids}
+                        hidePanels={agentBlocks.length > 0}
+                        missingMandatoryFieldIds={missingMandatoryFieldIds}
+                        panels={panels}
+                        repoFieldHints={repoFieldHints}
+                        repositoryId={workflow?.repositoryId}
+                        onFieldChange={setFieldValue}
+                        onOcrFieldList={applyOcrFieldList}
+                      />
+                    </div>
+                  ) : activeTab === 'attachments' ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5 pt-4'>
+                      <AttachmentsPanel
+                        attachments={attachments}
+                        isUploading={isUploadingAttachment}
+                        onAdd={addAttachment}
+                        onRemove={removeAttachment}
+                      />
+                    </div>
+                  ) : activeTab === 'comments' ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5 pt-4 pb-0'>
+                      <CommentsPanel
+                        comments={comments}
+                        draft={commentDraft}
+                        onDraftChange={setCommentDraft}
+                        onSend={addComment}
+                      />
+                    </div>
+                  ) : (
+                    <div className='flex h-32 items-center justify-center text-sm text-[var(--gray-9)]'>
+                      {t`No data available yet.`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : !needsManualUpload ? (
             // Plain form view — covers "no file yet", "still extracting"
             // (the dropzone/field itself shows its own loading state), and
             // "OCR filled everything, auto-staged" alike. The file-preview +
@@ -211,19 +377,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
               </div>
             </div>
           )}
-          {activePanel && (
-            <WorkflowRequestSidebar
-              activePanel={activePanel}
-              attachments={attachments}
-              commentDraft={commentDraft}
-              comments={comments}
-              isUploadingAttachment={isUploadingAttachment}
-              onAddAttachment={addAttachment}
-              onCommentDraftChange={setCommentDraft}
-              onRemoveAttachment={removeAttachment}
-              onSendComment={addComment}
-            />
-          )}
+          {/* The sidebar is no longer rendered here because it is integrated into the tabs */}
         </div>
       )}
     </div>
