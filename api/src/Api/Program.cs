@@ -40,8 +40,8 @@ builder.Configuration
     .AddJsonFile("appsettings.ActivityLog.json", optional: true, reloadOnChange: true)
     .AddJsonFile("appsettings.EventLog.json", optional: true, reloadOnChange: true);
 
-// Production-only overrides (EzofisAuth, pool sizes, RunServerInApi=false for separate worker).
-// Do NOT load this in Development — it disables the in-process Hangfire server and blocks OCR/archive jobs.
+// Production-only overrides (EzofisAuth, pool sizes, one Hangfire worker in this API).
+// Do NOT load this in Development — local runs use the code default (in-process server on).
 if (builder.Environment.IsProduction())
 {
     builder.Configuration.AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);

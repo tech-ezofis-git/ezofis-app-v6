@@ -65,6 +65,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       HttpsRedirection__Enabled: "false"
       Swagger__Enabled: "true"
+      Hangfire__RunServerInApi: "true"
+      Hangfire__ApiWorkerCount: "1"
   agents:
     image: ${IMAGE_AGENTS}:${agents_tag}
     restart: always
@@ -104,6 +106,8 @@ restart_once() {
     HttpsRedirection__Enabled=false
     Swagger__Enabled=true
     ASPNETCORE_ENVIRONMENT=Production
+    Hangfire__RunServerInApi=true
+    Hangfire__ApiWorkerCount=1
     DEPLOY_SHA="$SHORT_SHA"
     DOCKER_ENABLE_CI=true
   )
