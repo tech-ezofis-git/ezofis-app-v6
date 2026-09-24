@@ -48,6 +48,7 @@ type SampleDocument = {
   fileName: string
   icon: string
   label: string
+  meaning: string
   tag: string
   tagColor: SampleTagColor
   thumbnail?: string
@@ -252,7 +253,7 @@ const SampleThumbnail = ({
   const [portalPos, setPortalPos] = useState({ left: 0, top: 0 })
 
   const previewW = 320
-  const previewH = 420
+  const previewH = 480
 
   const handleMouseEnter = () => {
     const el = wrapperRef.current
@@ -323,15 +324,87 @@ const SampleThumbnail = ({
               zIndex: 99999,
             }}
           >
-            <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface/95 p-2 shadow-2xl backdrop-blur-md'>
-              <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface shadow-inner'>
+            <div className='flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface/95 p-2 shadow-2xl backdrop-blur-md'>
+              <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface shadow-inner'>
                 <SampleThumbnailPreview doc={doc} variant='expanded' />
+              </div>
+              <div className='px-1 pt-2.5 pb-1'>
+                <p className='text-[12px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                  {doc.meaning}
+                </p>
               </div>
             </div>
           </div>,
           document.body,
         )}
     </div>
+  )
+}
+
+const SampleTagBadge = ({
+  colors,
+  doc,
+}: {
+  colors: (typeof TAG_COLOR_STYLES)[SampleTagColor]
+  doc: SampleDocument
+}) => {
+  const badgeRef = useRef<HTMLSpanElement | null>(null)
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({
+    left: 0,
+    placeAbove: true,
+    top: 0,
+  })
+
+  const show = () => {
+    const el = badgeRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const width = 280
+    const left = Math.min(
+      Math.max(8, rect.left + rect.width / 2 - width / 2),
+      window.innerWidth - width - 8,
+    )
+    const placeAbove = rect.top > 168
+    setPos({
+      left,
+      placeAbove,
+      top: placeAbove ? rect.top - 8 : rect.bottom + 8,
+    })
+    setOpen(true)
+  }
+
+  return (
+    <>
+      <span
+        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-tight font-semibold ring-1 ring-inset transition-transform duration-200 hover:scale-105 ${colors.badge}`}
+        ref={badgeRef}
+        onMouseEnter={show}
+        onMouseLeave={() => setOpen(false)}
+      >
+        {doc.tag}
+      </span>
+      {open &&
+        createPortal(
+          <div
+            className='pointer-events-none w-[280px] animate-in fade-in zoom-in-95 duration-200'
+            style={{
+              left: pos.left,
+              position: 'fixed',
+              top: pos.top,
+              transform: pos.placeAbove ? 'translateY(-100%)' : undefined,
+              zIndex: 100000,
+            }}
+          >
+            <div className='rounded-xl border border-[var(--gray-3)] bg-surface p-3 shadow-2xl'>
+              <p className='text-[12px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                {doc.meaning}
+              </p>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   )
 }
 
@@ -345,6 +418,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Perfect PO validation.`,
         fileName: 'INV-2026-6001',
+        meaning: t`The invoice matches its purchase order. Supplier, amounts, and line items all agree, so this sample is a clean pass.`,
         icon: 'tabler:file-invoice',
         label: 'invoice1',
         tag: t`PO Verified`,
@@ -355,6 +429,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Complete document match.`,
         fileName: 'INV-2026-3101',
+        meaning: t`Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently.`,
         icon: 'tabler:file-invoice',
         label: 'invoice2',
         tag: t`Fully Matched`,
@@ -365,6 +440,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Supplier details differ.`,
         fileName: 'INV-2026-3005',
+        meaning: t`The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve.`,
         icon: 'tabler:file-invoice',
         label: 'invoice3',
         tag: t`Supplier Conflict`,
@@ -375,6 +451,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Scanned handwritten bill.`,
         fileName: t`Handwritten Invoice`,
+        meaning: t`This bill was written by hand and then scanned. The sample shows how the agent still reads the amounts and lines from the image.`,
         icon: 'tabler:file-invoice',
         label: 'invoice4',
         tag: t`Handwritten`,
@@ -385,6 +462,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Pending delivery items.`,
         fileName: 'INV-2026-1001',
+        meaning: t`Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment.`,
         icon: 'tabler:file-invoice',
         label: 'invoice5',
         tag: t`Backorder`,
@@ -395,6 +473,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Vendor identity mismatch.`,
         fileName: 'INV-2026-3001',
+        meaning: t`The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match.`,
         icon: 'tabler:file-invoice',
         label: 'invoice6',
         tag: t`Vendor Check`,
@@ -405,6 +484,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Invoice value reduced.`,
         fileName: 'INV-2026-5001',
+        meaning: t`The invoice total is lower than the purchase order. A price or quantity was billed for less than was agreed.`,
         icon: 'tabler:file-invoice',
         label: 'invoice7',
         tag: t`Undercharged`,
@@ -415,6 +495,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Multiple pricing differences.`,
         fileName: 'INV-2026-5004',
+        meaning: t`More than one line price differs from the purchase order. Compare each line before you approve.`,
         icon: 'tabler:file-invoice',
         label: 'invoice8',
         tag: t`Price Variance`,
@@ -425,6 +506,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Quantity line discrepancy.`,
         fileName: 'INV-2026-1004',
+        meaning: t`A quantity on the invoice does not match the purchase order or the receipt. One or more lines are short or over.`,
         icon: 'tabler:file-invoice',
         label: 'invoice9',
         tag: t`Line Variance`,
@@ -435,6 +517,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Invoice exceeds PO value.`,
         fileName: 'INV-2026-5003',
+        meaning: t`The invoice total is higher than the purchase order. The billed amount is above the agreed value.`,
         icon: 'tabler:file-invoice',
         label: 'invoice10',
         tag: t`Overcharged`,
@@ -952,11 +1035,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                         >
                           {displayLabel}
                         </span>
-                        <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-tight font-semibold ring-1 ring-inset ${colors.badge}`}
-                        >
-                          {doc.tag}
-                        </span>
+                        <SampleTagBadge colors={colors} doc={doc} />
                       </div>
                       <p className='mt-0.5 line-clamp-1 text-[9px] leading-snug font-medium text-[var(--gray-10)]'>
                         {doc.description}

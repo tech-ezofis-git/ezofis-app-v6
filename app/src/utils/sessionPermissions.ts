@@ -11,8 +11,12 @@ const PERMISSION_KEY_ALIASES: Record<string, string> = {
   'report-builder-settings': 'report-builder',
   reportbuilder: 'report-builder',
   reports: 'report',
-  requests: 'request',
+  requests: 'workflow-inbox',
+  request: 'workflow-inbox',
+  'workflow-inbox': 'workflow-inbox',
+  workflowinbox: 'workflow-inbox',
   workflows: 'workflow',
+  workflow: 'workflow',
 }
 
 export const normalizePermissionKey = (key: string) => {
@@ -36,37 +40,64 @@ export const isPermissionFlagVisible = (value: unknown): boolean => {
   return text === 'true' || text === '1' || text === 'yes'
 }
 
-const permissionIdentity = (item: SessionPermission) =>
-  [item.key, item.menu, item.name].filter(
+const permissionIdentity = (item: SessionPermission | string): string[] => {
+  if (typeof item === 'string') return [item]
+  if (!item || typeof item !== 'object') return []
+  return [
+    item.key,
+    item.menu,
+    item.name,
+    (item as Record<string, unknown>).permissionKey,
+    (item as Record<string, unknown>).permission,
+    (item as Record<string, unknown>).id,
+    (item as Record<string, unknown>).code,
+  ].filter(
     (value): value is string =>
       typeof value === 'string' && Boolean(value.trim()),
   )
+}
 
 export const isPermissionVisible = (
   permissionKey?: string,
-  sessionPermissions?: SessionPermission[] | null,
+  sessionPermissions?: Array<SessionPermission | string> | null,
+  role?: string | null,
 ): boolean => {
   if (!permissionKey) return true
+
+  const normalizedRole = String(role || '').trim().toLowerCase()
+  const isAdmin =
+    normalizedRole === 'admin' ||
+    normalizedRole === 'administrator' ||
+    normalizedRole === 'superadmin'
+
   if (!sessionPermissions || sessionPermissions.length === 0) return true
 
   const targetKey = normalizePermissionKey(permissionKey)
-  const permission = sessionPermissions.find((item) =>
+  const matchingPermissions = sessionPermissions.filter((item) =>
     permissionIdentity(item).some(
       (value) => normalizePermissionKey(value) === targetKey,
     ),
   )
 
-  if (!permission) return false
+  if (matchingPermissions.length === 0) {
+    if (isAdmin) return true
+    return false
+  }
 
-  return isPermissionFlagVisible(permission.visible)
+  return matchingPermissions.some((item) =>
+    isPermissionFlagVisible(
+      typeof item === 'string' ? true : item.visible,
+    ),
+  )
 }
 
 export const isAnyPermissionVisible = (
   permissionKeys: string[],
-  sessionPermissions?: SessionPermission[] | null,
+  sessionPermissions?: Array<SessionPermission | string> | null,
+  role?: string | null,
 ): boolean => {
   if (!permissionKeys.length) return true
   return permissionKeys.some((key) =>
-    isPermissionVisible(key, sessionPermissions),
+    isPermissionVisible(key, sessionPermissions, role),
   )
 }

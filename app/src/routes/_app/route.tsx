@@ -57,7 +57,7 @@ export const Route = createFileRoute('/_app')({
         '/folders': 'folder',
         '/forms': 'form',
         '/reports': 'report',
-        '/requests': 'request',
+        '/requests': 'workflow-inbox',
         '/settings': 'settings',
         '/workflow-chat': 'workflow',
         '/workflows': 'workflow',
@@ -72,10 +72,10 @@ export const Route = createFileRoute('/_app')({
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
 
-        if (!isPermissionVisible(requiredPermissionKey, sessionPermissions)) {
+        if (!isPermissionVisible(requiredPermissionKey, sessionPermissions, session?.role)) {
           const firstAllowedRoute =
             Object.keys(routeToPermissionKey).find((r) =>
-              isPermissionVisible(routeToPermissionKey[r], sessionPermissions),
+              isPermissionVisible(routeToPermissionKey[r], sessionPermissions, session?.role),
             ) || '/'
 
           if (location.pathname !== firstAllowedRoute) {

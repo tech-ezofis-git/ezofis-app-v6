@@ -17,6 +17,19 @@ import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
 import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message
+  }
+  return ''
+}
+
 interface Props {
   email: string
   setEmail: (value: string) => void
@@ -32,10 +45,29 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [tenantEmail, setTenantEmail] = useState<string | null>(null)
+
+  const clearError = () => {
+    setError(null)
+    setTenantEmail(null)
+  }
+
+  const showTenantExists = (existingEmail: string) => {
+    setTenantEmail(existingEmail)
+    setError('Tenant is already exists, Please change the Email for signup')
+  }
+
+  const continueToSignIn = () => {
+    if (!tenantEmail) return
+    navigate({
+      search: { email: tenantEmail } as any,
+      to: resolveAuthPath('/sign-in', isWhiteLabel) as NavigateOptions['to'],
+    })
+  }
 
   const handleEmailSendOtp = async () => {
     try {
-      setError(null)
+      clearError()
       if (!email) {
         setError('Please enter your email address.')
         return
@@ -62,7 +94,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       })
 
       if (status === 409) {
-        setError('Tenant is already exists, Please change the Email for signup')
+        showTenantExists(email)
         return
       }
       if (error) {
@@ -76,8 +108,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       showToast({ message: 'OTP sent successfully', variant: 'default' })
 
       onChangeView() // show OTP screen only for email signup
-    } catch (e: any) {
-      setError(e?.message ?? 'Unable to send OTP')
+    } catch (e: unknown) {
+      setError(errorMessage(e) || 'Unable to send OTP')
     } finally {
       setLoading(false)
     }
@@ -87,10 +119,12 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onError: () =>
-      setError("We couldn't create your account with Google. Please try again."),
+      setError(
+        "We couldn't create your account with Google. Please try again.",
+      ),
     onSuccess: async (tokenResponse) => {
       try {
-        setError(null)
+        clearError()
         setLoading(true)
 
         const res = await fetch(
@@ -129,9 +163,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
 
         if (otpStatus === 409) {
-          setError(
-            'Tenant is already exists, Please change the Email for signup',
-          )
+          showTenantExists(gEmail)
           return
         }
         if (otpError) {
@@ -146,8 +178,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
             isWhiteLabel,
           ) as NavigateOptions['to'],
         })
-      } catch (e: any) {
-        setError(e?.message ?? 'Google sign-up failed')
+      } catch (e: unknown) {
+        setError(errorMessage(e) || 'Google sign-up failed')
       } finally {
         setLoading(false)
       }
@@ -159,7 +191,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   // ✅ Microsoft signup: no OTP view
   const handleMicrosoftSignUp = async () => {
     try {
-      setError(null)
+      clearError()
       setLoading(true)
 
       const loginResponse = await msalInstance.loginPopup({
@@ -192,7 +224,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
 
       if (otpStatus === 409) {
-        setError('Tenant is already exists, Please change the Email for signup')
+        showTenantExists(msEmail)
         return
       }
       if (otpError) {
@@ -201,14 +233,16 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       }
 
       navigate({ to: '/reset-password' })
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e)
-      const errorMsg = e?.message || ''
+      const errorMsg = errorMessage(e)
       if (
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError("We couldn't create your account with Microsoft. Please try again.")
+        setError(
+          "We couldn't create your account with Microsoft. Please try again.",
+        )
       } else {
         setError(errorMsg || 'Microsoft sign-up failed')
       }
@@ -238,11 +272,11 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         className='-mt-2'
         label='Email'
         leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
-        placeholder={`${isWhiteLabel ? "hello@exmaple.com" : "hello@ezofis.com"}`}
+        placeholder={`${isWhiteLabel ? 'hello@exmaple.com' : 'hello@ezofis.com'}`}
         value={email}
         onChange={(v) => {
           setEmail(v)
-          setError(null)
+          clearError()
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleEmailSendOtp()
@@ -257,7 +291,30 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           onClick={handleEmailSendOtp}
         />
 
-        {error && <Alert className='mt-2' text={error} variant='primary' />}
+        {error && (
+          <Alert
+            className='mt-2'
+            variant='primary'
+            text={
+              tenantEmail ? (
+                <>
+                  Tenant is already exists, Please change the Email for signup
+                  or{' '}
+                  <button
+                    className='font-semibold underline underline-offset-2 transition-opacity hover:opacity-80 active:opacity-70'
+                    type='button'
+                    onClick={continueToSignIn}
+                  >
+                    click here
+                  </button>{' '}
+                  to continue the sign in
+                </>
+              ) : (
+                error
+              )
+            }
+          />
+        )}
       </div>
     </>
   )

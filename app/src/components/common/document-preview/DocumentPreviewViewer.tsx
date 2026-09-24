@@ -129,6 +129,16 @@ type DocumentPreviewViewerProps = {
   onProbeComplete?: (matchedValues: string[]) => void
   probeTerms?: string[]
   showScanOverlay?: boolean
+  // Signature & edit permission props for Collabora / Office document signing
+  permission?: 'edit' | 'readonly'
+  isSigningMode?: boolean
+  signRequestId?: string
+  permissions?: any
+  restrictToFields?: boolean
+  signatureFields?: any[]
+  signerName?: string
+  signerEmail?: string
+  onCompleteSigning?: (placements: any[]) => Promise<void>
 }
 
 type PdfViewerProps = {
@@ -383,6 +393,15 @@ export default function DocumentPreviewViewer({
   onProbeComplete,
   probeTerms = [],
   showScanOverlay = false,
+  permission = 'readonly',
+  isSigningMode = false,
+  signRequestId,
+  permissions,
+  restrictToFields = false,
+  signatureFields = [],
+  signerName,
+  signerEmail,
+  onCompleteSigning,
 }: DocumentPreviewViewerProps) {
   const mode = resolveViewerMode({
     fileName,
@@ -405,6 +424,15 @@ export default function DocumentPreviewViewer({
         fileBlob={fileBlob}
         fileName={fileName}
         fileUrl={fileUrl}
+        permission={permission}
+        isSigningMode={isSigningMode}
+        onCompleteSigning={onCompleteSigning}
+        permissions={permissions}
+        restrictToFields={restrictToFields}
+        signRequestId={signRequestId}
+        signatureFields={signatureFields}
+        signerEmail={signerEmail}
+        signerName={signerName}
       />
     )
   } else if (mode === 'pdf') {

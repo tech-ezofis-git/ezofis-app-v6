@@ -144,7 +144,7 @@ const DocumentApprovalSplitLayout = ({
   const { t } = useLingui()
   const firstAttachment = attachments[0]
   const [documentInfo, setDocumentInfo] = useState<any>(null)
-  
+
   const [isApproversOpen, setIsApproversOpen] = useState(true)
   const [isDocDetailsOpen, setIsDocDetailsOpen] = useState(true)
 
@@ -153,18 +153,18 @@ const DocumentApprovalSplitLayout = ({
 
   const previewAttachment = firstAttachment
     ? {
-        ...firstAttachment,
-        itemId: targetItemId,
-        repositoryId: targetRepoId,
-      }
+      ...firstAttachment,
+      itemId: targetItemId,
+      repositoryId: targetRepoId,
+    }
     : selectedItem?.itemId
       ? {
-          itemId: selectedItem.itemId,
-          repositoryId: selectedItem.repositoryId,
-          fileName: selectedItem.repositoryItem?.fileName,
-          name: selectedItem.repositoryItem?.fileName,
-          fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
-        }
+        itemId: selectedItem.itemId,
+        repositoryId: selectedItem.repositoryId,
+        fileName: selectedItem.repositoryItem?.fileName,
+        name: selectedItem.repositoryItem?.fileName,
+        fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
+      }
       : null
 
   const { previewUrl, mimeType } = useAttachmentPreviewUrl(
@@ -202,69 +202,67 @@ const DocumentApprovalSplitLayout = ({
       </div>
 
       <div className='flex w-[400px] xl:w-[480px] shrink-0 flex-col gap-5 overflow-hidden'>
-        <ScrollArea className='flex-1 pr-3 -mr-3' height='100%'>
-          <div className='space-y-5 pb-5'>
-              <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-                <button
-                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
-                  onClick={() => setIsApproversOpen(!isApproversOpen)}
-                >
-                  <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
-                    <DynamicIcon className='h-4 w-4 text-blue-11' name='users' />
-                    {t`Configure Approvers`}
-                  </h2>
-                  <DynamicIcon
-                    className={`h-4 w-4 text-gray-10 transition-transform ${isApproversOpen ? 'rotate-180' : ''}`}
-                    name='chevronDown'
-                  />
-                </button>
-                {isApproversOpen && (
-                  <div className='flex flex-col p-5 space-y-4'>
-                    {taskNode}
-                    <div className='border-t border-gray-2 pt-2 -mx-2'>
-                      {formNode}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-                <button
-                  className='flex w-full items-center justify-between border-b border-gray-3 p-5 transition-colors hover:bg-gray-2'
-                  onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
-                >
-                  <h2 className='flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
-                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
-                    {t`Document Details`}
-                  </h2>
-                  <DynamicIcon
-                    className={`h-4 w-4 text-gray-10 transition-transform ${isDocDetailsOpen ? 'rotate-180' : ''}`}
-                    name='chevronDown'
-                  />
-                </button>
-                {isDocDetailsOpen && (
-                  <div className='flex flex-col'>
-                    {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).length > 0 ? (
-                      documentInfo.infoCards.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
-                        <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
-                          <span className='flex items-center gap-2 text-[12px] text-gray-9'>
-                            <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
-                            {row.label}
-                          </span>
-                          <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
-                            {row.value || '-'}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className='px-5 py-4 text-center text-13 text-gray-9'>
-                        {t`No document details available.`}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+        <ScrollArea className='flex-1 pr-3.5' height='100%' type='always'>
+          <div className='space-y-4 pb-4'>
+            <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+              <button
+                className='flex w-full items-center justify-between border-b border-gray-3 px-4 py-2.5 transition-colors hover:bg-gray-2'
+                onClick={() => setIsApproversOpen(!isApproversOpen)}
+              >
+                <h2 className='flex items-center gap-2 text-sm font-semibold text-gray-13'>
+                  <DynamicIcon className='h-4 w-4 text-blue-11' name='users' />
+                  {t`Configure Approvers`}
+                </h2>
+                <DynamicIcon
+                  className={`h-4 w-4 text-gray-10 transition-transform ${isApproversOpen ? 'rotate-180' : ''}`}
+                  name='chevronDown'
+                />
+              </button>
+              {isApproversOpen && (
+                <div className='flex flex-col p-4 space-y-4'>
+                  {taskNode}
+                  {formNode}
+                </div>
+              )}
             </div>
+
+            <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+              <button
+                className='flex w-full items-center justify-between border-b border-gray-3 px-4 py-2.5 transition-colors hover:bg-gray-2'
+                onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
+              >
+                <h2 className='flex items-center gap-2 text-sm font-semibold text-gray-13'>
+                  <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                  {t`Document Details`}
+                </h2>
+                <DynamicIcon
+                  className={`h-4 w-4 text-gray-10 transition-transform ${isDocDetailsOpen ? 'rotate-180' : ''}`}
+                  name='chevronDown'
+                />
+              </button>
+              {isDocDetailsOpen && (
+                <div className='flex flex-col'>
+                  {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).length > 0 ? (
+                    documentInfo.infoCards.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
+                      <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
+                        <span className='flex items-center gap-2 text-[12px] text-gray-9'>
+                          <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
+                          {row.label}
+                        </span>
+                        <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
+                          {row.value || '-'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className='px-5 py-4 text-center text-xs text-gray-9'>
+                      {t`No document details available.`}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </ScrollArea>
       </div>
     </div>
@@ -305,18 +303,18 @@ const DocumentFormSplitLayout = ({
 
   const previewAttachment = firstAttachment
     ? {
-        ...firstAttachment,
-        itemId: targetItemId,
-        repositoryId: targetRepoId,
-      }
+      ...firstAttachment,
+      itemId: targetItemId,
+      repositoryId: targetRepoId,
+    }
     : selectedItem?.itemId
       ? {
-          itemId: selectedItem.itemId,
-          repositoryId: selectedItem.repositoryId,
-          fileName: selectedItem.repositoryItem?.fileName,
-          name: selectedItem.repositoryItem?.fileName,
-          fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
-        }
+        itemId: selectedItem.itemId,
+        repositoryId: selectedItem.repositoryId,
+        fileName: selectedItem.repositoryItem?.fileName,
+        name: selectedItem.repositoryItem?.fileName,
+        fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
+      }
       : null
 
   const { previewUrl } = useAttachmentPreviewUrl(
@@ -350,8 +348,8 @@ const DocumentFormSplitLayout = ({
             />
           </div>
         )}
-        
-        <ScrollArea className='flex-1 pr-3 -mr-3' height='100%'>
+
+        <ScrollArea className='flex-1 pr-3.5' height='100%' type='always'>
           {selectedAgentBlock ? (
             <AgentDetailPlaceholder
               agentBlock={selectedAgentBlock}
@@ -414,7 +412,7 @@ const GenericRequestOverview = ({
     if (!kanbanMissingFieldIds?.length) return []
     const byId = new Map<string, string>()
     panels.forEach((panel: any) => {
-      ;(panel.fields || []).forEach((field: any) => {
+      ; (panel.fields || []).forEach((field: any) => {
         byId.set(String(field.id), String(field.label || field.name || field.id))
       })
     })
@@ -502,16 +500,16 @@ const GenericRequestOverview = ({
         ? new Set(allFieldIds)
         : access === 'CUSTOM'
           ? (() => {
-              const rules = Array.isArray(blockSettings.formEditControls)
-                ? blockSettings.formEditControls
-                : []
-              const rule = rules.find(
-                (r: any) => String(r.userId) === currentUserId,
-              )
-              if (!rule) return undefined
-              const editable = new Set((rule?.formFields || []).map(String))
-              return new Set(allFieldIds.filter((id) => !editable.has(id)))
-            })()
+            const rules = Array.isArray(blockSettings.formEditControls)
+              ? blockSettings.formEditControls
+              : []
+            const rule = rules.find(
+              (r: any) => String(r.userId) === currentUserId,
+            )
+            if (!rule) return undefined
+            const editable = new Set((rule?.formFields || []).map(String))
+            return new Set(allFieldIds.filter((id) => !editable.has(id)))
+          })()
           : undefined
 
     if (requestNumberFieldIds.size === 0) return base
@@ -688,9 +686,9 @@ const GenericRequestOverview = ({
           String(repositoryId),
           existingItem
             ? {
-                itemId: existingItem.itemId,
-                repositoryId: existingItem.repositoryId || repositoryId,
-              }
+              itemId: existingItem.itemId,
+              repositoryId: existingItem.repositoryId || repositoryId,
+            }
             : undefined,
         )
         const formMeta = buildRepoMetadata(
@@ -946,7 +944,7 @@ const GenericRequestOverview = ({
                 />
               </div>
             )}
-            
+
             <ScrollArea className='flex-1' height='100%'>
               {selectedAgentBlock ? (
                 <div className='p-6 pt-2'>
@@ -975,6 +973,7 @@ const GenericRequestOverview = ({
                   ) : null} */}
                   <WorkflowFormRenderer
                     attachments={attachments}
+                    disableOwnScroll={true}
                     formModel={formModel}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                     hiddenFieldIds={hiddenFieldIds}
@@ -1000,75 +999,75 @@ const GenericRequestOverview = ({
           </div>
         )}
 
-      {showSidePanel && (
-        <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
-          {rightView === 'history' && (
-            <div className='flex h-full min-h-0 flex-col'>
-              <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-                <span className='text-xs font-semibold text-gray-12'>
-                  {t`History`}
-                </span>
-                <IconButton
-                  ariaLabel={t`Close`}
-                  icon='tabler:x'
-                  size='sm'
-                  variant='ghost'
-                  onClick={() => setRightView('overview')}
-                />
+        {showSidePanel && (
+          <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
+            {rightView === 'history' && (
+              <div className='flex h-full min-h-0 flex-col'>
+                <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+                  <span className='text-xs font-semibold text-gray-12'>
+                    {t`History`}
+                  </span>
+                  <IconButton
+                    ariaLabel={t`Close`}
+                    icon='tabler:x'
+                    size='sm'
+                    variant='ghost'
+                    onClick={() => setRightView('overview')}
+                  />
+                </div>
+                <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
+                  <History
+                    instanceId={instanceId}
+                    isCompleted={
+                      selectedItem?.isCompleted ||
+                      Boolean(selectedItem?.completedAtUtc) ||
+                      Boolean(selectedItem?.completedAt) ||
+                      ['completed', 'approved', 'closed', 'paid'].includes(
+                        String(selectedItem?.status || '').toLowerCase().trim(),
+                      )
+                    }
+                    processId={processId}
+                    workflowId={workflowId}
+                    enabled
+                  />
+                </div>
               </div>
-              <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
-                <History
+            )}
+            {rightView === 'attachments' &&
+              (selectedAttachment ? (
+                <div className='flex h-full min-h-0 flex-col'>
+                  <AttachmentPreviewPanel
+                    file={selectedAttachment}
+                    repositoryId={repositoryId}
+                    onBack={() => setSelectedAttachment(null)}
+                  />
+                </div>
+              ) : (
+                <Attachments
+                  canUpload={!viewOnly}
+                  initialData={attachments}
                   instanceId={instanceId}
-                  isCompleted={
-                    selectedItem?.isCompleted ||
-                    Boolean(selectedItem?.completedAtUtc) ||
-                    Boolean(selectedItem?.completedAt) ||
-                    ['completed', 'approved', 'closed', 'paid'].includes(
-                      String(selectedItem?.status || '').toLowerCase().trim(),
-                    )
-                  }
                   processId={processId}
+                  repositoryId={repositoryId}
                   workflowId={workflowId}
                   enabled
+                  onClose={() => setRightView('overview')}
+                  onSelect={setOpenedAttachment}
                 />
-              </div>
-            </div>
-          )}
-          {rightView === 'attachments' &&
-            (selectedAttachment ? (
-              <div className='flex h-full min-h-0 flex-col'>
-                <AttachmentPreviewPanel
-                  file={selectedAttachment}
-                  repositoryId={repositoryId}
-                  onBack={() => setSelectedAttachment(null)}
-                />
-              </div>
-            ) : (
-              <Attachments
-                canUpload={!viewOnly}
-                initialData={attachments}
+              ))}
+            {rightView === 'comments' && (
+              <Comments
+                comments={comments}
                 instanceId={instanceId}
                 processId={processId}
-                repositoryId={repositoryId}
+                refetch={onCommentsChanged}
                 workflowId={workflowId}
                 enabled
                 onClose={() => setRightView('overview')}
-                onSelect={setOpenedAttachment}
               />
-            ))}
-          {rightView === 'comments' && (
-            <Comments
-              comments={comments}
-              instanceId={instanceId}
-              processId={processId}
-              refetch={onCommentsChanged}
-              workflowId={workflowId}
-              enabled
-              onClose={() => setRightView('overview')}
-            />
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
       </div>
 
       {pendingUpload ? (

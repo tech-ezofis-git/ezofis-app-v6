@@ -1597,7 +1597,7 @@ export function DocumentDetailsView({
 
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col bg-surface-secondary text-[13px] text-gray-11 duration-300'>
-      {previewUrl && (isSigning || assignedFields.length > 0) ? (
+      {previewUrl && (isPdfPreview || isImagePreview) && (isSigning || assignedFields.length > 0) ? (
         <DocumentSigningPage
           mode='inline'
           overlayOnly={!isSigning && assignedFields.length > 0}
@@ -1937,6 +1937,25 @@ export function DocumentDetailsView({
                 <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
                 <span>{t`AI Summary`}</span>
               </button>
+              {canSendForSignature ? (
+                <button
+                  aria-label={t`Sign Document`}
+                  className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isSigning
+                      ? 'border-accent-primary bg-accent-soft text-accent-primary'
+                      : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
+                  }`}
+                  disabled={isPreviewLoading}
+                  type='button'
+                  onClick={() => setIsSigning((prev) => !prev)}
+                >
+                  <DynamicIcon
+                    className='h-4 w-4 text-accent-primary'
+                    name='pen-tool'
+                  />
+                  <span>{isSigning ? t`Exit Signing` : t`Sign Document`}</span>
+                </button>
+              ) : null}
               <div>
                 <FolderSharePopover
                   className='shrink-0'
@@ -2195,6 +2214,69 @@ export function DocumentDetailsView({
                       isPdf={isPdfPreview}
                       onProbeComplete={handleFieldMatchProbe}
                       probeTerms={fieldProbeTerms}
+                      permission={isEditingDoc ? 'edit' : 'readonly'}
+                      isSigningMode={isSigning}
+                      permissions={permissions}
+                      signRequestId={activeSignRequestId}
+                      signatureFields={(assignedFields || []).map((f, i) => ({
+                        id: f.fieldId || `field-${i}`,
+                        page: f.pageNumber || 1,
+                        x: f.x || 100,
+                        y: f.y || 150,
+                        width: f.width || 200,
+                        height: f.height || 70,
+                        signerName: f.signerName || f.signerEmail || signerName || 'Signer',
+                      }))}
+                      signerEmail={currentUserEmail}
+                      signerName={signerName}
+                      onCompleteSigning={async (placements) => {
+                        if (!repositoryId || !id) {
+                          throw new Error('Document context is missing.')
+                        }
+                        let requestId = String(activeSignRequestId || '').trim()
+                        if (!requestId && currentUserEmail) {
+                          const created = await createSignRequest({
+                            itemId: id,
+                            message: 'Please sign this document',
+                            repositoryId,
+                            signers: [
+                              {
+                                email: currentUserEmail,
+                                name: signerName || currentUserEmail,
+                                order: 1,
+                              },
+                            ],
+                            signingMode: 'single',
+                          })
+                          if (created.data?.signRequestId) {
+                            requestId = created.data.signRequestId
+                            setActiveSignRequestId(requestId)
+                          }
+                        }
+                        if (requestId) {
+                          for (const placement of placements) {
+                            await submitSignRequest({
+                              signRequestId: requestId,
+                              signature: {
+                                height: placement.height,
+                                pageNumber: placement.page,
+                                signatureImageBase64: placement.signatureData || '',
+                                signedAtClientUtc: new Date().toISOString(),
+                                width: placement.width,
+                                x: placement.x,
+                                y: placement.y,
+                              },
+                            })
+                          }
+                        }
+                        showToast({
+                          message: t`Signature submitted successfully.`,
+                          variant: 'success',
+                        })
+                        setIsSigning(false)
+                        setPreviewRefreshKey((v) => v + 1)
+                        onSigningComplete?.()
+                      }}
                     />
                   </div>
                 ) : (

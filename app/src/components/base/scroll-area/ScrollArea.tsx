@@ -23,8 +23,8 @@ const ScrollArea = ({
   height,
   overscrollBehavior = 'auto',
   scrollbars = 'y',
-  scrollbarSize = 6,
-  type = 'auto',
+  scrollbarSize = 8,
+  type = 'hover',
   width,
   ...rest
 }: Props) => {
@@ -39,9 +39,9 @@ const ScrollArea = ({
       type={type}
       w={width}
       classNames={{
-        content: 'h-full',
-        scrollbar: 'w-1 p-0',
-        thumb: 'bg-gray-8',
+        content: 'min-h-full',
+        scrollbar: 'w-2 p-0.5',
+        thumb: 'bg-gray-8 hover:bg-gray-9 transition-colors rounded-full',
       }}
     >
       {children}

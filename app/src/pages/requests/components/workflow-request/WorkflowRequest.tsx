@@ -99,7 +99,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     }
 
     showToast({
-      message: t`Request submitted.`,
+      message: t`Request submitted successfully.`,
       variant: 'success',
     })
     workflowRefresh()

@@ -164,7 +164,7 @@ const ROLE_STEP_CAPTIONS = [msg`Step 1`, msg`Step 2`, msg`Step 3`]
 
 const ROLE_PERMISSION_PAGES: RolePermissionPage[] = [
   { key: 'dashboard', name: 'Dashboard' },
-  { key: 'request', name: 'Request' },
+  { key: 'workflow-inbox', name: 'Workflow Inbox' },
   { key: 'folder', name: 'Folder' },
   { key: 'report', name: 'Reports' },
   { key: 'settings', name: 'Settings' },
@@ -185,8 +185,10 @@ const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
   'report-builder': 'report-builder',
   'report-builder-settings': 'report-builder',
   reportbuilder: 'report-builder',
-  request: 'request',
-  requests: 'request',
+  request: 'workflow-inbox',
+  requests: 'workflow-inbox',
+  'workflow-inbox': 'workflow-inbox',
+  workflowinbox: 'workflow-inbox',
   workflow: 'workflow',
   workflows: 'workflow',
   portal: 'portal',
@@ -427,6 +429,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     if (!selectedUsers.length) return
 
     const newPermissions = mapPermissionRowsToPermissions(newPermissionRows)
+    const permissionsPayload = Array.from(
+      new Set(
+        newPermissions.flatMap((p) =>
+          p === 'workflow-inbox' ? ['workflow-inbox', 'request'] : [p],
+        ),
+      ),
+    )
     const payload: UpsertV6RolePayload & { permissionKeys?: any[] } = {
       description:
         newRoleDescription.trim() || 'Custom role configured by administrator',
@@ -438,10 +447,12 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
           visible: isEnabled,
         }
       }),
-      permissions: newPermissions,
+      permissions: permissionsPayload,
       roleName: cleanName,
       users: selectedUsers.map((user) => String(user.id)),
     }
+
+    console.log('[Saving Role Menu Access Data]', payload)
 
     setIsSavingRole(true)
     try {
@@ -1138,7 +1149,7 @@ function applyPermissionKeysToMenus(
     isAllowedRolePermissionKey(String(menu.key || (menu as any).id || '')),
   )
 
-  // Keep a fixed page list only (dashboard, request, folder, workflow, form, settings).
+  // Keep a fixed page list only (dashboard, workflow-inbox, folder, workflow, form, settings).
   const orderedMenus = ROLE_PERMISSION_PAGES.map((page, index) => {
     const existing =
       sourceMenus.find(
@@ -1759,7 +1770,7 @@ function RoleList({
     <div className='flex h-full min-h-0 flex-col'>
       <SettingsPageHeader title={t`Roles & Permissions`} onBack={onBack} />
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={roleTable as any} />}
@@ -1807,7 +1818,7 @@ function RoleList({
             tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
           }}
         />
-        <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           <div className='min-h-0 flex-1 overflow-hidden'>
             <DataTable
               emptyDescription={t`Create a role to manage access permissions across the platform.`}

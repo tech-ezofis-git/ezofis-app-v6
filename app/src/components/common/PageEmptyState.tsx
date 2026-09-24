@@ -90,6 +90,9 @@ const PageEmptyState = ({
         description={resolvedDescription}
         icon={icon ?? content.icon}
         title={resolvedTitle}
+        primaryActionIcon={
+          showCreateAction ? content.primaryActionIcon : undefined
+        }
         primaryActionLabel={
           showCreateAction
             ? (emptyStateProps.primaryActionLabel ?? content.primaryActionLabel)

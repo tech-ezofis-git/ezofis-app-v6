@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
 interface Props {
-  text: string
+  text: ReactNode
   className?: string
   variant?: 'primary' | 'green' | 'red'
 }

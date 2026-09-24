@@ -1215,8 +1215,6 @@ const Request = ({
     if (currentBlockSettings.isManagerEnabled) names.push('Manager')
     if (currentBlockSettings.isToRequesterEnabled) names.push('Requester')
     if (currentBlockSettings.isCoordinatorEnabled) names.push('Coordinator')
-    if (currentBlockSettings.isDynamicUserEnabled)
-      names.push('Dynamically assigned user')
     if (currentBlockSettings.isMasterUserEnabled)
       names.push('Master table lookup')
     if (!names.length) return undefined

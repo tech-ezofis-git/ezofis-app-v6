@@ -8,6 +8,7 @@ interface Props {
   icon: string
   title: string
   className?: string
+  primaryActionIcon?: string
   primaryActionLabel?: string
   secondaryActionLabel?: string
   onPrimaryAction?: () => void
@@ -18,6 +19,7 @@ const EmptyState = ({
   className,
   description,
   icon,
+  primaryActionIcon,
   primaryActionLabel,
   secondaryActionLabel,
   title,
@@ -47,7 +49,11 @@ const EmptyState = ({
           )}
 
           {primaryActionLabel && (
-            <Button label={primaryActionLabel} onClick={onPrimaryAction} />
+            <Button
+              icon={primaryActionIcon}
+              label={primaryActionLabel}
+              onClick={onPrimaryAction}
+            />
           )}
         </div>
       )}

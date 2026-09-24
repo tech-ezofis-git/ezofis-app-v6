@@ -55,7 +55,7 @@ export function shouldDisableTableEllipsis(
 
 /**
  * Single-line ellipsis constrained to the column width.
- * When text overflows, hover expands the full text below with no extra styling.
+ * When text overflows, mouse over expands text downwards within column bounds.
  */
 export default function TableEllipsis({
   children,
@@ -101,7 +101,7 @@ export default function TableEllipsis({
       className={cn(
         'block max-w-full min-w-0',
         isTruncated && isHovered
-          ? 'relative z-20 whitespace-normal break-words [&>*]:whitespace-normal'
+          ? 'relative z-20 whitespace-normal break-all [&>*]:whitespace-normal [&>*]:break-all'
           : 'overflow-hidden text-ellipsis whitespace-nowrap',
         className,
       )}

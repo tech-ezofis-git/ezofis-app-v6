@@ -1,7 +1,7 @@
 import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
@@ -15,10 +15,23 @@ import {
   MicrosoftMark,
 } from './AuthHeroShell'
 
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message
+  }
+  return ''
+}
+
 type SignUpScreenProps = {
   email: string
-  setEmail: (value: string) => void
   onContinueEmail: () => void
+  setEmail: (value: string) => void
 }
 
 export function SignUpScreen({
@@ -32,10 +45,21 @@ export function SignUpScreen({
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [tenantEmail, setTenantEmail] = useState<string | null>(null)
+
+  const clearError = () => {
+    setError(null)
+    setTenantEmail(null)
+  }
+
+  const showTenantExists = (existingEmail: string) => {
+    setTenantEmail(existingEmail)
+    setError('Tenant is already exists, Please change the Email for signup')
+  }
 
   const handleEmailSendOtp = async () => {
     try {
-      setError(null)
+      clearError()
       if (!email) {
         setError('Please enter your email address.')
         return
@@ -59,7 +83,7 @@ export function SignUpScreen({
       })
 
       if (status === 409) {
-        setError('Tenant already exists. Please use a different email.')
+        showTenantExists(email)
         return
       }
       if (apiError) {
@@ -73,8 +97,8 @@ export function SignUpScreen({
 
       showToast({ message: 'OTP sent successfully', variant: 'default' })
       onContinueEmail()
-    } catch (e: any) {
-      setError(e?.message ?? 'Unable to send OTP')
+    } catch (e: unknown) {
+      setError(errorMessage(e) || 'Unable to send OTP')
     } finally {
       setLoading(false)
     }
@@ -83,10 +107,12 @@ export function SignUpScreen({
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onError: () =>
-      setError("We couldn't create your account with Google. Please try again."),
+      setError(
+        "We couldn't create your account with Google. Please try again.",
+      ),
     onSuccess: async (tokenResponse) => {
       try {
-        setError(null)
+        clearError()
         setLoading(true)
 
         const res = await fetch(
@@ -122,7 +148,7 @@ export function SignUpScreen({
           await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
 
         if (otpStatus === 409) {
-          setError('Tenant already exists. Please use a different email.')
+          showTenantExists(gEmail)
           return
         }
         if (otpError) {
@@ -131,8 +157,8 @@ export function SignUpScreen({
         }
 
         void navigate({ to: '/reset-password' })
-      } catch (e: any) {
-        setError(e?.message ?? 'Google sign-up failed')
+      } catch (e: unknown) {
+        setError(errorMessage(e) || 'Google sign-up failed')
       } finally {
         setLoading(false)
       }
@@ -141,7 +167,7 @@ export function SignUpScreen({
 
   const handleMicrosoftSignUp = async () => {
     try {
-      setError(null)
+      clearError()
       setLoading(true)
 
       const loginResponse = await msalInstance.loginPopup({
@@ -172,7 +198,7 @@ export function SignUpScreen({
         await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
 
       if (otpStatus === 409) {
-        setError('Tenant already exists. Please use a different email.')
+        showTenantExists(msEmail)
         return
       }
       if (otpError) {
@@ -181,14 +207,16 @@ export function SignUpScreen({
       }
 
       void navigate({ to: '/reset-password' })
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e)
-      const errorMsg = e?.message || ''
+      const errorMsg = errorMessage(e)
       if (
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError("We couldn't create your account with Microsoft. Please try again.")
+        setError(
+          "We couldn't create your account with Microsoft. Please try again.",
+        )
       } else {
         setError(errorMsg || 'Microsoft sign-up failed')
       }
@@ -252,21 +280,35 @@ export function SignUpScreen({
           value={email}
           onChange={(event) => {
             setEmail(event.target.value)
-            setError(null)
+            clearError()
           }}
         />
 
         {error ? (
           <p className='mt-3 rounded-xl bg-red-2 px-3 py-2 text-12 text-error-main'>
-            {error}
+            {tenantEmail ? (
+              <>
+                Tenant is already exists, Please change the Email for signup or{' '}
+                <Link
+                  className='font-semibold underline underline-offset-2 transition-opacity hover:opacity-80 active:opacity-70'
+                  search={{ email: tenantEmail }}
+                  to='/sign-in'
+                >
+                  click here
+                </Link>{' '}
+                to continue the sign in
+              </>
+            ) : (
+              error
+            )}
           </p>
         ) : null}
 
         <AppButton
           className='mt-4 min-h-12 text-14'
-          fullWidth
           loading={loading}
           type='submit'
+          fullWidth
         >
           Continue
         </AppButton>

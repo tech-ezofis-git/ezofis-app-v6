@@ -206,12 +206,20 @@ const authUserStore = create<Store>()((set) => {
     setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
 
     setSession: (session) => {
+      const permissionKeys = session
+        ? Array.isArray(session.permissionKeys) && session.permissionKeys.length > 0
+          ? session.permissionKeys
+          : Array.isArray((session as any).permissions) && (session as any).permissions.length > 0
+            ? (session as any).permissions
+            : Array.isArray((session as any).menus) && (session as any).menus.length > 0
+              ? (session as any).menus
+              : session?.permissionKeys || null
+        : null
+
       const nextSession = session
         ? {
             ...session,
-            permissionKeys: Array.isArray(session.permissionKeys)
-              ? session.permissionKeys
-              : null,
+            permissionKeys,
           }
         : null
 

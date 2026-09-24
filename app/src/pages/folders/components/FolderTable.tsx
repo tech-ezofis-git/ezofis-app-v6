@@ -158,11 +158,11 @@ const EXPLORER_CELL_META = {
 }
 const EXPLORER_VALUE_CLASS = 'text-sm font-normal leading-4 text-gray-12'
 const EXPLORER_NAME_BUTTON_CLASS =
-  'flex min-w-0 max-w-full items-center gap-1.5 text-left'
+  'flex min-w-0 max-w-full items-start gap-1.5 text-left'
 const EXPLORER_NAME_TEXT_WRAP_CLASS = 'min-w-0 flex-1'
-const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-none text-gray-12'
+const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-4 text-gray-12'
 const EXPLORER_ICON_WRAP_CLASS =
-  'inline-flex size-4 shrink-0 items-center justify-center'
+  'inline-flex size-4 shrink-0 items-center justify-center pt-0.5'
 const EXPLORER_ICON_CLASS = 'block size-4 text-[#4f5b88]'
 
 function ExplorerValue({ value }: { value: string }) {
