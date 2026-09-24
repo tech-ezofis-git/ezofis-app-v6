@@ -111,9 +111,12 @@ public static class WorkflowApAgentJson
                         "Resource");
                 }
 
-                var formId = ReadString(settings, "formId", "FormId", "masterFormId", "MasterFormId");
-                if (string.IsNullOrWhiteSpace(formId) && apAgent is { } apForForm)
-                    formId = ReadString(apForForm, "formId", "FormId", "masterFormId", "MasterFormId");
+                // apAgent.formId is the PO master. settings.formId is often the invoice form.
+                string? formId = null;
+                if (apAgent is { } apForFormFirst)
+                    formId = ReadString(apForFormFirst, "formId", "FormId", "masterFormId", "MasterFormId");
+                if (string.IsNullOrWhiteSpace(formId))
+                    formId = ReadString(settings, "formId", "FormId", "masterFormId", "MasterFormId");
 
                 var connectorId = ReadGuid(settings, "connectorId", "ConnectorId", "connector_id", "masterConnectorId");
                 if ((connectorId is null || connectorId == Guid.Empty) && apAgent is { } apForConn)

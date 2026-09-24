@@ -207,6 +207,35 @@ public sealed class ApAgentPoMasterStartPayloadEnricherTests
         Assert.Equal(invoiceFormId, payload["formId"]);
     }
 
+    [Fact]
+    public void TryReadPoMaster_PrefersApAgentFormIdOverBlockSettingsFormId()
+    {
+        const string invoiceFormId = "1dea95c8-005f-400d-98e7-f85e6c515a6e";
+        const string poMasterFormId = "719c181f-d861-4fb5-b10b-f5a9ffdfc657";
+        var workflowJson = $$"""
+            {
+              "Blocks": [
+                {
+                  "type": "AP_AGENT",
+                  "settings": {
+                    "formId": "{{invoiceFormId}}",
+                    "apAgent": { "formId": "{{poMasterFormId}}", "resource": "FORM" }
+                  }
+                }
+              ]
+            }
+            """;
+
+        Assert.True(WorkflowApAgentJson.TryReadPoMaster(
+            workflowJson,
+            out var source,
+            out _,
+            out var formId));
+
+        Assert.Equal(EmailIngestMasterSources.InternalForm, source);
+        Assert.Equal(poMasterFormId, formId);
+    }
+
     private static Dictionary<string, object?> BasePayload() => new()
     {
         ["tenantId"] = Guid.NewGuid().ToString("D"),
