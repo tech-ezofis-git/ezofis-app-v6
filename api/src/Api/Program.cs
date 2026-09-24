@@ -40,12 +40,15 @@ builder.Configuration
     .AddJsonFile("appsettings.ActivityLog.json", optional: true, reloadOnChange: true)
     .AddJsonFile("appsettings.EventLog.json", optional: true, reloadOnChange: true);
 
-// Production-only overrides (EzofisAuth, pool sizes, RunServerInApi=false for separate worker).
-// Do NOT load this in Development — it disables the in-process Hangfire server and blocks OCR/archive jobs.
+// Production-only overrides (EzofisAuth, pool sizes). Do NOT load this in Development.
+// The file is added after the host defaults, so re-apply environment variables afterward.
+// Azure Hangfire__RunServerInApi must win; otherwise a synced "false" stops the cloud worker.
 if (builder.Environment.IsProduction())
 {
     builder.Configuration.AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);
 }
+
+builder.Configuration.AddEnvironmentVariables();
 
 
 // Serilog + Application Insights (clear default providers to avoid duplicate log lines)
