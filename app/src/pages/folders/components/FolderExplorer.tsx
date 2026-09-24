@@ -3,9 +3,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import showToast from '@/components/base/toast/showToast'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
-import type { AppView } from '../types/folderTypes'
+import type { AppView, FileItem } from '../types/folderTypes'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
@@ -185,6 +186,43 @@ export function FolderExplorer() {
     selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
   )
   const currentRepositoryId = resolvedRepositoryId
+
+  const handleDeleteStagedFile = useCallback(
+    async (file: FileItem) => {
+      const fileId = String(file.stageFileId || file.id || '')
+        .replace(/^staged-/, '')
+        .trim()
+      const repositoryId = String(
+        file.repositoryId || resolvedRepositoryId || '',
+      ).trim()
+      if (!fileId || !repositoryId) {
+        showToast({
+          message: t`Couldn't delete this staged file.`,
+          variant: 'error',
+        })
+        throw new Error('missing staged file id')
+      }
+
+      const { error } = await uploadAndIndexApi.deleteStagedFiles({
+        fileIds: [fileId],
+        repositoryId,
+      })
+      if (error) {
+        showToast({
+          message: String(error),
+          variant: 'error',
+        })
+        throw new Error(error)
+      }
+
+      showToast({
+        message: t`Staged file deleted.`,
+        variant: 'success',
+      })
+      await refreshData()
+    },
+    [refreshData, resolvedRepositoryId, t],
+  )
 
   const selectRepositoryById = useCallback(
     (repositoryId: string, label = 'Repository') => {
@@ -710,6 +748,7 @@ export function FolderExplorer() {
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
+          onDeleteStagedFile={handleDeleteStagedFile}
         />
       </div>
     )
@@ -810,6 +849,7 @@ export function FolderExplorer() {
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => handleFileAction(id, 'workflow')}
+              onDeleteStagedFile={handleDeleteStagedFile}
             />
           </div>
         </main>

@@ -41,6 +41,10 @@ import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
 import { FolderDataTableSection } from './FolderTable'
 import { DynamicIcon } from './icons'
+import {
+  isUnarchivedStageFile,
+  StagedFileDeleteButton,
+} from './StagedFileDeleteButton'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
 type ActionMenuPosition = {
@@ -90,6 +94,7 @@ type DocumentsListViewProps = {
   onFiltersChange?: (filters: Record<string, string>) => void
   onIntelligentUpload?: () => void
   onOpenFile: (id: string) => void
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onRefresh?: () => void
@@ -377,6 +382,7 @@ export function DocumentsListView({
   onFiltersChange,
   onIntelligentUpload,
   onOpenFile,
+  onDeleteStagedFile,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -732,7 +738,20 @@ export function DocumentsListView({
       minSize: 56,
       size: 64,
       cell: ({ row }) => {
-        const fileId = getFileId(row.original)
+        const file = row.original
+        const fileId = getFileId(file)
+
+        if (isUnarchivedStageFile(file) && onDeleteStagedFile) {
+          return (
+            <div className='relative flex justify-end'>
+              <StagedFileDeleteButton
+                disabled={isBusy}
+                fileName={String(file.name || t`this file`)}
+                onDelete={() => onDeleteStagedFile(file)}
+              />
+            </div>
+          )
+        }
 
         return (
           <div className='relative flex justify-end'>
@@ -757,6 +776,7 @@ export function DocumentsListView({
     columns,
     folderContextFilters,
     isBusy,
+    onDeleteStagedFile,
     onOpenFile,
     openActionMenu,
     selectedIds,

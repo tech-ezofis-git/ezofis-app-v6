@@ -37,6 +37,10 @@ import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
+import {
+  isUnarchivedStageFile,
+  StagedFileDeleteButton,
+} from './StagedFileDeleteButton'
 import { EllipsisText, StatusPill } from './Ui'
 import cn from '@/utils/cn'
 
@@ -116,6 +120,8 @@ type FolderTableDataTableSplitProps = {
   onOpenFile: (id: string) => void
 
   onOpenFolder: (id: string) => void
+
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
 
   onPageChange?: (page: number, cursor?: string | null) => void
 
@@ -292,6 +298,8 @@ export default function FolderTableDataTableSplit({
   onOpenFile,
 
   onOpenFolder,
+
+  onDeleteStagedFile,
 
   onPageChange,
 
@@ -535,6 +543,7 @@ export default function FolderTableDataTableSplit({
             onReload={onReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
+            onDeleteStagedFile={onDeleteStagedFile}
             permissions={permissions}
           />
         ) : null}
@@ -640,6 +649,7 @@ function FileDataTableSection({
   onReload,
   onShare,
   onWorkflow,
+  onDeleteStagedFile,
   permissions,
 }: {
   columns: DynamicRepositoryColumn[]
@@ -663,6 +673,7 @@ function FileDataTableSection({
   onReload?: () => void
   onShare: (id: string) => void
   onWorkflow: (id: string) => void
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
   permissions?: {
     delete?: boolean
     editMetadata?: boolean
@@ -842,6 +853,22 @@ function FileDataTableSection({
         size: 64,
         cell: ({ row }) => {
           const fileId = row.original.id
+          const file = row.original.raw as FileItem
+
+          if (isUnarchivedStageFile(file) && onDeleteStagedFile) {
+            return (
+              <div
+                className='flex items-center justify-end'
+                onClick={(event) => event.stopPropagation()}
+              >
+                <StagedFileDeleteButton
+                  disabled={loadingPage}
+                  fileName={String(file.name || row.original.__name || t`this file`)}
+                  onDelete={() => onDeleteStagedFile(file)}
+                />
+              </div>
+            )
+          }
 
           return (
             <div
@@ -911,6 +938,7 @@ function FileDataTableSection({
     hiddenFirstColumnKeys,
     loadingPage,
     onAiSummary,
+    onDeleteStagedFile,
     onEditMetadata,
     onOpenFile,
     onShare,

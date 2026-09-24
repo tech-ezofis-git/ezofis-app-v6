@@ -12,6 +12,7 @@ import formApi from '@/api/form/form'
 import { uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
+  fetchStageFileBlob,
   indexStageFile,
   loadStageFile,
   uploadWithOcr,
@@ -1291,7 +1292,21 @@ export default function Upload({
         entry.fileName,
       )
 
+      let previewUrl = entry.previewUrl
+      let fileObj = entry.file
+      if (!previewUrl && entry.stageFileId) {
+        const blob = await fetchStageFileBlob(entry.stageFileId)
+        if (blob) {
+          fileObj = new File([blob], data.name || entry.fileName, {
+            type: blob.type,
+          })
+          previewUrl = URL.createObjectURL(blob)
+        }
+      }
+
       updateEntry(entry.id, {
+        file: fileObj,
+        previewUrl,
         fieldValues: mappedValues,
         fileName: data.name || entry.fileName,
         fileSize: typeof data.size === 'number' ? data.size : entry.fileSize,
@@ -1545,12 +1560,20 @@ export default function Upload({
           data.name,
         )
 
+        const blob = await fetchStageFileBlob(stageId)
+        let previewUrl: string | null = null
+        let fileObj: File | null = null
+        if (blob) {
+          fileObj = new File([blob], data.name || 'file', { type: blob.type })
+          previewUrl = URL.createObjectURL(blob)
+        }
+
         const entry: QueuedUploadFile = {
           activeTab: 'fields',
           backendStatus: data.status || 'OCR',
           exportStatus: 'idle',
           fieldValues: mappedValues,
-          file: null,
+          file: fileObj,
           fileName: data.name,
           fileSize: typeof data.size === 'number' ? data.size : 0,
           focusedFieldKey: null,
@@ -1560,7 +1583,7 @@ export default function Upload({
           masterSyncedValues: {},
           ocrExtractedValues: mappedValues,
           ocrStatus: 'complete',
-          previewUrl: null,
+          previewUrl,
           rawOcrJson: ocrJson,
           rawOcrText: ocrText,
           restoredFromServer: true,

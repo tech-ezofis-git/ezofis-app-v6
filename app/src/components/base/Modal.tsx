@@ -39,6 +39,7 @@ const Modal = ({
       opened={opened}
       size={width}
       withCloseButton={false}
+      zIndex={30000}
       centered
       onClose={onClose}
     >

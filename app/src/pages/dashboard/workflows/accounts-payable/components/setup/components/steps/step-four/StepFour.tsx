@@ -1,6 +1,6 @@
+import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import * as XLSX from 'xlsx'
 import apiRouter from '@/api/apiRouter'
 import { createRepository } from '@/api/createFolder'
@@ -13,6 +13,7 @@ import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { createDocumentApprovalFormAndWorkflow } from '@/pages/dashboard/workflows/document-approval/createDocumentApproval'
 import { resolvePredefinedFieldKey } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
@@ -718,6 +719,16 @@ const StepFour = () => {
       if (workflowRes.error) {
         showToast({
           message: `Failed to create Workflow: ${workflowRes.error}`,
+          variant: 'error',
+        })
+        setIsSaving(false)
+        return
+      }
+
+      const documentApprovalRes = await createDocumentApprovalFormAndWorkflow()
+      if (documentApprovalRes.error) {
+        showToast({
+          message: documentApprovalRes.error,
           variant: 'error',
         })
         setIsSaving(false)
