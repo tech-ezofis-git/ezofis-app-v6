@@ -8,6 +8,12 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.ftl.page_text import (
+    extract_pdf_text_hybrid,
+    is_image_filename,
+    ocr_image_file,
+    prefer_spec_attachment,
+)
 from app.ftl.qualifier import extract, runs_store, skill_store
 from app.ftl.qualifier import agent as qualifier_agent
 
@@ -69,7 +75,17 @@ class FtlQualifierAgent:
     def __init__(self, **kwargs: Any) -> None:
         pass
 
-    def _build_candidate_from_bytes(
+    async def _text_from_attachment(self, filename: str, content: bytes) -> str:
+        att_ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if att_ext == "pdf":
+            return await extract_pdf_text_hybrid(content)
+        if att_ext == "docx":
+            return extract.extract_docx_text(content)
+        if is_image_filename(filename):
+            return await ocr_image_file(content, filename)
+        return ""
+
+    async def _build_candidate_from_bytes(
         self, file_bytes: bytes, filename: str
     ) -> Tuple[str, Dict[str, Any], str]:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "pdf"
@@ -82,28 +98,20 @@ class FtlQualifierAgent:
                 "date": parsed.get("date", ""),
             }
             attachments = parsed.get("attachments") or []
-            spec_attachment = next(
-                (
-                    a
-                    for a in attachments
-                    if (a.get("filename") or "").lower().rsplit(".", 1)[-1]
-                    in ("pdf", "docx")
-                ),
-                None,
-            )
+            spec_attachment = prefer_spec_attachment(attachments)
             if spec_attachment:
-                att_ext = (spec_attachment.get("filename") or "").lower().rsplit(".", 1)[-1]
-                full_text = (
-                    extract.extract_pdf_text(spec_attachment["bytes"])
-                    if att_ext == "pdf"
-                    else extract.extract_docx_text(spec_attachment["bytes"])
+                full_text = await self._text_from_attachment(
+                    spec_attachment.get("filename") or "",
+                    spec_attachment["bytes"],
                 )
             else:
                 full_text = parsed.get("body_text", "")
         elif ext == "pdf":
-            full_text = extract.extract_pdf_text(file_bytes)
+            full_text = await extract_pdf_text_hybrid(file_bytes)
         elif ext == "docx":
             full_text = extract.extract_docx_text(file_bytes)
+        elif is_image_filename(filename):
+            full_text = await ocr_image_file(file_bytes, filename)
         else:
             full_text = file_bytes.decode("utf-8", errors="replace")
 
@@ -120,18 +128,17 @@ class FtlQualifierAgent:
         candidate_text: Optional[str] = None,
         raw_text: Optional[str] = None,
         model_override: Optional[str] = None,
-        llm_overrides: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Runs qualification on the given file/text asynchronously in a worker thread."""
         input_filename = filename or (os.path.basename(filepath) if filepath else "manual_input")
         input_type = "text"
 
         if file_bytes is not None:
-            rendered, _, input_type = self._build_candidate_from_bytes(file_bytes, input_filename)
+            rendered, _, input_type = await self._build_candidate_from_bytes(file_bytes, input_filename)
         elif filepath is not None and os.path.exists(filepath):
             with open(filepath, "rb") as f:
                 fb = f.read()
-            rendered, _, input_type = self._build_candidate_from_bytes(fb, input_filename)
+            rendered, _, input_type = await self._build_candidate_from_bytes(fb, input_filename)
         elif candidate_text:
             rendered = candidate_text
         elif raw_text:
@@ -141,12 +148,19 @@ class FtlQualifierAgent:
             raise ValueError("No RFQ content provided (must provide file_bytes, filepath, or text).")
 
         skill = skill_store.get_skill()
-        overrides = dict(llm_overrides or {})
-        if model_override:
-            overrides["model"] = model_override
 
         def _run() -> Tuple[Dict[str, Any], int]:
-            return qualifier_agent.run_qualification(skill, rendered, llm_overrides=overrides or None)
+            if model_override:
+                prev_model = os.environ.get("QUALIFIER_CHAT_MODEL")
+                os.environ["QUALIFIER_CHAT_MODEL"] = model_override
+                try:
+                    return qualifier_agent.run_qualification(skill, rendered)
+                finally:
+                    if prev_model is not None:
+                        os.environ["QUALIFIER_CHAT_MODEL"] = prev_model
+                    else:
+                        os.environ.pop("QUALIFIER_CHAT_MODEL", None)
+            return qualifier_agent.run_qualification(skill, rendered)
 
         decision, total_tokens = await asyncio.to_thread(_run)
 
@@ -197,9 +211,8 @@ class FtlQualifierAgent:
                 filepath=filepath,
                 candidate_text=candidate_text,
                 raw_text=raw_text,
-            model_override=model,
-            llm_overrides=job.get("llm_overrides"),
-        )
+                model_override=model,
+            )
             run_rec = res["run_record"]
             reply_md = format_decision_markdown(run_rec)
             return {
