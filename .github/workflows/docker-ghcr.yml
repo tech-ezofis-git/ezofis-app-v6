@@ -1,5 +1,11 @@
 name: Build & Push Docker Images to GHCR
 
+# Way 2 (no ACR):
+# - Build only services whose paths changed (or selected via workflow_dispatch).
+# - Pin only those services to sha-<short> in Azure compose; leave others on current tags.
+# - Restart once per changed service, then smoke-check before continuing.
+# - Never reset unchanged services to :latest (that forced full-stack GHCR pulls).
+
 on:
   push:
     branches:
@@ -10,17 +16,84 @@ on:
       - 'agents/**'
       - 'docker-compose.azure.yml'
       - '.github/workflows/docker-ghcr.yml'
+      - '.github/scripts/deploy-azure-compose.sh'
   workflow_dispatch:
+    inputs:
+      deploy_app:
+        description: Build & deploy front-end (app)
+        type: boolean
+        default: false
+      deploy_api:
+        description: Build & deploy API
+        type: boolean
+        default: false
+      deploy_agents:
+        description: Build & deploy agents
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_APP: ghcr.io/tech-ezofis-git/ezofis-app-v6/app
   IMAGE_API: ghcr.io/tech-ezofis-git/ezofis-app-v6/api
   IMAGE_AGENTS: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents
+  AZURE_RESOURCE_GROUP: rg-v6
+  AZURE_WEBAPP_NAME: ezofis-app-v6
+  SMOKE_BASE_URL: https://cloud.ezofis.com
 
 jobs:
+  changes:
+    name: Detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.select.outputs.app }}
+      api: ${{ steps.select.outputs.api }}
+      agents: ${{ steps.select.outputs.agents }}
+      any: ${{ steps.select.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            app:
+              - 'app/**'
+            api:
+              - 'api/**'
+            agents:
+              - 'agents/**'
+      - id: select
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            APP="${{ inputs.deploy_app }}"
+            API="${{ inputs.deploy_api }}"
+            AGENTS="${{ inputs.deploy_agents }}"
+          else
+            APP="${{ steps.filter.outputs.app }}"
+            API="${{ steps.filter.outputs.api }}"
+            AGENTS="${{ steps.filter.outputs.agents }}"
+            if [ "$APP" != "true" ] && [ "$API" != "true" ] && [ "$AGENTS" != "true" ]; then
+              echo "No app/api/agents path changes — skipping builds."
+            fi
+          fi
+          [ "$APP" = "true" ] || APP=false
+          [ "$API" = "true" ] || API=false
+          [ "$AGENTS" = "true" ] || AGENTS=false
+          ANY=false
+          if [ "$APP" = "true" ] || [ "$API" = "true" ] || [ "$AGENTS" = "true" ]; then
+            ANY=true
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "api=$API" >> "$GITHUB_OUTPUT"
+          echo "agents=$AGENTS" >> "$GITHUB_OUTPUT"
+          echo "any=$ANY" >> "$GITHUB_OUTPUT"
+          echo "Deploy selection: app=$APP api=$API agents=$AGENTS"
+
   build-and-push-app:
     name: Build & Push Front-End (app)
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,6 +129,8 @@ jobs:
 
   build-and-push-api:
     name: Build & Push Back-End (api)
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -69,7 +144,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: check_api
         run: |
-          if [ -f "./api/Dockerfile" ]; then echo "exists=true" >> $GITHUB_OUTPUT; else echo "exists=false" >> $GITHUB_OUTPUT; fi
+          if [ -f "./api/Dockerfile" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
       - if: steps.check_api.outputs.exists == 'true'
         id: meta-api
         uses: docker/metadata-action@v5
@@ -89,6 +164,8 @@ jobs:
 
   build-and-push-agents:
     name: Build & Push Agents (FastAPI)
+    needs: changes
+    if: needs.changes.outputs.agents == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -102,7 +179,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: check_agents
         run: |
-          if [ -f "./agents/Dockerfile" ]; then echo "exists=true" >> $GITHUB_OUTPUT; else echo "exists=false" >> $GITHUB_OUTPUT; fi
+          if [ -f "./agents/Dockerfile" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
       - if: steps.check_agents.outputs.exists == 'true'
         id: meta-agents
         uses: docker/metadata-action@v5
@@ -120,54 +197,44 @@ jobs:
           tags: ${{ steps.meta-agents.outputs.tags }}
           labels: ${{ steps.meta-agents.outputs.labels }}
 
-  restart-webapp:
-    name: Restart Azure Web App
+  deploy-azure:
+    name: Pin changed services & smoke-check
     runs-on: ubuntu-latest
-    needs: [build-and-push-app, build-and-push-api, build-and-push-agents]
-    if: always() && (needs.build-and-push-app.result == 'success' || needs.build-and-push-api.result == 'success' || needs.build-and-push-agents.result == 'success')
+    needs: [changes, build-and-push-app, build-and-push-api, build-and-push-agents]
+    if: |
+      always() &&
+      needs.changes.outputs.any == 'true' &&
+      (
+        needs.build-and-push-app.result == 'success' ||
+        needs.build-and-push-api.result == 'success' ||
+        needs.build-and-push-agents.result == 'success'
+      )
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Apply runtime settings and restart
+      - name: Select Azure subscription
         run: |
-          set -euo pipefail
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          SIGNING_KEY="$(jq -r '.EzofisAuth.SigningKey' api/src/Api/appsettings.Production.json)"
-          if [ -z "$SIGNING_KEY" ] || [ "$SIGNING_KEY" = "null" ]; then
-            echo "EzofisAuth.SigningKey missing from api/src/Api/appsettings.Production.json" >&2
-            exit 1
+          if [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then
+            az account set --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          elif [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
           fi
-          # Pin to sha-* tags and re-apply compose so App Service pulls new images
-          # (restart alone often keeps a cached :latest).
-          COMPOSE=docker-compose.azure.yml
-          if [ "${{ needs.build-and-push-app.result }}" = "success" ]; then
-            sed -i "s|ezofis-app-v6/app:latest|ezofis-app-v6/app:sha-${SHORT_SHA}|g" "$COMPOSE"
-          fi
-          if [ "${{ needs.build-and-push-api.result }}" = "success" ]; then
-            sed -i "s|ezofis-app-v6/api:latest|ezofis-app-v6/api:sha-${SHORT_SHA}|g" "$COMPOSE"
-          fi
-          if [ "${{ needs.build-and-push-agents.result }}" = "success" ]; then
-            sed -i "s|ezofis-app-v6/agents:latest|ezofis-app-v6/agents:sha-${SHORT_SHA}|g" "$COMPOSE"
-          fi
-          echo "Applying multicontainer config:"
-          grep 'image:' "$COMPOSE" || true
-          az webapp config container set \
-            --resource-group rg-v6 \
-            --name ezofis-app-v6 \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file "$COMPOSE"
-          az webapp config appsettings set \
-            --resource-group rg-v6 \
-            --name ezofis-app-v6 \
-            --settings \
-              HttpsRedirection__Enabled=false \
-              Swagger__Enabled=true \
-              ASPNETCORE_ENVIRONMENT=Production \
-              EzofisAuth__SigningKey="$SIGNING_KEY" \
-              EzofisAuth__Issuer=Ezofis \
-              EzofisAuth__Audience=Ezofis \
-              DEPLOY_SHA="$SHORT_SHA" \
-              DOCKER_ENABLE_CI=true
-          az webapp restart --resource-group rg-v6 --name ezofis-app-v6
+          az account show --query "{name:name,id:id}" -o json
+      - name: Deploy only rebuilt services (sequential pin + one restart each)
+        env:
+          DEPLOY_APP: ${{ needs.build-and-push-app.result == 'success' }}
+          DEPLOY_API: ${{ needs.build-and-push-api.result == 'success' }}
+          DEPLOY_AGENTS: ${{ needs.build-and-push-agents.result == 'success' }}
+          IMAGE_APP: ${{ env.IMAGE_APP }}
+          IMAGE_API: ${{ env.IMAGE_API }}
+          IMAGE_AGENTS: ${{ env.IMAGE_AGENTS }}
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ env.AZURE_WEBAPP_NAME }}
+          SMOKE_BASE_URL: ${{ env.SMOKE_BASE_URL }}
+          SMOKE_ATTEMPTS: '20'
+          SMOKE_SLEEP_SEC: '60'
+        run: |
+          chmod +x .github/scripts/deploy-azure-compose.sh
+          .github/scripts/deploy-azure-compose.sh
