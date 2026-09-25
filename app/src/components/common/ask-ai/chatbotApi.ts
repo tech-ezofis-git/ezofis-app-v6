@@ -29,6 +29,7 @@ export const SEARCH_ENDPOINT = `${CHATBOT_API_BASE}/repositories/assistant/searc
 export type ChatbotRequestBody = {
   actionFrom: string
   message: string
+  sessionId?: string
   specificId: string | null
   tenantId: string
   token: string
@@ -579,6 +580,7 @@ export const DEFAULT_CHATBOT_FALLBACK_ANSWER: AskAiAnswer = {
 export async function postChatbotMessage(
   message: string,
   pageContext: AskAiPageContext,
+  sessionId?: string,
 ): Promise<AskAiAnswer> {
   try {
     let { accessToken, tenantId } = resolveChatbotAuth()
@@ -622,9 +624,11 @@ export async function postChatbotMessage(
     }
 
     const specificId = String(pageContext.specificId || '').trim()
+    const chatSessionId = String(sessionId || '').trim()
     const body: ChatbotRequestBody = {
       actionFrom: pageContext.actionFrom ?? '',
       message,
+      sessionId: chatSessionId || undefined,
       specificId: specificId || null,
       tenantId,
       token: accessToken.startsWith('Bearer ')

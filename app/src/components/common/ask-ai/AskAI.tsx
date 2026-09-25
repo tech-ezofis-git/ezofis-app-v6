@@ -178,8 +178,9 @@ function resolveCtaMode(
 async function fetchAskAIAnswer(
   question: string,
   pageContext: { actionFrom: string; specificId: string },
+  sessionId?: string,
 ): Promise<AskAiAnswer> {
-  return postChatbotMessage(question, pageContext)
+  return postChatbotMessage(question, pageContext, sessionId)
 }
 
 function pickCardIdValue(
@@ -591,12 +592,13 @@ const AskAI = () => {
     nextMessages: Message[],
     creditsUsed: number,
     creditsRemaining: number,
+    sessionIdOverride?: string,
   ) => {
     const firstUser = nextMessages.find((m) => m.role === 'user')
     const lastAi = [...nextMessages].reverse().find((m) => m.role === 'ai')
     if (!firstUser || !lastAi) return
 
-    const sessionId = currentHistoryId || uid()
+    const sessionId = sessionIdOverride || currentHistoryId || uid()
     if (!currentHistoryId) setCurrentHistoryId(sessionId)
 
     setHistory((prev) => {
@@ -909,6 +911,8 @@ const AskAI = () => {
       ...messages.filter((m) => m.role !== 'status'),
       userMessage,
     ]
+    const sessionId = currentHistoryId || uid()
+    if (!currentHistoryId) setCurrentHistoryId(sessionId)
 
     setMessages(baseMessages)
     setInput('')
@@ -918,7 +922,7 @@ const AskAI = () => {
     try {
       // Keep loading (border loop) for at least 4s so answers are not instant
       const answer = await Promise.all([
-        fetchAskAIAnswer(text, resolvedPageContext),
+        fetchAskAIAnswer(text, resolvedPageContext, sessionId),
         new Promise<void>((resolve) => {
           window.setTimeout(resolve, 4000)
         }),
@@ -954,7 +958,7 @@ const AskAI = () => {
       const nextCredits = Math.max(0, credits - creditsUsed)
 
       setMessages(finalMessages)
-      saveHistory(finalMessages, creditsUsed, nextCredits)
+      saveHistory(finalMessages, creditsUsed, nextCredits, sessionId)
       setCredits(nextCredits)
     } catch {
       // Still respect the minimum wait feel on fallback
