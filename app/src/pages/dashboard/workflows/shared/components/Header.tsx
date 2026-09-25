@@ -56,6 +56,27 @@ function fmtMoney(v: number, currency = 'USD') {
   return `${sym}${v.toLocaleString()}`
 }
 
+function formatContextLabel(label?: string): string {
+  if (!label) return ''
+  const segments = label.split(/\s*·\s*/)
+  if (segments.length <= 1) return label
+
+  return segments
+    .map((seg) => {
+      if (seg.includes(',')) {
+        const items = seg.split(',').map((s) => s.trim()).filter(Boolean)
+        if (items.length > 2) {
+          const firstTwo = items.slice(0, 2).join(', ')
+          const remaining = items.length - 2
+          return `${firstTwo} +${remaining} more`
+        }
+        return items.join(', ')
+      }
+      return seg
+    })
+    .join(' · ')
+}
+
 const BulletIcon = () => (
   <svg
     className='mt-0.5 h-4 w-4 shrink-0 animate-pulse text-[#00a2c7]'
@@ -186,11 +207,15 @@ export default function DashboardCharts() {
     week: 'week',
   }
 
-  const cleanFilterValue = (
+  const getFilterArrayValues = (
     val: string | string[] | null | undefined,
-  ): string | undefined => {
+  ): string[] | undefined => {
     if (!val) return undefined
-    const parts = parseFilterValues(val).filter(
+    const rawParts = parseFilterValues(val)
+    const expandedParts = rawParts.flatMap((part) =>
+      part.includes(',') ? part.split(',').map((p) => p.trim()) : [part],
+    )
+    const parts = expandedParts.filter(
       (item) =>
         item &&
         item !== '__all__' &&
@@ -200,6 +225,14 @@ export default function DashboardCharts() {
         item !== '[object Object]',
     )
     if (parts.length === 0) return undefined
+    return parts
+  }
+
+  const cleanFilterValue = (
+    val: string | string[] | null | undefined,
+  ): string | undefined => {
+    const parts = getFilterArrayValues(val)
+    if (!parts || parts.length === 0) return undefined
     return parts.join(',')
   }
 
@@ -277,35 +310,40 @@ export default function DashboardCharts() {
       }
 
       const cleanSupplier = cleanFilterValue(supplierCategory)
+      const supplierArray = getFilterArrayValues(supplierCategory)
       if (cleanSupplier) {
         payload.supplier = cleanSupplier
         payload.supplierCategory = cleanSupplier
-        payload.suppliers = parseFilterValues(cleanSupplier)
+        payload.suppliers = supplierArray
       }
 
       const cleanCurrency = cleanFilterValue(currency)
+      const currencyArray = getFilterArrayValues(currency)
       if (cleanCurrency) {
         payload.currency = cleanCurrency
-        payload.currencies = parseFilterValues(cleanCurrency)
+        payload.currencies = currencyArray
       }
 
       const cleanStatus = cleanFilterValue(invoiceStatus)
+      const statusArray = getFilterArrayValues(invoiceStatus)
       if (cleanStatus) {
         payload.status = cleanStatus
         payload.invoiceStatus = cleanStatus
-        payload.statuses = parseFilterValues(cleanStatus)
+        payload.statuses = statusArray
       }
 
       const cleanDept = cleanFilterValue(department)
+      const deptArray = getFilterArrayValues(department)
       if (cleanDept) {
         payload.department = cleanDept
-        payload.departments = parseFilterValues(cleanDept)
+        payload.departments = deptArray
       }
 
       const cleanRequestStatus = cleanFilterValue(requestStatus)
+      const requestStatusArray = getFilterArrayValues(requestStatus)
       if (cleanRequestStatus) {
         payload.requestStatus = cleanRequestStatus
-        payload.requestStatuses = parseFilterValues(cleanRequestStatus)
+        payload.requestStatuses = requestStatusArray
       }
 
       const cleanPoAmount = cleanFilterValue(poAmountTier)
@@ -812,7 +850,8 @@ export default function DashboardCharts() {
             {t`AP Command Center`}
           </h2>
           <div className='mt-1 font-inter text-11 text-text-muted'>
-            {dashboardData?.header?.contextLabel || t`Loading...`}
+            {formatContextLabel(dashboardData?.header?.contextLabel) ||
+              t`Loading...`}
           </div>
         </div>
         <div className='relative z-10 flex flex-wrap items-center gap-6'>
