@@ -153,52 +153,6 @@ def _field_matching(invoice: dict[str, Any], po: dict[str, Any]) -> list[dict[st
     return rows
 
 
-# Invoice forms use Qty / Price / Amount. SAP and HANA lines use
-# Order Quantity / Net Price / Net Value. Read both or the line score stays 0.
-_LINE_DESC_KEYS = (
-    "description",
-    "Description",
-    "Material Description",
-    "materialDescription",
-    "material_description",
-    "item_description",
-    "Item Description",
-    "item",
-    "name",
-)
-_LINE_QTY_KEYS = (
-    "qty",
-    "Qty",
-    "quantity",
-    "Quantity",
-    "orderQuantity",
-    "Order Quantity",
-    "order_quantity",
-)
-_LINE_PRICE_KEYS = (
-    "price",
-    "Price",
-    "rate",
-    "unit_price",
-    "Unit Price",
-    "Unit Cost",
-    "netPrice",
-    "Net Price",
-    "net_price",
-)
-_LINE_AMT_KEYS = (
-    "amount",
-    "Amount",
-    "line_amount",
-    "Line Amount",
-    "Extended",
-    "extended",
-    "netValue",
-    "Net Value",
-    "net_value",
-)
-
-
 def _line_matching(invoice: dict[str, Any], po: dict[str, Any]) -> list[dict[str, Any]]:
     inv_lines = _invoice_lines(invoice)
     po_lines = _po_lines(po)
@@ -206,27 +160,29 @@ def _line_matching(invoice: dict[str, Any], po: dict[str, Any]) -> list[dict[str
         return []
 
     def _desc(row: dict[str, Any]) -> str:
-        return field_text(row, *_LINE_DESC_KEYS)
+        return field_text(row, "description", "Description", "item", "name")
 
     paired = match_lines_by_description(inv_lines, po_lines, describe=_desc)
     out: list[dict[str, Any]] = []
     for inv_i, po_i in enumerate(paired):
         inv = inv_lines[inv_i]
         po_line = po_lines[po_i] if po_i is not None else {}
-        inv_desc = field_text(inv, *_LINE_DESC_KEYS)
-        po_desc = field_text(po_line, *_LINE_DESC_KEYS) if po_line else ""
-        inv_qty = field_number(inv, *_LINE_QTY_KEYS)
-        po_qty = field_number(po_line, *_LINE_QTY_KEYS) if po_line else None
-        inv_qty_disp: Any = inv_qty if inv_qty is not None else (field_text(inv, *_LINE_QTY_KEYS) or "")
+        inv_desc = field_text(inv, "description", "Description")
+        po_desc = field_text(po_line, "description", "Description") if po_line else ""
+        inv_qty = field_number(inv, "qty", "quantity", "Quantity")
+        po_qty = (
+            field_number(po_line, "qty", "quantity", "Quantity", "orderQuantity") if po_line else None
+        )
+        inv_qty_disp: Any = inv_qty if inv_qty is not None else (field_text(inv, "qty", "quantity", "Quantity") or "")
         po_qty_disp: Any = (
             po_qty
             if po_qty is not None
-            else (field_text(po_line, *_LINE_QTY_KEYS) if po_line else "")
+            else (field_text(po_line, "qty", "quantity", "Quantity") if po_line else "")
         )
-        inv_price = field_number(inv, *_LINE_PRICE_KEYS)
-        po_price = field_number(po_line, *_LINE_PRICE_KEYS) if po_line else None
-        inv_amt = field_number(inv, *_LINE_AMT_KEYS)
-        po_amt = field_number(po_line, *_LINE_AMT_KEYS) if po_line else None
+        inv_price = field_number(inv, "price", "rate", "unit_price", "Unit Cost")
+        po_price = field_number(po_line, "price", "rate", "unit_price", "Unit Cost") if po_line else None
+        inv_amt = field_number(inv, "amount", "line_amount", "Extended")
+        po_amt = field_number(po_line, "amount", "line_amount", "Extended") if po_line else None
 
         desc_score = _field_score(inv_desc, po_desc, kind="text") if po_line else 0.0
         qty_score = _field_score(
