@@ -878,31 +878,9 @@ const AskAI = () => {
       return
     }
 
-    if (
+    const isSearchDocuments =
       lowerText === 'search my documents' ||
       lowerText === 'find open documents and requests'
-    ) {
-      const userMsg: Message = {
-        id: uid(),
-        role: 'user',
-        text: 'Search my documents',
-      }
-      const aiPromptMsg: Message = {
-        id: uid(),
-        isTyping: false,
-        revealExtras: true,
-        role: 'ai',
-        text: 'What document, folder, or keyword would you like to search for?',
-      }
-      setMessages((prev) => [
-        ...prev.filter((m) => m.role !== 'status'),
-        userMsg,
-        aiPromptMsg,
-      ])
-      setInput('')
-      setView('chat')
-      return
-    }
 
     const userMessage: Message = { id: uid(), role: 'user', text }
     const baseMessages = [
@@ -927,9 +905,14 @@ const AskAI = () => {
       const blocks = Array.isArray(answer.text?.blocks)
         ? answer.text.blocks
         : []
-      const replyText =
+      let replyText =
         paragraphTextFromBlocks(blocks) ||
         'I found matching documents based on your search.'
+        
+      if (isSearchDocuments && blocks.length === 0) {
+        replyText = 'What document, folder, or keyword would you like to search for?'
+      }
+      
       const ctaMode = resolveCtaMode(
         answer,
         pathname,
@@ -961,6 +944,10 @@ const AskAI = () => {
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, 1200)
       })
+      const replyText = isSearchDocuments
+        ? 'What document, folder, or keyword would you like to search for?'
+        : "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way."
+        
       setMessages([
         ...baseMessages,
         {
@@ -968,7 +955,7 @@ const AskAI = () => {
           isTyping: true,
           revealExtras: false,
           role: 'ai',
-          text: "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way.",
+          text: replyText,
         },
       ])
     } finally {
@@ -1128,6 +1115,7 @@ const AskAI = () => {
                         onActionClick={() => applyAnswerAction(msg)}
                         onCardClick={openResultCard}
                         onGroupClick={(type, id, name) => openResultGroup(type, id, name, msg)}
+                        onRepoSelect={(name) => sendMessage(name)}
                         onTypingComplete={() => finishTyping(msg.id)}
                         onTypingProgress={() =>
                           bottomRef.current?.scrollIntoView({ behavior: 'auto' })
@@ -1302,6 +1290,7 @@ const ChatMessage = ({
   onActionClick,
   onCardClick,
   onGroupClick,
+  onRepoSelect,
   onTypingComplete,
   onTypingProgress,
 }: {
@@ -1309,6 +1298,7 @@ const ChatMessage = ({
   onActionClick?: () => void
   onCardClick?: (card: AskAiCard) => void
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
+  onRepoSelect?: (name: string) => void
   onTypingComplete?: () => void
   onTypingProgress?: () => void
 }) => {
@@ -1382,6 +1372,7 @@ const ChatMessage = ({
                     onActionClick={onActionClick}
                     onCardClick={onCardClick}
                     onGroupClick={onGroupClick}
+                    onRepoSelect={onRepoSelect}
                   />
                 ))}
                 onProgress={onTypingProgress}
@@ -1401,6 +1392,7 @@ const AnswerCardGroup = ({
   isApply,
   onCardClick,
   onGroupClick,
+  onRepoSelect,
 }: {
   actionLabel: string
   canApply: boolean
@@ -1408,6 +1400,7 @@ const AnswerCardGroup = ({
   isApply: boolean
   onCardClick?: (card: AskAiCard) => void
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
+  onRepoSelect?: (name: string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
   const [limit, setLimit] = useState(3)
@@ -1442,6 +1435,19 @@ const AnswerCardGroup = ({
         </div>
 
         <div className='flex shrink-0 items-center gap-2'>
+          <Tooltip content='Open' position='top'>
+            <button
+              className='grid place-items-center text-[var(--secondary-7)] transition-colors hover:text-[var(--primary-9)] focus-visible:outline-none'
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation()
+                onRepoSelect?.(group.name)
+                onGroupClick?.(group.type, group.id, group.name)
+              }}
+            >
+              <ExternalLink className='size-4' strokeWidth={2} />
+            </button>
+          </Tooltip>
           {canApply && (
             <Tooltip content={actionLabel} position='top'>
               <button
@@ -1475,7 +1481,10 @@ const AnswerCardGroup = ({
                 card={card}
                 key={`${card.title || 'card'}-${index}`}
                 nested
-                onCardClick={onCardClick}
+                onCardClick={(c) => {
+                  onRepoSelect?.(c.title || group.name)
+                  onCardClick?.(c)
+                }}
               />
             </div>
           ))}
@@ -1521,6 +1530,7 @@ const AnswerBlock = ({
   onActionClick,
   onCardClick,
   onGroupClick,
+  onRepoSelect,
 }: {
   block: TextBlock
   ctaMode?: AskAiCtaMode | null
@@ -1528,8 +1538,39 @@ const AnswerBlock = ({
   onActionClick?: () => void
   onCardClick?: (card: AskAiCard) => void
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
+  onRepoSelect?: (name: string) => void
 }) => {
   const isMaximized = useAskAIStore((state: any) => state.isMaximized)
+
+  if (block.type === 'repo_picker') {
+    const items = block.items ?? []
+    if (!items.length) return null
+    return (
+      <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)]'>
+        <div className='border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+          {block.title || 'Choose a repository'}
+        </div>
+        <div className='flex flex-col divide-y divide-[var(--border)]'>
+          {items.map((item, index) => (
+            <button
+              className='group flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-[var(--purple-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--purple)]'
+              key={`${item.repositoryId}-${index}`}
+              type='button'
+              onClick={() => onRepoSelect?.(item.name)}
+            >
+              <div className='flex items-center gap-2 pr-2'>
+                <UiIcon className='shrink-0 text-[var(--purple)]' name='folder' size={15} />
+                <span className='truncate text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
+                  {item.name}
+                </span>
+              </div>
+              <ExternalLink className='size-3.5 shrink-0 text-[var(--text3)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:text-[var(--purple)] group-hover:opacity-100' strokeWidth={2} />
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   if (block.type === 'paragraph') {
     return <p className='mb-2.5'>{block.text}</p>
@@ -1684,6 +1725,7 @@ const AnswerBlock = ({
                 key={`${group.type}-${group.id}`}
                 onCardClick={onCardClick}
                 onGroupClick={onGroupClick}
+                onRepoSelect={onRepoSelect}
               />
             )
           })}

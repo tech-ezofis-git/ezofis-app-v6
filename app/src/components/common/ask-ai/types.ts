@@ -80,6 +80,11 @@ export type AskAiTextBlock =
       title?: string
       type: 'cards'
     }
+  | {
+      items?: { repositoryId: string; name: string }[]
+      title?: string
+      type: 'repo_picker'
+    }
 
 export type AskAiAnswer = {
   action?: {
