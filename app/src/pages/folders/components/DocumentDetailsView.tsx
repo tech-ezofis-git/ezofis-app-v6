@@ -2183,15 +2183,15 @@ export function DocumentDetailsView({
         </div>
       </div>
 
-      <div className='ez-detail-scroll min-h-0 flex-1 overflow-y-auto p-5'>
+      <div className='min-h-0 flex-1 overflow-hidden p-5'>
         <div
-          className={`grid gap-5 ${
+          className={`grid h-full gap-5 ${
             forceSigning && infoCards.length === 0
               ? 'grid-cols-1'
               : 'grid-cols-[minmax(0,1fr)_400px]'
           }`}
         >
-          <main className='min-w-0 space-y-4'>
+          <main className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-2'>
             {data.alert ? (
               <div className='flex items-center justify-between rounded-xl border border-orange-5 bg-orange-2 px-4 py-3'>
                 <div className='flex items-start gap-3'>
@@ -2956,7 +2956,7 @@ export function DocumentDetailsView({
           </main>
 
           {infoCards.length > 0 || ticketData ? (
-            <aside className='min-w-0 space-y-4'>
+            <aside className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-2'>
               {ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
