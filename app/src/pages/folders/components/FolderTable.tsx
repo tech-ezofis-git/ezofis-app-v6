@@ -38,9 +38,14 @@ import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import {
+  isArchivedFile,
   isUnarchivedStageFile,
   StagedFileDeleteButton,
 } from './StagedFileDeleteButton'
+import {
+  FileCategorySegmentedControl,
+  type FileCategory,
+} from './FileCategorySegmentedControl'
 import { EllipsisText, StatusPill } from './Ui'
 import cn from '@/utils/cn'
 
@@ -324,20 +329,26 @@ export default function FolderTableDataTableSplit({
   const [fileCategory, setFileCategory] = useState<'all' | 'staged' | 'archived'>('all')
 
   const stagedCount = useMemo(
-    () => files.filter((f: any) => f?.isStaged && !f?.isArchived && f?.status !== 'ARCHIVED').length,
+    () => files.filter(isUnarchivedStageFile).length,
     [files],
   )
   const archivedCount = useMemo(
-    () => files.filter((f: any) => f?.isArchived || f?.status === 'ARCHIVED' || f?.status === 'Archived').length,
+    () => files.filter(isArchivedFile).length,
     [files],
   )
 
+  useEffect(() => {
+    if (stagedCount <= 0 && fileCategory === 'staged') {
+      setFileCategory('all')
+    }
+  }, [stagedCount, fileCategory])
+
   const activeDisplayFiles = useMemo(() => {
     if (fileCategory === 'staged') {
-      return files.filter((f: any) => f?.isStaged && !f?.isArchived && f?.status !== 'ARCHIVED')
+      return files.filter(isUnarchivedStageFile)
     }
     if (fileCategory === 'archived') {
-      return files.filter((f: any) => f?.isArchived || f?.status === 'ARCHIVED' || f?.status === 'Archived')
+      return files.filter(isArchivedFile)
     }
     return files
   }, [files, fileCategory])
@@ -414,52 +425,15 @@ export default function FolderTableDataTableSplit({
           onClick={handleLeftViewClick}
         />
 
-        <div className='inline-flex items-center gap-1 rounded-full border border-gray-3 bg-surface p-1 shadow-sm'>
-          <button
-            type='button'
-            className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
-              fileCategory === 'all'
-                ? 'bg-[var(--primary-9)] text-white shadow-xs'
-                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
-            )}
-            onClick={() => setFileCategory('all')}
-          >
-            <Icon name='lucide:files' className='size-3.5' />
-            <span>{t`All Files`}</span>
-            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{files.length}</span>
-          </button>
-
-          <button
-            type='button'
-            className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
-              fileCategory === 'staged'
-                ? 'bg-[var(--primary-9)] text-white shadow-xs'
-                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
-            )}
-            onClick={() => setFileCategory('staged')}
-          >
-            <Icon name='tabler:scan' className='size-3.5' />
-            <span>{t`Staged`}</span>
-            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'staged' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{stagedCount}</span>
-          </button>
-
-          <button
-            type='button'
-            className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
-              fileCategory === 'archived'
-                ? 'bg-[var(--primary-9)] text-white shadow-xs'
-                : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
-            )}
-            onClick={() => setFileCategory('archived')}
-          >
-            <Icon name='lucide:archive' className='size-3.5' />
-            <span>{t`Archived`}</span>
-            <span className={cn('rounded-full px-1.5 py-0.2 text-[10px]', fileCategory === 'archived' ? 'bg-white/20 text-white' : 'bg-gray-4 text-gray-11')}>{archivedCount}</span>
-          </button>
-        </div>
+        {stagedCount > 0 ? (
+          <FileCategorySegmentedControl
+            activeCategory={fileCategory}
+            allCount={files.length}
+            archivedCount={archivedCount}
+            stagedCount={stagedCount}
+            onChange={setFileCategory}
+          />
+        ) : null}
 
         <IconButton
           ariaLabel={rightViewLabel}
@@ -483,7 +457,7 @@ export default function FolderTableDataTableSplit({
         </div>
       ) : null}
 
-      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-6 pt-2 pb-1'>
+      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-3 sm:px-6 pt-2 pb-1'>
         {showFoldersPane ? (
           <FolderDataTableSection
             folderBodyMaxHeight={
@@ -519,6 +493,7 @@ export default function FolderTableDataTableSplit({
           folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
           <FileDataTableSection
             columns={visibleFileColumns}
+            fileCategory={fileCategory}
             fileFilters={fileFilters}
             filePage={filePage}
             files={activeDisplayFiles}
@@ -629,6 +604,7 @@ function EmptyState({
 
 function FileDataTableSection({
   columns,
+  fileCategory = 'all',
   fileFilters = {},
   filePage,
   files,
@@ -653,6 +629,7 @@ function FileDataTableSection({
   permissions,
 }: {
   columns: DynamicRepositoryColumn[]
+  fileCategory?: 'all' | 'staged' | 'archived'
   fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
@@ -973,15 +950,18 @@ function FileDataTableSection({
   const currentPage = filePage?.page || 1
   const pageSize = filePage?.pageSize || 50
   const apiTotalCount = Number(filePage?.totalCount ?? 0)
+  const isStagedCategory = fileCategory === 'staged'
   const totalCount =
-    apiTotalCount > 0
-      ? apiTotalCount
-      : filePage?.hasMore
-        ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
-        : Math.max(
-          (currentPage - 1) * pageSize + filteredFiles.length,
-          filteredFiles.length,
-        )
+    isStagedCategory
+      ? filteredFiles.length
+      : apiTotalCount > 0
+        ? apiTotalCount
+        : filePage?.hasMore
+          ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
+          : Math.max(
+            (currentPage - 1) * pageSize + filteredFiles.length,
+            filteredFiles.length,
+          )
 
   const showFiles = filteredFiles.length || files.length || loading || loadingPage
 
@@ -1020,8 +1000,8 @@ function FileDataTableSection({
 
       {footerDivider}
 
-      {filePage ? (
-        <div className='shrink-0 px-6 pt-3 pb-2'>
+      {filePage && !isStagedCategory ? (
+        <div className='shrink-0 px-3 sm:px-6 pt-3 pb-2'>
           <Pagination
             itemLabel={t`Files`}
             page={currentPage}

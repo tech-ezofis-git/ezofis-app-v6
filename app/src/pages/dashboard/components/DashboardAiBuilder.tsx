@@ -236,7 +236,7 @@ export default function DashboardAiBuilder({
   )
 
   const handleFilterChange = (id: string, value: any) => {
-    if (id === 'timeframe') setTimeframe(String(value || 'month'))
+    if (id === 'timeframe') setTimeframe(String(value || ''))
     if (id === 'department') setDepartment(String(value || ''))
     if (id === 'supplierCategory') setSupplierCategory(String(value || ''))
     if (id === 'invoiceStatus') setInvoiceStatus(String(value || ''))
@@ -247,6 +247,7 @@ export default function DashboardAiBuilder({
 
   const handleResetFilters = () => {
     resetFilters()
+    setTimeframe('')
     setDepartment('')
     setRequestStatus('')
     setPoAmountTier('')
@@ -833,10 +834,10 @@ export default function DashboardAiBuilder({
               invoiceStatus: invoiceStatus,
               status: requestStatus,
               supplierCategory: supplierCategory,
-              timeframe: timeframe || 'month',
+              timeframe: timeframe || '',
             }}
             showReset={Boolean(
-              timeframe !== 'month' ||
+              timeframe ||
               currency ||
               invoiceStatus ||
               supplierCategory ||

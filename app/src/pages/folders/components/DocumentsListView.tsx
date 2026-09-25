@@ -42,6 +42,11 @@ import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
 import { FolderDataTableSection } from './FolderTable'
 import { DynamicIcon } from './icons'
 import {
+  FileCategorySegmentedControl,
+  type FileCategory,
+} from './FileCategorySegmentedControl'
+import {
+  isArchivedFile,
   isUnarchivedStageFile,
   StagedFileDeleteButton,
 } from './StagedFileDeleteButton'
@@ -413,7 +418,37 @@ export function DocumentsListView({
     [onBreadcrumbSelect, onRepositoryChange],
   )
 
-  const normalizedFiles = useMemo(() => files as AnyFileItem[], [files])
+  const [fileCategory, setFileCategory] = useState<FileCategory>('all')
+
+  const stagedCount = useMemo(
+    () => files.filter(isUnarchivedStageFile).length,
+    [files],
+  )
+  const archivedCount = useMemo(
+    () => files.filter(isArchivedFile).length,
+    [files],
+  )
+
+  useEffect(() => {
+    if (stagedCount <= 0 && fileCategory === 'staged') {
+      setFileCategory('all')
+    }
+  }, [stagedCount, fileCategory])
+
+  const activeCategoryFiles = useMemo(() => {
+    if (fileCategory === 'staged') {
+      return files.filter(isUnarchivedStageFile)
+    }
+    if (fileCategory === 'archived') {
+      return files.filter(isArchivedFile)
+    }
+    return files
+  }, [files, fileCategory])
+
+  const normalizedFiles = useMemo(
+    () => activeCategoryFiles as AnyFileItem[],
+    [activeCategoryFiles],
+  )
 
   const repositoryOptions = useMemo<Option[]>(
     () =>
@@ -485,15 +520,6 @@ export function DocumentsListView({
   const currentPage = filePage?.page || 1
   const pageSize = filePage?.pageSize || 50
   const apiTotalCount = Number(filePage?.totalCount ?? 0)
-  const totalCount =
-    apiTotalCount > 0
-      ? apiTotalCount
-      : filePage?.hasMore
-        ? Math.max(currentPage * pageSize + 1, normalizedFiles.length)
-        : Math.max(
-            (currentPage - 1) * pageSize + normalizedFiles.length,
-            normalizedFiles.length,
-          )
   const isBusy = loading || loadingPage || refreshing
   const hasActiveQuery =
     Boolean(String(searchQuery || '').trim()) ||
@@ -529,6 +555,19 @@ export function DocumentsListView({
       })
     })
   }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
+
+  const isStagedCategory = fileCategory === 'staged'
+  const totalCount =
+    isStagedCategory
+      ? visibleFiles.length
+      : apiTotalCount > 0
+        ? apiTotalCount
+        : filePage?.hasMore
+          ? Math.max(currentPage * pageSize + 1, visibleFiles.length)
+          : Math.max(
+              (currentPage - 1) * pageSize + visibleFiles.length,
+              visibleFiles.length,
+            )
 
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
@@ -921,6 +960,21 @@ export function DocumentsListView({
             />
           ) : null}
 
+          {activeRepositoryId && stagedCount > 0 && (files.length > 0 || loading || loadingPage) ? (
+            <div className='relative my-2 flex shrink-0 items-center justify-center select-none'>
+              <div className='pointer-events-none absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-gray-4' />
+              <div className='relative z-10'>
+                <FileCategorySegmentedControl
+                  activeCategory={fileCategory}
+                  allCount={files.length}
+                  archivedCount={archivedCount}
+                  stagedCount={stagedCount}
+                  onChange={setFileCategory}
+                />
+              </div>
+            </div>
+          ) : null}
+
           {activeRepositoryId ? (
             visibleFiles.length === 0 &&
             !loading &&
@@ -970,6 +1024,7 @@ export function DocumentsListView({
                 </div>
               )
             ) : visibleFiles.length > 0 ||
+              files.length > 0 ||
               loading ||
               loadingPage ||
               refreshing ? (
@@ -996,7 +1051,7 @@ export function DocumentsListView({
         </section>
       </div>
 
-      {!activeRepositoryId ? null : (
+      {!activeRepositoryId || isStagedCategory ? null : (
         <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
           <Pagination
             itemLabel={t`Files`}

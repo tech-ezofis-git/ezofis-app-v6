@@ -86,6 +86,20 @@ const isOptionListDataType = (dataType?: string) => {
   return true
 }
 
+const isDropdownDataType = (dataType?: string) => {
+  const normalized = String(dataType || '')
+    .trim()
+    .toUpperCase()
+  return (
+    normalized.includes('SELECT') ||
+    normalized.includes('DROPDOWN') ||
+    normalized.includes('CHOICE') ||
+    normalized.includes('OPTIONS') ||
+    normalized.includes('LOOKUP') ||
+    normalized === 'ENUM'
+  )
+}
+
 const toFacetFilterOptions = (
   facets: Array<{ count?: number; value: string }>,
 ): FilterOption[] =>
@@ -460,6 +474,21 @@ export function FolderFilterBar({
     [itemFilterFields],
   )
 
+  const prioritizedItemFilterFields = useMemo(() => {
+    const dropdowns: typeof normalizedItemFilterFields = []
+    const others: typeof normalizedItemFilterFields = []
+
+    for (const field of normalizedItemFilterFields) {
+      if (isDropdownDataType(field.dataType)) {
+        dropdowns.push(field)
+      } else {
+        others.push(field)
+      }
+    }
+
+    return [...dropdowns, ...others]
+  }, [normalizedItemFilterFields])
+
   const loadFacetsForField = useCallback(
     async (filterId: string) => {
       const repoId = String(repositoryId || '').trim()
@@ -520,9 +549,9 @@ export function FolderFilterBar({
     const repoId = String(repositoryId || '').trim()
     if (!repoId || !useApiItemFilters) return
 
-    const visibleOptionFields = normalizedItemFilterFields
-      .filter((field) => isOptionListDataType(field.dataType))
+    const visibleOptionFields = prioritizedItemFilterFields
       .slice(0, DEFAULT_VISIBLE_ITEM_FILTER_COUNT)
+      .filter((field) => isOptionListDataType(field.dataType))
 
     let cancelled = false
 
@@ -621,7 +650,7 @@ export function FolderFilterBar({
   }
 
   const buildApiItemFilterDefinitions = (): FilterDefinition[] => {
-    const visibleFields = normalizedItemFilterFields.slice(
+    const visibleFields = prioritizedItemFilterFields.slice(
       0,
       DEFAULT_VISIBLE_ITEM_FILTER_COUNT,
     )
@@ -658,7 +687,7 @@ export function FolderFilterBar({
     folderContextFilters,
     folderBaseline,
     folders,
-    normalizedItemFilterFields,
+    prioritizedItemFilterFields,
     showFileFilters,
     showFolderFilters,
     useApiItemFilters,
@@ -672,7 +701,7 @@ export function FolderFilterBar({
         defaultFilters.map((filter) => normalizeKey(filter.id)),
       )
 
-      return normalizedItemFilterFields
+      return prioritizedItemFilterFields
         .filter((field) => !defaultIds.has(normalizeKey(field.id)))
         .map((field) => {
           const useOptions = isOptionListDataType(field.dataType)
@@ -701,7 +730,7 @@ export function FolderFilterBar({
     folderContextFilters,
     folderBaseline,
     folders,
-    normalizedItemFilterFields,
+    prioritizedItemFilterFields,
     showFileFilters,
     showFolderFilters,
     useApiItemFilters,
@@ -761,6 +790,7 @@ export function FolderFilterBar({
                 id: 'intelligent-upload',
                 isIconButton: false,
                 label: t`Intelligent Upload`,
+                tooltip: t`Intelligent Upload`,
                 variant: 'outline' as const,
                 onClick: () => onIntelligentUpload(),
               },
@@ -774,6 +804,7 @@ export function FolderFilterBar({
                   <FolderSharePopover
                     allowSign={false}
                     iconOnly={false}
+                    triggerClassName='px-2.5 sm:px-3.5'
                     triggerLabel={t`Share`}
                     onShare={onShare}
                   />
