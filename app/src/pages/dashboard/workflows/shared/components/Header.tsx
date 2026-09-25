@@ -318,16 +318,16 @@ export default function DashboardCharts() {
       console.log('[AP Dashboard] Received response:', res)
 
       if (res.data) {
-        const rawData = res.data
-        const data = Array.isArray(rawData)
+        const rawData: any = res.data
+        const data: any = Array.isArray(rawData)
           ? rawData.length > 0
             ? rawData[0]
             : {}
           : rawData || {}
 
         setDashboardData((prev: any) => {
-          const prevOptions = prev?.filterOptions || {}
-          const newOptions = data?.filterOptions || {}
+          const prevOptions: any = prev?.filterOptions || {}
+          const newOptions: any = data?.filterOptions || {}
           const mergedFilterOptions = {
             departments:
               (newOptions.departments?.length
