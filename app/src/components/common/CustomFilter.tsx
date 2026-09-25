@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ButtonColor, ButtonVariant } from '@/components/base/button/types'
 import Button from '@/components/base/button/Button'
@@ -22,8 +22,8 @@ import {
 } from './filters/FilterMenus'
 
 const MORE_FILTER_DEBOUNCE_MS = 350
-const MORE_FILTER_PANEL_WIDTH = 388
-const MORE_FILTER_PANEL_HEIGHT = 260
+const MORE_FILTER_PANEL_WIDTH = 440
+const MORE_FILTER_PANEL_HEIGHT = 340
 /** Same layer as More filters panel; above toolbar/table content */
 const FILTER_MENU_Z_INDEX = 50000
 const VIEWPORT_GAP = 8
@@ -194,9 +194,37 @@ export default function CustomFilter({
     moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null,
   )
   const [filterSearchQuery, setFilterSearchQuery] = useState('')
+  const [moreFilterFieldSearch, setMoreFilterFieldSearch] = useState('')
   const [isSearchExpanded, setIsSearchExpanded] = useState(
     () => defaultSearchExpanded || Boolean(searchQuery),
   )
+
+  const filteredMoreFilterGroups = useMemo(() => {
+    if (!moreFilters) return []
+    const query = moreFilterFieldSearch.trim().toLowerCase()
+    if (!query) return moreFilters
+    return moreFilters.filter(
+      (group) =>
+        group.label.toLowerCase().includes(query) ||
+        group.id.toLowerCase().includes(query),
+    )
+  }, [moreFilters, moreFilterFieldSearch])
+
+  useEffect(() => {
+    if (moreFilterFieldSearch.trim() && filteredMoreFilterGroups.length > 0) {
+      if (!filteredMoreFilterGroups.some((g) => g.id === activeFilterGroup)) {
+        const nextId = filteredMoreFilterGroups[0].id
+        setActiveFilterGroup(nextId)
+        skipMoreFilterDebounceRef.current = true
+        setFilterSearchQuery(activeFilters[nextId] || '')
+      }
+    }
+  }, [
+    moreFilterFieldSearch,
+    filteredMoreFilterGroups,
+    activeFilterGroup,
+    activeFilters,
+  ])
 
   useEffect(() => {
     if (searchQuery) {
@@ -288,6 +316,7 @@ export default function CustomFilter({
         null
 
       morePanelAnchorRef.current = anchor
+      setMoreFilterFieldSearch('')
       setActiveFilterGroup(nextGroup)
       setActiveFilterDropdown('more')
       skipMoreFilterDebounceRef.current = true
@@ -336,6 +365,7 @@ export default function CustomFilter({
         !inDatePicker
       ) {
         setActiveFilterDropdown(null)
+        setMoreFilterFieldSearch('')
       }
     }
 
@@ -465,7 +495,7 @@ export default function CustomFilter({
     moreFilters.length > 0
       ? createPortal(
           <div
-            className='animate-in fade-in zoom-in-95 fixed flex max-h-[320px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
+            className='animate-in fade-in zoom-in-95 fixed flex max-h-[340px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
             ref={moreFiltersPanelRef}
             style={{
               left: morePanelPos.left,
@@ -473,39 +503,69 @@ export default function CustomFilter({
               zIndex: FILTER_MENU_Z_INDEX,
             }}
           >
-            <div className='ez-scrollbar flex max-h-[320px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
-              {moreFilters.map((group) => {
-                const IconComp = group.icon
-                const isActive = activeFilterGroup === group.id
-                return (
-                  <button
-                    key={group.id}
-                    type='button'
-                    className={cn(
-                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
-                      isActive
-                        ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
-                        : 'hover:bg-gray-2 dark:hover:bg-gray-10',
-                    )}
-                    onClick={() => {
-                      setActiveFilterGroup(group.id)
-                      skipMoreFilterDebounceRef.current = true
-                      setFilterSearchQuery(activeFilters[group.id] || '')
-                    }}
-                  >
-                    <span className='flex min-w-0 items-center gap-1.5'>
-                      {IconComp && (
-                        <IconComp className='h-3.5 w-3.5 shrink-0' />
+            <div className='flex max-h-[340px] w-[184px] shrink-0 flex-col border-r border-border-default bg-primary-3/30 dark:bg-gray-12'>
+              <div className='border-b border-border-default/60 p-1.5'>
+                <div className='relative flex items-center'>
+                  <Search className='pointer-events-none absolute left-2 h-3.5 w-3.5 text-text-muted' />
+                  <input
+                    type='text'
+                    value={moreFilterFieldSearch}
+                    onChange={(e) => setMoreFilterFieldSearch(e.target.value)}
+                    placeholder={t`Search fields...`}
+                    className='w-full rounded-md border border-border-default bg-surface py-1 pr-6 pl-7 text-12 text-text-primary placeholder:text-text-muted focus:border-primary-9 focus:outline-none'
+                    autoFocus
+                  />
+                  {moreFilterFieldSearch ? (
+                    <button
+                      type='button'
+                      onClick={() => setMoreFilterFieldSearch('')}
+                      className='absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-gray-4 hover:text-text-primary'
+                    >
+                      <X className='h-3 w-3' />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className='ez-scrollbar flex flex-1 flex-col overflow-y-auto p-1'>
+                {filteredMoreFilterGroups.map((group) => {
+                  const IconComp = group.icon
+                  const isActive = activeFilterGroup === group.id
+                  return (
+                    <button
+                      key={group.id}
+                      type='button'
+                      className={cn(
+                        'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
+                        isActive
+                          ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
+                          : 'hover:bg-gray-2 dark:hover:bg-gray-10',
                       )}
-                      <span className='truncate'>{group.label}</span>
-                    </span>
-                    <ChevronRight className='h-3 w-3 shrink-0 opacity-60' />
-                  </button>
-                )
-              })}
+                      onClick={() => {
+                        setActiveFilterGroup(group.id)
+                        skipMoreFilterDebounceRef.current = true
+                        setFilterSearchQuery(activeFilters[group.id] || '')
+                      }}
+                    >
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        {IconComp && (
+                          <IconComp className='h-3.5 w-3.5 shrink-0' />
+                        )}
+                        <span className='truncate'>{group.label}</span>
+                      </span>
+                      <ChevronRight className='h-3 w-3 shrink-0 opacity-60' />
+                    </button>
+                  )
+                })}
+                {filteredMoreFilterGroups.length === 0 ? (
+                  <div className='px-2 py-4 text-center text-12 text-text-muted'>
+                    {t`No fields found`}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            <div className='ez-scrollbar flex max-h-[320px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
+            <div className='ez-scrollbar flex max-h-[340px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
               {moreFilters.map((group) => {
                 if (activeFilterGroup !== group.id) return null
                 const selectedValues = parseFilterValues(
@@ -625,11 +685,11 @@ export default function CustomFilter({
 
   return (
     <div
-      className='relative z-40 flex w-full shrink-0 items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs'
+      className='relative z-40 flex w-full shrink-0 flex-wrap items-center justify-between gap-2.5 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'
       ref={filtersRef}
     >
       {/* Filters wrap onto new lines when they overflow */}
-      <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
+      <div className='flex min-w-[240px] flex-1 flex-wrap items-center gap-2'>
         {quickFilters &&
           quickFilters.map((qf) => {
             const isActive = activeQuickFilters?.includes(qf.id)
@@ -922,8 +982,8 @@ export default function CustomFilter({
         )}
       </div>
 
-      {/* Actions stay vertically centered while filters wrap */}
-      <div className='flex shrink-0 items-center justify-end gap-1.5 self-center'>
+      {/* Actions stay aligned and wrap cleanly when space is constrained */}
+      <div className='flex min-w-0 flex-wrap items-center justify-end gap-1.5 ml-auto'>
         {customSearchComponent ? (
           customSearchComponent
         ) : (
@@ -931,7 +991,7 @@ export default function CustomFilter({
             className={cn(
               'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
               isSearchExpanded || searchQuery
-                ? 'w-72 justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3'
+                ? 'w-44 sm:w-60 md:w-72 max-w-full justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3'
                 : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
             onClick={() => {

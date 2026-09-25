@@ -45,7 +45,6 @@ const useDashboardStore = create<DashboardState>()((set) => ({
       drillStatus: null,
       drillSupplier: null,
       invoiceStatus: '',
-      repositoryId: '',
       searchQuery: '',
       supplierCategory: '',
       timeframe: 'month',

@@ -16,7 +16,7 @@ export function TreeSidebar({
   onToggle: (id: string) => void
 }) {
   return (
-    <aside className='ez-scrollbar w-[304px] shrink-0 overflow-y-auto border-r border-gray-3 bg-surface px-3 py-4'>
+    <aside className='ez-scrollbar w-[240px] xl:w-[270px] 2xl:w-[304px] shrink-0 overflow-y-auto border-r border-gray-3 bg-surface px-3 py-4'>
       <div className='space-y-1'>
         {tree.map((node) => (
           <TreeItem

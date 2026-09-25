@@ -29,6 +29,7 @@ import { getDashboardData } from '@/api/v6/dashboard'
 import CustomFilter from '@/components/common/CustomFilter'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import { TODAY } from '@/pages/dashboard/utils/dashboardData'
+import { parseFilterValues } from '@/utils/filterUtils'
 import cn from '@/utils/cn'
 import showToast from '@/components/base/toast/showToast'
 import { SkeletonCard } from '@/components/common/skeletons'
@@ -185,6 +186,79 @@ export default function DashboardCharts() {
     week: 'week',
   }
 
+  const cleanFilterValue = (
+    val: string | string[] | null | undefined,
+  ): string | undefined => {
+    if (!val) return undefined
+    const parts = parseFilterValues(val).filter(
+      (item) =>
+        item &&
+        item !== '__all__' &&
+        item.toLowerCase() !== 'all' &&
+        item !== 'undefined' &&
+        item !== 'null' &&
+        item !== '[object Object]',
+    )
+    if (parts.length === 0) return undefined
+    return parts.join(',')
+  }
+
+  const normalizeFilterOption = (
+    opt: any,
+  ): { label: string; value: string } => {
+    if (opt == null) return { label: '', value: '' }
+    if (typeof opt === 'string' || typeof opt === 'number') {
+      const s = String(opt).trim()
+      return { label: s, value: s }
+    }
+    const value = String(
+      opt?.value ??
+        opt?.key ??
+        opt?.id ??
+        opt?.code ??
+        opt?.name ??
+        opt?.label ??
+        opt?.department ??
+        opt?.supplier ??
+        opt?.currency ??
+        opt?.status ??
+        '',
+    ).trim()
+
+    const label = String(
+      opt?.label ??
+        opt?.name ??
+        opt?.title ??
+        opt?.key ??
+        opt?.value ??
+        opt?.department ??
+        opt?.supplier ??
+        value,
+    ).trim()
+
+    return { label: label || value, value }
+  }
+
+  const isAllFilterOption = (opt: any): boolean => {
+    if (opt == null) return false
+    if (typeof opt === 'string') {
+      const lower = opt.trim().toLowerCase()
+      return lower === 'all' || lower === '__all__'
+    }
+    const val = String(opt?.value ?? opt?.key ?? opt?.id ?? '')
+      .trim()
+      .toLowerCase()
+    const lbl = String(opt?.label ?? opt?.name ?? '')
+      .trim()
+      .toLowerCase()
+    return val === 'all' || val === '__all__' || lbl === 'all'
+  }
+
+  const formatFilterOptions = (list: any[]) =>
+    (list || [])
+      .map(normalizeFilterOption)
+      .filter((opt) => opt.value && !isAllFilterOption(opt))
+
   React.useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
@@ -198,25 +272,103 @@ export default function DashboardCharts() {
           .split('_')
         if (start) payload.fromUtc = `${start}T00:00:00.000Z`
         if (end) payload.toUtc = `${end}T23:59:59.999Z`
-      } else {
-        payload.period = periodMap[timeframe] || 'thisMonth'
+      } else if (timeframe && timeframe !== 'all' && timeframe !== '__all__') {
+        payload.period = periodMap[timeframe] || timeframe
       }
 
-      if (supplierCategory) payload.supplier = supplierCategory
-      if (currency) payload.currency = currency
-      if (invoiceStatus) payload.status = invoiceStatus
-      if (department) payload.department = department
-      if (requestStatus) payload.requestStatus = requestStatus
-      if (poAmountTier) payload.poAmountTier = poAmountTier
+      const cleanSupplier = cleanFilterValue(supplierCategory)
+      if (cleanSupplier) {
+        payload.supplier = cleanSupplier
+        payload.supplierCategory = cleanSupplier
+        payload.suppliers = parseFilterValues(cleanSupplier)
+      }
 
+      const cleanCurrency = cleanFilterValue(currency)
+      if (cleanCurrency) {
+        payload.currency = cleanCurrency
+        payload.currencies = parseFilterValues(cleanCurrency)
+      }
+
+      const cleanStatus = cleanFilterValue(invoiceStatus)
+      if (cleanStatus) {
+        payload.status = cleanStatus
+        payload.invoiceStatus = cleanStatus
+        payload.statuses = parseFilterValues(cleanStatus)
+      }
+
+      const cleanDept = cleanFilterValue(department)
+      if (cleanDept) {
+        payload.department = cleanDept
+        payload.departments = parseFilterValues(cleanDept)
+      }
+
+      const cleanRequestStatus = cleanFilterValue(requestStatus)
+      if (cleanRequestStatus) {
+        payload.requestStatus = cleanRequestStatus
+        payload.requestStatuses = parseFilterValues(cleanRequestStatus)
+      }
+
+      const cleanPoAmount = cleanFilterValue(poAmountTier)
+      if (cleanPoAmount) {
+        payload.poAmountTier = cleanPoAmount
+      }
+
+      console.log('[AP Dashboard] Sending filter payload:', payload)
       const res = await getDashboardData(payload)
+      console.log('[AP Dashboard] Received response:', res)
+
       if (res.data) {
         const rawData = res.data
-        const data = Array.isArray(rawData) ? rawData[0] : rawData
-        setDashboardData(data)
+        const data = Array.isArray(rawData)
+          ? rawData.length > 0
+            ? rawData[0]
+            : {}
+          : rawData || {}
+
+        setDashboardData((prev: any) => {
+          const prevOptions = prev?.filterOptions || {}
+          const newOptions = data?.filterOptions || {}
+          const mergedFilterOptions = {
+            departments:
+              (newOptions.departments?.length
+                ? newOptions.departments
+                : prevOptions.departments) || [],
+            suppliers:
+              (newOptions.suppliers?.length
+                ? newOptions.suppliers
+                : prevOptions.suppliers) || [],
+            approvalStatuses:
+              (newOptions.approvalStatuses?.length
+                ? newOptions.approvalStatuses
+                : prevOptions.approvalStatuses) || [],
+            currencies:
+              (newOptions.currencies?.length
+                ? newOptions.currencies
+                : prevOptions.currencies) || [],
+            requestStatuses:
+              (newOptions.requestStatuses?.length
+                ? newOptions.requestStatuses
+                : prevOptions.requestStatuses) || [],
+            poAmountTiers:
+              (newOptions.poAmountTiers?.length
+                ? newOptions.poAmountTiers
+                : prevOptions.poAmountTiers) || [],
+            ...newOptions,
+          }
+
+          return {
+            ...prev,
+            ...data,
+            filterOptions: mergedFilterOptions,
+            invoices: data?.invoices || [],
+          }
+        })
       } else {
         console.error(res.error)
-        showToast({ message: res.error || t`Failed to load dashboard data`, variant: 'error' })
+        showToast({
+          message: res.error || t`Failed to load dashboard data`,
+          variant: 'error',
+        })
       }
       setIsLoading(false)
     }
@@ -451,42 +603,28 @@ export default function DashboardCharts() {
       {
         id: 'department',
         label: t`Department`,
-        options: (filterOptions.departments || []).map((dept: string) => ({
-          label: dept,
-          value: dept,
-        })),
+        options: formatFilterOptions(filterOptions.departments),
         searchable: true,
         searchPlaceholder: t`Search department...`,
       },
       {
         id: 'supplierCategory',
         label: t`Suppliers`,
-        options: (filterOptions.suppliers || []).map((sup: string) => ({
-          label: sup,
-          value: sup,
-        })),
+        options: formatFilterOptions(filterOptions.suppliers),
         searchable: true,
         searchPlaceholder: t`Search supplier...`,
       },
       {
         id: 'invoiceStatus',
         label: t`Statuses`,
-        options: (filterOptions.approvalStatuses || [])
-          .filter((opt: any) => opt.key !== 'all')
-          .map((opt: any) => ({
-            label: opt.label,
-            value: opt.key,
-          })),
+        options: formatFilterOptions(filterOptions.approvalStatuses),
         searchable: true,
         searchPlaceholder: t`Search status...`,
       },
       {
         id: 'currency',
         label: t`Currencies`,
-        options: (filterOptions.currencies || []).map((cur: string) => ({
-          label: cur,
-          value: cur,
-        })),
+        options: formatFilterOptions(filterOptions.currencies),
         searchable: true,
         searchPlaceholder: t`Search currency...`,
       },
@@ -500,23 +638,13 @@ export default function DashboardCharts() {
         icon: ClipboardList,
         id: 'status',
         label: t`Request Status`,
-        options: (filterOptions.requestStatuses || [])
-          .filter((opt: any) => opt.key !== 'all')
-          .map((opt: any) => ({
-            label: opt.label,
-            value: opt.key,
-          })),
+        options: formatFilterOptions(filterOptions.requestStatuses),
       },
       {
         icon: DollarSign,
         id: 'amount',
         label: t`PO Amount`,
-        options: (filterOptions.poAmountTiers || [])
-          .filter((opt: any) => opt.key !== 'all')
-          .map((opt: any) => ({
-            label: opt.label,
-            value: opt.key,
-          })),
+        options: formatFilterOptions(filterOptions.poAmountTiers),
       },
     ],
     [filterOptions, t],
@@ -625,6 +753,7 @@ export default function DashboardCharts() {
 
   const handleReset = () => {
     resetFilters()
+    setTimeframe('')
     setDepartment('')
     setRequestStatus('')
     setPoAmountTier('')
@@ -639,17 +768,17 @@ export default function DashboardCharts() {
         searchPlaceholder={t`Search invoice, supplier, PO...`}
         searchQuery={searchQuery}
         activeFilters={{
-          amount: serverActiveFilters.poAmountTier || '',
-          currency: serverActiveFilters.currency || '',
-          department: serverActiveFilters.department || '',
-          invoiceStatus: serverActiveFilters.status || '',
-          status: serverActiveFilters.requestStatus || '',
-          supplierCategory: serverActiveFilters.supplier || '',
-          timeframe: timeframe || 'month',
+          amount: poAmountTier || '',
+          currency: currency || '',
+          department: department || '',
+          invoiceStatus: invoiceStatus || '',
+          status: requestStatus || '',
+          supplierCategory: supplierCategory || '',
+          timeframe: timeframe || '',
         }}
         showReset={
           !!(
-            (timeframe && timeframe !== 'month') ||
+            timeframe ||
             supplierCategory ||
             invoiceStatus ||
             currency ||
@@ -660,14 +789,14 @@ export default function DashboardCharts() {
           )
         }
         onFilterChange={(id, value) => {
-          if (id === 'timeframe') setTimeframe(value || 'month')
-          else if (id === 'supplierCategory')
-            setSupplierCategory(value as string)
-          else if (id === 'invoiceStatus') setInvoiceStatus(value as string)
-          else if (id === 'currency') setCurrency(value as string)
-          else if (id === 'department') setDepartment(value as string)
-          else if (id === 'status') setRequestStatus(value as string)
-          else if (id === 'amount') setPoAmountTier(value as string)
+          const val = String(value || '').trim()
+          if (id === 'timeframe') setTimeframe(val)
+          else if (id === 'supplierCategory') setSupplierCategory(val)
+          else if (id === 'invoiceStatus') setInvoiceStatus(val)
+          else if (id === 'currency') setCurrency(val)
+          else if (id === 'department') setDepartment(val)
+          else if (id === 'status') setRequestStatus(val)
+          else if (id === 'amount') setPoAmountTier(val)
         }}
         onReset={handleReset}
         onSearchChange={setSearchQuery}
