@@ -6,12 +6,25 @@ import { DynamicIcon } from './icons'
 export const isUnarchivedStageFile = (file: {
   isArchived?: boolean
   isStaged?: boolean
+  rawStatus?: string
   stageFileId?: string
   status?: string
 } | null | undefined) => {
   if (!file?.isStaged && !file?.stageFileId) return false
-  const status = String(file.status || '')
-  return !file.isArchived && status !== 'ARCHIVED' && status !== 'Archived'
+  if (file.isArchived) return false
+  const status = String(file.status || (file as any)?.rawStatus || '').toUpperCase()
+  return status !== 'ARCHIVED'
+}
+
+export const isArchivedFile = (file: {
+  isArchived?: boolean
+  isStaged?: boolean
+  rawStatus?: string
+  stageFileId?: string
+  status?: string
+} | null | undefined) => {
+  if (!file) return false
+  return !isUnarchivedStageFile(file)
 }
 
 export function StagedFileDeleteButton({

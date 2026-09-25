@@ -5982,7 +5982,6 @@ const Overview = (props: any) => {
                                 <LineItemTable
                                   agentData={agentData}
                                   atEnd={atEnd}
-                                  compareLines={poLineItems}
                                   currentScoreWidth={currentScoreWidth}
                                   dynamicColumns={dynamicColumns}
                                   dynamicWidths={dynamicWidths}
