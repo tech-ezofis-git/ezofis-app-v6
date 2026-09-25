@@ -69,7 +69,7 @@ msgid "{0} connected successfully."
 msgstr "تم توصيل {0} بنجاح."
 
 #. placeholder {0}: bar.pct
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2446
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2485
 msgid "{0} conversion"
 msgstr "{0} التحويل"
 
@@ -403,7 +403,7 @@ msgstr "1 ملف"
 msgid "1 sheet"
 msgstr "ورقة واحدة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2410
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2449
 msgid "1. Received"
 msgstr "1. مستلم"
 
@@ -415,7 +415,7 @@ msgstr "1. مستلم"
 msgid "100% Accuracy"
 msgstr "دقة 100%"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2429
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2468
 msgid "142 inv"
 msgstr "142 فاتورة"
 
@@ -423,19 +423,19 @@ msgstr "142 فاتورة"
 msgid "2 / 6 fields"
 msgstr "2 / 6 حقول"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2416
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2455
 msgid "2. Extracted"
 msgstr "2. مستخرج"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2423
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2462
 msgid "210 inv"
 msgstr "210 فاتورة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2417
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2456
 msgid "248 inv"
 msgstr "248 فاتورة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2411
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2450
 msgid "266 inv"
 msgstr "266 فاتورة"
 
@@ -443,7 +443,7 @@ msgstr "266 فاتورة"
 #~ msgid "28 invoices flagged as potential duplicates — recommend review before release to avoid double payment."
 #~ msgstr "تم وضع علامة على 28 فاتورة كمكررات محتملة — يُوصى بالمراجعة قبل الإصدار لتجنب الدفع المزدوج."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2422
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2461
 msgid "3. Approved"
 msgstr "3. معتمد"
 
@@ -451,7 +451,7 @@ msgstr "3. معتمد"
 msgid "4 fields"
 msgstr "4 حقول"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2428
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2467
 msgid "4. Posted"
 msgstr "4. مرحّل"
 
@@ -463,11 +463,11 @@ msgstr "5 مستويات هرمية"
 msgid "6 / 6 fields"
 msgstr "6 / 6 حقول"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2384
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2423
 msgid "6.1 days"
 msgstr "6.1 أيام"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2616
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2655
 msgid "9 vendors"
 msgstr "9 موردين"
 
@@ -538,7 +538,7 @@ msgstr "مجلد الحسابات الدائنة"
 msgid "Accounts Receivable"
 msgstr "الحسابات المدينة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2160
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2199
 #: src/pages/settings/components/Folders/FolderRetention.tsx:116
 msgid "Action"
 msgstr "الإجراء"
@@ -552,7 +552,7 @@ msgstr "مطلوب اتخاذ إجراء"
 msgid "Action Required"
 msgstr "الإجراء مطلوب"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2078
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2117
 #: src/pages/forms/FormEntriesPage.tsx:1283
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/reports/components/ReportsListView.tsx:208
@@ -971,8 +971,8 @@ msgstr "تحليل المستندات التي تم إنشاؤها بواسطة 
 #~ msgid "AI-generated document analysis."
 #~ msgstr "تحليل مستند ناتج عن الذكاء الاصطناعي."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1046
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1884
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1085
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1923
 msgid "AI-generated insights"
 msgstr "رؤى مولّدة بالذكاء الاصطناعي"
 
@@ -988,7 +988,7 @@ msgstr "استخراج مدعوم بالذكاء الاصطناعي في ثوا�
 msgid "AI-powered workspace with smart search and agents"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2226
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2265
 msgid "ALERT: Potential duplicate invoice match. Review before release."
 msgstr "تنبيه: تطابق فاتورة مكررة محتمل. راجع قبل الإصدار."
 
@@ -1109,8 +1109,8 @@ msgstr "تم تعيينها بالفعل"
 msgid "amount"
 msgstr "المبلغ"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:971
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2074
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1010
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2113
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:155
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:533
 #: src/pages/requests/components/Table.tsx:50
@@ -1237,7 +1237,7 @@ msgstr "قرار وكيل الحسابات الدائنة"
 #~ msgid "AP Amount"
 #~ msgstr "مبلغ الحسابات الدائنة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:812
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:850
 msgid "AP Command Center"
 msgstr "مركز قيادة الحسابات الدائنة"
 
@@ -1245,7 +1245,7 @@ msgstr "مركز قيادة الحسابات الدائنة"
 #~ msgid "AP Team"
 #~ msgstr "فريق الحسابات الدائنة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2055
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2094
 msgid "AP workbench — prioritized queue"
 msgstr "منصة الحسابات الدائنة — قائمة أولويات"
 
@@ -1302,7 +1302,7 @@ msgstr "تطبيق اللون الأساسي على الخلفية"
 msgid "Approval"
 msgstr "موافقة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2457
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2496
 msgid "Approval delay heat map"
 msgstr "خريطة حرارية لتأخير الاعتماد"
 
@@ -1310,7 +1310,7 @@ msgstr "خريطة حرارية لتأخير الاعتماد"
 #~ msgid "Approval Rate"
 #~ msgstr "معدل الاعتماد"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2559
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2598
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
@@ -1322,7 +1322,7 @@ msgstr "موافق عليه"
 msgid "APPROVED"
 msgstr "موافقة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2460
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2499
 msgid "Approver delay averages over weeks"
 msgstr "متوسط تأخير المعتمدين عبر الأسابيع"
 
@@ -1533,8 +1533,8 @@ msgstr "تم إنشاؤه تلقائياً"
 msgid "Auto-increment version number"
 msgstr "زيادة رقم الإصدار تلقائيًا"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1049
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1887
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1088
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1926
 msgid "Auto-updates with your filters — the ledger's margin notes"
 msgstr "يُحدَّث تلقائياً مع عوامل التصفية — ملاحظات هامش دفتر الحسابات"
 
@@ -1580,11 +1580,11 @@ msgstr "الحقول المتاحة"
 #~ msgid "Average days to approve by department · last 8 weeks"
 #~ msgstr "متوسط أيام الاعتماد حسب القسم · آخر 8 أسابيع"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2381
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2420
 msgid "Avg Approval Days"
 msgstr "متوسط أيام الاعتماد"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:147
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:168
 msgid "Avg. Processing Time"
 msgstr "متوسط وقت المعالجة"
 
@@ -1871,7 +1871,7 @@ msgstr "التفاصيل التجارية"
 msgid "Business Unit"
 msgstr "وحدة الأعمال"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2077
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2116
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:55
 msgid "Buyer"
 msgstr "المشتري"
@@ -2009,15 +2009,15 @@ msgstr "اسم البطاقة"
 #~ msgid "Cash out forecast"
 #~ msgstr "توقعات النقد الخارج"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2328
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2367
 msgid "Cash required"
 msgstr "النقد المطلوب"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2309
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2348
 msgid "Cash required — next 7 days"
 msgstr "النقد المطلوب — الأيام السبعة القادمة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2018
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2057
 msgid "Cash This Week"
 msgstr "النقد هذا الأسبوع"
 
@@ -2260,11 +2260,11 @@ msgstr ""
 #~ msgid "Click a segment to drill into invoices"
 #~ msgstr "انقر على شريحة لعرض الفواتير"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2513
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2552
 msgid "Click a slice to open matching list"
 msgstr "انقر على شريحة لفتح القائمة المطابقة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2636
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2675
 msgid "Click a supplier's bar to drill down"
 msgstr "انقر على شريط المورد للتفاصيل"
 
@@ -2315,7 +2315,7 @@ msgid "Close AI Insights"
 msgstr "إغلاق رؤى الذكاء الاصطناعي"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:203
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:956
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:995
 msgid "Close panel"
 msgstr "إغلاق اللوحة"
 
@@ -2756,7 +2756,7 @@ msgstr "انسخ عنوان URL"
 msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2196
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2235
 msgid "Cost Center"
 msgstr "مركز التكلفة"
 
@@ -3015,7 +3015,7 @@ msgid "CSV File"
 msgstr "ملف CSV"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:199
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:626
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:664
 msgid "Currencies"
 msgstr "العملات"
 
@@ -3065,7 +3065,7 @@ msgstr "واجهة API مخصصة"
 msgid "Custom Email Configuration (IMAP)"
 msgstr "تكوين البريد الإلكتروني المخصص (IMAP)"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:600
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:638
 #: src/pages/requests/components/InboxList.tsx:1222
 #: src/pages/requests/components/InboxList.tsx:1284
 msgid "Custom Range"
@@ -3083,7 +3083,7 @@ msgstr "خصص الشعارات وألوان العلامة التجارية و�
 #~ msgid "Customize operational sections, analytics tiles, and visual components."
 #~ msgstr "قم بتخصيص الأقسام التشغيلية ومربعات التحليلات والمكونات المرئية."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2312
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2351
 msgid "Daily cash requirements for approved invoices"
 msgstr "متطلبات النقد اليومية للفواتير المعتمدة"
 
@@ -3393,9 +3393,9 @@ msgid "Demo data selected. This data will be used for invoice processing."
 msgstr "تم تحديد بيانات تجريبية. ستُستخدم هذه البيانات لمعالجة الفواتير."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:164
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:605
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:970
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2073
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:643
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1009
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2112
 #: src/pages/settings/components/ManageUser.tsx:1163
 #: src/pages/settings/components/ManageUser.tsx:1165
 #: src/pages/settings/components/ManageUser.tsx:1587
@@ -3757,7 +3757,7 @@ msgstr "تم"
 msgid "Done Customizing"
 msgstr "تم التخصيص"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1928
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1967
 msgid "Double payments flagged by ledger algorithms"
 msgstr "مدفوعات مزدوجة رصدتها خوارزميات دفتر الأستاذ"
 
@@ -3810,7 +3810,7 @@ msgstr "قم بتنزيل ملف قالب بيانات PO Master المحدد م
 msgid "Downloading..."
 msgstr "جاري التنزيل..."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:864
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:903
 msgid "DPO"
 msgstr "DPO"
 
@@ -3926,8 +3926,8 @@ msgstr "الاستحقاق والشروط"
 msgid "due date"
 msgstr "تاريخ الاستحقاق"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:972
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2075
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1011
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2114
 #: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
@@ -3948,8 +3948,8 @@ msgstr "مستحق خلال الـ 15 يومًا القادمة"
 msgid "Due in Next 7 Days"
 msgstr "مستحق في الأيام السبعة القادمة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:135
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2010
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:156
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2049
 #: src/pages/requests/components/InboxList.tsx:1212
 msgid "Due Today"
 msgstr "مستحق اليوم"
@@ -3966,7 +3966,7 @@ msgstr "مكرر"
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1925
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1964
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
@@ -3974,7 +3974,7 @@ msgstr "مراقبة الفواتير المكررة"
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2605
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2644
 msgid "Duplicates Value"
 msgstr "قيمة المكررات"
 
@@ -4589,7 +4589,7 @@ msgstr "تصدير إلى إكسل"
 msgid "Exporting..."
 msgstr "جاري التصدير..."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1116
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1155
 msgid "Exposure"
 msgstr "التعرض"
 
@@ -4769,7 +4769,7 @@ msgstr "فشلت الدعوة"
 msgid "Failed to load AI summary."
 msgstr "فشل تحميل ملخص الذكاء الاصطناعي."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:369
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:407
 msgid "Failed to load dashboard data"
 msgstr "فشل تحميل بيانات لوحة القيادة"
 
@@ -5125,7 +5125,7 @@ msgid "Finalizing Results..."
 msgstr "جاري إنهاء النتائج..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:599
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:637
 msgid "Financial Year"
 msgstr "السنة المالية"
 
@@ -5159,7 +5159,7 @@ msgstr "حقل الاسم الأول"
 msgid "Fixed Order"
 msgstr "أمر ثابت"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:899
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:938
 msgid "Flat"
 msgstr "مستوي"
 
@@ -5776,7 +5776,7 @@ msgstr "إخفاء الاقتراحات"
 #~ msgid "Hide this field from the end user."
 #~ msgstr "إخفاء هذا الحقل عن المستخدم النهائي."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1131
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1170
 msgid "High"
 msgstr "مرتفع"
 
@@ -5821,7 +5821,7 @@ msgstr ""
 msgid "History"
 msgstr "السجل"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2571
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2610
 msgid "Hold"
 msgstr "معلّق"
 
@@ -5953,7 +5953,7 @@ msgstr "الوارد"
 #~ msgid "Inbox ({inboxCount})"
 #~ msgstr "الوارد ({inboxCount})"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2730
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2769
 msgid "Incoming workload volumes over the last 6 months"
 msgstr "أحجام عبء العمل الوارد خلال آخر 6 أشهر"
 
@@ -6157,8 +6157,8 @@ msgstr "تم إرسال الدعوة"
 msgid "Invited"
 msgstr "مدعو"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:968
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2071
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1007
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2110
 #: src/pages/portal/components/PortalWizard.tsx:160
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1737
 msgid "Invoice"
@@ -6219,7 +6219,7 @@ msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2223
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2262
 msgid "Invoice matched against approved master"
 msgstr "تمت مطابقة الفاتورة مع السجل الرئيسي المعتمد"
 
@@ -6233,7 +6233,7 @@ msgstr "رقم الفاتورة"
 msgid "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2401
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2440
 msgid "Invoice processing funnel"
 msgstr "قمع معالجة الفواتير"
 
@@ -6241,7 +6241,7 @@ msgstr "قمع معالجة الفواتير"
 msgid "Invoice Ref"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2510
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2549
 msgid "Invoice status distribution"
 msgstr "توزيع حالة الفواتير"
 
@@ -6280,7 +6280,7 @@ msgstr "الفواتير"
 msgid "Invoices are automatically matched with purchase orders and goods receipt notes for accuracy."
 msgstr "تُطابق الفواتير تلقائياً مع أوامر الشراء وإشعارات استلام البضائع لضمان الدقة."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:947
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:986
 msgid "Invoices Drill-Down"
 msgstr "تفاصيل الفواتير"
 
@@ -6346,7 +6346,7 @@ msgstr ""
 msgid "ITEM DESCRIPTION"
 msgstr "وصف البند"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2035
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2074
 #: src/pages/forms/FormEntriesPage.tsx:1226
 msgid "items"
 msgstr "أغراض"
@@ -6492,7 +6492,7 @@ msgid "last month"
 msgstr "الشهر الماضي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:157
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:597
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:635
 msgid "Last month"
 msgstr "الشهر الماضي"
 
@@ -6509,7 +6509,7 @@ msgstr "اسم العائلة"
 #~ msgid "Launch Workflow"
 #~ msgstr "تشغيل سير العمل"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2221
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2260
 msgid "Ledger Verification Note:"
 msgstr "ملاحظة التحقق من دفتر الأستاذ:"
 
@@ -6847,7 +6847,7 @@ msgstr "جارٍ تحميل مسارات العمل..."
 msgid "Loading your branded sign-in"
 msgstr "جارٍ تحميل تسجيل الدخول الذي يحمل علامتك التجارية"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:815
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:854
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:198
 msgid "Loading..."
 msgstr "جارٍ التحميل..."
@@ -6943,7 +6943,7 @@ msgstr "أبحث في"
 msgid "Looking through your folders…"
 msgstr "البحث في المجلدات الخاصة بك ..."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1123
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1162
 msgid "Low"
 msgstr "منخفض"
 
@@ -7239,7 +7239,7 @@ msgstr ""
 msgid "May"
 msgstr "يمكن"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1127
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1166
 msgid "Medium"
 msgstr "متوسط"
 
@@ -7483,7 +7483,7 @@ msgstr "شهري"
 msgid "Monthly credit trend"
 msgstr "اتجاه الرصيد الشهري"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2727
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2766
 msgid "Monthly invoice trend"
 msgstr "اتجاه الفواتير الشهري"
 
@@ -7998,7 +7998,7 @@ msgstr "لم يتم العثور على أعمدة متطابقة - يجب أن 
 msgid "No matching folders"
 msgstr "لا توجد مجلدات متطابقة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1029
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1068
 msgid "No matching invoice records in this slice."
 msgstr "لا توجد سجلات فواتير مطابقة في هذه الشريحة."
 
@@ -8459,7 +8459,7 @@ msgstr "فتح المجلد والملفات"
 #~ msgid "Open in Form Builder"
 #~ msgstr "فتح في منشئ النماذج"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:852
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:891
 msgid "Open Invoices"
 msgstr "Open الفواتير"
 
@@ -8606,7 +8606,7 @@ msgstr "تم تحديد Outlook. انقر على اتصال Outlook لربط ح�
 #~ msgid "Outstanding overdue balances are down 100% versus last month ($0 now outstanding past due)."
 #~ msgstr "انخفضت الأرصدة المتأخرة المستحقة بنسبة 100% مقارنة بالشهر الماضي (0 دولار مستحق الآن)."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2633
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2672
 msgid "Outstanding payables by supplier"
 msgstr "الذمم الدائنة المستحقة حسب المورد"
 
@@ -8614,19 +8614,19 @@ msgstr "الذمم الدائنة المستحقة حسب المورد"
 msgid "Overcharged"
 msgstr "مبالغ فيه"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:141
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:834
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:162
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:873
 #: src/pages/requests/components/InboxList.tsx:1210
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
 msgstr "متأخر"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2597
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2636
 msgid "Overdue Amount"
 msgstr "المبلغ المتأخر"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2058
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2097
 msgid "Overdue and due-soonest first — process top-down"
 msgstr "المتأخر والأقرب استحقاقًا أولاً — عالج من الأعلى للأسفل"
 
@@ -8746,11 +8746,11 @@ msgstr "الحسابات الدائنة (الفواتير والمدفوعات)"
 msgid "Payables Overview"
 msgstr "نظرة عامة على الدائنين"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2244
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2283
 msgid "Payment calendar"
 msgstr "تقويم المدفوعات"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2212
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2251
 msgid "Payment Channel"
 msgstr "قناة الدفع"
 
@@ -8766,15 +8766,15 @@ msgstr ""
 msgid "Payment Deadlines & Terms"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2299
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2338
 msgid "Payment Due"
 msgstr "استحقاق الدفع"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2283
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2322
 msgid "Payment due date"
 msgstr "تاريخ استحقاق الدفع"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:974
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1013
 msgid "Payment Method"
 msgstr "طريقة الدفع"
 
@@ -8814,7 +8814,7 @@ msgstr "فترة ذروة الاستخدام"
 msgid "Pen width"
 msgstr "سمك القلم"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2563
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2602
 #: src/pages/portal/components/PortalHome.tsx:90
 #: src/pages/portal/components/PortalHome.tsx:141
 #: src/pages/settings/components/ManageUser.tsx:1426
@@ -8834,7 +8834,7 @@ msgstr "بنود التسليم المعلقة."
 msgid "Pending Items"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:129
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:150
 msgid "Pending Payments"
 msgstr "المدفوعات المعلقة"
 
@@ -8897,11 +8897,11 @@ msgstr "اختر استراتيجية استيراد واحدة. ولا يتم �
 msgid "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
 msgstr "اختر الحقول التي تظهر في هذا التقرير، ثم قم بتكوين تسميات الأعمدة والحسابات والحالة المحسوبة."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2404
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2443
 msgid "Pipeline drops across lifecycle steps"
 msgstr "انخفاضات المسار عبر مراحل دورة الحياة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2359
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2398
 msgid "Pipeline throughput efficiency and approval metrics"
 msgstr "كفاءة إنتاجية المسار ومقاييس الاعتماد"
 
@@ -9378,7 +9378,7 @@ msgid "PO #"
 msgstr "رقم طلب الشراء"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:227
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:646
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:684
 #: src/pages/requests/components/QuickFilters.tsx:309
 msgid "PO Amount"
 msgstr "مبلغ أمر الشراء"
@@ -9458,7 +9458,7 @@ msgstr ""
 msgid "po ref"
 msgstr "مرجع أمر الشراء"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2188
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2227
 msgid "PO Reference"
 msgstr "مرجع أمر الشراء"
 
@@ -9685,11 +9685,11 @@ msgstr "طباعة الملف"
 msgid "Prior Ticket {activeBackOrderTab} Details"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2004
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2043
 msgid "Prioritized invoice items requiring attention today"
 msgstr "عناصر فواتير ذات أولوية تتطلب اهتمامًا اليوم"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2070
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2109
 msgid "Priority"
 msgstr "الأولوية"
 
@@ -9720,7 +9720,7 @@ msgstr "المعالجة"
 #~ msgid "Processed ({processedCount})"
 #~ msgstr "المعالجة ({processedCount})"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2567
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2606
 msgid "Processing"
 msgstr "قيد المعالجة"
 
@@ -9729,7 +9729,7 @@ msgstr "قيد المعالجة"
 msgid "Processing \"{0}\""
 msgstr "جاري معالجة «{0}»"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2356
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2395
 msgid "Processing & Bottlenecks"
 msgstr "المعالجة والاختناقات"
 
@@ -9768,7 +9768,7 @@ msgstr "الملف الشخصي"
 #~ msgid "Profit %"
 #~ msgstr "الربح %"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2204
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2243
 msgid "Profit Center"
 msgstr "مركز الربح"
 
@@ -9852,7 +9852,7 @@ msgid "Quantity line discrepancy."
 msgstr "تناقض في سطر الكمية."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:158
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:598
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:636
 msgid "Quarter"
 msgstr "ربع"
 
@@ -9860,7 +9860,7 @@ msgstr "ربع"
 msgid "Quarterly"
 msgstr "ربع سنوي"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2026
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2065
 msgid "Queue Size"
 msgstr "حجم القائمة"
 
@@ -10320,7 +10320,7 @@ msgid "Request shared successfully"
 msgstr "تمت مشاركة الطلب بنجاح"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:218
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:640
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:678
 #: src/pages/requests/components/QuickFilters.tsx:265
 msgid "Request Status"
 msgstr "طلب Status"
@@ -10917,7 +10917,7 @@ msgstr "جدولة الدفع"
 msgid "Scheduled"
 msgstr "مجدول"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2247
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2286
 msgid "Scheduled payments calendar heatmap"
 msgstr "خريطة حرارية لتقويم المدفوعات المجدولة"
 
@@ -11004,12 +11004,12 @@ msgid "Search created by..."
 msgstr "البحث الذي تم إنشاؤه بواسطة..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:207
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:629
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:667
 msgid "Search currency..."
 msgstr "بحث currency..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:172
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:608
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:646
 #: src/pages/settings/components/ManageUser.tsx:1590
 msgid "Search department..."
 msgstr "بحث department..."
@@ -11074,7 +11074,7 @@ msgstr "أيقونات البحث"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:828
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1196
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:768
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:806
 #: src/pages/requests/components/InboxList.tsx:1839
 msgid "Search invoice, supplier, PO..."
 msgstr "ابحث عن فاتورة، مورد، أمر شراء..."
@@ -11134,7 +11134,7 @@ msgid "Search rows..."
 msgstr "البحث في الصفوف..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:195
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:622
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:660
 #: src/pages/requests/components/QuickFilters.tsx:278
 msgid "Search status..."
 msgstr "بحث status..."
@@ -11144,7 +11144,7 @@ msgid "Search submissions…"
 msgstr "بحث في التقديمات…"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:615
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:653
 msgid "Search supplier..."
 msgstr "بحث supplier..."
 
@@ -11884,11 +11884,11 @@ msgid "Showing cached AI summary."
 msgstr "عرض ملخص الذكاء الاصطناعي المخزن مؤقتًا."
 
 #. placeholder {0}: drillInvoices.length
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1023
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1062
 msgid "Showing first 50 of {0} invoices."
 msgstr "عرض أول 50 فاتورة من {0}."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:951
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:990
 msgid "Showing records matching this metrics slice"
 msgstr "عرض السجلات المطابقة لهذه الشريحة من المقاييس"
 
@@ -12195,7 +12195,7 @@ msgstr ""
 msgid "Staging failed."
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2227
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2266
 msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "الجدول الزمني القياسي لاتفاقية مستوى الخدمة. لم يُعثر على استثناءات تسعير."
 
@@ -12242,8 +12242,8 @@ msgstr "اتجاه الائتمان الثابت لـ {selectedMonth}"
 msgid "status"
 msgstr "الحالة"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:973
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2076
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1012
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2115
 #: src/pages/forms/FormsPage.tsx:191
 #: src/pages/forms/FormsPage.tsx:604
 #: src/pages/reports/components/ReportsListView.tsx:172
@@ -12280,7 +12280,7 @@ msgid "Status: {val}"
 msgstr "الحالة: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:187
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:619
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:657
 msgid "Statuses"
 msgstr "الحالات"
 
@@ -12460,8 +12460,8 @@ msgstr "جارٍ اقتراح مؤشرات الأداء الرئيسية وال�
 msgid "supplier"
 msgstr "المورد"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:969
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2072
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1008
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2111
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1435
 #: src/pages/requests/components/InboxList.tsx:1863
 #: src/pages/requests/components/QuickFilters.tsx:351
@@ -12499,7 +12499,7 @@ msgstr "تفاصيل المورد"
 msgid "Supplier details differ."
 msgstr "تفاصيل المورد مختلفة."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2588
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2627
 msgid "Supplier Follow-ups"
 msgstr "متابعات الموردين"
 
@@ -12529,7 +12529,7 @@ msgstr "اسم المورد"
 msgid "Supplier physical billing address"
 msgstr "عنوان إرسال الفواتير الفعلي للمورد"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1088
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1127
 msgid "Supplier Risk Radar"
 msgstr "رادار مخاطر الموردين"
 
@@ -12569,11 +12569,11 @@ msgid "Supplier: {val}"
 msgstr "المورد: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:176
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:612
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:650
 msgid "Suppliers"
 msgstr "الموردين"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2613
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2652
 msgid "Suppliers to Chase"
 msgstr "موردون للمتابعة"
 
@@ -12948,7 +12948,7 @@ msgid "This link is incomplete or no longer valid. Please ask for a new link."
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:156
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:596
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:634
 msgid "This month"
 msgstr "هذا الشهر"
 
@@ -13014,7 +13014,7 @@ msgid "This usually takes under a minute. Don't close this page."
 msgstr "عادةً ما يستغرق هذا أقل من دقيقة. لا تغلق هذه الصفحة."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:155
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:595
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:633
 msgid "This week"
 msgstr "هذا الاسبوع"
 
@@ -13061,7 +13061,7 @@ msgstr "تشغيل الوقت"
 #~ msgstr "الوقت المنقضي من الإجراء الأخير"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:592
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:630
 msgid "Timeframe"
 msgstr "الإطار الزمني"
 
@@ -13087,15 +13087,15 @@ msgid "to Trash?"
 msgstr "إلى سلة المهملات؟"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:154
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:594
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2281
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2295
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:632
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2320
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2334
 #: src/pages/folders/components/DocumentDetailsView.tsx:2564
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "اليوم"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2001
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2040
 msgid "Today's Action Queue"
 msgstr "قائمة إجراءات اليوم"
 
@@ -13134,7 +13134,7 @@ msgstr "المبلغ الإجمالي"
 msgid "Total Amount (Inv / PO)"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:821
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:860
 msgid "Total AP"
 msgstr "الإجمالي AP"
 
@@ -13151,15 +13151,15 @@ msgstr "إجمالي الرصيد المستخدم"
 msgid "Total Due"
 msgstr "المبلغ المستحق"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2365
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2404
 msgid "Total Invoices"
 msgstr "إجمالي الفواتير"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:117
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:138
 msgid "Total Outstanding"
 msgstr "إجمالي المستحق"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:123
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:144
 msgid "Total Paid"
 msgstr "إجمالي المدفوع"
 
@@ -13183,7 +13183,7 @@ msgstr "إجمالي المقدم"
 msgid "Total Value"
 msgstr "القيمة الإجمالية"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2373
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2412
 msgid "Touchless Rate"
 msgstr "معدل المعالجة الآلية"
 
@@ -14015,7 +14015,7 @@ msgstr "عدم تطابق هوية البائع."
 msgid "Vendor Name"
 msgstr "اسم البائع"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2591
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2630
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
@@ -14309,7 +14309,7 @@ msgstr "أين"
 #~ msgid "Where spend concentrates · vendor risk exposure"
 #~ msgstr "أين يتركز الإنفاق · تعرض مخاطر الموردين"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1092
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1131
 msgid "Which vendors carry the most risk exposure?"
 msgstr "أي الموردين يحملون أكبر تعرض للمخاطر؟"
 

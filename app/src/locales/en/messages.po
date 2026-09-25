@@ -69,7 +69,7 @@ msgid "{0} connected successfully."
 msgstr "{0} connected successfully."
 
 #. placeholder {0}: bar.pct
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2446
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2485
 msgid "{0} conversion"
 msgstr ""
 
@@ -428,7 +428,7 @@ msgstr "1 file"
 msgid "1 sheet"
 msgstr "1 sheet"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2410
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2449
 msgid "1. Received"
 msgstr "1. Received"
 
@@ -440,7 +440,7 @@ msgstr "1. Received"
 msgid "100% Accuracy"
 msgstr "100% Accuracy"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2429
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2468
 msgid "142 inv"
 msgstr "142 inv"
 
@@ -448,19 +448,19 @@ msgstr "142 inv"
 msgid "2 / 6 fields"
 msgstr "2 / 6 fields"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2416
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2455
 msgid "2. Extracted"
 msgstr "2. Extracted"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2423
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2462
 msgid "210 inv"
 msgstr "210 inv"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2417
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2456
 msgid "248 inv"
 msgstr "248 inv"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2411
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2450
 msgid "266 inv"
 msgstr "266 inv"
 
@@ -468,7 +468,7 @@ msgstr "266 inv"
 #~ msgid "28 invoices flagged as potential duplicates — recommend review before release to avoid double payment."
 #~ msgstr "28 invoices flagged as potential duplicates — recommend review before release to avoid double payment."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2422
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2461
 msgid "3. Approved"
 msgstr "3. Approved"
 
@@ -476,7 +476,7 @@ msgstr "3. Approved"
 msgid "4 fields"
 msgstr "4 fields"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2428
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2467
 msgid "4. Posted"
 msgstr "4. Posted"
 
@@ -488,11 +488,11 @@ msgstr "5 hierarchy levels"
 msgid "6 / 6 fields"
 msgstr "6 / 6 fields"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2384
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2423
 msgid "6.1 days"
 msgstr "6.1 days"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2616
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2655
 msgid "9 vendors"
 msgstr "9 vendors"
 
@@ -563,7 +563,7 @@ msgstr "Accounts payable folder"
 msgid "Accounts Receivable"
 msgstr "Accounts Receivable"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2160
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2199
 #: src/pages/settings/components/Folders/FolderRetention.tsx:116
 msgid "Action"
 msgstr "Action"
@@ -577,7 +577,7 @@ msgstr "Action needed"
 msgid "Action Required"
 msgstr "Action Required"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2078
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2117
 #: src/pages/forms/FormEntriesPage.tsx:1283
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/reports/components/ReportsListView.tsx:208
@@ -996,8 +996,8 @@ msgstr "AI-assisted lifecycle rules that archive, soft delete, or permanently de
 msgid "AI-generated document analysis"
 msgstr ""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1046
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1884
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1085
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1923
 msgid "AI-generated insights"
 msgstr "AI-generated insights"
 
@@ -1013,7 +1013,7 @@ msgstr "AI-powered extraction in seconds"
 msgid "AI-powered workspace with smart search and agents"
 msgstr "AI-powered workspace with smart search and agents"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2226
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2265
 msgid "ALERT: Potential duplicate invoice match. Review before release."
 msgstr "ALERT: Potential duplicate invoice match. Review before release."
 
@@ -1134,8 +1134,8 @@ msgstr "Already mapped"
 msgid "amount"
 msgstr "amount"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:971
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2074
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1010
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2113
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:155
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:533
 #: src/pages/requests/components/Table.tsx:50
@@ -1262,7 +1262,7 @@ msgstr "AP Agent Decision"
 #~ msgid "AP Amount"
 #~ msgstr "AP Amount"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:812
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:850
 msgid "AP Command Center"
 msgstr "AP Command Center"
 
@@ -1270,7 +1270,7 @@ msgstr "AP Command Center"
 #~ msgid "AP Team"
 #~ msgstr "AP Team"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2055
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2094
 msgid "AP workbench — prioritized queue"
 msgstr "AP workbench — prioritized queue"
 
@@ -1327,7 +1327,7 @@ msgstr "Apply primary color to the background"
 msgid "Approval"
 msgstr "Approval"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2457
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2496
 msgid "Approval delay heat map"
 msgstr "Approval delay heat map"
 
@@ -1335,7 +1335,7 @@ msgstr "Approval delay heat map"
 #~ msgid "Approval Rate"
 #~ msgstr "Approval Rate"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2559
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2598
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
@@ -1347,7 +1347,7 @@ msgstr "Approved"
 msgid "APPROVED"
 msgstr "APPROVED"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2460
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2499
 msgid "Approver delay averages over weeks"
 msgstr "Approver delay averages over weeks"
 
@@ -1558,8 +1558,8 @@ msgstr "Auto Generated"
 msgid "Auto-increment version number"
 msgstr "Auto-increment version number"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1049
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1887
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1088
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1926
 msgid "Auto-updates with your filters — the ledger's margin notes"
 msgstr "Auto-updates with your filters — the ledger's margin notes"
 
@@ -1605,11 +1605,11 @@ msgstr "Available fields"
 #~ msgid "Average days to approve by department · last 8 weeks"
 #~ msgstr "Average days to approve by department · last 8 weeks"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2381
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2420
 msgid "Avg Approval Days"
 msgstr "Avg Approval Days"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:147
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:168
 msgid "Avg. Processing Time"
 msgstr "Avg. Processing Time"
 
@@ -1896,7 +1896,7 @@ msgstr "Business Detail"
 msgid "Business Unit"
 msgstr "Business Unit"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2077
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2116
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:55
 msgid "Buyer"
 msgstr "Buyer"
@@ -2034,15 +2034,15 @@ msgstr "Card name"
 #~ msgid "Cash out forecast"
 #~ msgstr "Cash out forecast"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2328
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2367
 msgid "Cash required"
 msgstr "Cash required"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2309
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2348
 msgid "Cash required — next 7 days"
 msgstr "Cash required — next 7 days"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2018
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2057
 msgid "Cash This Week"
 msgstr "Cash This Week"
 
@@ -2289,11 +2289,11 @@ msgstr "Clear search"
 #~ msgid "Click a segment to drill into invoices"
 #~ msgstr "Click a segment to drill into invoices"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2513
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2552
 msgid "Click a slice to open matching list"
 msgstr "Click a slice to open matching list"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2636
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2675
 msgid "Click a supplier's bar to drill down"
 msgstr "Click a supplier's bar to drill down"
 
@@ -2344,7 +2344,7 @@ msgid "Close AI Insights"
 msgstr "Close AI Insights"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:203
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:956
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:995
 msgid "Close panel"
 msgstr "Close panel"
 
@@ -2793,7 +2793,7 @@ msgstr "Copy URL"
 msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 msgstr "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2196
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2235
 msgid "Cost Center"
 msgstr "Cost Center"
 
@@ -3060,7 +3060,7 @@ msgid "CSV File"
 msgstr "CSV File"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:199
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:626
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:664
 msgid "Currencies"
 msgstr "Currencies"
 
@@ -3110,7 +3110,7 @@ msgstr "Custom API"
 msgid "Custom Email Configuration (IMAP)"
 msgstr "Custom Email Configuration (IMAP)"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:600
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:638
 #: src/pages/requests/components/InboxList.tsx:1222
 #: src/pages/requests/components/InboxList.tsx:1284
 msgid "Custom Range"
@@ -3128,7 +3128,7 @@ msgstr "Customize logos, brand colors, and visual identity across the platform."
 #~ msgid "Customize operational sections, analytics tiles, and visual components."
 #~ msgstr "Customize operational sections, analytics tiles, and visual components."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2312
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2351
 msgid "Daily cash requirements for approved invoices"
 msgstr "Daily cash requirements for approved invoices"
 
@@ -3446,9 +3446,9 @@ msgid "Demo data selected. This data will be used for invoice processing."
 msgstr "Demo data selected. This data will be used for invoice processing."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:164
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:605
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:970
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2073
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:643
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1009
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2112
 #: src/pages/settings/components/ManageUser.tsx:1163
 #: src/pages/settings/components/ManageUser.tsx:1165
 #: src/pages/settings/components/ManageUser.tsx:1587
@@ -3814,7 +3814,7 @@ msgstr "Done"
 msgid "Done Customizing"
 msgstr "Done Customizing"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1928
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1967
 msgid "Double payments flagged by ledger algorithms"
 msgstr ""
 
@@ -3867,7 +3867,7 @@ msgstr ""
 msgid "Downloading..."
 msgstr "Downloading..."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:864
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:903
 msgid "DPO"
 msgstr "DPO"
 
@@ -3983,8 +3983,8 @@ msgstr "Due & Terms"
 msgid "due date"
 msgstr "due date"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:972
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2075
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1011
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2114
 #: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
@@ -4005,8 +4005,8 @@ msgstr "Due in Next 15 Days"
 msgid "Due in Next 7 Days"
 msgstr "Due in Next 7 Days"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:135
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2010
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:156
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2049
 #: src/pages/requests/components/InboxList.tsx:1212
 msgid "Due Today"
 msgstr "Due Today"
@@ -4023,7 +4023,7 @@ msgstr "Duplicate"
 msgid "Duplicate Detection"
 msgstr "Duplicate Detection"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1925
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1964
 msgid "Duplicate invoice watch"
 msgstr "Duplicate invoice watch"
 
@@ -4031,7 +4031,7 @@ msgstr "Duplicate invoice watch"
 msgid "Duplicate Payment Check"
 msgstr "Duplicate Payment Check"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2605
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2644
 msgid "Duplicates Value"
 msgstr "Duplicates Value"
 
@@ -4662,7 +4662,7 @@ msgstr "Export to Excel"
 msgid "Exporting..."
 msgstr "Exporting..."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1116
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1155
 msgid "Exposure"
 msgstr "Exposure"
 
@@ -4842,7 +4842,7 @@ msgstr "Failed to invite"
 msgid "Failed to load AI summary."
 msgstr "Failed to load AI summary."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:369
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:407
 msgid "Failed to load dashboard data"
 msgstr "Failed to load dashboard data"
 
@@ -5198,7 +5198,7 @@ msgid "Finalizing Results..."
 msgstr "Finalizing Results..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:599
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:637
 msgid "Financial Year"
 msgstr "Financial Year"
 
@@ -5232,7 +5232,7 @@ msgstr "First Name Field"
 msgid "Fixed Order"
 msgstr "Fixed Order"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:899
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:938
 msgid "Flat"
 msgstr "Flat"
 
@@ -5861,7 +5861,7 @@ msgstr "Hide suggestions"
 #~ msgid "Hide this field from the end user."
 #~ msgstr "Hide this field from the end user."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1131
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1170
 msgid "High"
 msgstr "High"
 
@@ -5906,7 +5906,7 @@ msgstr "Historical Match & Integrity Results"
 msgid "History"
 msgstr "History"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2571
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2610
 msgid "Hold"
 msgstr "Hold"
 
@@ -6038,7 +6038,7 @@ msgstr "Inbox"
 #~ msgid "Inbox ({inboxCount})"
 #~ msgstr "Inbox ({inboxCount})"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2730
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2769
 msgid "Incoming workload volumes over the last 6 months"
 msgstr "Incoming workload volumes over the last 6 months"
 
@@ -6242,8 +6242,8 @@ msgstr "Invite sent"
 msgid "Invited"
 msgstr "Invited"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:968
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2071
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1007
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2110
 #: src/pages/portal/components/PortalWizard.tsx:160
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1737
 msgid "Invoice"
@@ -6304,7 +6304,7 @@ msgstr ""
 msgid "Invoice Line Items"
 msgstr "Invoice Line Items"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2223
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2262
 msgid "Invoice matched against approved master"
 msgstr "Invoice matched against approved master"
 
@@ -6318,7 +6318,7 @@ msgstr "Invoice Number"
 msgid "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 msgstr "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2401
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2440
 msgid "Invoice processing funnel"
 msgstr "Invoice processing funnel"
 
@@ -6326,7 +6326,7 @@ msgstr "Invoice processing funnel"
 msgid "Invoice Ref"
 msgstr "Invoice Ref"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2510
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2549
 msgid "Invoice status distribution"
 msgstr "Invoice status distribution"
 
@@ -6365,7 +6365,7 @@ msgstr "Invoices"
 msgid "Invoices are automatically matched with purchase orders and goods receipt notes for accuracy."
 msgstr "Invoices are automatically matched with purchase orders and goods receipt notes for accuracy."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:947
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:986
 msgid "Invoices Drill-Down"
 msgstr "Invoices Drill-Down"
 
@@ -6431,7 +6431,7 @@ msgstr "Item Description"
 msgid "ITEM DESCRIPTION"
 msgstr "ITEM DESCRIPTION"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2035
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2074
 #: src/pages/forms/FormEntriesPage.tsx:1226
 msgid "items"
 msgstr "items"
@@ -6577,7 +6577,7 @@ msgid "last month"
 msgstr "last month"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:157
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:597
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:635
 msgid "Last month"
 msgstr "Last month"
 
@@ -6594,7 +6594,7 @@ msgstr "Last Name"
 #~ msgid "Launch Workflow"
 #~ msgstr "Launch Workflow"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2221
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2260
 msgid "Ledger Verification Note:"
 msgstr "Ledger Verification Note:"
 
@@ -6932,7 +6932,7 @@ msgstr "Loading workflows..."
 msgid "Loading your branded sign-in"
 msgstr "Loading your branded sign-in"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:815
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:854
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:198
 msgid "Loading..."
 msgstr "Loading..."
@@ -7028,7 +7028,7 @@ msgstr "Looking in"
 msgid "Looking through your folders…"
 msgstr "Looking through your folders…"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1123
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1162
 msgid "Low"
 msgstr "Low"
 
@@ -7328,7 +7328,7 @@ msgstr "Matter Validation Rules"
 msgid "May"
 msgstr "May"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1127
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1166
 msgid "Medium"
 msgstr "Medium"
 
@@ -7572,7 +7572,7 @@ msgstr "Monthly"
 msgid "Monthly credit trend"
 msgstr "Monthly credit trend"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2727
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2766
 msgid "Monthly invoice trend"
 msgstr "Monthly invoice trend"
 
@@ -8100,7 +8100,7 @@ msgstr "No matching columns found — CSV/Excel headers must match table column 
 msgid "No matching folders"
 msgstr "No matching folders"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1029
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1068
 msgid "No matching invoice records in this slice."
 msgstr "No matching invoice records in this slice."
 
@@ -8567,7 +8567,7 @@ msgstr "Open folder and files"
 #~ msgid "Open in Form Builder"
 #~ msgstr "Open in Form Builder"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:852
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:891
 msgid "Open Invoices"
 msgstr "Open Invoices"
 
@@ -8718,7 +8718,7 @@ msgstr "Outlook selected. Click Connect Outlook to link your account."
 #~ msgid "Outstanding overdue balances are down 100% versus last month ($0 now outstanding past due)."
 #~ msgstr "Outstanding overdue balances are down 100% versus last month ($0 now outstanding past due)."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2633
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2672
 msgid "Outstanding payables by supplier"
 msgstr "Outstanding payables by supplier"
 
@@ -8726,19 +8726,19 @@ msgstr "Outstanding payables by supplier"
 msgid "Overcharged"
 msgstr "Overcharged"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:141
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:834
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:162
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:873
 #: src/pages/requests/components/InboxList.tsx:1210
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
 msgstr "Overdue"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2597
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2636
 msgid "Overdue Amount"
 msgstr "Overdue Amount"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2058
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2097
 msgid "Overdue and due-soonest first — process top-down"
 msgstr "Overdue and due-soonest first — process top-down"
 
@@ -8858,11 +8858,11 @@ msgstr "Payables (Invoices & Disbursements)"
 msgid "Payables Overview"
 msgstr "Payables Overview"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2244
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2283
 msgid "Payment calendar"
 msgstr "Payment calendar"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2212
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2251
 msgid "Payment Channel"
 msgstr "Payment Channel"
 
@@ -8878,15 +8878,15 @@ msgstr "Payment Completion Insights"
 msgid "Payment Deadlines & Terms"
 msgstr "Payment Deadlines & Terms"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2299
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2338
 msgid "Payment Due"
 msgstr "Payment Due"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2283
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2322
 msgid "Payment due date"
 msgstr "Payment due date"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:974
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1013
 msgid "Payment Method"
 msgstr "Payment Method"
 
@@ -8926,7 +8926,7 @@ msgstr "Peak usage period"
 msgid "Pen width"
 msgstr "Pen width"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2563
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2602
 #: src/pages/portal/components/PortalHome.tsx:90
 #: src/pages/portal/components/PortalHome.tsx:141
 #: src/pages/settings/components/ManageUser.tsx:1426
@@ -8946,7 +8946,7 @@ msgstr "Pending delivery items."
 msgid "Pending Items"
 msgstr "Pending Items"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:129
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:150
 msgid "Pending Payments"
 msgstr "Pending Payments"
 
@@ -9009,11 +9009,11 @@ msgstr "Pick one import strategy. Nothing is saved until the next step confirms 
 msgid "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
 msgstr "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2404
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2443
 msgid "Pipeline drops across lifecycle steps"
 msgstr "Pipeline drops across lifecycle steps"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2359
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2398
 msgid "Pipeline throughput efficiency and approval metrics"
 msgstr "Pipeline throughput efficiency and approval metrics"
 
@@ -9490,7 +9490,7 @@ msgid "PO #"
 msgstr "PO #"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:227
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:646
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:684
 #: src/pages/requests/components/QuickFilters.tsx:309
 msgid "PO Amount"
 msgstr "PO Amount"
@@ -9570,7 +9570,7 @@ msgstr "PO Qty"
 msgid "po ref"
 msgstr "po ref"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2188
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2227
 msgid "PO Reference"
 msgstr "PO Reference"
 
@@ -9797,11 +9797,11 @@ msgstr "Print file"
 msgid "Prior Ticket {activeBackOrderTab} Details"
 msgstr "Prior Ticket {activeBackOrderTab} Details"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2004
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2043
 msgid "Prioritized invoice items requiring attention today"
 msgstr "Prioritized invoice items requiring attention today"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2070
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2109
 msgid "Priority"
 msgstr "Priority"
 
@@ -9836,7 +9836,7 @@ msgstr "Processed"
 #~ msgid "Processed ({processedCount})"
 #~ msgstr "Processed ({processedCount})"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2567
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2606
 msgid "Processing"
 msgstr "Processing"
 
@@ -9845,7 +9845,7 @@ msgstr "Processing"
 msgid "Processing \"{0}\""
 msgstr "Processing \"{0}\""
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2356
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2395
 msgid "Processing & Bottlenecks"
 msgstr "Processing & Bottlenecks"
 
@@ -9884,7 +9884,7 @@ msgstr "Profile"
 #~ msgid "Profit %"
 #~ msgstr "Profit %"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2204
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2243
 msgid "Profit Center"
 msgstr "Profit Center"
 
@@ -9972,7 +9972,7 @@ msgid "Quantity line discrepancy."
 msgstr "Quantity line discrepancy."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:158
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:598
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:636
 msgid "Quarter"
 msgstr "Quarter"
 
@@ -9980,7 +9980,7 @@ msgstr "Quarter"
 msgid "Quarterly"
 msgstr "Quarterly"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2026
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2065
 msgid "Queue Size"
 msgstr "Queue Size"
 
@@ -10440,7 +10440,7 @@ msgid "Request shared successfully"
 msgstr "Request shared successfully"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:218
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:640
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:678
 #: src/pages/requests/components/QuickFilters.tsx:265
 msgid "Request Status"
 msgstr "Request Status"
@@ -11045,7 +11045,7 @@ msgstr "Schedule Payment"
 msgid "Scheduled"
 msgstr "Scheduled"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2247
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2286
 msgid "Scheduled payments calendar heatmap"
 msgstr "Scheduled payments calendar heatmap"
 
@@ -11132,12 +11132,12 @@ msgid "Search created by..."
 msgstr "Search created by..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:207
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:629
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:667
 msgid "Search currency..."
 msgstr "Search currency..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:172
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:608
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:646
 #: src/pages/settings/components/ManageUser.tsx:1590
 msgid "Search department..."
 msgstr "Search department..."
@@ -11202,7 +11202,7 @@ msgstr "Search icons"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:828
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1196
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:768
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:806
 #: src/pages/requests/components/InboxList.tsx:1839
 msgid "Search invoice, supplier, PO..."
 msgstr "Search invoice, supplier, PO..."
@@ -11262,7 +11262,7 @@ msgid "Search rows..."
 msgstr "Search rows..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:195
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:622
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:660
 #: src/pages/requests/components/QuickFilters.tsx:278
 msgid "Search status..."
 msgstr "Search status..."
@@ -11272,7 +11272,7 @@ msgid "Search submissions…"
 msgstr "Search submissions…"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:615
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:653
 msgid "Search supplier..."
 msgstr "Search supplier..."
 
@@ -12059,11 +12059,11 @@ msgid "Showing cached AI summary."
 msgstr "Showing cached AI summary."
 
 #. placeholder {0}: drillInvoices.length
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1023
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1062
 msgid "Showing first 50 of {0} invoices."
 msgstr "Showing first 50 of {0} invoices."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:951
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:990
 msgid "Showing records matching this metrics slice"
 msgstr "Showing records matching this metrics slice"
 
@@ -12370,7 +12370,7 @@ msgstr "Staged file deleted."
 msgid "Staging failed."
 msgstr "Staging failed."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2227
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2266
 msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "Standard SLA timeline. No pricing exceptions found."
 
@@ -12417,8 +12417,8 @@ msgstr "Static credit trend for {selectedMonth}"
 msgid "status"
 msgstr "status"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:973
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2076
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1012
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2115
 #: src/pages/forms/FormsPage.tsx:191
 #: src/pages/forms/FormsPage.tsx:604
 #: src/pages/reports/components/ReportsListView.tsx:172
@@ -12455,7 +12455,7 @@ msgid "Status: {val}"
 msgstr "Status: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:187
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:619
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:657
 msgid "Statuses"
 msgstr "Statuses"
 
@@ -12635,8 +12635,8 @@ msgstr "Suggesting KPIs and charts for {repositoryName}..."
 msgid "supplier"
 msgstr "supplier"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:969
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2072
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1008
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2111
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1435
 #: src/pages/requests/components/InboxList.tsx:1863
 #: src/pages/requests/components/QuickFilters.tsx:351
@@ -12674,7 +12674,7 @@ msgstr "Supplier Details"
 msgid "Supplier details differ."
 msgstr "Supplier details differ."
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2588
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2627
 msgid "Supplier Follow-ups"
 msgstr "Supplier Follow-ups"
 
@@ -12704,7 +12704,7 @@ msgstr "Supplier Name"
 msgid "Supplier physical billing address"
 msgstr "Supplier physical billing address"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1088
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1127
 msgid "Supplier Risk Radar"
 msgstr "Supplier Risk Radar"
 
@@ -12744,11 +12744,11 @@ msgid "Supplier: {val}"
 msgstr "Supplier: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:176
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:612
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:650
 msgid "Suppliers"
 msgstr "Suppliers"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2613
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2652
 msgid "Suppliers to Chase"
 msgstr "Suppliers to Chase"
 
@@ -13123,7 +13123,7 @@ msgid "This link is incomplete or no longer valid. Please ask for a new link."
 msgstr "This link is incomplete or no longer valid. Please ask for a new link."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:156
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:596
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:634
 msgid "This month"
 msgstr "This month"
 
@@ -13189,7 +13189,7 @@ msgid "This usually takes under a minute. Don't close this page."
 msgstr "This usually takes under a minute. Don't close this page."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:155
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:595
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:633
 msgid "This week"
 msgstr "This week"
 
@@ -13236,7 +13236,7 @@ msgstr "Time Running"
 #~ msgstr "Time running from last action"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:592
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:630
 msgid "Timeframe"
 msgstr "Timeframe"
 
@@ -13262,15 +13262,15 @@ msgid "to Trash?"
 msgstr "to Trash?"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:154
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:594
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2281
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2295
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:632
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2320
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2334
 #: src/pages/folders/components/DocumentDetailsView.tsx:2564
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "Today"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2001
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2040
 msgid "Today's Action Queue"
 msgstr "Today's Action Queue"
 
@@ -13313,7 +13313,7 @@ msgstr "Total Amount"
 msgid "Total Amount (Inv / PO)"
 msgstr "Total Amount (Inv / PO)"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:821
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:860
 msgid "Total AP"
 msgstr "Total AP"
 
@@ -13330,15 +13330,15 @@ msgstr "Total Credits Used"
 msgid "Total Due"
 msgstr "Total Due"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2365
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2404
 msgid "Total Invoices"
 msgstr "Total Invoices"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:117
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:138
 msgid "Total Outstanding"
 msgstr "Total Outstanding"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:123
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:144
 msgid "Total Paid"
 msgstr "Total Paid"
 
@@ -13362,7 +13362,7 @@ msgstr "Total Submitted"
 msgid "Total Value"
 msgstr "Total Value"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2373
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2412
 msgid "Touchless Rate"
 msgstr "Touchless Rate"
 
@@ -14198,7 +14198,7 @@ msgstr "Vendor identity mismatch."
 msgid "Vendor Name"
 msgstr "Vendor Name"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:2591
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:2630
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Vendors needing prompt outreach or query resolution"
 
@@ -14496,7 +14496,7 @@ msgstr "Where"
 #~ msgid "Where spend concentrates · vendor risk exposure"
 #~ msgstr "Where spend concentrates · vendor risk exposure"
 
-#: src/pages/dashboard/workflows/shared/components/Header.tsx:1092
+#: src/pages/dashboard/workflows/shared/components/Header.tsx:1131
 msgid "Which vendors carry the most risk exposure?"
 msgstr "Which vendors carry the most risk exposure?"
 
