@@ -1435,19 +1435,7 @@ const AnswerCardGroup = ({
         </div>
 
         <div className='flex shrink-0 items-center gap-2'>
-          <Tooltip content='Open' position='top'>
-            <button
-              className='grid place-items-center text-[var(--secondary-7)] transition-colors hover:text-[var(--primary-9)] focus-visible:outline-none'
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation()
-                onRepoSelect?.(group.name)
-                onGroupClick?.(group.type, group.id, group.name)
-              }}
-            >
-              <ExternalLink className='size-4' strokeWidth={2} />
-            </button>
-          </Tooltip>
+
           {canApply && (
             <Tooltip content={actionLabel} position='top'>
               <button
@@ -1481,10 +1469,7 @@ const AnswerCardGroup = ({
                 card={card}
                 key={`${card.title || 'card'}-${index}`}
                 nested
-                onCardClick={(c) => {
-                  onRepoSelect?.(c.title || group.name)
-                  onCardClick?.(c)
-                }}
+                onCardClick={onCardClick}
               />
             </div>
           ))}
