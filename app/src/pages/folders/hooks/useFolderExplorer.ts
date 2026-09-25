@@ -195,10 +195,18 @@ export function useFolderExplorer() {
 
   const setFileSearch = useCallback(
     (value: string, options?: FilterWriteOptions) => {
+      const wasAskAi = filterSourceRef.current === 'ask-ai'
       fileSearchRef.current = value
       if (options?.fromAskAi) markFilterSource('ask-ai')
       else if (options?.manual) markFilterSource('manual')
       setFileSearchState(value)
+
+      if (wasAskAi && options?.manual && !value.trim()) {
+        fileFiltersRef.current = {}
+        setFileFiltersState({})
+        folderFiltersRef.current = {}
+        setFolderFiltersState({})
+      }
     },
     [],
   )
@@ -215,10 +223,18 @@ export function useFolderExplorer() {
 
   const setFolderSearch = useCallback(
     (value: string, options?: FilterWriteOptions) => {
+      const wasAskAi = filterSourceRef.current === 'ask-ai'
       folderSearchRef.current = value
       if (options?.fromAskAi) markFilterSource('ask-ai')
       else if (options?.manual) markFilterSource('manual')
       setFolderSearchState(value)
+
+      if (wasAskAi && options?.manual && !value.trim()) {
+        fileFiltersRef.current = {}
+        setFileFiltersState({})
+        folderFiltersRef.current = {}
+        setFolderFiltersState({})
+      }
     },
     [],
   )
@@ -961,13 +977,8 @@ export function useFolderExplorer() {
           fileSearch: trimmedFile,
           syncTree: viewMode === 'grid',
         })
-      } catch (exception: any) {
-        setError(
-          exception?.message ||
-            (viewMode === 'list'
-              ? 'Unable to search files'
-              : 'Unable to search folders'),
-        )
+      } catch {
+        // Error is handled safely inside loadFolderContent
       }
     }, FOLDER_SEARCH_DEBOUNCE_MS)
 
