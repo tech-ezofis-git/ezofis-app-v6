@@ -1090,6 +1090,11 @@ msgstr "Semua {count} dokumen berjaya diserap dan diindeks."
 msgid "All Active"
 msgstr "Semua Aktif"
 
+#: src/pages/reports/components/OverviewTab.tsx:269
+#: src/pages/reports/components/OverviewTab.tsx:276
+#~ msgid "All Columns"
+#~ msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:890
 msgid "All conditions must match"
 msgstr "Semua syarat mesti sepadan"
@@ -2274,6 +2279,10 @@ msgstr "Pilih cara pengguna log masuk ke portal ini"
 msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 msgstr "Pilih cara aliran kerja percubaan, folder, pengguna dan permintaan anda dipindahkan — kekalkan semua, kekalkan konfigurasi sahaja atau mulakan semula."
 
+#: src/pages/reports/components/OverviewTab.tsx:300
+#~ msgid "Choose search column"
+#~ msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2833
 msgid "Choose signature"
 msgstr "Pilih tandatangan"
@@ -2345,7 +2354,7 @@ msgstr "Kosongkan pemetaan"
 #~ msgid "Clear queue"
 #~ msgstr "Kosongkan baris gilir"
 
-#: src/components/common/CustomFilter.tsx:1051
+#: src/components/common/CustomFilter.tsx:1054
 msgid "Clear search"
 msgstr ""
 
@@ -5854,7 +5863,7 @@ msgstr "Kebenaran Diberikan ({0})"
 msgid "Greater Than"
 msgstr "Lebih Besar Daripada"
 
-#: src/components/common/CustomFilter.tsx:1075
+#: src/components/common/CustomFilter.tsx:1078
 #: src/components/common/DynamicFilter.tsx:816
 msgid "Grid View"
 msgstr "Paparan Grid"
@@ -11080,7 +11089,7 @@ msgstr ""
 msgid "rows"
 msgstr "barisan"
 
-#: src/pages/reports/components/OverviewTab.tsx:233
+#: src/pages/reports/components/OverviewTab.tsx:332
 msgid "Rows"
 msgstr "Baris"
 
@@ -11340,7 +11349,7 @@ msgstr "SD (Jualan & Pemprosesan Pesanan)"
 
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 #: src/components/base/data-table/actions/TableSearch.tsx:193
-#: src/components/common/CustomFilter.tsx:1007
+#: src/components/common/CustomFilter.tsx:1010
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:359
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:363
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:397
@@ -11352,9 +11361,18 @@ msgstr "SD (Jualan & Pemprosesan Pesanan)"
 msgid "Search"
 msgstr "Cari"
 
+#. placeholder {0}: col.label
+#: src/pages/reports/components/OverviewTab.tsx:183
+msgid "Search {0}..."
+msgstr ""
+
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 msgid "Search {selectedColumnLabel}"
 msgstr "Cari {selectedColumnLabel}"
+
+#: src/pages/reports/components/OverviewTab.tsx:307
+#~ msgid "Search across all fields..."
+#~ msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Search AI"
@@ -11469,6 +11487,10 @@ msgstr "Cari borang..."
 msgid "Search icons"
 msgstr "Cari ikon"
 
+#: src/pages/reports/components/OverviewTab.tsx:271
+#~ msgid "Search in {0}..."
+#~ msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/requests/components/InboxList.tsx:1867
 msgid "Search invoice, supplier, PO..."
@@ -11525,7 +11547,6 @@ msgid "Search request types…"
 msgstr "Jenis permintaan carian…"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:203
-#: src/pages/reports/components/OverviewTab.tsx:195
 msgid "Search rows..."
 msgstr "Cari baris..."
 
@@ -13180,7 +13201,7 @@ msgstr ""
 msgid "Table Data"
 msgstr ""
 
-#: src/components/common/CustomFilter.tsx:1089
+#: src/components/common/CustomFilter.tsx:1092
 #: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "Paparan Jadual"
@@ -13453,7 +13474,7 @@ msgstr "Pautan portal ini tidak sah atau belum diterbitkan lagi."
 msgid "This related document cannot be removed."
 msgstr "Dokumen berkaitan ini tidak boleh dialih keluar."
 
-#: src/pages/reports/components/OverviewTab.tsx:185
+#: src/pages/reports/components/OverviewTab.tsx:287
 msgid "This report has no fields configured yet."
 msgstr "Laporan ini belum mempunyai medan yang dikonfigurasikan."
 
