@@ -670,7 +670,7 @@ export default function FolderSharePopover({
                     <div className='px-2 py-2'>
                       {showPressEnterPrompt && (
                         <button
-                          className='mb-2 flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--primary-4)] bg-[var(--primary-1)]/10 px-3 py-2 text-left transition-all hover:bg-[var(--primary-2)]/30'
+                          className='mb-2 flex w-full items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--primary-4)] bg-[var(--primary-1)]/10 px-3 py-2 text-left transition-all hover:bg-[var(--primary-2)]/30'
                           type='button'
                           onClick={() => {
                             const val = shareSearch.trim()
@@ -692,17 +692,17 @@ export default function FolderSharePopover({
                             setShareSearch('')
                           }}
                         >
-                          <Icon
-                            className='size-4 shrink-0 text-[var(--primary-9)]'
-                            name='lucide:plus'
-                          />
                           <div className='min-w-0 flex-1'>
-                            <p className='text-[12px] font-semibold text-[var(--primary-9)]'>
-                              Press Enter to add "{shareSearch.trim()}"
+                            <p className='text-[13px] font-medium text-[var(--primary-11)] truncate'>
+                              {shareSearch.trim()}
                             </p>
-                            <p className='text-[10px] text-[var(--gray-9)]'>
-                              Share with this external email address
-                            </p>
+                          </div>
+                          <div className='flex shrink-0 items-center gap-1 rounded border border-[var(--primary-3)] bg-surface px-1.5 py-0.5 text-[10px] font-medium text-[var(--primary-9)] shadow-sm'>
+                            <span>Press Enter</span>
+                            <Icon
+                              className='size-3'
+                              name='lucide:corner-down-left'
+                            />
                           </div>
                         </button>
                       )}

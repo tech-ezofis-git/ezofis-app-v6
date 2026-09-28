@@ -18,6 +18,8 @@ import AgentSummaryBoxes from '../request/components/generic-overview/AgentSumma
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
+import workflowsApiV6 from '@/api/v6/workflows'
+import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 
 interface Props {
   workflow: any
@@ -43,6 +45,17 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   )
   const [focusRequestId, setFocusRequestId] = useState(0)
 
+  const [createdInstanceId, setCreatedInstanceId] = useState<string | null>(null)
+  const [isStartingAgentWorkflow, setIsStartingAgentWorkflow] = useState(false)
+  const [agentUploadedFile, setAgentUploadedFile] = useState<File | null>(null)
+
+  const { data: requestData } = useRequestDetail(
+    workflow?.id,
+    createdInstanceId,
+    null,
+    true
+  )
+
   const isDocumentForm =
     workflow?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
     workflow?.workflowJson?.settings?.general?.initiateUsing?.type ===
@@ -66,6 +79,50 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     if (!str) return
     setActiveHighlightTerm(str)
     setFocusRequestId((id) => id + 1)
+  }
+
+  const startAgentWorkflow = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const file = files[0]
+    setAgentUploadedFile(file)
+    setIsStartingAgentWorkflow(true)
+
+    // Auto-select the first agent block to show the loading state to the user immediately
+    if (agentBlocks.length > 0) {
+      setSelectedAgentBlockId(agentBlocks[0].id)
+    }
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('context', '')
+      formData.append('envType', 'trial')
+
+      const { data, error } = await workflowsApiV6.startWorkflow(
+        workflow?.id,
+        formData,
+      )
+
+      if (error) {
+        throw new Error(String(error))
+      }
+
+      if (data) {
+        const parsedData = typeof data === 'string' ? JSON.parse(data) : data
+        const processId = parsedData?.instanceId
+        
+        if (processId) {
+          setCreatedInstanceId(String(processId))
+          workflowRefresh()
+        } else {
+          throw new Error('Instance ID not returned')
+        }
+      }
+    } catch (e: any) {
+      showToast({ message: e?.message || t`Failed to start workflow`, variant: 'error' })
+    } finally {
+      setIsStartingAgentWorkflow(false)
+    }
   }
 
   const {
@@ -173,7 +230,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         isSubmitting={isSubmitting}
         title={t`New Request`}
         onClose={onClose}
-        onSubmit={handleSubmit}
+        onSubmit={createdInstanceId ? undefined : handleSubmit}
       />
 
       {isLoadingForm ? (
@@ -195,19 +252,25 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         </AnimateFadeIn>
       ) : (
         <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
-          {isDocumentForm && uploadedFiles.length === 0 ? (
+          {isDocumentForm && uploadedFiles.length === 0 && !createdInstanceId && !isStartingAgentWorkflow ? (
             <DocumentFormUpload
-              isUploading={isUploadingAttachment || isExtractingOcr}
+              isUploading={isUploadingAttachment || isExtractingOcr || isStartingAgentWorkflow}
               workflow={workflow}
-              onFilesSelected={addAttachment}
+              onFilesSelected={(files) => {
+                if (agentBlocks.length > 0) {
+                  startAgentWorkflow(files)
+                } else {
+                  addAttachment(files)
+                }
+              }}
             />
-          ) : isDocumentForm && uploadedFiles.length > 0 ? (
+          ) : isDocumentForm && (uploadedFiles.length > 0 || createdInstanceId || isStartingAgentWorkflow) ? (
             <div className='flex min-w-0 flex-1 gap-5 overflow-hidden p-5 bg-gray-1'>
               <div className='flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
-                  files={uploadedFiles}
+                  files={agentUploadedFile ? [{ key: 'agent-file', fileName: agentUploadedFile.name, rawFile: agentUploadedFile }] : uploadedFiles}
                   focusRequestId={focusRequestId}
                   onSelectKey={setActiveFileKey}
                 />
@@ -219,7 +282,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       agentBlocks={agentBlocks}
                       selectedAgentBlockId={selectedAgentBlockId}
                       onAgentClick={setSelectedAgentBlockId}
-                      requestData={null}
+                      requestData={requestData || null}
                     />
                   </div>
                 )}
@@ -258,7 +321,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       <AgentDetailPlaceholder
                         agentBlock={selectedAgentBlock}
                         onBack={() => setSelectedAgentBlockId(null)}
-                        requestData={null}
+                        requestData={requestData || null}
                       />
                     </div>
                   ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
@@ -341,7 +404,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
-                  files={uploadedFiles}
+                  files={agentUploadedFile ? [{ key: 'agent-file', fileName: agentUploadedFile.name, rawFile: agentUploadedFile }] : uploadedFiles}
                   focusRequestId={focusRequestId}
                   onSelectKey={setActiveFileKey}
                 />

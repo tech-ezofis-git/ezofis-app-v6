@@ -158,12 +158,20 @@ const DashboardPage = () => {
         } else if (!repositoryId || repositoryId === 'ap') {
           const apOpt = mapped.find(
             (opt) =>
+              opt.kind === 'workflow' &&
+              /accounts payable/i.test(opt.label)
+          ) || mapped.find(
+            (opt) =>
               opt.kind === 'repository' &&
               (/accounts payable/i.test(opt.label) || opt.value === 'ap'),
           )
           if (apOpt) {
             setSelectedSourceId(apOpt.selectId)
-            setRepositoryId(apOpt.value)
+            if (apOpt.kind === 'repository') {
+              setRepositoryId(apOpt.value)
+            } else {
+              setRepositoryId('')
+            }
           } else if (mapped[0]) {
             setSelectedSourceId(mapped[0].selectId)
             if (mapped[0].kind === 'repository') {
@@ -243,11 +251,10 @@ const DashboardPage = () => {
   }, [activeRepositoryId, activeWorkflowId, savedHtmlHeader, session?.tenantId])
 
   const isApDashboard =
-    !isWorkflowSource &&
-    (!activeRepositoryId ||
-      /accounts payable/i.test(selectedName) ||
-      selectedName.toLowerCase() === 'ap' ||
-      activeRepositoryId === 'ap')
+    (!activeRepositoryId && !activeWorkflowId) ||
+    /accounts payable/i.test(selectedName) ||
+    selectedName.toLowerCase() === 'ap' ||
+    activeRepositoryId === 'ap'
 
   const isCustomerDocuments =
     !isWorkflowSource &&

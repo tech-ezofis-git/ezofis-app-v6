@@ -1,8 +1,8 @@
 const MAX_SIZE = 50 * 1024 * 1024 // 50MB
 
-// Document & Media Types accepted for DMS: PDF, Office, Text, Images, Archives
+// Document & Media Types accepted for DMS: PDF, Office, Text, Images, Archives, Emails
 const DOCUMENT_ACCEPT =
-  '.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.rtf,.png,.jpg,.jpeg,.tiff,.tif,.webp,.svg,.bmp,.zip,.rar,.7z,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png,image/jpeg,image/tiff,image/webp,image/svg+xml,application/zip'
+  '.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.rtf,.png,.jpg,.jpeg,.tiff,.tif,.webp,.svg,.bmp,.zip,.rar,.7z,.eml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png,image/jpeg,image/tiff,image/webp,image/svg+xml,application/zip,message/rfc822'
 
 // Invoice (PDF)
 const PDF_ACCEPT = 'application/pdf'
@@ -52,6 +52,7 @@ const isSupportedDocument = (file: File): boolean => {
     '7z',
     'json',
     'xml',
+    'eml',
   ]
   return allowedExts.includes(ext) || isPdf(file) || isImage(file) || isCsv(file) || isXlsx(file) || Boolean(file.type)
 }
