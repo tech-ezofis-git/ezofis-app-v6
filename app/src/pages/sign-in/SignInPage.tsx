@@ -1,7 +1,8 @@
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
+import authUserStore from '@/stores/authUserStore'
 import ShareSignInForm from './components/ShareSignInForm'
 import SignInForm from './components/SignInForm'
 import SignRequestSignInForm from './components/SignRequestSignInForm'
@@ -23,6 +24,15 @@ const SignInPage = () => {
     search?.isnew === 'true' ||
     search?.isNew === true ||
     search?.isnew === true
+
+  useEffect(() => {
+    if (
+      (shareToken || inviteToken) &&
+      authUserStore.getState().isAuthenticated
+    ) {
+      authUserStore.getState().resetAuthState()
+    }
+  }, [shareToken, inviteToken])
 
   // Share + sign-request use dedicated invite forms (centered AuthLayout).
   // Plain /sign-in uses the standard app SignInForm (two-column AuthLayout).

@@ -12,12 +12,14 @@ import formApi from '@/api/form/form'
 import { uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
+  deleteStagedFiles,
   fetchStageFileBlob,
   indexStageFile,
   loadStageFile,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -701,6 +703,8 @@ export default function Upload({
   const [openFileId, setOpenFileId] = useState<string | null>(null)
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
   const [isRestoringQueue, setIsRestoringQueue] = useState(false)
+  const [isDeletingStageFile, setIsDeletingStageFile] = useState(false)
+  const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
 
   const repositoryFields = useMemo(() => {
     return [...(repositoryData?.fields ?? [])].sort((a, b) => {
@@ -1392,22 +1396,56 @@ export default function Upload({
     if (invoiceInputRef.current) invoiceInputRef.current.value = ''
   }
 
-  const handleRemoveFromQueue = (id: string) => {
+  const handleDeleteStageFile = async (id: string) => {
     const entry = queue.find((item) => item.id === id)
     if (!entry || entry.status === 'indexing') return
 
-    if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl)
+    setIsDeletingStageFile(true)
+    try {
+      const activeRepositoryId = String(
+        repositoryId || repositoryData?.id || '',
+      )
+      if (entry.stageFileId && activeRepositoryId) {
+        const { error } = await deleteStagedFiles({
+          fileIds: [entry.stageFileId],
+          repositoryId: activeRepositoryId,
+        })
+        if (error) {
+          showToast({
+            message: String(error),
+            variant: 'error',
+          })
+          return
+        }
+      }
 
-    const remaining = queue.filter((item) => item.id !== id)
-    setQueue(remaining)
+      showToast({
+        message: t`Staged file deleted.`,
+        variant: 'success',
+      })
 
-    if (openFileId === id) {
-      const nextOpen =
-        remaining.find((item) => item.status !== 'indexed') ??
-        remaining[0] ??
-        null
-      setOpenFileId(nextOpen ? nextOpen.id : null)
+      if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl)
+
+      const remaining = queue.filter((item) => item.id !== id)
+      setQueue(remaining)
+
+      if (openFileId === id) {
+        const nextOpen =
+          remaining.find((item) => item.status !== 'indexed') ??
+          remaining[0] ??
+          null
+        setOpenFileId(nextOpen ? nextOpen.id : null)
+      }
+      setDeleteStageConfirmOpen(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsDeletingStageFile(false)
     }
+  }
+
+  const handleRemoveFromQueue = (id: string) => {
+    void handleDeleteStageFile(id)
   }
 
   const handleRetryOcr = (id: string) => {
@@ -2454,7 +2492,7 @@ export default function Upload({
                 {
                   color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
                   icon: 'tabler:sparkles',
-                  sub: t`Industry-leading extraction accuracy`,
+                  sub: t`Industry-leading extraction accuracy and field precision`,
                   title: t`100% Accuracy`,
                 },
                 {
@@ -2465,26 +2503,28 @@ export default function Upload({
                 },
               ].map((item, idx) => (
                 <AnimateEntrancePop delay={0.4 + idx * 0.1} key={idx}>
-                  <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-6 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
-                    <div
-                      className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}
-                    >
-                      {item.icon === 'tabler:sparkles' ? (
-                        <AiBrandIcon
-                          className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                          variant='outline-purple'
-                        />
-                      ) : (
-                        <Icon
-                          className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                          name={item.icon}
-                        />
-                      )}
+                  <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-5 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
+                    <div className='flex items-center gap-3'>
+                      <div
+                        className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} transition-transform duration-300 group-hover:scale-110`}
+                      >
+                        {item.icon === 'tabler:sparkles' ? (
+                          <AiBrandIcon
+                            className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                            variant='outline-purple'
+                          />
+                        ) : (
+                          <Icon
+                            className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                            name={item.icon}
+                          />
+                        )}
+                      </div>
+                      <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
+                        {item.title}
+                      </h4>
                     </div>
-                    <h4 className='text-sm font-medium tracking-tight text-[var(--gray-13)]'>
-                      {item.title}
-                    </h4>
-                    <p className='mt-2 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
+                    <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
                       {item.sub}
                     </p>
                   </div>
@@ -2535,90 +2575,103 @@ export default function Upload({
         ) : (
           <>
             <div className='flex shrink-0 items-center justify-between gap-4 rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-2.5 shadow-xs'>
-              {PROCESS_STEP_KEYS.map((step, index, list) => {
-                const isComplete = isStepComplete(
-                  index,
-                  activeStepIndex,
-                  activeEntry?.exportStatus ?? 'idle',
-                )
-                const isActive = index === activeStepIndex && !isComplete
-                const isAnalysisStep = step === 'Analysis'
-                const isFieldsStep = step === 'Fields'
-                const isDoneStep = step === 'Done'
-                const showStepSpinner =
-                  (isAnalysisStep && isAnalyzing) || (isDoneStep && isExporting)
+              <div className='flex shrink-0 items-center border-r border-[var(--gray-4)] pr-4'>
+                <button
+                  className='flex items-center gap-1.5 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:text-[var(--primary-11)] active:scale-95'
+                  type='button'
+                  onClick={onBack}
+                >
+                  <Icon className='size-4 text-[var(--gray-10)]' name='lucide:arrow-left' />
+                  <span>{t`Back`}</span>
+                </button>
+              </div>
 
-                return (
-                  <div
-                    className='flex min-w-0 flex-1 items-center gap-3 last:flex-none'
-                    key={step}
-                  >
-                    <div className='flex min-w-0 items-center gap-3'>
-                      <div
-                        className={[
-                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-colors',
-                          isComplete
-                            ? 'bg-[#10B981]'
-                            : isActive
-                              ? 'bg-[var(--primary-9)]'
-                              : 'bg-[var(--gray-4)] text-[var(--gray-9)]',
-                        ].join(' ')}
-                      >
-                        {isComplete ? (
-                          <CheckCircle2 size={18} strokeWidth={2.5} />
-                        ) : showStepSpinner ? (
-                          <Icon
-                            className='size-4 animate-spin text-white'
-                            name='tabler:loader-2'
-                          />
-                        ) : (
-                          <span className='text-sm font-bold'>{index + 1}</span>
-                        )}
-                      </div>
+              <div className='flex min-w-0 flex-1 items-center gap-4'>
+                {PROCESS_STEP_KEYS.map((step, index, list) => {
+                  const isComplete = isStepComplete(
+                    index,
+                    activeStepIndex,
+                    activeEntry?.exportStatus ?? 'idle',
+                  )
+                  const isActive = index === activeStepIndex && !isComplete
+                  const isAnalysisStep = step === 'Analysis'
+                  const isFieldsStep = step === 'Fields'
+                  const isDoneStep = step === 'Done'
+                  const showStepSpinner =
+                    (isAnalysisStep && isAnalyzing) || (isDoneStep && isExporting)
 
-                      <div className='min-w-0'>
-                        <span
+                  return (
+                    <div
+                      className='flex min-w-0 flex-1 items-center gap-3 last:flex-none'
+                      key={step}
+                    >
+                      <div className='flex min-w-0 items-center gap-3'>
+                        <div
                           className={[
-                            'block text-sm font-bold whitespace-nowrap',
-                            isComplete || isActive
-                              ? 'text-[var(--gray-13)]'
-                              : 'text-[var(--gray-9)]',
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-colors',
+                            isComplete
+                              ? 'bg-[#10B981]'
+                              : isActive
+                                ? 'bg-[var(--primary-9)]'
+                                : 'bg-[var(--gray-4)] text-[var(--gray-9)]',
                           ].join(' ')}
                         >
-                          {processStepLabels[step]}
-                        </span>
+                          {isComplete ? (
+                            <CheckCircle2 size={18} strokeWidth={2.5} />
+                          ) : showStepSpinner ? (
+                            <Icon
+                              className='size-4 animate-spin text-white'
+                              name='tabler:loader-2'
+                            />
+                          ) : (
+                            <span className='text-sm font-bold'>{index + 1}</span>
+                          )}
+                        </div>
 
-                        {isAnalysisStep && isAnalyzing ? (
-                          <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                            {t`Analyzing document...`}
+                        <div className='min-w-0'>
+                          <span
+                            className={[
+                              'block text-sm font-bold whitespace-nowrap',
+                              isComplete || isActive
+                                ? 'text-[var(--gray-13)]'
+                                : 'text-[var(--gray-9)]',
+                            ].join(' ')}
+                          >
+                            {processStepLabels[step]}
                           </span>
-                        ) : null}
 
-                        {isFieldsStep && isFieldsPhase ? (
-                          <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                            {t`Review fields before export...`}
-                          </span>
-                        ) : null}
+                          {isAnalysisStep && isAnalyzing ? (
+                            <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                              {t`Analyzing document...`}
+                            </span>
+                          ) : null}
 
-                        {isDoneStep && isExporting ? (
-                          <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                            {t`Exporting...`}
-                          </span>
-                        ) : null}
+                          {isFieldsStep && isFieldsPhase ? (
+                            <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                              {t`Review fields before export...`}
+                            </span>
+                          ) : null}
+
+                          {isDoneStep && isExporting ? (
+                            <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                              {t`Exporting...`}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
 
-                    {index < list.length - 1 ? (
-                      <div
-                        className={[
-                          'h-[2px] min-w-[60px] flex-1 rounded-full transition-colors',
-                          isComplete ? 'bg-[#10B981]' : 'bg-[var(--gray-4)]',
-                        ].join(' ')}
-                      />
-                    ) : null}
-                  </div>
-                )
-              })}
+                      {index < list.length - 1 ? (
+                        <div
+                          className={[
+                            'h-[2px] min-w-[60px] flex-1 rounded-full transition-colors',
+                            isComplete ? 'bg-[#10B981]' : 'bg-[var(--gray-4)]',
+                          ].join(' ')}
+                        />
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div className='grid h-full min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
@@ -2749,14 +2802,17 @@ export default function Upload({
                     )}
 
                     {!isExporting ? (
-                      <button
-                        className='text-xs font-semibold text-[var(--gray-9)] transition-colors hover:text-[var(--primary-11)] disabled:cursor-not-allowed disabled:opacity-50'
-                        disabled={isExporting}
-                        type='button'
-                        onClick={() => handleRemoveFromQueue(activeEntry.id)}
-                      >
-                        {t`Cancel`}
-                      </button>
+                      <Tooltip content={t`Delete staged file`} position='top'>
+                        <button
+                          aria-label={t`Delete staged file`}
+                          className='flex h-8 w-8 items-center justify-center rounded-lg text-red-9 transition-all hover:bg-red-2 hover:text-red-10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+                          disabled={isExporting || isDeletingStageFile}
+                          type='button'
+                          onClick={() => setDeleteStageConfirmOpen(true)}
+                        >
+                          <Icon className='size-4' name='lucide:trash-2' />
+                        </button>
+                      </Tooltip>
                     ) : null}
 
                     <Button
@@ -2878,6 +2934,22 @@ export default function Upload({
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to delete this staged file?`}
+        isConfirming={isDeletingStageFile}
+        opened={deleteStageConfirmOpen}
+        title={t`Delete Staged File`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingStageFile) setDeleteStageConfirmOpen(false)
+        }}
+        onConfirm={() => {
+          if (activeEntry) void handleDeleteStageFile(activeEntry.id)
+        }}
+      />
     </AnimateFadeIn>
   )
 }
