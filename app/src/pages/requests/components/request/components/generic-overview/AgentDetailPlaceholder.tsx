@@ -3,19 +3,30 @@ import { useLingui } from '@lingui/react/macro'
 import { ArrowLeft } from 'lucide-react'
 import React from 'react'
 import cn from '@/utils/cn'
+import { QuoteAgentResultView } from './QuoteLineItemsTable'
 import type { AgentBlock } from './AgentSummaryBoxes'
 
 interface AgentDetailPlaceholderProps {
   agentBlock: AgentBlock
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  formModel?: Record<string, any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rawWorkflowData?: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requestData: any
+  viewOnly?: boolean
   onBack: () => void
+  onFieldChange?: (fieldId: string, value: any) => void
 }
 
 const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   agentBlock,
-  requestData,
+  formModel,
   onBack,
+  onFieldChange,
+  rawWorkflowData,
+  requestData,
+  viewOnly,
 }) => {
   const { t } = useLingui()
   const label = agentBlock.settings?.label || 'Agent Details'
@@ -24,7 +35,9 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const isQualify =
     agentBlock.settings?.subtype === 'QUALIFY' || label.includes('Qualify')
   const isQuote =
-    agentBlock.settings?.subtype === 'QUOTE' || label.includes('Quote')
+    agentBlock.settings?.subtype === 'QUOTE' ||
+    agentBlock.type === 'QUOTE_AGENT' ||
+    label.includes('Quote')
   const isDocGen =
     agentBlock.settings?.subtype === 'DOCUMENT_GENERATE' ||
     label.includes('Document Generate')
@@ -268,203 +281,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             )
           })()
         ) : isQuote && requestData?.quoteAgentResponse?.quote_result ? (
-          (() => {
-            const result = requestData.quoteAgentResponse.quote_result
-            return (
-              <div className='flex flex-col gap-6'>
-                {/* Header info */}
-                <div className='flex flex-wrap items-start justify-between gap-4'>
-                  <div>
-                    <h3 className='text-lg font-bold text-gray-12'>
-                      {result.Project || 'Unknown Project'}
-                    </h3>
-                    <p className='mt-1 flex gap-2 text-sm text-gray-9'>
-                      <span>Order: {result['Order Number'] || '-'}</span>
-                      <span>•</span>
-                      <span>{result['Invoice Type'] || 'Quotation'}</span>
-                      <span>•</span>
-                      <span>{result.Date || '-'}</span>
-                    </p>
-                  </div>
-                  <div className='flex flex-col items-end gap-1'>
-                    <div className='text-xl font-bold text-[var(--primary-11)]'>
-                      $
-                      {result.Total?.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}
-                    </div>
-                    <div className='text-xs font-medium text-gray-9'>
-                      Total Amount
-                    </div>
-                  </div>
-                </div>
-
-                {/* Line Items */}
-                {result['Line Item'] && result['Line Item'].length > 0 && (
-                  <div className='flex flex-col gap-3'>
-                    <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
-                      <Icon
-                        className='h-4 w-4 text-[var(--primary-9)]'
-                        icon='tabler:shopping-cart'
-                      />
-                      Line Items ({result['Line Item'].length})
-                    </h4>
-                    <div className='overflow-x-auto rounded-lg border border-gray-3'>
-                      <table className='w-full text-left text-sm'>
-                        <thead className='bg-gray-1 text-xs text-gray-11'>
-                          <tr>
-                            <th className='p-3 font-semibold'>Product</th>
-                            <th className='p-3 font-semibold'>Description</th>
-                            <th className='p-3 text-center font-semibold'>
-                              Qty
-                            </th>
-                            <th className='p-3 text-right font-semibold'>
-                              Price
-                            </th>
-                            <th className='p-3 text-right font-semibold'>
-                              Subtotal
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className='divide-y divide-gray-2 bg-surface'>
-                          {result['Line Item'].map(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (item: any, i: number) => (
-                            <React.Fragment key={i}>
-                              <tr className='group'>
-                                <td className='p-3 align-top font-medium text-gray-12'>
-                                  <div className='flex items-center gap-2'>
-                                    {item.Product}
-                                    {item['Needs Engineering Review'] && (
-                                      <span title='Needs Engineering Review' className='flex'>
-                                        <Icon
-                                          className='h-4 w-4 shrink-0 text-orange-9'
-                                          icon='tabler:alert-triangle'
-                                        />
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className='mt-0.5 text-xs text-gray-9'>
-                                    {item.Category}
-                                  </div>
-                                </td>
-                                <td className='p-3 align-top text-gray-11'>
-                                  {item.Description}
-                                </td>
-                                <td className='p-3 text-center align-top text-gray-12'>
-                                  {item.Qty}
-                                </td>
-                                <td className='p-3 text-right align-top text-gray-12'>
-                                  $
-                                  {item.Price?.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                  })}
-                                </td>
-                                <td className='p-3 text-right align-top font-semibold text-gray-12'>
-                                  $
-                                  {item.Subtotal?.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                  })}
-                                </td>
-                              </tr>
-                              {item.Note && (
-                                <tr>
-                                  <td className='px-3 pt-0 pb-3' colSpan={5}>
-                                    <div className='flex items-start gap-2 rounded border border-orange-3 bg-orange-2/30 p-2 text-xs text-gray-10 text-orange-11'>
-                                      <Icon
-                                        className='mt-0.5 h-4 w-4 shrink-0'
-                                        icon='tabler:info-circle'
-                                      />
-                                      <span>{item.Note}</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Summary Totals */}
-                <div className='flex justify-end border-t border-gray-3 pt-4'>
-                  <div className='flex w-full max-w-sm flex-col gap-2 text-sm'>
-                    <div className='flex justify-between text-gray-11'>
-                      <span>Subtotal</span>
-                      <span className='font-medium text-gray-12'>
-                        $
-                        {result.Subtotal?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className='flex justify-between text-gray-11'>
-                      <span>Freight</span>
-                      <span className='font-medium text-gray-12'>
-                        $
-                        {result.Freight?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className='flex justify-between text-gray-11'>
-                      <span>HST</span>
-                      <span className='font-medium text-gray-12'>
-                        $
-                        {result.Hst?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className='mt-2 flex justify-between border-t border-gray-2 pt-2 text-base font-bold text-gray-12'>
-                      <span>Total</span>
-                      <span className='text-[var(--primary-11)]'>
-                        $
-                        {result.Total?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Assumptions */}
-                {result.Assumptions && result.Assumptions.length > 0 && (
-                  <div className='flex flex-col gap-2 border-t border-gray-3 pt-2'>
-                    <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
-                      <Icon
-                        className='h-4 w-4 text-orange-9'
-                        icon='tabler:bulb'
-                      />
-                      Assumptions & Rules Applied
-                    </h4>
-                    <ul className='flex list-disc flex-col gap-1 pl-5'>
-                      {result.Assumptions.map((note: string, i: number) => (
-                        <li className='text-xs text-gray-10' key={i}>
-                          {note}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Remarks */}
-                {result.Remarks && (
-                  <div className='flex flex-col gap-2 border-t border-gray-3 pt-2'>
-                    <h4 className='text-sm font-semibold text-gray-12'>
-                      Remarks
-                    </h4>
-                    <p className='text-xs leading-relaxed text-gray-10'>
-                      {result.Remarks}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )
-          })()
+          <QuoteAgentResultView
+            readOnly={Boolean(viewOnly) && !onFieldChange}
+            result={requestData.quoteAgentResponse.quote_result}
+            workflow={rawWorkflowData}
+            onFieldChange={onFieldChange}
+          />
         ) : (
           <div className='flex flex-col items-center justify-center gap-3 py-10 text-center'>
             <Icon className='h-10 w-10 text-gray-7' icon='lucide:hammer' />

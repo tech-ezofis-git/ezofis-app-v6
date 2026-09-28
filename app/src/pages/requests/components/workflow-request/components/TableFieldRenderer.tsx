@@ -64,31 +64,72 @@ const parseColumnOptions = (col: TableColumn): { id: string; name: string }[] =>
     .filter(Boolean)
     .map((opt) => ({ id: opt, name: opt }))
 
+const normalizeHeaderKey = (value: string) =>
+  value.trim().toLowerCase().replace(/[\s._-]+/g, '')
+
+const HEADER_ALIAS_GROUPS = [
+  ['qty', 'quantity', 'qnty'],
+  ['price', 'rate', 'unitprice'],
+  ['subtotal', 'amount', 'lineamount', 'linetotal', 'extended'],
+  ['product', 'item', 'itemname', 'sku'],
+  ['description', 'desc', 'details', 'itemdescription'],
+]
+
+const headerLookupKeys = (header: string) => {
+  const normalized = normalizeHeaderKey(header)
+  const group = HEADER_ALIAS_GROUPS.find((keys) => keys.includes(normalized))
+  return group || [normalized]
+}
+
+const isDescriptionColumn = (col: { name?: string; id?: string }) => {
+  const keys = [col.name, col.id].filter(Boolean).map((v) => String(v))
+  return keys.some((key) => {
+    const normalized = normalizeHeaderKey(key)
+    return (
+      normalized.includes('description') ||
+      normalized === 'desc' ||
+      normalized === 'details'
+    )
+  })
+}
+
+export const mapExternalRowsToTableColumns = (
+  externalRows: Record<string, any>[],
+  tableColumns: Array<{ id: string; name?: string }>,
+): Record<string, any>[] => {
+  const columnByHeader = new Map<string, string>()
+  tableColumns.forEach((col) => {
+    headerLookupKeys(col.name || '').forEach((key) => {
+      if (key && !columnByHeader.has(key)) columnByHeader.set(key, col.id)
+    })
+    headerLookupKeys(col.id || '').forEach((key) => {
+      if (key && !columnByHeader.has(key)) columnByHeader.set(key, col.id)
+    })
+  })
+  return externalRows.map((row) => {
+    const mapped: Record<string, any> = { _rowId: generateRowId() }
+    Object.entries(row || {}).forEach(([header, cellVal]) => {
+      if (header === '_rowId' || header === '_approved') {
+        mapped[header] = cellVal
+        return
+      }
+      const colId = headerLookupKeys(header)
+        .map((key) => columnByHeader.get(key))
+        .find(Boolean)
+      if (colId) mapped[colId] = cellVal
+    })
+    return mapped
+  })
+}
+
 interface Props {
   field: any
   ocrLineItems?: Record<string, any>[]
   readOnly?: boolean
   required?: boolean
+  showRowApprove?: boolean
   value?: Array<Record<string, any>>
   onChange: (rows: Record<string, any>[]) => void
-}
-
-const mapExternalRowsToTableColumns = (
-  externalRows: Record<string, any>[],
-  tableColumns: TableColumn[],
-): Record<string, any>[] => {
-  const normalize = (s: string) => s.trim().toLowerCase()
-  const columnByHeader = new Map(
-    tableColumns.map((col) => [normalize(col.name || ''), col.id]),
-  )
-  return externalRows.map((row) => {
-    const mapped: Record<string, any> = { _rowId: generateRowId() }
-    Object.entries(row || {}).forEach(([header, cellVal]) => {
-      const colId = columnByHeader.get(normalize(header))
-      if (colId) mapped[colId] = cellVal
-    })
-    return mapped
-  })
 }
 
 // Calculated columns can reference OTHER calculated columns in the same row
@@ -310,6 +351,7 @@ const TableFieldRenderer = ({
   ocrLineItems,
   readOnly,
   required,
+  showRowApprove,
   value,
   onChange,
 }: Props) => {
@@ -419,6 +461,35 @@ const TableFieldRenderer = ({
     const next = rows.filter((_, i) => i !== rowIndex)
     onChange(next.length > 0 ? next : [{ _rowId: generateRowId() }])
   }
+
+  const handleApproveRow = (rowIndex: number) => {
+    const next = rows.map((row, i) => {
+      if (i !== rowIndex) return row
+      const cleared: Record<string, any> = { ...row, _approved: true }
+      tableColumns.forEach((col) => {
+        if (isDescriptionColumn(col)) {
+          cleared[col.id] = ''
+          if (col.name) cleared[col.name] = ''
+        }
+      })
+      Object.keys(cleared).forEach((key) => {
+        if (key === '_rowId' || key === '_approved') return
+        const normalized = normalizeHeaderKey(key)
+        if (
+          normalized.includes('description') ||
+          normalized === 'desc' ||
+          normalized === 'details'
+        ) {
+          cleared[key] = ''
+        }
+      })
+      return cleared
+    })
+    onChange(next)
+  }
+
+  const showActionColumn =
+    (!readOnly && rowsType === 'ON_DEMAND') || (showRowApprove && !readOnly)
 
   const toggleRowSelected = (rowId: string) => {
     setSelectedRowIds((prev) => {
@@ -672,9 +743,9 @@ const TableFieldRenderer = ({
                   <span className='truncate'>{col.name || 'Column'}</span>
                 </Th>
               ))}
-              {!readOnly && rowsType === 'ON_DEMAND' && (
-                <Th className='w-10 px-2 py-2 text-center text-11 font-bold text-gray-10'>
-                  <span className='sr-only'>{t`Actions`}</span>
+              {showActionColumn && (
+                <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
+                  {showRowApprove ? t`Approve` : <span className='sr-only'>{t`Actions`}</span>}
                 </Th>
               )}
             </Tr>
@@ -699,7 +770,7 @@ const TableFieldRenderer = ({
                       <div className='h-4 animate-pulse rounded-full bg-[var(--gray-3)] w-5/6' />
                     </Td>
                   ))}
-                  {!readOnly && rowsType === 'ON_DEMAND' && (
+                  {showActionColumn && (
                     <Td className='px-2 py-3 text-center align-middle'>
                       <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
                     </Td>
@@ -713,7 +784,7 @@ const TableFieldRenderer = ({
               const resolvedRow = resolvedRows[rowIndex] || row
               return (
                 <Tr
-                  className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                  className='group border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
                   key={rowId}
                 >
                   {rowSelection !== 'NONE' && (
@@ -735,7 +806,7 @@ const TableFieldRenderer = ({
                     <Td className='p-1.5 align-middle' key={col.id}>
                       {renderCellInput(
                         col,
-                        resolvedRow[col.id],
+                        resolvedRow[col.id] ?? resolvedRow[col.name],
                         (cellVal) =>
                           handleCellChange(rowIndex, col.id, cellVal),
                         readOnly,
@@ -743,16 +814,44 @@ const TableFieldRenderer = ({
                       )}
                     </Td>
                   ))}
-                  {!readOnly && rowsType === 'ON_DEMAND' && (
+                  {showActionColumn && (
                     <Td className='px-1.5 py-1 text-center align-middle'>
-                      <IconButton
-                        aria-label={t`Delete row`}
-                        color='red'
-                        icon='lucide:trash-2'
-                        size='xs'
-                        variant='ghost'
-                        onClick={() => handleDeleteRow(rowIndex)}
-                      />
+                      <div className='flex items-center justify-center gap-1'>
+                        {showRowApprove &&
+                          (row._approved ? (
+                            <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
+                              <Icon
+                                height={12}
+                                name='lucide:check'
+                                width={12}
+                              />
+                              {t`Approved`}
+                            </span>
+                          ) : (
+                            <button
+                              className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 opacity-80 transition-all group-hover:opacity-100 hover:bg-green-3 active:scale-95'
+                              type='button'
+                              onClick={() => handleApproveRow(rowIndex)}
+                            >
+                              <Icon
+                                height={12}
+                                name='lucide:check'
+                                width={12}
+                              />
+                              {t`Approve`}
+                            </button>
+                          ))}
+                        {!readOnly && rowsType === 'ON_DEMAND' && (
+                          <IconButton
+                            aria-label={t`Delete row`}
+                            color='red'
+                            icon='lucide:trash-2'
+                            size='xs'
+                            variant='ghost'
+                            onClick={() => handleDeleteRow(rowIndex)}
+                          />
+                        )}
+                      </div>
                     </Td>
                   )}
                 </Tr>
@@ -774,7 +873,7 @@ const TableFieldRenderer = ({
                       : ''}
                   </Td>
                 ))}
-                {!readOnly && rowsType === 'ON_DEMAND' && <Td />}
+                {showActionColumn && <Td />}
               </Tr>
             )}
           </Tbody>

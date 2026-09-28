@@ -373,7 +373,10 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                     <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
                       <AgentDetailPlaceholder
                         agentBlock={selectedAgentBlock}
+                        formModel={formModel}
                         onBack={() => setSelectedAgentBlockId(null)}
+                        onFieldChange={setFieldValue}
+                        rawWorkflowData={workflow}
                         requestData={requestData || null}
                       />
                     </div>
