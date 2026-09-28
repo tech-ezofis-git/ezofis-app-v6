@@ -406,6 +406,44 @@ export function FolderExplorer() {
     [buildStageFileIndexPayload, refreshData, t],
   )
 
+  const handleDeleteArchivedFile = useCallback(
+    async (fileId: string) => {
+      const targetId = String(fileId || '').trim()
+      const file = files.find((f) => f.id === targetId)
+      const repositoryId = String(
+        file?.repositoryId || resolvedRepositoryId || '',
+      ).trim()
+
+      if (!targetId || !repositoryId) {
+        showToast({
+          message: t`Couldn't delete this document. Missing document or repository ID.`,
+          variant: 'error',
+        })
+        throw new Error('missing file id or repository id')
+      }
+
+      const { error } = await folderApi.deleteRepositoryItem({
+        itemId: targetId,
+        repositoryId,
+      })
+
+      if (error) {
+        showToast({
+          message: String(error),
+          variant: 'error',
+        })
+        throw new Error(error)
+      }
+
+      showToast({
+        message: t`Document deleted successfully.`,
+        variant: 'success',
+      })
+      await refreshData()
+    },
+    [files, refreshData, resolvedRepositoryId, t],
+  )
+
   const selectRepositoryById = useCallback(
     (repositoryId: string, label = 'Repository') => {
       const repoId = String(repositoryId || '').trim()
@@ -930,6 +968,7 @@ export function FolderExplorer() {
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
+          onDeleteFile={handleDeleteArchivedFile}
           onDeleteStagedFile={handleDeleteStagedFile}
           onDeleteStagedFiles={handleDeleteStagedFiles}
           onExportStagedFile={handleExportStagedFile}
@@ -1035,6 +1074,7 @@ export function FolderExplorer() {
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => handleFileAction(id, 'workflow')}
+              onDeleteFile={handleDeleteArchivedFile}
               onDeleteStagedFile={handleDeleteStagedFile}
               onDeleteStagedFiles={handleDeleteStagedFiles}
               onExportStagedFile={handleExportStagedFile}

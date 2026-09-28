@@ -14,6 +14,7 @@ import {
   authApiV6,
   type BrowseChildrenDto,
   type BrowseStructureDto,
+  deleteRepositoryItem,
   deleteRepositoryItemRelatedSaved,
   getRepositoryItemComments,
   getRepositoryItemAiSummary,
@@ -297,8 +298,8 @@ const defaultItemPageSize = 50
 const throwIfCanceled = (result: { canceled?: boolean }) => {
   if (!result.canceled) return
   const cancelError = new Error('canceled')
-  ;(cancelError as any).code = 'ERR_CANCELED'
-  ;(cancelError as any).name = 'CanceledError'
+    ; (cancelError as any).code = 'ERR_CANCELED'
+    ; (cancelError as any).name = 'CanceledError'
   throw cancelError
 }
 
@@ -927,12 +928,12 @@ export const folderApi = {
           ? err
           : err && typeof err === 'object'
             ? String(
-                (err as { error?: string; message?: string; title?: string })
-                  .error ||
-                  (err as { message?: string }).message ||
-                  (err as { title?: string }).title ||
-                  'Unable to load document details',
-              )
+              (err as { error?: string; message?: string; title?: string })
+                .error ||
+              (err as { message?: string }).message ||
+              (err as { title?: string }).title ||
+              'Unable to load document details',
+            )
             : 'Unable to load document details'
       throw new Error(message)
     }
@@ -1086,8 +1087,8 @@ export const folderApi = {
 
     if ((childrenResult as any).canceled) {
       const cancelError = new Error('canceled')
-      ;(cancelError as any).code = 'ERR_CANCELED'
-      ;(cancelError as any).name = 'CanceledError'
+        ; (cancelError as any).code = 'ERR_CANCELED'
+        ; (cancelError as any).name = 'CanceledError'
       throw cancelError
     }
 
@@ -1195,7 +1196,7 @@ export const folderApi = {
         pageSize: request.pageSize ?? defaultItemPageSize,
         search: searchText,
         skipTotal: false,
-        sortBy: request.sortBy || 'DocumentDate',
+        sortBy: request.sortBy || 'id',
         sortOrder: request.sortOrder || 'desc',
       })
 
@@ -1272,8 +1273,8 @@ export const folderApi = {
 
       if ((childrenResult as any).canceled) {
         const cancelError = new Error('canceled')
-        ;(cancelError as any).code = 'ERR_CANCELED'
-        ;(cancelError as any).name = 'CanceledError'
+          ; (cancelError as any).code = 'ERR_CANCELED'
+          ; (cancelError as any).name = 'CanceledError'
         throw cancelError
       }
 
@@ -1380,8 +1381,8 @@ export const folderApi = {
     const mapShare = (share: SharedWithMeItem): ShareData['sharedWith'][number] => {
       const email = String(
         share.recipientEmail ||
-          (share as { email?: string }).email ||
-          '',
+        (share as { email?: string }).email ||
+        '',
       ).trim()
       const name = email.split('@')[0] || email || 'Guest'
       const initials =
@@ -1394,24 +1395,24 @@ export const folderApi = {
       const dateRaw = share.sharedAtUtc || share.expiresAtUtc
       const date = dateRaw
         ? (() => {
-            const parsed = new Date(dateRaw)
-            if (Number.isNaN(parsed.getTime())) return ''
-            const months = [
-              'jan',
-              'feb',
-              'mar',
-              'apr',
-              'may',
-              'jun',
-              'jul',
-              'aug',
-              'sep',
-              'oct',
-              'nov',
-              'dec',
-            ] as const
-            return `${parsed.getDate()}-${months[parsed.getMonth()]}-${parsed.getFullYear()}`
-          })()
+          const parsed = new Date(dateRaw)
+          if (Number.isNaN(parsed.getTime())) return ''
+          const months = [
+            'jan',
+            'feb',
+            'mar',
+            'apr',
+            'may',
+            'jun',
+            'jul',
+            'aug',
+            'sep',
+            'oct',
+            'nov',
+            'dec',
+          ] as const
+          return `${parsed.getDate()}-${months[parsed.getMonth()]}-${parsed.getFullYear()}`
+        })()
         : ''
       let shareUrl = String(share.shareUrl || '').trim()
       if (!shareUrl && share.shareToken) {
@@ -1445,19 +1446,19 @@ export const folderApi = {
     }
 
     const byKey = new Map<string, ShareData['sharedWith'][number]>()
-    ;[...remoteShares, ...localShares].forEach((person) => {
-      const key = person.shareId || person.email.toLowerCase()
-      const existing = byKey.get(key)
-      if (!existing) {
-        byKey.set(key, person)
-        return
-      }
-      byKey.set(key, {
-        ...existing,
-        ...person,
-        shareUrl: person.shareUrl || existing.shareUrl,
+      ;[...remoteShares, ...localShares].forEach((person) => {
+        const key = person.shareId || person.email.toLowerCase()
+        const existing = byKey.get(key)
+        if (!existing) {
+          byKey.set(key, person)
+          return
+        }
+        byKey.set(key, {
+          ...existing,
+          ...person,
+          shareUrl: person.shareUrl || existing.shareUrl,
+        })
       })
-    })
 
     return {
       documentId: itemId,
@@ -1567,6 +1568,13 @@ export const folderApi = {
       action: params.action as any,
     })
     return response
+  },
+
+  async deleteRepositoryItem(params: {
+    itemId: string
+    repositoryId: string
+  }): Promise<{ data: boolean; error: string }> {
+    return deleteRepositoryItem(params.repositoryId, params.itemId)
   },
 
   async getWorkflowData(): Promise<WorkflowData> {

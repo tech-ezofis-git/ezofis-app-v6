@@ -9,6 +9,7 @@ import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
 import BrandingSync from '@/lib/branding/BrandingSync'
+import { resolveSignInPath } from '@/lib/branding/session'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
@@ -97,7 +98,11 @@ const AppLayout = ({ children }: Props) => {
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      const signInPath = resolveSignInPath()
+      navigate({ replace: true, to: signInPath })
+      return
+    }
     if (
       restrictNavigationUntilApSetup &&
       !isApSetUpCompleted &&
