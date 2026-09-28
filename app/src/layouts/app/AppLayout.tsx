@@ -12,6 +12,7 @@ import BrandingSync from '@/lib/branding/BrandingSync'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
+import useGeoStore from '@/stores/useGeoStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import requestStore from '../../pages/requests/stores/useRequestStore'
 import NewRequest from './components/NewRequest'
@@ -60,6 +61,10 @@ const AppLayout = ({ children }: Props) => {
       closeDemoForm()
     }
   }, [pathname, closeNewRequest, closeDemoForm])
+
+  useEffect(() => {
+    useGeoStore.getState().fetchLocation()
+  }, [])
 
   useEffect(() => {
     if (!authUserStore.getState().isAuthenticated) return
