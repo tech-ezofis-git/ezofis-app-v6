@@ -17,6 +17,7 @@ services:
   api:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
     restart: always
+    stop_grace_period: 30s
     env_file:
       - .env.azure
     environment:
@@ -24,6 +25,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       HttpsRedirection__Enabled: "false"
       Swagger__Enabled: "true"
+      Hangfire__RunServerInApi: "true"
+      Hangfire__ServerName: v6-api
 
   agents:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
