@@ -142,10 +142,16 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         setLoading(false)
         setShowTenantList(false)
 
-        if (apiError === 'You should login with Microsoft') {
-          await handleMicrosoftLogin()
-        } else if (apiError === 'You should login with Google') {
-          await handleGoogleLogin()
+        const match = apiError.match(
+          /you should (?:log\s*in|sign\s*in) with\s+(.+?)\.?$/i,
+        )
+        if (match) {
+          const rawType = match[1].trim()
+          const loginType =
+            /^[a-z]+$/.test(rawType)
+              ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+              : rawType
+          setError(`Please sign in with ${loginType} to continue.`)
         } else {
           setError(apiError)
         }

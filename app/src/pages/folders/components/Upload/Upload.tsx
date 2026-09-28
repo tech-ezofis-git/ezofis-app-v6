@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useDebouncedValue } from '@mantine/hooks'
+import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks'
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
@@ -53,6 +53,7 @@ import {
 } from './../../../../components/common/animations'
 import UploadQueueFileCard from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
+import TableFieldInput from './TableFieldInput'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
 
@@ -1190,6 +1191,7 @@ export default function Upload({
           stageFileId: data.fileId || data.id,
           status: 'ready',
         })
+        lastSavedValuesRef.current.set(singleEntry.id, JSON.stringify(fieldValues))
         setOpenFileId(singleEntry.id)
 
         // Stage the file using uploadWithOcr carrying forward the extracted OCR data
@@ -1323,6 +1325,7 @@ export default function Upload({
         status: 'ready',
       })
 
+      lastSavedValuesRef.current.set(entry.id, JSON.stringify(mappedValues))
       triggerAutoSync(entry.id, mappedValues)
     },
     [repositoryFields, triggerAutoSync, updateEntry],
@@ -1594,6 +1597,7 @@ export default function Upload({
 
         setQueue([entry])
         setOpenFileId(entry.id)
+        lastSavedValuesRef.current.set(entry.id, JSON.stringify(mappedValues))
         triggerAutoSync(entry.id, mappedValues)
       } finally {
         setIsRestoringQueue(false)
@@ -1640,16 +1644,113 @@ export default function Upload({
   const buildIndexPayload = (
     entry: QueuedUploadFile,
   ): IndexStageFileRequest => ({
-    fields: repositoryFields.map((field) => ({
-      name: field.name,
-      type: String(field.dataType || 'text').trim(),
-      value: entry.fieldValues[getFieldKey(field)] ?? '',
-    })),
+    fields: repositoryFields.map((field) => {
+      const rawVal = entry.fieldValues[getFieldKey(field)]
+      const strVal =
+        rawVal === undefined || rawVal === null
+          ? ''
+          : typeof rawVal === 'object'
+            ? JSON.stringify(rawVal)
+            : String(rawVal)
+      return {
+        name: field.name,
+        type: String(field.dataType || 'text').trim(),
+        value: strVal,
+      }
+    }),
     itemId: null,
     ocrResult: null,
     repositoryId: String(repositoryId || repositoryData?.id || ''),
     status: 'Indexing',
   })
+
+  // Auto-save to /uploadAndIndex/index/{id} is disabled for now per user instruction
+  const ENABLE_INDEXING_AUTOSAVE = false
+
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle')
+  const lastSavedValuesRef = useRef<Map<string, string>>(new Map())
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const debouncedAutoSave = useDebouncedCallback(
+    async (targetEntryId: string) => {
+      if (!ENABLE_INDEXING_AUTOSAVE) return
+      const entry = queueRef.current.find((item) => item.id === targetEntryId)
+      if (!entry) return
+
+      const stageId =
+        entry.stageFileId ||
+        (entry.id.startsWith('staged-')
+          ? entry.id.replace(/^staged-/, '')
+          : null)
+
+      if (!stageId) return
+
+      if (
+        entry.exportStatus === 'exporting' ||
+        entry.status === 'indexing' ||
+        entry.status === 'indexed'
+      ) {
+        return
+      }
+
+      const currentSerialized = JSON.stringify(entry.fieldValues)
+      if (lastSavedValuesRef.current.get(entry.id) === currentSerialized) {
+        return
+      }
+
+      try {
+        setAutoSaveStatus('saving')
+        const payload = buildIndexPayload(entry)
+        const { error } = await indexStageFile(stageId, payload)
+
+        if (error) {
+          console.warn('[AutoSave] Error saving stage file:', error)
+          setAutoSaveStatus('error')
+        } else {
+          lastSavedValuesRef.current.set(entry.id, currentSerialized)
+          setAutoSaveStatus('saved')
+          if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+          autoSaveTimerRef.current = setTimeout(() => {
+            setAutoSaveStatus('idle')
+          }, 3000)
+        }
+      } catch (err) {
+        console.warn('[AutoSave] Exception saving stage file:', err)
+        setAutoSaveStatus('error')
+      }
+    },
+    800,
+  )
+
+  useEffect(() => {
+    if (!ENABLE_INDEXING_AUTOSAVE || !activeEntry) return
+
+    const stageId =
+      activeEntry.stageFileId ||
+      (activeEntry.id.startsWith('staged-')
+        ? activeEntry.id.replace(/^staged-/, '')
+        : null)
+
+    if (!stageId) return
+
+    const serialized = JSON.stringify(activeEntry.fieldValues)
+
+    if (!lastSavedValuesRef.current.has(activeEntry.id)) {
+      lastSavedValuesRef.current.set(activeEntry.id, serialized)
+      return
+    }
+
+    if (lastSavedValuesRef.current.get(activeEntry.id) !== serialized) {
+      debouncedAutoSave(activeEntry.id)
+    }
+  }, [
+    activeEntry?.id,
+    activeEntry?.stageFileId,
+    activeEntry?.fieldValues,
+    debouncedAutoSave,
+  ])
 
   const validateMandatoryFieldsFor = (entry: QueuedUploadFile) => {
     const missingField = repositoryFields.find((field) => {
@@ -1730,6 +1831,8 @@ export default function Upload({
         }
 
         updateEntry(id, { exportStatus: 'success', status: 'indexed' })
+        lastSavedValuesRef.current.set(id, JSON.stringify(entry.fieldValues))
+        setAutoSaveStatus('saved')
         showToast({
           message: t`File exported successfully.`,
           variant: 'success',
@@ -1974,7 +2077,23 @@ export default function Upload({
 
     let InputComponent = null
 
-    if (fieldType === 'date' || fieldType === 'datetime') {
+    if (
+      fieldType === 'table' ||
+      fieldType === 'dynamic_table' ||
+      fieldType.includes('table')
+    ) {
+      InputComponent = (
+        <TableFieldInput
+          className={fieldClassName}
+          disabled={disabled}
+          field={field}
+          label={label}
+          required={required}
+          value={value}
+          onChange={(jsonVal) => updateFieldValue(field, jsonVal)}
+        />
+      )
+    } else if (fieldType === 'date' || fieldType === 'datetime') {
       InputComponent = (
         <InputDate
           className={fieldClassName}
@@ -2604,6 +2723,31 @@ export default function Upload({
                   </div>
 
                   <div className='flex items-center gap-3'>
+                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saving' && (
+                      <span className='inline-flex items-center gap-1.5 text-xs text-[var(--primary-10)] animate-pulse'>
+                        <Icon
+                          className='size-3.5 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                        <span>{t`Saving...`}</span>
+                      </span>
+                    )}
+                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saved' && (
+                      <span className='inline-flex items-center gap-1 text-xs text-[var(--green-10)]'>
+                        <Icon className='size-3.5' name='lucide:check' />
+                        <span>{t`Saved to stage`}</span>
+                      </span>
+                    )}
+                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'error' && (
+                      <span
+                        className='inline-flex items-center gap-1 text-xs text-[var(--red-10)]'
+                        title={t`Failed to auto-save to stage table`}
+                      >
+                        <Icon className='size-3.5' name='lucide:alert-circle' />
+                        <span>{t`Save failed`}</span>
+                      </span>
+                    )}
+
                     {!isExporting ? (
                       <button
                         className='text-xs font-semibold text-[var(--gray-9)] transition-colors hover:text-[var(--primary-11)] disabled:cursor-not-allowed disabled:opacity-50'

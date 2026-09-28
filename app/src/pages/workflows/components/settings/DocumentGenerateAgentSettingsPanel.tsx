@@ -53,7 +53,7 @@ export default function DocumentGenerateAgentSettingsPanel({
     nodeData.outputFormat || outputFormatOptions[0],
   )
 
-  // Form Template JSON Input State
+  // Template JSON Input State
   const [templateJson, setTemplateJson] = useState(() =>
     toTemplateJsonString(
       nodeData.templateJson ?? nodeData.pdfTemplateJson ?? nodeData.pdfTemplate,
@@ -70,12 +70,12 @@ export default function DocumentGenerateAgentSettingsPanel({
       nodes.map((n) =>
         n.id === currentNode.id
           ? {
-              ...n,
-              data: {
-                ...n.data,
-                [key]: value,
-              },
-            }
+            ...n,
+            data: {
+              ...n.data,
+              [key]: value,
+            },
+          }
           : n,
       ),
     )
@@ -140,11 +140,11 @@ export default function DocumentGenerateAgentSettingsPanel({
             />
           </div>
 
-          {/* Form Template JSON */}
+          {/* Template JSON */}
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <span className='text-13 font-normal text-gray-12'>
-                Form template JSON <span className='text-red-11'>*</span>
+                Template JSON <span className='text-red-11'>*</span>
               </span>
               <IconButton
                 ariaLabel={jsonCopied ? 'Copied' : 'Copy JSON'}

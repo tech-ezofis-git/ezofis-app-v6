@@ -14,8 +14,11 @@ import {
   useState,
 } from 'react'
 import type { Option } from '@/types/option'
+import BaseButton from '@/components/base/button/Button'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
@@ -46,10 +49,15 @@ import {
   type FileCategory,
 } from './FileCategorySegmentedControl'
 import {
+  hasAllMandatoryFieldsFilled,
   isArchivedFile,
   isUnarchivedStageFile,
   StagedFileDeleteButton,
+  StagedFileExportButton,
 } from './StagedFileDeleteButton'
+import DynamicTableColumnCell, {
+  isTableColumnType,
+} from './DynamicTableColumnCell'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
 type ActionMenuPosition = {
@@ -100,6 +108,9 @@ type DocumentsListViewProps = {
   onIntelligentUpload?: () => void
   onOpenFile: (id: string) => void
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
+  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
+  onExportStagedFile?: (file: FileItem) => Promise<void>
+  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onRefresh?: () => void
@@ -136,12 +147,6 @@ const PRIMARY_NAME_KEYS = new Set([
   'filename',
   'file name',
   'name',
-  'invoicenumber',
-  'invoice number',
-  'invoiceno',
-  'invoice no',
-  'documentname',
-  'document name',
 ])
 
 const normalizeKey = normalizeFieldKey
@@ -165,6 +170,18 @@ const getPrimaryFileName = (file: AnyFileItem) => {
 
   if (directValue !== undefined && directValue !== null && directValue !== '') {
     return String(directValue)
+  }
+
+  const fromRaw =
+    getRepositoryFieldRawValueFromRow(file, 'name') ??
+    getRepositoryFieldRawValueFromRow(file, 'Name') ??
+    getRepositoryFieldRawValueFromRow(file, 'fileName') ??
+    getRepositoryFieldRawValueFromRow(file, 'FileName') ??
+    getRepositoryFieldRawValueFromRow(file, 'DocumentName') ??
+    getRepositoryFieldRawValueFromRow(file, 'documentName')
+
+  if (fromRaw !== undefined && fromRaw !== null && fromRaw !== '') {
+    return String(fromRaw)
   }
 
   const matchedKey = Object.keys(file || {}).find((key) =>
@@ -266,6 +283,7 @@ const getColumnWidth = (key: string, label?: string, dataType?: string) => {
 
   if (key === '__name') return 260
   if (key === '__status') return 130
+  if (isTableColumnType(dataType)) return 130
   if (normalizedType === 'date' || normalizedType === 'datetime') return 150
   if (
     ['decimal', 'number', 'int', 'integer', 'currency', 'amount'].includes(
@@ -324,6 +342,7 @@ const buildRepositoryColumns = (
   labels: { currentStage: string; name: string },
   isAccountsPayable: boolean = false,
 ): DynamicColumn[] => {
+  const primaryNameCol = fileColumns.find((col) => isPrimaryNameKey(col.key))
   const normalColumns = fileColumns.filter(
     (column) => !isHiddenFileKey(column.key) && !isPrimaryNameKey(column.key),
   )
@@ -331,7 +350,7 @@ const buildRepositoryColumns = (
   return [
     {
       key: '__name',
-      label: labels.name,
+      label: primaryNameCol?.label || labels.name,
       minWidth: 220,
     },
     ...(isAccountsPayable
@@ -388,6 +407,9 @@ export function DocumentsListView({
   onIntelligentUpload,
   onOpenFile,
   onDeleteStagedFile,
+  onDeleteStagedFiles,
+  onExportStagedFile,
+  onExportStagedFiles,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -556,6 +578,32 @@ export function DocumentsListView({
     })
   }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
 
+  const stagedFilesList = useMemo(
+    () => visibleFiles.filter(isUnarchivedStageFile),
+    [visibleFiles],
+  )
+  const hasStagedFiles = stagedFilesList.length > 0
+
+  const selectedStagedFiles = useMemo(() => {
+    const idSet = new Set(selectedIds)
+    return stagedFilesList.filter((f) => idSet.has(getFileId(f)))
+  }, [stagedFilesList, selectedIds])
+
+  const selectedStagedCount = selectedStagedFiles.length
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
+  const [isBulkExporting, setIsBulkExporting] = useState(false)
+  const [isBulkExportConfirmOpen, setIsBulkExportConfirmOpen] = useState(false)
+
+  const canBulkExport = useMemo(
+    () =>
+      selectedStagedFiles.length > 0 &&
+      selectedStagedFiles.every((file) =>
+        hasAllMandatoryFieldsFilled(file, fileColumns, folderContextFilters),
+      ),
+    [fileColumns, folderContextFilters, selectedStagedFiles],
+  )
+
   const isStagedCategory = fileCategory === 'staged'
   const totalCount =
     isStagedCategory
@@ -665,42 +713,73 @@ export function DocumentsListView({
     const selectColumn: ColumnDef<AnyFileItem> = {
       enableSorting: false,
       id: 'selection',
-      maxSize: 44,
-      minSize: 44,
-      size: 44,
+      maxSize: 48,
+      meta: {
+        className: '!px-0 !pl-0 !pr-0 text-center',
+        headerClassName: '!px-0 !pl-0 !pr-0 text-center',
+        headerAlign: 'center',
+        disableEllipsis: true,
+      },
+      minSize: 48,
+      size: 48,
       cell: ({ row }) => {
-        const fileId = getFileId(row.original)
+        const file = row.original
+        if (!isUnarchivedStageFile(file)) {
+          return null
+        }
+
+        const fileId = getFileId(file)
         const isSelected = selectedIds.includes(fileId)
 
         return (
-          <div className='flex justify-center'>
-            {selectionEnabled ? (
-              <CheckBoxButton
-                checked={isSelected}
-                onClick={() => toggleSelect(fileId)}
-              />
-            ) : (
-              <button
-                className='h-5 w-5 rounded-md border border-transparent transition-all hover:border-blue-9 hover:bg-blue-1 disabled:cursor-not-allowed disabled:opacity-40'
-                disabled={isBusy}
-                title={t`Select`}
-                type='button'
-                onClick={() => toggleSelect(fileId)}
-              />
-            )}
+          <div
+            className='flex w-full items-center justify-center'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <InputCheckbox
+              aria-label={t`Select staged file`}
+              checked={isSelected}
+              onChange={() => toggleSelect(fileId)}
+            />
           </div>
         )
       },
-      header: () => (
-        <div className='flex justify-center'>
-          {selectionEnabled && (
-            <CheckBoxButton
-              checked={allVisibleSelected}
-              onClick={toggleSelectAllVisible}
-            />
-          )}
-        </div>
-      ),
+      header: () => {
+        const isAllSelected =
+          stagedFilesList.length > 0 &&
+          selectedStagedCount === stagedFilesList.length
+        const isIndeterminate =
+          selectedStagedCount > 0 && !isAllSelected
+
+        return (
+          <div
+            className='flex w-full items-center justify-center'
+            onClick={(e) => e.stopPropagation()}
+          >
+            {hasStagedFiles ? (
+              <InputCheckbox
+                aria-label={t`Select all staged files`}
+                checked={isAllSelected}
+                indeterminate={isIndeterminate}
+                onChange={(checked) => {
+                  if (checked) {
+                    setSelectedIds((prev) =>
+                      Array.from(
+                        new Set([...prev, ...stagedFilesList.map(getFileId)]),
+                      ),
+                    )
+                  } else {
+                    const stagedIdSet = new Set(stagedFilesList.map(getFileId))
+                    setSelectedIds((prev) =>
+                      prev.filter((id) => !stagedIdSet.has(id)),
+                    )
+                  }
+                }}
+              />
+            ) : null}
+          </div>
+        )
+      },
     }
 
     const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
@@ -711,7 +790,19 @@ export function DocumentsListView({
       minSize: column.minWidth || 160,
       size: column.minWidth || 160,
       accessorFn: (row) => {
-        if (column.key === '__name') return getPrimaryFileName(row)
+        if (column.key === '__name') {
+          const nameCol = fileColumns.find((col) => isPrimaryNameKey(col.key))
+          if (nameCol?.key) {
+            const val = getDisplayValue(
+              row,
+              nameCol.key,
+              nameCol.dataType,
+              folderContextFilters,
+            )
+            if (val && val !== '-') return val
+          }
+          return getPrimaryFileName(row)
+        }
         if (column.key === '__status') {
           return String(row.status ?? row.Status ?? '').trim()
         }
@@ -730,7 +821,9 @@ export function DocumentsListView({
           const fileName =
             value !== '-'
               ? value
-              : row.original.name || row.original.fileName || ''
+              : getPrimaryFileName(row.original) !== '-'
+                ? getPrimaryFileName(row.original)
+                : row.original.name || row.original.fileName || ''
           const iconName = getFileIcon(fileName)
 
           return (
@@ -744,7 +837,7 @@ export function DocumentsListView({
               <EllipsisText
                 className='font-semibold text-gray-13'
                 lines={1}
-                value={value}
+                value={fileName || '-'}
               />
             </button>
           )
@@ -754,6 +847,23 @@ export function DocumentsListView({
           const status = String(getValue() || '').trim()
           if (!status) return <span className='text-gray-10'>—</span>
           return <StatusPill status={status} />
+        }
+
+        if (isTableColumnType(column.dataType)) {
+          const rawVal =
+            row.original[column.key] ??
+            getRepositoryFieldRawValueFromRow(
+              row.original,
+              column.key,
+              folderContextFilters,
+            ) ??
+            getValue()
+          return (
+            <DynamicTableColumnCell
+              rawVal={rawVal}
+              title={column.label || column.key}
+            />
+          )
         }
 
         return (
@@ -772,22 +882,40 @@ export function DocumentsListView({
       enableSorting: false,
       header: '',
       id: 'actions',
-      maxSize: 72,
+      maxSize: 96,
       meta: { headerAlign: 'right' as const },
       minSize: 56,
-      size: 64,
+      size: 80,
       cell: ({ row }) => {
         const file = row.original
         const fileId = getFileId(file)
 
-        if (isUnarchivedStageFile(file) && onDeleteStagedFile) {
+        if (isUnarchivedStageFile(file)) {
+          const canExport = hasAllMandatoryFieldsFilled(
+            file,
+            fileColumns,
+            folderContextFilters,
+          )
+
           return (
-            <div className='relative flex justify-end'>
-              <StagedFileDeleteButton
-                disabled={isBusy}
-                fileName={String(file.name || t`this file`)}
-                onDelete={() => onDeleteStagedFile(file)}
-              />
+            <div
+              className='relative flex items-center justify-end gap-1'
+              onClick={(event) => event.stopPropagation()}
+            >
+              {canExport && onExportStagedFile ? (
+                <StagedFileExportButton
+                  disabled={isBusy || isBulkExporting || isBulkDeleting}
+                  fileName={String(file.name || t`this file`)}
+                  onExport={() => onExportStagedFile(file)}
+                />
+              ) : null}
+              {onDeleteStagedFile ? (
+                <StagedFileDeleteButton
+                  disabled={isBusy || isBulkExporting || isBulkDeleting}
+                  fileName={String(file.name || t`this file`)}
+                  onDelete={() => onDeleteStagedFile(file)}
+                />
+              ) : null}
             </div>
           )
         }
@@ -807,19 +935,26 @@ export function DocumentsListView({
       },
     }
 
-    return selectionEnabled
+    return hasStagedFiles || selectionEnabled
       ? [selectColumn, ...dynamicColumns, actionColumn]
       : [...dynamicColumns, actionColumn]
   }, [
     allVisibleSelected,
     columns,
+    fileColumns,
     folderContextFilters,
+    hasStagedFiles,
+    isBulkDeleting,
+    isBulkExporting,
     isBusy,
     onDeleteStagedFile,
+    onExportStagedFile,
     onOpenFile,
     openActionMenu,
     selectedIds,
+    selectedStagedCount,
     selectionEnabled,
+    stagedFilesList,
     t,
     visibleFiles,
   ])
@@ -1028,24 +1163,74 @@ export function DocumentsListView({
               loading ||
               loadingPage ||
               refreshing ? (
-              <DataTable
-                pageSize={Math.max(5, visibleFiles.length || pageSize)}
-                rowSize='compact'
-                table={table}
-                hideActionBar
-                hideGrouping
-                isSticky
-                stickyHeader
-                isLoading={
-                  (loading || loadingPage) && visibleFiles.length === 0
-                }
-                isReLoading={
-                  refreshing ||
-                  loadingPage ||
-                  (loading && visibleFiles.length > 0)
-                }
-                onReload={handleRefresh}
-              />
+              <>
+                {selectedStagedCount > 0 &&
+                (onDeleteStagedFiles || onExportStagedFiles) ? (
+                  <div className='animate-in fade-in slide-in-from-top-1 mb-2 flex shrink-0 items-center justify-between rounded-lg border border-gray-4 bg-gray-2 px-4 py-2 text-xs duration-200'>
+                    <div className='flex items-center gap-2.5'>
+                      <span className='inline-flex items-center justify-center rounded-full bg-primary-9 px-2 py-0.5 text-[11px] font-semibold text-white'>
+                        {selectedStagedCount}
+                      </span>
+                      <span className='font-medium text-gray-12'>
+                        {selectedStagedCount === 1
+                          ? t`1 staged file selected`
+                          : t`${selectedStagedCount} staged files selected`}
+                      </span>
+                      <button
+                        className='text-[12px] font-medium text-gray-10 underline hover:text-gray-13'
+                        type='button'
+                        onClick={() => setSelectedIds([])}
+                      >
+                        {t`Deselect all`}
+                      </button>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      {canBulkExport && onExportStagedFiles ? (
+                        <BaseButton
+                          color='primary'
+                          disabled={isBulkExporting || isBulkDeleting}
+                          loading={isBulkExporting}
+                          size='xs'
+                          onClick={() => setIsBulkExportConfirmOpen(true)}
+                        >
+                          <Icon className='size-3.5' name='tabler:file-export' />
+                          {t`Export Selected (${selectedStagedCount})`}
+                        </BaseButton>
+                      ) : null}
+                      {onDeleteStagedFiles ? (
+                        <BaseButton
+                          color='red'
+                          disabled={isBulkDeleting || isBulkExporting}
+                          loading={isBulkDeleting}
+                          size='xs'
+                          onClick={() => setIsBulkConfirmOpen(true)}
+                        >
+                          <DynamicIcon className='size-3.5' name='trash' />
+                          {t`Delete Selected (${selectedStagedCount})`}
+                        </BaseButton>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+                <DataTable
+                  pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                  rowSize='compact'
+                  table={table}
+                  hideActionBar
+                  hideGrouping
+                  isSticky
+                  stickyHeader
+                  isLoading={
+                    (loading || loadingPage) && visibleFiles.length === 0
+                  }
+                  isReLoading={
+                    refreshing ||
+                    loadingPage ||
+                    (loading && visibleFiles.length > 0)
+                  }
+                  onReload={handleRefresh}
+                />
+              </>
             ) : null
           ) : null}
         </section>
@@ -1139,6 +1324,68 @@ export function DocumentsListView({
           ) : null}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={
+          selectedStagedCount === 1
+            ? t`Are you sure you want to delete 1 selected staged file?`
+            : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
+        }
+        isConfirming={isBulkDeleting}
+        opened={isBulkConfirmOpen}
+        title={t`Delete staged files`}
+        variant='danger'
+        onCancel={() => {
+          if (!isBulkDeleting) setIsBulkConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          setIsBulkDeleting(true)
+          try {
+            if (onDeleteStagedFiles) {
+              await onDeleteStagedFiles(selectedStagedFiles)
+              setSelectedIds([])
+              setIsBulkConfirmOpen(false)
+            }
+          } catch {
+            // caller handles error toast
+          } finally {
+            setIsBulkDeleting(false)
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Export`}
+        description={
+          selectedStagedCount === 1
+            ? t`Are you sure you want to export 1 selected staged file?`
+            : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
+        }
+        isConfirming={isBulkExporting}
+        opened={isBulkExportConfirmOpen}
+        title={t`Export staged files`}
+        variant='default'
+        onCancel={() => {
+          if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          setIsBulkExporting(true)
+          try {
+            if (onExportStagedFiles) {
+              await onExportStagedFiles(selectedStagedFiles)
+              setSelectedIds([])
+              setIsBulkExportConfirmOpen(false)
+            }
+          } catch {
+            // caller handles error toast
+          } finally {
+            setIsBulkExporting(false)
+          }
+        }}
+      />
     </div>
   )
 }

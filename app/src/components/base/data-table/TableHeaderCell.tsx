@@ -104,6 +104,8 @@ const TableHeaderCell = <TData,>({
     <Th
       className={cn(
         'group/dtcell min-h-10 max-w-0 overflow-visible bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]',
+        column.columnDef.meta?.headerClassName,
+        column.columnDef.meta?.className,
         className,
       )}
       key={header.id}
@@ -116,7 +118,7 @@ const TableHeaderCell = <TData,>({
     >
       <div
         className={cn(
-          'flex min-h-10 min-w-0 items-center py-1',
+          'flex min-h-10 w-full min-w-0 items-center py-1',
           headerAlignClassName,
         )}
       >

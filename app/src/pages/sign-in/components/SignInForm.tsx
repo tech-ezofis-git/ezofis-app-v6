@@ -213,6 +213,22 @@ const SignInForm = ({
     }
   }, [origin])
 
+  const formatAuthErrorMessage = (errorMsg?: string | null): string => {
+    if (!errorMsg || typeof errorMsg !== 'string') return ''
+    const match = errorMsg.match(
+      /you should (?:log\s*in|sign\s*in) with\s+(.+?)\.?$/i,
+    )
+    if (match) {
+      const rawType = match[1].trim()
+      const loginType =
+        /^[a-z]+$/.test(rawType)
+          ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+          : rawType
+      return t`Please sign in with ${loginType} to continue.`
+    }
+    return errorMsg
+  }
+
   // === navigation after successful login ===
   const handleLoggedNavigation = async () => {
     await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
@@ -480,14 +496,7 @@ const SignInForm = ({
       if (error) {
         setLoading(false)
         setShowTenantListModal(false)
-
-        if (error === 'You should login with Microsoft') {
-          await handleMicrosoftLogin()
-        } else if (error === 'You should login with Google') {
-          await handleGoogleLogin()
-        } else {
-          setError(error)
-        }
+        setError(formatAuthErrorMessage(error))
         return
       }
 

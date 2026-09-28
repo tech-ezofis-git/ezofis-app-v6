@@ -90,6 +90,7 @@ export function BuilderTimelineStep({
   topConnectorState,
   bottomConnectorState,
   onSelectStep,
+  minimized = false,
 }: {
   stepId: number
   status: TimelineStepStatus
@@ -101,6 +102,7 @@ export function BuilderTimelineStep({
   topConnectorState: TimelineConnectorState
   bottomConnectorState: TimelineConnectorState
   onSelectStep?: (stepId: number) => void
+  minimized?: boolean
 }) {
   const { t } = useLingui()
   const isActive = status === 'active'
@@ -110,6 +112,101 @@ export function BuilderTimelineStep({
   const isClickable = Boolean(
     onSelectStep && (isCompleted || (!isActive && status !== 'upcoming')),
   )
+
+  if (minimized) {
+    return (
+      <div className='relative'>
+        <div className='flex gap-4'>
+          <div
+            className={cn(
+              'relative z-20 flex w-8 shrink-0 flex-col items-center self-stretch',
+              isClickable && 'cursor-pointer',
+            )}
+            onClick={() => {
+              if (isClickable && onSelectStep) {
+                onSelectStep(stepId)
+              }
+            }}
+          >
+            {showTopConnector ? (
+              <ConnectorTrack
+                state={topConnectorState}
+                style={{ height: 10 }}
+              />
+            ) : (
+              <div className='w-[2px] shrink-0' style={{ height: 10 }} />
+            )}
+
+            <span className='relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full bg-green-9 text-white shadow-2xs'>
+              <Check className='size-3.5 stroke-[2.5]' />
+            </span>
+
+            {hasBottomConnector ? (
+              <ConnectorTrack
+                className='min-h-0 flex-1'
+                state={bottomConnectorState}
+              />
+            ) : null}
+          </div>
+
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              'flex min-h-0 flex-1 items-center justify-between rounded-[12px] border border-primary-4 bg-surface px-4 py-2 transition hover:border-primary-6 hover:bg-primary-2/40',
+              isClickable && 'cursor-pointer',
+            )}
+            initial={{ opacity: 0, y: 6 }}
+            layout
+            transition={{ duration: 0.2 }}
+            onClick={() => {
+              if (isClickable && onSelectStep) {
+                onSelectStep(stepId)
+              }
+            }}
+          >
+            <div className='flex min-w-0 flex-1 items-center gap-2.5'>
+              <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
+                {title}
+              </span>
+              {summary ? (
+                <>
+                  <span className='text-[var(--gray-6)]'>•</span>
+                  <div className='min-w-0 flex-1 truncate text-[12px] text-[var(--gray-10)]'>
+                    {summary}
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            {onSelectStep ? (
+              <button
+                className='inline-flex items-center gap-1 rounded-md border border-primary-4 bg-surface px-2 py-1 text-[11px] font-semibold text-primary-9 shadow-2xs transition-colors hover:border-primary-6 hover:bg-primary-3'
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectStep(stepId)
+                }}
+              >
+                <Pencil className='size-3' />
+                <span>{t`Edit`}</span>
+              </button>
+            ) : null}
+          </motion.div>
+        </div>
+
+        {hasBottomConnector ? (
+          <div className='flex gap-4'>
+            <ConnectorTrack
+              className='w-8'
+              state={bottomConnectorState}
+              style={{ height: 8 }}
+            />
+            <div className='flex-1' style={{ height: 8 }} />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className='relative'>
