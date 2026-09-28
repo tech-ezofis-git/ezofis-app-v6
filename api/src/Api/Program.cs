@@ -47,10 +47,6 @@ if (builder.Environment.IsProduction())
     builder.Configuration.AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);
 }
 
-// This JSON is added after the host environment variables, so it was hiding
-// Hangfire__RunServerInApi=true from Azure. Re-apply env vars so that setting wins.
-builder.Configuration.AddEnvironmentVariables();
-
 
 // Serilog + Application Insights (clear default providers to avoid duplicate log lines)
 builder.Logging.ClearProviders();
