@@ -813,8 +813,7 @@ export default function DashboardCharts() {
       <CustomFilter
         filters={filtersProp}
         moreFilters={moreFiltersProp}
-        searchPlaceholder={t`Search invoice, supplier, PO...`}
-        searchQuery={searchQuery}
+        hideSearch
         activeFilters={{
           amount: poAmountTier || '',
           currency: currency || '',
@@ -832,8 +831,7 @@ export default function DashboardCharts() {
             currency ||
             department ||
             requestStatus ||
-            poAmountTier ||
-            searchQuery
+            poAmountTier
           )
         }
         onFilterChange={(id, value) => {
@@ -847,7 +845,6 @@ export default function DashboardCharts() {
           else if (id === 'amount') setPoAmountTier(val)
         }}
         onReset={handleReset}
-        onSearchChange={setSearchQuery}
       />
 
       {/* 2. AP COMMAND CENTER BANNER */}

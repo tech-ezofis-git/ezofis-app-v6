@@ -23,7 +23,13 @@ import Pagination from '@/components/base/pagination/Pagination'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import { isAccountsPayableFolder } from './DocumentsListView'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import { mergeFileExplorerFilters } from '../api/folderApi'
+import {
+  mergeFileExplorerFilters,
+  getPagedData,
+  toPage,
+  toFileItem,
+} from '../api/folderApi'
+import { getRepositoryItems } from '../../../api/v6/folder/folder'
 import type {
   FileItem,
   FolderItem,
@@ -33,14 +39,25 @@ import {
   FOLDER_FILES_SECTION_MAX_FOLDERS,
   formatFolderModifiedDate,
 } from '../utils/folderExplorerUtils'
-import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
+import {
+  getRepositoryFieldRawValue,
+  getRepositoryFieldStringValue,
+} from '../utils/repositoryFieldUtils'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
+import DynamicTableColumnCell, {
+  isTableColumnType,
+} from './DynamicTableColumnCell'
 import { DynamicIcon } from './icons'
+import Button from '@/components/base/button/Button'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import {
+  hasAllMandatoryFieldsFilled,
   isArchivedFile,
   isUnarchivedStageFile,
   StagedFileDeleteButton,
+  StagedFileExportButton,
 } from './StagedFileDeleteButton'
 import {
   FileCategorySegmentedControl,
@@ -82,6 +99,8 @@ type FolderRow = {
 }
 
 type FolderTableDataTableSplitProps = {
+  repositoryId?: string
+
   error?: string
 
   fileColumns?: DynamicRepositoryColumn[]
@@ -127,6 +146,12 @@ type FolderTableDataTableSplitProps = {
   onOpenFolder: (id: string) => void
 
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
+
+  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
+
+  onExportStagedFile?: (file: FileItem) => Promise<void>
+
+  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
 
   onPageChange?: (page: number, cursor?: string | null) => void
 
@@ -191,7 +216,14 @@ function ExplorerValue({ value }: { value: string }) {
 
 const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 
-const getFileId = (file: any) => String((file as any).id ?? '')
+const getFileId = (file: any) =>
+  String(
+    (file as any)?.id ??
+      (file as any)?.stageFileId ??
+      (file as any)?.ItemId ??
+      (file as any)?.itemId ??
+      '',
+  )
 
 const getFileColumnSizing = (
   column: {
@@ -239,6 +271,10 @@ const getFileColumnSizing = (
     }
   }
 
+  if (isTableColumnType(column.dataType)) {
+    return { maxSize: 220, minSize: 110, size: 130 }
+  }
+
   return {
     maxSize: 420,
     minSize: 120,
@@ -251,12 +287,13 @@ const getRepositoryFieldValue = (
   sqlColumnName: string,
   folderContextFilters: Record<string, string> = {},
 ) => {
-  const value = getRepositoryFieldStringValue(
+  const value = getRepositoryFieldRawValue(
     row,
     sqlColumnName,
     folderContextFilters,
   )
-  return value || '-'
+  if (value === undefined || value === null || value === '') return '-'
+  return value
 }
 
 export default function FolderTableDataTableSplit({
@@ -306,6 +343,12 @@ export default function FolderTableDataTableSplit({
 
   onDeleteStagedFile,
 
+  onDeleteStagedFiles,
+
+  onExportStagedFile,
+
+  onExportStagedFiles,
+
   onPageChange,
 
   onPageSizeChange,
@@ -323,22 +366,78 @@ export default function FolderTableDataTableSplit({
   uploadDisabled = false,
 
   onWorkflow,
+
+  repositoryId,
 }: FolderTableDataTableSplitProps) {
   const { t } = useLingui()
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
   const [fileCategory, setFileCategory] = useState<'all' | 'staged' | 'archived'>('all')
 
+  const [archivedCount, setArchivedCount] = useState<number>(0)
+  const [archivedFiles, setArchivedFiles] = useState<FileItem[]>([])
+  const [archivedFilePage, setArchivedFilePage] = useState<RepositoryFilePage | undefined>(undefined)
+  const [loadingArchived, setLoadingArchived] = useState<boolean>(false)
+
+  const fetchArchivedFileList = useCallback(
+    async (targetPage = 1, targetPageSize = 50) => {
+      if (!repositoryId) return
+      setLoadingArchived(true)
+      try {
+        const response = await getRepositoryItems({
+          id: repositoryId,
+          filters: {},
+          page: targetPage,
+          pageSize: targetPageSize,
+          skipTotal: false,
+          sortBy: 'DocumentDate',
+          sortOrder: 'desc',
+        })
+        if (response && !response.error && response.data) {
+          const rawFiles = getPagedData<Record<string, any>>(response.data)
+          const mappedFiles = rawFiles.map(toFileItem)
+          const pageMeta = toPage(response.data)
+          setArchivedFiles(mappedFiles)
+          setArchivedFilePage(pageMeta)
+          setArchivedCount(pageMeta.totalCount ?? mappedFiles.length)
+        }
+      } catch (err) {
+        console.error('Failed to load archived file list:', err)
+      } finally {
+        setLoadingArchived(false)
+      }
+    },
+    [repositoryId],
+  )
+
+  useEffect(() => {
+    if (repositoryId) {
+      void fetchArchivedFileList(1, 50)
+    } else {
+      setArchivedCount(0)
+      setArchivedFiles([])
+      setArchivedFilePage(undefined)
+    }
+  }, [repositoryId, refreshing, fetchArchivedFileList])
+
   const stagedCount = useMemo(
     () => files.filter(isUnarchivedStageFile).length,
     [files],
   )
-  const archivedCount = useMemo(
-    () => files.filter(isArchivedFile).length,
-    [files],
+  const effectiveArchivedCount = useMemo(() => {
+    if (archivedCount > 0) return archivedCount
+    if (filePage?.totalCount !== undefined && filePage.totalCount > 0) {
+      return filePage.totalCount
+    }
+    return files.filter(isArchivedFile).length
+  }, [archivedCount, filePage?.totalCount, files])
+
+  const allCount = useMemo(
+    () => stagedCount + effectiveArchivedCount,
+    [stagedCount, effectiveArchivedCount],
   )
 
   useEffect(() => {
-    if (stagedCount <= 0 && fileCategory === 'staged') {
+    if (stagedCount <= 0 && fileCategory !== 'all') {
       setFileCategory('all')
     }
   }, [stagedCount, fileCategory])
@@ -348,10 +447,57 @@ export default function FolderTableDataTableSplit({
       return files.filter(isUnarchivedStageFile)
     }
     if (fileCategory === 'archived') {
-      return files.filter(isArchivedFile)
+      return archivedFiles.length > 0
+        ? archivedFiles
+        : files.filter(isArchivedFile)
+    }
+    if (archivedFiles.length > 0 && files.filter(isArchivedFile).length === 0) {
+      return [...files.filter(isUnarchivedStageFile), ...archivedFiles]
     }
     return files
-  }, [files, fileCategory])
+  }, [files, fileCategory, archivedFiles])
+
+  const activeDisplayFilePage = useMemo(() => {
+    if (fileCategory === 'archived' && archivedFilePage) {
+      return archivedFilePage
+    }
+    return filePage
+  }, [fileCategory, archivedFilePage, filePage])
+
+  const handleFilePageChange = useCallback(
+    (page: number, cursor?: string | null) => {
+      if (fileCategory === 'archived') {
+        void fetchArchivedFileList(
+          page,
+          activeDisplayFilePage?.pageSize || 50,
+        )
+      } else {
+        onPageChange?.(page, cursor)
+      }
+    },
+    [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.pageSize, onPageChange],
+  )
+
+  const handleFilePageSizeChange = useCallback(
+    (nextPageSize: number) => {
+      if (fileCategory === 'archived') {
+        void fetchArchivedFileList(1, nextPageSize)
+      } else {
+        onPageSizeChange?.(nextPageSize)
+      }
+    },
+    [fileCategory, fetchArchivedFileList, onPageSizeChange],
+  )
+
+  const handleReload = useCallback(() => {
+    if (fileCategory === 'archived') {
+      void fetchArchivedFileList(
+        activeDisplayFilePage?.page || 1,
+        activeDisplayFilePage?.pageSize || 50,
+      )
+    }
+    onReload?.()
+  }, [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.page, activeDisplayFilePage?.pageSize, onReload])
 
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
@@ -373,11 +519,22 @@ export default function FolderTableDataTableSplit({
       </div>
     )
   }
-  const filesHave = files.length > 0 || loading || loadingPage
+  const filesHave =
+    files.length > 0 ||
+    loading ||
+    loadingPage ||
+    effectiveArchivedCount > 0 ||
+    archivedFiles.length > 0 ||
+    loadingArchived
+
   const canResizeSplit =
     folders.length > 0 &&
-    (files.length > 0 || loading || loadingPage) &&
-    folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
+    (files.length > 0 ||
+      loading ||
+      loadingPage ||
+      effectiveArchivedCount > 0 ||
+      archivedFiles.length > 0 ||
+      loadingArchived)
   const showFoldersPane = splitViewMode !== 'files-only'
   const showFilesPane = splitViewMode !== 'folders-only'
   const isSplitView = splitViewMode === 'split'
@@ -428,12 +585,46 @@ export default function FolderTableDataTableSplit({
         {stagedCount > 0 ? (
           <FileCategorySegmentedControl
             activeCategory={fileCategory}
-            allCount={files.length}
-            archivedCount={archivedCount}
+            allCount={allCount}
+            archivedCount={effectiveArchivedCount}
             stagedCount={stagedCount}
-            onChange={setFileCategory}
+            onChange={(cat) => {
+              setFileCategory(cat)
+              if (cat === 'archived' && archivedFiles.length === 0 && repositoryId) {
+                void fetchArchivedFileList(1, 50)
+              }
+              if (splitViewMode === 'folders-only') {
+                setSplitViewMode('split')
+              }
+            }}
           />
-        ) : null}
+        ) : (
+          <div className='inline-flex items-center gap-2 rounded-full border border-gray-3 bg-surface px-3.5 py-1 text-xs font-normal leading-none text-gray-10 shadow-sm'>
+            {splitViewMode === 'files-only' ? (
+              <>
+                <DynamicIcon
+                  className='block size-3.5 shrink-0 text-gray-8'
+                  name='folder'
+                />
+                <span className='leading-none text-gray-8'>{t`FOLDERS`}</span>
+                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] font-medium leading-none text-gray-11'>
+                  {folders.length}
+                </span>
+              </>
+            ) : (
+              <>
+                <DynamicIcon
+                  className='block size-3.5 shrink-0 text-gray-8'
+                  name='fileText'
+                />
+                <span className='leading-none text-gray-8'>{t`FILES IN THIS FOLDER`}</span>
+                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] font-medium leading-none text-gray-11'>
+                  {allCount > 0 ? allCount : files.length}
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         <IconButton
           ariaLabel={rightViewLabel}
@@ -489,13 +680,17 @@ export default function FolderTableDataTableSplit({
         {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
-          (files.length || loading || loadingPage) &&
-          folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
+          (activeDisplayFiles.length > 0 ||
+            files.length > 0 ||
+            loading ||
+            loadingPage ||
+            loadingArchived ||
+            fileCategory === 'archived') ? (
           <FileDataTableSection
             columns={visibleFileColumns}
             fileCategory={fileCategory}
             fileFilters={fileFilters}
-            filePage={filePage}
+            filePage={activeDisplayFilePage}
             files={activeDisplayFiles}
             fileSearch={fileSearch || folderSearch}
             folderContextFilters={folderContextFilters}
@@ -508,17 +703,20 @@ export default function FolderTableDataTableSplit({
             }
             isExpanded={splitViewMode === 'files-only'}
             isSplitView={isSplitView}
-            loading={loading}
+            loading={loading || loadingArchived}
             loadingPage={loadingPage}
             onAiSummary={onAiSummary}
             onEditMetadata={onEditMetadata}
             onOpenFile={onOpenFile}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-            onReload={onReload}
+            onPageChange={handleFilePageChange}
+            onPageSizeChange={handleFilePageSizeChange}
+            onReload={handleReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
             onDeleteStagedFile={onDeleteStagedFile}
+            onDeleteStagedFiles={onDeleteStagedFiles}
+            onExportStagedFile={onExportStagedFile}
+            onExportStagedFiles={onExportStagedFiles}
             permissions={permissions}
           />
         ) : null}
@@ -626,6 +824,9 @@ function FileDataTableSection({
   onShare,
   onWorkflow,
   onDeleteStagedFile,
+  onDeleteStagedFiles,
+  onExportStagedFile,
+  onExportStagedFiles,
   permissions,
 }: {
   columns: DynamicRepositoryColumn[]
@@ -651,12 +852,21 @@ function FileDataTableSection({
   onShare: (id: string) => void
   onWorkflow: (id: string) => void
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
+  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
+  onExportStagedFile?: (file: FileItem) => Promise<void>
+  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   permissions?: {
     delete?: boolean
     editMetadata?: boolean
   }
 }) {
   const { t } = useLingui()
+  const [selectedStagedIds, setSelectedStagedIds] = useState<string[]>([])
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
+  const [isBulkExporting, setIsBulkExporting] = useState(false)
+  const [isBulkExportConfirmOpen, setIsBulkExportConfirmOpen] = useState(false)
+
   const mergedFileFilters = useMemo(
     () => mergeFileExplorerFilters(folderFilters, fileFilters),
     [folderFilters, fileFilters],
@@ -673,8 +883,30 @@ function FileDataTableSection({
     [folderContextFilters, files, mergedFileFilters, fileSearch],
   )
 
+  const stagedFilesList = useMemo(
+    () => (filteredFiles as FileItem[]).filter(isUnarchivedStageFile),
+    [filteredFiles],
+  )
+  const hasStagedFiles = stagedFilesList.length > 0
+
+  const validSelectedStagedFiles = useMemo(() => {
+    const idSet = new Set(selectedStagedIds)
+    return stagedFilesList.filter((f) => idSet.has(getFileId(f as any)))
+  }, [stagedFilesList, selectedStagedIds])
+
+  const selectedStagedCount = validSelectedStagedFiles.length
+
+  const canBulkExport = useMemo(
+    () =>
+      validSelectedStagedFiles.length > 0 &&
+      validSelectedStagedFiles.every((file) =>
+        hasAllMandatoryFieldsFilled(file, columns, folderContextFilters),
+      ),
+    [columns, folderContextFilters, validSelectedStagedFiles],
+  )
+
   const getPrimaryFileName = (file: any) => {
-    return (
+    const direct =
       file?.fileName ||
       file?.FileName ||
       file?.name ||
@@ -685,9 +917,19 @@ function FileDataTableSection({
       file?.invoiceNo ||
       file?.['Invoice No'] ||
       file?.DocumentName ||
-      file?.documentName ||
-      '-'
-    )
+      file?.documentName
+    if (direct) return String(direct)
+
+    const fromFields =
+      getRepositoryFieldStringValue(file, 'name') ||
+      getRepositoryFieldStringValue(file, 'Name') ||
+      getRepositoryFieldStringValue(file, 'fileName') ||
+      getRepositoryFieldStringValue(file, 'FileName') ||
+      getRepositoryFieldStringValue(file, 'documentName') ||
+      getRepositoryFieldStringValue(file, 'DocumentName')
+    if (fromFields) return fromFields
+
+    return '-'
   }
 
   const hiddenFirstColumnKeys = [
@@ -696,20 +938,29 @@ function FileDataTableSection({
     'FileName',
     'name',
     'Name',
-    'InvoiceNumber',
-    'invoiceNumber',
-    'InvoiceNo',
-    'invoiceNo',
-    'Invoice No',
-    'DocumentName',
-    'documentName',
   ]
+
+  const primaryNameCol = useMemo(
+    () => columns.find((col) => hiddenFirstColumnKeys.includes(col.key)),
+    [columns],
+  )
 
   const fileRows = useMemo<FileRow[]>(
     () =>
       filteredFiles.map((file) => {
+        const nameVal = primaryNameCol
+          ? getRepositoryFieldValue(
+              file as any,
+              primaryNameCol.key,
+              folderContextFilters,
+            )
+          : ''
+
         const row: FileRow = {
-          __name: getPrimaryFileName(file),
+          __name:
+            nameVal && nameVal !== '-'
+              ? nameVal
+              : getPrimaryFileName(file),
           __status: String(
             (file as any)?.status ??
             (file as any)?.Status ??
@@ -729,7 +980,7 @@ function FileDataTableSection({
 
         return row
       }),
-    [columns, filteredFiles, folderContextFilters],
+    [columns, filteredFiles, folderContextFilters, primaryNameCol],
   )
 
   const fileColumns = useMemo(() => {
@@ -748,7 +999,7 @@ function FileDataTableSection({
     const resolvedColumns: DynamicRepositoryColumn[] = [
       {
         key: '__name',
-        label: t`Name`,
+        label: primaryNameCol?.label || t`Name`,
       } as DynamicRepositoryColumn,
       ...(isAPFolder
         ? [
@@ -812,37 +1063,141 @@ function FileDataTableSection({
             return <StatusPill status={status} />
           }
 
+          if (isTableColumnType(column.dataType)) {
+            const rawVal = row.original[column.key] ?? getValue()
+            return (
+              <DynamicTableColumnCell
+                rawVal={rawVal}
+                title={column.label || column.key}
+              />
+            )
+          }
+
           return <ExplorerValue value={value} />
         },
       })
     })
 
+    const selectionColumn = hasStagedFiles
+      ? [
+          fileColumnHelper.display({
+            enableResizing: false,
+            enableSorting: false,
+            header: () => {
+              const isAllSelected =
+                stagedFilesList.length > 0 &&
+                validSelectedStagedFiles.length === stagedFilesList.length
+              const isIndeterminate =
+                validSelectedStagedFiles.length > 0 && !isAllSelected
+
+              return (
+                <div
+                  className='flex w-full items-center justify-center'
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <InputCheckbox
+                    aria-label={t`Select all staged files`}
+                    checked={isAllSelected}
+                    indeterminate={isIndeterminate}
+                    onChange={(checked) => {
+                      if (checked) {
+                        setSelectedStagedIds(
+                          stagedFilesList.map((f) => getFileId(f as any)),
+                        )
+                      } else {
+                        setSelectedStagedIds([])
+                      }
+                    }}
+                  />
+                </div>
+              )
+            },
+            id: 'select',
+            maxSize: 48,
+            meta: {
+              className: '!px-0 !pl-0 !pr-0 text-center',
+              headerClassName: '!px-0 !pl-0 !pr-0 text-center',
+              headerAlign: 'center' as const,
+              disableEllipsis: true,
+            },
+            minSize: 48,
+            size: 48,
+            cell: ({ row }) => {
+              const file = row.original.raw as FileItem
+              if (!isUnarchivedStageFile(file)) {
+                return null
+              }
+
+              const fileId = row.original.id
+              const isChecked = selectedStagedIds.includes(fileId)
+
+              return (
+                <div
+                  className='flex w-full items-center justify-center'
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <InputCheckbox
+                    aria-label={t`Select staged file`}
+                    checked={isChecked}
+                    onChange={(checked) => {
+                      setSelectedStagedIds((prev) =>
+                        checked
+                          ? prev.includes(fileId)
+                            ? prev
+                            : [...prev, fileId]
+                          : prev.filter((id) => id !== fileId),
+                      )
+                    }}
+                  />
+                </div>
+              )
+            },
+          }),
+        ]
+      : []
+
     return [
+      ...selectionColumn,
       ...dynamicColumns,
       fileColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
         header: '',
         id: 'actions',
-        maxSize: 72,
+        maxSize: 96,
         meta: { ...EXPLORER_CELL_META, headerAlign: 'right' as const },
         minSize: 56,
-        size: 64,
+        size: 80,
         cell: ({ row }) => {
           const fileId = row.original.id
           const file = row.original.raw as FileItem
 
-          if (isUnarchivedStageFile(file) && onDeleteStagedFile) {
+          if (isUnarchivedStageFile(file)) {
+            const canExport = hasAllMandatoryFieldsFilled(
+              file,
+              columns,
+              folderContextFilters,
+            )
+
             return (
               <div
-                className='flex items-center justify-end'
+                className='flex items-center justify-end gap-1'
                 onClick={(event) => event.stopPropagation()}
               >
-                <StagedFileDeleteButton
-                  disabled={loadingPage}
-                  fileName={String(file.name || row.original.__name || t`this file`)}
-                  onDelete={() => onDeleteStagedFile(file)}
-                />
+                {canExport && onExportStagedFile ? (
+                  <StagedFileExportButton
+                    disabled={loadingPage || isBulkExporting || isBulkDeleting}
+                    fileName={String(file.name || row.original.__name || t`this file`)}
+                    onExport={() => onExportStagedFile(file)}
+                  />
+                ) : null}
+                {onDeleteStagedFile ? (
+                  <StagedFileDeleteButton
+                    disabled={loadingPage || isBulkExporting || isBulkDeleting}
+                    fileName={String(file.name || row.original.__name || t`this file`)}
+                    onDelete={() => onDeleteStagedFile(file)}
+                  />
+                ) : null}
               </div>
             )
           }
@@ -912,10 +1267,19 @@ function FileDataTableSection({
     ]
   }, [
     columns,
+    folderContextFilters,
+    hasStagedFiles,
+    stagedFilesList,
+    validSelectedStagedFiles,
+    selectedStagedIds,
     hiddenFirstColumnKeys,
+    primaryNameCol,
     loadingPage,
+    isBulkDeleting,
+    isBulkExporting,
     onAiSummary,
     onDeleteStagedFile,
+    onExportStagedFile,
     onEditMetadata,
     onOpenFile,
     onShare,
@@ -941,7 +1305,7 @@ function FileDataTableSection({
     getRowId: (row) => `file-${row.id}`,
     initialState: {
       columnPinning: {
-        left: ['__name'],
+        left: hasStagedFiles ? ['select', '__name'] : ['__name'],
         right: ['actions'],
       },
     },
@@ -982,6 +1346,54 @@ function FileDataTableSection({
 
   return (
     <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+      {selectedStagedCount > 0 && (onDeleteStagedFiles || onExportStagedFiles) ? (
+        <div className='animate-in fade-in slide-in-from-top-1 flex shrink-0 items-center justify-between border-b border-gray-4 bg-gray-2 px-4 py-2 text-xs duration-200'>
+          <div className='flex items-center gap-2.5'>
+            <span className='inline-flex items-center justify-center rounded-full bg-primary-9 px-2 py-0.5 text-[11px] font-semibold text-white'>
+              {selectedStagedCount}
+            </span>
+            <span className='font-medium text-gray-12'>
+              {selectedStagedCount === 1
+                ? t`1 staged file selected`
+                : t`${selectedStagedCount} staged files selected`}
+            </span>
+            <button
+              className='text-[12px] font-medium text-gray-10 underline hover:text-gray-13'
+              type='button'
+              onClick={() => setSelectedStagedIds([])}
+            >
+              {t`Deselect all`}
+            </button>
+          </div>
+          <div className='flex items-center gap-2'>
+            {canBulkExport && onExportStagedFiles ? (
+              <Button
+                color='primary'
+                disabled={isBulkExporting || isBulkDeleting}
+                loading={isBulkExporting}
+                size='xs'
+                onClick={() => setIsBulkExportConfirmOpen(true)}
+              >
+                <Icon className='size-3.5' name='tabler:file-export' />
+                {t`Export Selected (${selectedStagedCount})`}
+              </Button>
+            ) : null}
+            {onDeleteStagedFiles ? (
+              <Button
+                color='red'
+                disabled={isBulkDeleting || isBulkExporting}
+                loading={isBulkDeleting}
+                size='xs'
+                onClick={() => setIsBulkConfirmOpen(true)}
+              >
+                <DynamicIcon className='size-3.5' name='trash' />
+                {t`Delete Selected (${selectedStagedCount})`}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
           hideActionBar
@@ -997,6 +1409,64 @@ function FileDataTableSection({
           onReload={onReload || (() => undefined)}
         />
       </div>
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Export`}
+        description={
+          selectedStagedCount === 1
+            ? t`Are you sure you want to export 1 selected staged file?`
+            : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
+        }
+        isConfirming={isBulkExporting}
+        opened={isBulkExportConfirmOpen}
+        title={t`Export staged files`}
+        variant='default'
+        onCancel={() => {
+          if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          setIsBulkExporting(true)
+          try {
+            await onExportStagedFiles?.(validSelectedStagedFiles)
+            setSelectedStagedIds([])
+            setIsBulkExportConfirmOpen(false)
+          } catch {
+            // error handled by caller toast
+          } finally {
+            setIsBulkExporting(false)
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={
+          selectedStagedCount === 1
+            ? t`Are you sure you want to delete 1 selected staged file?`
+            : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
+        }
+        isConfirming={isBulkDeleting}
+        opened={isBulkConfirmOpen}
+        title={t`Delete staged files`}
+        variant='danger'
+        onCancel={() => {
+          if (!isBulkDeleting) setIsBulkConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          setIsBulkDeleting(true)
+          try {
+            await onDeleteStagedFiles?.(validSelectedStagedFiles)
+            setSelectedStagedIds([])
+            setIsBulkConfirmOpen(false)
+          } catch {
+            // error handled by caller toast
+          } finally {
+            setIsBulkDeleting(false)
+          }
+        }}
+      />
 
       {footerDivider}
 
@@ -1198,11 +1668,7 @@ export function FolderDataTableSection({
           const raw = String(getValue() || '-').trim()
           if (raw === '-' || raw === '') return <ExplorerValue value='-' />
           const num = Number(raw)
-          const displayText = !isNaN(num)
-            ? num === 1
-              ? t`1 file`
-              : t`${num} files`
-            : raw
+          const displayText = !isNaN(num) ? String(num) : raw
           return <ExplorerValue value={displayText} />
         },
       }),

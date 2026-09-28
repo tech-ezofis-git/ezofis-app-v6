@@ -1,6 +1,6 @@
 import type { Node } from '@xyflow/react'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
@@ -13,6 +13,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
+import showToast from '@/components/base/toast/showToast'
 import { folderApi } from '@/pages/folders/api/folderApi'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import type { PrefixSegment } from '../stores/useWorkflowStore'
@@ -33,6 +34,10 @@ import {
 import SettingsSection from './settings/common/SettingsSection'
 import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
+import {
+  normalizeInitiateUsing,
+  validateWorkflowSettings,
+} from '../utils/validateWorkflowSettings'
 
 type PreviewField = {
   key: string
@@ -62,6 +67,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     previewValues,
     requestTitleField,
     requestTabs,
+    settingsValidationErrors,
     workflowDescription,
     workflowName,
     workflowStatus,
@@ -73,10 +79,28 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setPreviewValues,
     setRequestTitleField,
     setRequestTabs,
+    setSettingsValidationErrors,
     setWorkflowDescription,
     setWorkflowName,
     setWorkflowStatus,
   } = useWorkflowStore((state) => state)
+
+  const currentInitiateType = normalizeInitiateUsing(initiateUsing)
+  const isFolderRequired =
+    currentInitiateType === 'DOCUMENT' || currentInitiateType === 'DOCUMENT_FORM'
+  const isFormRequired =
+    currentInitiateType === 'FORM' || currentInitiateType === 'DOCUMENT_FORM'
+
+  useEffect(() => {
+    if (settingsValidationErrors) {
+      if (settingsValidationErrors.name) {
+        setOpenGeneral(true)
+      }
+      if (settingsValidationErrors.folder || settingsValidationErrors.form) {
+        setOpenConfiguration(true)
+      }
+    }
+  }, [settingsValidationErrors])
 
   // Options
   const initiateOptions = [
@@ -104,8 +128,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
   // Document-only initiation previews from the repository/folder fields;
   // Form and Document & Form previews come from the selected form's fields.
-  const showFormFields = initiateUsing !== 'DOCUMENT'
-  const showRepositoryFields = initiateUsing === 'DOCUMENT'
+  const showFormFields = currentInitiateType !== 'DOCUMENT'
+  const showRepositoryFields = currentInitiateType === 'DOCUMENT'
 
   // Form fields (for the selected initiation form)
   const { data: formFields = [] } = useQuery<PreviewField[]>({
@@ -276,33 +300,6 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
         />
       </div>
 
-      {/* Status (common, applies regardless of which section is open) */}
-      <div className='flex flex-col gap-1.5 border-b border-gray-2 px-4 py-3'>
-        <label className='text-13 font-medium text-gray-11'>Status</label>
-        <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
-          {[
-            { id: 'draft', label: 'Draft' },
-            { id: 'published', label: 'Published' },
-          ].map((opt) => {
-            const active = String(workflowStatus).toLowerCase() === opt.id
-            return (
-              <button
-                key={opt.id}
-                type='button'
-                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
-                  active
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                }`}
-                onClick={() => setWorkflowStatus(opt.id as any)}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Content */}
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <SettingsSection
@@ -318,7 +315,16 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={workflowName}
             clearable
             required
-            onChange={setWorkflowName}
+            error={settingsValidationErrors?.name}
+            onChange={(val) => {
+              setWorkflowName(val)
+              if (settingsValidationErrors?.name) {
+                setSettingsValidationErrors({
+                  ...settingsValidationErrors,
+                  name: undefined,
+                })
+              }
+            }}
           />
 
           {/* Description */}
@@ -340,6 +346,35 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               </div>
             </div>
           </div>
+
+          {/* Status */}
+          <div>
+            <label className='mb-2 block text-13 font-medium text-gray-11'>
+              Status
+            </label>
+            <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
+              {[
+                { id: 'draft', label: 'Draft' },
+                { id: 'published', label: 'Published' },
+              ].map((opt) => {
+                const active = String(workflowStatus).toLowerCase() === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type='button'
+                    className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
+                      active
+                        ? 'bg-primary-9 text-white shadow-sm'
+                        : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                    }`}
+                    onClick={() => setWorkflowStatus(opt.id as any)}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </SettingsSection>
 
         <SettingsSection
@@ -354,19 +389,26 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Initiate Using'
             options={initiateOptions as any}
             placeholder='Select'
+            required
             value={
-              initiateUsing
-                ? {
-                    id: initiateUsing as any,
-                    name:
-                      initiateOptions.find((o: any) => o.id === initiateUsing)
-                        ?.name || '',
-                  }
-                : null
+              initiateOptions.find(
+                (o: any) =>
+                  o.id === initiateUsing || o.id === currentInitiateType,
+              ) || null
             }
-            onChange={(val: any) =>
-              setInitiateUsing(val?.id || 'document-form')
-            }
+            onChange={(val: any) => {
+              setInitiateUsing(val?.id || 'DOCUMENT_FORM')
+              if (
+                settingsValidationErrors?.folder ||
+                settingsValidationErrors?.form
+              ) {
+                setSettingsValidationErrors({
+                  ...settingsValidationErrors,
+                  folder: undefined,
+                  form: undefined,
+                })
+              }
+            }}
           />
 
           {/* Folder */}
@@ -374,6 +416,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Folder'
             options={folderOptions}
             placeholder='Select'
+            required={isFolderRequired}
+            error={settingsValidationErrors?.folder}
             value={
               folder
                 ? {
@@ -384,7 +428,15 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   }
                 : null
             }
-            onChange={(val: any) => setFolder(val?.id || null)}
+            onChange={(val: any) => {
+              setFolder(val?.id || null)
+              if (settingsValidationErrors?.folder) {
+                setSettingsValidationErrors({
+                  ...settingsValidationErrors,
+                  folder: undefined,
+                })
+              }
+            }}
           />
 
           {/* Form */}
@@ -392,7 +444,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Form'
             options={workflowForms}
             placeholder='Select'
-            required
+            required={isFormRequired}
+            error={settingsValidationErrors?.form}
             value={
               form
                 ? {
@@ -402,7 +455,15 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   }
                 : null
             }
-            onChange={(val: any) => setForm(val?.id || null)}
+            onChange={(val: any) => {
+              setForm(val?.id || null)
+              if (settingsValidationErrors?.form) {
+                setSettingsValidationErrors({
+                  ...settingsValidationErrors,
+                  form: undefined,
+                })
+              }
+            }}
           />
 
           {/* Field Selection */}
@@ -659,10 +720,46 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
       {/* Footer */}
       <div className='flex items-center justify-end gap-3 border-t border-gray-2 bg-gray-1 px-6 py-4'>
-        <Button color='gray' variant='outline' onClick={closeSettings}>
+        <Button
+          color='gray'
+          variant='outline'
+          onClick={() => {
+            setSettingsValidationErrors(null)
+            closeSettings()
+          }}
+        >
           Cancel
         </Button>
-        <Button onClick={closeSettings}>Save</Button>
+        <Button
+          onClick={() => {
+            const validation = validateWorkflowSettings({
+              workflowName,
+              initiateUsing,
+              folder,
+              form,
+            })
+            if (!validation.isValid) {
+              setSettingsValidationErrors(validation.errors)
+              if (validation.failedSection === 'general') {
+                setOpenGeneral(true)
+              } else {
+                setOpenConfiguration(true)
+              }
+              showToast({
+                message:
+                  validation.firstError ||
+                  'Please fill in all required workflow settings.',
+                toastTitle: 'Required Fields',
+                variant: 'default',
+              })
+              return
+            }
+            setSettingsValidationErrors(null)
+            closeSettings()
+          }}
+        >
+          Save
+        </Button>
       </div>
     </div>
   )

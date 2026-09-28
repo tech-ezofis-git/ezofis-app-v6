@@ -121,7 +121,7 @@ export default function ManualUserSettingsPanel({
         ]
         const options: Option[] = []
         panels.forEach((panel: any) => {
-          ;(panel?.fields || []).forEach((field: any) => {
+          ; (panel?.fields || []).forEach((field: any) => {
             if (field.type === 'DIVIDER') return
             // Keyed by field.id to match how the Requests overview reads
             // form data (WorkflowFormRenderer/FieldRenderer key formModel
@@ -390,7 +390,7 @@ export default function ManualUserSettingsPanel({
                 <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
                   <div className='flex items-center justify-between'>
                     <span className='text-13 font-medium text-gray-12'>
-                      Form template JSON{' '}
+                      Template JSON{' '}
                       <span className='text-red-11'>*</span>
                     </span>
                     <IconButton

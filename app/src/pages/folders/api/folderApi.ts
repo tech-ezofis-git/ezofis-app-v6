@@ -369,14 +369,14 @@ export const resolveCurrentFolderGroupField = (
   return field?.sqlColumnName || field?.name || ''
 }
 
-const getPagedData = <T>(paged: any): T[] => {
+export const getPagedData = <T>(paged: any): T[] => {
   if (Array.isArray(paged)) return paged
   if (Array.isArray(paged?.data)) return paged.data
   if (Array.isArray(paged?.items)) return paged.items
   return []
 }
 
-const toPage = (paged?: PagedDto<any> | null): RepositoryFilePage => {
+export const toPage = (paged?: PagedDto<any> | null): RepositoryFilePage => {
   const totalCount = Number(paged?.totalCount ?? 0)
   const pageSize = Number(paged?.pageSize ?? defaultItemPageSize)
   const totalPagesFromApi = Number(paged?.totalPages ?? 0)
@@ -470,7 +470,7 @@ const toWorkspaceDetail = (workspace: any): any => {
   }
 }
 
-const toFileItem = (row: Record<string, any>, index: number): FileItem => {
+export const toFileItem = (row: Record<string, any>, index: number): FileItem => {
   const id = String(
     row.id ??
     row.Id ??
@@ -1245,10 +1245,7 @@ export const folderApi = {
         totalPages: 1,
       }
 
-      if (
-        includeFiles &&
-        (Object.keys(fileUiFilters).length > 0 || Boolean(fileSearchText))
-      ) {
+      if (includeFiles) {
         const fileResult = await fetchRepositoryFiles(
           fileUiFilters,
           fileSearchText,

@@ -8,6 +8,7 @@ import showToast from '@/components/base/toast/showToast'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { exportWorkflow } from '../../utils/exportWorkflow'
+import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
 
 const BuilderHeader = () => {
   const navigate = useNavigate()
@@ -26,10 +27,33 @@ const BuilderHeader = () => {
       return
     }
 
-    const currentStatus = targetStatus || useWorkflowStore.getState().workflowStatus
+    const state = useWorkflowStore.getState()
+    const validation = validateWorkflowSettings({
+      workflowName: state.workflowName,
+      initiateUsing: state.initiateUsing,
+      folder: state.folder,
+      form: state.form,
+    })
+
+    if (!validation.isValid) {
+      state.setSettingsValidationErrors(validation.errors)
+      state.openSettings()
+      showToast({
+        message:
+          validation.firstError ||
+          'Please fill in all required workflow settings.',
+        toastTitle: 'Required Fields',
+        variant: 'default',
+      })
+      return
+    }
+
+    state.setSettingsValidationErrors(null)
+
+    const currentStatus = targetStatus || state.workflowStatus
     const isPublished = String(currentStatus).toLowerCase() === 'published'
 
-    useWorkflowStore.getState().setWorkflowStatus(isPublished ? 'published' : 'draft')
+    state.setWorkflowStatus(isPublished ? 'published' : 'draft')
 
     setIsSaving(true)
     try {

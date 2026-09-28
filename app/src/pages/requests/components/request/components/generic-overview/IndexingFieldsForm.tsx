@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import { Card } from '@/pages/folders/components/Ui'
 import FieldRenderer from '@/pages/requests/components/workflow-request/components/FieldRenderer'
+import TableFieldInput from '@/pages/folders/components/Upload/TableFieldInput'
 import { SUPPORTED_TYPES } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import {
   isIndexingFieldRequired,
@@ -96,6 +97,23 @@ const IndexingFieldsForm = ({
             const required = isIndexingFieldRequired(repoField)
             const value = values[repoField.sqlColumnName] ?? ''
             const missing = attemptedSubmit && required && !String(value).trim()
+            const dataType = String(repoField.dataType || '').toUpperCase()
+
+            if (dataType === 'TABLE' || dataType === 'DYNAMIC_TABLE' || dataType.includes('TABLE')) {
+              return (
+                <TableFieldInput
+                  key={repoField.id || repoField.sqlColumnName}
+                  field={repoField}
+                  label={repoField.name}
+                  required={required}
+                  value={value}
+                  onChange={(jsonVal) =>
+                    onChange(repoField.sqlColumnName, jsonVal)
+                  }
+                />
+              )
+            }
+
             return (
               <FieldRenderer
                 error={missing ? t`This field is required.` : undefined}

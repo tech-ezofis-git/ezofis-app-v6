@@ -138,7 +138,19 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
     })
 
     if (apiError) {
-      setError(apiError)
+      const match = apiError.match(
+        /you should (?:log\s*in|sign\s*in) with\s+(.+?)\.?$/i,
+      )
+      if (match) {
+        const rawType = match[1].trim()
+        const loginType =
+          /^[a-z]+$/.test(rawType)
+            ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+            : rawType
+        setError(t`Please sign in with ${loginType} to continue.`)
+      } else {
+        setError(apiError)
+      }
       setSubmitting(false)
     } else {
       handleLoggedNavigation()

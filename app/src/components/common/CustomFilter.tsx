@@ -107,6 +107,7 @@ export interface CustomFilterProps {
   customSearchComponent?: React.ReactNode
   /** Whether search control starts expanded or minimized (defaults to false). */
   defaultSearchExpanded?: boolean
+  hideSearch?: boolean
   isLoading?: boolean
   moreFilters?: FilterGroup[]
   moreFiltersLabel?: string
@@ -169,6 +170,7 @@ export default function CustomFilter({
   customSearchComponent,
   defaultSearchExpanded = false,
   filters,
+  hideSearch = false,
   isLoading = false,
   moreFilters,
   moreFiltersLabel = 'More filters',
@@ -986,7 +988,7 @@ export default function CustomFilter({
       <div className='flex min-w-0 flex-wrap items-center justify-end gap-1.5 ml-auto'>
         {customSearchComponent ? (
           customSearchComponent
-        ) : (
+        ) : hideSearch || !onSearchChange ? null : (
           <div
             className={cn(
               'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',

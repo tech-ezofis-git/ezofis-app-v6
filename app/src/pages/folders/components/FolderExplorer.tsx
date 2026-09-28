@@ -3,8 +3,11 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import showToast from '@/components/base/toast/showToast'
-import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
+import uploadAndIndexApi, {
+  type IndexStageFileRequest,
+} from '@/api/v6/uploadAndIndex'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
+import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
 import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import type { AppView, FileItem } from '../types/folderTypes'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
@@ -222,6 +225,185 @@ export function FolderExplorer() {
       await refreshData()
     },
     [refreshData, resolvedRepositoryId, t],
+  )
+
+  const handleDeleteStagedFiles = useCallback(
+    async (filesToDelete: FileItem[]) => {
+      const fileIds = filesToDelete
+        .map((file) =>
+          String(file.stageFileId || file.id || '')
+            .replace(/^staged-/, '')
+            .trim(),
+        )
+        .filter(Boolean)
+
+      const repositoryId = String(
+        filesToDelete[0]?.repositoryId || resolvedRepositoryId || '',
+      ).trim()
+
+      if (!fileIds.length || !repositoryId) {
+        showToast({
+          message: t`Couldn't delete selected staged files.`,
+          variant: 'error',
+        })
+        throw new Error('missing staged file id or repository id')
+      }
+
+      const { error } = await uploadAndIndexApi.deleteStagedFiles({
+        fileIds,
+        repositoryId,
+      })
+      if (error) {
+        showToast({
+          message: String(error),
+          variant: 'error',
+        })
+        throw new Error(error)
+      }
+
+      showToast({
+        message:
+          fileIds.length === 1
+            ? t`Staged file deleted.`
+            : t`${fileIds.length} staged files deleted.`,
+        variant: 'success',
+      })
+      await refreshData()
+    },
+    [refreshData, resolvedRepositoryId, t],
+  )
+
+  const buildStageFileIndexPayload = useCallback(
+    (file: FileItem): IndexStageFileRequest => {
+      const fields = fileColumns.map((col) => {
+        let rawVal = getRepositoryFieldRawValue(
+          file,
+          col.key,
+          folderContextFilters,
+        )
+        if (rawVal === undefined && col.label) {
+          rawVal = getRepositoryFieldRawValue(
+            file,
+            col.label,
+            folderContextFilters,
+          )
+        }
+        if (rawVal === undefined && col.fieldId) {
+          rawVal = getRepositoryFieldRawValue(
+            file,
+            col.fieldId,
+            folderContextFilters,
+          )
+        }
+
+        const strVal =
+          rawVal === undefined || rawVal === null
+            ? ''
+            : typeof rawVal === 'object'
+              ? JSON.stringify(rawVal)
+              : String(rawVal)
+
+        return {
+          name: col.label || col.key,
+          type: String(col.dataType || 'text').trim() || 'text',
+          value: strVal,
+        }
+      })
+
+      return {
+        fields,
+        itemId: null,
+        ocrResult: null,
+        repositoryId: String(
+          file.repositoryId || resolvedRepositoryId || '',
+        ),
+        status: 'Indexing',
+      }
+    },
+    [fileColumns, folderContextFilters, resolvedRepositoryId],
+  )
+
+  const handleExportStagedFile = useCallback(
+    async (file: FileItem) => {
+      const stageId = String(file.stageFileId || file.id || '')
+        .replace(/^staged-/, '')
+        .trim()
+
+      if (!stageId) {
+        showToast({
+          message: t`Couldn't export this staged file. Missing ID.`,
+          variant: 'error',
+        })
+        throw new Error('missing staged file id')
+      }
+
+      const payload = buildStageFileIndexPayload(file)
+      const { error } = await uploadAndIndexApi.indexStageFile(
+        stageId,
+        payload,
+      )
+
+      if (error) {
+        showToast({
+          message: String(error),
+          variant: 'error',
+        })
+        throw new Error(error)
+      }
+
+      showToast({
+        message: t`Staged file exported successfully.`,
+        variant: 'success',
+      })
+      await refreshData()
+    },
+    [buildStageFileIndexPayload, refreshData, t],
+  )
+
+  const handleExportStagedFiles = useCallback(
+    async (filesToExport: FileItem[]) => {
+      if (!filesToExport.length) return
+
+      let successCount = 0
+      let lastError = ''
+
+      for (const file of filesToExport) {
+        const stageId = String(file.stageFileId || file.id || '')
+          .replace(/^staged-/, '')
+          .trim()
+        if (!stageId) continue
+
+        const payload = buildStageFileIndexPayload(file)
+        const { error } = await uploadAndIndexApi.indexStageFile(
+          stageId,
+          payload,
+        )
+
+        if (error) {
+          lastError = String(error)
+        } else {
+          successCount++
+        }
+      }
+
+      if (successCount > 0) {
+        showToast({
+          message:
+            successCount === 1
+              ? t`Staged file exported successfully.`
+              : t`${successCount} staged files exported successfully.`,
+          variant: 'success',
+        })
+        await refreshData()
+      } else if (lastError) {
+        showToast({
+          message: lastError,
+          variant: 'error',
+        })
+        throw new Error(lastError)
+      }
+    },
+    [buildStageFileIndexPayload, refreshData, t],
   )
 
   const selectRepositoryById = useCallback(
@@ -749,6 +931,9 @@ export function FolderExplorer() {
           onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
           onDeleteStagedFile={handleDeleteStagedFile}
+          onDeleteStagedFiles={handleDeleteStagedFiles}
+          onExportStagedFile={handleExportStagedFile}
+          onExportStagedFiles={handleExportStagedFiles}
         />
       </div>
     )
@@ -814,6 +999,7 @@ export function FolderExplorer() {
         <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
+              repositoryId={resolvedRepositoryId}
               fileColumns={fileColumns}
               fileFilters={fileFilters}
               filePage={filePage}
@@ -850,6 +1036,9 @@ export function FolderExplorer() {
               onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => handleFileAction(id, 'workflow')}
               onDeleteStagedFile={handleDeleteStagedFile}
+              onDeleteStagedFiles={handleDeleteStagedFiles}
+              onExportStagedFile={handleExportStagedFile}
+              onExportStagedFiles={handleExportStagedFiles}
             />
           </div>
         </main>
