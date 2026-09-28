@@ -814,6 +814,7 @@ export function FolderExplorer() {
         <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
+              repositoryId={resolvedRepositoryId}
               fileColumns={fileColumns}
               fileFilters={fileFilters}
               filePage={filePage}

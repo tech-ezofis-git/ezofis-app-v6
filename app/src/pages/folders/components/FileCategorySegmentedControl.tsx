@@ -23,7 +23,7 @@ export function FileCategorySegmentedControl({
 }: FileCategorySegmentedControlProps) {
   const { t } = useLingui()
 
-  if (stagedCount <= 0) {
+  if (allCount <= 0 && stagedCount <= 0 && archivedCount <= 0) {
     return null
   }
 
@@ -58,29 +58,31 @@ export function FileCategorySegmentedControl({
         </span>
       </button>
 
-      <button
-        type='button'
-        className={cn(
-          'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
-          activeCategory === 'staged'
-            ? 'bg-[var(--primary-9)] text-white shadow-xs'
-            : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
-        )}
-        onClick={() => onChange('staged')}
-      >
-        <Icon name='tabler:scan' className='size-3.5' />
-        <span>{t`Staged`}</span>
-        <span
+      {stagedCount > 0 ? (
+        <button
+          type='button'
           className={cn(
-            'rounded-full px-1.5 py-0.2 text-[10px]',
+            'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
             activeCategory === 'staged'
-              ? 'bg-white/20 text-white'
-              : 'bg-gray-4 text-gray-11',
+              ? 'bg-[var(--primary-9)] text-white shadow-xs'
+              : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
           )}
+          onClick={() => onChange('staged')}
         >
-          {stagedCount}
-        </span>
-      </button>
+          <Icon name='tabler:scan' className='size-3.5' />
+          <span>{t`Staged`}</span>
+          <span
+            className={cn(
+              'rounded-full px-1.5 py-0.2 text-[10px]',
+              activeCategory === 'staged'
+                ? 'bg-white/20 text-white'
+                : 'bg-gray-4 text-gray-11',
+            )}
+          >
+            {stagedCount}
+          </span>
+        </button>
+      ) : null}
 
       <button
         type='button'

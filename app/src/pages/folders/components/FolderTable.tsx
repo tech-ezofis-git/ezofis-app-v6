@@ -23,7 +23,13 @@ import Pagination from '@/components/base/pagination/Pagination'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import { isAccountsPayableFolder } from './DocumentsListView'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import { mergeFileExplorerFilters } from '../api/folderApi'
+import {
+  mergeFileExplorerFilters,
+  getPagedData,
+  toPage,
+  toFileItem,
+} from '../api/folderApi'
+import { getRepositoryItems } from '../../../api/v6/folder/folder'
 import type {
   FileItem,
   FolderItem,
@@ -82,6 +88,8 @@ type FolderRow = {
 }
 
 type FolderTableDataTableSplitProps = {
+  repositoryId?: string
+
   error?: string
 
   fileColumns?: DynamicRepositoryColumn[]
@@ -323,18 +331,74 @@ export default function FolderTableDataTableSplit({
   uploadDisabled = false,
 
   onWorkflow,
+
+  repositoryId,
 }: FolderTableDataTableSplitProps) {
   const { t } = useLingui()
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
   const [fileCategory, setFileCategory] = useState<'all' | 'staged' | 'archived'>('all')
 
+  const [archivedCount, setArchivedCount] = useState<number>(0)
+  const [archivedFiles, setArchivedFiles] = useState<FileItem[]>([])
+  const [archivedFilePage, setArchivedFilePage] = useState<RepositoryFilePage | undefined>(undefined)
+  const [loadingArchived, setLoadingArchived] = useState<boolean>(false)
+
+  const fetchArchivedFileList = useCallback(
+    async (targetPage = 1, targetPageSize = 50) => {
+      if (!repositoryId) return
+      setLoadingArchived(true)
+      try {
+        const response = await getRepositoryItems({
+          id: repositoryId,
+          filters: {},
+          page: targetPage,
+          pageSize: targetPageSize,
+          skipTotal: false,
+          sortBy: 'DocumentDate',
+          sortOrder: 'desc',
+        })
+        if (response && !response.error && response.data) {
+          const rawFiles = getPagedData<Record<string, any>>(response.data)
+          const mappedFiles = rawFiles.map(toFileItem)
+          const pageMeta = toPage(response.data)
+          setArchivedFiles(mappedFiles)
+          setArchivedFilePage(pageMeta)
+          setArchivedCount(pageMeta.totalCount ?? mappedFiles.length)
+        }
+      } catch (err) {
+        console.error('Failed to load archived file list:', err)
+      } finally {
+        setLoadingArchived(false)
+      }
+    },
+    [repositoryId],
+  )
+
+  useEffect(() => {
+    if (repositoryId) {
+      void fetchArchivedFileList(1, 50)
+    } else {
+      setArchivedCount(0)
+      setArchivedFiles([])
+      setArchivedFilePage(undefined)
+    }
+  }, [repositoryId, refreshing, fetchArchivedFileList])
+
   const stagedCount = useMemo(
     () => files.filter(isUnarchivedStageFile).length,
     [files],
   )
-  const archivedCount = useMemo(
-    () => files.filter(isArchivedFile).length,
-    [files],
+  const effectiveArchivedCount = useMemo(() => {
+    if (archivedCount > 0) return archivedCount
+    if (filePage?.totalCount !== undefined && filePage.totalCount > 0) {
+      return filePage.totalCount
+    }
+    return files.filter(isArchivedFile).length
+  }, [archivedCount, filePage?.totalCount, files])
+
+  const allCount = useMemo(
+    () => stagedCount + effectiveArchivedCount,
+    [stagedCount, effectiveArchivedCount],
   )
 
   useEffect(() => {
@@ -348,10 +412,57 @@ export default function FolderTableDataTableSplit({
       return files.filter(isUnarchivedStageFile)
     }
     if (fileCategory === 'archived') {
-      return files.filter(isArchivedFile)
+      return archivedFiles.length > 0
+        ? archivedFiles
+        : files.filter(isArchivedFile)
+    }
+    if (archivedFiles.length > 0 && files.filter(isArchivedFile).length === 0) {
+      return [...files.filter(isUnarchivedStageFile), ...archivedFiles]
     }
     return files
-  }, [files, fileCategory])
+  }, [files, fileCategory, archivedFiles])
+
+  const activeDisplayFilePage = useMemo(() => {
+    if (fileCategory === 'archived' && archivedFilePage) {
+      return archivedFilePage
+    }
+    return filePage
+  }, [fileCategory, archivedFilePage, filePage])
+
+  const handleFilePageChange = useCallback(
+    (page: number, cursor?: string | null) => {
+      if (fileCategory === 'archived') {
+        void fetchArchivedFileList(
+          page,
+          activeDisplayFilePage?.pageSize || 50,
+        )
+      } else {
+        onPageChange?.(page, cursor)
+      }
+    },
+    [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.pageSize, onPageChange],
+  )
+
+  const handleFilePageSizeChange = useCallback(
+    (nextPageSize: number) => {
+      if (fileCategory === 'archived') {
+        void fetchArchivedFileList(1, nextPageSize)
+      } else {
+        onPageSizeChange?.(nextPageSize)
+      }
+    },
+    [fileCategory, fetchArchivedFileList, onPageSizeChange],
+  )
+
+  const handleReload = useCallback(() => {
+    if (fileCategory === 'archived') {
+      void fetchArchivedFileList(
+        activeDisplayFilePage?.page || 1,
+        activeDisplayFilePage?.pageSize || 50,
+      )
+    }
+    onReload?.()
+  }, [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.page, activeDisplayFilePage?.pageSize, onReload])
 
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
@@ -373,11 +484,22 @@ export default function FolderTableDataTableSplit({
       </div>
     )
   }
-  const filesHave = files.length > 0 || loading || loadingPage
+  const filesHave =
+    files.length > 0 ||
+    loading ||
+    loadingPage ||
+    effectiveArchivedCount > 0 ||
+    archivedFiles.length > 0 ||
+    loadingArchived
+
   const canResizeSplit =
     folders.length > 0 &&
-    (files.length > 0 || loading || loadingPage) &&
-    folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
+    (files.length > 0 ||
+      loading ||
+      loadingPage ||
+      effectiveArchivedCount > 0 ||
+      archivedFiles.length > 0 ||
+      loadingArchived)
   const showFoldersPane = splitViewMode !== 'files-only'
   const showFilesPane = splitViewMode !== 'folders-only'
   const isSplitView = splitViewMode === 'split'
@@ -425,15 +547,21 @@ export default function FolderTableDataTableSplit({
           onClick={handleLeftViewClick}
         />
 
-        {stagedCount > 0 ? (
-          <FileCategorySegmentedControl
-            activeCategory={fileCategory}
-            allCount={files.length}
-            archivedCount={archivedCount}
-            stagedCount={stagedCount}
-            onChange={setFileCategory}
-          />
-        ) : null}
+        <FileCategorySegmentedControl
+          activeCategory={fileCategory}
+          allCount={allCount}
+          archivedCount={effectiveArchivedCount}
+          stagedCount={stagedCount}
+          onChange={(cat) => {
+            setFileCategory(cat)
+            if (cat === 'archived' && archivedFiles.length === 0 && repositoryId) {
+              void fetchArchivedFileList(1, 50)
+            }
+            if (splitViewMode === 'folders-only') {
+              setSplitViewMode('split')
+            }
+          }}
+        />
 
         <IconButton
           ariaLabel={rightViewLabel}
@@ -489,13 +617,17 @@ export default function FolderTableDataTableSplit({
         {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
-          (files.length || loading || loadingPage) &&
-          folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
+          (activeDisplayFiles.length > 0 ||
+            files.length > 0 ||
+            loading ||
+            loadingPage ||
+            loadingArchived ||
+            fileCategory === 'archived') ? (
           <FileDataTableSection
             columns={visibleFileColumns}
             fileCategory={fileCategory}
             fileFilters={fileFilters}
-            filePage={filePage}
+            filePage={activeDisplayFilePage}
             files={activeDisplayFiles}
             fileSearch={fileSearch || folderSearch}
             folderContextFilters={folderContextFilters}
@@ -508,14 +640,14 @@ export default function FolderTableDataTableSplit({
             }
             isExpanded={splitViewMode === 'files-only'}
             isSplitView={isSplitView}
-            loading={loading}
+            loading={loading || loadingArchived}
             loadingPage={loadingPage}
             onAiSummary={onAiSummary}
             onEditMetadata={onEditMetadata}
             onOpenFile={onOpenFile}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-            onReload={onReload}
+            onPageChange={handleFilePageChange}
+            onPageSizeChange={handleFilePageSizeChange}
+            onReload={handleReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
             onDeleteStagedFile={onDeleteStagedFile}

@@ -825,8 +825,7 @@ export default function DashboardAiBuilder({
           <CustomFilter
             filters={filtersProp}
             moreFilters={moreFiltersProp}
-            searchPlaceholder={t`Search invoice, supplier, PO...`}
-            searchQuery={searchQuery}
+            hideSearch
             activeFilters={{
               amount: poAmountTier,
               currency: currency,
@@ -843,12 +842,10 @@ export default function DashboardAiBuilder({
               supplierCategory ||
               department ||
               requestStatus ||
-              poAmountTier ||
-              searchQuery,
+              poAmountTier,
             )}
             onFilterChange={handleFilterChange}
             onReset={handleResetFilters}
-            onSearchChange={(query) => setSearchQuery(query)}
           />
         </div>
 
@@ -1193,8 +1190,7 @@ export default function DashboardAiBuilder({
                 <CustomFilter
                   filters={filtersProp}
                   moreFilters={moreFiltersProp}
-                  searchPlaceholder={t`Search invoice, supplier, PO...`}
-                  searchQuery={searchQuery}
+                  hideSearch
                   activeFilters={{
                     amount: poAmountTier,
                     currency: currency,
@@ -1211,12 +1207,10 @@ export default function DashboardAiBuilder({
                     supplierCategory ||
                     department ||
                     requestStatus ||
-                    poAmountTier ||
-                    searchQuery,
+                    poAmountTier,
                   )}
                   onFilterChange={handleFilterChange}
                   onReset={handleResetFilters}
-                  onSearchChange={(query) => setSearchQuery(query)}
                 />
               </div>
 

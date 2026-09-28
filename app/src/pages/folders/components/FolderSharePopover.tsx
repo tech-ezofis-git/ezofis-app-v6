@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { SignRequestSigningMode } from '@/api/v6/folder/signRequest'
 import { getUserListQueryOptions } from '@/api/userQueries'
@@ -417,6 +417,25 @@ export default function FolderSharePopover({
     setShareSearch('')
   }
 
+  const handleAddEmail = useCallback(() => {
+    const val = shareSearch.trim().replace(/,$/, '')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return
+    setSelectedUsersToShare((prev) => ({
+      ...prev,
+      [val]: {
+        permission: globalShareRole.id,
+        user: {
+          email: val,
+          id: val,
+          isExternal: true,
+          name: val,
+        },
+      },
+    }))
+    setSelectedOrder((prev) => (prev.includes(val) ? prev : [...prev, val]))
+    setShareSearch('')
+  }, [shareSearch, globalShareRole.id])
+
   const handleBulkShare = async () => {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareSearch)
     const selectedCount = Object.keys(selectedUsersToShare).length
@@ -592,25 +611,7 @@ export default function FolderSharePopover({
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ',') {
                               e.preventDefault()
-                              const val = shareSearch.trim().replace(/,$/, '')
-                              if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                                setSelectedUsersToShare((prev) => ({
-                                  ...prev,
-                                  [val]: {
-                                    permission: globalShareRole.id,
-                                    user: {
-                                      email: val,
-                                      id: val,
-                                      isExternal: true,
-                                      name: val,
-                                    },
-                                  },
-                                }))
-                                setSelectedOrder((prev) =>
-                                  prev.includes(val) ? prev : [...prev, val],
-                                )
-                                setShareSearch('')
-                              }
+                              handleAddEmail()
                             }
                           }}
                         />
@@ -670,39 +671,20 @@ export default function FolderSharePopover({
                     <div className='px-2 py-2'>
                       {showPressEnterPrompt && (
                         <button
-                          className='mb-2 flex w-full items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--primary-4)] bg-[var(--primary-1)]/10 px-3 py-2 text-left transition-all hover:bg-[var(--primary-2)]/30'
+                          className='group mb-2.5 flex w-full items-center gap-2.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-1)]/40 p-2 text-left shadow-2xs transition-all hover:border-[var(--primary-6)] hover:bg-[var(--primary-2)]/60 active:scale-[0.99]'
                           type='button'
-                          onClick={() => {
-                            const val = shareSearch.trim()
-                            setSelectedUsersToShare((prev) => ({
-                              ...prev,
-                              [val]: {
-                                permission: globalShareRole.id,
-                                user: {
-                                  email: val,
-                                  id: val,
-                                  isExternal: true,
-                                  name: val,
-                                },
-                              },
-                            }))
-                            setSelectedOrder((prev) =>
-                              prev.includes(val) ? prev : [...prev, val],
-                            )
-                            setShareSearch('')
-                          }}
+                          onClick={handleAddEmail}
                         >
+                          <div className='flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-9)] transition-colors group-hover:bg-[var(--primary-4)]'>
+                            <Icon className='size-3.5' name='lucide:user-plus' />
+                          </div>
                           <div className='min-w-0 flex-1'>
-                            <p className='text-[13px] font-medium text-[var(--primary-11)] truncate'>
+                            <p className='truncate text-[13px] font-medium text-[var(--primary-11)]'>
                               {shareSearch.trim()}
                             </p>
-                          </div>
-                          <div className='flex shrink-0 items-center gap-1 rounded border border-[var(--primary-3)] bg-surface px-1.5 py-0.5 text-[10px] font-medium text-[var(--primary-9)] shadow-sm'>
-                            <span>Press Enter</span>
-                            <Icon
-                              className='size-3'
-                              name='lucide:corner-down-left'
-                            />
+                            <p className='text-[11px] text-[var(--gray-10)]'>
+                              {t`Click or press Enter ↵`}
+                            </p>
                           </div>
                         </button>
                       )}
