@@ -1065,6 +1065,11 @@ msgstr "تم استيعاب وفهرسة جميع المستندات الـ {cou
 msgid "All Active"
 msgstr "الكل نشط"
 
+#: src/pages/reports/components/OverviewTab.tsx:269
+#: src/pages/reports/components/OverviewTab.tsx:276
+#~ msgid "All Columns"
+#~ msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:890
 msgid "All conditions must match"
 msgstr "يجب أن تتطابق جميع الشروط"
@@ -2236,6 +2241,10 @@ msgstr "اختر كيفية تسجيل دخول المستخدمين إلى هذ
 msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 msgstr "اختر كيفية ترحيل مسارات العمل والمجلدات والمستخدمين والطلبات التجريبية — الاحتفاظ بكل شيء، أو الاحتفاظ بالإعدادات فقط، أو البدء من جديد."
 
+#: src/pages/reports/components/OverviewTab.tsx:300
+#~ msgid "Choose search column"
+#~ msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2833
 msgid "Choose signature"
 msgstr "اختر توقيعاً"
@@ -2307,7 +2316,7 @@ msgstr "مسح الربط"
 #~ msgid "Clear queue"
 #~ msgstr "مسح قائمة الانتظار"
 
-#: src/components/common/CustomFilter.tsx:1051
+#: src/components/common/CustomFilter.tsx:1054
 msgid "Clear search"
 msgstr ""
 
@@ -5754,7 +5763,7 @@ msgstr "الأذونات الممنوحة ({0})"
 msgid "Greater Than"
 msgstr "أعظم من"
 
-#: src/components/common/CustomFilter.tsx:1075
+#: src/components/common/CustomFilter.tsx:1078
 #: src/components/common/DynamicFilter.tsx:816
 msgid "Grid View"
 msgstr "عرض الشبكة"
@@ -10933,7 +10942,7 @@ msgstr ""
 msgid "rows"
 msgstr "صفوف"
 
-#: src/pages/reports/components/OverviewTab.tsx:233
+#: src/pages/reports/components/OverviewTab.tsx:332
 msgid "Rows"
 msgstr "صفوف"
 
@@ -11189,7 +11198,7 @@ msgstr "المبيعات ومعالجة الطلبات (SD)"
 
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 #: src/components/base/data-table/actions/TableSearch.tsx:193
-#: src/components/common/CustomFilter.tsx:1007
+#: src/components/common/CustomFilter.tsx:1010
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:359
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:363
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:397
@@ -11201,9 +11210,18 @@ msgstr "المبيعات ومعالجة الطلبات (SD)"
 msgid "Search"
 msgstr "بحث"
 
+#. placeholder {0}: col.label
+#: src/pages/reports/components/OverviewTab.tsx:183
+msgid "Search {0}..."
+msgstr ""
+
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 msgid "Search {selectedColumnLabel}"
 msgstr "بحث {selectedColumnLabel}"
+
+#: src/pages/reports/components/OverviewTab.tsx:307
+#~ msgid "Search across all fields..."
+#~ msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Search AI"
@@ -11318,6 +11336,10 @@ msgstr "بحث forms..."
 msgid "Search icons"
 msgstr "أيقونات البحث"
 
+#: src/pages/reports/components/OverviewTab.tsx:271
+#~ msgid "Search in {0}..."
+#~ msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/requests/components/InboxList.tsx:1867
 msgid "Search invoice, supplier, PO..."
@@ -11374,7 +11396,6 @@ msgid "Search request types…"
 msgstr "أنواع طلبات البحث..."
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:203
-#: src/pages/reports/components/OverviewTab.tsx:195
 msgid "Search rows..."
 msgstr "البحث في الصفوف..."
 
@@ -12982,7 +13003,7 @@ msgstr ""
 msgid "Table Data"
 msgstr ""
 
-#: src/components/common/CustomFilter.tsx:1089
+#: src/components/common/CustomFilter.tsx:1092
 #: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "عرض الجدول"
@@ -13255,7 +13276,7 @@ msgstr "رابط البوابة هذا غير صالح أو لم يتم نشره
 msgid "This related document cannot be removed."
 msgstr "لا يمكن إزالة هذه الوثيقة ذات الصلة."
 
-#: src/pages/reports/components/OverviewTab.tsx:185
+#: src/pages/reports/components/OverviewTab.tsx:287
 msgid "This report has no fields configured yet."
 msgstr "لم يتم تكوين أي حقول لهذا التقرير بعد."
 

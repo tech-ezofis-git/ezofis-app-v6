@@ -1090,6 +1090,11 @@ msgstr "Tous les {count} documents ont été ingérés et indexés avec succès.
 msgid "All Active"
 msgstr "Tous actifs"
 
+#: src/pages/reports/components/OverviewTab.tsx:269
+#: src/pages/reports/components/OverviewTab.tsx:276
+#~ msgid "All Columns"
+#~ msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:890
 msgid "All conditions must match"
 msgstr "Toutes les conditions doivent correspondre"
@@ -2265,6 +2270,10 @@ msgstr "Choisissez comment les utilisateurs se connectent à ce portail"
 msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 msgstr "Choisissez comment transférer vos flux de travail, dossiers, utilisateurs et demandes d'évaluation — tout conserver, ne conserver que les configurations ou repartir à zéro."
 
+#: src/pages/reports/components/OverviewTab.tsx:300
+#~ msgid "Choose search column"
+#~ msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2833
 msgid "Choose signature"
 msgstr "Choisir une signature"
@@ -2336,7 +2345,7 @@ msgstr "Effacer le mappage"
 #~ msgid "Clear queue"
 #~ msgstr "Vider la file d'attente"
 
-#: src/components/common/CustomFilter.tsx:1051
+#: src/components/common/CustomFilter.tsx:1054
 msgid "Clear search"
 msgstr ""
 
@@ -5835,7 +5844,7 @@ msgstr "Autorisations accordées ({0})"
 msgid "Greater Than"
 msgstr "Supérieur à"
 
-#: src/components/common/CustomFilter.tsx:1075
+#: src/components/common/CustomFilter.tsx:1078
 #: src/components/common/DynamicFilter.tsx:816
 msgid "Grid View"
 msgstr "Vue grille"
@@ -11057,7 +11066,7 @@ msgstr ""
 msgid "rows"
 msgstr "lignes"
 
-#: src/pages/reports/components/OverviewTab.tsx:233
+#: src/pages/reports/components/OverviewTab.tsx:332
 msgid "Rows"
 msgstr "Lignes"
 
@@ -11317,7 +11326,7 @@ msgstr "SD (Ventes et traitement des commandes)"
 
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 #: src/components/base/data-table/actions/TableSearch.tsx:193
-#: src/components/common/CustomFilter.tsx:1007
+#: src/components/common/CustomFilter.tsx:1010
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:359
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:363
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:397
@@ -11329,9 +11338,18 @@ msgstr "SD (Ventes et traitement des commandes)"
 msgid "Search"
 msgstr "Rechercher"
 
+#. placeholder {0}: col.label
+#: src/pages/reports/components/OverviewTab.tsx:183
+msgid "Search {0}..."
+msgstr ""
+
 #: src/components/base/data-table/actions/TableSearch.tsx:134
 msgid "Search {selectedColumnLabel}"
 msgstr "Rechercher {selectedColumnLabel}"
+
+#: src/pages/reports/components/OverviewTab.tsx:307
+#~ msgid "Search across all fields..."
+#~ msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Search AI"
@@ -11446,6 +11464,10 @@ msgstr "Formulaires de recherche..."
 msgid "Search icons"
 msgstr "Icônes de recherche"
 
+#: src/pages/reports/components/OverviewTab.tsx:271
+#~ msgid "Search in {0}..."
+#~ msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/requests/components/InboxList.tsx:1867
 msgid "Search invoice, supplier, PO..."
@@ -11502,7 +11524,6 @@ msgid "Search request types…"
 msgstr "Types de requêtes de recherche…"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:203
-#: src/pages/reports/components/OverviewTab.tsx:195
 msgid "Search rows..."
 msgstr "Rechercher des lignes..."
 
@@ -13157,7 +13178,7 @@ msgstr ""
 msgid "Table Data"
 msgstr ""
 
-#: src/components/common/CustomFilter.tsx:1089
+#: src/components/common/CustomFilter.tsx:1092
 #: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "Vue tableau"
@@ -13430,7 +13451,7 @@ msgstr "Ce lien de portail n'est pas valide ou n'a pas encore été publié."
 msgid "This related document cannot be removed."
 msgstr "Ce document associé ne peut pas être supprimé."
 
-#: src/pages/reports/components/OverviewTab.tsx:185
+#: src/pages/reports/components/OverviewTab.tsx:287
 msgid "This report has no fields configured yet."
 msgstr "Ce rapport n'a pas encore de champs configurés."
 
