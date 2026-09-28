@@ -35,7 +35,13 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
   let maxReachedIndex = -1
   agentBlocks.forEach((block, index) => {
     const label = block.settings?.label || 'Agent'
-    if (historyStages.has(label) || currentStage === label) {
+    let hasResponse = false
+    if (block.type === 'QUALIFY_AGENT' && requestData?.qualifyAgentResponse) hasResponse = true
+    if (block.type === 'QUOTE_AGENT' && requestData?.quoteAgentResponse) hasResponse = true
+    if (block.type === 'DOCUMENT_GENERATE_AGENT' && requestData?.documentGenerateResponse) hasResponse = true
+    if (block.type === 'AP_AGENT' && (requestData?.agentResponse || requestData?._agentData?.length > 0)) hasResponse = true
+
+    if (historyStages.has(label) || currentStage === label || hasResponse) {
       maxReachedIndex = Math.max(maxReachedIndex, index)
     }
   })
@@ -67,19 +73,50 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
         let statusColor = 'text-gray-9 bg-gray-2 border-gray-3'
         let value = '-'
 
-        // Simple placeholder mapping
         if (block.type === 'QUALIFY_AGENT') {
-          status = 'Qualifed'
-          statusColor = 'text-green-10 bg-green-2 border-green-3'
-          value = 'QUALIFY-1001'
+          const qualifyResult = requestData?.qualifyAgentResponse?.qualifier_result
+          if (qualifyResult) {
+            status = qualifyResult.Qualify || 'Processed'
+            if (status.toLowerCase() === 'qualify') {
+              statusColor = 'text-green-10 bg-green-2 border-green-3'
+            } else if (status.toLowerCase() === 'disqualify') {
+              statusColor = 'text-red-10 bg-red-2 border-red-3'
+            } else {
+              statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            }
+            // Value can be project name or project type
+            value = qualifyResult['Project Name'] || qualifyResult['Project Type'] || 'Completed'
+          } else if (requestData?.stage === label && !requestData?.qualifyAgentResponse) {
+            status = 'Processing'
+            statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
+            value = 'Analyzing...'
+          }
         } else if (block.type === 'QUOTE_AGENT') {
-          status = 'Matched'
-          statusColor = 'text-green-10 bg-green-2 border-green-3'
-          value = 'Quote-1001'
+          status = 'Pending'
+          statusColor = 'text-gray-10 bg-gray-2 border-gray-3'
+          value = '-'
+          if (requestData?.quoteAgentResponse) {
+            status = 'Processed'
+            statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            value = 'Completed'
+          } else if (requestData?.stage === label) {
+            status = 'Processing'
+            statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
+            value = 'Analyzing...'
+          }
         } else if (block.type === 'DOCUMENT_GENERATE_AGENT') {
-          status = 'Generated'
-          statusColor = 'text-blue-10 bg-blue-2 border-blue-3'
-          value = 'Doc-Ready'
+          status = 'Pending'
+          statusColor = 'text-gray-10 bg-gray-2 border-gray-3'
+          value = '-'
+          if (requestData?.documentGenerateResponse) {
+            status = 'Processed'
+            statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            value = 'Completed'
+          } else if (requestData?.stage === label) {
+            status = 'Processing'
+            statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
+            value = 'Generating...'
+          }
         }
 
         return (

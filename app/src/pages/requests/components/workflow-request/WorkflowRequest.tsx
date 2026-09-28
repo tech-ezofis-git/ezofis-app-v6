@@ -87,11 +87,44 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setAgentUploadedFile(file)
     setIsStartingAgentWorkflow(true)
 
-    // Auto-select the first agent block to show the loading state to the user immediately
-    if (agentBlocks.length > 0) {
-      setSelectedAgentBlockId(agentBlocks[0].id)
+    // Instantly open the request page with a stub to match AP behavior
+    const localUrl = URL.createObjectURL(file)
+    const startTime = new Date().toISOString()
+    const resolvedProcessId = `job-temp-${Date.now()}`
+
+    const wFormId =
+      workflow?.formId ??
+      workflow?.wFormId ??
+      workflow?.settings?.general?.initiateUsing?.formId ??
+      ''
+    const stubWorkflow = {
+      ...workflow,
+      flowJson:
+        typeof workflow?.flowJson === 'string'
+          ? workflow.flowJson
+          : JSON.stringify(workflow?.flowJson || {}),
+      formJson:
+        typeof workflow?.formJson === 'string'
+          ? workflow.formJson
+          : JSON.stringify(workflow?.formJson || ''),
+      wFormId: wFormId || '',
     }
-    
+
+    const lastStubItem = {
+      _localFileUrl: localUrl,
+      createdAt: startTime,
+      documentNumber: t`Processing Document...`,
+      id: resolvedProcessId,
+      isProcessing: true,
+      processId: resolvedProcessId,
+      reqNo: t`New Request`,
+      requestNo: t`New Request`,
+      stage: t`Initiating...`,
+      stageType: 'AGENT',
+    }
+
+    // Wait for the API response before opening the request
+
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -109,19 +142,34 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
       if (data) {
         const parsedData = typeof data === 'string' ? JSON.parse(data) : data
-        const processId = parsedData?.instanceId
-        
+        const processId =
+          parsedData?.instanceId || parsedData?.items?.[0]?.workflowInstanceId
+
         if (processId) {
-          setCreatedInstanceId(String(processId))
-          workflowRefresh()
+          const item = parsedData?.items?.[0]
+          const nextItem = item || {
+            ...lastStubItem,
+            id: processId,
+            processId: processId,
+            workflowInstanceId: processId,
+            transactionId: parsedData?.transactionId
+          }
+          requestStore.getState().openRequest(nextItem, stubWorkflow, 'Inbox')
+          requestStore.getState().workflowRefresh()
+          onClose()
         } else {
           throw new Error('Instance ID not returned')
         }
       }
     } catch (e: any) {
-      showToast({ message: e?.message || t`Failed to start workflow`, variant: 'error' })
+      showToast({
+        message: e?.message || t`Failed to start workflow`,
+        variant: 'error',
+      })
     } finally {
-      setIsStartingAgentWorkflow(false)
+      if (typeof setIsStartingAgentWorkflow === 'function') {
+        setIsStartingAgentWorkflow(false)
+      }
     }
   }
 
@@ -230,7 +278,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         isSubmitting={isSubmitting}
         title={t`New Request`}
         onClose={onClose}
-        onSubmit={createdInstanceId ? undefined : handleSubmit}
+        onSubmit={createdInstanceId || agentBlocks.length > 0 ? undefined : handleSubmit}
       />
 
       {isLoadingForm ? (
@@ -293,8 +341,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         {[
                           { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
                           lineItemsHiddenFieldIds.hasLineItems ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
-                          { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments` },
-                          { icon: 'tabler:message-circle', id: 'comments', label: t`Comments` },
+                          { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments`, count: attachments.length },
+                          { icon: 'tabler:message-circle', id: 'comments', label: t`Comments`, count: comments.length },
                           { icon: 'tabler:history', id: 'history', label: t`History` },
                         ].filter(Boolean).map((tab: any) => (
                           <button
@@ -309,6 +357,11 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           >
                             <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
                             <span>{tab.label}</span>
+                            {tab.count !== undefined && (
+                              <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                                {tab.count}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>

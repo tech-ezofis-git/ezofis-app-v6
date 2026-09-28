@@ -132,6 +132,8 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row,
   )
 
+  const isAgentStage = Boolean(row?.stageType?.toUpperCase().includes('AGENT'))
+
   return (
     <div
       className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
@@ -140,14 +142,14 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div
         className={cn(
           'flex size-9 shrink-0 items-center justify-center rounded-full',
-          isTerminal ? 'bg-green-2' : 'bg-orange-2',
+          isAgentStage ? 'bg-orange-2' : isTerminal ? 'bg-green-2' : 'bg-orange-2',
         )}
       >
         <Icon
-          name={isTerminal ? 'tabler:check' : 'tabler:clock'}
+          name={isAgentStage ? 'tabler:loader-2' : isTerminal ? 'tabler:check' : 'tabler:clock'}
           className={cn(
             'size-4',
-            isTerminal ? 'text-green-9' : 'text-orange-9',
+            isAgentStage ? 'text-orange-9 animate-spin' : isTerminal ? 'text-green-9' : 'text-orange-9',
           )}
         />
       </div>

@@ -1040,7 +1040,9 @@ const StatusCell = ({
                   </div>
                   <div>
                     <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
-                      Extraction Progress
+                      {row.stageType === 'AP_AGENT' || row.workflowName === 'AP Agent' || row.apAgentJobId
+                        ? 'Extraction Progress'
+                        : 'Agent Processing'}
                     </h4>
                     <p className='text-[10px] text-[var(--gray-9)]'>
                       ID: {rowId}
@@ -1055,6 +1057,18 @@ const StatusCell = ({
               {/* Stepper Content */}
               {(() => {
                 const stage = row.stage || 'Start'
+                const isApAgent = row.stageType === 'AP_AGENT' || row.workflowName === 'AP Agent' || row.apAgentJobId
+                
+                if (!isApAgent) {
+                  return (
+                    <div className='relative z-10 flex flex-col pt-2'>
+                      <span className='text-[12px] font-medium text-[var(--gray-10)]'>
+                        The AI Agent is currently extracting and analyzing data for this request. Please wait...
+                      </span>
+                    </div>
+                  )
+                }
+
                 const { step2Status, step3Status, step4Status } =
                   getStepStatuses(stage)
 

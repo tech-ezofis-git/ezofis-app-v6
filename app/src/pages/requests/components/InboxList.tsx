@@ -1617,21 +1617,49 @@ const InboxList: React.FC<InboxListProps> = ({
   const processingProcesses = requestStore((state) => state.processingProcesses)
 
   const finalData = useMemo(() => {
-    if (
-      (activeTab !== 'Inbox' && viewMode !== 'kanban') ||
-      !processingProcesses ||
-      processingProcesses.length === 0
-    ) {
+    if (activeTab !== 'Inbox' && viewMode !== 'kanban') {
       return filteredData
     }
 
     const existingIds = new Set()
     const outData = (filteredData || []).map((g) => {
-      g.items?.forEach((i: any) => existingIds.add(String(i.processId || i.id)))
-      return { ...g, items: [...(g.items || [])] }
+      const updatedItems = (g.items || []).map((i: any) => {
+        existingIds.add(String(i.processId || i.id))
+        
+        const isApAgent = i.stageType === 'AP_AGENT' || String(i.workflowName).toLowerCase().includes('ap agent') || String(i.workflowName).toLowerCase().includes('accounts payable') || i.apAgentJobId != null
+
+        let isProcessing = i.isProcessing || false
+        
+        const isAgentStage = 
+          i.stageType === 'INTERNAL_ACTOR' || 
+          i.stageType === 'AGENT' || 
+          String(i.stageType).includes('AGENT') ||
+          String(i.stage).toLowerCase().includes('agent')
+
+        if (!isProcessing && activeTab === 'Inbox' && isAgentStage) {
+          if (!isApAgent) {
+            const hasAgentData = 
+              i.qualifyAgentResponse != null || 
+              i.quoteAgentResponse != null || 
+              i.documentGenerateResponse != null || 
+              i.agentResponse != null || 
+              i._agentResponse != null
+              
+            if (!hasAgentData) {
+              isProcessing = true
+            }
+          }
+        }
+
+        return {
+          ...i,
+          isProcessing
+        }
+      })
+      return { ...g, items: updatedItems }
     })
 
-    const newProcessingItems = processingProcesses
+    const newProcessingItems = (processingProcesses || [])
       .filter((p) => !existingIds.has(String(p.processId || p.id)))
       .map((p) => {
         const rowId = p.processId || p.id
