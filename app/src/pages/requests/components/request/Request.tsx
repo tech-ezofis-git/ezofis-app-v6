@@ -928,13 +928,23 @@ const Request = ({
   const openPlayground = usePlaygroundStore((state) => state.open)
   const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
 
-  // Determine if it was known to be processing initially
-  const initialProcessing =
-    processingProcesses.some(
+  const initialProcessing = useMemo(() => {
+    const fromStore = processingProcesses.some(
       (p) =>
         String(p.processId || p.id) ===
         String(selectedItem?.processId || selectedItem?.id),
     ) || selectedItem?.isProcessing
+
+    if (fromStore) return true
+
+    // Check if it's currently on an agent stage that hasn't responded yet
+    const stage = selectedItem?.stage || selectedItem?.currentStage
+    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    const isAgentStage = blocks.some((b: any) => b.type?.includes('AGENT') && b.settings?.label === stage)
+    const hasDecision = !!(selectedItem?.qualifyAgentResponse?.qualifier_result || selectedItem?.agentResponse || selectedItem?._agentData?.length)
+
+    return isAgentStage && !hasDecision
+  }, [processingProcesses, selectedItem, rawWorkflowData])
 
   const { data: request, isLoading } = useRequestDetail(
     resolvedWorkflowId,
@@ -1013,15 +1023,30 @@ const Request = ({
   }, [request, selectedItem])
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
-  const hasAgentData = agentDataList.length > 0
+  const qualifyResponse = request?.qualifyAgentResponse || selectedItem?.qualifyAgentResponse
+  const hasAgentData = agentDataList.length > 0 || !!qualifyResponse?.qualifier_result
 
   const currentAgentData = useMemo(() => {
+    // For Generic Workflows where AI Insights comes from Qualify Agent Response
+    if (qualifyResponse?.qualifier_result) {
+      return {
+        score: qualifyResponse.qualifier_result.Confidence,
+        reason:
+          qualifyResponse.qualifier_result['Ai Insight'] ||
+          qualifyResponse.qualifier_result['AI Insight'] ||
+          qualifyResponse.qualifier_result['aiInsight'] ||
+          qualifyResponse.qualifier_result['Detailed Reasoning'] ||
+          qualifyResponse.qualifier_result.Reasoning ||
+          qualifyResponse.qualifier_result.Decision,
+        ...qualifyResponse.qualifier_result,
+      }
+    }
     return (
       agentDataList.find((a: any) => a.id === selectedAgentId) ||
       agentDataList[0] ||
       {}
     )
-  }, [agentDataList, selectedAgentId])
+  }, [agentDataList, selectedAgentId, request, selectedItem])
 
   const invoiceHeader =
     currentAgentData?.['Extracted Invoice JSON']?.invoice_header
@@ -1061,7 +1086,9 @@ const Request = ({
     ? !!(
       request.review ||
       request._agentData?.[0]?.decision ||
-      request.completedAtUtc
+      request.completedAtUtc ||
+      request.qualifyAgentResponse?.qualifier_result ||
+      request.agentResponse
     )
     : false
   const isCurrentlyProcessing =
@@ -2050,10 +2077,10 @@ const Request = ({
             }
           })}
           agentData={currentAgentData}
+          enableAIInsights={hasAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
           currency={currency}
-          enableAIInsights={true}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}

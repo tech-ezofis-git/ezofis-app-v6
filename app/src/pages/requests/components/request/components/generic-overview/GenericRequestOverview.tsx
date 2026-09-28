@@ -22,6 +22,7 @@ import {
   getFirstReceivedAttachment,
   getWorkflowRepositoryId,
   hasStoredFileValue,
+  getFormPanels,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -159,13 +160,14 @@ const DocumentApprovalSplitLayout = ({
       itemId: targetItemId,
       repositoryId: targetRepoId,
     }
-    : selectedItem?.itemId
+    : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        itemId: selectedItem.itemId,
-        repositoryId: selectedItem.repositoryId,
-        fileName: selectedItem.repositoryItem?.fileName,
-        name: selectedItem.repositoryItem?.fileName,
-        fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
+        itemId: selectedItem?.itemId,
+        repositoryId: selectedItem?.repositoryId,
+        fileName: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        fileExtension: selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+        _localFileUrl: selectedItem?._localFileUrl,
       }
       : null
 
@@ -282,6 +284,8 @@ const DocumentFormSplitLayout = ({
   commentsNode,
   historyNode,
   lineItemsNode,
+  attachmentsCount,
+  commentsCount,
 }: {
   attachments: AttachmentItem[]
   repositoryId: string | number | undefined
@@ -293,6 +297,8 @@ const DocumentFormSplitLayout = ({
   commentsNode?: React.ReactNode
   historyNode?: React.ReactNode
   lineItemsNode?: React.ReactNode
+  attachmentsCount?: number
+  commentsCount?: number
 }) => {
   const { t } = useLingui()
   const firstAttachment = attachments[0]
@@ -303,6 +309,23 @@ const DocumentFormSplitLayout = ({
   }, [rawWorkflowData])
 
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedAgentBlockId && agentBlocks.length > 0) {
+      if (selectedItem?.isProcessing) {
+        const activeStage = selectedItem?.stage || selectedItem?.currentStage
+        if (activeStage) {
+          const matchingBlock = agentBlocks.find(b => b.settings?.label === activeStage)
+          if (matchingBlock) {
+            setSelectedAgentBlockId(matchingBlock.id)
+            return
+          }
+        }
+        setSelectedAgentBlockId(agentBlocks[0].id)
+      }
+    }
+  }, [selectedItem?.isProcessing, selectedItem?.stage, selectedItem?.currentStage, selectedAgentBlockId, agentBlocks])
+
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
     return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
@@ -319,13 +342,14 @@ const DocumentFormSplitLayout = ({
       itemId: targetItemId,
       repositoryId: targetRepoId,
     }
-    : selectedItem?.itemId
+    : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        itemId: selectedItem.itemId,
-        repositoryId: selectedItem.repositoryId,
-        fileName: selectedItem.repositoryItem?.fileName,
-        name: selectedItem.repositoryItem?.fileName,
-        fileExtension: selectedItem.repositoryItem?.fileName?.split('.').pop(),
+        itemId: selectedItem?.itemId,
+        repositoryId: selectedItem?.repositoryId,
+        fileName: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        fileExtension: selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+        _localFileUrl: selectedItem?._localFileUrl,
       }
       : null
 
@@ -367,8 +391,8 @@ const DocumentFormSplitLayout = ({
                 {[
                   { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
                   lineItemsNode ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
-                  { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments` },
-                  { icon: 'tabler:message-circle', id: 'comments', label: t`Comments` },
+                  { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments`, count: attachmentsCount },
+                  { icon: 'tabler:message-circle', id: 'comments', label: t`Comments`, count: commentsCount },
                   { icon: 'tabler:history', id: 'history', label: t`History` },
                 ].filter(Boolean).map((tab: any) => (
                   <button
@@ -383,6 +407,11 @@ const DocumentFormSplitLayout = ({
                   >
                     <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
                     <span>{tab.label}</span>
+                    {tab.count !== undefined && (
+                      <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                        {tab.count}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -467,7 +496,7 @@ const GenericRequestOverview = ({
   )
 
   const panels = useMemo(
-    () => rawWorkflowData?.formJson?.panels || [],
+    () => getFormPanels(rawWorkflowData),
     [rawWorkflowData],
   )
 
@@ -1084,6 +1113,8 @@ const GenericRequestOverview = ({
                 enabled
               />
             }
+            attachmentsCount={attachments.length}
+            commentsCount={comments.length}
           />
         ) : (
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>

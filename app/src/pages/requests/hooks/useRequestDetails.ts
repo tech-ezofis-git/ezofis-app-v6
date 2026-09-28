@@ -59,6 +59,9 @@ export const useRequestDetail = (
       }
 
       if (!processData) {
+        if (isProcessing) {
+          return null
+        }
         throw new Error('Process details not found')
       }
 
@@ -164,7 +167,7 @@ export const useRequestDetail = (
       const agentDataList = data._agentData || []
       const hasAgentDecision = agentDataList.some((agent: any) => {
         return !!(agent?.decision || data.review || data.completedAtUtc)
-      })
+      }) || !!data.qualifyAgentResponse?.qualifier_result || !!data.agentResponse
 
       const isAgentStage = data.stageType?.includes('AGENT') || data.stageType === 'AP_AGENT'
       const isDone =

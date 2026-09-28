@@ -209,6 +209,11 @@ const DashboardPage = () => {
     sourceOptions.find((opt) => opt.selectId === selectedSourceId) ||
     sourceOptions.find(
       (opt) =>
+        opt.kind === 'workflow' &&
+        /accounts payable/i.test(opt.label),
+    ) ||
+    sourceOptions.find(
+      (opt) =>
         opt.kind === 'repository' &&
         (opt.value === repositoryId || /accounts payable/i.test(opt.label)),
     ) ||
@@ -281,7 +286,9 @@ const DashboardPage = () => {
           </div>
           <Skeleton className='h-9 w-32 rounded-lg' />
         </div>
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4'>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6'>
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
           <SkeletonCard height='h-28' />
           <SkeletonCard height='h-28' />
           <SkeletonCard height='h-28' />

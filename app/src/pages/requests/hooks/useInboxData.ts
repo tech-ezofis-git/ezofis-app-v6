@@ -563,6 +563,42 @@ export const useInboxData = (
     ],
     retry: 1,
     staleTime: 10000,
+    refetchInterval: (query: any) => {
+      const rawData = query.state?.data?.data
+      if (!Array.isArray(rawData)) return false
+
+      let hasLoading = false
+      for (const outer of rawData) {
+        if (outer && Array.isArray(outer.value)) {
+          for (const inner of outer.value) {
+            if (inner && Array.isArray(inner.value)) {
+              for (const p of inner.value) {
+                if (
+                  p?.stageType?.toUpperCase().includes('AGENT') ||
+                  p?.isProcessing ||
+                  p?.apAgentJobId
+                ) {
+                  hasLoading = true
+                  break
+                }
+              }
+            } else if (inner) {
+              if (
+                inner.stageType?.toUpperCase().includes('AGENT') ||
+                inner.isProcessing ||
+                inner.apAgentJobId
+              ) {
+                hasLoading = true
+                break
+              }
+            }
+            if (hasLoading) break
+          }
+        }
+        if (hasLoading) break
+      }
+      return hasLoading ? 20000 : false
+    },
 
     queryFn: async () => {
       const workflowId = selectedWorkflow?.id

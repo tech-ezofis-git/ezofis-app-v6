@@ -989,8 +989,10 @@ const GridRowItem = memo(
       agentData?.ai_insect ||
       ''
 
+    const isAgentStage = Boolean(row?.stageType?.toUpperCase().includes('AGENT'))
+
     const { iconColorClass, iconName } = getRowIconAndColor(
-      !!row.isProcessing,
+      !!row.isProcessing || isAgentStage,
       rawDecision,
       !!row?.isDuplicateInvoice,
     )
@@ -1065,7 +1067,7 @@ const GridRowItem = memo(
             )}
           >
             <Icon
-              className={cn('size-5', row.isProcessing && 'animate-spin')}
+              className={cn('size-5', (row.isProcessing || isAgentStage) && 'animate-spin')}
               name={iconName}
             />
           </div>

@@ -574,6 +574,78 @@ const Header: React.FC<HeaderProps> = ({
             ))}
           </div>
 
+          {/* AI Insights Toggle & Overlay */}
+          {enableAIInsights && (
+            <div className='relative' ref={containerRef}>
+              <Button
+                variant='outline'
+                className={cn(
+                  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+                  showAIInsights
+                    ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
+                    : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
+                  isProcessing &&
+                  'pointer-events-none animate-pulse opacity-70',
+                )}
+                onClick={() =>
+                  !isProcessing && setShowAIInsights(!showAIInsights)
+                }
+              >
+                <AiBrandIcon className='size-[16px]' />
+                <span>{t`AI Insights`}</span>
+                {agentData?.score !== undefined && (
+                  <span
+                    className={cn(
+                      'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
+                      getScoreBadgeClass(agentData.score),
+                    )}
+                  >
+                    {Math.round(Number(agentData.score))}%
+                  </span>
+                )}
+              </Button>
+
+              <AnimatePresence>
+                {showAIInsights && (
+                  <motion.div
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  >
+                    <div className='flex flex-col gap-4'>
+                      {/* AI Insights Section */}
+                      <div className='flex flex-col'>
+                        <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
+                          <div className='flex items-center gap-2'>
+                            <AiBrandIcon
+                              className='size-[20px] text-[var(--primary-9)]'
+                            />
+                            <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
+                              {t`Decision Details`}
+                            </span>
+                          </div>
+                          <button
+                            aria-label={t`Close AI Insights`}
+                            className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                            onClick={() => setShowAIInsights(false)}
+                          >
+                            <Icon className='size-4' name='lucide:x' />
+                          </button>
+                        </div>
+                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                          {insightContent
+                            ? renderHighlightedContent(insightContent)
+                            : t`No decision details available for this request.`}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           {!isProcessing && actions && actions.length > 0 && (
             <div className='flex shrink-0 items-center gap-2 border-l border-gray-3 pl-3'>
               {actions.map((action: any) => {
@@ -946,7 +1018,7 @@ const Header: React.FC<HeaderProps> = ({
                               className='size-[20px] text-[var(--primary-9)]'
                             />
                             <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                              {t`Invoice Decision Details`}
+                              {t`Decision Details`}
                             </span>
                           </div>
                           <button
