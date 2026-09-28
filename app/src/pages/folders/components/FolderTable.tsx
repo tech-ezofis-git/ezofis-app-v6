@@ -52,6 +52,7 @@ import { DynamicIcon } from './icons'
 import Button from '@/components/base/button/Button'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import Tooltip from '@/components/base/Tooltip'
 import {
   hasAllMandatoryFieldsFilled,
   isArchivedFile,
@@ -1367,28 +1368,32 @@ function FileDataTableSection({
           </div>
           <div className='flex items-center gap-2'>
             {canBulkExport && onExportStagedFiles ? (
-              <Button
-                color='primary'
-                disabled={isBulkExporting || isBulkDeleting}
-                loading={isBulkExporting}
-                size='xs'
-                onClick={() => setIsBulkExportConfirmOpen(true)}
-              >
-                <Icon className='size-3.5' name='tabler:file-export' />
-                {t`Export Selected (${selectedStagedCount})`}
-              </Button>
+              <Tooltip content={t`Export selected staged files`} position='top'>
+                <Button
+                  color='primary'
+                  disabled={isBulkExporting || isBulkDeleting}
+                  loading={isBulkExporting}
+                  size='xs'
+                  onClick={() => setIsBulkExportConfirmOpen(true)}
+                >
+                  <Icon className='size-3.5' name='tabler:file-export' />
+                  {t`Export Selected (${selectedStagedCount})`}
+                </Button>
+              </Tooltip>
             ) : null}
             {onDeleteStagedFiles ? (
-              <Button
-                color='red'
-                disabled={isBulkDeleting || isBulkExporting}
-                loading={isBulkDeleting}
-                size='xs'
-                onClick={() => setIsBulkConfirmOpen(true)}
-              >
-                <DynamicIcon className='size-3.5' name='trash' />
-                {t`Delete Selected (${selectedStagedCount})`}
-              </Button>
+              <Tooltip content={t`Delete selected staged files`} position='top'>
+                <Button
+                  color='red'
+                  disabled={isBulkDeleting || isBulkExporting}
+                  loading={isBulkDeleting}
+                  size='xs'
+                  onClick={() => setIsBulkConfirmOpen(true)}
+                >
+                  <DynamicIcon className='size-3.5' name='trash' />
+                  {t`Delete Selected (${selectedStagedCount})`}
+                </Button>
+              </Tooltip>
             ) : null}
           </div>
         </div>
