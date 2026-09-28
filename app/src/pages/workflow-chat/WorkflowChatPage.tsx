@@ -624,10 +624,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             ]
         setMessages([
           {
-            htmlContent: `You have 2 active requests:<br><br>
-            <strong>WF-2026-001245</strong> - Vendor Registration - <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
-            <strong>WF-2026-001231</strong> - Accounts Payable - <span style="color:#8300E6; font-weight:600;">Action Required</span><br><br>
-            Select a workflow below to filter, or type a request ID or keyword to search:`,
+            htmlContent: `Select a workflow below to filter, or type a request ID or keyword to search:`,
             id: 'msg-pending-choices',
             pills: initialPills,
             sender: 'assistant',
@@ -2453,9 +2450,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       setMessages((prev) => [
         ...prev,
         {
-          htmlContent: `You have 2 active requests for <strong>${matchedWf ? matchedWf.name : label}</strong>:<br><br>
-            <strong>WF-2026-001245</strong> — Vendor Registration — <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
-            <strong>WF-2026-001231</strong> — Accounts Payable — <span style="color:#8300E6; font-weight:600;">Action Required</span>`,
+          htmlContent: `No active requests found for <strong>${matchedWf ? matchedWf.name : label}</strong>. Type a request ID or keyword to search.`,
           id: `msg-${Date.now()}-pending`,
           sender: 'assistant',
         },

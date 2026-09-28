@@ -12,6 +12,7 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { hl, foundLine } from '@/layouts/app/components/topbar/components/mockSearch'
 
 const CACHE_EMPTY_API_DEBOUNCE_MS = 450
+const ENABLE_LOCAL_CACHE = false
 
 export default function SearchPage() {
   const { t } = useLingui()
@@ -38,6 +39,8 @@ export default function SearchPage() {
       setResults([])
       return
     }
+    if (!ENABLE_LOCAL_CACHE) return
+
     setResults(searchAllLocalData(trimmed))
     setResultsSource('cache')
   }
@@ -64,7 +67,11 @@ export default function SearchPage() {
         specificId: resolvedContext.specificId || '',
       })
       if (requestId !== requestIdRef.current) return
-      setResults(mergeSearchHits(hits, searchLocalAppData(trimmed)))
+      setResults(
+        ENABLE_LOCAL_CACHE 
+          ? mergeSearchHits(hits, searchLocalAppData(trimmed))
+          : hits
+      )
       setResultsSource('api')
       lastApiQueryRef.current = trimmed
     } catch {

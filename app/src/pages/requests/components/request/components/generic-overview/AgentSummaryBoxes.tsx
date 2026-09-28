@@ -28,6 +28,23 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
 }) => {
   if (!agentBlocks || agentBlocks.length === 0) return null
 
+  const historyList = Array.isArray(requestData?._history) ? requestData._history : []
+  const historyStages = new Set(historyList.map((h: any) => h.stage))
+  const currentStage = requestData?.stage
+
+  let maxReachedIndex = -1
+  agentBlocks.forEach((block, index) => {
+    const label = block.settings?.label || 'Agent'
+    if (historyStages.has(label) || currentStage === label) {
+      maxReachedIndex = Math.max(maxReachedIndex, index)
+    }
+  })
+
+  // Allow clicking the first block by default if workflow hasn't reached any agent yet
+  if (maxReachedIndex === -1) {
+    maxReachedIndex = 0
+  }
+
   return (
     <div
       className={cn(
@@ -38,8 +55,9 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
         agentBlocks.length >= 6 && 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
       )}
     >
-      {agentBlocks.map((block) => {
+      {agentBlocks.map((block, index) => {
         const isSelected = selectedAgentBlockId === block.id
+        const isClickable = index <= maxReachedIndex
         const label = block.settings?.label || 'Agent'
         const iconName = block.icon || 'lucide:cpu'
 
@@ -67,13 +85,19 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
         return (
           <button
             key={block.id}
+            type='button'
+            disabled={!isClickable}
             className={cn(
-              'relative flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md active:scale-95',
+              'relative flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-300 ease-in-out',
+              isClickable ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-95' : 'cursor-not-allowed opacity-50 grayscale',
               isSelected
                 ? 'border-[var(--primary-9)] bg-[var(--primary-2)]/30 shadow-sm ring-1 ring-[var(--primary-9)]/20'
-                : 'border-gray-3 bg-surface hover:bg-[var(--gray-1)]',
+                : 'border-gray-3 bg-surface',
+              isClickable && !isSelected ? 'hover:bg-[var(--gray-1)]' : ''
             )}
-            onClick={() => onAgentClick(isSelected ? null : block.id)}
+            onClick={() => {
+              if (isClickable) onAgentClick(isSelected ? null : block.id)
+            }}
           >
             <div className='flex w-full items-center justify-between gap-1 flex-wrap'>
               <div
@@ -101,9 +125,6 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
               </span>
               <div className='truncate text-[13px] leading-tight font-semibold text-[var(--gray-13)]'>
                 {value || '---'}
-              </div>
-              <div className='mt-0.5 truncate text-[10px] font-normal leading-none text-[var(--gray-10)]'>
-                via Workflow
               </div>
             </div>
           </button>

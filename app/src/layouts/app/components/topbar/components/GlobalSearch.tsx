@@ -25,6 +25,7 @@ import {
 import { foundLine, hl, lineFor, searchMock } from './mockSearch'
 
 const CACHE_EMPTY_API_DEBOUNCE_MS = 450
+const ENABLE_LOCAL_CACHE = false
 
 const GlobalSearch = () => {
   const { t } = useLingui()
@@ -51,6 +52,11 @@ const GlobalSearch = () => {
     const trimmed = searchText.trim()
     if (!trimmed) {
       setResults([])
+      return
+    }
+
+    if (!ENABLE_LOCAL_CACHE) {
+      // Don't show local cache if disabled. Wait for API.
       return
     }
 
@@ -91,7 +97,7 @@ const GlobalSearch = () => {
     void queryClient
       .ensureQueryData(getFormsListQueryOptions(1, 100, '', []))
       .then(() => {
-        if (!apiInFlightRef.current) {
+        if (!apiInFlightRef.current && ENABLE_LOCAL_CACHE) {
           const current = inputRef.current?.value?.trim() || ''
           if (current) {
             setResults(searchAllLocalData(current))
@@ -177,7 +183,11 @@ const GlobalSearch = () => {
       })
       if (requestId !== requestIdRef.current) return
       // Keep already-loaded app hits alongside API results.
-      setResults(mergeSearchHits(hits, searchLocalAppData(trimmed)))
+      setResults(
+        ENABLE_LOCAL_CACHE 
+          ? mergeSearchHits(hits, searchLocalAppData(trimmed))
+          : hits
+      )
       setResultsSource('api')
       lastApiQueryRef.current = trimmed
     } catch {
@@ -204,7 +214,7 @@ const GlobalSearch = () => {
       return
     }
 
-    const localHits = searchAllLocalData(trimmed)
+    const localHits = ENABLE_LOCAL_CACHE ? searchAllLocalData(trimmed) : []
     if (localHits.length > 0) return
 
     const timer = window.setTimeout(() => {

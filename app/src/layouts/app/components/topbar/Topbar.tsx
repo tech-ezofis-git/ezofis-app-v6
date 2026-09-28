@@ -1,3 +1,4 @@
+import { useLocation } from '@tanstack/react-router'
 import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -12,6 +13,7 @@ import UserMenu from './components/user-menu/UserMenu'
 
 const Topbar = () => {
   const { t } = useLingui()
+  const { pathname } = useLocation()
   const openAskAI = useAskAIStore((state) => state.open)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isAskAIMaximized = useAskAIStore((state) => state.isMaximized)
@@ -25,6 +27,8 @@ const Topbar = () => {
     useAskAIStore.getState().open()
   }
 
+  const isSearchPage = pathname.startsWith('/search')
+
   return (
     <header className='relative z-[20000] flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-6'>
       <div className='flex items-center gap-2'>
@@ -35,7 +39,7 @@ const Topbar = () => {
       </div>
 
       <div className='flex items-center'>
-        <GlobalSearch />
+        {!isSearchPage && <GlobalSearch />}
         <IconButton
           ariaLabel={t`Ask AI`}
           color='gray'

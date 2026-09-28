@@ -166,12 +166,17 @@ export const useRequestDetail = (
         return !!(agent?.decision || data.review || data.completedAtUtc)
       })
 
-      const isCompleted =
-        data.stageType !== 'AP_AGENT' ||
+      const isAgentStage = data.stageType?.includes('AGENT') || data.stageType === 'AP_AGENT'
+      const isDone =
         hasAgentDecision ||
         ['Verifier', 'Approved', 'Completed'].includes(data.stage)
 
-      return !isCompleted ? 10000 : false
+      // If explicitly marked as processing, or if it's an active agent stage, keep polling
+      if ((isProcessing || isAgentStage) && !isDone) {
+        return 10000
+      }
+
+      return false
     },
   })
 }

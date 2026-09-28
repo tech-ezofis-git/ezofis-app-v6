@@ -37,6 +37,7 @@ import {
   Workflow,
   X,
 } from 'lucide-react'
+import useGeoStore from '@/stores/useGeoStore'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { WorkflowChatPage } from '@/pages/workflow-chat/WorkflowChatPage'
@@ -541,7 +542,7 @@ const AskAI = () => {
   const { pathname } = useLocation()
   const pageContext = useAskAiActionStore((state) => state.pageContext)
   const setPending = useAskAiActionStore((state) => state.setPending)
-
+  const isRestricted = useGeoStore((state) => state.isRestricted)
   const [view, setView] = useState<ViewMode>('chat')
   const [messages, setMessages] = useState<Message[]>([])
   const [history, setHistory] = useState<HistoryItem[]>([])
@@ -908,11 +909,11 @@ const AskAI = () => {
       let replyText =
         paragraphTextFromBlocks(blocks) ||
         'I found matching documents based on your search.'
-        
+
       if (isSearchDocuments && blocks.length === 0) {
         replyText = 'What document, folder, or keyword would you like to search for?'
       }
-      
+
       const ctaMode = resolveCtaMode(
         answer,
         pathname,
@@ -947,7 +948,7 @@ const AskAI = () => {
       const replyText = isSearchDocuments
         ? 'What document, folder, or keyword would you like to search for?'
         : "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way."
-        
+
       setMessages([
         ...baseMessages,
         {
@@ -1404,6 +1405,7 @@ const AnswerCardGroup = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
   const [limit, setLimit] = useState(3)
+  const isRestricted = useGeoStore((state) => state.isRestricted)
 
   const iconName =
     group.type === 'form' || group.type.includes('master')
@@ -1436,7 +1438,7 @@ const AnswerCardGroup = ({
 
         <div className='flex shrink-0 items-center gap-2'>
 
-          {canApply && (
+          {canApply && !isRestricted && (
             <Tooltip content={actionLabel} position='top'>
               <button
                 className='grid place-items-center text-[var(--secondary-7)] transition-colors hover:text-[var(--primary-9)] focus-visible:outline-none'
@@ -1474,7 +1476,7 @@ const AnswerCardGroup = ({
             </div>
           ))}
 
-          {canApply && (
+          {(limit < group.cards.length || (canApply && !isRestricted)) && (
             <div className='flex items-center justify-between border-t border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[12px]'>
               <div>
                 {limit < group.cards.length && (
@@ -1490,16 +1492,18 @@ const AnswerCardGroup = ({
                   </button>
                 )}
               </div>
-              <button
-                className='font-medium text-[var(--purple)] hover:underline focus-visible:outline-none'
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onGroupClick?.(group.type, group.id, group.name)
-                }}
-              >
-                {actionLabel}
-              </button>
+              {canApply && !isRestricted && (
+                <button
+                  className='font-medium text-[var(--purple)] hover:underline focus-visible:outline-none'
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onGroupClick?.(group.type, group.id, group.name)
+                  }}
+                >
+                  {actionLabel}
+                </button>
+              )}
             </div>
           )}
         </div>

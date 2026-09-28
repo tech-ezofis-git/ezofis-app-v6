@@ -19,6 +19,8 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const label = agentBlock.settings?.label || 'Agent Details'
   const iconName = agentBlock.icon || 'lucide:cpu'
 
+  const isProcessing = !requestData || requestData?.stage === label || !requestData?._agentData?.length
+
   return (
     <div className='flex flex-col gap-5 pb-5'>
       <div className='flex items-center gap-3'>
@@ -35,13 +37,32 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       </div>
 
       <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm p-6'>
-        <div className='flex flex-col items-center justify-center gap-3 py-10 text-center'>
-          <Icon icon='lucide:hammer' className='h-10 w-10 text-gray-7' />
-          <h3 className='text-base font-medium text-gray-12'>Details Not Available Yet</h3>
-          <p className='text-13 text-gray-9 max-w-md'>
-            The API integration for {label} is currently pending. Once the API is updated, this view will show the full agent analysis and details.
-          </p>
-        </div>
+        {isProcessing ? (
+          <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>
+            <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
+              <Icon
+                className='size-7 animate-spin text-[var(--primary-9)]'
+                icon='tabler:loader-2'
+              />
+            </div>
+            <div className='text-center'>
+              <h3 className='text-base font-bold text-[var(--gray-13)]'>
+                {t`Agent is processing...`}
+              </h3>
+              <p className='mt-1 max-w-[280px] text-xs font-semibold text-[var(--gray-10)]'>
+                {t`Please wait while data is being extracted.`}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className='flex flex-col items-center justify-center gap-3 py-10 text-center'>
+            <Icon icon='lucide:hammer' className='h-10 w-10 text-gray-7' />
+            <h3 className='text-base font-medium text-gray-12'>Details Not Available Yet</h3>
+            <p className='text-13 text-gray-9 max-w-md'>
+              The API integration for {label} is currently pending. Once the API is updated, this view will show the full agent analysis and details.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

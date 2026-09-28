@@ -220,34 +220,34 @@ export function AiSummaryView({
   }
 
   const showLoading = loading || regenerating || (!data && !error)
-
+  const ShowCards = false;
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[14px] text-gray-11'>
-     <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
-  {/* Left side */}
-  <Button
-    className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
-    onClick={onBack}
-  >
-    <DynamicIcon className='h-4 w-4' name='arrowLeft' />
-    {t`Back`}
-  </Button>
+      <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
+        {/* Left side */}
+        <Button
+          className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
+          onClick={onBack}
+        >
+          <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+          {t`Back`}
+        </Button>
 
-  {/* Right side */}
-  <Button
-    className='ml-auto h-9 px-4 text-[14px]'
-    disabled={exporting || !data || loading || regenerating}
-    onClick={exportPdf}
-  >
-    {exporting ? (
-      <DynamicIcon className='h-4 w-4 animate-spin' name='loader' />
-    ) : (
-      <DynamicIcon className='h-4 w-4' name='download' />
-    )}
+        {/* Right side */}
+        <Button
+          className='ml-auto h-9 px-4 text-[14px]'
+          disabled={exporting || !data || loading || regenerating}
+          onClick={exportPdf}
+        >
+          {exporting ? (
+            <DynamicIcon className='h-4 w-4 animate-spin' name='loader' />
+          ) : (
+            <DynamicIcon className='h-4 w-4' name='download' />
+          )}
 
-    {exporting ? t`Exporting...` : t`Export PDF`}
-  </Button>
-</div>
+          {exporting ? t`Exporting...` : t`Export PDF`}
+        </Button>
+      </div>
 
       {showLoading ? (
         <AiSummaryLoading />
@@ -271,8 +271,8 @@ export function AiSummaryView({
                 <div>
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
                     {data.engineTitle === 'EZOFIS AI Summary' ||
-                    data.engineTitle === 'AI Summary' ||
-                    !data.engineTitle
+                      data.engineTitle === 'AI Summary' ||
+                      !data.engineTitle
                       ? t`AI Summary`
                       : data.engineTitle}
                   </h2>
@@ -340,7 +340,7 @@ export function AiSummaryView({
               )}
             </Card>
 
-            <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
+            {data && ShowCards && (<><Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <div className='mb-4 flex items-center justify-between'>
                 <h3 className='flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
                   <DynamicIcon
@@ -382,47 +382,47 @@ export function AiSummaryView({
               )}
             </Card>
 
-            <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
-              <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                <AiBrandIcon className='size-5 text-orange-9' />
-                {t`AI Recommendations`}
-              </h3>
-              {data.recommendations.length > 0 ? (
-                <div className='space-y-3'>
-                  {data.recommendations.map((recommendation) => (
-                    <div
-                      className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
-                      key={recommendation}
-                    >
-                      ›{' '}
-                      <RichHtml
-                        as='span'
-                        className='inline'
-                        html={recommendation}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className='text-[14px] text-gray-10'>
-                  {t`No recommendations available.`}
-                </p>
-              )}
-            </Card>
+              <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
+                <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
+                  <AiBrandIcon className='size-5 text-orange-9' />
+                  {t`AI Recommendations`}
+                </h3>
+                {data.recommendations.length > 0 ? (
+                  <div className='space-y-3'>
+                    {data.recommendations.map((recommendation) => (
+                      <div
+                        className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
+                        key={recommendation}
+                      >
+                        ›{' '}
+                        <RichHtml
+                          as='span'
+                          className='inline'
+                          html={recommendation}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className='text-[14px] text-gray-10'>
+                    {t`No recommendations available.`}
+                  </p>
+                )}
+              </Card>
 
-            <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
-              <b>{t`Supplier Trend Insight`}</b>
-              {data.insight ? (
-                <RichHtml
-                  className='mt-1 text-gray-10'
-                  html={data.insight}
-                />
-              ) : (
-                <p className='mt-1 text-gray-10'>
-                  {t`No supplier trend insight available.`}
-                </p>
-              )}
-            </div>
+              <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
+                <b>{t`Supplier Trend Insight`}</b>
+                {data.insight ? (
+                  <RichHtml
+                    className='mt-1 text-gray-10'
+                    html={data.insight}
+                  />
+                ) : (
+                  <p className='mt-1 text-gray-10'>
+                    {t`No supplier trend insight available.`}
+                  </p>
+                )}
+              </div></>)}
           </div>
         </div>
       ) : null}

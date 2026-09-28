@@ -190,7 +190,7 @@ export default function DashboardCharts() {
 
   // API response storage
   const [dashboardData, setDashboardData] = React.useState<any>(null)
-  const [_isLoading, setIsLoading] = React.useState(false)
+  const [_isLoading, setIsLoading] = React.useState(true)
 
   // Map store timeframe key to API period key
   const periodMap: Record<string, string> = {
@@ -293,6 +293,8 @@ export default function DashboardCharts() {
       .filter((opt) => opt.value && !isAllFilterOption(opt))
 
   React.useEffect(() => {
+    let isMounted = true
+
     const fetchData = async () => {
       setIsLoading(true)
       const payload: any = {
@@ -353,6 +355,9 @@ export default function DashboardCharts() {
 
       console.log('[AP Dashboard] Sending filter payload:', payload)
       const res = await getDashboardData(payload)
+      
+      if (!isMounted) return
+
       console.log('[AP Dashboard] Received response:', res)
 
       if (res.data) {
@@ -410,7 +415,12 @@ export default function DashboardCharts() {
       }
       setIsLoading(false)
     }
+    
     fetchData()
+
+    return () => {
+      isMounted = false
+    }
   }, [
     timeframe,
     supplierCategory,
@@ -803,8 +813,7 @@ export default function DashboardCharts() {
       <CustomFilter
         filters={filtersProp}
         moreFilters={moreFiltersProp}
-        searchPlaceholder={t`Search invoice, supplier, PO...`}
-        searchQuery={searchQuery}
+        hideSearch
         activeFilters={{
           amount: poAmountTier || '',
           currency: currency || '',
@@ -822,8 +831,7 @@ export default function DashboardCharts() {
             currency ||
             department ||
             requestStatus ||
-            poAmountTier ||
-            searchQuery
+            poAmountTier
           )
         }
         onFilterChange={(id, value) => {
@@ -837,7 +845,6 @@ export default function DashboardCharts() {
           else if (id === 'amount') setPoAmountTier(val)
         }}
         onReset={handleReset}
-        onSearchChange={setSearchQuery}
       />
 
       {/* 2. AP COMMAND CENTER BANNER */}
@@ -926,7 +933,17 @@ export default function DashboardCharts() {
         <div className='animate-in fade-in grid grid-cols-1 gap-4 duration-300 sm:grid-cols-2 md:grid-cols-6'>
           {_isLoading ? (
             Array.from({ length: 6 }).map((_, idx) => (
-              <SkeletonCard key={idx} height='h-24' />
+              <div
+                key={idx}
+                className='rounded-lg border border-border-default bg-surface p-4 shadow-xs'
+              >
+                <div className='h-2.5 w-20 animate-pulse rounded bg-gray-3' />
+                <div className='mt-2.5 h-6 w-24 animate-pulse rounded bg-gray-3' />
+                <div className='mt-3 flex items-center gap-1.5'>
+                  <div className='h-4 w-10 animate-pulse rounded bg-gray-3' />
+                  <div className='h-3 w-16 animate-pulse rounded bg-gray-2' />
+                </div>
+              </div>
             ))
           ) : (
             (dashboardData?.kpis || []).map((kpi: any) => {

@@ -5,6 +5,10 @@ import {
   type KanbanCardSetting,
   parseKanbanSettings,
 } from '../utils/kanbanSettings'
+import {
+  isFilledValue,
+  type WorkflowValidationErrors,
+} from '../utils/validateWorkflowSettings'
 
 export type PrefixSegment = { id: string; key: string; value: string | number }
 
@@ -85,6 +89,7 @@ type Store = {
   requestTabs: RequestTabConfig[]
   selectedEdge: Edge | null
   selectedNode: Node | null
+  settingsValidationErrors: WorkflowValidationErrors | null
   workflowDescription: string
   workflowId: number | null
   workflowName: string
@@ -110,6 +115,9 @@ type Store = {
   setPreviewValues: (values: string[]) => void
   setRequestTitleField: (field: string | null) => void
   setRequestTabs: (tabs: RequestTabConfig[]) => void
+  setSettingsValidationErrors: (
+    errors: WorkflowValidationErrors | null,
+  ) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
@@ -143,6 +151,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   requestTabs: [],
   selectedEdge: null,
   selectedNode: null,
+  settingsValidationErrors: null,
   workflowDescription: '',
   workflowId: null,
   workflowName: `Workflow - ${new Date()
@@ -230,15 +239,20 @@ const useWorkflowStore = create<Store>()((set) => ({
       apiData?.description ||
       ''
 
+    const rawFolder =
+      legacyJson.settings?.general?.initiateUsing?.repositoryId ??
+      apiData?.repositoryId
+    const rawForm =
+      legacyJson.settings?.general?.initiateUsing?.formId ??
+      apiData?.formId
+
     set({
-      folder:
-        legacyJson.settings?.general?.initiateUsing?.repositoryId ||
-        apiData?.repositoryId ||
-        null,
-      form:
-        legacyJson.settings?.general?.initiateUsing?.formId ||
-        apiData?.formId ||
-        null,
+      folder: isFilledValue(rawFolder)
+        ? (typeof rawFolder === 'number' ? rawFolder : Number(rawFolder) || rawFolder)
+        : null,
+      form: isFilledValue(rawForm)
+        ? (typeof rawForm === 'number' ? rawForm : Number(rawForm) || rawForm)
+        : null,
       initiateUsing:
         legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
       kanbanSettings: parseKanbanSettings(
@@ -281,6 +295,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       requestTabs: [],
       selectedEdge: null,
       selectedNode: null,
+      settingsValidationErrors: null,
       workflowDescription: '',
       workflowId: null,
       workflowName: `Workflow - ${new Date()
@@ -323,6 +338,8 @@ const useWorkflowStore = create<Store>()((set) => ({
   setPreviewValues: (values) => set({ previewValues: values }),
   setRequestTitleField: (field) => set({ requestTitleField: field }),
   setRequestTabs: (tabs) => set({ requestTabs: tabs }),
+  setSettingsValidationErrors: (errors) =>
+    set({ settingsValidationErrors: errors }),
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
   setWorkflowId: (workflowId) => set({ workflowId }),

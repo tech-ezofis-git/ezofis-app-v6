@@ -21,6 +21,7 @@ import {
   resolveDocumentPreviewKind,
 } from '@/pages/folders/utils/documentDetailsUtils'
 import CollaboraPreviewViewer from '@/pages/folders/components/CollaboraPreviewViewer'
+import EmlPreview from './EmlPreview'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
@@ -32,6 +33,7 @@ type ViewerMode =
   | 'spreadsheet'
   | 'word'
   | 'text'
+  | 'eml'
   | 'office-remote'
   | 'unsupported'
 
@@ -47,6 +49,8 @@ const TEXT_EXTS = new Set([
   'htm',
   'tsv',
 ])
+const EML_EXTS = new Set(['eml'])
+
 const OFFICE_REMOTE_EXTS = new Set([
   ...SPREADSHEET_EXTS,
   ...WORD_EXTS,
@@ -82,6 +86,7 @@ const resolveViewerMode = ({
 
   if (SPREADSHEET_EXTS.has(ext)) return 'spreadsheet'
   if (WORD_EXTS.has(ext)) return 'word'
+  if (EML_EXTS.has(ext)) return 'eml'
   if (TEXT_EXTS.has(ext)) return 'text'
 
   // Public Office URLs can use Microsoft's online viewer as a fallback.
@@ -472,6 +477,8 @@ export default function DocumentPreviewViewer({
     content = <SpreadsheetPreview fileName={fileName} fileUrl={fileUrl} />
   } else if (mode === 'word' && fileUrl) {
     content = <WordPreview fileName={fileName} fileUrl={fileUrl} />
+  } else if (mode === 'eml' && fileUrl) {
+    content = <EmlPreview fileName={fileName} fileUrl={fileUrl} />
   } else if (mode === 'text' && fileUrl) {
     content = <TextFilePreview fileName={fileName} fileUrl={fileUrl} />
   } else if (mode === 'office-remote' && fileUrl) {
