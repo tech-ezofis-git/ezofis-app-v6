@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import type { CommentItem } from '@/pages/requests/hooks/useComments'
 import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
@@ -140,8 +140,8 @@ const DocumentApprovalSplitLayout = ({
 }: {
   attachments: AttachmentItem[]
   repositoryId: string | number | undefined
-  formNode: React.ReactNode
-  taskNode: React.ReactNode
+  formNode: ReactNode
+  taskNode: ReactNode
   selectedItem: any
 }) => {
   const { t } = useLingui()
@@ -276,6 +276,7 @@ const DocumentApprovalSplitLayout = ({
 const DocumentFormSplitLayout = ({
   attachments,
   repositoryId,
+  formModel,
   formNode,
   taskNode,
   selectedItem,
@@ -286,19 +287,24 @@ const DocumentFormSplitLayout = ({
   lineItemsNode,
   attachmentsCount,
   commentsCount,
+  viewOnly,
+  onFieldChange,
 }: {
   attachments: AttachmentItem[]
   repositoryId: string | number | undefined
-  formNode: React.ReactNode
-  taskNode: React.ReactNode
+  formModel?: Record<string, any>
+  formNode: ReactNode
+  taskNode: ReactNode
   selectedItem: any
   rawWorkflowData: any
-  attachmentsNode?: React.ReactNode
-  commentsNode?: React.ReactNode
-  historyNode?: React.ReactNode
-  lineItemsNode?: React.ReactNode
+  attachmentsNode?: ReactNode
+  commentsNode?: ReactNode
+  historyNode?: ReactNode
+  lineItemsNode?: ReactNode
   attachmentsCount?: number
   commentsCount?: number
+  viewOnly?: boolean
+  onFieldChange?: (fieldId: string, value: any) => void
 }) => {
   const { t } = useLingui()
   const firstAttachment = attachments[0]
@@ -424,8 +430,12 @@ const DocumentFormSplitLayout = ({
             <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
+                formModel={formModel}
                 onBack={() => setSelectedAgentBlockId(null)}
+                onFieldChange={onFieldChange}
+                rawWorkflowData={rawWorkflowData}
                 requestData={selectedItem}
+                viewOnly={viewOnly}
               />
             </div>
           ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
@@ -1008,9 +1018,12 @@ const GenericRequestOverview = ({
           rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ? (
           <DocumentFormSplitLayout
             attachments={attachments}
+            formModel={formModel}
             repositoryId={repositoryId}
             selectedItem={selectedItem || storeSelectedItem}
             rawWorkflowData={rawWorkflowData}
+            viewOnly={viewOnly}
+            onFieldChange={onFieldChange}
             taskNode={
               <TaskRequirements
                 attachmentCount={attachments.length}
@@ -1134,8 +1147,12 @@ const GenericRequestOverview = ({
                 <div className='p-6 pt-2'>
                   <AgentDetailPlaceholder
                     agentBlock={selectedAgentBlock}
+                    formModel={formModel}
                     onBack={() => setSelectedAgentBlockId(null)}
+                    onFieldChange={onFieldChange}
+                    rawWorkflowData={rawWorkflowData}
                     requestData={selectedItem}
+                    viewOnly={viewOnly}
                   />
                 </div>
               ) : (

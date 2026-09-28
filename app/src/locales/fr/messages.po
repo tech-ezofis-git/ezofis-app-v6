@@ -229,7 +229,7 @@ msgstr ""
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} flux de travail actifs"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:626
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:697
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} élément(s) de ligne trouvé(s) dans le document importé."
 
@@ -608,7 +608,7 @@ msgstr "Action requise"
 #: src/pages/reports/components/ReportsListView.tsx:208
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1919
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:677
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:748
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
@@ -843,7 +843,7 @@ msgid "Add Portal"
 msgstr "Ajouter un portail"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:238
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:602
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:673
 msgid "Add Row"
 msgstr "Ajouter une ligne"
 
@@ -886,7 +886,7 @@ msgstr "Conditions supplémentaires"
 msgid "Agent"
 msgstr "Agent"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:81
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:94
 msgid "Agent is processing..."
 msgstr ""
 
@@ -1377,10 +1377,19 @@ msgstr "Carte thermique des délais d’approbation"
 #~ msgid "Approval Rate"
 #~ msgstr "Taux d'approbation"
 
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:201
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:318
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:748
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:841
+msgid "Approve"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2615
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:309
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:828
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
 msgstr "Approuvé"
@@ -1550,13 +1559,13 @@ msgstr "Joindre un fichier (facultatif)..."
 #~ msgstr "Joindre à la facture"
 
 #: src/pages/portal/components/PortalDetail.tsx:288
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1279
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1296
 msgid "Attachment"
 msgstr "Pièce jointe"
 
 #: src/pages/portal/components/PortalDetail.tsx:337
 #: src/pages/portal/components/PortalWizard.tsx:1065
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:394
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:400
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
@@ -2054,7 +2063,7 @@ msgstr "Peut voir"
 #: src/pages/requests/components/request/ForwardPopover.tsx:186
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:254
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:448
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:481
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:484
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:266
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:188
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:270
@@ -2415,7 +2424,7 @@ msgstr "Numéro de client"
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:289
 #: src/pages/folders/components/SignRequestAssignForm.tsx:529
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:495
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1196
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1213
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:799
@@ -2513,7 +2522,7 @@ msgid "Coming Soon"
 msgstr "À venir"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1577
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:395
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:401
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
@@ -2910,7 +2919,7 @@ msgstr "Impossible de générer des champs. Essayez à nouveau de recommander le
 msgid "Could not generate folder configuration. Try again."
 msgstr "Impossible de générer la configuration du dossier. Essayer à nouveau."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:492
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:563
 msgid "Could not read that file."
 msgstr "Impossible de lire ce fichier."
 
@@ -3509,7 +3518,7 @@ msgid "Delete Role"
 msgstr "Supprimer le rôle"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:437
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:749
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:846
 msgid "Delete row"
 msgstr "Supprimer la ligne"
 
@@ -4811,7 +4820,7 @@ msgstr ""
 msgid "Export staged files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:589
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:660
 msgid "Export to Excel"
 msgstr "Exporter vers Excel"
 
@@ -4834,7 +4843,7 @@ msgid "EXTRACTED"
 msgstr "EXTRAIT"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2716
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:392
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:398
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4331
 #: src/pages/requests/components/RequestSummary.tsx:194
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:342
@@ -5156,10 +5165,10 @@ msgstr "Échec de la mise à jour du dossier : {0}"
 msgid "Failed to upload master file to the server"
 msgstr "Échec du téléchargement du fichier maître sur le serveur"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:836
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:859
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:914
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:938
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:846
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:869
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:924
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:948
 msgid "Failed to upload the file."
 msgstr "Échec du téléchargement du fichier."
 
@@ -6069,8 +6078,8 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "Résultats des matchs historiques"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:396
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1193
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:402
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1210
 #: src/pages/requests/components/request/components/Header.tsx:470
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4351
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:346
@@ -6144,11 +6153,11 @@ msgstr "Serveur IMAP"
 msgid "Immediate Invoice Processing"
 msgstr "Traitement immédiat des factures"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:579
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:650
 msgid "Import CSV/Excel"
 msgstr "Importer CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:635
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:706
 msgid "Import extracted items"
 msgstr "Importer les éléments extraits"
 
@@ -6873,7 +6882,7 @@ msgstr "Correspondance des lignes"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:393
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:399
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
@@ -8109,8 +8118,8 @@ msgstr "Aucune évaluation de conformité disponible."
 msgid "No consumption data for this period."
 msgstr "Aucune donnée de consommation pour cette période."
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:454
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:430
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:464
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:433
 msgid "No data available yet."
 msgstr ""
 
@@ -8132,7 +8141,7 @@ msgid "No distribution data for this period."
 msgstr "Aucune donnée de répartition pour cette période."
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:203
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:371
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:377
 msgid "No document attached"
 msgstr ""
 
@@ -8277,7 +8286,7 @@ msgstr "Aucun fait clé extrait."
 msgid "No logs found"
 msgstr "Aucun journal trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:486
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:557
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Aucune colonne correspondante trouvée : les en-têtes CSV/Excel doivent correspondre aux noms de colonnes du tableau."
 
@@ -8485,7 +8494,7 @@ msgstr "Aucune information sur les tendances des fournisseurs disponible."
 msgid "No suppliers found"
 msgstr "Aucun fournisseur trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:528
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:599
 msgid "No table columns configured."
 msgstr "Aucune colonne de tableau configurée."
 
@@ -9665,7 +9674,7 @@ msgstr ""
 msgid "Please wait a moment"
 msgstr "Veuillez patienter un instant"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:84
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:97
 msgid "Please wait while data is being extracted."
 msgstr ""
 
@@ -11262,7 +11271,7 @@ msgid "Scan QR"
 msgstr "Scanner le QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:555
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:626
 msgid "Scan QR / Barcode"
 msgstr "Scannez le QR / le code-barres"
 
@@ -11608,7 +11617,7 @@ msgstr "Protocole de sécurité"
 msgid "See the Attachments section for uploaded files."
 msgstr "Consultez la section Pièces jointes pour les fichiers téléchargés."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:658
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:729
 #: src/pages/settings/components/ManageUser.tsx:1903
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -11865,7 +11874,7 @@ msgstr "Sélectionnez des destinataires"
 msgid "Select role"
 msgstr "Sélectionnez un rôle"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:722
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:793
 msgid "Select row"
 msgstr "Sélectionner une ligne"
 
@@ -13578,7 +13587,7 @@ msgstr "Principaux agents par utilisation de crédits · {periodSubtitle}"
 #~ msgstr "Concentration Top-3"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:765
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:864
 msgid "Total"
 msgstr "Total"
 
@@ -14101,7 +14110,7 @@ msgstr "Mise à niveau…"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:711
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:759
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:487
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:490
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:68
 msgid "Upload"
 msgstr "Téléverser"

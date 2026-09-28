@@ -1,6 +1,6 @@
 import type { Node } from '@xyflow/react'
 import { useNodes, useReactFlow } from '@xyflow/react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputLabel from '@/components/base/inputs/InputLabel'
@@ -75,9 +75,11 @@ const mergeFiles = (current: KnowledgeFile[], list: FileList | null) => {
 
 export default function AgentKnowledgeSkillPanel({
   config,
+  extraSettings,
   node: initialNode,
 }: {
   config: AgentKnowledgeSkillConfig
+  extraSettings?: ReactNode
   node?: Node
 }) {
   const { setNodes } = useReactFlow()
@@ -127,6 +129,7 @@ export default function AgentKnowledgeSkillPanel({
 
   return (
     <div className='flex h-full flex-col space-y-3.5 overflow-y-auto p-4 font-sans'>
+      {extraSettings}
       <SettingsSection
         icon='lucide:library'
         isOpen={openKnowledge}

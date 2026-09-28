@@ -618,6 +618,12 @@ export const importWorkflow = (
         generateCSVFields: Array.isArray(block.settings?.generateCSVFields)
           ? block.settings.generateCSVFields.map(String)
           : [],
+        showTableAsEditable: Boolean(
+          block.settings?.showTableAsEditable ??
+            block.settings?.show_table_as_editable ??
+            block.settings?.tableAsEditable ??
+            block.settings?.editableTable,
+        ),
 
         // Manual User - Security & Form Access
         formEditAccess: block.settings?.formEditAccess ?? 'ALL',
