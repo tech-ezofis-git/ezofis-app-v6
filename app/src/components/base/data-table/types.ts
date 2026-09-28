@@ -8,6 +8,7 @@ declare module '@tanstack/react-table' {
     /** Skip DataTable 2-line ellipsis wrap (icons, actions, pills, etc.). */
     disableEllipsis?: boolean
     headerAlign?: 'left' | 'center' | 'right'
+    headerClassName?: string
     label?: string
     showMenu?: boolean
   }

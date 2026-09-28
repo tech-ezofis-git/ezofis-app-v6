@@ -4,6 +4,7 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import TableFieldInput from '../components/Upload/TableFieldInput'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 
 export type SelectOption = {
@@ -166,6 +167,22 @@ export function renderMetadataFieldControl(
   const label = field.label || field.key
   const required = Boolean(field.isMandatory)
   const options = getSelectOptions(field)
+
+  if (
+    fieldType === 'table' ||
+    fieldType === 'dynamic_table' ||
+    fieldType.includes('table')
+  ) {
+    return (
+      <TableFieldInput
+        field={field}
+        label={label}
+        required={required}
+        value={value}
+        onChange={(jsonVal) => updateFieldValue(field.key, jsonVal)}
+      />
+    )
+  }
 
   if (fieldType === 'date' || fieldType === 'datetime') {
     return (
