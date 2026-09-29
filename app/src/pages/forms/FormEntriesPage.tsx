@@ -1244,7 +1244,8 @@ const FormEntriesPage = () => {
   const handleSaveEntry = async () => {
     setIsSaving(true)
     try {
-      let targetEntryId: number | string = 0
+      let targetEntryId: number | string =
+        '00000000-0000-0000-0000-000000000000'
       if (!isAddOpen && selectedEntry) {
         targetEntryId =
           selectedEntry.entryId ??
@@ -1252,7 +1253,7 @@ const FormEntriesPage = () => {
           (typeof selectedEntry.id === 'string'
             ? selectedEntry.id.replace(/^Entry #/, '')
             : selectedEntry.id) ??
-          0
+          '00000000-0000-0000-0000-000000000000'
       }
 
       const { data, error } = await formApi.saveFormEntry(
