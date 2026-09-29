@@ -2,11 +2,17 @@ import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { getLicenseSummary } from '@/api/v6/license'
+import { getRepositorys } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
+import workflowsApiV6, { createPublishedWorkflowBrowsePayload } from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import AnimateSlideUp from '@/components/common/animations/AnimateSlideUp'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
-import { licenseSummaryFallback } from '../../data/licenseMockData'
+import {
+  type LicenseResourceCategory,
+  licenseSummaryFallback,
+} from '../../data/licenseMockData'
 import useSettingsTopbarAction from '../../hooks/useSettingsTopbarAction'
 import SettingsPageHeader from '../SettingsPageHeader'
 import LicenseRecentResources from './LicenseRecentResources'
@@ -16,9 +22,62 @@ import LicenseUpgradeScreen from './LicenseUpgradeScreen'
 
 type Screen = 'overview' | 'upgrade'
 
+const extractRepositoriesData = (raw: unknown): any[] => {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === 'object' && raw !== null) {
+    const record = raw as Record<string, unknown>
+    if (Array.isArray(record.data)) return record.data
+    if (Array.isArray(record.items)) return record.items
+    if (Array.isArray(record.payload)) return record.payload
+    if (Array.isArray(record.value)) return record.value
+  }
+  return []
+}
+
+const extractWorkflowsData = (raw: unknown): any[] => {
+  if (!raw) return []
+
+  const extractFromArr = (arr: any[]): any[] => {
+    const list: any[] = []
+    for (const item of arr) {
+      if (item && Array.isArray(item.value)) {
+        list.push(...item.value)
+      } else if (item && typeof item === 'object') {
+        list.push(item)
+      }
+    }
+    return list
+  }
+
+  if (Array.isArray(raw)) {
+    return extractFromArr(raw)
+  }
+
+  if (typeof raw === 'object' && raw !== null) {
+    const record = raw as Record<string, unknown>
+    if (Array.isArray(record.data)) {
+      return extractFromArr(record.data)
+    }
+    if (Array.isArray(record.items)) {
+      return extractFromArr(record.items)
+    }
+    if (Array.isArray(record.workflows)) {
+      return extractFromArr(record.workflows)
+    }
+    if (Array.isArray(record.payload)) {
+      return extractFromArr(record.payload)
+    }
+  }
+
+  return []
+}
+
 export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
   const { t } = useLingui()
   const [screen, setScreen] = useState<Screen>('overview')
+  const [selectedCategory, setSelectedCategory] =
+    useState<LicenseResourceCategory>('users')
 
   const { data: summary } = useQuery({
     queryKey: ['settings', 'license-summary'],
@@ -28,21 +87,85 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
     },
   })
 
-  const resolvedSummary = summary ?? licenseSummaryFallback
-  const isTrial = resolvedSummary.planType === 'trial'
+  const { data: usersResponse } = useQuery({
+    queryKey: ['settings', 'real-users-list'],
+    queryFn: async () => {
+      const response = await getUsers()
+      return response.data ?? []
+    },
+  })
 
-  const topbarAction = useMemo(
-    () =>
-      isTrial && screen === 'overview'
-        ? {
-            color: 'primary' as const,
-            icon: 'lucide:arrow-up',
-            label: t`Upgrade to Production`,
-            onClick: () => setScreen('upgrade'),
-          }
-        : null,
-    [isTrial, screen, t],
-  )
+  const { data: repositoriesResponse } = useQuery({
+    queryKey: ['settings', 'real-repositories-list'],
+    queryFn: async () => {
+      const response = await getRepositorys()
+      return extractRepositoriesData(response.data)
+    },
+  })
+
+  const { data: workflowsResponse } = useQuery({
+    queryKey: ['settings', 'real-workflows-list'],
+    queryFn: async () => {
+      const response = await workflowsApiV6.getAllWorkflows(
+        createPublishedWorkflowBrowsePayload({ itemsPerPage: 100 }),
+      )
+      return extractWorkflowsData(response.data)
+    },
+  })
+
+  const resolvedSummary = useMemo(() => {
+    const base = summary ?? licenseSummaryFallback
+    const liveUsersCount =
+      usersResponse && usersResponse.length > 0
+        ? usersResponse.length
+        : base.usersCount
+
+    const liveFoldersCount =
+      repositoriesResponse && repositoriesResponse.length > 0
+        ? repositoriesResponse.length
+        : base.foldersCount
+
+    const liveFilesCount =
+      repositoriesResponse && repositoriesResponse.length > 0
+        ? repositoriesResponse.reduce((acc: number, repo: any) => {
+            const count = Number(
+              repo.documents ??
+                repo.documentsCount ??
+                repo.totalCount ??
+                repo.fileCount ??
+                0,
+            )
+            return acc + (Number.isFinite(count) ? count : 0)
+          }, 0)
+        : base.filesCount
+
+    const liveWorkflowsCount =
+      workflowsResponse && workflowsResponse.length > 0
+        ? workflowsResponse.length
+        : base.workflowsCount
+
+    return {
+      ...base,
+      filesCount: liveFilesCount,
+      foldersCount: liveFoldersCount,
+      usersCount: liveUsersCount,
+      workflowsCount: liveWorkflowsCount,
+    }
+  }, [summary, usersResponse, repositoriesResponse, workflowsResponse])
+
+  const isTrial = resolvedSummary.planType === 'trial' || !resolvedSummary.planType
+  const daysRemaining = resolvedSummary.daysRemaining ?? 12
+
+  const topbarAction = useMemo(() => {
+    if (!isTrial || screen !== 'overview') return null
+    const actionColor: 'red' | 'primary' = daysRemaining <= 7 ? 'red' : 'primary'
+    return {
+      color: actionColor,
+      icon: 'lucide:arrow-up',
+      label: t`Upgrade to Production`,
+      onClick: () => setScreen('upgrade'),
+    }
+  }, [isTrial, screen, daysRemaining, t])
   useSettingsTopbarAction(topbarAction)
 
   const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
@@ -88,12 +211,16 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
           </AnimateSlideUp>
 
           <AnimateSlideUp delay={0.08}>
-            <LicenseStatsRow summary={resolvedSummary} />
+            <LicenseStatsRow
+              selectedCategory={selectedCategory}
+              summary={resolvedSummary}
+              onSelectCategory={setSelectedCategory}
+            />
           </AnimateSlideUp>
 
           {isTrial ? (
             <AnimateSlideUp
-              className='flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-3 bg-gradient-to-r from-primary-11 via-primary-9 to-secondary-9 p-5 shadow-[var(--shadow-md)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]'
+              className='flex flex-wrap items-center justify-between gap-4 rounded-xl border border-primary-9/30 bg-gradient-to-r from-primary-11 via-primary-9 to-primary-10 p-5 shadow-[var(--shadow-md)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]'
               delay={0.16}
             >
               <div>
@@ -103,11 +230,11 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
                 <div className='mt-2 text-15 font-semibold text-white'>
                   {t`Ready to go live? Upgrade to Production.`}
                 </div>
-                <div className='mt-1 max-w-[46ch] text-[12.5px] text-white/90'>
+                <div className='mt-1 max-w-[48ch] text-[12.5px] text-white/90 leading-relaxed'>
                   {t`Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean.`}
                 </div>
               </div>
-              <div className='flex flex-wrap items-center gap-2'>
+              <div className='flex flex-wrap items-center gap-2.5'>
                 <Button
                   className='border-white/40 bg-white/15 text-white hover:bg-white/25'
                   icon='lucide:headset'
@@ -117,7 +244,7 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
                   onClick={handleTalkToSales}
                 />
                 <Button
-                  className='bg-white text-primary-11 hover:bg-white/90'
+                  className='bg-white text-primary-11 hover:bg-white/90 font-semibold'
                   icon='lucide:arrow-up'
                   label={t`Upgrade to Production`}
                   size='md'
@@ -129,7 +256,14 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
           ) : null}
 
           <AnimateSlideUp delay={0.24}>
-            <LicenseRecentResources summary={resolvedSummary} />
+            <LicenseRecentResources
+              repositoriesData={repositoriesResponse}
+              selectedCategory={selectedCategory}
+              summary={resolvedSummary}
+              usersData={usersResponse}
+              workflowsData={workflowsResponse}
+              onSelectCategory={setSelectedCategory}
+            />
           </AnimateSlideUp>
         </div>
       </div>

@@ -83,7 +83,12 @@ export default function IntelligentSuggestionsPanel({
               {t`Detected keywords:`}
             </span>
             {keywords.map((kw) => (
-              <Badge className='text-[10px]' color='purple' key={kw} label={kw} />
+              <Badge
+                className='text-[10px]'
+                color='purple'
+                key={kw}
+                label={kw}
+              />
             ))}
           </div>
         )}
@@ -163,7 +168,7 @@ export default function IntelligentSuggestionsPanel({
                 <div className='mt-auto flex min-h-[20px] flex-wrap items-end gap-1'>
                   {suggestion.keywords.map((kw) => (
                     <span
-                      className='text-[10px] rounded bg-surface-secondary px-1.5 py-0.5 font-normal text-text-secondary'
+                      className='rounded bg-surface-secondary px-1.5 py-0.5 text-[10px] font-normal text-text-secondary'
                       key={kw}
                     >
                       {kw}

@@ -1,5 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { uploadForOcr } from '@/api/v6/folder/folder'
+import {
+  bulkUpload,
+  deleteStagedFiles,
+  getBulkUploadJobStatus,
+  indexStageFile,
+  uploadWithOcr,
+} from '@/api/v6/uploadAndIndex'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -23,7 +31,7 @@ interface IntelligentUploadViewProps {
   candidateRepositories: CandidateRepository[]
   repositoryId?: string | null
   onBack: () => void
-  onDone: () => Promise<void> | void
+  onDone: (targetRepositoryId?: string) => Promise<void> | void
 }
 
 const FILE_TYPE_ICONS = [
@@ -56,6 +64,7 @@ export default function IntelligentUploadView({
   const [isUploading, setIsUploading] = useState(false)
   const [uploadIndex, setUploadIndex] = useState(0)
   const [indexingFileId, setIndexingFileId] = useState<string | null>(null)
+  const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
 
   // Track processing concurrency
   const activeProcessingCount = useRef(0)
@@ -101,12 +110,12 @@ export default function IntelligentUploadView({
     [t],
   )
 
-  // Start processing pending files with max concurrency of 2
+  // Start processing pending files sequentially (1 file at a time)
   useEffect(() => {
     const pendingFiles = files.filter((f) => f.status === 'pending')
-    if (pendingFiles.length === 0 || activeProcessingCount.current >= 2) return
+    if (pendingFiles.length === 0 || activeProcessingCount.current >= 1) return
 
-    const availableSlots = 2 - activeProcessingCount.current
+    const availableSlots = 1 - activeProcessingCount.current
     const toProcess = pendingFiles.slice(0, availableSlots)
 
     toProcess.forEach((item) => {
@@ -173,7 +182,10 @@ export default function IntelligentUploadView({
                       ((Date.now() - startTime) / 1000).toFixed(1),
                     ),
                     keywords: result.keywords,
+                    ocrText: result.ocrText,
+                    rationale: result.rationale,
                     selectedRepositoryId: topRepoId,
+                    sourceReference: result.sourceReference,
                     status: 'done',
                     suggestions: result.suggestions,
                   }
@@ -188,10 +200,23 @@ export default function IntelligentUploadView({
             activeProcessingCount.current - 1,
           )
 
-          const errorMessage =
+          const rawMessage =
             error instanceof Error
               ? error.message
               : t`Failed to classify document`
+
+          const isTechnicalJSError =
+            typeof rawMessage === 'string' &&
+            (rawMessage.includes('Cannot read properties') ||
+              rawMessage.includes('toLowerCase') ||
+              rawMessage.includes('TypeError') ||
+              rawMessage.includes('is null') ||
+              rawMessage.includes('is undefined') ||
+              rawMessage.includes('is not a function'))
+
+          const errorMessage = isTechnicalJSError
+            ? t`Classification failed for this document. Please try again.`
+            : rawMessage
 
           setFiles((prev) =>
             prev.map((f) =>
@@ -219,9 +244,20 @@ export default function IntelligentUploadView({
     [],
   )
 
-  const handleRemoveFile = useCallback((fileId: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== fileId))
-  }, [])
+  const handleRemoveFile = useCallback(
+    (fileId: string) => {
+      const targetFile = files.find((f) => f.id === fileId)
+      setFiles((prev) => prev.filter((f) => f.id !== fileId))
+
+      if (targetFile?.stagedFileId && targetFile?.selectedRepositoryId) {
+        void deleteStagedFiles({
+          fileIds: [targetFile.stagedFileId],
+          repositoryId: targetFile.selectedRepositoryId,
+        })
+      }
+    },
+    [files],
+  )
 
   const handleRetry = useCallback((fileId: string) => {
     setFiles((prev) =>
@@ -231,8 +267,7 @@ export default function IntelligentUploadView({
     )
   }, [])
 
-
-  // Single file indexing handler
+  // Single file staging & archiving handler
   const handleIndexSingleFile = async (fileId: string) => {
     if (isUploading || indexingFileId) return
     const targetFile = files.find((f) => f.id === fileId)
@@ -247,35 +282,90 @@ export default function IntelligentUploadView({
     }
 
     setIndexingFileId(fileId)
-    const sleep = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms))
 
-    // Simulate indexing single file
-    await sleep(600)
+    try {
+      let stageId = targetFile.stagedFileId
+      if (!stageId) {
+        // Step 1: Call uploadForOcr first to extract OCR data
+        const { data: ocrData, error: ocrError } = await uploadForOcr(
+          targetFile.selectedRepositoryId,
+          targetFile.file,
+          [],
+        )
 
-    setFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, status: 'uploaded' as const } : f,
-      ),
-    )
-    setIndexingFileId(null)
+        const ocrFieldList = ocrData?.ocrFieldList
+        const ocrJson =
+          typeof ocrData?.ocrJson === 'string'
+            ? ocrData.ocrJson
+            : ocrData?.ocrJson
+              ? JSON.stringify(ocrData.ocrJson)
+              : undefined
+        const ocrText = ocrData?.ocrText || targetFile.ocrText
 
-    const folderName =
-      candidateRepositories.find(
-        (r) => r.id === targetFile.selectedRepositoryId,
-      )?.name ||
-      targetFile.suggestions?.find(
-        (s) => s.repositoryId === targetFile.selectedRepositoryId,
-      )?.repositoryName ||
-      t`target folder`
+        // Step 2: Call uploadWithOcr carrying forward the extracted OCR data
+        const { data: stageData, error: stageError } = await uploadWithOcr({
+          file: targetFile.file,
+          ocrFieldList,
+          ocrJson,
+          ocrText,
+          repositoryId: targetFile.selectedRepositoryId,
+        })
+        if (stageError || !stageData?.fileId) {
+          throw new Error(
+            stageError || ocrError || t`Failed to stage file for indexing`,
+          )
+        }
+        stageId = stageData.fileId
+      }
 
-    showToast({
-      message: t`"${targetFile.file.name}" successfully indexed to ${folderName}.`,
-      variant: 'success',
-    })
+      const { error: indexError } = await indexStageFile(stageId, {
+        fields: [],
+        itemId: null,
+        ocrResult: null,
+        repositoryId: targetFile.selectedRepositoryId,
+        status: 'Indexing',
+      })
+
+      const is400Error =
+        indexError &&
+        (indexError.includes('400') ||
+          indexError.includes('mandatory metadata') ||
+          indexError.includes('RepositoryFields'))
+
+      if (indexError && !is400Error) throw new Error(indexError)
+
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? { ...f, stagedFileId: stageId, status: 'uploaded' as const }
+            : f,
+        ),
+      )
+
+      const folderName =
+        candidateRepositories.find(
+          (r) => r.id === targetFile.selectedRepositoryId,
+        )?.name ||
+        targetFile.suggestions?.find(
+          (s) => s.repositoryId === targetFile.selectedRepositoryId,
+        )?.repositoryName ||
+        t`target folder`
+
+      const fileName = targetFile.file.name
+      showToast({
+        message: t`"${fileName}" successfully indexed to ${folderName}.`,
+        variant: 'success',
+      })
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : t`Failed to index document`
+      showToast({ message: msg, variant: 'error' })
+    } finally {
+      setIndexingFileId(null)
+    }
   }
 
-  // Proceed to Indexing: Front-end UI only simulation (no upload-archive API call)
+  // Proceed to Indexing: Single vs Bulk Upload depending on selected repository counts
   const handleProceedToIndexing = async () => {
     const pendingUploadFiles = files.filter((f) => f.status !== 'uploaded')
     if (pendingUploadFiles.length === 0) {
@@ -294,33 +384,269 @@ export default function IntelligentUploadView({
     }
 
     setIsUploading(true)
-    const sleep = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms))
+    let processedCount = 0
+    const successfullyIndexedRepoIds = new Set<string>()
 
-    for (let i = 0; i < pendingUploadFiles.length; i++) {
-      const item = pendingUploadFiles[i]
-      if (!item) continue
+    console.log(
+      '[IntelligentUpload] Starting batch indexing for pending files:',
+      pendingUploadFiles.map((f) => ({
+        fileName: f.file.name,
+        selectedRepositoryId: f.selectedRepositoryId,
+      })),
+    )
 
-      setUploadIndex(i + 1)
-      await sleep(350)
+    try {
+      const groupedByRepo = new Map<string, ClassifiedFile[]>()
+      pendingUploadFiles.forEach((fileItem) => {
+        const repoId = fileItem.selectedRepositoryId!
+        const existing = groupedByRepo.get(repoId) || []
+        groupedByRepo.set(repoId, [...existing, fileItem])
+      })
 
-      setFiles((prev) =>
-        prev.map((f) => (f.id === item.id ? { ...f, status: 'uploaded' } : f)),
+      console.log(
+        '[IntelligentUpload] Grouped repositories:',
+        Array.from(groupedByRepo.entries()).map(([repoId, list]) => ({
+          filesCount: list.length,
+          repoId,
+        })),
       )
+
+      for (const [repoId, groupFiles] of groupedByRepo.entries()) {
+        console.log(
+          `[IntelligentUpload] Processing repository group repoId=${repoId}, count=${groupFiles.length}`,
+        )
+        if (groupFiles.length > 1) {
+          // Repository group has > 1 file -> Call Bulk Upload API
+          const filesToUpload = groupFiles.map((item) => item.file)
+          const { data: bulkRes, error: bulkErr } = await bulkUpload({
+            files: filesToUpload,
+            repositoryId: repoId,
+          })
+
+          if (bulkErr || !bulkRes) {
+            showToast({
+              message: bulkErr || t`Bulk upload failed for target folder`,
+              variant: 'error',
+            })
+            continue
+          }
+
+          if (bulkRes.jobId) {
+            let isDone = false
+            let pollAttempts = 0
+            while (!isDone && pollAttempts < 30) {
+              pollAttempts++
+              await new Promise((res) => setTimeout(res, 2000))
+              const { data: jobStatus } = await getBulkUploadJobStatus(
+                bulkRes.jobId,
+              )
+              if (
+                jobStatus &&
+                jobStatus.isTerminal &&
+                jobStatus.ocrPending === 0
+              ) {
+                isDone = true
+              }
+            }
+          }
+
+          const stagedList = bulkRes.files || []
+          for (let i = 0; i < groupFiles.length; i++) {
+            const item = groupFiles[i]
+            if (!item) continue
+            const stagedInfo = stagedList[i]
+            const stageId = stagedInfo?.fileId || item.stagedFileId
+
+            if (stageId) {
+              const { error: indexErr } = await indexStageFile(stageId, {
+                fields: [],
+                itemId: null,
+                ocrResult: null,
+                repositoryId: repoId,
+                status: 'Indexing',
+              })
+
+              const is400Err =
+                indexErr &&
+                (indexErr.includes('400') ||
+                  indexErr.includes('mandatory metadata') ||
+                  indexErr.includes('RepositoryFields'))
+
+              if (indexErr && !is400Err) {
+                const itemName = item.file.name
+                showToast({
+                  message: indexErr || t`Failed to index ${itemName}`,
+                  variant: 'error',
+                })
+                setFiles((prev) =>
+                  prev.map((f) =>
+                    f.id === item.id
+                      ? { ...f, error: indexErr, status: 'error' }
+                      : f,
+                  ),
+                )
+                continue
+              }
+            }
+
+            processedCount++
+            successfullyIndexedRepoIds.add(repoId)
+            setUploadIndex(processedCount)
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === item.id
+                  ? { ...f, stagedFileId: stageId, status: 'uploaded' }
+                  : f,
+              ),
+            )
+          }
+        } else {
+          // Repository group has exactly 1 file -> Call uploadForOcr first, then uploadWithOcr
+          const item = groupFiles[0]
+          if (!item) continue
+
+          let stageId = item.stagedFileId
+          if (!stageId) {
+            // Step 1: Call uploadForOcr
+            const { data: ocrData, error: ocrError } = await uploadForOcr(
+              repoId,
+              item.file,
+              [],
+            )
+
+            const ocrFieldList = ocrData?.ocrFieldList
+            const ocrJson =
+              typeof ocrData?.ocrJson === 'string'
+                ? ocrData.ocrJson
+                : ocrData?.ocrJson
+                  ? JSON.stringify(ocrData.ocrJson)
+                  : undefined
+            const ocrText = ocrData?.ocrText || item.ocrText
+
+            // Step 2: Call uploadWithOcr carrying forward OCR data
+            const { data: stageData, error: stageError } = await uploadWithOcr({
+              file: item.file,
+              ocrFieldList,
+              ocrJson,
+              ocrText,
+              repositoryId: repoId,
+            })
+
+            if (stageError || !stageData?.fileId) {
+              const itemName = item.file.name
+              showToast({
+                message:
+                  stageError || ocrError || t`Upload failed for ${itemName}`,
+                variant: 'error',
+              })
+              setFiles((prev) =>
+                prev.map((f) =>
+                  f.id === item.id
+                    ? {
+                        ...f,
+                        error:
+                          stageError ||
+                          ocrError ||
+                          t`Upload failed for ${itemName}`,
+                        status: 'error',
+                      }
+                    : f,
+                ),
+              )
+              continue
+            }
+            stageId = stageData.fileId
+          }
+
+          const { error: indexErr } = await indexStageFile(stageId, {
+            fields: [],
+            itemId: null,
+            ocrResult: null,
+            repositoryId: repoId,
+            status: 'Indexing',
+          })
+
+          const is400Err =
+            indexErr &&
+            (indexErr.includes('400') ||
+              indexErr.includes('mandatory metadata') ||
+              indexErr.includes('RepositoryFields'))
+
+          if (indexErr && !is400Err) {
+            const itemName = item.file.name
+            showToast({
+              message: indexErr || t`Failed to index ${itemName}`,
+              variant: 'error',
+            })
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === item.id
+                  ? { ...f, error: indexErr, status: 'error' }
+                  : f,
+              ),
+            )
+            continue
+          }
+
+          processedCount++
+          successfullyIndexedRepoIds.add(repoId)
+          setUploadIndex(processedCount)
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === item.id
+                ? { ...f, stagedFileId: stageId, status: 'uploaded' }
+                : f,
+            ),
+          )
+        }
+      }
+
+      const totalPending = pendingUploadFiles.length
+      console.log('[IntelligentUpload] Batch processing complete.', {
+        processedCount,
+        successfullyIndexedRepoIds: Array.from(successfullyIndexedRepoIds),
+        totalPending,
+        uniqueRepoCount: successfullyIndexedRepoIds.size,
+      })
+
+      if (processedCount > 0 && processedCount === totalPending) {
+        if (successfullyIndexedRepoIds.size === 1) {
+          const singleTargetRepoId = Array.from(successfullyIndexedRepoIds)[0]
+          console.log(
+            '[IntelligentUpload] Calling onDone with single targetRepoId:',
+            singleTargetRepoId,
+          )
+          showToast({
+            message:
+              processedCount === 1
+                ? t`Document successfully ingested and indexed.`
+                : t`All ${processedCount} documents successfully ingested and indexed.`,
+            variant: 'success',
+          })
+          await onDone(singleTargetRepoId)
+        } else {
+          console.log('[IntelligentUpload] Calling onDone for multiple folders')
+          showToast({
+            message: t`All ${processedCount} documents successfully ingested and indexed.`,
+            variant: 'success',
+          })
+          await onDone()
+        }
+      } else if (processedCount > 0) {
+        showToast({
+          message: t`Indexed ${processedCount} of ${totalPending} document(s). Please review failed files.`,
+          variant: 'warning',
+        })
+      }
+    } catch (err: unknown) {
+      console.error(err)
+      showToast({
+        message: t`An error occurred during indexing.`,
+        variant: 'error',
+      })
+    } finally {
+      setIsUploading(false)
     }
-
-    setIsUploading(false)
-
-    const count = pendingUploadFiles.length
-    showToast({
-      message:
-        count === 1
-          ? t`Document successfully ingested and indexed.`
-          : t`All ${count} documents successfully ingested and indexed.`,
-      variant: 'success',
-    })
-
-    await onDone()
   }
 
   // Derived metrics
@@ -333,7 +659,8 @@ export default function IntelligentUploadView({
     (f) => f.status === 'processing' || f.status === 'pending',
   ).length
   const pendingUploadFiles = files.filter((f) => f.status !== 'uploaded')
-  const allIndexed = filesCount > 0 && pendingUploadFiles.length === 0
+  const pendingUploadCount = pendingUploadFiles.length
+  const allIndexed = filesCount > 0 && pendingUploadCount === 0
 
   const canProceed =
     filesCount > 0 &&
@@ -412,7 +739,10 @@ export default function IntelligentUploadView({
               <div className='grid grid-cols-1 gap-3 pt-1 sm:grid-cols-3'>
                 <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-3 shadow-xs'>
                   <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-primary'>
-                    <AiBrandIcon className='size-3.5' variant='outline-purple' />
+                    <AiBrandIcon
+                      className='size-3.5'
+                      variant='outline-purple'
+                    />
                   </div>
                   <div className='min-w-0 flex-1'>
                     <h3 className='text-12 font-semibold text-text-primary'>
@@ -472,7 +802,10 @@ export default function IntelligentUploadView({
                     <>
                       <span className='text-12 text-text-secondary'>•</span>
                       <span className='inline-flex items-center gap-1 text-12 font-medium text-success-main'>
-                        <Icon className='size-3.5' name='lucide:check-circle-2' />
+                        <Icon
+                          className='size-3.5'
+                          name='lucide:check-circle-2'
+                        />
                         {t`${uploadedCount} indexed`}
                       </span>
                     </>
@@ -489,8 +822,24 @@ export default function IntelligentUploadView({
                 </div>
 
                 {isUploading && (
-                  <div className='text-12 font-medium text-accent-primary'>
-                    {t`Uploading file ${uploadIndex} of ${pendingUploadFiles.length}...`}
+                  <div className='flex items-center gap-3'>
+                    <div className='text-12 font-medium text-accent-primary'>
+                      {t`Uploading file ${uploadIndex} of ${pendingUploadCount}...`}
+                    </div>
+                    <Button
+                      color='gray'
+                      size='xs'
+                      variant='outline'
+                      icon={
+                        isQueueCollapsed
+                          ? 'lucide:chevron-down'
+                          : 'lucide:chevron-up'
+                      }
+                      label={
+                        isQueueCollapsed ? t`Show details` : t`Hide details`
+                      }
+                      onClick={() => setIsQueueCollapsed(!isQueueCollapsed)}
+                    />
                   </div>
                 )}
               </div>
@@ -507,22 +856,28 @@ export default function IntelligentUploadView({
                 />
               </div>
 
-              {/* File Cards List */}
-              <AnimateStagger className='space-y-3'>
-                {files.map((fileItem) => (
-                  <IntelligentUploadFileCard
-                    candidateRepositories={candidateRepositories}
-                    fileItem={fileItem}
-                    isIndexing={indexingFileId === fileItem.id}
-                    key={fileItem.id}
-                    totalFilesCount={files.length}
-                    onIndexSingleFile={handleIndexSingleFile}
-                    onRemove={handleRemoveFile}
-                    onRetry={handleRetry}
-                    onSelectRepository={handleSelectRepository}
-                  />
-                ))}
-              </AnimateStagger>
+              {/* File Cards List - Collapsible during batch upload */}
+              {!isQueueCollapsed && (
+                <AnimateStagger className='space-y-3'>
+                  {files.map((fileItem) => (
+                    <IntelligentUploadFileCard
+                      candidateRepositories={candidateRepositories}
+                      fileItem={fileItem}
+                      key={fileItem.id}
+                      isIndexing={
+                        indexingFileId === fileItem.id ||
+                        (isUploading &&
+                          fileItem.status !== 'uploaded' &&
+                          fileItem.status !== 'error')
+                      }
+                      onIndexSingleFile={handleIndexSingleFile}
+                      onRemove={handleRemoveFile}
+                      onRetry={handleRetry}
+                      onSelectRepository={handleSelectRepository}
+                    />
+                  ))}
+                </AnimateStagger>
+              )}
             </div>
           )}
         </div>
@@ -598,9 +953,9 @@ export default function IntelligentUploadView({
                 variant='solid'
                 label={
                   isUploading
-                    ? t`Uploading (${uploadIndex}/${pendingUploadFiles.length})...`
+                    ? t`Uploading (${uploadIndex}/${pendingUploadCount})...`
                     : uploadedCount > 0
-                      ? t`Index Remaining (${pendingUploadFiles.length})`
+                      ? t`Index Remaining (${pendingUploadCount})`
                       : t`Proceed to Indexing`
                 }
                 onClick={handleProceedToIndexing}

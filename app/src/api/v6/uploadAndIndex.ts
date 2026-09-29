@@ -1,6 +1,26 @@
 import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 
+export interface DocumentIntelligentAgentResponse {
+  document_intelligent_result: DocumentIntelligentResult
+}
+
+export interface DocumentIntelligentCandidate {
+  repository_id: string
+  repository_name: string
+  score: number
+}
+
+export interface DocumentIntelligentResult {
+  candidates: DocumentIntelligentCandidate[]
+  confidence_score: number
+  rationale: string
+  repository_id: string
+  repository_name: string
+  ocr_text?: string
+  source_reference?: string
+}
+
 export interface OcrFieldResult {
   name: string
   type: string
@@ -14,6 +34,22 @@ export interface UploadWithOcrResult {
   ocrFieldList: OcrFieldResult[]
   ocrJson: string
   repositoryId: string
+}
+
+export function parseApiError(errData: unknown): string {
+  if (!errData) return ''
+  if (typeof errData === 'string') return errData
+  if (typeof errData === 'object') {
+    const obj = errData as Record<string, unknown>
+    if (typeof obj.error === 'string') return obj.error
+    if (typeof obj.message === 'string') return obj.message
+    try {
+      return JSON.stringify(obj)
+    } catch {
+      return String(obj)
+    }
+  }
+  return String(errData)
 }
 
 const getTenantHeaders = () => {
@@ -329,20 +365,40 @@ const listStagedFiles = async ({
       url: '/uploadAndIndex/index/all',
     })
     if (status !== 200) throw new Error('invalid status code')
-    const payload = data as any
+    const payload = data as Record<string, unknown> | StageFileSummary[]
     if (Array.isArray(payload)) {
       response.data = payload
-    } else if (Array.isArray(payload?.data)) {
-      const first = payload.data[0]
-      if (first && typeof first === 'object' && 'value' in first && Array.isArray(first.value)) {
-        response.data = payload.data.flatMap((group: any) => group.value ?? [])
+    } else if (
+      payload &&
+      typeof payload === 'object' &&
+      Array.isArray((payload as { data?: unknown }).data)
+    ) {
+      const dataArray = (payload as { data: unknown[] }).data
+      const first = dataArray[0]
+      if (
+        first &&
+        typeof first === 'object' &&
+        'value' in first &&
+        Array.isArray((first as { value?: unknown }).value)
+      ) {
+        response.data = (dataArray as { value?: StageFileSummary[] }[]).flatMap(
+          (group) => group.value ?? [],
+        )
       } else {
-        response.data = payload.data
+        response.data = dataArray as StageFileSummary[]
       }
-    } else if (Array.isArray(payload?.items)) {
-      response.data = payload.items
-    } else if (Array.isArray(payload?.content)) {
-      response.data = payload.content
+    } else if (
+      payload &&
+      typeof payload === 'object' &&
+      Array.isArray((payload as { items?: unknown }).items)
+    ) {
+      response.data = (payload as { items: StageFileSummary[] }).items
+    } else if (
+      payload &&
+      typeof payload === 'object' &&
+      Array.isArray((payload as { content?: unknown }).content)
+    ) {
+      response.data = (payload as { content: StageFileSummary[] }).content
     }
   } catch (e: unknown) {
     console.error(e)
@@ -394,9 +450,18 @@ const indexStageFile = async (
     response.data = data as IndexStageFileResponse
   } catch (e: unknown) {
     console.error(e)
-    const err = e as { message?: string; response?: { data?: string } }
-    response.error =
-      err?.response?.data || err?.message || 'error exporting staged file'
+    const err = e as {
+      message?: string
+      response?: { data?: unknown; status?: number }
+    }
+    if (err?.response?.status === 400) {
+      response.error = ''
+    } else {
+      response.error =
+        parseApiError(err?.response?.data) ||
+        err?.message ||
+        'error exporting staged file'
+    }
   }
   return response
 }
@@ -441,13 +506,87 @@ const fetchStageFileBlob = async (fileId: string) => {
   }
 }
 
+const uploadAndClassifyDocument = async (
+  file: File,
+  sessionId?: string,
+  includeRepositoryCatalog = true,
+  pageno = '1',
+) => {
+  const response: {
+    data: DocumentIntelligentAgentResponse | null
+    error: string
+  } = { data: null, error: '' }
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (sessionId) formData.append('session_id', sessionId)
+    formData.append('pageno', pageno)
+    formData.append(
+      'include_repository_catalog',
+      String(includeRepositoryCatalog),
+    )
+
+    const { data, status } = await axiosV6({
+      data: formData,
+      headers: { ...getTenantHeaders(), 'Content-Type': 'multipart/form-data' },
+      method: 'POST',
+      url: '/repositories/document-intelligent-agent/upload',
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data as DocumentIntelligentAgentResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error classifying document'
+  }
+  return response
+}
+
+const classifyDocumentWithText = async (params: {
+  filepath?: string | null
+  includeRepositoryCatalog?: boolean
+  ocrText: string
+  pageno?: string
+  sessionId?: string
+}) => {
+  const response: {
+    data: DocumentIntelligentAgentResponse | null
+    error: string
+  } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        filepath: params.filepath ?? null,
+        includeRepositoryCatalog: params.includeRepositoryCatalog ?? true,
+        ocrText: params.ocrText,
+        pageno: params.pageno ?? '1',
+        sessionId: params.sessionId ?? 'demo-di',
+      },
+      headers: { ...getTenantHeaders() },
+      method: 'POST',
+      url: '/repositories/document-intelligent-agent',
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data as DocumentIntelligentAgentResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error classifying document'
+  }
+  return response
+}
+
 const uploadAndIndexApi = {
   bulkUpload,
+  classifyDocumentWithText,
   deleteStagedFiles,
   fetchStageFileBlob,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  uploadAndClassifyDocument,
   uploadWithOcr,
   getBulkUploadJobStatus,
 }
@@ -455,11 +594,13 @@ const uploadAndIndexApi = {
 export default uploadAndIndexApi
 export {
   bulkUpload,
+  classifyDocumentWithText,
   deleteStagedFiles,
   fetchStageFileBlob,
   getBulkUploadJobStatus,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  uploadAndClassifyDocument,
   uploadWithOcr,
 }

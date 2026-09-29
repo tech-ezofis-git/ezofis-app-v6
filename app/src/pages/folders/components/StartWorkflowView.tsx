@@ -36,6 +36,8 @@ export function StartWorkflowView({
   const [workflowDetail, setWorkflowDetail] = useState<V6WorkflowDetail | null>(
     null,
   )
+  const [isNotConfigured, setIsNotConfigured] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [workflowError, setWorkflowError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -52,24 +54,25 @@ export function StartWorkflowView({
     viewerRepositoryId: repositoryId,
     viewerItemId: id,
     isRaiseTicket: true,
-    fileName: fileName
+    fileName: fileName,
   })
 
   const workflowNodes = useMemo(() => {
     if (!workflowDetail) return []
-    if (workflowDetail.workflowJson?.nodes) return workflowDetail.workflowJson.nodes
+    if (workflowDetail.workflowJson?.nodes)
+      return workflowDetail.workflowJson.nodes
     if (workflowDetail.flowJson?.nodes) return workflowDetail.flowJson.nodes
 
     let parsedWorkflowJson = workflowDetail.workflowJson
     if (typeof parsedWorkflowJson === 'string') {
       try {
         parsedWorkflowJson = JSON.parse(parsedWorkflowJson)
-      } catch (e) { }
+      } catch (e) {}
     }
     if (parsedWorkflowJson?.blocks) {
       return importWorkflow(parsedWorkflowJson).nodes.map((n: any) => ({
         id: n.id,
-        data: { ...n.data, toolType: n.data.toolType || n.type }
+        data: { ...n.data, toolType: n.data.toolType || n.type },
       }))
     }
 
@@ -93,7 +96,7 @@ export function StartWorkflowView({
     if (typeof parsedWorkflowJson === 'string') {
       try {
         parsedWorkflowJson = JSON.parse(parsedWorkflowJson)
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const blocks = parsedWorkflowJson?.blocks || []
@@ -115,15 +118,39 @@ export function StartWorkflowView({
       }
     }
 
-    return parsedWorkflowJson?.settings?.general?.connectionName || workflowDetail.name || 'Workflow'
+    return (
+      parsedWorkflowJson?.settings?.general?.connectionName ||
+      workflowDetail.name ||
+      'Workflow'
+    )
   }, [workflowDetail])
 
   useEffect(() => {
-    if (!id || !repositoryId) return
+    if (!id) {
+      setLoading(false)
+      setIsNotConfigured(true)
+      return
+    }
 
     let cancelled = false
+
+    if (!repositoryId) {
+      const timer = setTimeout(() => {
+        if (!cancelled) {
+          setLoading(false)
+          setIsNotConfigured(true)
+        }
+      }, 1500)
+      return () => {
+        cancelled = true
+        clearTimeout(timer)
+      }
+    }
+
     const load = async () => {
       setLoading(true)
+      setIsNotConfigured(false)
+      setWorkflowError(null)
       try {
         const docDetail = await folderApi.getDocumentDetail(repositoryId, id)
         if (cancelled) return
@@ -141,10 +168,10 @@ export function StartWorkflowView({
           if (detail.data) {
             setWorkflowDetail(detail.data)
           } else {
-            setWorkflowError('Workflow details not found.')
+            setWorkflowError(t`Workflow details could not be loaded.`)
           }
         } else {
-          setWorkflowError('Workflow "Document Approval" not found.')
+          setIsNotConfigured(true)
         }
       } catch (err) {
         if (!cancelled) setWorkflowError(String(err))
@@ -156,7 +183,7 @@ export function StartWorkflowView({
     return () => {
       cancelled = true
     }
-  }, [id, repositoryId])
+  }, [id, repositoryId, reloadKey, t])
 
   // Optional: load inline preview image/pdf for thumbnail logic if we want to show it.
   useEffect(() => {
@@ -171,7 +198,7 @@ export function StartWorkflowView({
           setPreviewUrl(URL.createObjectURL(response.data))
         }
       })
-      .catch(() => { })
+      .catch(() => {})
     return () => {
       cancelled = true
       if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -185,7 +212,10 @@ export function StartWorkflowView({
         const label = field.label
         if (!prefilledFields.current.has(field.id)) {
           if (label === 'Requested By') {
-            formState.setFieldValue(field.id, session?.email || session?.name || '')
+            formState.setFieldValue(
+              field.id,
+              session?.email || session?.name || '',
+            )
             prefilledFields.current.add(field.id)
           } else if (label === 'Requested Date') {
             const today = new Date().toISOString().split('T')[0]
@@ -197,12 +227,128 @@ export function StartWorkflowView({
     })
   }, [formState.panels, session])
 
-  if (loading || formState.isLoadingForm) {
-    return <StartWorkflowSkeleton />
+  if (loading || (workflowDetail && formState.isLoadingForm)) {
+    return <StartWorkflowSkeleton onBack={onBack} />
+  }
+
+  if (isNotConfigured) {
+    return (
+      <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[13px] text-gray-11 duration-300'>
+        <div className='flex h-[52px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary px-4'>
+          <div className='flex min-w-0 items-center gap-3'>
+            <button
+              className='inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-13 transition-all hover:bg-gray-4 active:scale-95'
+              type='button'
+              onClick={onBack}
+            >
+              <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+              {t`Back`}
+            </button>
+
+            <div className='h-5 w-px shrink-0 bg-gray-4' />
+
+            <div className='flex min-w-0 items-center gap-3'>
+              <Icon className='size-5 shrink-0' name={iconName} />
+              <h2 className='truncate text-[14px] font-semibold text-gray-13'>
+                {fileName}
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        <div className='flex min-h-0 flex-1 items-center justify-center p-6'>
+          <div className='animate-in fade-in slide-in-from-bottom-2 flex max-w-md flex-col items-center rounded-2xl border border-blue-4 bg-surface-primary p-8 text-center shadow-sm duration-300'>
+            <div className='mb-4 flex size-14 items-center justify-center rounded-2xl bg-blue-2 text-blue-10 ring-8 ring-blue-1/60'>
+              <Icon className='size-7 text-blue-10' name='tabler:info-circle' />
+            </div>
+            <h3 className='text-[16px] font-semibold text-gray-13'>
+              {t`Document Approval Process Not Configured`}
+            </h3>
+            <p className='mt-2 text-[13px] leading-relaxed text-gray-10'>
+              {t`The Document Approval workflow process is not configured yet. Please configure the workflow or contact your administrator to get started.`}
+            </p>
+            <div className='mt-6 flex items-center gap-3'>
+              <button
+                className='inline-flex h-9 items-center gap-2 rounded-lg bg-gray-3 px-4 text-[13px] font-medium text-gray-12 transition-all hover:bg-gray-4 active:scale-95'
+                type='button'
+                onClick={onBack}
+              >
+                <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+                {t`Back to Document`}
+              </button>
+              <button
+                className='inline-flex h-9 items-center gap-2 rounded-lg bg-primary-9 px-4 text-[13px] font-medium text-white transition-all hover:bg-primary-10 active:scale-95'
+                type='button'
+                onClick={() => setReloadKey((k) => k + 1)}
+              >
+                <DynamicIcon className='h-4 w-4' name='refresh' />
+                {t`Check Again`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (workflowError) {
-    return <div className='p-6 text-[13px] text-red-10'>{workflowError}</div>
+    return (
+      <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[13px] text-gray-11 duration-300'>
+        <div className='flex h-[52px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary px-4'>
+          <div className='flex min-w-0 items-center gap-3'>
+            <button
+              className='inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-13 transition-all hover:bg-gray-4 active:scale-95'
+              type='button'
+              onClick={onBack}
+            >
+              <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+              {t`Back`}
+            </button>
+
+            <div className='h-5 w-px shrink-0 bg-gray-4' />
+
+            <div className='flex min-w-0 items-center gap-3'>
+              <Icon className='size-5 shrink-0' name={iconName} />
+              <h2 className='truncate text-[14px] font-semibold text-gray-13'>
+                {fileName}
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        <div className='flex min-h-0 flex-1 items-center justify-center p-6'>
+          <div className='animate-in fade-in slide-in-from-bottom-2 flex max-w-md flex-col items-center rounded-2xl border border-red-4 bg-surface-primary p-8 text-center shadow-sm duration-300'>
+            <div className='mb-4 flex size-14 items-center justify-center rounded-2xl bg-red-2 text-red-10 ring-8 ring-red-1/60'>
+              <Icon className='size-7 text-red-10' name='tabler:alert-circle' />
+            </div>
+            <h3 className='text-[16px] font-semibold text-gray-13'>
+              {t`Failed to Load Workflow`}
+            </h3>
+            <p className='mt-2 text-[13px] leading-relaxed text-gray-10'>
+              {workflowError}
+            </p>
+            <div className='mt-6 flex items-center gap-3'>
+              <button
+                className='inline-flex h-9 items-center gap-2 rounded-lg bg-gray-3 px-4 text-[13px] font-medium text-gray-12 transition-all hover:bg-gray-4 active:scale-95'
+                type='button'
+                onClick={onBack}
+              >
+                <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+                {t`Back to Document`}
+              </button>
+              <button
+                className='inline-flex h-9 items-center gap-2 rounded-lg bg-primary-9 px-4 text-[13px] font-medium text-white transition-all hover:bg-primary-10 active:scale-95'
+                type='button'
+                onClick={() => setReloadKey((k) => k + 1)}
+              >
+                <DynamicIcon className='h-4 w-4' name='refresh' />
+                {t`Try Again`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const fileExt = (getFileExtension(fileName) || 'FILE').toUpperCase()
@@ -220,7 +366,8 @@ export function StartWorkflowView({
       (r: any) => r.label === 'Status' || r.label === 'Current Stage',
     )?.value || '-'
 
-  const currentStageName = workflowNodes.length > 0 ? workflowNodes[0].data?.label : documentStatus
+  const currentStageName =
+    workflowNodes.length > 0 ? workflowNodes[0].data?.label : documentStatus
 
   const resolvedPreviewKind = resolveDocumentPreviewKind(null, fileName)
   const isPdfPreview = resolvedPreviewKind === 'pdf'
@@ -230,7 +377,7 @@ export function StartWorkflowView({
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[13px] text-gray-11 duration-300'>
       <div className='flex h-[52px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary px-4'>
-        <div className='flex items-center gap-3 min-w-0'>
+        <div className='flex min-w-0 items-center gap-3'>
           <button
             className='inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-13 transition-all hover:bg-gray-4 active:scale-95'
             type='button'
@@ -240,18 +387,18 @@ export function StartWorkflowView({
             {t`Back`}
           </button>
 
-          <div className='h-5 w-px bg-gray-4 shrink-0' />
+          <div className='h-5 w-px shrink-0 bg-gray-4' />
 
-          <div className='flex items-center gap-3 min-w-0'>
+          <div className='flex min-w-0 items-center gap-3'>
             <Icon className='size-5 shrink-0' name={iconName} />
-            <h2 className='text-[14px] font-semibold text-gray-13 truncate'>
+            <h2 className='truncate text-[14px] font-semibold text-gray-13'>
               {fileName}
             </h2>
           </div>
         </div>
 
         <PrimaryButton
-          className='h-9 px-4 text-[13px] shrink-0'
+          className='h-9 shrink-0 px-4 text-[13px]'
           disabled={formState.isSubmitting}
           onClick={async () => {
             const res = await formState.submit()
@@ -262,13 +409,16 @@ export function StartWorkflowView({
               })
               onBack()
             } else {
-              const isMissingFields = formState.missingMandatoryFieldIds.size > 0
+              const errorMsg =
+                res.error ||
+                formState.submitError ||
+                t`Please fill in required field(s)`
+              const isMissingFields =
+                formState.missingMandatoryFieldIds.size > 0 ||
+                /required|mandatory/i.test(String(errorMsg))
               showToast({
-                message:
-                  res.error ||
-                  formState.submitError ||
-                  t`Please fill in required field(s)`,
-                variant: isMissingFields ? 'default' : 'error',
+                message: errorMsg,
+                variant: isMissingFields ? 'info' : 'error',
               })
             }
           }}
@@ -282,8 +432,8 @@ export function StartWorkflowView({
       </div>
 
       <div className='flex min-h-0 flex-1 gap-4 overflow-hidden p-4'>
-        <div className='flex flex-1 min-w-0 flex-col overflow-hidden'>
-          <Card className='flex flex-1 min-h-0 flex-col overflow-hidden rounded-xl border border-gray-3 p-0 shadow-sm'>
+        <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+          <Card className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 p-0 shadow-sm'>
             <div className='ez-detail-scroll h-full flex-1 overflow-hidden bg-gray-1'>
               {previewUrl ? (
                 <div className='relative h-full min-h-full w-full'>
@@ -298,16 +448,13 @@ export function StartWorkflowView({
                   />
                 </div>
               ) : (
-                <DummyDocumentPreview
-                  fileName={fileName}
-                  fileType={fileExt}
-                />
+                <DummyDocumentPreview fileName={fileName} fileType={fileExt} />
               )}
             </div>
           </Card>
         </div>
 
-        <div className='flex w-[400px] xl:w-[460px] shrink-0 flex-col gap-4 overflow-hidden'>
+        <div className='flex w-[400px] shrink-0 flex-col gap-4 overflow-hidden xl:w-[460px]'>
           <ScrollArea className='flex-1 pr-3.5' height='100%' type='always'>
             <div className='space-y-4 pb-4'>
               <Card className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
@@ -355,7 +502,10 @@ export function StartWorkflowView({
                   onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
                 >
                   <h2 className='flex items-center gap-2 text-sm font-semibold text-gray-13'>
-                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                    <DynamicIcon
+                      className='h-4 w-4 text-blue-11'
+                      name='fileText'
+                    />
                     {t`Document Details`}
                   </h2>
                   <DynamicIcon
@@ -365,17 +515,25 @@ export function StartWorkflowView({
                 </button>
                 {isDocDetailsOpen && (
                   <div className='flex flex-col'>
-                    {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
-                      <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-4 py-2.5 last:border-b-0'>
-                        <span className='flex items-center gap-2 text-[12px] text-gray-9'>
-                          <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
-                          {row.label}
-                        </span>
-                        <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
-                          {row.value || '-'}
-                        </span>
-                      </div>
-                    ))}
+                    {documentInfo?.infoCards
+                      ?.flatMap((card: any) => card.rows || [])
+                      .map((row: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className='flex items-center justify-between border-b border-gray-2 px-4 py-2.5 last:border-b-0'
+                        >
+                          <span className='flex items-center gap-2 text-[12px] text-gray-9'>
+                            <DynamicIcon
+                              className='h-3.5 w-3.5 text-gray-8'
+                              name='maximize'
+                            />
+                            {row.label}
+                          </span>
+                          <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
+                            {row.value || '-'}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </Card>
@@ -442,28 +600,40 @@ export function DummyDocumentPreview({
   )
 }
 
-function StartWorkflowSkeleton() {
+function StartWorkflowSkeleton({ onBack }: { onBack?: () => void }) {
+  const { t } = useLingui()
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary duration-300'>
       <div className='flex h-[52px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary px-4'>
-        <div className='flex items-center gap-4 min-w-0'>
-          <div className='flex items-center gap-2'>
-            <Skeleton className='h-4 w-4 rounded' />
-            <Skeleton className='h-4 w-12 rounded' />
-          </div>
-          <div className='h-5 w-px bg-gray-4 shrink-0' />
-          <div className='flex items-center gap-3 min-w-0'>
-            <Skeleton className='h-5 w-5 rounded shrink-0' />
+        <div className='flex min-w-0 items-center gap-4'>
+          {onBack ? (
+            <button
+              className='inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-13 transition-all hover:bg-gray-4 active:scale-95'
+              type='button'
+              onClick={onBack}
+            >
+              <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+              {t`Back`}
+            </button>
+          ) : (
+            <div className='flex items-center gap-2'>
+              <Skeleton className='h-4 w-4 rounded' />
+              <Skeleton className='h-4 w-12 rounded' />
+            </div>
+          )}
+          <div className='h-5 w-px shrink-0 bg-gray-4' />
+          <div className='flex min-w-0 items-center gap-3'>
+            <Skeleton className='h-5 w-5 shrink-0 rounded' />
             <Skeleton className='h-4 w-48 rounded' />
           </div>
         </div>
-        <Skeleton className='h-9 w-36 rounded-lg shrink-0' />
+        <Skeleton className='h-9 w-36 shrink-0 rounded-lg' />
       </div>
 
       <div className='flex min-h-0 flex-1 gap-4 overflow-hidden p-4'>
-        <div className='flex flex-1 min-w-0 flex-col overflow-hidden'>
-          <Card className='flex flex-1 min-h-0 flex-col items-center justify-center overflow-hidden rounded-xl border border-gray-3 bg-surface-primary p-6 shadow-sm'>
-            <div className='flex flex-col items-center gap-4 w-full max-w-sm'>
+        <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+          <Card className='flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border border-gray-3 bg-surface-primary p-6 shadow-sm'>
+            <div className='flex w-full max-w-sm flex-col items-center gap-4'>
               <Skeleton className='h-16 w-16 rounded-xl' />
               <Skeleton className='h-5 w-48 rounded' />
               <Skeleton className='h-4 w-32 rounded' />
@@ -471,10 +641,10 @@ function StartWorkflowSkeleton() {
           </Card>
         </div>
 
-        <div className='flex w-[400px] xl:w-[460px] shrink-0 flex-col gap-4 overflow-hidden'>
-          <ScrollArea className='flex-1 pr-2 -mr-2' height='100%'>
+        <div className='flex w-[400px] shrink-0 flex-col gap-4 overflow-hidden xl:w-[460px]'>
+          <ScrollArea className='-mr-2 flex-1 pr-2' height='100%'>
             <div className='space-y-4 pb-4'>
-              <Card className='rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm space-y-4'>
+              <Card className='space-y-4 rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm'>
                 <div className='flex items-center justify-between border-b border-gray-3 pb-3'>
                   <div className='flex items-center gap-2'>
                     <Skeleton className='h-4 w-4 rounded' />
@@ -498,7 +668,7 @@ function StartWorkflowSkeleton() {
                 </div>
               </Card>
 
-              <Card className='rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm space-y-4'>
+              <Card className='space-y-4 rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm'>
                 <div className='flex items-center justify-between border-b border-gray-3 pb-3'>
                   <div className='flex items-center gap-2'>
                     <Skeleton className='h-4 w-4 rounded' />
@@ -508,7 +678,10 @@ function StartWorkflowSkeleton() {
                 </div>
                 <div className='space-y-3 pt-1'>
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className='flex items-center justify-between py-1'>
+                    <div
+                      key={i}
+                      className='flex items-center justify-between py-1'
+                    >
                       <Skeleton className='h-3.5 w-28 rounded' />
                       <Skeleton className='h-3.5 w-36 rounded' />
                     </div>

@@ -89,9 +89,14 @@ export function useFolderExplorer() {
       storedState?.viewMode ||
       'grid') as ExplorerView,
   )
-  const [appView, setAppView] = useState<AppView>(
-    (storedState?.appView as AppView) ?? 'explorer',
-  )
+  const initialAppView: AppView = (() => {
+    const raw = storedState?.appView as AppView
+    if (raw === 'details' && storedState?.selectedFile) {
+      return 'details'
+    }
+    return 'explorer'
+  })()
+  const [appView, setAppView] = useState<AppView>(initialAppView)
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [files, setFiles] = useState<FileItem[]>([])
@@ -273,7 +278,7 @@ export function useFolderExplorer() {
         FOLDER_EXPLORER_SESSION_KEY,
         JSON.stringify({
           activeFolder,
-          appView,
+          appView: appView === 'details' ? 'details' : 'explorer',
           selectedFile,
           viewMode,
           expandedIds,

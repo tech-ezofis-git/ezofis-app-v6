@@ -2,114 +2,170 @@ import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { FileText, FolderOpen, GitFork, Users } from 'lucide-react'
 import type { LicenseSummaryResponse } from '@/api/v6/license'
+import type { LicenseResourceCategory } from '../../data/licenseMockData'
+import cn from '@/utils/cn'
 
 type Props = {
+  onSelectCategory?: (category: LicenseResourceCategory) => void
+  selectedCategory?: LicenseResourceCategory
   summary: LicenseSummaryResponse
 }
 
-export default function LicenseStatsRow({ summary }: Props) {
+export default function LicenseStatsRow({
+  onSelectCategory,
+  selectedCategory,
+  summary,
+}: Props) {
   const { t } = useLingui()
   const storageUsedGb = (summary.storageUsedBytes / 1024 ** 3).toFixed(1)
-  const activeWorkflows = Math.max(0, summary.workflowsCount - 4)
-  const activeUsers = Math.max(0, summary.usersCount - 4)
-  const groupsCount = summary.groupsCount
+
+  // Calculations for percent used & limits
+  const usersPct = Math.min(100, Math.round((summary.usersCount / Math.max(1, summary.usersLimit)) * 100))
+  const workflowsPct = Math.min(100, Math.round((summary.workflowsCount / Math.max(1, summary.workflowsLimit)) * 100))
+  const foldersPct = Math.min(100, Math.round((summary.foldersCount / Math.max(1, summary.foldersLimit)) * 100))
+  const filesPct = Math.min(100, Math.round((summary.filesCount / Math.max(1, summary.filesLimit)) * 100))
 
   return (
     <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
       <StatCard
-        accent='teal'
-        badgeLabel={t`All Active`}
-        badgeTone='positive'
-        footer={t`${activeUsers} active · ${groupsCount} groups`}
+        badgeLabel={t`${usersPct}% limit`}
+        category='users'
+        footer={t`${summary.groupsCount ?? 0} user groups`}
         icon={<Users size={18} strokeWidth={2} />}
+        isSelected={selectedCategory === 'users'}
         label={t`Users`}
-        value={`${summary.usersCount}/${summary.usersLimit}`}
+        percent={usersPct}
+        value={`${summary.usersCount} / ${summary.usersLimit}`}
+        onClick={() => onSelectCategory?.('users')}
       />
       <StatCard
-        accent='primary'
-        badgeLabel={t`+2 this week`}
-        badgeTone='positive'
-        footer={t`${activeWorkflows} active`}
+        badgeLabel={t`${workflowsPct}% limit`}
+        category='workflows'
+        footer={t`Automated processes`}
         icon={<GitFork size={18} strokeWidth={2} />}
+        isSelected={selectedCategory === 'workflows'}
         label={t`Workflows`}
-        value={`${summary.workflowsCount}/${summary.workflowsLimit}`}
+        percent={workflowsPct}
+        value={`${summary.workflowsCount} / ${summary.workflowsLimit}`}
+        onClick={() => onSelectCategory?.('workflows')}
       />
       <StatCard
-        accent='cyan'
-        badgeLabel={t`Organized`}
-        badgeTone='neutral'
-        footer={t`5 hierarchy levels`}
+        badgeLabel={t`${foldersPct}% limit`}
+        category='folders'
+        footer={t`Hierarchy structure`}
         icon={<FolderOpen size={18} strokeWidth={2} />}
+        isSelected={selectedCategory === 'folders'}
         label={t`Folders`}
-        value={`${summary.foldersCount}/${summary.foldersLimit}`}
+        percent={foldersPct}
+        value={`${summary.foldersCount} / ${summary.foldersLimit}`}
+        onClick={() => onSelectCategory?.('folders')}
       />
       <StatCard
-        accent='violet'
         badgeLabel={t`${storageUsedGb} GB used`}
-        badgeTone='neutral'
-        footer={t`Storage across all folders`}
+        category='files'
+        footer={t`${filesPct}% file capacity`}
         icon={<FileText size={18} strokeWidth={2} />}
-        label={t`Files`}
-        value={`${summary.filesCount.toLocaleString()}/${summary.filesLimit.toLocaleString()}`}
+        isSelected={selectedCategory === 'files'}
+        label={t`Files & Storage`}
+        percent={filesPct}
+        value={`${summary.filesCount.toLocaleString()} / ${summary.filesLimit.toLocaleString()}`}
+        onClick={() => onSelectCategory?.('files')}
       />
     </div>
   )
 }
 
-const accentClass = {
-  cyan: { icon: 'bg-cyan-3 text-cyan-11', top: 'border-t-cyan-9' },
-  primary: { icon: 'bg-primary-3 text-primary-10', top: 'border-t-primary-9' },
-  teal: { icon: 'bg-teal-3 text-teal-11', top: 'border-t-teal-9' },
-  violet: { icon: 'bg-violet-3 text-violet-11', top: 'border-t-violet-9' },
-} as const
-
-const badgeToneClass = {
-  neutral: 'border-gray-4 bg-gray-2 text-text-secondary',
-  positive: 'border-green-6 bg-green-3 text-green-11',
-} as const
+function getProgressColorClass(percent: number) {
+  if (percent > 85) return 'bg-red-9'
+  if (percent > 60) return 'bg-orange-9'
+  return 'bg-primary-9'
+}
 
 function StatCard({
-  accent,
   badgeLabel,
-  badgeTone,
+  category,
   footer,
   icon,
+  isSelected,
   label,
+  onClick,
+  percent,
   value,
 }: {
-  accent: keyof typeof accentClass
   badgeLabel: string
-  badgeTone: keyof typeof badgeToneClass
+  category: LicenseResourceCategory
   footer: string
   icon: ReactNode
+  isSelected?: boolean
   label: string
+  onClick?: () => void
+  percent: number
   value: string
 }) {
+  const barColor = getProgressColorClass(percent)
+
   return (
-    <div
-      className={`flex flex-col gap-2 rounded-xl border border-t-[3px] border-gray-3 bg-surface p-3 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${accentClass[accent].top}`}
+    <button
+      type='button'
+      aria-pressed={isSelected}
+      className={cn(
+        'group relative flex cursor-pointer flex-col justify-between gap-3 rounded-xl border p-4 text-left transition-all duration-200 active:scale-[0.98]',
+        isSelected
+          ? 'border-2 border-primary-9 bg-primary-1/60 shadow-md ring-2 ring-primary-9/20 -translate-y-0.5'
+          : 'border-gray-3 bg-surface hover:border-primary-6 hover:bg-primary-1/30 hover:shadow-[var(--shadow-md)]',
+      )}
+      onClick={onClick}
     >
-      <div className='flex items-start justify-between gap-2'>
-        <span
-          className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${accentClass[accent].icon}`}
-        >
-          {icon}
-        </span>
-        <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${badgeToneClass[badgeTone]}`}
-        >
-          {badgeLabel}
-        </span>
-      </div>
       <div>
-        <div className='font-poppins text-[20px] font-semibold text-text-primary'>
-          {value}
+        <div className='flex items-start justify-between gap-2'>
+          <span
+            className={cn(
+              'flex size-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200',
+              isSelected
+                ? 'bg-primary-9 text-white shadow-sm'
+                : 'bg-primary-3 text-primary-10 group-hover:bg-primary-9 group-hover:text-white',
+            )}
+          >
+            {icon}
+          </span>
+          <div className='flex items-center gap-1.5'>
+            <span
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors duration-200',
+                isSelected
+                  ? 'border-primary-4 bg-primary-3 text-primary-11'
+                  : 'border-gray-4 bg-gray-2 text-text-secondary',
+              )}
+            >
+              {badgeLabel}
+            </span>
+          </div>
         </div>
-        <div className='mt-0.5 text-12 font-medium text-text-secondary'>
-          {label}
+
+        <div className='mt-3'>
+          <div className='font-poppins text-[22px] font-bold text-text-primary tracking-tight'>
+            {value}
+          </div>
+          <div className='mt-0.5 text-12 font-semibold text-text-secondary'>
+            {label}
+          </div>
         </div>
       </div>
-      <div className='text-11 text-text-muted'>{footer}</div>
-    </div>
+
+      <div>
+        <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
+          <div
+            className={cn('h-full rounded-full transition-all duration-500 ease-out', barColor)}
+            style={{ width: `${Math.max(4, percent)}%` }}
+          />
+        </div>
+        <div className='mt-2 flex items-center justify-between text-11 font-medium text-text-muted'>
+          <span>{footer}</span>
+          {isSelected ? (
+            <span className='size-2 rounded-full bg-primary-9 animate-pulse' />
+          ) : null}
+        </div>
+      </div>
+    </button>
   )
 }

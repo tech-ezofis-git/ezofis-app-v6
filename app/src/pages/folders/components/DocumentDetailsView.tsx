@@ -1956,16 +1956,17 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              <button
-                aria-label={t`Start Workflow`}
-                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
-                disabled={!onWorkflow}
-                type='button'
-                onClick={() => onWorkflow?.()}
-              >
-                <DynamicIcon className='h-4 w-4 text-blue-9' name='play' />
-                <span className='hidden sm:inline'>{t`Start Workflow`}</span>
-              </button>
+              {onWorkflow ? (
+                <button
+                  aria-label={t`Start Workflow`}
+                  className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
+                  type='button'
+                  onClick={() => onWorkflow?.()}
+                >
+                  <DynamicIcon className='h-4 w-4 text-blue-9' name='play' />
+                  <span className='hidden sm:inline'>{t`Start Workflow`}</span>
+                </button>
+              ) : null}
               <button
                 aria-label={t`AI Summary`}
                 className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'

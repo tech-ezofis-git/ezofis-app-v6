@@ -356,6 +356,16 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       delete settings.backOrderDetection
     }
 
+    if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
+      const rawTemplate =
+        data.templateJson ?? data.pdfTemplateJson ?? data.pdfTemplate
+      if (typeof rawTemplate === 'string' && rawTemplate.trim()) {
+        settings.templateJson = rawTemplate
+      } else if (rawTemplate && typeof rawTemplate === 'object') {
+        settings.templateJson = rawTemplate
+      }
+    }
+
     settings.generatePDF = Boolean(data.generatePDF)
     if (!Array.isArray(settings.generatePDFFields)) {
       settings.generatePDFFields = []

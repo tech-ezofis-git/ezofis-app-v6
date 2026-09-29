@@ -176,7 +176,7 @@ type FolderTableDataTableSplitProps = {
 
   uploadDisabled?: boolean
 
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
 }
 
 const folderColumnHelper = createColumnHelper<FolderRow>()
@@ -857,7 +857,7 @@ function FileDataTableSection({
   onPageSizeChange?: (pageSize: number) => void
   onReload?: () => void
   onShare: (id: string) => void
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
   onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
   onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
@@ -1246,11 +1246,13 @@ function FileDataTableSection({
                   label={t`Share`}
                   onClick={() => onShare(fileId)}
                 />
-                <MenuItem
-                  icon='lucide:play'
-                  label={t`Start Workflow`}
-                  onClick={() => onWorkflow(fileId)}
-                />
+                {onWorkflow ? (
+                  <MenuItem
+                    icon='lucide:play'
+                    label={t`Start Workflow`}
+                    onClick={() => onWorkflow(fileId)}
+                  />
+                ) : null}
                 {permissions?.delete !== false ? (
                   <>
                     <MenuDivider />

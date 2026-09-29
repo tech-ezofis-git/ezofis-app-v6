@@ -122,7 +122,7 @@ type DocumentsListViewProps = {
   onShareFilter?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
   onUploadFile?: (files: File[]) => void
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
   setView: (view: ExplorerView) => void
 }
 
@@ -1304,11 +1304,13 @@ export function DocumentsListView({
             label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
-          <MenuItem
-            icon='play'
-            label={t`Start Workflow`}
-            onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
-          />
+          {onWorkflow ? (
+            <MenuItem
+              icon='play'
+              label={t`Start Workflow`}
+              onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
+            />
+          ) : null}
 
           {permissions?.delete !== false ? (
             <>

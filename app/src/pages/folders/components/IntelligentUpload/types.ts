@@ -7,6 +7,9 @@ export interface ClassificationResult {
   documentType: string
   keywords: string[]
   suggestions: ClassificationSuggestion[]
+  ocrText?: string
+  rationale?: string
+  sourceReference?: string
 }
 
 export interface ClassificationSuggestion {
@@ -15,6 +18,7 @@ export interface ClassificationSuggestion {
   reason: string
   repositoryId: string
   repositoryName: string
+  score?: number
 }
 
 export interface ClassifiedFile {
@@ -26,7 +30,11 @@ export interface ClassifiedFile {
   elapsedSeconds?: number
   error?: string
   keywords?: string[]
+  ocrText?: string
+  rationale?: string
   selectedRepositoryId?: string
+  sourceReference?: string
+  stagedFileId?: string
   suggestions?: ClassificationSuggestion[]
 }
 
