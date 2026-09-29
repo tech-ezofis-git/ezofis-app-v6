@@ -16,7 +16,6 @@ interface IntelligentUploadFileCardProps {
   candidateRepositories: CandidateRepository[]
   fileItem: ClassifiedFile
   isIndexing?: boolean
-  totalFilesCount?: number
   onIndexSingleFile?: (fileId: string) => void
   onRemove: (fileId: string) => void
   onRetry: (fileId: string) => void
@@ -27,7 +26,6 @@ export default function IntelligentUploadFileCard({
   candidateRepositories,
   fileItem,
   isIndexing = false,
-  totalFilesCount = 1,
   onIndexSingleFile,
   onRemove,
   onRetry,
@@ -183,26 +181,20 @@ export default function IntelligentUploadFileCard({
           {fileItem.status === 'done' && (
             <Tooltip
               content={
-                totalFilesCount <= 1
-                  ? t`Use the bottom button to index when only 1 file is in queue`
-                  : !fileItem.selectedRepositoryId
-                    ? t`Select a target folder before indexing`
-                    : t`Index only this document now`
+                !fileItem.selectedRepositoryId
+                  ? t`Select a target folder before indexing`
+                  : t`Index this document now`
               }
             >
               <span>
                 <Button
                   color='primary'
+                  disabled={isIndexing || !fileItem.selectedRepositoryId}
                   icon={isIndexing ? 'tabler:loader-2' : 'lucide:upload-cloud'}
                   iconClass={isIndexing ? 'animate-spin' : undefined}
                   label={isIndexing ? t`Indexing...` : t`Index this file`}
                   size='xs'
                   variant='outline'
-                  disabled={
-                    totalFilesCount <= 1 ||
-                    isIndexing ||
-                    !fileItem.selectedRepositoryId
-                  }
                   onClick={() => onIndexSingleFile?.(fileItem.id)}
                 />
               </span>

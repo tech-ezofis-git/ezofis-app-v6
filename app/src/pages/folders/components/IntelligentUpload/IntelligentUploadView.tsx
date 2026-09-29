@@ -864,7 +864,6 @@ export default function IntelligentUploadView({
                       candidateRepositories={candidateRepositories}
                       fileItem={fileItem}
                       key={fileItem.id}
-                      totalFilesCount={files.length}
                       isIndexing={
                         indexingFileId === fileItem.id ||
                         (isUploading &&
