@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 
 interface Props {
@@ -32,6 +33,9 @@ const Header = ({
   onTogglePanel,
 }: Props) => {
   const { t } = useLingui()
+  const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
+  const openPlayground = usePlaygroundStore((state) => state.open)
+  const closePlayground = usePlaygroundStore((state) => state.close)
 
   const panelButtons: {
     count: number
@@ -79,6 +83,28 @@ const Header = ({
       </div>
 
       <div className='flex items-center gap-1'>
+        <Tooltip content={t`Console / Workflow API`} position='bottom'>
+          <button
+            aria-label={t`Console`}
+            type='button'
+            className={cn(
+              'relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-all hover:bg-gray-3 active:scale-95',
+              isPlaygroundOpen
+                ? 'bg-[var(--primary-2)] text-[var(--primary-11)]'
+                : 'text-gray-10',
+            )}
+            onClick={() => {
+              if (isPlaygroundOpen) {
+                closePlayground()
+              } else {
+                openPlayground()
+              }
+            }}
+          >
+            <Icon className='size-4' name='tabler:terminal-2' />
+          </button>
+        </Tooltip>
+
         {onTogglePanel &&
           panelButtons.map((panel) => (
             <Tooltip content={panel.label} key={panel.id} position='bottom'>

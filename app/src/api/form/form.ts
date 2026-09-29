@@ -269,7 +269,7 @@ const uploadMasterFile = async (payload: any) => {
 
 const saveFormEntry = async (
   formId: string,
-  entryId: number | string = 0,
+  entryId: number | string = '00000000-0000-0000-0000-000000000000',
   payload: any,
 ) => {
   const response: any = { data: null, error: '' }

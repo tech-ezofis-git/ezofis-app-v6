@@ -8,7 +8,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Option } from '@/types/option'
 import {
@@ -23,6 +23,7 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import {
   type Question,
   useFormStore,
@@ -30,10 +31,12 @@ import {
 import {
   buildMergedOcrFieldHints,
   facetsToFieldOptions,
+  fetchMasterFormColumnOptions,
   findFieldOption,
   getConfiguredFieldOptions,
   getDropdownFacetSource,
   getFieldOptions as getSharedFieldOptions,
+  getMasterFormInfo,
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
   withExtraFieldOptions,
@@ -51,6 +54,11 @@ const LivePreview = () => {
   )
   const [repositories, setRepositories] = useState<any[]>([])
   const [selectedRepoId, setSelectedRepoId] = useState<string>('')
+
+  const fieldStates = useMemo(
+    () => evaluateFormRules(panels, previewModel),
+    [panels, previewModel],
+  )
 
   // Fetch repositories for OCR target context
   useEffect(() => {
@@ -296,35 +304,39 @@ const LivePreview = () => {
 
                   {/* Section Fields Grid */}
                   <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
-                    {panel.fields.map((field) => (
-                      <div
-                        key={field.id}
-                        className={cn(
-                          'col-span-12',
-                          deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-6' &&
-                          'md:col-span-6',
-                          deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-4' &&
-                          'md:col-span-4',
-                          deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-3' &&
-                          'md:col-span-3',
-                        )}
-                      >
-                        {!field.settings.general.hideLabel && (
-                          <div className='mb-1.5 flex items-center justify-between'>
-                            <label className='block text-xs font-semibold text-gray-12'>
-                              {field.label || 'Untitled Question'}
-                              {field.settings.validation.fieldRule ===
-                                'REQUIRED' && (
+                    {panel.fields.map((field) => {
+                      const state = fieldStates[field.id]
+                      if (state && !state.visible) return null
+                      const isRequired = state ? state.required : field.settings.validation.fieldRule === 'REQUIRED'
+
+                      return (
+                        <div
+                          key={field.id}
+                          className={cn(
+                            'col-span-12',
+                            deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-6' &&
+                            'md:col-span-6',
+                            deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-4' &&
+                            'md:col-span-4',
+                            deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-3' &&
+                            'md:col-span-3',
+                          )}
+                        >
+                          {!field.settings.general.hideLabel && (
+                            <div className='mb-1.5 flex items-center justify-between'>
+                              <label className='block text-xs font-semibold text-gray-12'>
+                                {field.label || 'Untitled Question'}
+                                {isRequired && (
                                   <span className='ml-1 font-bold text-red-11'>
                                     *
                                   </span>
                                 )}
-                            </label>
-                          </div>
-                        )}
+                              </label>
+                            </div>
+                          )}
                         {field.settings.general.description && (
                           <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
                             {field.settings.general.description}
@@ -339,7 +351,8 @@ const LivePreview = () => {
                           selectedRepoId,
                         )}
                       </div>
-                    ))}
+                    )
+                  })}
                   </div>
                 </div>
               ))
@@ -379,6 +392,7 @@ const LivePreviewDropdown = ({
 }) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
+  const masterInfo = getMasterFormInfo(field)
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     queryKey: [
@@ -408,14 +422,31 @@ const LivePreviewDropdown = ({
     enabled: optionsType === 'USER_LIST',
   })
 
+  const { data: masterFieldOptions = [] } = useQuery({
+    enabled: masterInfo.enabled,
+    queryKey: [
+      'livePreviewMasterOptions',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+    ],
+    queryFn: () =>
+      fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+      ),
+  })
+
   const selectOptions = withExtraFieldOptions(
     withExtraFieldOptions(
-      optionsType === 'DYNAMIC'
-        ? getSharedFieldOptions(field)
-        : getConfiguredFieldOptions(field),
-      uniqueFieldOptions,
+      withExtraFieldOptions(
+        optionsType === 'DYNAMIC'
+          ? getSharedFieldOptions(field)
+          : getConfiguredFieldOptions(field),
+        uniqueFieldOptions,
+      ),
+      userFieldOptions,
     ),
-    userFieldOptions,
+    masterFieldOptions,
   )
 
   if (multiple) {

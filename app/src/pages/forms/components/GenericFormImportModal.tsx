@@ -280,7 +280,11 @@ export default function GenericFormImportModal({
         })
 
         if (Object.keys(entryValues).length > 0) {
-          const { error } = await formApi.saveFormEntry(formId, 0, entryValues)
+          const { error } = await formApi.saveFormEntry(
+            formId,
+            '00000000-0000-0000-0000-000000000000',
+            entryValues,
+          )
           if (!error) successCount++
         }
       }

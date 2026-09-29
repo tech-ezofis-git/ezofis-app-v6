@@ -8,6 +8,7 @@ import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap
 import cn from '@/utils/cn'
 import ExtractedFieldCell from './components/ExtractedFieldCell'
 import FieldRenderer from './components/FieldRenderer'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import {
   getColumnSizeClass,
   isFieldFilled,
@@ -154,6 +155,11 @@ const WorkflowFormRenderer = ({
     return grouped
   }, [attachments, firstFileFieldId, instanceId])
 
+  const evaluatedFieldStates = useMemo(
+    () => evaluateFormRules(panels, formModel),
+    [panels, formModel],
+  )
+
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
 
@@ -266,6 +272,10 @@ const WorkflowFormRenderer = ({
               ? field.settings?.general?.size || 'col-12'
               : field.settings?.general?.size,
           )
+          const state = evaluatedFieldStates[field.id]
+          const isReadOnlyByRule = Boolean(state?.disabled)
+          const isRequiredByRule = state ? state.required : isFieldRequired(field)
+
           return (
             <div
               className={cn(
@@ -287,7 +297,8 @@ const WorkflowFormRenderer = ({
                 value={formModel[field.id]}
                 error={
                   hasAttemptedSubmit &&
-                    (missingMandatoryFieldIds?.has(String(field.id)) ||
+                    ((isRequiredByRule && !formModel[field.id]) ||
+                      missingMandatoryFieldIds?.has(String(field.id)) ||
                       (field.jsonId &&
                         missingMandatoryFieldIds?.has(String(field.jsonId))))
                     ? t`This field is required.`
@@ -299,7 +310,8 @@ const WorkflowFormRenderer = ({
                 }
                 viewOnly={
                   viewOnly ||
-                  Boolean(readOnlyFieldIds?.has(String(field.id)))
+                  Boolean(readOnlyFieldIds?.has(String(field.id))) ||
+                  isReadOnlyByRule
                 }
                 onChange={(value) => onFieldChange(field.id, value)}
                 onOcrFieldList={onOcrFieldList}
@@ -307,7 +319,8 @@ const WorkflowFormRenderer = ({
                 onRequestUpload={
                   onRequestUpload &&
                     !viewOnly &&
-                    !readOnlyFieldIds?.has(String(field.id))
+                    !readOnlyFieldIds?.has(String(field.id)) &&
+                    !isReadOnlyByRule
                     ? (file) => onRequestUpload(field.id, file)
                     : undefined
                 }
@@ -337,12 +350,15 @@ const WorkflowFormRenderer = ({
         <AnimateFadeIn delay={0.1}>
           <div className='flex flex-col gap-6'>
             {panels.map((panel: any, panelIndex: number) => {
-              const visibleFields = (panel.fields || []).filter(
-                (field: any) =>
-                  !isFieldHidden(field) &&
+              const visibleFields = (panel.fields || []).filter((field: any) => {
+                const state = evaluatedFieldStates[field.id]
+                const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
+                return (
+                  !isHiddenByRule &&
                   !hiddenFieldIds?.has(field.id) &&
-                  field.type !== 'DIVIDER',
-              )
+                  field.type !== 'DIVIDER'
+                )
+              })
               if (visibleFields.length === 0) return null
 
               return (
@@ -390,10 +406,11 @@ const WorkflowFormRenderer = ({
           }}
         >
           {panels.map((panel: any, panelIndex: number) => {
-            const visibleFields = (panel.fields || []).filter(
-              (field: any) =>
-                !isFieldHidden(field) && !hiddenFieldIds?.has(field.id),
-            )
+            const visibleFields = (panel.fields || []).filter((field: any) => {
+              const state = evaluatedFieldStates[field.id]
+              const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
+              return !isHiddenByRule && !hiddenFieldIds?.has(field.id)
+            })
             if (visibleFields.length === 0) return null
 
             const requiredFields = visibleFields.filter(

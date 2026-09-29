@@ -3,6 +3,7 @@
 // existing @/components/base input components.
 
 import dayjs from 'dayjs'
+import formApi from '@/api/form/form'
 import {
   getFileNameWithoutExtension,
   isFilenameField,
@@ -198,10 +199,182 @@ export const getFieldOptions = (field: any): FieldOption[] => {
 // list used when a field has no customOptions yet.
 export const getConfiguredFieldOptions = (field: any): FieldOption[] => {
   const specific = field?.settings?.specific
-  if (specific?.optionsType === 'DYNAMIC') return getFieldOptions(field)
+  const optionsType = String(specific?.optionsType || 'CUSTOM').toUpperCase()
+  const optionsSource = String(specific?.optionsSource || optionsType).toUpperCase()
+
+  if (optionsType !== 'CUSTOM' || optionsSource !== 'CUSTOM') {
+    if (optionsType === 'DYNAMIC') return getFieldOptions(field)
+    return []
+  }
+
   const raw: string = specific?.customOptions || ''
   if (!String(raw).trim()) return []
   return getFieldOptions(field)
+}
+
+export const getMasterFormInfo = (
+  field: any,
+): { enabled: boolean; masterFormColumn: string; masterFormId: string } => {
+  const isSelect =
+    field?.type === 'SINGLE_SELECT' ||
+    field?.type === 'MULTI_SELECT' ||
+    field?.type === 'SINGLE_CHOICE' ||
+    field?.type === 'MULTIPLE_CHOICE'
+
+  const specific = field?.settings?.specific || {}
+  const aiSettings = field?.settings?.aiSettings || {}
+  const optionsType = String(specific.optionsType || '').toUpperCase()
+  const optionsSource = String(specific.optionsSource || optionsType).toUpperCase()
+
+  const isMaster =
+    optionsType === 'MASTER' ||
+    optionsType === 'MASTER_TABLE' ||
+    optionsSource === 'MASTER' ||
+    optionsSource === 'MASTER_TABLE'
+
+  const masterFormId = String(
+    specific.masterFormId ||
+      aiSettings.formControlValidate?.masterFormId ||
+      specific.masterFormDetails?.masterFormId ||
+      '',
+  ).trim()
+
+  const rawCol =
+    specific.masterFormColumn ||
+    aiSettings.formControlValidate?.masterFormColumn ||
+    specific.columnName ||
+    specific.masterFormDetails?.masterFormColumn ||
+    ''
+
+  const masterFormColumn = Array.isArray(rawCol)
+    ? String(rawCol[0] || '').trim()
+    : String(rawCol).trim()
+
+  return {
+    enabled: isSelect && isMaster && !!masterFormId,
+    masterFormColumn,
+    masterFormId,
+  }
+}
+
+export const fetchMasterFormColumnOptions = async (
+  masterFormId: string,
+  masterFormColumn?: string,
+): Promise<FieldOption[]> => {
+  if (!masterFormId) return []
+
+  try {
+    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    let rawEntries: any[] = []
+    if (entriesRes.data) {
+      const data = entriesRes.data
+      if (Array.isArray(data)) {
+        rawEntries = data
+      } else if (Array.isArray(data.entries)) {
+        rawEntries = data.entries
+      } else if (Array.isArray(data.data)) {
+        if (
+          data.data.length > 0 &&
+          data.data[0].value &&
+          Array.isArray(data.data[0].value)
+        ) {
+          rawEntries = data.data.flatMap((g: any) => g.value || [])
+        } else {
+          rawEntries = data.data
+        }
+      }
+    }
+
+    let columnKeyOrLabel = masterFormColumn || ''
+    const formDefRes = await formApi.getFormDataById(masterFormId)
+    let formFields: any[] = []
+    if (formDefRes.data) {
+      let fJson = formDefRes.data.formJson || formDefRes.data._json
+      if (typeof fJson === 'string') {
+        try {
+          fJson = JSON.parse(fJson)
+        } catch {
+          // ignore
+        }
+      }
+      if (fJson?.panels) {
+        formFields = fJson.panels.flatMap((p: any) => p.fields || [])
+      }
+    }
+
+    if (!columnKeyOrLabel && formFields.length > 0) {
+      columnKeyOrLabel = formFields[0].id || formFields[0].label || ''
+    }
+
+    const candidateKeys = new Set<string>()
+    if (columnKeyOrLabel) candidateKeys.add(columnKeyOrLabel)
+
+    const matchedField = formFields.find(
+      (f: any) =>
+        f.id === columnKeyOrLabel ||
+        f.label?.toLowerCase() === columnKeyOrLabel.toLowerCase() ||
+        f.name?.toLowerCase() === columnKeyOrLabel.toLowerCase(),
+    )
+    if (matchedField) {
+      if (matchedField.id) candidateKeys.add(matchedField.id)
+      if (matchedField.label) candidateKeys.add(matchedField.label)
+      if (matchedField.name) candidateKeys.add(matchedField.name)
+    }
+
+    const uniqueValues = new Set<string>()
+
+    for (const entry of rawEntries) {
+      let val: any = undefined
+      const dicts = [
+        entry.values,
+        entry.formData,
+        entry.data,
+        entry.fields,
+        entry,
+      ]
+
+      for (const dict of dicts) {
+        if (!dict) continue
+        if (typeof dict === 'object' && !Array.isArray(dict)) {
+          for (const key of candidateKeys) {
+            if (
+              dict[key] !== undefined &&
+              dict[key] !== null &&
+              dict[key] !== ''
+            ) {
+              val = dict[key]
+              break
+            }
+          }
+        } else if (Array.isArray(dict)) {
+          for (const item of dict) {
+            if (item && typeof item === 'object') {
+              const itemKey = item.id || item.name || item.label
+              if (
+                candidateKeys.has(itemKey) &&
+                item.value != null &&
+                item.value !== ''
+              ) {
+                val = item.value
+                break
+              }
+            }
+          }
+        }
+        if (val !== undefined && val !== null && val !== '') break
+      }
+
+      if (val !== undefined && val !== null && val !== '') {
+        const valStr = String(val).trim()
+        if (valStr) uniqueValues.add(valStr)
+      }
+    }
+
+    return Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+  } catch (err) {
+    console.error('Error fetching master form column options:', err)
+    return []
+  }
 }
 
 export const findFieldOption = (

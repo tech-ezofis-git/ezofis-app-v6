@@ -23,58 +23,80 @@ const NewRequestSheet = ({ onClose }: Props) => {
   // rendered dynamically instead (see WorkflowRequest).
   const isAccountsPayable = isAccountsPayableWorkflow(rawWorkflow)
 
+  const workflowJson = useMemo(() => {
+    if (!rawWorkflow) return null
+    if (rawWorkflow.workflowJson) {
+      return typeof rawWorkflow.workflowJson === 'string'
+        ? JSON.parse(rawWorkflow.workflowJson)
+        : rawWorkflow.workflowJson
+    }
+    if (rawWorkflow.flowJson) {
+      return typeof rawWorkflow.flowJson === 'string'
+        ? JSON.parse(rawWorkflow.flowJson)
+        : rawWorkflow.flowJson
+    }
+    return rawWorkflow
+  }, [rawWorkflow])
+
   const newRequestEndpoints = useMemo(
     () => [
       {
-        apiPath: '/api/v6/requests',
-        description: 'Create a new document request programmatically.',
-        id: 'create_request',
+        apiPath: `/api/v6/workflows/${rawWorkflow?.id || 'AP'}/start`,
+        description:
+          'Create a new Accounts Payable request by uploading an invoice or selecting a sample document.',
+        id: 'create_ap_request',
         method: 'POST',
         requestPayload: {
-          metadata: {
-            department: 'Finance',
+          context: '',
+          envType: 'trial',
+          file: {
+            fileName: 'INV-2026-6001.pdf',
+            sizeBytes: 1245000,
+            type: 'application/pdf',
           },
-          priority: 'high',
-          title: 'New Request',
-          type: 'invoice',
+          workflowId: rawWorkflow?.id,
+          workflowName: rawWorkflow?.name || 'Accounts Payable',
         },
         responsePayload: {
-          message: 'Request created successfully',
-          status: 'Draft',
+          apAgentJobId: 'JOB-9921',
+          instanceId: 'INST-2026-8801',
+          message: 'Accounts Payable request initiated successfully',
+          status: 'INITIATED',
           success: true,
-          transactionId: 'REQ-NEW-12345',
+          transactionId: 'TX-3301-AP',
         },
-        title: 'Create Request API',
+        title: 'Start AP Workflow API',
       },
-      // {
-      //   id: 'list_master_data',
-      //   title: 'List Master Data API',
-      //   description: 'Retrieve reference data lists (vendors, GL codes, etc.) for populating creation forms.',
-      //   method: 'GET',
-      //   apiPath: '/api/v6/master-data',
-      //   requestPayload: null,
-      //   responsePayload: {
-      //     success: true,
-      //     data: {
-      //       vendors: [
-      //         { id: 'V-1', name: 'Silverline Auto Parts' },
-      //         { id: 'V-2', name: 'Acme Corp' }
-      //       ],
-      //       glCodes: [
-      //         { code: 'GL-1000', description: 'Office Supplies' },
-      //         { code: 'GL-2000', description: 'Software Subscriptions' }
-      //       ]
-      //     }
-      //   }
-      // }
+      {
+        apiPath: `/api/v6/workflows/${rawWorkflow?.id || 'AP'}/definition`,
+        description:
+          'Accounts Payable Workflow JSON definition including steps, rules, and form bindings.',
+        id: 'ap_workflow_json',
+        method: 'GET',
+        requestPayload: null,
+        responsePayload: (workflowJson || rawWorkflow || {}) as Record<
+          string,
+          unknown
+        >,
+        title: 'Accounts Payable Workflow JSON',
+      },
     ],
-    [],
+    [rawWorkflow, workflowJson],
   )
 
   useEffect(() => {
-    setPlaygroundContext({ endpoints: newRequestEndpoints })
+    setPlaygroundContext({
+      actionName: 'Accounts Payable New Request',
+      description: `Accounts Payable Workflow (ID: ${rawWorkflow?.id || 'AP'}) — Create Request & Process Invoices`,
+      endpoints: newRequestEndpoints,
+      payload: {
+        rawWorkflow,
+        workflowId: rawWorkflow?.id,
+        workflowJson: workflowJson || rawWorkflow,
+      },
+    })
     return () => setPlaygroundContext(null)
-  }, [newRequestEndpoints, setPlaygroundContext])
+  }, [newRequestEndpoints, rawWorkflow, workflowJson, setPlaygroundContext])
 
   return (
     <div className='flex h-full w-full min-w-0'>

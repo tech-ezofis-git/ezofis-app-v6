@@ -26,6 +26,7 @@ import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useTheme from '@/hooks/useTheme'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import Icon from '../../../../../../components/base/icon/Icon'
 import {
   AnimateEntrancePop,
@@ -591,16 +592,39 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     formData.append('context', '')
     formData.append('envType', 'trial')
 
-    console.log(
-      'Starting workflow with new upload API for workflow ID:',
-      rawWorkflow?.id,
-    )
+    const parsedWorkflowJson =
+      typeof rawWorkflow?.workflowJson === 'string'
+        ? JSON.parse(rawWorkflow.workflowJson)
+        : rawWorkflow?.workflowJson ||
+          (typeof rawWorkflow?.flowJson === 'string'
+            ? JSON.parse(rawWorkflow.flowJson)
+            : rawWorkflow?.flowJson || rawWorkflow)
+
+    console.group('🚀 [Accounts Payable] Creating New Request')
+    console.log('📋 Workflow ID:', rawWorkflow?.id)
+    console.log('📌 Workflow Name:', rawWorkflow?.name)
+    console.log('⚙️ Workflow JSON:', parsedWorkflowJson)
+    console.log('📁 File Info:', {
+      fileName: file.name,
+      fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      fileType: file.type,
+      lastModified: new Date(file.lastModified).toISOString(),
+    })
+    console.log('📦 Form Data Parameters:', {
+      context: '',
+      envType: 'trial',
+      formId: rawWorkflow?.formId || rawWorkflow?.wFormId,
+      repositoryId: rawWorkflow?.repositoryId,
+    })
+    console.groupEnd()
+
     const { data, error } = await workflowsApiV6.startWorkflow(
       rawWorkflow?.id,
       formData,
     )
 
     if (error) {
+      console.error('❌ [Accounts Payable] Workflow Creation Error:', error)
       throw new Error(String(error))
     }
 
@@ -618,6 +642,30 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         t`Workflow started but did not return a valid instanceId or apAgentJobId.`,
       )
     }
+
+    console.group(`⚡ [Accounts Payable] Request Created Successfully (${file.name})`)
+    console.log('🔑 Instance ID:', processId)
+    console.log('🤖 AP Agent Job ID:', apAgentJobId)
+    console.log('💳 Transaction ID:', transactionId)
+    console.log('📥 Full API Response Payload:', parsedData)
+    console.log('⚙️ Associated Workflow JSON:', parsedWorkflowJson)
+    console.groupEnd()
+
+    usePlaygroundStore.getState().setContext({
+      actionName: 'Accounts Payable New Request Created',
+      apiEndpoint: `/api/v6/workflows/${rawWorkflow?.id}/start`,
+      apiPath: `/api/v6/workflows/${rawWorkflow?.id}/start`,
+      description: `Accounts Payable request created for file "${file.name}" with Instance ID: ${processId || apAgentJobId}`,
+      method: 'POST',
+      requestPayload: {
+        context: '',
+        envType: 'trial',
+        file: { name: file.name, size: file.size, type: file.type },
+        workflowId: rawWorkflow?.id,
+        workflowJson: parsedWorkflowJson,
+      },
+      responsePayload: parsedData,
+    })
 
     return { apAgentJobId, processId, transactionId }
   }
