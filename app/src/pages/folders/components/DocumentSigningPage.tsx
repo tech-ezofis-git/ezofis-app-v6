@@ -286,7 +286,27 @@ async function toPngDataUrl(dataUrl: string): Promise<string> {
   })
 }
 
-type PageRect = { left: number; top: number; width: number; height: number }
+type PageRect = {
+  height: number
+  left: number
+  /** Real PDF page, 1-based. Not the index in the virtualized DOM list. */
+  pageNumber: number
+  top: number
+  width: number
+}
+
+/** react-pdf-viewer only mounts visible pages. Page index lives on the layer. */
+function readViewerPageNumber(el: HTMLElement, fallbackIndex: number) {
+  const layer = el.querySelector('[data-testid^="core__page-layer-"]')
+  const testId = layer?.getAttribute('data-testid') || ''
+  const fromTestId = testId.match(/core__page-layer-(\d+)$/)
+  if (fromTestId) return Number(fromTestId[1]) + 1
+
+  const fromLabel = (el.getAttribute('aria-label') || '').match(/(\d+)\s*$/)
+  if (fromLabel) return Number(fromLabel[1])
+
+  return fallbackIndex + 1
+}
 
 function getPageRects(
   surfaceRoot: HTMLElement | null | undefined,
@@ -300,22 +320,45 @@ function getPageRects(
   if (pageEls.length === 0) {
     return [
       {
+        height: layerHost.offsetHeight,
         left: 0,
+        pageNumber: 1,
         top: 0,
         width: layerHost.offsetWidth,
-        height: layerHost.offsetHeight,
       },
     ]
   }
-  return pageEls.map((el) => {
+  return pageEls.map((el, index) => {
     const r = el.getBoundingClientRect()
     return {
+      height: r.height / zoom,
       left: (r.left - hostRect.left) / zoom,
+      pageNumber: readViewerPageNumber(el, index),
       top: (r.top - hostRect.top) / zoom,
       width: r.width / zoom,
-      height: r.height / zoom,
     }
   })
+}
+
+/**
+ * Full PDF size lists are indexed by page. A list built from the mounted
+ * pages is the same length as `pageRects` and is not page-indexed once the
+ * viewer has virtualized past page 1.
+ */
+function sizeForPage(
+  pageNumber: number,
+  pageSizesPt: Array<{ width: number; height: number }>,
+  pageRects: PageRect[],
+  rect: PageRect,
+) {
+  const size = pageSizesPt[pageNumber - 1]
+  const virtualFallback =
+    pageSizesPt.length === pageRects.length &&
+    pageRects.some((entry, index) => entry.pageNumber !== index + 1)
+  if (size && pageSizesPt.length >= pageNumber && !virtualFallback) {
+    return size
+  }
+  return { height: rect.height, width: rect.width }
 }
 
 function mapBoxToPdfPoints(
@@ -324,24 +367,28 @@ function mapBoxToPdfPoints(
   pageSizesPt: Array<{ width: number; height: number }>,
 ) {
   const centerY = box.y + box.height / 2
-  let pageIndex = pageRects.findIndex(
-    (rect) => centerY >= rect.top && centerY <= rect.top + rect.height,
-  )
-  if (pageIndex < 0) pageIndex = 0
-  const rect = pageRects[pageIndex] || pageRects[0]
-  const size = pageSizesPt[pageIndex] ||
-    pageSizesPt[0] || {
-      width: rect.width,
-      height: rect.height,
+  const rect =
+    pageRects.find(
+      (entry) => centerY >= entry.top && centerY <= entry.top + entry.height,
+    ) || pageRects[0]
+  if (!rect) {
+    return {
+      height: box.height,
+      pageNumber: 1,
+      width: box.width,
+      x: box.x,
+      y: box.y,
     }
+  }
+  const size = sizeForPage(rect.pageNumber, pageSizesPt, pageRects, rect)
   const scaleX = size.width / Math.max(1, rect.width)
   const scaleY = size.height / Math.max(1, rect.height)
   return {
-    pageNumber: pageIndex + 1,
+    height: Number((box.height * scaleY).toFixed(2)),
+    pageNumber: rect.pageNumber,
+    width: Number((box.width * scaleX).toFixed(2)),
     x: Number(((box.x - rect.left) * scaleX).toFixed(2)),
     y: Number(((box.y - rect.top) * scaleY).toFixed(2)),
-    width: Number((box.width * scaleX).toFixed(2)),
-    height: Number((box.height * scaleY).toFixed(2)),
   }
 }
 
@@ -356,13 +403,10 @@ function mapPdfFieldToScreen(
   pageRects: PageRect[],
   pageSizesPt: Array<{ width: number; height: number }>,
 ): PlacementState | null {
-  const pageIndex = Math.max(0, (Number(field.pageNumber) || 1) - 1)
-  const rect = pageRects[pageIndex] || pageRects[0]
+  const pageNumber = Number(field.pageNumber) || 1
+  const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
   if (!rect) return null
-  const size = pageSizesPt[pageIndex] || {
-    width: rect.width,
-    height: rect.height,
-  }
+  const size = sizeForPage(pageNumber, pageSizesPt, pageRects, rect)
   const scaleX = rect.width / Math.max(1, size.width)
   const scaleY = rect.height / Math.max(1, size.height)
   return {
@@ -1899,22 +1943,10 @@ export function DocumentSigningPage({
 
         const pdf = await pdfjsLib.getDocument(documentUrl).promise
 
-        const hostRect = layerHost.getBoundingClientRect()
         const surfaceRoot = isInline
           ? externalSurfaceRef?.current
           : documentSurfaceRef.current
-        const pageEls = Array.from(
-          surfaceRoot?.querySelectorAll('.rpv-core__inner-page') || [],
-        ) as HTMLElement[]
-        const pageRects = pageEls.map((el) => {
-          const r = el.getBoundingClientRect()
-          return {
-            left: (r.left - hostRect.left) / zoom,
-            top: (r.top - hostRect.top) / zoom,
-            width: r.width / zoom,
-            height: r.height / zoom,
-          }
-        })
+        const pageRects = getPageRects(surfaceRoot, layerHost, zoom)
 
         let doc: InstanceType<typeof JsPdf> | null = null
 
@@ -1931,19 +1963,16 @@ export function DocumentSigningPage({
 
           await page.render({ canvasContext: ctx, viewport }).promise
 
-          const rect = pageRects[pageNumber - 1] || {
-            left: 0,
-            top: 0,
-            width: layerHost.offsetWidth,
-            height: layerHost.offsetHeight,
-          }
-          const scaleX = canvas.width / rect.width
-          const scaleY = canvas.height / rect.height
+          const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
+          if (rect) {
+            const scaleX = canvas.width / rect.width
+            const scaleY = canvas.height / rect.height
 
-          for (const box of boxes) {
-            const centerY = box.item.y + box.item.height / 2
-            if (centerY < rect.top || centerY > rect.top + rect.height) continue
-            await drawBox(ctx, box, rect.left, rect.top, scaleX, scaleY)
+            for (const box of boxes) {
+              const centerY = box.item.y + box.item.height / 2
+              if (centerY < rect.top || centerY > rect.top + rect.height) continue
+              await drawBox(ctx, box, rect.left, rect.top, scaleX, scaleY)
+            }
           }
 
           const orientation =
