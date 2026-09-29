@@ -30,10 +30,12 @@ import {
 import {
   buildMergedOcrFieldHints,
   facetsToFieldOptions,
+  fetchMasterFormColumnOptions,
   findFieldOption,
   getConfiguredFieldOptions,
   getDropdownFacetSource,
   getFieldOptions as getSharedFieldOptions,
+  getMasterFormInfo,
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
   withExtraFieldOptions,
@@ -379,6 +381,7 @@ const LivePreviewDropdown = ({
 }) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
+  const masterInfo = getMasterFormInfo(field)
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     queryKey: [
@@ -408,14 +411,31 @@ const LivePreviewDropdown = ({
     enabled: optionsType === 'USER_LIST',
   })
 
+  const { data: masterFieldOptions = [] } = useQuery({
+    enabled: masterInfo.enabled,
+    queryKey: [
+      'livePreviewMasterOptions',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+    ],
+    queryFn: () =>
+      fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+      ),
+  })
+
   const selectOptions = withExtraFieldOptions(
     withExtraFieldOptions(
-      optionsType === 'DYNAMIC'
-        ? getSharedFieldOptions(field)
-        : getConfiguredFieldOptions(field),
-      uniqueFieldOptions,
+      withExtraFieldOptions(
+        optionsType === 'DYNAMIC'
+          ? getSharedFieldOptions(field)
+          : getConfiguredFieldOptions(field),
+        uniqueFieldOptions,
+      ),
+      userFieldOptions,
     ),
-    userFieldOptions,
+    masterFieldOptions,
   )
 
   if (multiple) {
