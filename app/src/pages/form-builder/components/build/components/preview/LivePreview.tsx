@@ -380,19 +380,42 @@ const getFieldOptions = (field: Question): string[] => {
 const LivePreviewDropdown = ({
   field,
   fallbackRepositoryId,
+  model,
   multiple,
   value,
   onChange,
 }: {
   field: Question
   fallbackRepositoryId?: string
+  model?: Record<string, any>
   multiple?: boolean
   value: any
   onChange: (val: any) => void
 }) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
+  const { panels } = useFormStore()
   const masterInfo = getMasterFormInfo(field)
+
+  const allFields = useMemo(
+    () => panels.flatMap((p: any) => p.fields || []),
+    [panels],
+  )
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    return allFields.find(
+      (f: any) => f.id === masterInfo.masterFormParentColumn,
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue =
+    masterInfo.masterFormParentColumn && model
+      ? model[masterInfo.masterFormParentColumn]
+      : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn || parentField.label || parentField.id
+    : undefined
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     queryKey: [
@@ -428,11 +451,17 @@ const LivePreviewDropdown = ({
       'livePreviewMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -988,8 +1017,9 @@ const renderPreviewInput = (
     case 'SINGLE_SELECT':
       return (
         <LivePreviewDropdown
-          field={field}
           fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
           value={fieldValue}
           onChange={(val) => onChange(field.id, val)}
         />
@@ -997,8 +1027,9 @@ const renderPreviewInput = (
     case 'MULTI_SELECT':
       return (
         <LivePreviewDropdown
-          field={field}
           fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
           multiple
           value={fieldValue}
           onChange={(val) => onChange(field.id, val)}

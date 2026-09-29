@@ -212,9 +212,15 @@ export const getConfiguredFieldOptions = (field: any): FieldOption[] => {
   return getFieldOptions(field)
 }
 
-export const getMasterFormInfo = (
-  field: any,
-): { enabled: boolean; masterFormColumn: string; masterFormId: string } => {
+export interface MasterFormInfo {
+  enabled: boolean
+  masterFormColumn: string
+  masterFormId: string
+  masterFormParentColumn?: string
+  showAllData?: boolean
+}
+
+export const getMasterFormInfo = (field: any): MasterFormInfo => {
   const isSelect =
     field?.type === 'SINGLE_SELECT' ||
     field?.type === 'MULTI_SELECT' ||
@@ -224,7 +230,9 @@ export const getMasterFormInfo = (
   const specific = field?.settings?.specific || {}
   const aiSettings = field?.settings?.aiSettings || {}
   const optionsType = String(specific.optionsType || '').toUpperCase()
-  const optionsSource = String(specific.optionsSource || optionsType).toUpperCase()
+  const optionsSource = String(
+    specific.optionsSource || optionsType,
+  ).toUpperCase()
 
   const isMaster =
     optionsType === 'MASTER' ||
@@ -250,44 +258,66 @@ export const getMasterFormInfo = (
     ? String(rawCol[0] || '').trim()
     : String(rawCol).trim()
 
+  const masterFormParentColumn = String(
+    specific.masterFormParentColumn || '',
+  ).trim()
+  const showAllData = Boolean(specific.showAllData)
+
   return {
     enabled: isSelect && isMaster && !!masterFormId,
     masterFormColumn,
     masterFormId,
+    masterFormParentColumn,
+    showAllData,
   }
+}
+
+const normalizeDictList = (raw: any): any[] => {
+  if (!raw) return []
+  let item = raw
+  if (typeof item === 'string') {
+    const trimmed = item.trim()
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        item = JSON.parse(trimmed)
+      } catch {
+        return []
+      }
+    } else {
+      return []
+    }
+  }
+  if (!item || typeof item !== 'object') return []
+
+  const result: any[] = []
+  if (Array.isArray(item)) {
+    result.push(item)
+  } else {
+    result.push(item)
+    if (item.fields) result.push(...normalizeDictList(item.fields))
+    if (item.values) result.push(...normalizeDictList(item.values))
+    if (item.data) result.push(...normalizeDictList(item.data))
+    if (item.formData) result.push(...normalizeDictList(item.formData))
+  }
+  return result
 }
 
 export const fetchMasterFormColumnOptions = async (
   masterFormId: string,
   masterFormColumn?: string,
+  parentValue?: any,
+  parentMasterColumn?: string,
+  showAllData?: boolean,
 ): Promise<FieldOption[]> => {
   if (!masterFormId) return []
 
   try {
-    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
-    let rawEntries: any[] = []
-    if (entriesRes.data) {
-      const data = entriesRes.data
-      if (Array.isArray(data)) {
-        rawEntries = data
-      } else if (Array.isArray(data.entries)) {
-        rawEntries = data.entries
-      } else if (Array.isArray(data.data)) {
-        if (
-          data.data.length > 0 &&
-          data.data[0].value &&
-          Array.isArray(data.data[0].value)
-        ) {
-          rawEntries = data.data.flatMap((g: any) => g.value || [])
-        } else {
-          rawEntries = data.data
-        }
-      }
-    }
-
-    let columnKeyOrLabel = masterFormColumn || ''
-    const formDefRes = await formApi.getFormDataById(masterFormId)
     let formFields: any[] = []
+    let matchedField: any = undefined
+    let columnKeyOrLabel = masterFormColumn || ''
+
+    // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
+    const formDefRes = await formApi.getFormDataById(masterFormId)
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -307,66 +337,192 @@ export const fetchMasterFormColumnOptions = async (
     }
 
     const candidateKeys = new Set<string>()
-    if (columnKeyOrLabel) candidateKeys.add(columnKeyOrLabel)
+    if (columnKeyOrLabel) {
+      candidateKeys.add(columnKeyOrLabel)
+      candidateKeys.add(columnKeyOrLabel.trim())
+      candidateKeys.add(columnKeyOrLabel.trim().toLowerCase())
+    }
 
-    const matchedField = formFields.find(
+    matchedField = formFields.find(
       (f: any) =>
         f.id === columnKeyOrLabel ||
-        f.label?.toLowerCase() === columnKeyOrLabel.toLowerCase() ||
-        f.name?.toLowerCase() === columnKeyOrLabel.toLowerCase(),
+        f.id?.trim() === columnKeyOrLabel?.trim() ||
+        f.label?.trim().toLowerCase() === columnKeyOrLabel?.trim().toLowerCase() ||
+        f.name?.trim().toLowerCase() === columnKeyOrLabel?.trim().toLowerCase(),
     )
+
     if (matchedField) {
-      if (matchedField.id) candidateKeys.add(matchedField.id)
-      if (matchedField.label) candidateKeys.add(matchedField.label)
-      if (matchedField.name) candidateKeys.add(matchedField.name)
+      if (matchedField.id) {
+        candidateKeys.add(matchedField.id)
+        candidateKeys.add(matchedField.id.trim())
+        candidateKeys.add(matchedField.id.trim().toLowerCase())
+      }
+      if (matchedField.label) {
+        candidateKeys.add(matchedField.label)
+        candidateKeys.add(matchedField.label.trim())
+        candidateKeys.add(matchedField.label.trim().toLowerCase())
+      }
+      if (matchedField.name) {
+        candidateKeys.add(matchedField.name)
+        candidateKeys.add(matchedField.name.trim())
+        candidateKeys.add(matchedField.name.trim().toLowerCase())
+      }
     }
 
     const uniqueValues = new Set<string>()
 
-    for (const entry of rawEntries) {
-      let val: any = undefined
-      const dicts = [
-        entry.values,
-        entry.formData,
-        entry.data,
-        entry.fields,
-        entry,
-      ]
+    // Include custom options defined on the master form column schema as baseline options
+    if (matchedField) {
+      const schemaOptions = getFieldOptions(matchedField)
+      for (const opt of schemaOptions) {
+        if (opt.name && opt.name.trim()) {
+          uniqueValues.add(opt.name.trim())
+        }
+      }
+    }
 
-      for (const dict of dicts) {
-        if (!dict) continue
-        if (typeof dict === 'object' && !Array.isArray(dict)) {
-          for (const key of candidateKeys) {
-            if (
-              dict[key] !== undefined &&
-              dict[key] !== null &&
-              dict[key] !== ''
-            ) {
-              val = dict[key]
-              break
-            }
+    // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
+    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    let rawEntries: any[] = []
+    const parseEntriesData = (data: any): any[] => {
+      if (!data) return []
+      if (Array.isArray(data)) return data
+      if (Array.isArray(data.entries)) return data.entries
+      if (Array.isArray(data.content)) return data.content
+      if (Array.isArray(data.rows)) return data.rows
+      if (Array.isArray(data.items)) return data.items
+      if (Array.isArray(data.result)) return data.result
+      if (Array.isArray(data.data)) {
+        if (
+          data.data.length > 0 &&
+          data.data[0].value &&
+          Array.isArray(data.data[0].value)
+        ) {
+          return data.data.flatMap((g: any) => g.value || [])
+        }
+        return data.data
+      }
+      return []
+    }
+
+    rawEntries = parseEntriesData(entriesRes.data)
+
+    if (rawEntries.length === 0) {
+      const searchRes = await formApi.searchFormEntries(masterFormId, {
+        currentPage: 1,
+        itemsPerPage: 500,
+      })
+      if (searchRes.data) {
+        rawEntries = parseEntriesData(searchRes.data)
+      }
+    }
+
+    // Prepare parent column candidate keys if parent filtering is active
+    const parentCandidateKeys = new Set<string>()
+    if (parentMasterColumn) {
+      parentCandidateKeys.add(parentMasterColumn)
+      parentCandidateKeys.add(parentMasterColumn.trim())
+      parentCandidateKeys.add(parentMasterColumn.trim().toLowerCase())
+      const matchedParentField = formFields.find(
+        (f: any) =>
+          f.id === parentMasterColumn ||
+          f.id?.trim() === parentMasterColumn?.trim() ||
+          f.label?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase() ||
+          f.name?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase(),
+      )
+      if (matchedParentField) {
+        if (matchedParentField.id) {
+          parentCandidateKeys.add(matchedParentField.id)
+          parentCandidateKeys.add(matchedParentField.id.trim())
+          parentCandidateKeys.add(matchedParentField.id.trim().toLowerCase())
+        }
+        if (matchedParentField.label) {
+          parentCandidateKeys.add(matchedParentField.label)
+          parentCandidateKeys.add(matchedParentField.label.trim())
+          parentCandidateKeys.add(matchedParentField.label.trim().toLowerCase())
+        }
+      }
+    }
+
+    const hasParentFilter =
+      parentMasterColumn &&
+      parentValue !== undefined &&
+      parentValue !== null &&
+      String(parentValue).trim() !== ''
+    const normalizedParentVal = String(parentValue || '').trim().toLowerCase()
+
+    const extractFromDict = (dictionary: any, keys: Set<string>): any => {
+      if (!dictionary || typeof dictionary !== 'object') return undefined
+      if (!Array.isArray(dictionary)) {
+        for (const k of keys) {
+          if (
+            dictionary[k] !== undefined &&
+            dictionary[k] !== null &&
+            dictionary[k] !== ''
+          ) {
+            return dictionary[k]
           }
-        } else if (Array.isArray(dict)) {
-          for (const item of dict) {
-            if (item && typeof item === 'object') {
-              const itemKey = item.id || item.name || item.label
-              if (
-                candidateKeys.has(itemKey) &&
-                item.value != null &&
-                item.value !== ''
-              ) {
-                val = item.value
-                break
-              }
+        }
+        const entriesList = Object.entries(dictionary)
+        for (const [k, v] of entriesList) {
+          if (v !== undefined && v !== null && v !== '') {
+            const kNorm = k.trim().toLowerCase()
+            if (keys.has(kNorm) || keys.has(k)) {
+              return v
             }
           }
         }
+      } else {
+        for (const item of dictionary) {
+          if (item && typeof item === 'object') {
+            const itemKey = String(
+              item.id || item.name || item.label || item.column || item.key || '',
+            )
+              .trim()
+              .toLowerCase()
+            if (keys.has(itemKey) && item.value != null && item.value !== '') {
+              return item.value
+            }
+          }
+        }
+      }
+      return undefined
+    }
+
+    for (const entry of rawEntries) {
+      const dicts = [
+        ...normalizeDictList(entry.formData),
+        ...normalizeDictList(entry.values),
+        ...normalizeDictList(entry.data),
+        ...normalizeDictList(entry.fields),
+        ...normalizeDictList(entry),
+      ]
+
+      if (hasParentFilter) {
+        let entryParentVal: any = undefined
+        for (const dict of dicts) {
+          entryParentVal = extractFromDict(dict, parentCandidateKeys)
+          if (entryParentVal !== undefined) break
+        }
+        if (entryParentVal === undefined || entryParentVal === null) continue
+        const normEntryParentVal = String(entryParentVal).trim().toLowerCase()
+        if (normEntryParentVal !== normalizedParentVal) {
+          continue
+        }
+      }
+
+      let val: any = undefined
+      for (const dict of dicts) {
+        val = extractFromDict(dict, candidateKeys)
         if (val !== undefined && val !== null && val !== '') break
       }
 
       if (val !== undefined && val !== null && val !== '') {
-        const valStr = String(val).trim()
-        if (valStr) uniqueValues.add(valStr)
+        const splitVals = splitStoredSelectValues(val)
+        for (const item of splitVals) {
+          const itemStr = item.trim()
+          if (itemStr) uniqueValues.add(itemStr)
+        }
       }
     }
 

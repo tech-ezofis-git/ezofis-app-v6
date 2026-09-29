@@ -298,7 +298,7 @@ function renderCell(
       <div className='min-w-0 max-w-[220px]'>
         <ApiCatalogSelect
           compact
-          col={col}
+          col={{ ...col, name: col.name || col.id } as any}
           value={value}
           onSelectProduct={(code) => onChange(code)}
         />

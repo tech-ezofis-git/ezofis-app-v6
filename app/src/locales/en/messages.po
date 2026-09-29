@@ -248,7 +248,7 @@ msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} line item(s) found in the uploaded document."
 
 #. placeholder {0}: box.assigneeName
-#: src/pages/folders/components/DocumentSigningPage.tsx:1233
+#: src/pages/folders/components/DocumentSigningPage.tsx:1277
 msgid "{countForUser} place(s) for {0}. Click again to add another, or Send when done."
 msgstr "{countForUser} place(s) for {0}. Click again to add another, or Send when done."
 
@@ -633,7 +633,7 @@ msgid "Action Required"
 msgstr "Action Required"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2139
-#: src/pages/forms/FormEntriesPage.tsx:1548
+#: src/pages/forms/FormEntriesPage.tsx:1591
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/reports/components/ReportsListView.tsx:208
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1919
@@ -715,8 +715,8 @@ msgstr "Actual vs projected"
 msgid "Add"
 msgstr "Add"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:714
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:754
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:740
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:780
 msgid "Add \"{query}\""
 msgstr "Add \"{query}\""
 
@@ -791,7 +791,7 @@ msgstr "Add custom option"
 msgid "Add Document Rule"
 msgstr "Add Document Rule"
 
-#: src/pages/forms/FormEntriesPage.tsx:2158
+#: src/pages/forms/FormEntriesPage.tsx:2201
 msgid "Add Entry"
 msgstr "Add Entry"
 
@@ -1545,11 +1545,11 @@ msgstr "Are you sure you want to export {selectedStagedCount} selected staged fi
 msgid "Are you sure you want to export 1 selected staged file?"
 msgstr "Are you sure you want to export 1 selected staged file?"
 
-#: src/pages/forms/FormEntriesPage.tsx:2183
+#: src/pages/forms/FormEntriesPage.tsx:2226
 msgid "Are you sure you want to move"
 msgstr "Are you sure you want to move"
 
-#: src/pages/forms/FormEntriesPage.tsx:2191
+#: src/pages/forms/FormEntriesPage.tsx:2234
 msgid "Are you sure you want to permanently delete"
 msgstr "Are you sure you want to permanently delete"
 
@@ -1785,8 +1785,8 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/folders/components/CollaboraEditor.tsx:276
 #: src/pages/folders/components/DocumentDetailsView.tsx:1612
 #: src/pages/folders/components/DocumentDetailsView.tsx:1890
-#: src/pages/folders/components/DocumentSigningPage.tsx:2910
-#: src/pages/folders/components/DocumentSigningPage.tsx:2913
+#: src/pages/folders/components/DocumentSigningPage.tsx:2939
+#: src/pages/folders/components/DocumentSigningPage.tsx:2942
 #: src/pages/folders/components/EditMetadataView.tsx:394
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:682
 #: src/pages/folders/components/ShareView.tsx:318
@@ -1846,7 +1846,7 @@ msgstr "Back to Designer"
 msgid "Back to Document"
 msgstr "Back to Document"
 
-#: src/pages/forms/FormEntriesPage.tsx:1793
+#: src/pages/forms/FormEntriesPage.tsx:1836
 msgid "Back to Entries"
 msgstr "Back to Entries"
 
@@ -1862,7 +1862,7 @@ msgstr "Back to folder"
 msgid "Back to folder explorer"
 msgstr "Back to folder explorer"
 
-#: src/pages/forms/FormEntriesPage.tsx:2136
+#: src/pages/forms/FormEntriesPage.tsx:2179
 msgid "Back to Forms"
 msgstr "Back to Forms"
 
@@ -1986,7 +1986,7 @@ msgstr "Breadcrumb"
 msgid "browse"
 msgstr "browse"
 
-#: src/pages/forms/FormEntriesPage.tsx:2149
+#: src/pages/forms/FormEntriesPage.tsx:2192
 msgid "Browse"
 msgstr "Browse"
 
@@ -2047,7 +2047,7 @@ msgstr "Built-in secure storage"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Bulk action \"{0}\" applied to {1} requests successfully!"
 
-#: src/pages/forms/FormEntriesPage.tsx:2260
+#: src/pages/forms/FormEntriesPage.tsx:2303
 msgid "Bulk Import"
 msgstr "Bulk Import"
 
@@ -2160,8 +2160,8 @@ msgstr "Can View"
 #: src/pages/folders/components/Upload/Upload.tsx:2939
 #: src/pages/forms/components/GenericFormImportModal.tsx:860
 #: src/pages/forms/FormEntriesPage.tsx:641
-#: src/pages/forms/FormEntriesPage.tsx:2109
-#: src/pages/forms/FormEntriesPage.tsx:2208
+#: src/pages/forms/FormEntriesPage.tsx:2152
+#: src/pages/forms/FormEntriesPage.tsx:2251
 #: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/reports/components/ReportsListView.tsx:282
@@ -2183,7 +2183,7 @@ msgstr "Cancel"
 msgid "Cancel Remaining"
 msgstr "Cancel Remaining"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2886
+#: src/pages/folders/components/DocumentSigningPage.tsx:2915
 msgid "Cancel signing"
 msgstr "Cancel signing"
 
@@ -2347,7 +2347,7 @@ msgstr "Choose a folder to report on..."
 msgid "Choose a migration strategy"
 msgstr "Choose a migration strategy"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1308
+#: src/pages/folders/components/DocumentSigningPage.tsx:1352
 msgid "Choose a signature first, then tap your sign area."
 msgstr "Choose a signature first, then tap your sign area."
 
@@ -2383,7 +2383,7 @@ msgstr "Choose columns"
 msgid "Choose fields"
 msgstr "Choose fields"
 
-#: src/pages/forms/FormEntriesPage.tsx:2047
+#: src/pages/forms/FormEntriesPage.tsx:2090
 msgid "Choose File"
 msgstr "Choose File"
 
@@ -2403,7 +2403,7 @@ msgstr "Choose how your trial workflows, folders, users, and requests carry over
 #~ msgid "Choose search column"
 #~ msgstr "Choose search column"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2833
+#: src/pages/folders/components/DocumentSigningPage.tsx:2862
 msgid "Choose signature"
 msgstr "Choose signature"
 
@@ -2455,7 +2455,7 @@ msgstr "Classification failed for this document. Please try again."
 msgid "Classification failed for this file."
 msgstr "Classification failed for this file."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2649
+#: src/pages/folders/components/DocumentSigningPage.tsx:2678
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:944
 msgid "Clear"
@@ -2518,7 +2518,7 @@ msgstr "Click any preview to process"
 #~ msgid "Click on a tile to filter workflow records."
 #~ msgstr "Click on a tile to filter workflow records."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2049
+#: src/pages/folders/components/DocumentSigningPage.tsx:2078
 msgid "Click on the document to mark signature places."
 msgstr "Click on the document to mark signature places."
 
@@ -2531,7 +2531,7 @@ msgid "Click or press Enter ↵"
 msgstr "Click or press Enter ↵"
 
 #. placeholder {0}: first.name
-#: src/pages/folders/components/DocumentSigningPage.tsx:2048
+#: src/pages/folders/components/DocumentSigningPage.tsx:2077
 msgid "Click the document to mark one or more places for {0}, then Send."
 msgstr "Click the document to mark one or more places for {0}, then Send."
 
@@ -2539,7 +2539,7 @@ msgstr "Click the document to mark one or more places for {0}, then Send."
 msgid "Click to edit column name"
 msgstr "Click to edit column name"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2217
+#: src/pages/folders/components/DocumentSigningPage.tsx:2246
 msgid "Click to mark assignee signature place"
 msgstr "Click to mark assignee signature place"
 
@@ -2556,7 +2556,7 @@ msgstr "Click to view table data ({rowCount} {0})"
 msgid "Client Number"
 msgstr "Client Number"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2479
+#: src/pages/folders/components/DocumentSigningPage.tsx:2508
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:213
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:289
 #: src/pages/folders/components/SignRequestAssignForm.tsx:529
@@ -2691,7 +2691,7 @@ msgstr "Complete each stage, then continue"
 msgid "Complete editing session"
 msgstr "Complete editing session"
 
-#: src/pages/forms/FormEntriesPage.tsx:1812
+#: src/pages/forms/FormEntriesPage.tsx:1855
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Complete required form information using the metadata-driven enterprise canvas below."
 
@@ -3232,8 +3232,8 @@ msgid "Created by"
 msgstr "Created by"
 
 #: src/pages/folders/components/FolderTable.tsx:1737
-#: src/pages/forms/FormEntriesPage.tsx:1534
-#: src/pages/forms/FormEntriesPage.tsx:2279
+#: src/pages/forms/FormEntriesPage.tsx:1577
+#: src/pages/forms/FormEntriesPage.tsx:2322
 #: src/pages/forms/FormsPage.tsx:229
 #: src/pages/forms/FormsPage.tsx:614
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2183
@@ -3244,7 +3244,7 @@ msgstr "Created by"
 msgid "Created By"
 msgstr "Created By"
 
-#: src/pages/forms/FormEntriesPage.tsx:2287
+#: src/pages/forms/FormEntriesPage.tsx:2330
 #: src/pages/forms/FormsPage.tsx:625
 #: src/pages/settings/components/AuditMonitoring.tsx:359
 #: src/pages/workflows/components/Table.tsx:509
@@ -3670,8 +3670,8 @@ msgstr "Delete Group"
 msgid "Delete Menu"
 msgstr "Delete Menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:1594
-#: src/pages/forms/FormEntriesPage.tsx:2226
+#: src/pages/forms/FormEntriesPage.tsx:1637
+#: src/pages/forms/FormEntriesPage.tsx:2269
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
@@ -3738,11 +3738,11 @@ msgstr "Delete staged files"
 #~ msgid "Delete This Field"
 #~ msgstr "Delete This Field"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2358
+#: src/pages/folders/components/DocumentSigningPage.tsx:2387
 msgid "Delete this signature"
 msgstr "Delete this signature"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3488
+#: src/pages/folders/components/DocumentSigningPage.tsx:3517
 msgid "Delete this signature?"
 msgstr "Delete this signature?"
 
@@ -4171,7 +4171,7 @@ msgstr "Double-payment prevention checks analyze historical invoices by combinin
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2848
 #: src/pages/folders/components/DocumentDetailsView.tsx:2853
-#: src/pages/folders/components/DocumentSigningPage.tsx:2869
+#: src/pages/folders/components/DocumentSigningPage.tsx:2898
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:870
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:69
 msgid "Download"
@@ -4256,7 +4256,7 @@ msgstr ""
 msgid "Drag to reorder"
 msgstr "Drag to reorder"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2111
+#: src/pages/folders/components/DocumentSigningPage.tsx:2140
 msgid "Draw"
 msgstr "Draw"
 
@@ -4268,12 +4268,12 @@ msgstr "Draw"
 #~ msgid "Draw your signature before using it."
 #~ msgstr "Draw your signature before using it."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:869
-#: src/pages/folders/components/DocumentSigningPage.tsx:872
-#: src/pages/folders/components/DocumentSigningPage.tsx:980
-#: src/pages/folders/components/DocumentSigningPage.tsx:982
-#: src/pages/folders/components/DocumentSigningPage.tsx:1249
-#: src/pages/folders/components/DocumentSigningPage.tsx:1295
+#: src/pages/folders/components/DocumentSigningPage.tsx:913
+#: src/pages/folders/components/DocumentSigningPage.tsx:916
+#: src/pages/folders/components/DocumentSigningPage.tsx:1024
+#: src/pages/folders/components/DocumentSigningPage.tsx:1026
+#: src/pages/folders/components/DocumentSigningPage.tsx:1293
+#: src/pages/folders/components/DocumentSigningPage.tsx:1339
 msgid "Drawn signature"
 msgstr "Drawn signature"
 
@@ -4479,7 +4479,7 @@ msgstr "Each batch needs manual confirmation before it runs."
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:541
 #: src/pages/dashboard/DashboardPage.tsx:415
 #: src/pages/dashboard/DashboardPage.tsx:420
-#: src/pages/forms/FormEntriesPage.tsx:1571
+#: src/pages/forms/FormEntriesPage.tsx:1614
 #: src/pages/forms/FormsPage.tsx:281
 #: src/pages/reports/components/RowActionsMenu.tsx:34
 #: src/pages/requests/components/Table.tsx:113
@@ -4547,7 +4547,7 @@ msgstr "Edit Folder Security Policy"
 #~ msgid "Edit Folder Setup"
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:1807
+#: src/pages/forms/FormEntriesPage.tsx:1850
 msgid "Edit Form Entry"
 msgstr "Edit Form Entry"
 
@@ -4685,8 +4685,8 @@ msgstr "empty"
 msgid "Empty"
 msgstr "Empty"
 
-#: src/pages/forms/FormEntriesPage.tsx:1514
-#: src/pages/forms/FormEntriesPage.tsx:1524
+#: src/pages/forms/FormEntriesPage.tsx:1557
+#: src/pages/forms/FormEntriesPage.tsx:1567
 msgid "Empty form field"
 msgstr "Empty form field"
 
@@ -4819,7 +4819,7 @@ msgstr "Enter username"
 msgid "Enter value"
 msgstr "Enter value"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3122
+#: src/pages/folders/components/DocumentSigningPage.tsx:3151
 msgid "Enter your full name"
 msgstr "Enter your full name"
 
@@ -4848,7 +4848,7 @@ msgstr "Enterprise-grade encryption at rest"
 msgid "Entity supplying goods"
 msgstr "Entity supplying goods"
 
-#: src/pages/forms/FormEntriesPage.tsx:2328
+#: src/pages/forms/FormEntriesPage.tsx:2371
 msgid "Entries"
 msgstr "Entries"
 
@@ -5088,7 +5088,7 @@ msgstr "Extracting data from document..."
 #: src/pages/portal/components/PortalWizard.tsx:1072
 #: src/pages/portal/components/PortalWizard.tsx:1079
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:960
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:986
 msgid "Extracting data from the document…"
 msgstr "Extracting data from the document…"
 
@@ -5567,7 +5567,7 @@ msgid "File Upload"
 msgstr "File Upload"
 
 #: src/pages/portal/components/PortalWizard.tsx:681
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:888
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:914
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr "File upload isn't available for this request. Please contact your administrator."
 
@@ -6910,7 +6910,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "ITEM DESCRIPTION"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2096
-#: src/pages/forms/FormEntriesPage.tsx:1491
+#: src/pages/forms/FormEntriesPage.tsx:1534
 msgid "items"
 msgstr "items"
 
@@ -6966,9 +6966,9 @@ msgstr "Key Facts Extracted"
 msgid "Keyword / Field"
 msgstr "Keyword / Field"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2593
-#: src/pages/folders/components/DocumentSigningPage.tsx:2605
-#: src/pages/folders/components/DocumentSigningPage.tsx:3236
+#: src/pages/folders/components/DocumentSigningPage.tsx:2622
+#: src/pages/folders/components/DocumentSigningPage.tsx:2634
+#: src/pages/folders/components/DocumentSigningPage.tsx:3265
 msgid "Kindly draw the signature"
 msgstr "Kindly draw the signature"
 
@@ -7671,7 +7671,7 @@ msgstr "Mark as Paid"
 msgid "Mark as read"
 msgstr "Mark as read"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1480
+#: src/pages/folders/components/DocumentSigningPage.tsx:1524
 msgid "Mark at least one signature place on the document before sending."
 msgstr "Mark at least one signature place on the document before sending."
 
@@ -8033,7 +8033,7 @@ msgstr "Modified Date"
 msgid "Modify document content"
 msgstr "Modify document content"
 
-#: src/pages/forms/FormEntriesPage.tsx:1813
+#: src/pages/forms/FormEntriesPage.tsx:1856
 msgid "Modify existing form response answers and save changes."
 msgstr "Modify existing form response answers and save changes."
 
@@ -8102,7 +8102,7 @@ msgstr "More than one line price differs from the purchase order. Compare each l
 msgid "Move down"
 msgstr "Move down"
 
-#: src/pages/forms/FormEntriesPage.tsx:2177
+#: src/pages/forms/FormEntriesPage.tsx:2220
 msgid "Move Entry to Trash"
 msgstr "Move Entry to Trash"
 
@@ -8110,8 +8110,8 @@ msgstr "Move Entry to Trash"
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Move matched documents out of active storage into the archive."
 
-#: src/pages/forms/FormEntriesPage.tsx:1577
-#: src/pages/forms/FormEntriesPage.tsx:2225
+#: src/pages/forms/FormEntriesPage.tsx:1620
+#: src/pages/forms/FormEntriesPage.tsx:2268
 msgid "Move to Trash"
 msgstr "Move to Trash"
 
@@ -8172,7 +8172,7 @@ msgstr "N/A (No value needed)"
 #: src/pages/folders/components/DocumentsListView.tsx:541
 #: src/pages/folders/components/FolderTable.tsx:1024
 #: src/pages/folders/components/FolderTable.tsx:1673
-#: src/pages/forms/FormEntriesPage.tsx:2270
+#: src/pages/forms/FormEntriesPage.tsx:2313
 #: src/pages/forms/FormsPage.tsx:169
 #: src/pages/forms/FormsPage.tsx:597
 #: src/pages/reports/components/ReportsListView.tsx:114
@@ -8261,7 +8261,7 @@ msgstr ""
 msgid "New Form"
 msgstr "New Form"
 
-#: src/pages/forms/FormEntriesPage.tsx:1807
+#: src/pages/forms/FormEntriesPage.tsx:1850
 msgid "New Form Entry"
 msgstr "New Form Entry"
 
@@ -8766,7 +8766,7 @@ msgstr "No roles yet"
 msgid "No rules yet. Values without a matching rule use the default color below."
 msgstr "No rules yet. Values without a matching rule use the default color below."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3429
+#: src/pages/folders/components/DocumentSigningPage.tsx:3458
 msgid "No saved signatures"
 msgstr "No saved signatures"
 
@@ -8782,7 +8782,7 @@ msgstr "No share link available for this user"
 msgid "No sign requests for this document yet."
 msgstr "No sign requests for this document yet."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1659
+#: src/pages/folders/components/DocumentSigningPage.tsx:1703
 msgid "No signature place was assigned to your account on this document."
 msgstr "No signature place was assigned to your account on this document."
 
@@ -9244,7 +9244,7 @@ msgstr "Order"
 msgid "Other"
 msgstr "Other"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2297
+#: src/pages/folders/components/DocumentSigningPage.tsx:2326
 msgid "Other signer"
 msgstr "Other signer"
 
@@ -9461,7 +9461,7 @@ msgstr "Peak usage period"
 #~ msgid "Peak Week"
 #~ msgstr "Peak Week"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3293
+#: src/pages/folders/components/DocumentSigningPage.tsx:3322
 msgid "Pen width"
 msgstr "Pen width"
 
@@ -9501,7 +9501,7 @@ msgstr "Perfect PO validation."
 msgid "Permanent Delete"
 msgstr "Permanent Delete"
 
-#: src/pages/forms/FormEntriesPage.tsx:2178
+#: src/pages/forms/FormEntriesPage.tsx:2221
 msgid "Permanently Delete Entry"
 msgstr "Permanently Delete Entry"
 
@@ -9556,18 +9556,18 @@ msgstr "Pipeline drops across lifecycle steps"
 msgid "Pipeline throughput efficiency and approval metrics"
 msgstr "Pipeline throughput efficiency and approval metrics"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1731
+#: src/pages/folders/components/DocumentSigningPage.tsx:1775
 msgid "Place at least one signature on the document before completing."
 msgstr "Place at least one signature on the document before completing."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2583
-#: src/pages/folders/components/DocumentSigningPage.tsx:2642
-#: src/pages/folders/components/DocumentSigningPage.tsx:2752
-#: src/pages/folders/components/DocumentSigningPage.tsx:2795
-#: src/pages/folders/components/DocumentSigningPage.tsx:3203
-#: src/pages/folders/components/DocumentSigningPage.tsx:3314
-#: src/pages/folders/components/DocumentSigningPage.tsx:3417
-#: src/pages/folders/components/DocumentSigningPage.tsx:3541
+#: src/pages/folders/components/DocumentSigningPage.tsx:2612
+#: src/pages/folders/components/DocumentSigningPage.tsx:2671
+#: src/pages/folders/components/DocumentSigningPage.tsx:2781
+#: src/pages/folders/components/DocumentSigningPage.tsx:2824
+#: src/pages/folders/components/DocumentSigningPage.tsx:3232
+#: src/pages/folders/components/DocumentSigningPage.tsx:3343
+#: src/pages/folders/components/DocumentSigningPage.tsx:3446
+#: src/pages/folders/components/DocumentSigningPage.tsx:3570
 msgid "Place Signature"
 msgstr "Place Signature"
 
@@ -9575,11 +9575,11 @@ msgstr "Place Signature"
 #~ msgid "Placeholder"
 #~ msgstr "Placeholder"
 
-#: src/pages/forms/FormEntriesPage.tsx:1510
+#: src/pages/forms/FormEntriesPage.tsx:1553
 msgid "Placeholder Column 1"
 msgstr "Placeholder Column 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:1520
+#: src/pages/forms/FormEntriesPage.tsx:1563
 msgid "Placeholder Column 2"
 msgstr "Placeholder Column 2"
 
@@ -9707,8 +9707,8 @@ msgstr "Please describe the workflow you want to create."
 #~ msgid "Please describe what workflow you want to create"
 #~ msgstr "Please describe what workflow you want to create"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:862
-#: src/pages/folders/components/DocumentSigningPage.tsx:976
+#: src/pages/folders/components/DocumentSigningPage.tsx:906
+#: src/pages/folders/components/DocumentSigningPage.tsx:1020
 msgid "Please draw your signature before continuing."
 msgstr "Please draw your signature before continuing."
 
@@ -9789,8 +9789,8 @@ msgstr "Please enter Workflow."
 msgid "Please enter your email address."
 msgstr "Please enter your email address."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:837
-#: src/pages/folders/components/DocumentSigningPage.tsx:986
+#: src/pages/folders/components/DocumentSigningPage.tsx:881
+#: src/pages/folders/components/DocumentSigningPage.tsx:1030
 msgid "Please enter your full name to create your signature."
 msgstr "Please enter your full name to create your signature."
 
@@ -9941,7 +9941,7 @@ msgstr "Please select the document you want to send for signing."
 msgid "Please select the field that determines when this rule should apply."
 msgstr "Please select the field that determines when this rule should apply."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2066
+#: src/pages/folders/components/DocumentSigningPage.tsx:2095
 msgid "Please select the person who needs to sign before placing the signature."
 msgstr "Please select the person who needs to sign before placing the signature."
 
@@ -9971,7 +9971,7 @@ msgstr "Please try again."
 msgid "Please upload a CSV or Excel file."
 msgstr "Please upload a CSV or Excel file."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1101
+#: src/pages/folders/components/DocumentSigningPage.tsx:1145
 msgid "Please upload a PNG or JPG image."
 msgstr "Please upload a PNG or JPG image."
 
@@ -9996,8 +9996,8 @@ msgstr "Please upload only CSV or XLSX files"
 msgid "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 msgstr "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:882
-#: src/pages/folders/components/DocumentSigningPage.tsx:1000
+#: src/pages/folders/components/DocumentSigningPage.tsx:926
+#: src/pages/folders/components/DocumentSigningPage.tsx:1044
 msgid "Please upload your signature image before continuing."
 msgstr "Please upload your signature image before continuing."
 
@@ -10710,9 +10710,9 @@ msgstr "Recurrence"
 msgid "Recv Qty"
 msgstr "Recv Qty"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2856
-#: src/pages/folders/components/DocumentSigningPage.tsx:2971
-#: src/pages/folders/components/DocumentSigningPage.tsx:2976
+#: src/pages/folders/components/DocumentSigningPage.tsx:2885
+#: src/pages/folders/components/DocumentSigningPage.tsx:3000
+#: src/pages/folders/components/DocumentSigningPage.tsx:3005
 msgid "Redo"
 msgstr "Redo"
 
@@ -10727,7 +10727,7 @@ msgstr "Reference Document Number"
 #: src/pages/dashboard/DashboardPage.tsx:410
 #: src/pages/folders/components/FolderFilterBar.tsx:760
 #: src/pages/folders/components/SignRequestAssignForm.tsx:463
-#: src/pages/forms/FormEntriesPage.tsx:2248
+#: src/pages/forms/FormEntriesPage.tsx:2291
 #: src/pages/forms/FormsPage.tsx:589
 #: src/pages/portal/components/PortalHome.tsx:424
 #: src/pages/portal/components/PortalHome.tsx:434
@@ -10831,8 +10831,8 @@ msgstr "Remove condition"
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:93
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:95
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:867
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1002
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:893
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1028
 msgid "Remove file"
 msgstr "Remove file"
 
@@ -11134,11 +11134,11 @@ msgstr "Reset to initial auto-mapped suggestions."
 msgid "Reset to Suggested"
 msgstr "Reset to Suggested"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2950
+#: src/pages/folders/components/DocumentSigningPage.tsx:2979
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
-#: src/pages/forms/FormEntriesPage.tsx:1588
+#: src/pages/forms/FormEntriesPage.tsx:1631
 msgid "Restore"
 msgstr "Restore"
 
@@ -11192,7 +11192,7 @@ msgstr "Retry"
 msgid "Retry Ingestion"
 msgstr "Retry Ingestion"
 
-#: src/pages/forms/FormEntriesPage.tsx:1752
+#: src/pages/forms/FormEntriesPage.tsx:1795
 msgid "Retry Loading"
 msgstr "Retry Loading"
 
@@ -11502,6 +11502,8 @@ msgid "SAP Table Field Mapping"
 msgstr "SAP Table Field Mapping"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:289
+#: src/pages/folders/components/DocumentDetailsView.tsx:2159
+#: src/pages/folders/components/DocumentDetailsView.tsx:2180
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1545
 #: src/pages/settings/components/SettingsWizardLayout.tsx:81
@@ -11542,7 +11544,7 @@ msgstr "Save Branding"
 
 #: src/pages/folders/components/EditMetadataView.tsx:426
 #: src/pages/forms/FormEntriesPage.tsx:665
-#: src/pages/forms/FormEntriesPage.tsx:2117
+#: src/pages/forms/FormEntriesPage.tsx:2160
 msgid "Save Changes"
 msgstr "Save Changes"
 
@@ -11551,7 +11553,7 @@ msgstr "Save Changes"
 msgid "Save Dashboard"
 msgstr "Save Dashboard"
 
-#: src/pages/forms/FormEntriesPage.tsx:2117
+#: src/pages/forms/FormEntriesPage.tsx:2160
 msgid "Save Entry"
 msgstr "Save Entry"
 
@@ -11568,9 +11570,9 @@ msgstr "Save failed inside the document editor."
 msgid "Save Folder"
 msgstr "Save Folder"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2575
-#: src/pages/folders/components/DocumentSigningPage.tsx:2633
-#: src/pages/folders/components/DocumentSigningPage.tsx:2744
+#: src/pages/folders/components/DocumentSigningPage.tsx:2604
+#: src/pages/folders/components/DocumentSigningPage.tsx:2662
+#: src/pages/folders/components/DocumentSigningPage.tsx:2773
 msgid "Save for reuse"
 msgstr "Save for reuse"
 
@@ -11615,7 +11617,7 @@ msgid "Save User"
 msgstr "Save User"
 
 #. placeholder {0}: savedSignatures.length
-#: src/pages/folders/components/DocumentSigningPage.tsx:2114
+#: src/pages/folders/components/DocumentSigningPage.tsx:2143
 msgid "Saved ({0})"
 msgstr "Saved ({0})"
 
@@ -11627,6 +11629,7 @@ msgstr "Saved signature removed."
 msgid "Saved to stage"
 msgstr "Saved to stage"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:2177
 #: src/pages/folders/components/EditMetadataView.tsx:426
 #: src/pages/folders/components/Upload/Upload.tsx:2785
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:992
@@ -11793,7 +11796,7 @@ msgstr "Search description..."
 msgid "Search email..."
 msgstr "Search email..."
 
-#: src/pages/forms/FormEntriesPage.tsx:2238
+#: src/pages/forms/FormEntriesPage.tsx:2281
 msgid "Search entries..."
 msgstr "Search entries..."
 
@@ -11863,7 +11866,7 @@ msgstr "Search location..."
 msgid "Search manager..."
 msgstr "Search manager..."
 
-#: src/pages/forms/FormEntriesPage.tsx:2273
+#: src/pages/forms/FormEntriesPage.tsx:2316
 #: src/pages/forms/FormsPage.tsx:600
 #: src/pages/settings/components/GroupManagement.tsx:626
 #: src/pages/settings/components/ManageUser.tsx:1572
@@ -11958,7 +11961,7 @@ msgid "Secondary"
 msgstr "Secondary"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:1823
+#: src/pages/forms/FormEntriesPage.tsx:1866
 msgid "Section {0}"
 msgstr "Section {0}"
 
@@ -11999,7 +12002,7 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:967
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:993
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
@@ -12056,11 +12059,11 @@ msgstr "Select a repository first."
 #~ msgid "Select a retention trigger field."
 #~ msgstr "Select a retention trigger field."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1014
+#: src/pages/folders/components/DocumentSigningPage.tsx:1058
 msgid "Select a saved signature first."
 msgstr "Select a saved signature first."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2047
+#: src/pages/folders/components/DocumentSigningPage.tsx:2076
 msgid "Select a signer below, then click the document to mark one or more places."
 msgstr "Select a signer below, then click the document to mark one or more places."
 
@@ -12088,7 +12091,7 @@ msgstr "Select a specific workflow or folder above to proceed with report creati
 msgid "Select a target folder before indexing"
 msgstr "Select a target folder before indexing"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1618
+#: src/pages/folders/components/DocumentSigningPage.tsx:1662
 msgid "Select a user and mark at least one signature place on the document."
 msgstr "Select a user and mark at least one signature place on the document."
 
@@ -12450,7 +12453,7 @@ msgstr ""
 msgid "Send sign request"
 msgstr "Send sign request"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3003
+#: src/pages/folders/components/DocumentSigningPage.tsx:3032
 msgid "Send Sign Request"
 msgstr "Send Sign Request"
 
@@ -12485,7 +12488,7 @@ msgstr "September"
 #~ msgstr ""
 
 #. placeholder {0}: first.name
-#: src/pages/folders/components/DocumentSigningPage.tsx:2046
+#: src/pages/folders/components/DocumentSigningPage.tsx:2075
 msgid "Sequential: mark place(s) for {0} first, then switch to the next signer."
 msgstr ""
 
@@ -12785,9 +12788,9 @@ msgstr "Sign"
 msgid "Sign Document"
 msgstr "Sign Document"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1888
-#: src/pages/folders/components/DocumentSigningPage.tsx:2291
-#: src/pages/folders/components/DocumentSigningPage.tsx:2420
+#: src/pages/folders/components/DocumentSigningPage.tsx:1932
+#: src/pages/folders/components/DocumentSigningPage.tsx:2320
+#: src/pages/folders/components/DocumentSigningPage.tsx:2449
 msgid "Sign here"
 msgstr "Sign here"
 
@@ -12867,12 +12870,12 @@ msgstr "Signature"
 msgid "Signature box placed on Page {currentPage}"
 msgstr "Signature box placed on Page {currentPage}"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2489
-#: src/pages/folders/components/DocumentSigningPage.tsx:3076
+#: src/pages/folders/components/DocumentSigningPage.tsx:2518
+#: src/pages/folders/components/DocumentSigningPage.tsx:3105
 msgid "Signature methods"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1089
+#: src/pages/folders/components/DocumentSigningPage.tsx:1133
 msgid "Signature placed on document."
 msgstr "Signature placed on document."
 
@@ -12890,7 +12893,7 @@ msgstr "Signature submitted successfully."
 msgid "Signature workflow completed successfully!"
 msgstr "Signature workflow completed successfully!"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2283
+#: src/pages/folders/components/DocumentSigningPage.tsx:2312
 msgid "Signed"
 msgstr ""
 
@@ -13292,8 +13295,6 @@ msgstr "Submission Details"
 msgid "submissions"
 msgstr "submissions"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2159
-#: src/pages/folders/components/DocumentDetailsView.tsx:2180
 #: src/pages/portal/components/PortalShell.tsx:120
 #: src/pages/portal/components/PortalWizard.tsx:785
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:134
@@ -13310,8 +13311,8 @@ msgstr "Submit"
 #~ msgstr "Submitted"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2177
-msgid "Submitting..."
-msgstr "Submitting..."
+#~ msgid "Submitting..."
+#~ msgstr "Submitting..."
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:172
 msgid "Subtotal"
@@ -13620,7 +13621,7 @@ msgstr "Take your workspace to Production"
 msgid "Talk to Sales"
 msgstr "Talk to Sales"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1658
+#: src/pages/folders/components/DocumentSigningPage.tsx:1702
 msgid "Tap your highlighted sign area to place your signature."
 msgstr ""
 
@@ -13782,13 +13783,13 @@ msgstr "Thinking..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 
-#: src/pages/forms/FormEntriesPage.tsx:2195
+#: src/pages/forms/FormEntriesPage.tsx:2238
 #: src/pages/forms/FormsPage.tsx:513
 #: src/pages/reports/components/ReportsListView.tsx:271
 msgid "This action is permanent and cannot be undone."
 msgstr "This action is permanent and cannot be undone."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1317
+#: src/pages/folders/components/DocumentSigningPage.tsx:1361
 msgid "This area is already signed."
 msgstr "This area is already signed."
 
@@ -13818,7 +13819,7 @@ msgstr "This email address has already been added."
 msgid "This field is required."
 msgstr "This field is required."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1069
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1095
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr "This field type ({fieldType}) isn't supported in this view yet."
 
@@ -13918,7 +13919,7 @@ msgstr "This result cannot be added to related documents."
 msgid "This result cannot be attached."
 msgstr "This result cannot be attached."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1313
+#: src/pages/folders/components/DocumentSigningPage.tsx:1357
 msgid "This sign area belongs to another user."
 msgstr "This sign area belongs to another user."
 
@@ -13999,7 +14000,7 @@ msgstr "Timezone"
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 
-#: src/pages/forms/FormEntriesPage.tsx:2187
+#: src/pages/forms/FormEntriesPage.tsx:2230
 msgid "to Trash?"
 msgstr "to Trash?"
 
@@ -14153,7 +14154,7 @@ msgid "Transactions"
 msgstr "Transactions"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:92
-#: src/pages/forms/FormEntriesPage.tsx:2150
+#: src/pages/forms/FormEntriesPage.tsx:2193
 msgid "Trash"
 msgstr "Trash"
 
@@ -14203,7 +14204,7 @@ msgstr "Try widening your search or choosing another status card."
 msgid "Two-Step Verification"
 msgstr "Two-Step Verification"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2112
+#: src/pages/folders/components/DocumentSigningPage.tsx:2141
 #: src/pages/forms/FormsPage.tsx:217
 #: src/pages/settings/components/credits/components/CreditsChart.tsx:32
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4842
@@ -14237,7 +14238,7 @@ msgstr "Type to search the data. To find the Request,Document,Workflows,Folders,
 msgid "Type your answer…"
 msgstr "Type your answer…"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2526
+#: src/pages/folders/components/DocumentSigningPage.tsx:2555
 msgid "Type your name"
 msgstr "Type your name"
 
@@ -14245,11 +14246,11 @@ msgstr "Type your name"
 msgid "Type:"
 msgstr "Type:"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1243
+#: src/pages/folders/components/DocumentSigningPage.tsx:1287
 msgid "Typed signature"
 msgstr "Typed signature"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1819
+#: src/pages/folders/components/DocumentSigningPage.tsx:1863
 msgid "Unable to complete signing. Please try again."
 msgstr "Unable to complete signing. Please try again."
 
@@ -14261,7 +14262,7 @@ msgstr "Unable to complete social login"
 msgid "Unable to copy summary"
 msgstr "Unable to copy summary"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1557
+#: src/pages/folders/components/DocumentSigningPage.tsx:1601
 #: src/pages/folders/components/SignRequestAssignForm.tsx:274
 msgid "Unable to create sign request"
 msgstr ""
@@ -14279,7 +14280,7 @@ msgstr "Unable to create this request."
 msgid "Unable to download file"
 msgstr "Unable to download file"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2008
+#: src/pages/folders/components/DocumentSigningPage.tsx:2037
 msgid "Unable to download the signed file. Please try again."
 msgstr ""
 
@@ -14351,11 +14352,11 @@ msgstr "Unable to remove related document"
 msgid "Unable to resend OTP"
 msgstr "Unable to resend OTP"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1638
+#: src/pages/folders/components/DocumentSigningPage.tsx:1682
 msgid "Unable to save assignments. Please try again."
 msgstr "Unable to save assignments. Please try again."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1609
+#: src/pages/folders/components/DocumentSigningPage.tsx:1653
 msgid "Unable to send sign request. Please try again."
 msgstr "Unable to send sign request. Please try again."
 
@@ -14378,7 +14379,7 @@ msgstr "Unable to sign in"
 msgid "Unable to start this workflow."
 msgstr "Unable to start this workflow."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1722
+#: src/pages/folders/components/DocumentSigningPage.tsx:1766
 msgid "Unable to submit signature. Please try again."
 msgstr "Unable to submit signature. Please try again."
 
@@ -14408,9 +14409,9 @@ msgstr "Unassigned"
 msgid "Undercharged"
 msgstr "Undercharged"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2844
-#: src/pages/folders/components/DocumentSigningPage.tsx:2961
-#: src/pages/folders/components/DocumentSigningPage.tsx:2966
+#: src/pages/folders/components/DocumentSigningPage.tsx:2873
+#: src/pages/folders/components/DocumentSigningPage.tsx:2990
+#: src/pages/folders/components/DocumentSigningPage.tsx:2995
 msgid "Undo"
 msgstr "Undo"
 
@@ -14466,7 +14467,7 @@ msgstr "Unsupported file type. Please upload a CSV or XLSX file."
 msgid "Untitled"
 msgstr "Untitled"
 
-#: src/pages/forms/FormEntriesPage.tsx:1408
+#: src/pages/forms/FormEntriesPage.tsx:1451
 msgid "Untitled Field"
 msgstr "Untitled Field"
 
@@ -14559,7 +14560,7 @@ msgstr "Upgrading your workspace…"
 msgid "Upgrading…"
 msgstr "Upgrading…"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2113
+#: src/pages/folders/components/DocumentSigningPage.tsx:2142
 #: src/pages/folders/components/FolderExplorer.tsx:684
 #: src/pages/folders/components/FolderFilterBar.tsx:772
 #: src/pages/folders/components/Upload/Upload.tsx:2415
@@ -14669,12 +14670,12 @@ msgstr "Upload your organization's logo and favicon"
 msgid "Uploaded"
 msgstr "Uploaded"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:891
-#: src/pages/folders/components/DocumentSigningPage.tsx:895
-#: src/pages/folders/components/DocumentSigningPage.tsx:1006
-#: src/pages/folders/components/DocumentSigningPage.tsx:1009
-#: src/pages/folders/components/DocumentSigningPage.tsx:1255
-#: src/pages/folders/components/DocumentSigningPage.tsx:1303
+#: src/pages/folders/components/DocumentSigningPage.tsx:935
+#: src/pages/folders/components/DocumentSigningPage.tsx:939
+#: src/pages/folders/components/DocumentSigningPage.tsx:1050
+#: src/pages/folders/components/DocumentSigningPage.tsx:1053
+#: src/pages/folders/components/DocumentSigningPage.tsx:1299
+#: src/pages/folders/components/DocumentSigningPage.tsx:1347
 msgid "Uploaded signature"
 msgstr "Uploaded signature"
 
@@ -14725,7 +14726,7 @@ msgstr "Uploading file..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Uploading master file to process entries in the background..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:959
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:985
 msgid "Uploading the document…"
 msgstr "Uploading the document…"
 
@@ -15115,7 +15116,7 @@ msgstr ""
 #~ msgid "View Document"
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:1480
+#: src/pages/forms/FormEntriesPage.tsx:1523
 msgid "View Line Items Table"
 msgstr "View Line Items Table"
 
@@ -15228,8 +15229,8 @@ msgstr "We couldn’t move request {requestNo}. {0}"
 msgid "We couldn’t move this request right now. Please try again."
 msgstr "We couldn’t move this request right now. Please try again."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1116
-#: src/pages/folders/components/DocumentSigningPage.tsx:1125
+#: src/pages/folders/components/DocumentSigningPage.tsx:1160
+#: src/pages/folders/components/DocumentSigningPage.tsx:1169
 msgid "We couldn't open this file. Please choose another file and try again."
 msgstr "We couldn't open this file. Please choose another file and try again."
 
@@ -15480,7 +15481,7 @@ msgstr "Your account has access to both versions. Pick the one you want to conti
 msgid "Your AI agent will start monitoring your email and processing incoming invoices automatically."
 msgstr "Your AI agent will start monitoring your email and processing incoming invoices automatically."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1106
+#: src/pages/folders/components/DocumentSigningPage.tsx:1150
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr "Your image is too large. Please upload an image smaller than 5 MB."
 
@@ -15525,11 +15526,11 @@ msgid "Zero-Downtime Transition"
 msgstr "Zero-Downtime Transition"
 
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:372
-#: src/pages/folders/components/DocumentSigningPage.tsx:2939
+#: src/pages/folders/components/DocumentSigningPage.tsx:2968
 msgid "Zoom in"
 msgstr "Zoom in"
 
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:360
-#: src/pages/folders/components/DocumentSigningPage.tsx:2925
+#: src/pages/folders/components/DocumentSigningPage.tsx:2954
 msgid "Zoom out"
 msgstr "Zoom out"

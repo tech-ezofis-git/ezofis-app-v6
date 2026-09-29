@@ -2156,7 +2156,7 @@ export function DocumentDetailsView({
           {isSigning && (signingState.hasPlacements || signingState.canSave) ? (
             <button
               type='button'
-              aria-label={t`Submit`}
+              aria-label={t`Save`}
               className='inline-flex h-8 items-center justify-center gap-2 rounded-lg bg-primary-9 px-3.5 text-[13px] font-semibold text-white transition-all hover:bg-primary-10 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
               disabled={
                 !signingState.canSave ||
@@ -2174,10 +2174,10 @@ export function DocumentDetailsView({
               )}
               <span>
                 {signingState.isSaving
-                  ? t`Submitting...`
+                  ? t`Saving...`
                   : signingState.workspaceMode === 'assign'
                     ? t`Send`
-                    : t`Submit`}
+                    : t`Save`}
               </span>
             </button>
           ) : null}
