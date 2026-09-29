@@ -35,6 +35,7 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
@@ -1778,6 +1779,8 @@ const FormEntriesPage = () => {
   const isPanelOpen = isAddOpen || !!selectedEntry
 
   if (isPanelOpen) {
+    const evaluatedFieldStates = evaluateFormRules(panels, editValues)
+
     return (
       <div className='bg-gray-50/20 flex h-full flex-col font-inter'>
         {/* Compact Enterprise Form Banner Header */}
@@ -1818,51 +1821,55 @@ const FormEntriesPage = () => {
             {panels.map((panel: any, pIdx: number) => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
               const panelDescription = panel.settings?.description || ''
-              const renderableFields = (panel.fields || []).filter(
-                (f: any) =>
-                  !['HEADING', 'DIVIDER'].includes(
-                    (f.type || '').toUpperCase(),
-                  ),
-              )
+              const renderableFields = (panel.fields || []).filter((f: any) => {
+                if (['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase()))
+                  return false
+                const state = evaluatedFieldStates[f.id]
+                if (state && !state.visible) return false
+                return true
+              })
 
-              if (renderableFields.length === 0) return null
+                if (renderableFields.length === 0) return null
 
-              return (
-                <div
-                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
-                  key={panel.id || `panel_${pIdx}`}
-                >
-                  {/* Block Card Header */}
-                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                        <Icon className='size-4' name='lucide:layers' />
-                      </div>
-                      <div>
-                        <h4 className='text-sm font-bold text-gray-12'>
-                          {panelTitle}
-                        </h4>
-                        {panelDescription && (
-                          <p className='text-[11px] text-gray-7'>
-                            {panelDescription}
-                          </p>
-                        )}
+                return (
+                  <div
+                    className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                    key={panel.id || `panel_${pIdx}`}
+                  >
+                    {/* Block Card Header */}
+                    <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
+                      <div className='flex items-center gap-3'>
+                        <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+                          <Icon className='size-4' name='lucide:layers' />
+                        </div>
+                        <div>
+                          <h4 className='text-sm font-bold text-gray-12'>
+                            {panelTitle}
+                          </h4>
+                          {panelDescription && (
+                            <p className='text-[11px] text-gray-7'>
+                              {panelDescription}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Block Fields Layout using 12-column grid */}
-                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                    {renderableFields.map((field: Question) => {
-                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
-                      const val = editValues[field.id] ?? ''
-                      const isFieldRequired =
-                        field.settings?.validation?.fieldRule === 'REQUIRED'
-                      const isReadOnly = (field.settings?.specific as any)
-                        ?.isReadOnly
-                      const colSpan = getColumnSpan(
-                        field.settings?.general?.size,
-                      )
+                    {/* Block Fields Layout using 12-column grid */}
+                    <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
+                      {renderableFields.map((field: Question) => {
+                        const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                        const val = editValues[field.id] ?? ''
+                        const state = evaluatedFieldStates[field.id]
+                        const isFieldRequired = state
+                          ? state.required
+                          : field.settings?.validation?.fieldRule === 'REQUIRED'
+                        const isReadOnly = state
+                          ? state.disabled
+                          : Boolean((field.settings?.specific as any)?.isReadOnly)
+                        const colSpan = getColumnSpan(
+                          field.settings?.general?.size,
+                        )
 
                       const isTableType =
                         type === 'LINE_ITEM' ||

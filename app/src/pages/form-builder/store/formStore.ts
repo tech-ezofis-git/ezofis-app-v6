@@ -107,7 +107,7 @@ export interface FormStore {
 export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
 
 export interface LogicRule {
-  action: 'SHOW' | 'HIDE'
+  action: 'SHOW' | 'HIDE' | 'ENABLE' | 'DISABLE' | 'REQUIRE'
   condition:
     | 'IS'
     | 'IS_NOT'

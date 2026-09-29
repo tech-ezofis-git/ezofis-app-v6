@@ -319,6 +319,9 @@ const QuestionSettings = ({
   const logicActionOptions = [
     { id: 'SHOW', name: 'Show' },
     { id: 'HIDE', name: 'Hide' },
+    { id: 'ENABLE', name: 'Enable' },
+    { id: 'DISABLE', name: 'Disable' },
+    { id: 'REQUIRE', name: 'Make Required' },
   ]
 
   const isShortText = activeQuestion.type === 'SHORT_TEXT'
@@ -4214,7 +4217,7 @@ const QuestionSettings = ({
       </SettingsSection>
 
       {/* 7. LOGIC SECTION */}
-      {!isShortText && !isDate && !isTime && !isDateTime && (
+      {!isDivider && (
         <SettingsSection
           icon='lucide:split'
           isOpen={openLogic}
@@ -4322,7 +4325,7 @@ const QuestionSettings = ({
                         <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
                           Then
                         </span>
-                        <div className='w-28'>
+                        <div className='flex-1'>
                           <InputSelect
                             options={logicActionOptions}
                             value={
@@ -4338,7 +4341,7 @@ const QuestionSettings = ({
                             }
                           />
                         </div>
-                        <span className='text-[11px] text-gray-6'>
+                        <span className='text-[11px] text-gray-6 shrink-0'>
                           this field
                         </span>
                       </div>
