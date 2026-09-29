@@ -1,8 +1,13 @@
 import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useDebouncedCallback } from '@mantine/hooks'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import {
+  fetchFtlCatalogCodes,
+  fetchFtlCatalogProduct,
+} from '@/api/v6/ftlCatalog'
 import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -14,6 +19,8 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
+import Combobox from '@/components/base/inputs/select/Combobox'
+import type { Option } from '@/types/option'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
@@ -36,13 +43,17 @@ const generateRowId = () => {
   }
 }
 
-interface TableColumn {
+export interface TableColumn {
   id: string
-  name: string
+  name?: string
   size?: 'SMALL' | 'MEDIUM' | 'LARGE'
   type?: string
   settings?: {
-    lookupSettings?: { repositoryField?: string; repositoryId?: string }
+    lookupSettings?: {
+      optionsSource?: 'LOOKUP' | 'API'
+      repositoryField?: string
+      repositoryId?: string
+    }
     specific?: {
       customOptions?: string
       formulaTokens?: Array<{ type: string; value: string }>
@@ -54,6 +65,25 @@ interface TableColumn {
 
 const getColumnPlaceholder = (col: TableColumn) =>
   col.settings?.specific?.placeholder || col.name || '...'
+
+const isApiOptionsColumn = (col: TableColumn) =>
+  col.settings?.lookupSettings?.optionsSource === 'API'
+
+const findPriceColumnId = (columns: TableColumn[]) => {
+  const exact = columns.find((col) => {
+    const key = normalizeHeaderKey(col.name || col.id)
+    return key === 'price' || key === 'unitprice'
+  })
+  if (exact) return exact.id
+  const fuzzy = columns.find((col) => {
+    const key = normalizeHeaderKey(col.name || col.id)
+    return key.includes('price') && !key.includes('subtotal')
+  })
+  return fuzzy?.id
+}
+
+const findDescriptionColumnId = (columns: TableColumn[]) =>
+  columns.find((col) => isDescriptionColumn(col))?.id
 
 const SUMMABLE_TYPES = new Set(['NUMBER', 'CURRENCY_AMOUNT', 'COUNTER'])
 
@@ -109,7 +139,11 @@ export const mapExternalRowsToTableColumns = (
   return externalRows.map((row) => {
     const mapped: Record<string, any> = { _rowId: generateRowId() }
     Object.entries(row || {}).forEach(([header, cellVal]) => {
-      if (header === '_rowId' || header === '_approved') {
+      if (
+        header === '_rowId' ||
+        header === '_approved' ||
+        header === '_hideNote'
+      ) {
         mapped[header] = cellVal
         return
       }
@@ -117,6 +151,14 @@ export const mapExternalRowsToTableColumns = (
         .map((key) => columnByHeader.get(key))
         .find(Boolean)
       if (colId) mapped[colId] = cellVal
+      // Keep warning / category keys even when the form has no matching column.
+      if (
+        header === 'Note' ||
+        header === 'Needs Engineering Review' ||
+        header === 'Category'
+      ) {
+        mapped[header] = cellVal
+      }
     })
     return mapped
   })
@@ -128,8 +170,21 @@ interface Props {
   readOnly?: boolean
   required?: boolean
   showRowApprove?: boolean
+  /** AP-style flat chrome (default). Use `form` for denser card-style table. */
+  variant?: 'flat' | 'form'
   value?: Array<Record<string, any>>
   onChange: (rows: Record<string, any>[]) => void
+}
+
+const getTableIconName = (label: string) => {
+  const l = String(label || '').toLowerCase()
+  if (l.includes('matched') || l.includes('match')) return 'tabler:circle-check'
+  if (l.includes('excluded') || l.includes('exclude') || l.includes('reject'))
+    return 'tabler:circle-x'
+  if (l.includes('po ') || l.includes('purchase')) return 'tabler:shopping-cart'
+  if (l.includes('invoice')) return 'tabler:file-invoice'
+  if (l.includes('line')) return 'tabler:file-invoice'
+  return 'tabler:table'
 }
 
 // Calculated columns can reference OTHER calculated columns in the same row
@@ -177,12 +232,176 @@ const getColumnWidthClass = (size?: string) => {
   }
 }
 
+const toCatalogOptions = (
+  codes: string[],
+  currentValue: string,
+): Option[] => {
+  const next = codes.map((code) => ({
+    id: code,
+    name: code,
+    value: code,
+  }))
+  if (currentValue && !next.some((opt) => String(opt.id) === currentValue)) {
+    next.unshift({
+      id: currentValue,
+      name: currentValue,
+      value: currentValue,
+    })
+  }
+  return next
+}
+
+const TABLE_CATALOG_DROPDOWN_WIDTH = 220
+
+const ApiCatalogSelect = ({
+  autoOpen = false,
+  col,
+  compact = false,
+  readOnly,
+  value,
+  onSelectProduct,
+}: {
+  autoOpen?: boolean
+  col?: TableColumn | null
+  /** Narrow trigger + fixed dropdown width for table cells. */
+  compact?: boolean
+  readOnly?: boolean
+  value: any
+  onSelectProduct: (productCode: string | null) => void | Promise<void>
+}) => {
+  const [options, setOptions] = useState<Option[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+  const currentValue = value != null && value !== '' ? String(value) : ''
+  const currentValueRef = useRef(currentValue)
+  currentValueRef.current = currentValue
+
+  const lastFetchedKeyRef = useRef<string | null>(null)
+  const inFlightKeyRef = useRef<string | null>(null)
+  const requestSeqRef = useRef(0)
+
+  const loadCodes = useCallback(async (searchKey: string) => {
+    const key = searchKey.trim()
+    if (lastFetchedKeyRef.current === key) return
+    if (inFlightKeyRef.current === key) return
+
+    inFlightKeyRef.current = key
+    const seq = ++requestSeqRef.current
+    setLoading(true)
+    try {
+      const codes = await fetchFtlCatalogCodes(key)
+      if (seq !== requestSeqRef.current) return
+      lastFetchedKeyRef.current = key
+      setOptions(toCatalogOptions(codes, currentValueRef.current))
+    } catch {
+      if (seq !== requestSeqRef.current) return
+      const fallback = currentValueRef.current
+      setOptions(
+        fallback
+          ? [{ id: fallback, name: fallback, value: fallback }]
+          : [],
+      )
+    } finally {
+      if (seq === requestSeqRef.current) {
+        inFlightKeyRef.current = null
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  const debouncedLoadCodes = useDebouncedCallback((searchKey: string) => {
+    void loadCodes(searchKey)
+  }, 400)
+
+  const handleDropdownOpen = useCallback(() => {
+    // Prefill search with the current product code so results match the value.
+    const key = currentValueRef.current.trim()
+    setSearch(key)
+    void loadCodes(key)
+  }, [loadCodes])
+
+  const handleSearch = useCallback(
+    (nextSearch: string) => {
+      setSearch(nextSearch)
+      // Dropdown close / selection clears search with "" — do not fire a
+      // second catalog "codes" request after the details fetch.
+      if (!nextSearch.trim()) return
+      debouncedLoadCodes(nextSearch)
+    },
+    [debouncedLoadCodes],
+  )
+
+  if (readOnly) {
+    return (
+      <div className='truncate px-2 py-1 text-xs text-gray-12'>
+        {currentValue || '-'}
+      </div>
+    )
+  }
+
+  const selected: Option | null = currentValue
+    ? options.find((opt) => String(opt.id) === currentValue) || {
+        id: currentValue,
+        name: currentValue,
+        value: currentValue,
+      }
+    : null
+
+  const placeholder =
+    (col && getColumnPlaceholder(col)) || 'Select product...'
+
+  return (
+    <Combobox
+      autoOpen={autoOpen}
+      className={compact ? 'w-full min-w-0 max-w-[220px]' : 'w-full'}
+      loading={loading || loadingDetails}
+      options={options}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      search={search}
+      searchable
+      searchPlaceholder='Search...'
+      value={selected ? [selected] : []}
+      variant='single'
+      width={compact ? TABLE_CATALOG_DROPDOWN_WIDTH : 'target'}
+      onChange={async (opts) => {
+        const opt = opts?.[0] ?? null
+        const code = opt ? String(opt.id) : null
+        // Cancel any pending codes search so select only triggers details.
+        debouncedLoadCodes.cancel?.()
+        setSearch('')
+        if (code) {
+          setOptions((prev) => toCatalogOptions(
+            prev.map((o) => String(o.id)),
+            code,
+          ))
+        }
+        setLoadingDetails(true)
+        try {
+          await onSelectProduct(code)
+        } finally {
+          setLoadingDetails(false)
+        }
+      }}
+      onDropdownClose={() => {
+        setSearch('')
+      }}
+      onDropdownOpen={handleDropdownOpen}
+      onSearch={handleSearch}
+    />
+  )
+}
+
+export { ApiCatalogSelect }
+
 const renderCellInput = (
   col: TableColumn,
   val: any,
   onCellChange: (newVal: any) => void,
   readOnly?: boolean,
   resolvedOptions?: { id: string; name: string }[],
+  onApiProductSelect?: (productCode: string | null) => void | Promise<void>,
 ): ReactNode => {
   const cellType = (col.type || 'SHORT_TEXT').toUpperCase()
 
@@ -190,6 +409,27 @@ const renderCellInput = (
     return (
       <div className='truncate px-2 py-1 text-xs font-semibold text-gray-11'>
         {val !== undefined && val !== null && val !== '' ? String(val) : '-'}
+      </div>
+    )
+  }
+
+  if (
+    (cellType === 'SINGLE_SELECT' || cellType === 'SINGLE_CHOICE') &&
+    isApiOptionsColumn(col)
+  ) {
+    return (
+      <div className='min-w-0 max-w-[220px]'>
+        <ApiCatalogSelect
+          compact
+          col={col}
+          readOnly={readOnly}
+          value={val}
+          onSelectProduct={(code) =>
+            onApiProductSelect
+              ? onApiProductSelect(code)
+              : onCellChange(code)
+          }
+        />
       </div>
     )
   }
@@ -352,10 +592,12 @@ const TableFieldRenderer = ({
   readOnly,
   required,
   showRowApprove,
+  variant = 'flat',
   value,
   onChange,
 }: Props) => {
   const { t } = useLingui()
+  const isFlat = variant !== 'form'
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
   const tableColumns: TableColumn[] = specific.tableColumns || []
@@ -386,7 +628,9 @@ const TableFieldRenderer = ({
   })()
 
   const lookupColumns = tableColumns.filter(
-    (col) => col.settings?.lookupSettings?.repositoryId,
+    (col) =>
+      col.settings?.lookupSettings?.optionsSource !== 'API' &&
+      col.settings?.lookupSettings?.repositoryId,
   )
   const { data: lookupOptionsByColumn = {} } = useQuery({
     enabled: lookupColumns.length > 0,
@@ -453,6 +697,42 @@ const TableFieldRenderer = ({
     onChange(next)
   }
 
+  const handleApiProductSelect = async (
+    rowIndex: number,
+    colId: string,
+    productCode: string | null,
+  ) => {
+    if (!productCode) {
+      handleCellChange(rowIndex, colId, null)
+      return
+    }
+
+    const priceColId = findPriceColumnId(tableColumns)
+    const descriptionColId = findDescriptionColumnId(tableColumns)
+    let product: Awaited<ReturnType<typeof fetchFtlCatalogProduct>> = null
+    try {
+      product = await fetchFtlCatalogProduct(productCode)
+    } catch {
+      product = null
+    }
+
+    const next = rows.map((r, i) => {
+      if (i !== rowIndex) return r
+      const patched: Record<string, any> = {
+        ...r,
+        [colId]: product?.productCode || productCode,
+      }
+      if (priceColId && product?.unitPrice != null) {
+        patched[priceColId] = product.unitPrice
+      }
+      if (descriptionColId && product?.description) {
+        patched[descriptionColId] = product.description
+      }
+      return patched
+    })
+    onChange(next)
+  }
+
   const handleAddRow = () => {
     onChange([...rows, { _rowId: generateRowId() }])
   }
@@ -465,25 +745,8 @@ const TableFieldRenderer = ({
   const handleApproveRow = (rowIndex: number) => {
     const next = rows.map((row, i) => {
       if (i !== rowIndex) return row
-      const cleared: Record<string, any> = { ...row, _approved: true }
-      tableColumns.forEach((col) => {
-        if (isDescriptionColumn(col)) {
-          cleared[col.id] = ''
-          if (col.name) cleared[col.name] = ''
-        }
-      })
-      Object.keys(cleared).forEach((key) => {
-        if (key === '_rowId' || key === '_approved') return
-        const normalized = normalizeHeaderKey(key)
-        if (
-          normalized.includes('description') ||
-          normalized === 'desc' ||
-          normalized === 'details'
-        ) {
-          cleared[key] = ''
-        }
-      })
-      return cleared
+      // Keep description/text; only mark approved so warning UI can hide.
+      return { ...row, _approved: true, _hideNote: true }
     })
     onChange(next)
   }
@@ -602,15 +865,20 @@ const TableFieldRenderer = ({
   }
 
   return (
-    <div className='w-full max-w-full min-w-0 space-y-2'>
+    <div className={cn('w-full max-w-full min-w-0', isFlat ? 'space-y-2.5' : 'space-y-2')}>
       <div className='flex items-center justify-between gap-2'>
         <div>
           <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
             <Icon
               className='h-4 w-4 text-[var(--primary-9)]'
-              name='tabler:table'
+              name={getTableIconName(field.label)}
             />
             {field.label}
+            {isFlat ? (
+              <span className='font-bold text-[var(--gray-13)]'>
+                ({rows.length})
+              </span>
+            ) : null}
             {required && <span className='ml-1 text-red-9'>*</span>}
           </h4>
           {general.description && (
@@ -664,14 +932,25 @@ const TableFieldRenderer = ({
             </>
           )}
           {!readOnly && rowsType === 'ON_DEMAND' && (
-            <button
-              className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary-5/40 bg-primary-1/50 px-2.5 py-1 text-xs font-bold text-primary-9 shadow-2xs transition-colors hover:bg-primary-1 active:scale-95'
-              type='button'
-              onClick={handleAddRow}
-            >
-              <Icon height={13} name='lucide:plus' width={13} />
-              <span>{t`Add Row`}</span>
-            </button>
+            isFlat ? (
+              <IconButton
+                color='primary'
+                icon='lucide:plus'
+                size='xs'
+                tooltip={t`Add Row`}
+                variant='ghost'
+                onClick={handleAddRow}
+              />
+            ) : (
+              <button
+                className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary-5/40 bg-primary-1/50 px-2.5 py-1 text-xs font-bold text-primary-9 shadow-2xs transition-colors hover:bg-primary-1 active:scale-95'
+                type='button'
+                onClick={handleAddRow}
+              >
+                <Icon height={13} name='lucide:plus' width={13} />
+                <span>{t`Add Row`}</span>
+              </button>
+            )
           )}
         </div>
       </div>
@@ -710,19 +989,26 @@ const TableFieldRenderer = ({
 
       <div
         className={cn(
-          'w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-gray-3 bg-white shadow-2xs',
-          // Spreadsheet-like borderless inputs
-          '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
-          '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
-          '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-white',
-          '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
-          // Vertical borders for columns matching AP style
-          '[&_th]:border-r [&_th]:border-gray-3 [&_td]:border-r [&_td]:border-gray-2',
-          '[&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0',
+          'relative w-full max-w-full min-w-0 overflow-hidden',
+          isFlat
+            ? 'rounded-xl border border-[var(--gray-3)] bg-surface'
+            : 'rounded-lg border border-gray-3 bg-white shadow-2xs',
         )}
       >
+        <div
+          className={cn(
+            'h-full w-full overflow-x-auto overflow-y-hidden overscroll-x-contain',
+            // Spreadsheet-like borderless inputs
+            '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
+            '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
+            '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-white',
+            '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
+            !isFlat &&
+              '[&_th]:border-r [&_th]:border-gray-3 [&_td]:border-r [&_td]:border-gray-2 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0',
+          )}
+        >
         <Table className='w-max min-w-full border-collapse'>
-          <Thead className='bg-gray-2/60'>
+          <Thead className={isFlat ? 'bg-[var(--gray-1)]' : 'bg-gray-2/60'}>
             <Tr className='border-b border-gray-3'>
               {rowSelection !== 'NONE' && (
                 <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
@@ -806,11 +1092,15 @@ const TableFieldRenderer = ({
                     <Td className='p-1.5 align-middle' key={col.id}>
                       {renderCellInput(
                         col,
-                        resolvedRow[col.id] ?? resolvedRow[col.name],
+                        resolvedRow[col.id] ?? (col.name ? resolvedRow[col.name] : undefined),
                         (cellVal) =>
                           handleCellChange(rowIndex, col.id, cellVal),
                         readOnly,
                         lookupOptionsByColumn[col.id],
+                        isApiOptionsColumn(col)
+                          ? (code) =>
+                              handleApiProductSelect(rowIndex, col.id, code)
+                          : undefined,
                       )}
                     </Td>
                   ))}
@@ -878,6 +1168,7 @@ const TableFieldRenderer = ({
             )}
           </Tbody>
         </Table>
+        </div>
       </div>
     </div>
   )

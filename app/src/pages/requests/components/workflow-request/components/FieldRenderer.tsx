@@ -23,12 +23,14 @@ import {
 import {
   buildMergedOcrFieldHints,
   facetsToFieldOptions,
+  fetchMasterFormColumnOptions,
   findFieldOption,
   getConfiguredFieldOptions,
   getDateTimeLimits,
   getDropdownFacetSource,
   getFieldOptions,
   getFileExtension,
+  getMasterFormInfo,
   isFieldReadOnly,
   isFieldRequired,
   normalizeStoredMultiSelectValue,
@@ -507,6 +509,7 @@ const FieldRenderer = ({
 
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, repositoryId)
+  const masterInfo = getMasterFormInfo(field)
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     enabled: facetSource.enabled,
@@ -536,14 +539,31 @@ const FieldRenderer = ({
     },
   })
 
+  const { data: masterFieldOptions = [] } = useQuery({
+    enabled: masterInfo.enabled,
+    queryKey: [
+      'masterFormColumnOptions',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+    ],
+    queryFn: () =>
+      fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+      ),
+  })
+
   const selectOptions = withExtraFieldOptions(
     withExtraFieldOptions(
-      optionsType === 'DYNAMIC'
-        ? getFieldOptions(field)
-        : getConfiguredFieldOptions(field),
-      uniqueFieldOptions,
+      withExtraFieldOptions(
+        optionsType === 'DYNAMIC'
+          ? getFieldOptions(field)
+          : getConfiguredFieldOptions(field),
+        uniqueFieldOptions,
+      ),
+      userFieldOptions,
     ),
-    userFieldOptions,
+    masterFieldOptions,
   )
 
   const common = {

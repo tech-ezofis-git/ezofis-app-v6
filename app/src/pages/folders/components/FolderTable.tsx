@@ -38,6 +38,8 @@ import type {
 import {
   FOLDER_FILES_SECTION_MAX_FOLDERS,
   formatFolderModifiedDate,
+  formatRepositoryDateDisplay,
+  isRepositoryDateDataType,
 } from '../utils/folderExplorerUtils'
 import {
   getRepositoryFieldRawValue,
@@ -289,6 +291,7 @@ const getRepositoryFieldValue = (
   row: any,
   sqlColumnName: string,
   folderContextFilters: Record<string, string> = {},
+  dataType?: string,
 ) => {
   const value = getRepositoryFieldRawValue(
     row,
@@ -296,6 +299,14 @@ const getRepositoryFieldValue = (
     folderContextFilters,
   )
   if (value === undefined || value === null || value === '') return '-'
+
+  const looksLikeDateKey = String(sqlColumnName || '')
+    .toLowerCase()
+    .includes('date')
+  if (isRepositoryDateDataType(dataType) || looksLikeDateKey) {
+    return formatRepositoryDateDisplay(value)
+  }
+
   return value
 }
 
@@ -985,6 +996,7 @@ function FileDataTableSection({
             file as any,
             column.key,
             folderContextFilters,
+            column.dataType,
           )
         })
 

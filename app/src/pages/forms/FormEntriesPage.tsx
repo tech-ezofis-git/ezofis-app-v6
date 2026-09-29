@@ -35,6 +35,7 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
@@ -44,6 +45,269 @@ import {
   matchesDateRangeValue,
 } from '@/utils/filterUtils'
 import GenericFormImportModal from './components/GenericFormImportModal'
+import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
+import {
+  facetsToFieldOptions,
+  fetchMasterFormColumnOptions,
+  getConfiguredFieldOptions,
+  getDropdownFacetSource,
+  getFieldOptions,
+  getMasterFormInfo,
+  withExtraFieldOptions,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+
+const FormEntriesChoiceInput = ({
+  field,
+  val,
+  isMultiple,
+  onChange,
+}: {
+  field: Question
+  val: any
+  isMultiple?: boolean
+  onChange: (value: any) => void
+}) => {
+  const optionsType = String(
+    field.settings?.specific?.optionsType || 'CUSTOM',
+  ).toUpperCase()
+  const masterInfo = getMasterFormInfo(field)
+
+  const { data: userFieldOptions = [] } = useQuery({
+    enabled: optionsType === 'USER_LIST',
+    queryKey: ['formEntriesChoiceUserList'],
+    queryFn: async () => {
+      const res = await getUsers()
+      return res.data.map((user) => ({ id: user.email, name: user.email }))
+    },
+  })
+
+  const { data: masterFieldOptions = [] } = useQuery({
+    enabled: masterInfo.enabled,
+    queryKey: [
+      'formEntriesChoiceMasterOptions',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+    ],
+    queryFn: () =>
+      fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+      ),
+  })
+
+  const rawOptions = withExtraFieldOptions(
+    withExtraFieldOptions(
+      optionsType === 'DYNAMIC'
+        ? getFieldOptions(field)
+        : getConfiguredFieldOptions(field),
+      userFieldOptions,
+    ),
+    masterFieldOptions,
+  )
+
+  const opts =
+    rawOptions.length > 0
+      ? rawOptions.map((o) => o.name)
+      : ['Option 1', 'Option 2', 'Option 3']
+
+  if (isMultiple) {
+    const selectedList = Array.isArray(val)
+      ? val
+      : val
+        ? String(val).split(',')
+        : []
+
+    const toggleOpt = (opt: string) => {
+      const next = selectedList.includes(opt)
+        ? selectedList.filter((x) => x !== opt)
+        : [...selectedList, opt]
+      onChange(next.join(','))
+    }
+
+    return (
+      <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+        {opts.map((opt: string) => {
+          const isSelected = selectedList.includes(opt)
+          return (
+            <button
+              key={opt}
+              type='button'
+              className={cn(
+                'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+                isSelected
+                  ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
+                  : 'border-gray-2 bg-white text-gray-12',
+              )}
+              onClick={() => toggleOpt(opt)}
+            >
+              <div className='flex size-4 shrink-0 items-center justify-center rounded border border-gray-3'>
+                {isSelected && (
+                  <Icon className='size-3 text-accent-primary' name='lucide:check' />
+                )}
+              </div>
+              <span className='text-xs'>{opt}</span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+      {opts.map((opt: string) => {
+        const isSelected = val === opt
+        return (
+          <button
+            key={opt}
+            type='button'
+            className={cn(
+              'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+              isSelected
+                ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
+                : 'border-gray-2 bg-white text-gray-12',
+            )}
+            onClick={() => onChange(opt)}
+          >
+            <div className='flex size-4 shrink-0 items-center justify-center rounded-full border border-gray-3'>
+              {isSelected && (
+                <div className='size-2 rounded-full bg-accent-primary' />
+              )}
+            </div>
+            <span className='text-xs'>{opt}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const FormEntriesSelectInput = ({
+  field,
+  val,
+  fieldDistinctOptions = [],
+  onChange,
+}: {
+  field: Question
+  val: any
+  fieldDistinctOptions?: Option[]
+  onChange: (value: any) => void
+}) => {
+  const optionsType = String(
+    field.settings?.specific?.optionsType || 'CUSTOM',
+  ).toUpperCase()
+  const facetSource = getDropdownFacetSource(field)
+  const masterInfo = getMasterFormInfo(field)
+
+  const { data: uniqueFieldOptions = [] } = useQuery({
+    enabled: facetSource.enabled,
+    queryKey: [
+      'formEntriesFacets',
+      facetSource.repositoryId,
+      facetSource.fieldName,
+    ],
+    queryFn: async () => {
+      const res = await getRepositoryItemFacets({
+        fieldName: facetSource.fieldName,
+        limit: 1000,
+        repositoryId: facetSource.repositoryId,
+      })
+      return facetsToFieldOptions(res.data, {
+        splitArrayValues: field.type === 'MULTI_SELECT',
+      })
+    },
+  })
+
+  const { data: userFieldOptions = [] } = useQuery({
+    enabled: optionsType === 'USER_LIST',
+    queryKey: ['formEntriesUserList'],
+    queryFn: async () => {
+      const res = await getUsers()
+      return res.data.map((user) => ({ id: user.email, name: user.email }))
+    },
+  })
+
+  const { data: masterFieldOptions = [] } = useQuery({
+    enabled: masterInfo.enabled,
+    queryKey: [
+      'formEntriesMasterOptions',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+    ],
+    queryFn: () =>
+      fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+      ),
+  })
+
+  const normalizedDistinctOptions = fieldDistinctOptions.map((o) => ({
+    id: String(o.id),
+    name: o.name,
+  }))
+
+  const selectOptions = withExtraFieldOptions(
+    withExtraFieldOptions(
+      withExtraFieldOptions(
+        withExtraFieldOptions(
+          optionsType === 'DYNAMIC'
+            ? getFieldOptions(field)
+            : getConfiguredFieldOptions(field),
+          uniqueFieldOptions,
+        ),
+        userFieldOptions,
+      ),
+      masterFieldOptions,
+    ),
+    normalizedDistinctOptions,
+  )
+
+  const isMulti = field.type === 'MULTI_SELECT'
+
+  if (isMulti) {
+    const selectedValues = val
+      ? String(val)
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean)
+      : []
+    const selectedOpts = selectedValues.map((v) => ({ id: v, name: v }))
+
+    return (
+      <InputSelectMultiple
+        creatable
+        options={withExtraFieldOptions(selectOptions, selectedOpts)}
+        placeholder={field.settings?.general?.placeholder || 'Select options...'}
+        searchable
+        value={selectedOpts}
+        onChange={(vals: Option[]) =>
+          onChange(
+            vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','),
+          )
+        }
+      />
+    )
+  }
+
+  const selectedOpt = val ? { id: String(val), name: String(val) } : null
+
+  return (
+    <InputSelect
+      creatable
+      options={withExtraFieldOptions(
+        selectOptions,
+        selectedOpt ? [selectedOpt] : [],
+      )}
+      placeholder={field.settings?.general?.placeholder || 'Select an option'}
+      searchable
+      value={selectedOpt}
+      onChange={(opt) =>
+        onChange(opt ? String(opt.id ?? opt.value ?? opt.name) : '')
+      }
+    />
+  )
+}
 
 // Helper to generate dynamic mock values based on field schema
 const generateDummyEntries = (fields: Question[], count: number = 6) => {
@@ -980,7 +1244,8 @@ const FormEntriesPage = () => {
   const handleSaveEntry = async () => {
     setIsSaving(true)
     try {
-      let targetEntryId: number | string = 0
+      let targetEntryId: number | string =
+        '00000000-0000-0000-0000-000000000000'
       if (!isAddOpen && selectedEntry) {
         targetEntryId =
           selectedEntry.entryId ??
@@ -988,7 +1253,7 @@ const FormEntriesPage = () => {
           (typeof selectedEntry.id === 'string'
             ? selectedEntry.id.replace(/^Entry #/, '')
             : selectedEntry.id) ??
-          0
+          '00000000-0000-0000-0000-000000000000'
       }
 
       const { data, error } = await formApi.saveFormEntry(
@@ -1515,6 +1780,8 @@ const FormEntriesPage = () => {
   const isPanelOpen = isAddOpen || !!selectedEntry
 
   if (isPanelOpen) {
+    const evaluatedFieldStates = evaluateFormRules(panels, editValues)
+
     return (
       <div className='bg-gray-50/20 flex h-full flex-col font-inter'>
         {/* Compact Enterprise Form Banner Header */}
@@ -1555,51 +1822,55 @@ const FormEntriesPage = () => {
             {panels.map((panel: any, pIdx: number) => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
               const panelDescription = panel.settings?.description || ''
-              const renderableFields = (panel.fields || []).filter(
-                (f: any) =>
-                  !['HEADING', 'DIVIDER'].includes(
-                    (f.type || '').toUpperCase(),
-                  ),
-              )
+              const renderableFields = (panel.fields || []).filter((f: any) => {
+                if (['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase()))
+                  return false
+                const state = evaluatedFieldStates[f.id]
+                if (state && !state.visible) return false
+                return true
+              })
 
-              if (renderableFields.length === 0) return null
+                if (renderableFields.length === 0) return null
 
-              return (
-                <div
-                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
-                  key={panel.id || `panel_${pIdx}`}
-                >
-                  {/* Block Card Header */}
-                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                        <Icon className='size-4' name='lucide:layers' />
-                      </div>
-                      <div>
-                        <h4 className='text-sm font-bold text-gray-12'>
-                          {panelTitle}
-                        </h4>
-                        {panelDescription && (
-                          <p className='text-[11px] text-gray-7'>
-                            {panelDescription}
-                          </p>
-                        )}
+                return (
+                  <div
+                    className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                    key={panel.id || `panel_${pIdx}`}
+                  >
+                    {/* Block Card Header */}
+                    <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
+                      <div className='flex items-center gap-3'>
+                        <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+                          <Icon className='size-4' name='lucide:layers' />
+                        </div>
+                        <div>
+                          <h4 className='text-sm font-bold text-gray-12'>
+                            {panelTitle}
+                          </h4>
+                          {panelDescription && (
+                            <p className='text-[11px] text-gray-7'>
+                              {panelDescription}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Block Fields Layout using 12-column grid */}
-                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                    {renderableFields.map((field: Question) => {
-                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
-                      const val = editValues[field.id] ?? ''
-                      const isFieldRequired =
-                        field.settings?.validation?.fieldRule === 'REQUIRED'
-                      const isReadOnly = (field.settings?.specific as any)
-                        ?.isReadOnly
-                      const colSpan = getColumnSpan(
-                        field.settings?.general?.size,
-                      )
+                    {/* Block Fields Layout using 12-column grid */}
+                    <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
+                      {renderableFields.map((field: Question) => {
+                        const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                        const val = editValues[field.id] ?? ''
+                        const state = evaluatedFieldStates[field.id]
+                        const isFieldRequired = state
+                          ? state.required
+                          : field.settings?.validation?.fieldRule === 'REQUIRED'
+                        const isReadOnly = state
+                          ? state.disabled
+                          : Boolean((field.settings?.specific as any)?.isReadOnly)
+                        const colSpan = getColumnSpan(
+                          field.settings?.general?.size,
+                        )
 
                       const isTableType =
                         type === 'LINE_ITEM' ||
@@ -1723,192 +1994,34 @@ const FormEntriesPage = () => {
                               })}
                             </div>
                           ) : type === 'SINGLE_CHOICE' ? (
-                            (() => {
-                              const optString =
-                                field.settings?.specific?.customOptions ||
-                                'Option A,Option B,Option C'
-                              const delimiter =
-                                field.settings?.specific
-                                  ?.separateOptionsUsing === 'COMMA'
-                                  ? ','
-                                  : '\n'
-                              const opts = optString
-                                .split(delimiter)
-                                .map((o: any) => o.trim())
-                                .filter(Boolean)
-
-                              return (
-                                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-                                  {opts.map((opt: string) => {
-                                    const isSelected = val === opt
-                                    return (
-                                      <button
-                                        key={opt}
-                                        type='button'
-                                        className={cn(
-                                          'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
-                                          isSelected
-                                            ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                                            : 'border-gray-2 bg-white text-gray-12',
-                                        )}
-                                        onClick={() =>
-                                          handleFieldChange(field.id, opt)
-                                        }
-                                      >
-                                        <div className='flex size-4 shrink-0 items-center justify-center rounded-full border border-gray-3'>
-                                          {isSelected && (
-                                            <div className='size-2 rounded-full bg-accent-primary' />
-                                          )}
-                                        </div>
-                                        <span className='text-xs'>{opt}</span>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              )
-                            })()
-                          ) : type === 'MULTIPLE_CHOICE' ? (
-                            (() => {
-                              const optString =
-                                field.settings?.specific?.customOptions ||
-                                'Option A,Option B,Option C'
-                              const delimiter =
-                                field.settings?.specific
-                                  ?.separateOptionsUsing === 'COMMA'
-                                  ? ','
-                                  : '\n'
-                              const opts = optString
-                                .split(delimiter)
-                                .map((o: any) => o.trim())
-                                .filter(Boolean)
-
-                              const selectedList = Array.isArray(val)
-                                ? val
-                                : val
-                                  ? String(val).split(',')
-                                  : []
-
-                              const toggleOpt = (opt: string) => {
-                                const next = selectedList.includes(opt)
-                                  ? selectedList.filter((x) => x !== opt)
-                                  : [...selectedList, opt]
-                                handleFieldChange(field.id, next.join(','))
+                            <FormEntriesChoiceInput
+                              field={field}
+                              val={val}
+                              onChange={(next) =>
+                                handleFieldChange(field.id, next)
                               }
-
-                              return (
-                                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-                                  {opts.map((opt: string) => {
-                                    const isSelected =
-                                      selectedList.includes(opt)
-                                    return (
-                                      <button
-                                        key={opt}
-                                        type='button'
-                                        className={cn(
-                                          'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
-                                          isSelected
-                                            ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                                            : 'border-gray-2 bg-white text-gray-12',
-                                        )}
-                                        onClick={() => toggleOpt(opt)}
-                                      >
-                                        <div className='flex size-4 shrink-0 items-center justify-center rounded border border-gray-3'>
-                                          {isSelected && (
-                                            <Icon
-                                              className='size-3 text-accent-primary'
-                                              name='lucide:check'
-                                            />
-                                          )}
-                                        </div>
-                                        <span className='text-xs'>{opt}</span>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              )
-                            })()
+                            />
+                          ) : type === 'MULTIPLE_CHOICE' ? (
+                            <FormEntriesChoiceInput
+                              field={field}
+                              isMultiple
+                              val={val}
+                              onChange={(next) =>
+                                handleFieldChange(field.id, next)
+                              }
+                            />
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
-                            (() => {
-                              const optString =
-                                field.settings?.specific?.customOptions || ''
-                              const delimiter =
-                                field.settings?.specific
-                                  ?.separateOptionsUsing === 'COMMA'
-                                  ? ','
-                                  : '\n'
-                              const configuredOpts = optString
-                                .split(delimiter)
-                                .map((o: any) => o.trim())
-                                .filter(Boolean)
-
-                              // Merge configured options with distinct values
-                              // already saved for this column across entries
-                              // (no hardcoded placeholder options — an empty
-                              // list is fine since both dropdowns are creatable)
-                              const merged = new Map<string, Option>()
-                              configuredOpts.forEach((o: string) =>
-                                merged.set(o, { id: o, name: o }),
-                              )
-                              ;(fieldDistinctOptions[field.id] || []).forEach(
-                                (o) => merged.set(o.name, o),
-                              )
-                              const opts = Array.from(merged.values())
-
-                              if (type === 'MULTI_SELECT') {
-                                const selectedValues = val
-                                  ? String(val)
-                                      .split(',')
-                                      .map((v) => v.trim())
-                                      .filter(Boolean)
-                                  : []
-                                const selectedOpts = selectedValues.map(
-                                  (v) => ({ id: v, name: v }),
-                                )
-
-                                return (
-                                  <InputSelectMultiple
-                                    options={opts}
-                                    value={selectedOpts}
-                                    creatable
-                                    searchable
-                                    placeholder={
-                                      field.settings?.general?.placeholder
-                                    }
-                                    onChange={(vals) =>
-                                      handleFieldChange(
-                                        field.id,
-                                        vals
-                                          .map((v) => String(v.value ?? v.name))
-                                          .join(','),
-                                      )
-                                    }
-                                  />
-                                )
+                            <FormEntriesSelectInput
+                              field={field}
+                              fieldDistinctOptions={
+                                fieldDistinctOptions[field.id] || []
                               }
-
-                              const selectedOpt = val
-                                ? { id: val, name: val }
-                                : null
-
-                              return (
-                                <InputSelect
-                                  options={opts}
-                                  value={selectedOpt}
-                                  creatable
-                                  searchable
-                                  placeholder={
-                                    field.settings?.general?.placeholder
-                                  }
-                                  onChange={(opt) =>
-                                    handleFieldChange(
-                                      field.id,
-                                      opt ? String(opt.value ?? opt.name) : '',
-                                    )
-                                  }
-                                />
-                              )
-                            })()
+                              val={val}
+                              onChange={(next) =>
+                                handleFieldChange(field.id, next)
+                              }
+                            />
                           ) : type === 'FILE_UPLOAD' ||
                             type === 'IMAGE_UPLOAD' ? (
                             <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>

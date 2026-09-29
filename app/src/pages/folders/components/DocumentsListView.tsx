@@ -35,6 +35,10 @@ import type {
   TreeNode,
 } from '../types/folderTypes'
 import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
+import {
+  formatRepositoryDateDisplay,
+  isRepositoryDateDataType,
+} from '../utils/folderExplorerUtils'
 import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import {
   getRepositoryFieldRawValue,
@@ -210,14 +214,7 @@ const toTitle = (key: string) =>
     .trim()
     .replace(/^./, (value) => value.toUpperCase())
 
-const formatDateValue = (value: any) => {
-  if (!value) return '-'
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-
-  return date.toISOString().slice(0, 10)
-}
+const formatDateValue = (value: any) => formatRepositoryDateDisplay(value)
 
 const formatAmountValue = (value: any) => {
   if (value === undefined || value === null || value === '') return '-'
@@ -250,7 +247,11 @@ const getDisplayValue = (
   const normalizedType = String(dataType || '').toLowerCase()
   const normalizedKey = sqlColumnName.toLowerCase()
 
-  if (normalizedType === 'date' || normalizedKey.includes('date')) {
+  if (
+    isRepositoryDateDataType(dataType) ||
+    normalizedType === 'date' ||
+    normalizedKey.includes('date')
+  ) {
     return formatDateValue(value)
   }
 

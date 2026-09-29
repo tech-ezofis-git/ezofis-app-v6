@@ -107,7 +107,7 @@ export interface FormStore {
 export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
 
 export interface LogicRule {
-  action: 'SHOW' | 'HIDE'
+  action: 'SHOW' | 'HIDE' | 'ENABLE' | 'DISABLE' | 'REQUIRE'
   condition:
     | 'IS'
     | 'IS_NOT'
@@ -171,10 +171,16 @@ export interface Question {
     logic?: LogicRule[]
     lookupSettings: {
       columnName?: string
+      columnNameInAPI?: string
       conditionMappings?: { fieldId: string; operator: string; value: any }[]
-      connectionId?: number
-      connectionType?: 'SQL' | 'API' | 'ORACLE' | 'GOOGLE_SHEETS'
+      connectionId?: number | string
+      connectionType?: 'SQL' | 'API' | 'ORACLE' | 'GOOGLE_SHEETS' | 'SALESFORCE'
+      hasSameConnection?: boolean
       hubName?: string
+      mappingField?: string
+      parentField?: string
+      secondaryName?: string
+      syncFieldsForAPI?: Array<{ apiParam: string; formField: string }>
       valueMappings?: { source: string; target: string }[]
     }
     pipingEnabled?: boolean
@@ -202,6 +208,7 @@ export interface Question {
       dense?: boolean
       dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
       dividerType?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
+      existingFieldId?: string
       fibFields?: any[]
       fibMapping?: string
       fileInStageOnly?: boolean
@@ -216,7 +223,13 @@ export interface Question {
       inputMask?: string
       isCalculationEnabled?: boolean
       isInteger?: boolean
+      isSameMaster?: boolean
+      listUsersByGroup?: string
       lookupMaster?: string
+      masterFormColumn?: string
+      masterFormConditionColumn?: Array<{ formField: string; masterColumn: string }>
+      masterFormId?: number | string
+      masterFormParentColumn?: string
       matrixColumnLabels?: string[]
       matrixColumns?: string[]
       matrixRowLabels?: string[]
@@ -232,12 +245,15 @@ export interface Question {
       parentDateOffset?: number
       parentFieldFilterValue?: any
       parentFieldId?: string
+      predefinedColumn?: string
+      predefinedType?: 'USER' | 'WORKSPACE' | 'FOLDER' | 'WORKFLOW'
       prefillFromUrl?: boolean
       prefixIcon?: string
       prefixLabel?: string
       preventNegative?: boolean
       qrCodeEnabled?: boolean
       repositoryField?: string
+      repositoryFieldParent?: string
       repositoryId?: string
       requireFirst?: boolean
       requireLast?: boolean
@@ -246,6 +262,7 @@ export interface Question {
       rowSelection?: 'NONE' | 'SINGLE' | 'MULTIPLE'
       rowsType?: 'ON_DEMAND' | 'FIXED'
       separateOptionsUsing?: string
+      showAllData?: boolean
       showMiddle?: boolean
       showOptionsWrapper?: boolean
       showStatusIndicator?: boolean
@@ -260,6 +277,8 @@ export interface Question {
         name: string
         settings?: {
           lookupSettings?: {
+            /** LOOKUP = repository facets; API = FTL catalog on focus/select */
+            optionsSource?: 'LOOKUP' | 'API'
             repositoryField?: string
             repositoryId?: string
           }

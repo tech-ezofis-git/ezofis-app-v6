@@ -222,6 +222,62 @@ export const getFirstReceivedAttachment = <T,>(
   return attachments.at(-1)
 }
 
+/** Newest attachment (generated PDF, latest upload) — opposite of first received. */
+export const getLatestAttachment = <T,>(
+  attachments: T[] | null | undefined,
+): T | undefined => {
+  if (!attachments?.length) return undefined
+
+  const ranked = [...attachments].sort((left, right) => {
+    const timeDelta =
+      attachmentReceivedAt(right as { createdAt?: unknown }) -
+      attachmentReceivedAt(left as { createdAt?: unknown })
+    if (timeDelta !== 0) return timeDelta
+
+    const idA = Number(attachmentKey(left as { id?: unknown }))
+    const idB = Number(attachmentKey(right as { id?: unknown }))
+    if (Number.isFinite(idA) && Number.isFinite(idB) && idA !== idB) {
+      return idB - idA
+    }
+    return 0
+  })
+
+  const hasKnownTime = ranked.some(
+    (item) =>
+      attachmentReceivedAt(item as { createdAt?: unknown }) !==
+      Number.POSITIVE_INFINITY,
+  )
+  if (hasKnownTime) {
+    // Prefer a non-initiate file when one exists (generated doc vs inbound RFQ).
+    const nonInitiate = ranked.find(
+      (item) => !isInitiateAttachment(item as { initiate?: unknown }),
+    )
+    return nonInitiate || ranked[0]
+  }
+
+  const withNumericId = ranked.filter((item) =>
+    Number.isFinite(Number(attachmentKey(item as { id?: unknown }))),
+  )
+  if (withNumericId.length > 0) {
+    const nonInitiate = withNumericId.find(
+      (item) => !isInitiateAttachment(item as { initiate?: unknown }),
+    )
+    return nonInitiate || withNumericId[0]
+  }
+
+  // Newest-first APIs: first list item is the most recent.
+  const head = attachments[0]
+  if (
+    attachments.length > 1 &&
+    isInitiateAttachment(head as { initiate?: unknown })
+  ) {
+    return attachments.find(
+      (item) => !isInitiateAttachment(item as { initiate?: unknown }),
+    ) || head
+  }
+  return head
+}
+
 export const attachmentToFormFileValue = (
   attachment: {
     fileId?: unknown

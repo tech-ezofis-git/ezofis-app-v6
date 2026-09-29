@@ -17,6 +17,8 @@ import {
   getRepositoryItemFilterFields,
   getRepositorys,
 } from '@/api/v6/folder/folder'
+import formApi from '@/api/form/form'
+import connectorApi from '@/api/connector'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -100,6 +102,113 @@ const QuestionSettings = ({
       return res.data?.fields || []
     },
   })
+
+  const { data: masterForms = [] } = useQuery({
+    queryKey: ['masterForms'],
+    queryFn: async () => {
+      const payload = {
+        currentPage: 1,
+        filterBy: [],
+        groupBy: '',
+        hasSecurity: false,
+        itemsPerPage: 500,
+        mode: 'BROWSE',
+        sortBy: { criteria: 'name', order: 'ASC' },
+      }
+      let res = await formApi.getForms(payload)
+      if (!res?.data) {
+        res = await formApi.listAllForms(1, 500, '', [])
+      }
+
+      const extractData = (obj: any): any[] => {
+        if (!obj) return []
+        let raw = obj
+        if (typeof raw === 'string') {
+          try {
+            raw = JSON.parse(raw)
+          } catch {
+            return []
+          }
+        }
+        if (Array.isArray(raw)) return raw
+        const inner = raw.data || raw.value || raw.forms || raw.items
+        if (Array.isArray(inner)) {
+          if (
+            inner.length > 0 &&
+            inner[0]?.value &&
+            Array.isArray(inner[0].value)
+          ) {
+            return inner.flatMap((g: any) => g.value || [])
+          }
+          return inner
+        }
+        if (typeof raw === 'object') {
+          for (const key in raw) {
+            const result = extractData(raw[key])
+            if (result.length > 0) return result
+          }
+        }
+        return []
+      }
+
+      const allForms = extractData(res?.data)
+      return allForms
+        .map((f: any) => ({
+          id: String(f.id ?? f.formId ?? f.uid ?? ''),
+          name: String(f.name || f.label || f.title || 'Untitled Form'),
+        }))
+        .filter((f) => Boolean(f.id))
+    },
+  })
+
+  const currentMasterFormId = activeQuestion.settings.specific.masterFormId || ''
+
+  const { data: masterFormDetails } = useQuery({
+    enabled: !!currentMasterFormId,
+    queryKey: ['masterFormDetails', currentMasterFormId],
+    queryFn: async () => {
+      if (!currentMasterFormId) return null
+      const res = await formApi.getFormDataById(String(currentMasterFormId))
+      return res.data
+    },
+  })
+
+  const masterColumns = (() => {
+    if (!masterFormDetails) return []
+    let raw =
+      masterFormDetails.formJson ||
+      masterFormDetails.data?.formJson ||
+      masterFormDetails.data ||
+      masterFormDetails
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw)
+      } catch {
+        return []
+      }
+    }
+    const panels: any[] = raw?.panels || []
+    return panels
+      .flatMap((p) =>
+        (p.fields || []).map((f: any) => ({
+          id: String(f.id || f.label || ''),
+          name: String(f.label || f.name || f.displayLabel || f.id || ''),
+        })),
+      )
+      .filter((col) => Boolean(col.id))
+  })()
+
+  const { data: connectors = [] } = useQuery({
+    queryKey: ['connectors'],
+    queryFn: async () => {
+      const res = await connectorApi.getConnection({
+        filterBy: [],
+        mode: 'BROWSE',
+      })
+      return Array.isArray(res.payload) ? res.payload : []
+    },
+  })
+
 
   const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
@@ -210,6 +319,9 @@ const QuestionSettings = ({
   const logicActionOptions = [
     { id: 'SHOW', name: 'Show' },
     { id: 'HIDE', name: 'Hide' },
+    { id: 'ENABLE', name: 'Enable' },
+    { id: 'DISABLE', name: 'Disable' },
+    { id: 'REQUIRE', name: 'Make Required' },
   ]
 
   const isShortText = activeQuestion.type === 'SHORT_TEXT'
@@ -344,9 +456,11 @@ const QuestionSettings = ({
 
   const optionsTypeOptions = [
     { id: 'CUSTOM', name: 'Custom List (Manual)' },
-    { id: 'MASTER_TABLE', name: 'Master Table (Dynamic)' },
+    { id: 'MASTER', name: 'Master Table (Dynamic)' },
     { id: 'REPOSITORY', name: 'Data Repository' },
     { id: 'PREDEFINED', name: 'Predefined Lists' },
+    { id: 'EXISTING', name: 'Existing Submitted Values' },
+    { id: 'ASSIGN_PARENT_FIELD', name: 'Assign Control Field' },
     { id: 'USER_LIST', name: 'User List' },
   ]
 
@@ -859,33 +973,263 @@ const QuestionSettings = ({
                     value={
                       optionsTypeOptions.find(
                         (o) =>
-                          o.id === activeQuestion.settings.specific.optionsType,
+                          o.id === (activeQuestion.settings.specific.optionsType || activeQuestion.settings.specific.optionsSource),
                       ) || optionsTypeOptions[0]
                     }
                     onChange={(val) =>
-                      val && updateNested('specific', { optionsType: val.id })
+                      val &&
+                      updateNested('specific', {
+                        optionsSource: val.id,
+                        optionsType: val.id,
+                      })
                     }
                   />
                 </div>
 
-                {(activeQuestion.settings.specific.optionsType === 'MASTER_TABLE' ||
+                {(activeQuestion.settings.specific.optionsType === 'MASTER' ||
                   activeQuestion.settings.specific.optionsType ===
-                    'PREDEFINED') && (
-                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
-                    Master Table and Predefined sources require a backend endpoint
-                    — coming soon.
-                  </div>
-                )}
-                {activeQuestion.settings.specific.optionsType === 'USER_LIST' && (
-                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
-                    Options will be dynamically populated with user emails.
+                    'MASTER_TABLE') && (
+                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-4 rounded-lg border p-3.5'>
+                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                      Master Table Configuration
+                    </label>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Target Master Form / Table
+                      </label>
+                      <InputSelect
+                        placeholder='Select Master Table'
+                        options={masterForms}
+                        value={
+                          masterForms.find(
+                            (f: any) =>
+                              String(f.id) ===
+                              String(
+                                activeQuestion.settings.specific.masterFormId,
+                              ),
+                          ) || null
+                        }
+                        onChange={(val) => {
+                          updateNested('specific', {
+                            masterFormColumn: '',
+                            masterFormId: val?.id ? String(val.id) : '',
+                          })
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Master Column to Display
+                      </label>
+                      <InputSelect
+                        placeholder='Select Master Column'
+                        options={masterColumns}
+                        value={
+                          masterColumns.find(
+                            (col: any) =>
+                              String(col.id) ===
+                                String(
+                                  activeQuestion.settings.specific
+                                    .masterFormColumn,
+                                ) ||
+                              col.name ===
+                                activeQuestion.settings.specific
+                                  .masterFormColumn,
+                          ) || null
+                        }
+                        onChange={(val) => {
+                          updateNested('specific', {
+                            masterFormColumn: val?.id ? String(val.id) : '',
+                          })
+                        }}
+                      />
+                    </div>
+
+                    <div className='flex items-center justify-between py-1'>
+                      <div>
+                        <div className='text-xs font-bold text-gray-12'>
+                          Same Master Evaluation
+                        </div>
+                        <div className='text-[10px] text-gray-6'>
+                          Evaluate against the same master form instance
+                        </div>
+                      </div>
+                      <InputSwitch
+                        checked={
+                          activeQuestion.settings.specific.isSameMaster || false
+                        }
+                        onChange={(checked) =>
+                          updateNested('specific', { isSameMaster: checked })
+                        }
+                      />
+                    </div>
+
+                    <div className='space-y-2.5 border-t border-gray-1 pt-3'>
+                      <div className='flex items-center justify-between'>
+                        <label className='block text-xs font-bold text-gray-11'>
+                          Condition Mappings (Form Field &rarr; Master Column)
+                        </label>
+                        <button
+                          className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
+                          type='button'
+                          onClick={() => {
+                            const current =
+                              activeQuestion.settings.specific
+                                .masterFormConditionColumn || []
+                            updateNested('specific', {
+                              masterFormConditionColumn: [
+                                ...current,
+                                { formField: '', masterColumn: '' },
+                              ],
+                            })
+                          }}
+                        >
+                          <Icon height={10} name='lucide:plus' width={10} />
+                          Add Condition
+                        </button>
+                      </div>
+
+                      {(
+                        activeQuestion.settings.specific
+                          .masterFormConditionColumn || []
+                      ).map((cond, cIdx) => (
+                        <div className='flex items-center gap-2' key={cIdx}>
+                          <div className='flex-1'>
+                            <InputSelect
+                              placeholder='Form Field'
+                              options={allQuestions
+                                .filter((q) => q.id !== activeQuestion.id)
+                                .map((q) => ({ id: q.id, name: q.label }))}
+                              value={
+                                allQuestions
+                                  .filter((q) => q.id !== activeQuestion.id)
+                                  .map((q) => ({ id: q.id, name: q.label }))
+                                  .find((q) => q.id === cond.formField) || null
+                              }
+                              onChange={(val) => {
+                                const current = [
+                                  ...(activeQuestion.settings.specific
+                                    .masterFormConditionColumn || []),
+                                ]
+                                current[cIdx] = {
+                                  ...current[cIdx],
+                                  formField: val?.id ? String(val.id) : '',
+                                }
+                                updateNested('specific', {
+                                  masterFormConditionColumn: current,
+                                })
+                              }}
+                            />
+                          </div>
+                          <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                          <div className='flex-1'>
+                            <InputSelect
+                              placeholder='Master Column'
+                              options={masterColumns.map((col: any) => ({
+                                id: col.id || col.label,
+                                name: col.label || col.name || col.id,
+                              }))}
+                              value={
+                                masterColumns
+                                  .map((col: any) => ({
+                                    id: col.id || col.label,
+                                    name: col.label || col.name || col.id,
+                                  }))
+                                  .find(
+                                    (col: any) => col.id === cond.masterColumn,
+                                  ) || null
+                              }
+                              onChange={(val) => {
+                                const current = [
+                                  ...(activeQuestion.settings.specific
+                                    .masterFormConditionColumn || []),
+                                ]
+                                current[cIdx] = {
+                                  ...current[cIdx],
+                                  masterColumn: val?.id ? String(val.id) : '',
+                                }
+                                updateNested('specific', {
+                                  masterFormConditionColumn: current,
+                                })
+                              }}
+                            />
+                          </div>
+                          <IconButton
+                            color='red'
+                            icon='lucide:trash-2'
+                            size='xs'
+                            variant='ghost'
+                            onClick={() => {
+                              const current = (
+                                activeQuestion.settings.specific
+                                  .masterFormConditionColumn || []
+                              ).filter((_, idx) => idx !== cIdx)
+                              updateNested('specific', {
+                                masterFormConditionColumn: current,
+                              })
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className='space-y-3 border-t border-gray-1 pt-3'>
+                      <div>
+                        <label className='mb-1 block text-xs font-medium text-gray-11'>
+                          Parent Field Filter (Cascading)
+                        </label>
+                        <InputSelect
+                          placeholder='Select Parent Form Field'
+                          options={allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({ id: q.id, name: q.label }))}
+                          value={
+                            allQuestions
+                              .filter((q) => q.id !== activeQuestion.id)
+                              .map((q) => ({ id: q.id, name: q.label }))
+                              .find(
+                                (q) =>
+                                  q.id ===
+                                  activeQuestion.settings.specific
+                                    .masterFormParentColumn,
+                              ) || null
+                          }
+                          onChange={(val) => {
+                            updateNested('specific', {
+                              masterFormParentColumn: val?.id || '',
+                            })
+                          }}
+                        />
+                      </div>
+
+                      <div className='flex items-center justify-between py-1'>
+                        <div>
+                          <div className='text-xs font-bold text-gray-12'>
+                            Display All Data When Parent Empty
+                          </div>
+                          <div className='text-[10px] text-gray-6'>
+                            Show all options without filtering if parent field is empty
+                          </div>
+                        </div>
+                        <InputSwitch
+                          checked={
+                            activeQuestion.settings.specific.showAllData || false
+                          }
+                          onChange={(checked) =>
+                            updateNested('specific', { showAllData: checked })
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {activeQuestion.settings.specific.optionsType ===
                   'REPOSITORY' && (
-                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase'>
+                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
+                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
                       Repository Source Builder
                     </label>
                     <div className='space-y-3'>
@@ -949,7 +1293,225 @@ const QuestionSettings = ({
                           }}
                         />
                       </div>
+                      <div>
+                        <label className='mb-1 block text-xs font-medium text-gray-11'>
+                          Parent Field Filter (Cascading)
+                        </label>
+                        <InputSelect
+                          placeholder='Select Parent Field'
+                          options={allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({ id: q.id, name: q.label }))}
+                          value={
+                            allQuestions
+                              .filter((q) => q.id !== activeQuestion.id)
+                              .map((q) => ({ id: q.id, name: q.label }))
+                              .find(
+                                (q) =>
+                                  q.id ===
+                                  activeQuestion.settings.specific
+                                    .repositoryFieldParent,
+                              ) || null
+                          }
+                          onChange={(val) => {
+                            updateNested('specific', {
+                              repositoryFieldParent: val?.id || '',
+                            })
+                          }}
+                        />
+                      </div>
                     </div>
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.optionsType ===
+                  'PREDEFINED' && (
+                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3.5 rounded-lg border p-3.5'>
+                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                      Predefined Entity Configuration
+                    </label>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Entity Type
+                      </label>
+                      <InputSelect
+                        placeholder='Select Predefined Entity'
+                        options={[
+                          { id: 'USER', name: 'User Directory' },
+                          { id: 'WORKSPACE', name: 'Workspaces' },
+                          { id: 'FOLDER', name: 'Folders / Repositories' },
+                          { id: 'WORKFLOW', name: 'Workflows' },
+                        ]}
+                        value={
+                          [
+                            { id: 'USER', name: 'User Directory' },
+                            { id: 'WORKSPACE', name: 'Workspaces' },
+                            { id: 'FOLDER', name: 'Folders / Repositories' },
+                            { id: 'WORKFLOW', name: 'Workflows' },
+                          ].find(
+                            (o) =>
+                              o.id ===
+                              activeQuestion.settings.specific.predefinedType,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            predefinedType: val?.id || 'USER',
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Attribute Column
+                      </label>
+                      <InputSelect
+                        placeholder='Select Display Attribute'
+                        options={
+                          activeQuestion.settings.specific.predefinedType ===
+                            'USER' ||
+                          !activeQuestion.settings.specific.predefinedType
+                            ? [
+                                { id: 'email', name: 'Email Address' },
+                                { id: 'username', name: 'Username' },
+                                { id: 'firstName', name: 'First Name' },
+                                { id: 'department', name: 'Department' },
+                                { id: 'jobTitle', name: 'Job Title' },
+                                { id: 'phoneNumber', name: 'Phone Number' },
+                              ]
+                            : [
+                                { id: 'name', name: 'Name / Title' },
+                                { id: 'id', name: 'ID / Code' },
+                              ]
+                        }
+                        value={
+                          [
+                            { id: 'email', name: 'Email Address' },
+                            { id: 'username', name: 'Username' },
+                            { id: 'firstName', name: 'First Name' },
+                            { id: 'department', name: 'Department' },
+                            { id: 'jobTitle', name: 'Job Title' },
+                            { id: 'phoneNumber', name: 'Phone Number' },
+                            { id: 'name', name: 'Name / Title' },
+                            { id: 'id', name: 'ID / Code' },
+                          ].find(
+                            (o) =>
+                              o.id ===
+                              activeQuestion.settings.specific.predefinedColumn,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            predefinedColumn: val?.id || '',
+                          })
+                        }
+                      />
+                    </div>
+
+                    {(activeQuestion.settings.specific.predefinedType ===
+                      'USER' ||
+                      !activeQuestion.settings.specific.predefinedType) && (
+                      <div>
+                        <label className='mb-1 block text-xs font-medium text-gray-11'>
+                          Filter Users by Group (Optional)
+                        </label>
+                        <InputText
+                          placeholder='Group Name or ID (Leave empty for all users)'
+                          value={
+                            activeQuestion.settings.specific.listUsersByGroup ||
+                            ''
+                          }
+                          onChange={(val: string) =>
+                            updateNested('specific', { listUsersByGroup: val })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.optionsType ===
+                  'EXISTING' && (
+                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
+                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                      Existing Submitted Values
+                    </label>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Form Field Column
+                      </label>
+                      <InputSelect
+                        placeholder='Select Field'
+                        options={allQuestions
+                          .filter((q) => q.id !== activeQuestion.id)
+                          .map((q) => ({ id: q.id, name: q.label }))}
+                        value={
+                          allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({ id: q.id, name: q.label }))
+                            .find(
+                              (q) =>
+                                q.id ===
+                                activeQuestion.settings.specific.existingFieldId,
+                            ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            existingFieldId: val?.id || '',
+                          })
+                        }
+                      />
+                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                        Options will be dynamically collected from unique values of submitted entries for this field.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.optionsType ===
+                  'ASSIGN_PARENT_FIELD' && (
+                  <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
+                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                      Assign Control Field
+                    </label>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Target Control Field
+                      </label>
+                      <InputSelect
+                        placeholder='Select Control Field'
+                        options={allQuestions
+                          .filter((q) => q.id !== activeQuestion.id)
+                          .map((q) => ({ id: q.id, name: q.label }))}
+                        value={
+                          allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({ id: q.id, name: q.label }))
+                            .find(
+                              (q) =>
+                                q.id ===
+                                activeQuestion.settings.specific.parentFieldId,
+                            ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            parentFieldId: val?.id || '',
+                          })
+                        }
+                      />
+                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                        Options will dynamically match the selected control field's choices.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.optionsType ===
+                  'USER_LIST' && (
+                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
+                    Options will be dynamically populated with system user emails.
                   </div>
                 )}
 
@@ -3204,17 +3766,19 @@ const QuestionSettings = ({
                 <InputSelect
                   placeholder='Select protocol'
                   options={[
-                    { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
-                    { id: 'SQL', name: 'Internal SQL Database' },
                     { id: 'API', name: 'RESTful API' },
+                    { id: 'SQL', name: 'Internal SQL Database' },
                     { id: 'ORACLE', name: 'Oracle DB' },
+                    { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
+                    { id: 'SALESFORCE', name: 'Salesforce API' },
                   ]}
                   value={
                     [
-                      { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
-                      { id: 'SQL', name: 'Internal SQL Database' },
                       { id: 'API', name: 'RESTful API' },
+                      { id: 'SQL', name: 'Internal SQL Database' },
                       { id: 'ORACLE', name: 'Oracle DB' },
+                      { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
+                      { id: 'SALESFORCE', name: 'Salesforce API' },
                     ].find(
                       (o) =>
                         o.id ===
@@ -3230,19 +3794,32 @@ const QuestionSettings = ({
 
               <div>
                 <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Lookup Connection
+                  Lookup Connection Credential
                 </label>
                 <InputSelect
-                  placeholder='Select source connection'
-                  options={[
-                    { id: '1', name: 'Main Prod Cluster' },
-                    { id: '2', name: 'Staging Sheet v2' },
-                  ]}
+                  placeholder='Select connection credential'
+                  options={
+                    connectors.length > 0
+                      ? connectors.map((c: any) => ({
+                          id: String(c.id),
+                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                        }))
+                      : [
+                          { id: '1', name: 'Main Production Connector' },
+                          { id: '2', name: 'Staging Integration Connector' },
+                        ]
+                  }
                   value={
-                    [
-                      { id: '1', name: 'Main Prod Cluster' },
-                      { id: '2', name: 'Staging Sheet v2' },
-                    ].find(
+                    (connectors.length > 0
+                      ? connectors.map((c: any) => ({
+                          id: String(c.id),
+                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                        }))
+                      : [
+                          { id: '1', name: 'Main Production Connector' },
+                          { id: '2', name: 'Staging Integration Connector' },
+                        ]
+                    ).find(
                       (o) =>
                         o.id ===
                         String(
@@ -3253,41 +3830,48 @@ const QuestionSettings = ({
                   onChange={(val) =>
                     val &&
                     updateNested('lookupSettings', {
-                      connectionId: Number(val.id),
+                      connectionId: val.id,
                     })
                   }
                 />
               </div>
 
               <InputText
-                label='Hub Name / Collection'
-                placeholder='e.g. users_collection'
+                label='Hub Name / Function Endpoint'
+                placeholder='e.g. get_customer_details or /api/v1/lookup'
                 value={activeQuestion.settings.lookupSettings?.hubName || ''}
                 onChange={(val: string) =>
                   updateNested('lookupSettings', { hubName: val })
                 }
               />
 
-              {(isNumber || isDate || isTime || isDateTime || isSelect) && (
+              <div className='bg-gray-50/50 space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='text-xs font-bold text-gray-12'>
+                  Column Mappings
+                </div>
                 <InputText
-                  label={
-                    isDate || isDateTime
-                      ? 'Target Column (Date)'
-                      : isTime
-                        ? 'Target Column (Time)'
-                        : isSelect
-                          ? 'Selector Data Source'
-                          : 'Target Column (Number)'
+                  label='Primary Name Column (columnNameInAPI)'
+                  placeholder='e.g. display_name'
+                  value={
+                    activeQuestion.settings.lookupSettings?.columnNameInAPI || ''
                   }
-                  placeholder={
-                    isDate || isDateTime
-                      ? 'e.g. birth_date'
-                      : isTime
-                        ? 'e.g. checkin_time'
-                        : isSelect
-                          ? 'e.g. items_list'
-                          : 'e.g. age, quantity...'
+                  onChange={(val: string) =>
+                    updateNested('lookupSettings', { columnNameInAPI: val })
                   }
+                />
+                <InputText
+                  label='Secondary Name Column (secondaryName)'
+                  placeholder='e.g. subtitle, description'
+                  value={
+                    activeQuestion.settings.lookupSettings?.secondaryName || ''
+                  }
+                  onChange={(val: string) =>
+                    updateNested('lookupSettings', { secondaryName: val })
+                  }
+                />
+                <InputText
+                  label='Reference Key Column (columnName)'
+                  placeholder='e.g. id, code, key'
                   value={
                     activeQuestion.settings.lookupSettings?.columnName || ''
                   }
@@ -3295,7 +3879,166 @@ const QuestionSettings = ({
                     updateNested('lookupSettings', { columnName: val })
                   }
                 />
-              )}
+              </div>
+
+              {/* Sync Fields for API Input Parameters */}
+              <div className='space-y-2.5 border-t border-gray-1 pt-3'>
+                <div className='flex items-center justify-between'>
+                  <label className='block text-xs font-bold text-gray-11'>
+                    Sync Input Fields (Form Field &rarr; API Param)
+                  </label>
+                  <button
+                    className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
+                    type='button'
+                    onClick={() => {
+                      const current =
+                        activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
+                      updateNested('lookupSettings', {
+                        syncFieldsForAPI: [
+                          ...current,
+                          { apiParam: '', formField: '' },
+                        ],
+                      })
+                    }}
+                  >
+                    <Icon height={10} name='lucide:plus' width={10} />
+                    Add Parameter Sync
+                  </button>
+                </div>
+
+                {(
+                  activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
+                ).map((sync, sIdx) => (
+                  <div className='flex items-center gap-2' key={sIdx}>
+                    <div className='flex-1'>
+                      <InputSelect
+                        placeholder='Form Field'
+                        options={allQuestions
+                          .filter((q) => q.id !== activeQuestion.id)
+                          .map((q) => ({ id: q.id, name: q.label }))}
+                        value={
+                          allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({ id: q.id, name: q.label }))
+                            .find((q) => q.id === sync.formField) || null
+                        }
+                        onChange={(val) => {
+                          const current = [
+                            ...(activeQuestion.settings.lookupSettings
+                              ?.syncFieldsForAPI || []),
+                          ]
+                          current[sIdx] = {
+                            ...current[sIdx],
+                            formField: val?.id ? String(val.id) : '',
+                          }
+                          updateNested('lookupSettings', {
+                            syncFieldsForAPI: current,
+                          })
+                        }}
+                      />
+                    </div>
+                    <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                    <div className='flex-1'>
+                      <InputText
+                        placeholder='API Parameter'
+                        value={sync.apiParam || ''}
+                        onChange={(val: string) => {
+                          const current = [
+                            ...(activeQuestion.settings.lookupSettings
+                              ?.syncFieldsForAPI || []),
+                          ]
+                          current[sIdx] = {
+                            ...current[sIdx],
+                            apiParam: val,
+                          }
+                          updateNested('lookupSettings', {
+                            syncFieldsForAPI: current,
+                          })
+                        }}
+                      />
+                    </div>
+                    <IconButton
+                      color='red'
+                      icon='lucide:trash-2'
+                      size='xs'
+                      variant='ghost'
+                      onClick={() => {
+                        const current = (
+                          activeQuestion.settings.lookupSettings
+                            ?.syncFieldsForAPI || []
+                        ).filter((_, idx) => idx !== sIdx)
+                        updateNested('lookupSettings', {
+                          syncFieldsForAPI: current,
+                        })
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Cascading Lookup Dependent Conditions */}
+              <div className='space-y-3 border-t border-gray-1 pt-3'>
+                <div className='text-xs font-bold text-gray-12'>
+                  Cascading Dependent Lookup
+                </div>
+                <div>
+                  <label className='mb-1 block text-xs font-medium text-gray-11'>
+                    Parent Field Filter
+                  </label>
+                  <InputSelect
+                    placeholder='Select Parent Field'
+                    options={allQuestions
+                      .filter((q) => q.id !== activeQuestion.id)
+                      .map((q) => ({ id: q.id, name: q.label }))}
+                    value={
+                      allQuestions
+                        .filter((q) => q.id !== activeQuestion.id)
+                        .map((q) => ({ id: q.id, name: q.label }))
+                        .find(
+                          (q) =>
+                            q.id ===
+                            activeQuestion.settings.lookupSettings?.parentField,
+                        ) || null
+                    }
+                    onChange={(val) => {
+                      updateNested('lookupSettings', {
+                        parentField: val?.id || '',
+                      })
+                    }}
+                  />
+                </div>
+                <InputText
+                  label='Mapping Field Key'
+                  placeholder='e.g. parent_id'
+                  value={
+                    activeQuestion.settings.lookupSettings?.mappingField || ''
+                  }
+                  onChange={(val: string) =>
+                    updateNested('lookupSettings', { mappingField: val })
+                  }
+                />
+                <div className='flex items-center justify-between py-1'>
+                  <div>
+                    <div className='text-xs font-bold text-gray-12'>
+                      Same Connection Context
+                    </div>
+                    <div className='text-[10px] text-gray-6'>
+                      Inherit target connection from parent field lookup
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={
+                      activeQuestion.settings.lookupSettings?.hasSameConnection ||
+                      false
+                    }
+                    onChange={(checked) =>
+                      updateNested('lookupSettings', {
+                        hasSameConnection: checked,
+                      })
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </SettingsSection>
         )}
@@ -3474,7 +4217,7 @@ const QuestionSettings = ({
       </SettingsSection>
 
       {/* 7. LOGIC SECTION */}
-      {!isShortText && !isDate && !isTime && !isDateTime && (
+      {!isDivider && (
         <SettingsSection
           icon='lucide:split'
           isOpen={openLogic}
@@ -3582,7 +4325,7 @@ const QuestionSettings = ({
                         <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
                           Then
                         </span>
-                        <div className='w-28'>
+                        <div className='flex-1'>
                           <InputSelect
                             options={logicActionOptions}
                             value={
@@ -3598,7 +4341,7 @@ const QuestionSettings = ({
                             }
                           />
                         </div>
-                        <span className='text-[11px] text-gray-6'>
+                        <span className='text-[11px] text-gray-6 shrink-0'>
                           this field
                         </span>
                       </div>

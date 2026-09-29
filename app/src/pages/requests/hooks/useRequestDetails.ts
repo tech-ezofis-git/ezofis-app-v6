@@ -8,11 +8,19 @@ export const useRequestDetail = (
   processId: number | string | null,
   transactionId: number | string | null,
   isProcessing?: boolean,
+  /** Fallback when the list payload omits formId (common after stage moves). */
+  fallbackFormId?: number | string | null,
 ) => {
   return useQuery({
     enabled:
       !!workflowId && !!processId && !String(processId).startsWith('job-'),
-    queryKey: ['request-detail', workflowId, processId, transactionId],
+    queryKey: [
+      'request-detail',
+      workflowId,
+      processId,
+      transactionId,
+      fallbackFormId ? String(fallbackFormId) : '',
+    ],
     queryFn: async () => {
       // 1. Fetch Basic Process Data from V6 API instead of discontinued rowInfo
       let processData: any = null
@@ -65,9 +73,13 @@ export const useRequestDetail = (
         throw new Error('Process details not found')
       }
 
-      // 2. Fetch Form Definition
+      // 2. Fetch Form Definition (ticket formId, else workflow formId)
       let formDefinition = null
-      const formId = processData.formId || processData.formData?.formId
+      const formId =
+        processData.formId ||
+        processData.formData?.formId ||
+        fallbackFormId ||
+        null
       if (formId) {
         try {
           formDefinition = await requestApi.getForm(formId)

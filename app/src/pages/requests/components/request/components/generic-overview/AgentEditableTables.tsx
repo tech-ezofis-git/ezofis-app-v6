@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import TableFieldRenderer, {
-  mapExternalRowsToTableColumns,
-} from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
+import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import { getFormPanels } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
+import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
+import QuoteLineItemsTable, {
+  normalizeLineItemRows,
+} from './QuoteLineItemsTable'
 
 const asBool = (value: unknown) =>
   value === true || value === 1 || value === 'true'
@@ -321,19 +323,37 @@ const AgentEditableTables = ({
 
   return (
     <div className='flex flex-col gap-5'>
-      {tables.map((table) => (
-        <TableFieldRenderer
-          field={table.field}
-          key={table.fieldId}
-          readOnly={readOnly}
-          showRowApprove={table.isLineItem}
-          value={draftRows[table.fieldId] ?? table.rows}
-          onChange={(rows) => {
-            setDraftRows((prev) => ({ ...prev, [table.fieldId]: rows }))
-            onFieldChange?.(table.fieldId, rows)
-          }}
-        />
-      ))}
+      {tables.map((table) => {
+        const columns = table.field?.settings?.specific?.tableColumns || []
+        const currentRows = draftRows[table.fieldId] ?? table.rows
+
+        if (table.isLineItem) {
+          const externalRows = normalizeLineItemRows(currentRows, columns)
+          return (
+            <QuoteLineItemsTable
+              items={externalRows}
+              key={table.fieldId}
+              readOnly={readOnly}
+              workflow={workflow}
+              onFieldChange={onFieldChange}
+            />
+          )
+        }
+
+        return (
+          <AgentFlatTable
+            columns={columns}
+            key={table.fieldId}
+            readOnly={readOnly}
+            rows={normalizeAgentTableRows(currentRows, columns)}
+            title={table.heading}
+            onChange={(rows) => {
+              setDraftRows((prev) => ({ ...prev, [table.fieldId]: rows }))
+              onFieldChange?.(table.fieldId, rows)
+            }}
+          />
+        )
+      })}
     </div>
   )
 }
