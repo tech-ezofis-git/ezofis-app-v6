@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Alert from '@/components/base/Alert'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
@@ -35,6 +35,12 @@ export default function IntelligentUploadFileCard({
 }: IntelligentUploadFileCardProps) {
   const { t } = useLingui()
   const [isExpanded, setIsExpanded] = useState(true)
+
+  useEffect(() => {
+    if (isIndexing) {
+      setIsExpanded(false)
+    }
+  }, [isIndexing])
 
   const iconMeta = useMemo(
     () => getFileIconMeta(fileItem.file.name),
@@ -146,6 +152,16 @@ export default function IntelligentUploadFileCard({
                       )}
                     </>
                   )}
+
+                  {isIndexing && (
+                    <span className='inline-flex items-center gap-1.5 font-medium text-accent-primary'>
+                      <Icon
+                        className='size-3.5 animate-spin'
+                        name='tabler:loader-2'
+                      />
+                      {t`Indexing...`}
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -177,16 +193,16 @@ export default function IntelligentUploadFileCard({
               <span>
                 <Button
                   color='primary'
-                  disabled={
-                    totalFilesCount <= 1 ||
-                    isIndexing ||
-                    !fileItem.selectedRepositoryId
-                  }
                   icon={isIndexing ? 'tabler:loader-2' : 'lucide:upload-cloud'}
                   iconClass={isIndexing ? 'animate-spin' : undefined}
                   label={isIndexing ? t`Indexing...` : t`Index this file`}
                   size='xs'
                   variant='outline'
+                  disabled={
+                    totalFilesCount <= 1 ||
+                    isIndexing ||
+                    !fileItem.selectedRepositoryId
+                  }
                   onClick={() => onIndexSingleFile?.(fileItem.id)}
                 />
               </span>
@@ -197,17 +213,17 @@ export default function IntelligentUploadFileCard({
             fileItem.suggestions &&
             fileItem.suggestions.length > 0 && (
               <Tooltip
-                content={
-                  isExpanded ? t`Hide suggestions` : t`View suggestions`
-                }
+                content={isExpanded ? t`Hide suggestions` : t`View suggestions`}
               >
                 <IconButton
+                  color='gray'
+                  variant='ghost'
                   aria-label={
                     isExpanded ? t`Hide suggestions` : t`View suggestions`
                   }
-                  color='gray'
-                  icon={isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'}
-                  variant='ghost'
+                  icon={
+                    isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'
+                  }
                   onClick={() => setIsExpanded(!isExpanded)}
                 />
               </Tooltip>
@@ -218,7 +234,7 @@ export default function IntelligentUploadFileCard({
               <IconButton
                 aria-label={t`Remove file`}
                 color='gray'
-                disabled={fileItem.status === 'processing'}
+                disabled={fileItem.status === 'processing' || isIndexing}
                 icon='lucide:trash-2'
                 variant='ghost'
                 onClick={() => onRemove(fileItem.id)}
@@ -228,8 +244,8 @@ export default function IntelligentUploadFileCard({
         </div>
       </div>
 
-      {/* Indeterminate loader bar during processing */}
-      {fileItem.status === 'processing' && (
+      {/* Indeterminate loader bar during processing or indexing */}
+      {(fileItem.status === 'processing' || isIndexing) && (
         <div className='mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-secondary'>
           <div className='h-full w-2/5 animate-pulse rounded-full bg-accent-primary duration-700' />
         </div>

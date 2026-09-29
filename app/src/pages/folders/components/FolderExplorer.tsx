@@ -2,22 +2,23 @@ import { useLingui } from '@lingui/react/macro'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
-import showToast from '@/components/base/toast/showToast'
 import uploadAndIndexApi, {
   type IndexStageFileRequest,
 } from '@/api/v6/uploadAndIndex'
+import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
-import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
+import { isDemoAppOrigin } from '@/utils/origin'
 import type { AppView, FileItem } from '../types/folderTypes'
+import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
+import { markFolderExplorerAskAiQuery } from '../utils/folderExplorerSession'
 import {
   findRepositoryNodeId,
   getRepositoryRootNodeId,
 } from '../utils/folderExplorerUtils'
-import { markFolderExplorerAskAiQuery } from '../utils/folderExplorerSession'
+import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -28,7 +29,6 @@ import IntelligentUploadView from './IntelligentUpload/IntelligentUploadView'
 import { StartWorkflowView } from './StartWorkflowView'
 import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
-import { isDemoAppOrigin } from '@/utils/origin'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
@@ -314,9 +314,7 @@ export function FolderExplorer() {
         fields,
         itemId: null,
         ocrResult: null,
-        repositoryId: String(
-          file.repositoryId || resolvedRepositoryId || '',
-        ),
+        repositoryId: String(file.repositoryId || resolvedRepositoryId || ''),
         status: 'Indexing',
       }
     },
@@ -338,10 +336,7 @@ export function FolderExplorer() {
       }
 
       const payload = buildStageFileIndexPayload(file)
-      const { error } = await uploadAndIndexApi.indexStageFile(
-        stageId,
-        payload,
-      )
+      const { error } = await uploadAndIndexApi.indexStageFile(stageId, payload)
 
       if (error) {
         showToast({
@@ -853,9 +848,31 @@ export function FolderExplorer() {
         candidateRepositories={candidateRepos}
         repositoryId={resolvedRepositoryId || null}
         onBack={() => setAppView('explorer')}
-        onDone={async () => {
-          setAppView('explorer')
-          await refreshData()
+        onDone={async (targetRepositoryId?: string) => {
+          console.log(
+            '[FolderExplorer] onDone triggered with targetRepositoryId:',
+            targetRepositoryId,
+          )
+          if (targetRepositoryId) {
+            const targetNodeId =
+              findRepositoryNodeId(tree, targetRepositoryId) ||
+              encodeRepositoryNodeId({
+                kind: 'repository',
+                label: 'Repository',
+                repositoryId: targetRepositoryId,
+              })
+            console.log(
+              '[FolderExplorer] Resolved targetNodeId in tree for selectFolder:',
+              targetNodeId,
+            )
+            selectFolder(targetNodeId)
+          } else {
+            console.log(
+              '[FolderExplorer] Navigating back to main explorer view',
+            )
+            setAppView('explorer')
+            await refreshData()
+          }
         }}
       />
     )
@@ -938,11 +955,16 @@ export function FolderExplorer() {
           setView={changeViewMode}
           onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
+          onDeleteFile={handleDeleteArchivedFile}
+          onDeleteStagedFile={handleDeleteStagedFile}
+          onDeleteStagedFiles={handleDeleteStagedFiles}
           onEdit={
             folderPermissions.editMetadata
               ? (id) => handleFileAction(id, 'editMetadata')
               : undefined
           }
+          onExportStagedFile={handleExportStagedFile}
+          onExportStagedFiles={handleExportStagedFiles}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
@@ -968,16 +990,10 @@ export function FolderExplorer() {
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFiles : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
-          onDeleteFile={handleDeleteArchivedFile}
-          onDeleteStagedFile={handleDeleteStagedFile}
-          onDeleteStagedFiles={handleDeleteStagedFiles}
-          onExportStagedFile={handleExportStagedFile}
-          onExportStagedFiles={handleExportStagedFiles}
         />
       </div>
     )
   }
-
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
@@ -1038,7 +1054,6 @@ export function FolderExplorer() {
         <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
-              repositoryId={resolvedRepositoryId}
               fileColumns={fileColumns}
               fileFilters={fileFilters}
               filePage={filePage}
@@ -1055,16 +1070,22 @@ export function FolderExplorer() {
               loadingPage={loadingPage}
               permissions={folderPermissions}
               refreshing={refreshing}
+              repositoryId={resolvedRepositoryId}
               uploadDisabled={!canUpload}
               folderTotalCount={
                 activeFolder ? folderPage?.totalCount : displayFolders.length
               }
               onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
+              onDeleteFile={handleDeleteArchivedFile}
+              onDeleteStagedFile={handleDeleteStagedFile}
+              onDeleteStagedFiles={handleDeleteStagedFiles}
               onEditMetadata={
                 folderPermissions.editMetadata
                   ? (id) => handleFileAction(id, 'editMetadata')
                   : undefined
               }
+              onExportStagedFile={handleExportStagedFile}
+              onExportStagedFiles={handleExportStagedFiles}
               onLoadMoreFolders={loadMoreFolders}
               onOpenFile={openDetailsFile}
               onOpenFolder={openFolder}
@@ -1074,11 +1095,6 @@ export function FolderExplorer() {
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
               onWorkflow={(id) => handleFileAction(id, 'workflow')}
-              onDeleteFile={handleDeleteArchivedFile}
-              onDeleteStagedFile={handleDeleteStagedFile}
-              onDeleteStagedFiles={handleDeleteStagedFiles}
-              onExportStagedFile={handleExportStagedFile}
-              onExportStagedFiles={handleExportStagedFiles}
             />
           </div>
         </main>

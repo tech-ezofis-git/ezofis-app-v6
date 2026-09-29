@@ -32,6 +32,7 @@ import { TODAY } from '@/pages/dashboard/utils/dashboardData'
 import { parseFilterValues } from '@/utils/filterUtils'
 import cn from '@/utils/cn'
 import showToast from '@/components/base/toast/showToast'
+import { parseInsightText } from '@/utils/parseInsightText'
 import { SkeletonCard } from '@/components/common/skeletons'
 
 function hasData(obj: any): boolean {
@@ -561,8 +562,12 @@ export default function DashboardCharts() {
       if (typeof insight === 'object' && insight !== null && 'node' in insight) {
         return insight
       }
+      const textVal =
+        typeof insight === 'object' && insight !== null
+          ? insight.text || insight.observation || insight.title || ''
+          : String(insight || '')
       return {
-        node: <span>{insight}</span>,
+        node: <span>{parseInsightText(textVal)}</span>,
       }
     })
   }, [dashboardData])
