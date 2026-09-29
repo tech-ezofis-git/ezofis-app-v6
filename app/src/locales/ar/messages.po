@@ -226,7 +226,7 @@ msgstr "{activeCard}"
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} من مسارات العمل النشطة"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:972
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:976
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "تم العثور على {count} من البنود في المستند الذي تم تحميله."
 
@@ -615,7 +615,7 @@ msgstr "الإجراء مطلوب"
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:191
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:583
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1030
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1034
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
@@ -858,8 +858,8 @@ msgstr "إضافة البوابة"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:238
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:170
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:569
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:936
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:947
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:940
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:951
 msgid "Add Row"
 msgstr "إضافة صف"
 
@@ -896,7 +896,7 @@ msgstr "أضف وعدّل وأدر مستخدمي المنصة. قم بتكوي�
 msgid "Additional conditions"
 msgstr "شروط إضافية"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:420
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:432
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:220
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:319
 #: src/pages/settings/components/credits/Credits.tsx:467
@@ -1413,10 +1413,10 @@ msgstr "خريطة حرارية لتأخير الاعتماد"
 
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:231
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:233
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:794
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:796
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1030
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1127
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:891
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:893
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1034
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1131
 msgid "Approve"
 msgstr ""
 
@@ -1426,9 +1426,9 @@ msgstr ""
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:223
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:225
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:786
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1114
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:883
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:885
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1118
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
 msgstr "موافق عليه"
@@ -1607,14 +1607,14 @@ msgstr "إرفاق ملف (اختياري)..."
 #~ msgstr "إرفاق بالفاتورة"
 
 #: src/pages/portal/components/PortalDetail.tsx:288
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1424
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1442
 msgid "Attachment"
 msgstr "مرفق"
 
 #: src/pages/portal/components/PortalDetail.tsx:337
 #: src/pages/portal/components/PortalWizard.tsx:1063
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:396
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:428
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:408
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:440
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
@@ -2532,7 +2532,7 @@ msgstr "رقم العميل"
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:289
 #: src/pages/folders/components/SignRequestAssignForm.tsx:529
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:495
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1341
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1359
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:799
@@ -2630,8 +2630,8 @@ msgid "Coming Soon"
 msgstr "قريباً"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1577
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:402
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:434
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:414
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:446
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
@@ -2759,7 +2759,7 @@ msgid "Configure application navigation menus, route paths, and display order"
 msgstr "قم بتكوين قوائم التنقل في التطبيق ومسارات المسار وترتيب العرض"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:472
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:221
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:229
 msgid "Configure Approvers"
 msgstr "تكوين الموافقين"
 
@@ -3029,7 +3029,7 @@ msgstr "تعذر إنشاء الحقول. جرّب «الحقول الموصى �
 msgid "Could not generate folder configuration. Try again."
 msgstr "تعذر إنشاء تكوين المجلد. حاول مرة أخرى."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:822
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:826
 msgid "Could not read that file."
 msgstr "لا يمكن قراءة هذا الملف."
 
@@ -3637,9 +3637,9 @@ msgstr "حذف الدور"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:437
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:242
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:244
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:804
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:806
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1132
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:901
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:903
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1136
 msgid "Delete row"
 msgstr "حذف الصف"
 
@@ -3794,6 +3794,8 @@ msgstr ""
 
 #: src/pages/forms/FormsPage.tsx:204
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:308
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:791
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:812
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:515
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4647
@@ -3949,7 +3951,7 @@ msgid "Document deleted successfully."
 msgstr ""
 
 #: src/pages/folders/components/StartWorkflowView.tsx:509
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:243
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:251
 msgid "Document Details"
 msgstr ""
 
@@ -4969,7 +4971,7 @@ msgstr ""
 msgid "Export staged files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:924
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:928
 msgid "Export to Excel"
 msgstr "تصدير إلى إكسل"
 
@@ -4992,7 +4994,7 @@ msgid "EXTRACTED"
 msgstr "مستخرج"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2769
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:384
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:396
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4331
 #: src/pages/requests/components/RequestSummary.tsx:194
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:279
@@ -5331,10 +5333,10 @@ msgstr "فشل تحديث المجلد: {0}"
 msgid "Failed to upload master file to the server"
 msgstr "فشل في تحميل الملف الرئيسي إلى الخادم"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:971
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:994
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1049
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1073
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:989
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1012
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1067
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1091
 msgid "Failed to upload the file."
 msgstr "فشل تحميل الملف."
 
@@ -6262,9 +6264,9 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "نتائج المطابقة التاريخية"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:404
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:436
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1338
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:416
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:448
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1356
 #: src/pages/requests/components/request/components/Header.tsx:470
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4351
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:299
@@ -6344,11 +6346,11 @@ msgstr "خادم IMAP"
 msgid "Immediate Invoice Processing"
 msgstr "معالجة فورية للفواتير"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:914
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:918
 msgid "Import CSV/Excel"
 msgstr "استيراد CSV/اكسل"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:981
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:985
 msgid "Import extracted items"
 msgstr "استيراد العناصر المستخرجة"
 
@@ -7094,7 +7096,7 @@ msgstr "مطابقة بنود السطر"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:389
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:401
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:560
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
@@ -8129,7 +8131,7 @@ msgstr "تضييق نطاق الصفوف"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "قم بتضييق نطاق الصفوف التي يتضمنها هذا التقرير. اتركه فارغاً لتضمين كل الصفوف."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:734
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:831
 msgid "needs engineering review"
 msgstr ""
 
@@ -8337,7 +8339,7 @@ msgstr "لا يوجد تقييم للامتثال متاح."
 msgid "No consumption data for this period."
 msgstr "لا توجد بيانات استهلاك لهذه الفترة."
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:589
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:607
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:563
 msgid "No data available yet."
 msgstr ""
@@ -8359,12 +8361,12 @@ msgstr "لا توجد تفاصيل قرار متاحة لهذا الطلب."
 msgid "No distribution data for this period."
 msgstr "لا توجد بيانات توزيع لهذه الفترة."
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:206
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:492
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:214
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:510
 msgid "No document attached"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:266
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:274
 msgid "No document details available."
 msgstr ""
 
@@ -8464,6 +8466,10 @@ msgstr "لم يتم العثور على لوحات نماذج لهذا الطل�
 #~ msgid "No forms found for this source type."
 #~ msgstr "لم يتم العثور على نماذج لنوع المصدر هذا."
 
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:203
+msgid "No generated document yet"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:2200
 msgid "No groups available from the API yet."
 msgstr "لا توجد مجموعات متاحة من API حتى الآن."
@@ -8502,7 +8508,7 @@ msgstr "لم يتم استخراج أي حقائق أساسية."
 msgid "No logs found"
 msgstr "لم يتم العثور على سجلات"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:816
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:820
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "لم يتم العثور على أعمدة متطابقة - يجب أن تتطابق رؤوس CSV/Excel مع أسماء أعمدة الجدول."
 
@@ -8710,7 +8716,7 @@ msgstr "لا تتوفر رؤية واضحة لاتجاهات الموردين."
 msgid "No suppliers found"
 msgstr "لم يتم العثور على الموردين"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:858
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:862
 msgid "No table columns configured."
 msgstr "لم يتم تكوين أي أعمدة جدول."
 
@@ -10202,7 +10208,7 @@ msgstr "الطلب السابق"
 msgid "Previous step"
 msgstr "الخطوة السابقة"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:767
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:864
 msgid "Price"
 msgstr ""
 
@@ -10292,7 +10298,7 @@ msgid "Processing Timeline"
 msgstr "الجدول الزمني للمعالجة"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:458
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:179
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:219
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:933
 msgid "Processing..."
 msgstr "جاري المعالجة..."
@@ -10305,7 +10311,7 @@ msgstr "المشتريات (أوامر الشراء والطلبات)"
 msgid "Procurement Agent"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:689
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:737
 msgid "Product"
 msgstr ""
 
@@ -10394,7 +10400,7 @@ msgstr "محذوف"
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "ضع المتأخر أولاً باللون الأحمر. مخطط دائري مجوف على اليسار باللون الأزرق..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:750
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:847
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:519
 msgid "Qty"
@@ -11511,7 +11517,7 @@ msgid "Scan QR"
 msgstr "مسح QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:890
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:894
 msgid "Scan QR / Barcode"
 msgstr "مسح QR / الباركود"
 
@@ -11856,7 +11862,7 @@ msgstr "بروتوكول الأمان"
 msgid "See the Attachments section for uploaded files."
 msgstr "راجع قسم المرفقات للاطلاع على الملفات التي تم تحميلها."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1011
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1015
 #: src/pages/settings/components/ManageUser.tsx:1903
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -12131,7 +12137,7 @@ msgstr "حدد المستلمين"
 msgid "Select role"
 msgstr "حدد الدور"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1075
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1079
 msgid "Select row"
 msgstr "حدد الصف"
 
@@ -13573,6 +13579,10 @@ msgstr "واجه الخادم خطأ أثناء استيراد أوامر الش
 msgid "The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve."
 msgstr ""
 
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:206
+msgid "The uploaded file is shown on the left. A generated document will appear here when it is available."
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:477
 msgid "The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match."
 msgstr ""
@@ -13853,7 +13863,7 @@ msgstr "أعلى الوكلاء استخداماً للرصيد · {periodSubtit
 #~ msgstr "تركز أعلى 3"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1150
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1154
 msgid "Total"
 msgstr "المجموع"
 
