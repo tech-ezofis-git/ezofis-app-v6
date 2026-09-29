@@ -155,7 +155,7 @@ msgid "{0} people"
 msgstr "{0} people"
 
 #. placeholder {0}: doc.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:105
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:106
 msgid "{0} preview"
 msgstr "{0} preview"
 
@@ -460,7 +460,7 @@ msgstr "$5k - $10k"
 msgid "0 fields"
 msgstr "0 fields"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:667
+#: src/pages/forms/components/GenericFormImportModal.tsx:671
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1346
 msgid "0 skipped"
 msgstr "0 skipped"
@@ -473,7 +473,7 @@ msgstr "1 document in queue"
 #~ msgid "1 file"
 #~ msgstr "1 file"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:603
+#: src/pages/forms/components/GenericFormImportModal.tsx:607
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1274
 msgid "1 sheet"
 msgstr "1 sheet"
@@ -559,11 +559,11 @@ msgstr "9 vendors"
 msgid "91% average"
 msgstr "91% average"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:724
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:772
 msgid "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
 msgstr "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:509
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:510
 msgid "A quantity on the invoice does not match the purchase order or the receipt. One or more lines are short or over."
 msgstr "A quantity on the invoice does not match the purchase order or the receipt. One or more lines are short or over."
 
@@ -633,12 +633,12 @@ msgid "Action Required"
 msgstr "Action Required"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2139
-#: src/pages/forms/FormEntriesPage.tsx:1283
+#: src/pages/forms/FormEntriesPage.tsx:1548
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/reports/components/ReportsListView.tsx:208
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1919
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:191
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:551
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:583
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1030
 #: src/pages/settings/components/Menus.tsx:415
@@ -710,13 +710,13 @@ msgid "Actual vs projected"
 msgstr "Actual vs projected"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:276
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:245
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:439
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:247
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:441
 msgid "Add"
 msgstr "Add"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:694
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:734
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:714
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:754
 msgid "Add \"{query}\""
 msgstr "Add \"{query}\""
 
@@ -781,8 +781,8 @@ msgstr "Add condition"
 msgid "Add connection"
 msgstr "Add connection"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:264
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:458
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:266
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:460
 msgid "Add custom option"
 msgstr "Add custom option"
 
@@ -791,7 +791,7 @@ msgstr "Add custom option"
 msgid "Add Document Rule"
 msgstr "Add Document Rule"
 
-#: src/pages/forms/FormEntriesPage.tsx:2045
+#: src/pages/forms/FormEntriesPage.tsx:2158
 msgid "Add Entry"
 msgstr "Add Entry"
 
@@ -837,8 +837,8 @@ msgstr "Add First Row"
 msgid "Add Group"
 msgstr "Add Group"
 
-#: src/pages/forms/FormEntriesPage.tsx:265
-#: src/pages/forms/FormEntriesPage.tsx:545
+#: src/pages/forms/FormEntriesPage.tsx:529
+#: src/pages/forms/FormEntriesPage.tsx:809
 msgid "Add Line Item"
 msgstr "Add Line Item"
 
@@ -882,7 +882,7 @@ msgstr "Add Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:238
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:170
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:536
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:569
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:936
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:947
 msgid "Add Row"
@@ -987,7 +987,7 @@ msgstr "AI Decision"
 #~ msgid "AI Extract"
 #~ msgstr "AI Extract"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:537
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:538
 msgid "AI EXTRACTION"
 msgstr "AI EXTRACTION"
 
@@ -1083,7 +1083,7 @@ msgstr ""
 msgid "AI-generated insights"
 msgstr "AI-generated insights"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:538
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:539
 msgid "AI-powered extraction in seconds"
 msgstr "AI-powered extraction in seconds"
 
@@ -1107,7 +1107,7 @@ msgstr "Align data fields"
 msgid "Align your file columns with Master Fields to ensure accurate data processing."
 msgstr "Align your file columns with Master Fields to ensure accurate data processing."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:716
+#: src/pages/forms/components/GenericFormImportModal.tsx:720
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1414
 msgid "Aligning CSV/XLSX headers with database mapping schema."
 msgstr "Aligning CSV/XLSX headers with database mapping schema."
@@ -1176,7 +1176,7 @@ msgstr "All folders"
 #~ msgid "All folders you can access"
 #~ msgstr "All folders you can access"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:469
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:471
 msgid "All options must be checked to fulfill requirements."
 msgstr "All options must be checked to fulfill requirements."
 
@@ -1258,7 +1258,7 @@ msgstr "An error occurred: {0}"
 msgid "Analysis"
 msgstr "Analysis"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:551
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:552
 msgid "ANALYTICS"
 msgstr "ANALYTICS"
 
@@ -1292,7 +1292,7 @@ msgstr "Analyzing file and mapping fields..."
 msgid "Analyzing folder metadata…"
 msgstr "Analyzing folder metadata…"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:826
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:874
 msgid "Analyzing Invoice..."
 msgstr "Analyzing Invoice..."
 
@@ -1304,7 +1304,7 @@ msgstr "Analyzing Invoice..."
 msgid "Analyzing spatial layout"
 msgstr "Analyzing spatial layout"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:835
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:883
 msgid "Analyzing Supplier..."
 msgstr ""
 
@@ -1347,7 +1347,7 @@ msgid "AP agent"
 msgstr "AP agent"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:161
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:897
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:945
 msgid "AP Agent"
 msgstr "AP Agent"
 
@@ -1390,7 +1390,7 @@ msgstr "API Playground"
 msgid "API URL"
 msgstr "API URL"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:738
+#: src/pages/forms/components/GenericFormImportModal.tsx:742
 msgid "Append"
 msgstr "Append"
 
@@ -1438,8 +1438,8 @@ msgstr "Approval delay heat map"
 
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:231
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:233
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:754
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:756
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:794
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:796
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1030
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1127
 msgid "Approve"
@@ -1451,8 +1451,8 @@ msgstr "Approve"
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:223
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:225
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:746
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:748
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:786
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:788
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1114
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
@@ -1545,11 +1545,11 @@ msgstr "Are you sure you want to export {selectedStagedCount} selected staged fi
 msgid "Are you sure you want to export 1 selected staged file?"
 msgstr "Are you sure you want to export 1 selected staged file?"
 
-#: src/pages/forms/FormEntriesPage.tsx:2070
+#: src/pages/forms/FormEntriesPage.tsx:2183
 msgid "Are you sure you want to move"
 msgstr "Are you sure you want to move"
 
-#: src/pages/forms/FormEntriesPage.tsx:2078
+#: src/pages/forms/FormEntriesPage.tsx:2191
 msgid "Are you sure you want to permanently delete"
 msgstr "Are you sure you want to permanently delete"
 
@@ -1641,7 +1641,7 @@ msgstr "Attachment"
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:396
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:428
 #: src/pages/requests/components/request/components/Header.tsx:475
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:46
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4341
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
@@ -1691,7 +1691,7 @@ msgstr "Authenticator App"
 msgid "Authorized Amount"
 msgstr "Authorized Amount"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:477
+#: src/pages/forms/components/GenericFormImportModal.tsx:481
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:991
 msgid "Auto Column Mapping"
 msgstr "Auto Column Mapping"
@@ -1733,7 +1733,7 @@ msgstr "Automatic backups and versioning support"
 msgid "Automatic file metadata sync"
 msgstr "Automatic file metadata sync"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:476
+#: src/pages/forms/components/GenericFormImportModal.tsx:480
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:990
 msgid "Automatically links file columns"
 msgstr "Automatically links file columns"
@@ -1802,7 +1802,7 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/portal/components/PortalShell.tsx:135
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:60
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:64
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1117
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5393
@@ -1846,7 +1846,7 @@ msgstr "Back to Designer"
 msgid "Back to Document"
 msgstr "Back to Document"
 
-#: src/pages/forms/FormEntriesPage.tsx:1526
+#: src/pages/forms/FormEntriesPage.tsx:1793
 msgid "Back to Entries"
 msgstr "Back to Entries"
 
@@ -1862,7 +1862,7 @@ msgstr "Back to folder"
 msgid "Back to folder explorer"
 msgstr "Back to folder explorer"
 
-#: src/pages/forms/FormEntriesPage.tsx:2023
+#: src/pages/forms/FormEntriesPage.tsx:2136
 msgid "Back to Forms"
 msgstr "Back to Forms"
 
@@ -1899,7 +1899,7 @@ msgstr "Back to versions"
 msgid "Back to workflows"
 msgstr "Back to workflows"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:468
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Backorder"
 msgstr "Backorder"
 
@@ -1977,16 +1977,16 @@ msgstr "Breadcrumb"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:115
 #: src/pages/folders/components/Upload/Upload.tsx:2461
-#: src/pages/forms/components/GenericFormImportModal.tsx:401
+#: src/pages/forms/components/GenericFormImportModal.tsx:405
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:322
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:970
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1018
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:168
 #: src/pages/requests/components/workflow-request/components/CompactDropzone.tsx:72
 msgid "browse"
 msgstr "browse"
 
-#: src/pages/forms/FormEntriesPage.tsx:2036
+#: src/pages/forms/FormEntriesPage.tsx:2149
 msgid "Browse"
 msgstr "Browse"
 
@@ -2047,12 +2047,12 @@ msgstr "Built-in secure storage"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Bulk action \"{0}\" applied to {1} requests successfully!"
 
-#: src/pages/forms/FormEntriesPage.tsx:2147
+#: src/pages/forms/FormEntriesPage.tsx:2260
 msgid "Bulk Import"
 msgstr "Bulk Import"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:346
-#: src/pages/forms/components/GenericFormImportModal.tsx:359
+#: src/pages/forms/components/GenericFormImportModal.tsx:350
+#: src/pages/forms/components/GenericFormImportModal.tsx:363
 msgid "Bulk Import Entries"
 msgstr "Bulk Import Entries"
 
@@ -2158,10 +2158,10 @@ msgstr "Can View"
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:99
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:157
 #: src/pages/folders/components/Upload/Upload.tsx:2939
-#: src/pages/forms/components/GenericFormImportModal.tsx:856
-#: src/pages/forms/FormEntriesPage.tsx:377
-#: src/pages/forms/FormEntriesPage.tsx:1996
-#: src/pages/forms/FormEntriesPage.tsx:2095
+#: src/pages/forms/components/GenericFormImportModal.tsx:860
+#: src/pages/forms/FormEntriesPage.tsx:641
+#: src/pages/forms/FormEntriesPage.tsx:2109
+#: src/pages/forms/FormEntriesPage.tsx:2208
 #: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/reports/components/ReportsListView.tsx:282
@@ -2170,8 +2170,8 @@ msgstr "Can View"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1113
 #: src/pages/requests/components/request/ForwardPopover.tsx:186
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:254
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:448
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:256
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:450
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:614
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:266
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:188
@@ -2383,7 +2383,7 @@ msgstr "Choose columns"
 msgid "Choose fields"
 msgstr "Choose fields"
 
-#: src/pages/forms/FormEntriesPage.tsx:1934
+#: src/pages/forms/FormEntriesPage.tsx:2047
 msgid "Choose File"
 msgstr "Choose File"
 
@@ -2510,7 +2510,7 @@ msgstr "Click a slice to open matching list"
 msgid "Click a supplier's bar to drill down"
 msgstr "Click a supplier's bar to drill down"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1000
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1048
 msgid "Click any preview to process"
 msgstr "Click any preview to process"
 
@@ -2603,7 +2603,7 @@ msgstr "Collapse"
 #~ msgid "Collapse All"
 #~ msgstr "Collapse All"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:639
+#: src/pages/forms/components/GenericFormImportModal.tsx:643
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1317
 msgid "Column & Row Extraction"
 msgstr "Column & Row Extraction"
@@ -2635,13 +2635,13 @@ msgstr "Column Type"
 msgid "Column Width (px)"
 msgstr "Column Width (px)"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:662
+#: src/pages/forms/components/GenericFormImportModal.tsx:666
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1341
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:230
 msgid "columns"
 msgstr "columns"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:660
+#: src/pages/forms/components/GenericFormImportModal.tsx:664
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1339
 msgid "Columns Found"
 msgstr "Columns Found"
@@ -2662,7 +2662,7 @@ msgstr "Coming Soon"
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:402
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:434
 #: src/pages/requests/components/request/components/Header.tsx:481
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:52
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4346
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
@@ -2679,7 +2679,7 @@ msgstr "Comments"
 #~ msgid "Complete"
 #~ msgstr "Complete"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:431
 msgid "Complete document match."
 msgstr "Complete document match."
 
@@ -2691,7 +2691,7 @@ msgstr "Complete each stage, then continue"
 msgid "Complete editing session"
 msgstr "Complete editing session"
 
-#: src/pages/forms/FormEntriesPage.tsx:1545
+#: src/pages/forms/FormEntriesPage.tsx:1812
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Complete required form information using the metadata-driven enterprise canvas below."
 
@@ -2699,7 +2699,7 @@ msgstr "Complete required form information using the metadata-driven enterprise 
 msgid "Complete setup to start your AP automation."
 msgstr "Complete setup to start your AP automation."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:710
+#: src/pages/forms/components/GenericFormImportModal.tsx:714
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
 #: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
@@ -2710,12 +2710,12 @@ msgstr "Completed"
 #~ msgid "Completed ({completedCount})"
 #~ msgstr "Completed ({completedCount})"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:565
+#: src/pages/forms/components/GenericFormImportModal.tsx:569
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1234
 msgid "Completed in 0.4s"
 msgstr "Completed in 0.4s"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:643
+#: src/pages/forms/components/GenericFormImportModal.tsx:647
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1321
 msgid "Completed in 0.9s"
 msgstr ""
@@ -2748,7 +2748,7 @@ msgstr "Conditions"
 msgid "Confidence"
 msgstr "Confidence"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:728
+#: src/pages/forms/components/GenericFormImportModal.tsx:732
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1429
 msgid "Confidence Level"
 msgstr "Confidence Level"
@@ -2832,7 +2832,7 @@ msgstr "Confirm"
 msgid "Confirm & Ingest"
 msgstr "Confirm & Ingest"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:865
+#: src/pages/forms/components/GenericFormImportModal.tsx:869
 msgid "Confirm & Ingest Entries"
 msgstr "Confirm & Ingest Entries"
 
@@ -2933,6 +2933,14 @@ msgstr "Connection Successful! SAP ERP ({sapSystemId}) RFC Destination verified 
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:172
 msgid "Connector"
 msgstr "Connector"
+
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:88
+msgid "Console"
+msgstr "Console"
+
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:86
+msgid "Console / Workflow API"
+msgstr "Console / Workflow API"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1922
 msgid "Contact Vendor"
@@ -3224,8 +3232,8 @@ msgid "Created by"
 msgstr "Created by"
 
 #: src/pages/folders/components/FolderTable.tsx:1737
-#: src/pages/forms/FormEntriesPage.tsx:1269
-#: src/pages/forms/FormEntriesPage.tsx:2166
+#: src/pages/forms/FormEntriesPage.tsx:1534
+#: src/pages/forms/FormEntriesPage.tsx:2279
 #: src/pages/forms/FormsPage.tsx:229
 #: src/pages/forms/FormsPage.tsx:614
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2183
@@ -3236,7 +3244,7 @@ msgstr "Created by"
 msgid "Created By"
 msgstr "Created By"
 
-#: src/pages/forms/FormEntriesPage.tsx:2174
+#: src/pages/forms/FormEntriesPage.tsx:2287
 #: src/pages/forms/FormsPage.tsx:625
 #: src/pages/settings/components/AuditMonitoring.tsx:359
 #: src/pages/workflows/components/Table.tsx:509
@@ -3479,7 +3487,7 @@ msgstr "Data extraction complete"
 msgid "Data Preview"
 msgstr "Data Preview"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:674
+#: src/pages/forms/components/GenericFormImportModal.tsx:678
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1353
 msgid "Data Rows"
 msgstr "Data Rows"
@@ -3662,8 +3670,8 @@ msgstr "Delete Group"
 msgid "Delete Menu"
 msgstr "Delete Menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:1329
-#: src/pages/forms/FormEntriesPage.tsx:2113
+#: src/pages/forms/FormEntriesPage.tsx:1594
+#: src/pages/forms/FormEntriesPage.tsx:2226
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
@@ -3682,13 +3690,13 @@ msgstr "Delete Role"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:437
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:242
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:244
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:764
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:766
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:804
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:806
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1132
 msgid "Delete row"
 msgstr "Delete row"
 
-#: src/pages/forms/FormEntriesPage.tsx:635
+#: src/pages/forms/FormEntriesPage.tsx:899
 msgid "Delete Row"
 msgstr "Delete Row"
 
@@ -3839,8 +3847,6 @@ msgstr "Describe your report for \"{0}\""
 
 #: src/pages/forms/FormsPage.tsx:204
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:308
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:687
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:701
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:515
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4647
@@ -4187,7 +4193,7 @@ msgstr "Download PO Master Demo Data"
 msgid "Download PO Template"
 msgstr "Download PO Template"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:425
+#: src/pages/forms/components/GenericFormImportModal.tsx:429
 msgid "Download Sample Template"
 msgstr "Download Sample Template"
 
@@ -4201,7 +4207,7 @@ msgid "Download the predefined PO Master Data template file to view reference re
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1944
-#: src/pages/forms/components/GenericFormImportModal.tsx:424
+#: src/pages/forms/components/GenericFormImportModal.tsx:428
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:900
 msgid "Downloading..."
 msgstr "Downloading..."
@@ -4286,9 +4292,9 @@ msgstr "Drop multiple files to automatically classify document types and route t
 #~ msgstr "Drop multiple files to automatically classify document types and route to target repositories."
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:114
-#: src/pages/forms/components/GenericFormImportModal.tsx:399
+#: src/pages/forms/components/GenericFormImportModal.tsx:403
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:321
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:969
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1017
 msgid "Drop your file here, or"
 msgstr "Drop your file here, or"
 
@@ -4471,7 +4477,7 @@ msgstr "Each batch needs manual confirmation before it runs."
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:541
 #: src/pages/dashboard/DashboardPage.tsx:415
 #: src/pages/dashboard/DashboardPage.tsx:420
-#: src/pages/forms/FormEntriesPage.tsx:1306
+#: src/pages/forms/FormEntriesPage.tsx:1571
 #: src/pages/forms/FormsPage.tsx:281
 #: src/pages/reports/components/RowActionsMenu.tsx:34
 #: src/pages/requests/components/Table.tsx:113
@@ -4539,7 +4545,7 @@ msgstr "Edit Folder Security Policy"
 #~ msgid "Edit Folder Setup"
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:1540
+#: src/pages/forms/FormEntriesPage.tsx:1807
 msgid "Edit Form Entry"
 msgstr "Edit Form Entry"
 
@@ -4551,8 +4557,8 @@ msgstr "Edit Group"
 #~ msgid "Edit Group Setup"
 #~ msgstr "Edit Group Setup"
 
-#: src/pages/forms/FormEntriesPage.tsx:265
-#: src/pages/forms/FormEntriesPage.tsx:627
+#: src/pages/forms/FormEntriesPage.tsx:529
+#: src/pages/forms/FormEntriesPage.tsx:891
 msgid "Edit Line Item"
 msgstr "Edit Line Item"
 
@@ -4673,16 +4679,16 @@ msgstr "Employee ID"
 msgid "empty"
 msgstr "empty"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:830
+#: src/pages/forms/components/GenericFormImportModal.tsx:834
 msgid "Empty"
 msgstr "Empty"
 
-#: src/pages/forms/FormEntriesPage.tsx:1249
-#: src/pages/forms/FormEntriesPage.tsx:1259
+#: src/pages/forms/FormEntriesPage.tsx:1514
+#: src/pages/forms/FormEntriesPage.tsx:1524
 msgid "Empty form field"
 msgstr "Empty form field"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:666
+#: src/pages/forms/components/GenericFormImportModal.tsx:670
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1345
 msgid "Empty Rows Skipped"
 msgstr "Empty Rows Skipped"
@@ -4757,7 +4763,7 @@ msgstr "Enter folder name…"
 msgid "Enter IMAP server details for your custom email provider."
 msgstr "Enter IMAP server details for your custom email provider."
 
-#: src/pages/forms/FormEntriesPage.tsx:268
+#: src/pages/forms/FormEntriesPage.tsx:532
 msgid "Enter itemized quantity, pricing, and specs inline below."
 msgstr "Enter itemized quantity, pricing, and specs inline below."
 
@@ -4840,7 +4846,7 @@ msgstr "Enterprise-grade encryption at rest"
 msgid "Entity supplying goods"
 msgstr "Entity supplying goods"
 
-#: src/pages/forms/FormEntriesPage.tsx:2215
+#: src/pages/forms/FormEntriesPage.tsx:2328
 msgid "Entries"
 msgstr "Entries"
 
@@ -4880,7 +4886,7 @@ msgstr "ERP System"
 msgid "Error Severity"
 msgstr "Error Severity"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:861
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:909
 msgid "Error starting workflow"
 msgstr "Error starting workflow"
 
@@ -4913,7 +4919,7 @@ msgstr "Escalated{assignee}"
 msgid "Event Title"
 msgstr "Event Title"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:432
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:433
 msgid "Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently."
 msgstr "Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently."
 
@@ -4921,7 +4927,7 @@ msgstr "Every invoice line matches the purchase order and the goods receipt. Not
 msgid "Exact Invoice Number string similarity."
 msgstr "Exact Invoice Number string similarity."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:779
+#: src/pages/forms/components/GenericFormImportModal.tsx:783
 msgid "Example"
 msgstr "Example"
 
@@ -4929,7 +4935,7 @@ msgstr "Example"
 msgid "Example Value"
 msgstr "Example Value"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:776
+#: src/pages/forms/components/GenericFormImportModal.tsx:780
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:148
 msgid "Excel Fields"
 msgstr "Excel Fields"
@@ -5080,7 +5086,7 @@ msgstr "Extracting data from document..."
 #: src/pages/portal/components/PortalWizard.tsx:1072
 #: src/pages/portal/components/PortalWizard.tsx:1079
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:940
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:960
 msgid "Extracting data from the document…"
 msgstr "Extracting data from the document…"
 
@@ -5092,7 +5098,7 @@ msgstr "Extracting fields from document..."
 msgid "Extracting fields..."
 msgstr "Extracting fields..."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:654
+#: src/pages/forms/components/GenericFormImportModal.tsx:658
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1332
 msgid "Extracting grid fields and filtering metadata records."
 msgstr ""
@@ -5131,7 +5137,7 @@ msgstr "EZOFIS"
 msgid "EZOFIS Drive"
 msgstr "EZOFIS Drive"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:787
+#: src/pages/forms/components/GenericFormImportModal.tsx:791
 msgid "EZOFIS Fields"
 msgstr "EZOFIS Fields"
 
@@ -5215,7 +5221,7 @@ msgstr "Failed to generate dashboard schema"
 msgid "Failed to generate template"
 msgstr "Failed to generate template"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:299
+#: src/pages/forms/components/GenericFormImportModal.tsx:303
 msgid "Failed to import entries"
 msgstr "Failed to import entries"
 
@@ -5285,7 +5291,7 @@ msgstr "Failed to load role"
 msgid "Failed to load role permissions"
 msgstr "Failed to load role permissions"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:883
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:931
 msgid "Failed to load sample document."
 msgstr "Failed to load sample document."
 
@@ -5467,8 +5473,8 @@ msgstr "Field settings"
 msgid "Field type"
 msgstr "Field type"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:724
-#: src/pages/forms/components/GenericFormImportModal.tsx:744
+#: src/pages/forms/components/GenericFormImportModal.tsx:728
+#: src/pages/forms/components/GenericFormImportModal.tsx:748
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1673
 msgid "fields"
 msgstr "fields"
@@ -5486,12 +5492,12 @@ msgstr "Fields"
 #~ msgid "Fields ({0})"
 #~ msgstr "Fields ({0})"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:722
+#: src/pages/forms/components/GenericFormImportModal.tsx:726
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1421
 msgid "Fields Matched"
 msgstr "Fields Matched"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:742
+#: src/pages/forms/components/GenericFormImportModal.tsx:746
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1444
 msgid "Fields Needing Review"
 msgstr "Fields Needing Review"
@@ -5521,7 +5527,7 @@ msgstr "File exceeds 50MB limit: {fileName}"
 msgid "File exported successfully."
 msgstr "File exported successfully."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:561
+#: src/pages/forms/components/GenericFormImportModal.tsx:565
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1230
 msgid "File Ingestion & Parsing"
 msgstr "File Ingestion & Parsing"
@@ -5532,7 +5538,7 @@ msgstr "File Ingestion & Parsing"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:54
 #: src/pages/folders/components/Upload/Upload.tsx:1496
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:561
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:562
 msgid "File is too large. Max size is 50MB."
 msgstr "File is too large. Max size is 50MB."
 
@@ -5549,7 +5555,7 @@ msgstr "File Name"
 msgid "File Selected"
 msgstr "File Selected"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:582
+#: src/pages/forms/components/GenericFormImportModal.tsx:586
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1252
 msgid "File Size"
 msgstr "File Size"
@@ -5559,7 +5565,7 @@ msgid "File Upload"
 msgstr "File Upload"
 
 #: src/pages/portal/components/PortalWizard.tsx:681
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:868
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:888
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr "File upload isn't available for this request. Please contact your administrator."
 
@@ -5873,7 +5879,7 @@ msgstr "Form Entries"
 #~ msgid "Form Sections"
 #~ msgstr "Form Sections"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:590
+#: src/pages/forms/components/GenericFormImportModal.tsx:594
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:99
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1260
 msgid "Format"
@@ -5932,7 +5938,7 @@ msgstr "Full User Control"
 msgid "Fullscreen"
 msgstr "Fullscreen"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:435
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:436
 msgid "Fully Matched"
 msgstr "Fully Matched"
 
@@ -6186,11 +6192,11 @@ msgstr "Groups"
 msgid "Guidelines validated"
 msgstr "Guidelines validated"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:457
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:458
 msgid "Handwritten"
 msgstr "Handwritten"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:453
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
 msgid "Handwritten Invoice"
 msgstr "Handwritten Invoice"
 
@@ -6211,7 +6217,7 @@ msgstr "Header Fields Checked"
 msgid "Header Records"
 msgstr "Header Records"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:670
+#: src/pages/forms/components/GenericFormImportModal.tsx:674
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1349
 msgid "Header Row"
 msgstr "Header Row"
@@ -6453,8 +6459,8 @@ msgstr "Import Strategy"
 msgid "Import your records via CSV or Excel."
 msgstr "Import your records via CSV or Excel."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:570
-#: src/pages/forms/components/GenericFormImportModal.tsx:648
+#: src/pages/forms/components/GenericFormImportModal.tsx:574
+#: src/pages/forms/components/GenericFormImportModal.tsx:652
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1239
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1326
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1408
@@ -6554,16 +6560,16 @@ msgstr "Industry-leading extraction accuracy and field precision"
 msgid "Info"
 msgstr "Info"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:884
+#: src/pages/forms/components/GenericFormImportModal.tsx:888
 msgid "Ingesting entries..."
 msgstr "Ingesting entries..."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:576
+#: src/pages/forms/components/GenericFormImportModal.tsx:580
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1245
 msgid "Ingesting raw file payload and validating structure."
 msgstr "Ingesting raw file payload and validating structure."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:489
+#: src/pages/forms/components/GenericFormImportModal.tsx:493
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1003
 msgid "INGESTION"
 msgstr "INGESTION"
@@ -6600,7 +6606,7 @@ msgstr "Ingestion timeline"
 msgid "Initializing upload..."
 msgstr "Initializing upload..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:772
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:820
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:169
 msgid "Initiating..."
 msgstr "Initiating..."
@@ -6609,7 +6615,7 @@ msgstr "Initiating..."
 msgid "Insights"
 msgstr "Insights"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:552
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:553
 msgid "Insights into your liabilities."
 msgstr "Insights into your liabilities."
 
@@ -6617,7 +6623,7 @@ msgstr "Insights into your liabilities."
 msgid "Instance / System Number"
 msgstr "Instance / System Number"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:539
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:540
 msgid "Instant Processing"
 msgstr "Instant Processing"
 
@@ -6636,7 +6642,7 @@ msgstr "Integration"
 msgid "Integrations"
 msgstr "Integrations"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:544
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:545
 msgid "INTELLIGENCE"
 msgstr "INTELLIGENCE"
 
@@ -6644,7 +6650,7 @@ msgstr "INTELLIGENCE"
 msgid "Intelligence Profile"
 msgstr "Intelligence Profile"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:896
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:944
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:711
 msgid "Intelligent"
 msgstr "Intelligent"
@@ -6680,7 +6686,7 @@ msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Invalid file type. Please upload a PDF or Image."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1498
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:564
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:565
 msgid "Invalid file type. Please upload a supported document."
 msgstr "Invalid file type. Please upload a supported document."
 
@@ -6719,7 +6725,7 @@ msgstr "Invited"
 msgid "Invoice"
 msgstr "Invoice"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:127
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:128
 msgid "INVOICE"
 msgstr "INVOICE"
 
@@ -6765,7 +6771,7 @@ msgstr "Invoice emails will be read from this inbox and sent for processing auto
 msgid "Invoice Error"
 msgstr "Invoice Error"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:518
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:519
 msgid "Invoice exceeds PO value."
 msgstr ""
 
@@ -6814,7 +6820,7 @@ msgstr "Invoice Summary"
 msgid "Invoice Value"
 msgstr "Invoice Value"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:485
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:486
 msgid "Invoice value reduced."
 msgstr "Invoice value reduced."
 
@@ -6902,7 +6908,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "ITEM DESCRIPTION"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2096
-#: src/pages/forms/FormEntriesPage.tsx:1226
+#: src/pages/forms/FormEntriesPage.tsx:1491
 msgid "items"
 msgstr "items"
 
@@ -7174,7 +7180,7 @@ msgstr "Line Item Matching"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:389
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:527
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:560
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
@@ -7195,7 +7201,7 @@ msgstr "Line Items Verified"
 msgid "Line Score"
 msgstr "Line Score"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:512
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:513
 msgid "Line Variance"
 msgstr "Line Variance"
 
@@ -7215,7 +7221,7 @@ msgstr "Link copied"
 #~ msgid "Link document"
 #~ msgstr "Link document"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:545
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:546
 msgid "Link invoices to POs with precision."
 msgstr "Link invoices to POs with precision."
 
@@ -7588,7 +7594,7 @@ msgstr "Map Columns"
 msgid "Map columns to preview data"
 msgstr "Map columns to preview data"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:758
+#: src/pages/forms/components/GenericFormImportModal.tsx:762
 msgid "Map Excel file headers (source) to EZOFIS database fields (destination)."
 msgstr "Map Excel file headers (source) to EZOFIS database fields (destination)."
 
@@ -7604,7 +7610,7 @@ msgstr "Map Repository Fields (destination) to Excel Fields (source)."
 msgid "Map SAP structure fields to folder fields"
 msgstr "Map SAP structure fields to folder fields"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:362
+#: src/pages/forms/components/GenericFormImportModal.tsx:366
 msgid "Map spreadsheet columns to active form fields and import response records in bulk."
 msgstr "Map spreadsheet columns to active form fields and import response records in bulk."
 
@@ -7616,7 +7622,7 @@ msgstr "Map the columns from your uploaded file to the platform schema."
 msgid "Mapped Source"
 msgstr "Mapped Source"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:475
+#: src/pages/forms/components/GenericFormImportModal.tsx:479
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:989
 msgid "MAPPING"
 msgstr "MAPPING"
@@ -7671,7 +7677,7 @@ msgstr "Mark at least one signature place on the document before sending."
 #~ msgid "Master"
 #~ msgstr "Master"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:491
+#: src/pages/forms/components/GenericFormImportModal.tsx:495
 msgid "Master Data Update"
 msgstr "Master Data Update"
 
@@ -8025,7 +8031,7 @@ msgstr "Modified Date"
 msgid "Modify document content"
 msgstr "Modify document content"
 
-#: src/pages/forms/FormEntriesPage.tsx:1546
+#: src/pages/forms/FormEntriesPage.tsx:1813
 msgid "Modify existing form response answers and save changes."
 msgstr "Modify existing form response answers and save changes."
 
@@ -8086,7 +8092,7 @@ msgstr "More (+{hiddenCount})"
 msgid "More than"
 msgstr "More than"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:498
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:499
 msgid "More than one line price differs from the purchase order. Compare each line before you approve."
 msgstr "More than one line price differs from the purchase order. Compare each line before you approve."
 
@@ -8094,7 +8100,7 @@ msgstr "More than one line price differs from the purchase order. Compare each l
 msgid "Move down"
 msgstr "Move down"
 
-#: src/pages/forms/FormEntriesPage.tsx:2064
+#: src/pages/forms/FormEntriesPage.tsx:2177
 msgid "Move Entry to Trash"
 msgstr "Move Entry to Trash"
 
@@ -8102,8 +8108,8 @@ msgstr "Move Entry to Trash"
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Move matched documents out of active storage into the archive."
 
-#: src/pages/forms/FormEntriesPage.tsx:1312
-#: src/pages/forms/FormEntriesPage.tsx:2112
+#: src/pages/forms/FormEntriesPage.tsx:1577
+#: src/pages/forms/FormEntriesPage.tsx:2225
 msgid "Move to Trash"
 msgstr "Move to Trash"
 
@@ -8129,7 +8135,7 @@ msgstr "Multi-Factor Authentication"
 msgid "Multiple conditions set on field ({0})."
 msgstr "Multiple conditions set on field ({0})."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:496
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:497
 msgid "Multiple pricing differences."
 msgstr "Multiple pricing differences."
 
@@ -8164,7 +8170,7 @@ msgstr "N/A (No value needed)"
 #: src/pages/folders/components/DocumentsListView.tsx:541
 #: src/pages/folders/components/FolderTable.tsx:1024
 #: src/pages/folders/components/FolderTable.tsx:1673
-#: src/pages/forms/FormEntriesPage.tsx:2157
+#: src/pages/forms/FormEntriesPage.tsx:2270
 #: src/pages/forms/FormsPage.tsx:169
 #: src/pages/forms/FormsPage.tsx:597
 #: src/pages/reports/components/ReportsListView.tsx:114
@@ -8212,10 +8218,14 @@ msgstr "Narrow down rows"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Narrow down which rows this report includes. Leave empty to include every row."
 
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:734
+msgid "needs engineering review"
+msgstr "needs engineering review"
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:623
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:670
-msgid "Needs Engineering Review"
-msgstr "Needs Engineering Review"
+#~ msgid "Needs Engineering Review"
+#~ msgstr "Needs Engineering Review"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5342
 msgid "Needs Manual Entry"
@@ -8249,7 +8259,7 @@ msgstr ""
 msgid "New Form"
 msgstr "New Form"
 
-#: src/pages/forms/FormEntriesPage.tsx:1540
+#: src/pages/forms/FormEntriesPage.tsx:1807
 msgid "New Form Entry"
 msgstr "New Form Entry"
 
@@ -8271,10 +8281,10 @@ msgstr "New Password"
 msgid "New Report"
 msgstr "New Report"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:668
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:771
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:70
-#: src/pages/requests/components/request/NewRequestSheet.tsx:83
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:716
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:819
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:74
+#: src/pages/requests/components/request/NewRequestSheet.tsx:105
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:167
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:168
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:396
@@ -8871,7 +8881,7 @@ msgid "No users yet"
 msgstr ""
 
 #: src/pages/folders/components/Upload/Upload.tsx:1499
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:565
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
 msgid "No valid files selected."
 msgstr "No valid files selected."
 
@@ -9244,7 +9254,7 @@ msgstr "Outlook selected. Click Connect Outlook to link your account."
 msgid "Outstanding payables by supplier"
 msgstr "Outstanding payables by supplier"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:523
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:524
 msgid "Overcharged"
 msgstr "Overcharged"
 
@@ -9377,7 +9387,7 @@ msgstr "Password Field"
 msgid "Payables (Invoices & Disbursements)"
 msgstr "Payables (Invoices & Disbursements)"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:553
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:554
 msgid "Payables Overview"
 msgstr "Payables Overview"
 
@@ -9461,7 +9471,7 @@ msgstr "Pending"
 msgid "Pending classification"
 msgstr "Pending classification"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:463
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:464
 msgid "Pending delivery items."
 msgstr "Pending delivery items."
 
@@ -9477,7 +9487,7 @@ msgstr "Pending Payments"
 msgid "Pending Review"
 msgstr "Pending Review"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:419
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:420
 msgid "Perfect PO validation."
 msgstr "Perfect PO validation."
 
@@ -9485,7 +9495,7 @@ msgstr "Perfect PO validation."
 msgid "Permanent Delete"
 msgstr "Permanent Delete"
 
-#: src/pages/forms/FormEntriesPage.tsx:2065
+#: src/pages/forms/FormEntriesPage.tsx:2178
 msgid "Permanently Delete Entry"
 msgstr "Permanently Delete Entry"
 
@@ -9559,11 +9569,11 @@ msgstr "Place Signature"
 #~ msgid "Placeholder"
 #~ msgstr "Placeholder"
 
-#: src/pages/forms/FormEntriesPage.tsx:1245
+#: src/pages/forms/FormEntriesPage.tsx:1510
 msgid "Placeholder Column 1"
 msgstr "Placeholder Column 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:1255
+#: src/pages/forms/FormEntriesPage.tsx:1520
 msgid "Placeholder Column 2"
 msgstr "Placeholder Column 2"
 
@@ -9951,7 +9961,7 @@ msgstr "Please sign this document. You can place your signature anywhere."
 msgid "Please try again."
 msgstr "Please try again."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:312
+#: src/pages/forms/components/GenericFormImportModal.tsx:316
 msgid "Please upload a CSV or Excel file."
 msgstr "Please upload a CSV or Excel file."
 
@@ -9997,11 +10007,11 @@ msgstr "Please wait a moment"
 msgid "Please wait while we extract data..."
 msgstr "Please wait while we extract data..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:955
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1003
 msgid "Please wait while we process your document"
 msgstr "Please wait while we process your document"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:887
+#: src/pages/forms/components/GenericFormImportModal.tsx:891
 msgid "Please wait while your spreadsheet rows are parsed and added to the database."
 msgstr "Please wait while your spreadsheet rows are parsed and added to the database."
 
@@ -10121,7 +10131,7 @@ msgstr "PO Value"
 msgid "PO VALUE"
 msgstr "PO VALUE"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:424
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:425
 msgid "PO Verified"
 msgstr "PO Verified"
 
@@ -10304,12 +10314,11 @@ msgstr "Previous Request"
 msgid "Previous step"
 msgstr "Previous step"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:722
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:731
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:767
 msgid "Price"
 msgstr "Price"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:501
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:502
 msgid "Price Variance"
 msgstr ""
 
@@ -10382,7 +10391,7 @@ msgid "Processing"
 msgstr "Processing"
 
 #. placeholder {0}: uploadProgressText.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:954
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1002
 msgid "Processing \"{0}\""
 msgstr "Processing \"{0}\""
 
@@ -10398,7 +10407,7 @@ msgstr "Processing Document..."
 msgid "Processing Timeline"
 msgstr "Processing Timeline"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:454
+#: src/pages/forms/components/GenericFormImportModal.tsx:458
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:179
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:933
 msgid "Processing..."
@@ -10412,7 +10421,7 @@ msgstr "Procurement (POs & Requisitions)"
 msgid "Procurement Agent"
 msgstr "Procurement Agent"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:626
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:689
 msgid "Product"
 msgstr "Product"
 
@@ -10505,8 +10514,7 @@ msgstr "Purged"
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "Put overdue first in red. Donut on the left in blue..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:708
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:717
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:750
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:519
 msgid "Qty"
@@ -10532,7 +10540,7 @@ msgstr "Quantity"
 msgid "Quantity (Inv / PO)"
 msgstr "Quantity (Inv / PO)"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:507
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:508
 msgid "Quantity line discrepancy."
 msgstr "Quantity line discrepancy."
 
@@ -10562,7 +10570,7 @@ msgstr "Quick Help"
 msgid "Quick Hint"
 msgstr "Quick Hint"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:997
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1045
 msgid "Quick Try"
 msgstr "Quick Try"
 
@@ -10713,7 +10721,7 @@ msgstr "Reference Document Number"
 #: src/pages/dashboard/DashboardPage.tsx:410
 #: src/pages/folders/components/FolderFilterBar.tsx:760
 #: src/pages/folders/components/SignRequestAssignForm.tsx:463
-#: src/pages/forms/FormEntriesPage.tsx:2135
+#: src/pages/forms/FormEntriesPage.tsx:2248
 #: src/pages/forms/FormsPage.tsx:589
 #: src/pages/portal/components/PortalHome.tsx:424
 #: src/pages/portal/components/PortalHome.tsx:434
@@ -10817,8 +10825,8 @@ msgstr "Remove condition"
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:93
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:95
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:847
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:982
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:867
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1002
 msgid "Remove file"
 msgstr "Remove file"
 
@@ -10851,7 +10859,7 @@ msgstr "Rename"
 #~ msgid "Rendering dashboard preview..."
 #~ msgstr "Rendering dashboard preview..."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:738
+#: src/pages/forms/components/GenericFormImportModal.tsx:742
 msgid "Replace"
 msgstr "Replace"
 
@@ -11083,7 +11091,7 @@ msgid "Resend OTP"
 msgstr "Resend OTP"
 
 #: src/pages/folders/components/EditMetadataView.tsx:416
-#: src/pages/forms/components/GenericFormImportModal.tsx:767
+#: src/pages/forms/components/GenericFormImportModal.tsx:771
 msgid "Reset"
 msgstr "Reset"
 
@@ -11108,7 +11116,7 @@ msgstr "Reset Search"
 msgid "Reset to default"
 msgstr "Reset to default"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:760
+#: src/pages/forms/components/GenericFormImportModal.tsx:764
 msgid "Reset to default suggestions"
 msgstr "Reset to default suggestions"
 
@@ -11124,7 +11132,7 @@ msgstr "Reset to Suggested"
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
-#: src/pages/forms/FormEntriesPage.tsx:1323
+#: src/pages/forms/FormEntriesPage.tsx:1588
 msgid "Restore"
 msgstr "Restore"
 
@@ -11178,7 +11186,7 @@ msgstr "Retry"
 msgid "Retry Ingestion"
 msgstr "Retry Ingestion"
 
-#: src/pages/forms/FormEntriesPage.tsx:1487
+#: src/pages/forms/FormEntriesPage.tsx:1752
 msgid "Retry Loading"
 msgstr "Retry Loading"
 
@@ -11402,7 +11410,7 @@ msgstr "Route to a different folder:"
 msgid "row"
 msgstr "row"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:671
+#: src/pages/forms/components/GenericFormImportModal.tsx:675
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1350
 msgid "Row 1"
 msgstr "Row 1"
@@ -11414,8 +11422,8 @@ msgstr "row entered"
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:170
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:282
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:463
-#: src/pages/forms/components/GenericFormImportModal.tsx:598
-#: src/pages/forms/components/GenericFormImportModal.tsx:676
+#: src/pages/forms/components/GenericFormImportModal.tsx:602
+#: src/pages/forms/components/GenericFormImportModal.tsx:680
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1269
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1355
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1665
@@ -11426,7 +11434,7 @@ msgstr "rows"
 msgid "Rows"
 msgstr "Rows"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:596
+#: src/pages/forms/components/GenericFormImportModal.tsx:600
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1267
 msgid "Rows Detected"
 msgstr "Rows Detected"
@@ -11494,7 +11502,7 @@ msgstr "SAP Table Field Mapping"
 msgid "Save"
 msgstr "Save"
 
-#: src/pages/forms/FormEntriesPage.tsx:387
+#: src/pages/forms/FormEntriesPage.tsx:651
 msgid "Save & Add Another"
 msgstr "Save & Add Another"
 
@@ -11527,8 +11535,8 @@ msgid "Save Branding"
 msgstr "Save Branding"
 
 #: src/pages/folders/components/EditMetadataView.tsx:426
-#: src/pages/forms/FormEntriesPage.tsx:401
-#: src/pages/forms/FormEntriesPage.tsx:2004
+#: src/pages/forms/FormEntriesPage.tsx:665
+#: src/pages/forms/FormEntriesPage.tsx:2117
 msgid "Save Changes"
 msgstr "Save Changes"
 
@@ -11537,7 +11545,7 @@ msgstr "Save Changes"
 msgid "Save Dashboard"
 msgstr "Save Dashboard"
 
-#: src/pages/forms/FormEntriesPage.tsx:2004
+#: src/pages/forms/FormEntriesPage.tsx:2117
 msgid "Save Entry"
 msgstr "Save Entry"
 
@@ -11564,7 +11572,7 @@ msgstr "Save for reuse"
 msgid "Save Group"
 msgstr "Save Group"
 
-#: src/pages/forms/FormEntriesPage.tsx:401
+#: src/pages/forms/FormEntriesPage.tsx:665
 msgid "Save Line Item"
 msgstr "Save Line Item"
 
@@ -11626,7 +11634,7 @@ msgstr "Saving..."
 msgid "Saving…"
 msgstr "Saving…"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:154
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:156
 msgid "Scan QR"
 msgstr "Scan QR"
 
@@ -11635,11 +11643,11 @@ msgstr "Scan QR"
 msgid "Scan QR / Barcode"
 msgstr "Scan QR / Barcode"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:143
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:145
 msgid "Scan QR code to select"
 msgstr "Scan QR code to select"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:452
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:453
 msgid "Scanned handwritten bill."
 msgstr "Scanned handwritten bill."
 
@@ -11665,12 +11673,12 @@ msgstr "Scheduled"
 msgid "Scheduled payments calendar heatmap"
 msgstr "Scheduled payments calendar heatmap"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:706
+#: src/pages/forms/components/GenericFormImportModal.tsx:710
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1399
 msgid "Schema Auto-Mapping"
 msgstr "Schema Auto-Mapping"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:484
+#: src/pages/forms/components/GenericFormImportModal.tsx:488
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:998
 msgid "Schema Validation"
 msgstr "Schema Validation"
@@ -11779,7 +11787,7 @@ msgstr "Search description..."
 msgid "Search email..."
 msgstr "Search email..."
 
-#: src/pages/forms/FormEntriesPage.tsx:2125
+#: src/pages/forms/FormEntriesPage.tsx:2238
 msgid "Search entries..."
 msgstr "Search entries..."
 
@@ -11849,7 +11857,7 @@ msgstr "Search location..."
 msgid "Search manager..."
 msgstr "Search manager..."
 
-#: src/pages/forms/FormEntriesPage.tsx:2160
+#: src/pages/forms/FormEntriesPage.tsx:2273
 #: src/pages/forms/FormsPage.tsx:600
 #: src/pages/settings/components/GroupManagement.tsx:626
 #: src/pages/settings/components/ManageUser.tsx:1572
@@ -11944,7 +11952,7 @@ msgid "Secondary"
 msgstr "Secondary"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:1556
+#: src/pages/forms/FormEntriesPage.tsx:1823
 msgid "Section {0}"
 msgstr "Section {0}"
 
@@ -11985,7 +11993,7 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:947
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:967
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
@@ -12630,7 +12638,7 @@ msgstr "Sharing"
 msgid "Sharing..."
 msgstr "Sharing..."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:602
+#: src/pages/forms/components/GenericFormImportModal.tsx:606
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1273
 msgid "Sheets Used"
 msgstr "Sheets Used"
@@ -12906,9 +12914,9 @@ msgstr "Skip"
 msgid "Skip for now"
 msgstr "Skip for now"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:804
-#: src/pages/forms/components/GenericFormImportModal.tsx:813
-#: src/pages/forms/components/GenericFormImportModal.tsx:837
+#: src/pages/forms/components/GenericFormImportModal.tsx:808
+#: src/pages/forms/components/GenericFormImportModal.tsx:817
+#: src/pages/forms/components/GenericFormImportModal.tsx:841
 msgid "Skip this field"
 msgstr "Skip this field"
 
@@ -12944,7 +12952,7 @@ msgstr "Skipped (Will not be imported)"
 msgid "Skipped unsupported file: {fileName}"
 msgstr "Skipped unsupported file: {fileName}"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:546
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:547
 msgid "Smart PO Matching"
 msgstr "Smart PO Matching"
 
@@ -12961,7 +12969,7 @@ msgstr "Social Login"
 msgid "Soft Delete"
 msgstr "Soft Delete"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:465
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:466
 msgid "Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment."
 msgstr "Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment."
 
@@ -13075,9 +13083,9 @@ msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "Standard SLA timeline. No pricing exceptions found."
 
 #: src/pages/portal/components/PortalPicker.tsx:130
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:677
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:772
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:717
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:725
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:820
 msgid "Start"
 msgstr "Start"
 
@@ -13240,7 +13248,7 @@ msgstr "Store folder documents in Microsoft OneDrive."
 msgid "stored as JSON data"
 msgstr "stored as JSON data"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:736
+#: src/pages/forms/components/GenericFormImportModal.tsx:740
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1436
 msgid "Strategy"
 msgstr "Strategy"
@@ -13253,7 +13261,7 @@ msgstr "Strategy Applied:"
 msgid "Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations."
 msgstr "Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:900
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:948
 msgid "Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility."
 msgstr "Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility."
 
@@ -13282,8 +13290,8 @@ msgstr "submissions"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2180
 #: src/pages/portal/components/PortalShell.tsx:120
 #: src/pages/portal/components/PortalWizard.tsx:785
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:108
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:121
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:134
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:147
 msgid "Submit"
 msgstr "Submit"
 
@@ -13299,12 +13307,11 @@ msgstr "Submit"
 msgid "Submitting..."
 msgstr "Submitting..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:735
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:172
 msgid "Subtotal"
 msgstr "Subtotal"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:290
+#: src/pages/forms/components/GenericFormImportModal.tsx:294
 msgid "Successfully imported {successCount} entries!"
 msgstr "Successfully imported {successCount} entries!"
 
@@ -13370,7 +13377,7 @@ msgstr "Supplier Address"
 #~ msgid "Supplier Concentration & Risk"
 #~ msgstr "Supplier Concentration & Risk"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:446
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:447
 msgid "Supplier Conflict"
 msgstr "Supplier Conflict"
 
@@ -13378,7 +13385,7 @@ msgstr "Supplier Conflict"
 msgid "Supplier Details"
 msgstr "Supplier Details"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:441
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:442
 msgid "Supplier details differ."
 msgstr "Supplier details differ."
 
@@ -13473,7 +13480,7 @@ msgstr "Support for PDF, PNG, TIFF, JPG up to 50MB."
 #~ msgstr "Supported formats: PNG, JPG, JPEG."
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:621
-#: src/pages/forms/components/GenericFormImportModal.tsx:405
+#: src/pages/forms/components/GenericFormImportModal.tsx:409
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:878
 msgid "Supports Excel (.xlsx, .xls) and CSV formats"
 msgstr "Supports Excel (.xlsx, .xls) and CSV formats"
@@ -13496,7 +13503,7 @@ msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB"
 msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:325
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:973
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1021
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 
@@ -13709,15 +13716,15 @@ msgstr "The Document Approval workflow process is not configured yet. Please con
 msgid "The familiar EZOFIS experience, unchanged"
 msgstr "The familiar EZOFIS experience, unchanged"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:421
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:422
 msgid "The invoice matches its purchase order. Supplier, amounts, and line items all agree, so this sample is a clean pass."
 msgstr "The invoice matches its purchase order. Supplier, amounts, and line items all agree, so this sample is a clean pass."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:520
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:521
 msgid "The invoice total is higher than the purchase order. The billed amount is above the agreed value."
 msgstr "The invoice total is higher than the purchase order. The billed amount is above the agreed value."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:487
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:488
 msgid "The invoice total is lower than the purchase order. A price or quantity was billed for less than was agreed."
 msgstr "The invoice total is lower than the purchase order. A price or quantity was billed for less than was agreed."
 
@@ -13737,11 +13744,11 @@ msgstr "The selected repository did not return editable metadata fields. Please 
 msgid "The server encountered an error while importing the purchase orders. Please try again."
 msgstr "The server encountered an error while importing the purchase orders. Please try again."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:443
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:444
 msgid "The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve."
 msgstr "The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:476
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:477
 msgid "The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match."
 msgstr "The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match."
 
@@ -13765,7 +13772,7 @@ msgstr "Thinking..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 
-#: src/pages/forms/FormEntriesPage.tsx:2082
+#: src/pages/forms/FormEntriesPage.tsx:2195
 #: src/pages/forms/FormsPage.tsx:513
 #: src/pages/reports/components/ReportsListView.tsx:271
 msgid "This action is permanent and cannot be undone."
@@ -13775,7 +13782,7 @@ msgstr "This action is permanent and cannot be undone."
 msgid "This area is already signed."
 msgstr "This area is already signed."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:455
 msgid "This bill was written by hand and then scanned. The sample shows how the agent still reads the amounts and lines from the image."
 msgstr "This bill was written by hand and then scanned. The sample shows how the agent still reads the amounts and lines from the image."
 
@@ -13795,13 +13802,13 @@ msgstr "This email address has already been added."
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1620
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1710
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:178
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:230
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:293
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:184
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:236
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:304
 msgid "This field is required."
 msgstr "This field is required."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1049
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1069
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr "This field type ({fieldType}) isn't supported in this view yet."
 
@@ -13982,7 +13989,7 @@ msgstr "Timezone"
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 
-#: src/pages/forms/FormEntriesPage.tsx:2074
+#: src/pages/forms/FormEntriesPage.tsx:2187
 msgid "to Trash?"
 msgstr "to Trash?"
 
@@ -14136,7 +14143,7 @@ msgid "Transactions"
 msgstr "Transactions"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:92
-#: src/pages/forms/FormEntriesPage.tsx:2037
+#: src/pages/forms/FormEntriesPage.tsx:2150
 msgid "Trash"
 msgstr "Trash"
 
@@ -14202,8 +14209,8 @@ msgstr "Type"
 #~ msgid "Type an option and press Enter"
 #~ msgstr "Type an option and press Enter"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:230
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:424
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:232
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:426
 msgid "Type custom option..."
 msgstr "Type custom option..."
 
@@ -14387,7 +14394,7 @@ msgstr "Unable to verify OTP"
 msgid "Unassigned"
 msgstr "Unassigned"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:490
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:491
 msgid "Undercharged"
 msgstr "Undercharged"
 
@@ -14449,7 +14456,7 @@ msgstr "Unsupported file type. Please upload a CSV or XLSX file."
 msgid "Untitled"
 msgstr "Untitled"
 
-#: src/pages/forms/FormEntriesPage.tsx:1143
+#: src/pages/forms/FormEntriesPage.tsx:1408
 msgid "Untitled Field"
 msgstr "Untitled Field"
 
@@ -14520,7 +14527,7 @@ msgstr "Update User"
 #~ msgid "Updated from Document"
 #~ msgstr "Updated from Document"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:490
+#: src/pages/forms/components/GenericFormImportModal.tsx:494
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1004
 msgid "Updates records in master database"
 msgstr ""
@@ -14613,7 +14620,7 @@ msgstr "Upload favicon"
 msgid "Upload Files"
 msgstr "Upload Files"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:912
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:960
 msgid "Upload invoice"
 msgstr "Upload invoice"
 
@@ -14679,12 +14686,12 @@ msgstr "Uploading ({uploadIndex}/{pendingUploadCount})..."
 
 #. placeholder {0}: uploadProgressText.current
 #. placeholder {1}: uploadProgressText.total
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:946
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:994
 msgid "Uploading & Processing ({0}/{1})..."
 msgstr "Uploading & Processing ({0}/{1})..."
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:304
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:947
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:995
 msgid "Uploading & Processing..."
 msgstr "Uploading & Processing..."
 
@@ -14708,7 +14715,7 @@ msgstr "Uploading file..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Uploading master file to process entries in the background..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:939
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:959
 msgid "Uploading the document…"
 msgstr "Uploading the document…"
 
@@ -14909,7 +14916,7 @@ msgstr "Validate accounts to master"
 msgid "Validate mappings and confirm to finalize import payload."
 msgstr "Validate mappings and confirm to finalize import payload."
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:483
+#: src/pages/forms/components/GenericFormImportModal.tsx:487
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:997
 msgid "Validates required system fields"
 msgstr "Validates required system fields"
@@ -14926,7 +14933,7 @@ msgstr "Validating guidelines"
 msgid "Validation"
 msgstr "Validation"
 
-#: src/pages/forms/components/GenericFormImportModal.tsx:482
+#: src/pages/forms/components/GenericFormImportModal.tsx:486
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:996
 msgid "VALIDATION"
 msgstr "VALIDATION"
@@ -14958,11 +14965,11 @@ msgstr "Vendor"
 msgid "Vendor / Account Number"
 msgstr "Vendor / Account Number"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:479
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:480
 msgid "Vendor Check"
 msgstr "Vendor Check"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:474
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:475
 msgid "Vendor identity mismatch."
 msgstr "Vendor identity mismatch."
 
@@ -15098,7 +15105,7 @@ msgstr ""
 #~ msgid "View Document"
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:1215
+#: src/pages/forms/FormEntriesPage.tsx:1480
 msgid "View Line Items Table"
 msgstr "View Line Items Table"
 
@@ -15308,7 +15315,7 @@ msgstr "Which versioning strategy should apply when the same file is uploaded ag
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:230
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:177
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:147
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:818
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:866
 #: src/pages/settings/components/PortalConfiguration.tsx:978
 #: src/pages/settings/components/PortalConfiguration.tsx:986
 msgid "Workflow"
@@ -15337,7 +15344,7 @@ msgstr "Workflow document processing and automation"
 #~ msgid "Workflow Form"
 #~ msgstr "Workflow Form"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:711
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:759
 msgid "Workflow ID is missing. Cannot start workflow."
 msgstr "Workflow ID is missing. Cannot start workflow."
 
@@ -15349,11 +15356,11 @@ msgstr "Workflow Name"
 msgid "Workflow stages"
 msgstr "Workflow stages"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:618
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:642
 msgid "Workflow started but did not return a valid instanceId or apAgentJobId."
 msgstr "Workflow started but did not return a valid instanceId or apAgentJobId."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:608
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:632
 msgid "Workflow started but did not return any data."
 msgstr "Workflow started but did not return any data."
 
