@@ -615,40 +615,88 @@ function HoverValue({
   className,
   display,
   input,
+  keepOpenOnPortal = false,
 }: {
   canEdit: boolean
   className?: string
   display: ReactNode
-  input: ReactNode
+  input: (close: () => void) => ReactNode
+  /** Combobox / popover menus render in a portal — don't close on their clicks. */
+  keepOpenOnPortal?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const close = () => setOpen(false)
+
+  useEffect(() => {
+    if (!open) return
+    const isInsidePortal = (node: EventTarget | null) => {
+      if (!(node instanceof Element)) return false
+      return Boolean(
+        node.closest(
+          '[data-combobox-dropdown], [data-dates-dropdown], .mantine-Popover-dropdown, .mantine-Combobox-dropdown',
+        ),
+      )
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const path = event.composedPath()
+      if (rootRef.current && path.includes(rootRef.current)) return
+      if (keepOpenOnPortal && path.some(isInsidePortal)) return
+      setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    // Defer so the click that opened edit mode doesn't immediately close it,
+    // and so Combobox portal mount isn't treated as an outside click.
+    const timer = window.setTimeout(() => {
+      document.addEventListener('pointerdown', onPointerDown, true)
+      document.addEventListener('keydown', onKeyDown)
+    }, 0)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [keepOpenOnPortal, open])
 
   if (!canEdit) return <>{display}</>
 
   return (
     <div
-      className='min-w-0'
+      className={cn(
+        'group min-w-0',
+        open ? 'block w-full' : 'inline-flex max-w-full items-center gap-1',
+      )}
       ref={rootRef}
-      onBlur={(event) => {
-        const next = event.relatedTarget as Node | null
-        if (next && rootRef.current?.contains(next)) return
-        setOpen(false)
-      }}
     >
       {open ? (
-        input
+        input(close)
       ) : (
-        <button
-          className={cn(
-            'block w-full cursor-text border-0 bg-transparent p-0 text-left',
-            className,
-          )}
-          type='button'
-          onClick={() => setOpen(true)}
-        >
-          {display}
-        </button>
+        <>
+          <button
+            className={cn(
+              'min-w-0 flex-1 cursor-text border-0 bg-transparent p-0 text-inherit',
+              className,
+            )}
+            type='button'
+            onClick={() => setOpen(true)}
+          >
+            {display}
+          </button>
+          <button
+            aria-label='Edit'
+            className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+            type='button'
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              setOpen(true)
+            }}
+          >
+            <Icon className='size-3.5' icon='lucide:pencil' />
+          </button>
+        </>
       )}
     </div>
   )
@@ -697,19 +745,24 @@ function QuoteLineRow({
           <HoverValue
             canEdit={canEdit}
             className='text-left'
+            keepOpenOnPortal={useApiProduct}
             display={
               <span className='block text-left font-semibold text-[var(--primary-11)]'>
                 {item.Product || 'NA'}
               </span>
             }
-            input={
+            input={(close) =>
               useApiProduct ? (
                 <div className='min-w-0 w-full max-w-[280px]'>
                   <ApiCatalogSelect
+                    autoOpen
                     compact
                     col={productColumn}
                     value={item.Product}
-                    onSelectProduct={onSelectProduct}
+                    onSelectProduct={async (code) => {
+                      await onSelectProduct(code)
+                      close()
+                    }}
                   />
                 </div>
               ) : (
@@ -724,7 +777,51 @@ function QuoteLineRow({
             }
           />
           {description ? (
-            <span className='text-xs break-words text-gray-11'>{description}</span>
+            <HoverValue
+              canEdit={canEdit}
+              className='text-left text-xs text-gray-11'
+              display={
+                <span className='text-xs break-words text-gray-11'>
+                  {description}
+                </span>
+              }
+              input={() => (
+                <textarea
+                  autoFocus
+                  aria-label={t`Description`}
+                  className={cn(
+                    cellInputClass,
+                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
+                  )}
+                  rows={2}
+                  value={item.Description ?? ''}
+                  onChange={(event) =>
+                    onChange('Description', event.target.value)
+                  }
+                />
+              )}
+            />
+          ) : canEdit ? (
+            <HoverValue
+              canEdit={canEdit}
+              className='text-left text-xs text-gray-9'
+              display={<span className='text-xs text-gray-9'>NA</span>}
+              input={() => (
+                <textarea
+                  autoFocus
+                  aria-label={t`Description`}
+                  className={cn(
+                    cellInputClass,
+                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
+                  )}
+                  rows={2}
+                  value={item.Description ?? ''}
+                  onChange={(event) =>
+                    onChange('Description', event.target.value)
+                  }
+                />
+              )}
+            />
           ) : (
             <span className='text-xs text-gray-9'>NA</span>
           )}
@@ -744,7 +841,7 @@ function QuoteLineRow({
             canEdit={canEdit}
             className='text-center'
             display={<span>{item.Qty === '' || item.Qty == null ? 'NA' : item.Qty}</span>}
-            input={
+            input={() => (
               <input
                 autoFocus
                 aria-label={t`Qty`}
@@ -753,7 +850,7 @@ function QuoteLineRow({
                 value={item.Qty ?? ''}
                 onChange={(event) => onChange('Qty', event.target.value)}
               />
-            }
+            )}
           />
         </td>
         <td className='w-28 border border-gray-3 p-3 text-right align-top text-gray-12'>
@@ -761,7 +858,7 @@ function QuoteLineRow({
             canEdit={canEdit}
             className='text-right'
             display={<span>${toMoney(item.Price)}</span>}
-            input={
+            input={() => (
               <input
                 autoFocus
                 aria-label={t`Price`}
@@ -770,7 +867,7 @@ function QuoteLineRow({
                 value={item.Price ?? ''}
                 onChange={(event) => onChange('Price', event.target.value)}
               />
-            }
+            )}
           />
         </td>
         <td className='w-28 border border-gray-3 p-3 text-right align-top'>

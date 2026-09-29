@@ -20,6 +20,7 @@ import {
   attachmentToFormFileValue,
   getFirstFileUploadField,
   getFirstReceivedAttachment,
+  getLatestAttachment,
   getWorkflowRepositoryId,
   hasStoredFileValue,
   getFormPanels,
@@ -148,30 +149,37 @@ const DocumentApprovalSplitLayout = ({
   selectedItem: any
 }) => {
   const { t } = useLingui()
-  const firstAttachment = attachments[0]
+  const firstAttachment =
+    getFirstReceivedAttachment(attachments) || attachments[0]
   const [documentInfo, setDocumentInfo] = useState<any>(null)
 
   const [isApproversOpen, setIsApproversOpen] = useState(true)
   const [isDocDetailsOpen, setIsDocDetailsOpen] = useState(true)
 
-  const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
-  const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
+  const targetRepoId =
+    firstAttachment?.repositoryId ||
+    repositoryId ||
+    selectedItem?.repositoryId
+  const targetItemId =
+    firstAttachment?.itemId || firstAttachment?.id || selectedItem?.itemId
 
   const previewAttachment = firstAttachment
     ? {
-      ...firstAttachment,
-      itemId: targetItemId,
-      repositoryId: targetRepoId,
-    }
+        ...firstAttachment,
+        itemId: targetItemId,
+        repositoryId: targetRepoId,
+      }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        itemId: selectedItem?.itemId,
-        repositoryId: selectedItem?.repositoryId,
-        fileName: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-        fileExtension: selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-        _localFileUrl: selectedItem?._localFileUrl,
-      }
+          itemId: selectedItem?.itemId,
+          repositoryId: selectedItem?.repositoryId,
+          fileName:
+            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          fileExtension:
+            selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          _localFileUrl: selectedItem?._localFileUrl,
+        }
       : null
 
   const { previewUrl, mimeType } = useAttachmentPreviewUrl(
@@ -310,7 +318,11 @@ const DocumentFormSplitLayout = ({
   onFieldChange?: (fieldId: string, value: any) => void
 }) => {
   const { t } = useLingui()
-  const firstAttachment = attachments[0]
+  // Left pane: original inbound upload (initiate / oldest), not newest-first [0].
+  const firstAttachment = useMemo(
+    () => getFirstReceivedAttachment(attachments) || attachments[0],
+    [attachments],
+  )
 
   const agentBlocks: AgentBlock[] = useMemo(() => {
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
@@ -454,24 +466,30 @@ const DocumentFormSplitLayout = ({
     }
   }
 
-  const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
-  const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
+  const targetRepoId =
+    firstAttachment?.repositoryId ||
+    repositoryId ||
+    selectedItem?.repositoryId
+  const targetItemId =
+    firstAttachment?.itemId || firstAttachment?.id || selectedItem?.itemId
 
   const previewAttachment = firstAttachment
     ? {
-      ...firstAttachment,
-      itemId: targetItemId,
-      repositoryId: targetRepoId,
-    }
+        ...firstAttachment,
+        itemId: targetItemId,
+        repositoryId: targetRepoId,
+      }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        itemId: selectedItem?.itemId,
-        repositoryId: selectedItem?.repositoryId,
-        fileName: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-        fileExtension: selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-        _localFileUrl: selectedItem?._localFileUrl,
-      }
+          itemId: selectedItem?.itemId,
+          repositoryId: selectedItem?.repositoryId,
+          fileName:
+            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          fileExtension:
+            selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          _localFileUrl: selectedItem?._localFileUrl,
+        }
       : null
 
   const { previewUrl } = useAttachmentPreviewUrl(

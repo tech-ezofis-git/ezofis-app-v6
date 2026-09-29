@@ -15,6 +15,77 @@ export interface AgentBlock {
   }
 }
 
+const isDocGenBlock = (block: AgentBlock | null | undefined) => {
+  if (!block) return false
+  const type = String(block.type || '')
+  const label = String(block.settings?.label || '')
+  const subtype = String(block.settings?.subtype || '').toUpperCase()
+  return (
+    type === 'DOCUMENT_GENERATE_AGENT' ||
+    subtype === 'DOCUMENT_GENERATE' ||
+    label.includes('Document Generate') ||
+    label.includes('Document Agent')
+  )
+}
+
+const isDocGenStageName = (value: string, label: string) => {
+  const stage = String(value || '').toLowerCase().trim()
+  const want = String(label || '').toLowerCase().trim()
+  if (!stage) return false
+  if (want && (stage === want || stage.includes(want) || want.includes(stage))) {
+    return true
+  }
+  return (
+    stage.includes('document generate') ||
+    stage.includes('document_generate') ||
+    stage === 'document agent'
+  )
+}
+
+/** True when history shows the workflow actually entered Document Generate. */
+const docGenVisitedInHistory = (requestData: any, label: string) => {
+  const history = Array.isArray(requestData?._history)
+    ? requestData._history
+    : []
+  return history.some((row: any) => {
+    const stage = String(row?.stage || row?.stageName || '')
+    const stageType = String(row?.stageType || row?.agentType || '').toLowerCase()
+    return (
+      isDocGenStageName(stage, label) ||
+      stageType.includes('document_generate') ||
+      stageType === 'document_generate_agent'
+    )
+  })
+}
+
+/**
+ * Document Generate has no result payload — the UI shows the generated file.
+ * Only treat it as done when the workflow has actually reached / finished
+ * that stage (response, history visit then moved on, or terminal after visit).
+ * Quote finishing alone must NOT unlock Document Generate.
+ */
+export const documentGenerateIsComplete = (
+  requestData: any,
+  block?: AgentBlock | null,
+) => {
+  if (requestData?.documentGenerateResponse) return true
+
+  const label = String(block?.settings?.label || 'Document Generate')
+  const stage = String(
+    requestData?.stage || requestData?.currentStage || '',
+  ).trim()
+
+  // Still on Document Generate → not complete yet.
+  if (isDocGenStageName(stage, label)) return false
+
+  // Workflow entered Document Generate earlier and has since moved on.
+  if (docGenVisitedInHistory(requestData, label)) return true
+
+  // Closed/completed request that still lacks history can only count as done
+  // when a document-generate response exists (handled above).
+  return false
+}
+
 /** True when this agent block already has a persisted response payload. */
 export const agentHasResponse = (
   block: AgentBlock | null | undefined,
@@ -39,12 +110,8 @@ export const agentHasResponse = (
   ) {
     return Boolean(requestData?.quoteAgentResponse)
   }
-  if (
-    type === 'DOCUMENT_GENERATE_AGENT' ||
-    subtype === 'DOCUMENT_GENERATE' ||
-    label.includes('Document Generate')
-  ) {
-    return Boolean(requestData?.documentGenerateResponse)
+  if (isDocGenBlock(block)) {
+    return documentGenerateIsComplete(requestData, block)
   }
   if (
     type === 'AP_AGENT' ||
@@ -131,13 +198,15 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
   let maxReachedIndex = -1
   agentBlocks.forEach((block, index) => {
     const label = block.settings?.label || 'Agent'
-    let hasResponse = false
-    if (block.type === 'QUALIFY_AGENT' && requestData?.qualifyAgentResponse) hasResponse = true
-    if (block.type === 'QUOTE_AGENT' && requestData?.quoteAgentResponse) hasResponse = true
-    if (block.type === 'DOCUMENT_GENERATE_AGENT' && requestData?.documentGenerateResponse) hasResponse = true
-    if (block.type === 'AP_AGENT' && (requestData?.agentResponse || requestData?._agentData?.length > 0)) hasResponse = true
+    const hasResponse = agentHasResponse(block, requestData)
+    const isRunning = agentIsRunning(block, requestData)
 
-    if (historyStages.has(label) || currentStage === label || hasResponse) {
+    if (
+      historyStages.has(label) ||
+      currentStage === label ||
+      isRunning ||
+      hasResponse
+    ) {
       maxReachedIndex = Math.max(maxReachedIndex, index)
     }
   })
@@ -204,11 +273,13 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
           status = 'Pending'
           statusColor = 'text-gray-10 bg-gray-2 border-gray-3'
           value = '-'
-          if (requestData?.documentGenerateResponse) {
+          // Doc gen has no API result — file preview is the deliverable.
+          if (documentGenerateIsComplete(requestData, block)) {
             status = 'Processed'
-            statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
-            value = 'Completed'
-          } else if (requestData?.stage === label) {
+            statusColor =
+              'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            value = 'Document ready'
+          } else if (requestData?.stage === label || agentIsRunning(block, requestData)) {
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
             value = 'Generating...'
