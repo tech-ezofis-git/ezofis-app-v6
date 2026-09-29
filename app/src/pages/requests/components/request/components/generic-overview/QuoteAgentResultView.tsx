@@ -1,11 +1,10 @@
 import { Icon } from '@iconify/react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import Tooltip from '@/components/base/Tooltip'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
   getConfiguredFieldOptions,
@@ -75,18 +74,9 @@ const isEmptyDisplay = (value: string) => {
   )
 }
 
-const formatFieldDisplay = (
-  value: string,
-  field: any | null,
-  canEdit: boolean,
-  fallbackLabel?: string,
-) => {
+const formatFieldDisplay = (value: string) => {
   if (!isEmptyDisplay(value)) return value
-  if (canEdit) {
-    const label = controlLabel(field, fallbackLabel) || 'field'
-    return `Kindly Enter ${label}`
-  }
-  return ''
+  return 'NA'
 }
 
 const stringifyScalar = (value: unknown) => {
@@ -116,27 +106,47 @@ const HoverEditShell = ({
   editor,
   fieldId,
   inline = false,
-  label,
   onActivate,
 }: HoverEditProps) => {
+  const rootRef = useRef<HTMLSpanElement>(null)
   const isActive = canEdit && activeEditId === fieldId
 
-  const wrapLabel = (node: ReactNode) => {
-    if (!label) return node
-    return (
-      <Tooltip
-        className={cn(
-          inline ? 'inline-flex max-w-full' : 'flex w-full min-w-0',
-          className,
-        )}
-        content={label}
-        openDelay={200}
-        position='top'
-      >
-        {node}
-      </Tooltip>
-    )
-  }
+  useEffect(() => {
+    if (!isActive) return
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (rootRef.current?.contains(target)) return
+      if (
+        target.closest(
+          '[data-combobox-dropdown], [data-dates-dropdown], .mantine-Popover-dropdown',
+        )
+      ) {
+        return
+      }
+      onActivate(null)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onActivate(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isActive, onActivate])
+
+  const wrapLabel = (node: ReactNode) => (
+    <span
+      className={cn(
+        inline ? 'inline-flex max-w-full' : 'flex w-full min-w-0',
+        className,
+      )}
+    >
+      {node}
+    </span>
+  )
 
   if (!canEdit) {
     return wrapLabel(
@@ -150,15 +160,62 @@ const HoverEditShell = ({
     <span
       className={cn(
         'rounded px-0.5 transition-colors',
-        inline ? 'inline-flex min-w-0 align-middle' : 'block w-full',
-        !isActive && 'cursor-text hover:bg-gray-2 hover:text-gray-12',
+        isActive
+          ? inline
+            ? 'inline-flex min-w-0 align-middle'
+            : 'block w-full'
+          : 'group inline-flex max-w-full min-w-0 items-center gap-1',
         className,
       )}
-      onMouseEnter={() => onActivate(fieldId)}
-      onMouseLeave={() => onActivate(null)}
+      ref={rootRef}
     >
-      {isActive ? editor : children}
+      {isActive ? (
+        editor
+      ) : (
+        <>
+          <span className='min-w-0'>{children}</span>
+          <button
+            aria-label='Edit'
+            className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+            type='button'
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onActivate(fieldId)
+            }}
+          >
+            <Icon className='size-3.5' icon='lucide:pencil' />
+          </button>
+        </>
+      )}
     </span>,
+  )
+}
+
+const InlineCaretInput = ({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (next: string) => void
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const input = inputRef.current
+    if (!input) return
+    input.focus()
+    const end = input.value.length
+    input.setSelectionRange(end, end)
+  }, [])
+
+  return (
+    <input
+      className='m-0 max-w-full min-w-[1.5rem] border-0 bg-transparent p-0 text-left text-sm leading-5 font-normal text-gray-12 outline-none [field-sizing:content]'
+      ref={inputRef}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
   )
 }
 
@@ -175,6 +232,20 @@ const ScalarEditor = ({
 }) => {
   const type = String(field?.type || 'SHORT_TEXT').toUpperCase()
   const inputClass = compact ? 'min-w-[10rem] text-sm' : 'w-full'
+  const isPlainText =
+    type === 'SHORT_TEXT' ||
+    type === 'TEXT' ||
+    type === 'NUMBER' ||
+    type === 'CURRENCY_AMOUNT' ||
+    type === 'COUNTER'
+  if (compact && isPlainText) {
+    return (
+      <InlineCaretInput
+        value={value != null ? String(value) : ''}
+        onChange={onChange}
+      />
+    )
+  }
   if (type === 'DATE') {
     return (
       <InputDate
@@ -351,28 +422,64 @@ const QuoteAgentResultView = ({
             (typeof row.Note === 'string' && row.Note.trim()) ||
             (typeof agent.Note === 'string' && agent.Note.trim()) ||
             ''
-          const formDescription = String(
+          const descriptionColumn = columns.find((col: any) =>
+            /description|desc|details/i.test(
+              String(col?.name || col?.label || '').trim(),
+            ),
+          )
+          const rawFormDescription = String(
             row.Description ??
-              row[
-                columns.find((col: any) =>
-                  /^(description|desc|details)$/i.test(
-                    String(col?.name || '').trim(),
-                  ),
-                )?.id || ''
-              ] ??
+              (descriptionColumn?.id != null ? row[descriptionColumn.id] : '') ??
               '',
           ).trim()
-          const agentDescription = String(agent.Description || '').trim()
-          const descriptionLooksNumeric = /^\d+(\.\d+)?$/.test(formDescription)
+          const agentDescription = String(
+            agent.Description ?? agent.description ?? '',
+          ).trim()
+          const formDescriptionIsQty =
+            /^\d+(\.\d+)?$/.test(rawFormDescription) &&
+            (agent.Qty == null ||
+              Number(rawFormDescription) === Number(agent.Qty) ||
+              Number(rawFormDescription) === Number(agent.Quantity))
           const description =
-            formDescription && !descriptionLooksNumeric
-              ? formDescription
-              : agentDescription || formDescription
+            agentDescription &&
+            (!rawFormDescription ||
+              formDescriptionIsQty ||
+              /^\d+(\.\d+)?$/.test(rawFormDescription))
+              ? agentDescription
+              : rawFormDescription || agentDescription
+
+          const agentQty =
+            agent.Qty ?? agent.Quantity ?? agent.qty ?? agent.quantity
+          const formQty = row.Qty ?? row.Quantity ?? row.qty ?? row.quantity
+          const asNumber = (value: unknown) => {
+            const num = Number(value)
+            return Number.isFinite(num) ? num : null
+          }
+          const formQtyNum = asNumber(formQty)
+          const formQtyIsMoney =
+            formQtyNum != null &&
+            (formQtyNum === asNumber(agent.Price) ||
+              formQtyNum === asNumber(agent.Subtotal) ||
+              formQtyNum === asNumber(row.Price) ||
+              formQtyNum === asNumber(row.Subtotal))
+          const formQtyUnusable =
+            formQty == null ||
+            String(formQty).trim() === '' ||
+            formQtyIsMoney ||
+            (typeof formQty === 'string' &&
+              !/^\d+(\.\d+)?$/.test(formQty.trim()))
+          const qty =
+            agentQty != null &&
+            String(agentQty).trim() !== '' &&
+            formQtyUnusable
+              ? agentQty
+              : formQty ?? agentQty
 
           return {
             ...row,
             Note: note,
             Description: description,
+            Qty: qty,
             'Needs Engineering Review':
               row['Needs Engineering Review'] ??
               agent['Needs Engineering Review'] ??
@@ -498,7 +605,7 @@ const QuoteAgentResultView = ({
     const canEdit = entry.field ? canEditField(entry.field) : false
     return {
       canEdit,
-      display: formatFieldDisplay(raw, entry.field, canEdit, entry.label),
+      display: formatFieldDisplay(raw),
       raw,
     }
   }
@@ -565,13 +672,7 @@ const QuoteAgentResultView = ({
         editor={renderScalarEditor(entry, raw, options?.compact)}
       >
         {options?.compact ? (
-          <span
-            className={cn(
-              isEmptyDisplay(raw) && canEdit && 'italic text-gray-8',
-            )}
-          >
-            {display}
-          </span>
+          <span>{display}</span>
         ) : (
           <span className='leading-relaxed'>{display || raw}</span>
         )}
@@ -594,8 +695,6 @@ const QuoteAgentResultView = ({
     return entry.value
   }
 
-  const titleEntry = viewModel.titleEntry
-  const titleResolved = titleEntry ? resolveScalarEntry(titleEntry) : null
   const grandTotalLabel =
     viewModel.grandTotal?.label ||
     viewModel.totals.find((entry) => entry.kind === 'total')?.label ||
@@ -605,69 +704,46 @@ const QuoteAgentResultView = ({
     (entry) => entry.kind !== 'total',
   )
 
+  const headerEntries = [viewModel.titleEntry, ...viewModel.metaEntries].filter(
+    (entry): entry is QuoteScalarEntry => !!entry,
+  )
+
+  const renderHeaderField = (entry: QuoteScalarEntry) => {
+    const resolved = resolveScalarEntry(entry)
+    const label = controlLabel(entry.field, entry.label) || entry.label
+
+    return (
+      <span
+        className='inline-flex max-w-full items-baseline text-left text-sm leading-5 font-normal text-gray-12'
+        key={entry.resultKey}
+      >
+        <span className='font-bold'>{label}: </span>
+        <HoverEditShell
+          activeEditId={activeEditId}
+          canEdit={resolved.canEdit}
+          className='max-w-full justify-start text-left'
+          fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
+          inline
+          label={label}
+          onActivate={setActiveEditId}
+          editor={renderScalarEditor(entry, resolved.raw, true)}
+        >
+          <span>{resolved.display || 'NA'}</span>
+        </HoverEditShell>
+      </span>
+    )
+  }
+
   return (
     <div className='flex flex-col gap-6'>
-      <div className='flex flex-wrap items-start justify-between gap-4'>
-        <div className='min-w-0 flex-1'>
-          {titleEntry ? (
-            titleEntry.isLongText ? (
-              renderScalarHover(titleEntry)
-            ) : (
-              <HoverEditShell
-                activeEditId={activeEditId}
-                canEdit={titleResolved?.canEdit ?? false}
-                fieldId={
-                  titleEntry.field
-                    ? getFieldId(titleEntry.field)
-                    : titleEntry.resultKey
-                }
-                label={controlLabel(titleEntry.field, titleEntry.label)}
-                onActivate={setActiveEditId}
-                editor={renderScalarEditor(
-                  titleEntry,
-                  titleResolved?.raw || '',
-                  true,
-                )}
-              >
-                <h3
-                  className={cn(
-                    'text-lg font-bold text-gray-12',
-                    titleResolved &&
-                      isEmptyDisplay(titleResolved.raw) &&
-                      titleResolved.canEdit &&
-                      'text-base font-medium italic text-gray-8',
-                  )}
-                >
-                  {titleResolved?.display || titleResolved?.raw}
-                </h3>
-              </HoverEditShell>
-            )
-          ) : null}
-
-          {viewModel.metaEntries.length > 0 && (
-            <div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-0 text-sm text-gray-9'>
-              {viewModel.metaEntries.map((entry, index) => (
-                <span
-                  className='inline-flex items-center gap-2'
-                  key={entry.resultKey}
-                >
-                  {index > 0 ? (
-                    <span aria-hidden className='text-gray-7'>
-                      •
-                    </span>
-                  ) : null}
-                  {renderScalarHover(entry, { compact: true, inline: true })}
-                </span>
-              ))}
-            </div>
-          )}
+      <div className='flex items-center justify-between gap-4'>
+        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
+          {headerEntries.map(renderHeaderField)}
         </div>
 
-        <div className='flex flex-col items-end gap-1'>
-          <div className='text-xl font-bold text-[var(--primary-11)]'>
-            ${toMoney(computedTotals.total)}
-          </div>
-          <div className='text-xs font-medium text-gray-9'>{grandTotalLabel}</div>
+        <div className='shrink-0 text-left text-sm leading-5 font-normal text-gray-12'>
+          <span className='font-bold'>{grandTotalLabel}: </span>
+          ${toMoney(computedTotals.total)}
         </div>
       </div>
 

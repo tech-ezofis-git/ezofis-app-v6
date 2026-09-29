@@ -267,3 +267,38 @@ export const summarizeQualifierResult = (
       : 'Completed'
   return { qualify: vm.qualify, title }
 }
+
+export const qualifyDecisionStyle = (value: string) => {
+  const decision = String(value || '')
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .trim()
+
+  if (decision === 'qualify') {
+    return {
+      className: 'border-green-4 bg-green-2 text-green-11',
+      icon: 'tabler:check',
+      label: 'Qualify',
+    }
+  }
+  if (decision === 'disqualify') {
+    return {
+      className: 'border-red-4 bg-red-2 text-red-11',
+      icon: 'tabler:x',
+      label: 'Disqualify',
+    }
+  }
+  if (decision === 'needs review' || decision === 'need review') {
+    return {
+      className: 'border-orange-4 bg-orange-2 text-orange-11',
+      icon: 'tabler:alert-circle',
+      label: 'Needs Review',
+    }
+  }
+  return {
+    className:
+      'border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-10)]',
+    icon: 'tabler:point',
+    label: value || 'Processed',
+  }
+}

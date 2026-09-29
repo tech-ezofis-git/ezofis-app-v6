@@ -43,9 +43,9 @@ const generateRowId = () => {
   }
 }
 
-interface TableColumn {
+export interface TableColumn {
   id: string
-  name: string
+  name?: string
   size?: 'SMALL' | 'MEDIUM' | 'LARGE'
   type?: string
   settings?: {
@@ -1088,7 +1088,7 @@ const TableFieldRenderer = ({
                     <Td className='p-1.5 align-middle' key={col.id}>
                       {renderCellInput(
                         col,
-                        resolvedRow[col.id] ?? resolvedRow[col.name],
+                        resolvedRow[col.id] ?? (col.name ? resolvedRow[col.name] : undefined),
                         (cellVal) =>
                           handleCellChange(rowIndex, col.id, cellVal),
                         readOnly,

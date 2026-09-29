@@ -114,21 +114,14 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       (requestData?._agentData && requestData._agentData.length > 0)
   }
 
-  const stage = String(
-    requestData?.stage ||
-      requestData?.currentStage ||
-      requestData?.lastActionStageName ||
-      '',
+  const status = String(requestData?.status || '').toLowerCase().trim()
+  const isDone = Boolean(
+    requestData?.completedAtUtc ||
+      requestData?.completedAt ||
+      status === 'completed' ||
+      status === 'complete',
   )
-  const stageMatchesLabel =
-    Boolean(stage) &&
-    (stage === label ||
-      label.toLowerCase().includes(stage.toLowerCase()) ||
-      stage.toLowerCase().includes(label.toLowerCase()))
-
-  const isProcessing =
-    !hasAgentResponse &&
-    (Boolean(requestData?.isProcessing) || stageMatchesLabel)
+  const isProcessing = !hasAgentResponse && !isDone
 
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
@@ -140,7 +133,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       : undefined)
 
   return (
-    <div className='flex flex-col gap-5 pb-5'>
+    <div className='flex flex-col gap-4'>
       {!hideBack && (
         <div className='flex items-center gap-3'>
           <button

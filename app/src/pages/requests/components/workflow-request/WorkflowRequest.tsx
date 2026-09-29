@@ -84,15 +84,18 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const hasAgents = agentBlocks.length > 0
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
+  const initialAgentId = agentBlocks[0]?.id ?? null
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
-    null,
+    initialAgentId,
+  )
+  const [activeTab, setActiveTab] = useState(
+    initialAgentId ? `agent:${initialAgentId}` : 'summary',
   )
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
     return agentBlocks.find((b) => b.id === selectedAgentBlockId) || null
   }, [selectedAgentBlockId, agentBlocks])
 
-  const [activeTab, setActiveTab] = useState('summary')
   const prevAgentResponseTabKey = useRef('')
 
   useEffect(() => {
@@ -191,12 +194,13 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
         if (processId) {
           const item = parsedData?.items?.[0]
-          const nextItem = item || {
-            ...lastStubItem,
-            id: processId,
-            processId: processId,
-            workflowInstanceId: processId,
-            transactionId: parsedData?.transactionId
+          const nextItem = {
+            ...(item || lastStubItem),
+            id: item?.id || processId,
+            isProcessing: true,
+            processId: item?.processId || processId,
+            transactionId: item?.transactionId || parsedData?.transactionId,
+            workflowInstanceId: item?.workflowInstanceId || processId,
           }
           requestStore.getState().openRequest(nextItem, stubWorkflow, 'Inbox')
           requestStore.getState().workflowRefresh()

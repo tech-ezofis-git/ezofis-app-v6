@@ -172,13 +172,13 @@ const AgentFlatTable = ({
         )}
       </div>
       <div className='overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full min-w-max text-left text-sm'>
+        <table className='w-full min-w-max border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
               {columns.map((col) => (
                 <th
                   className={cn(
-                    'whitespace-nowrap p-3 font-semibold',
+                    'border border-gray-3 whitespace-nowrap p-3 font-semibold',
                     isNumericColumn(col) && 'text-right',
                   )}
                   key={col.id}
@@ -187,19 +187,20 @@ const AgentFlatTable = ({
                 </th>
               ))}
               {canEdit && (
-                <th className='w-36 whitespace-nowrap p-3 text-right font-semibold'>
-                  {t`Actions`}
-                </th>
+                <th
+                  aria-label={t`Actions`}
+                  className='w-px border border-gray-3 p-2 whitespace-nowrap'
+                />
               )}
             </tr>
           </thead>
-          <tbody className='divide-y divide-gray-2 bg-surface'>
+          <tbody className='bg-surface'>
             {rows.map((row, index) => (
               <tr className='group' key={row._rowId || index}>
                 {columns.map((col) => (
                   <td
                     className={cn(
-                      'min-w-[8rem] p-3 align-top text-gray-11',
+                      'min-w-[8rem] border border-gray-3 p-3 align-top text-gray-11',
                       isNumericColumn(col) && 'text-right font-medium text-gray-12',
                       columnType(col) === 'LONG_TEXT' && 'min-w-[12rem]',
                     )}
@@ -214,7 +215,7 @@ const AgentFlatTable = ({
                   </td>
                 ))}
                 {canEdit && (
-                  <td className='p-3 text-right align-top'>
+                  <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
                     <div className='inline-flex items-center justify-end gap-1'>
                       {showRowApprove ? (
                         row._approved ? (
@@ -284,7 +285,7 @@ function renderCell(
   if (!canEdit) {
     return withLabel(
       <span className='block min-w-0 truncate'>
-        {value != null && value !== '' ? String(value) : '-'}
+        {value != null && value !== '' ? String(value) : 'NA'}
       </span>,
     )
   }
@@ -309,7 +310,6 @@ function renderCell(
     return withLabel(
       <textarea
         className={cn(cellInputClass, 'min-h-[2.5rem] resize-y')}
-        placeholder={label ? `${label}…` : undefined}
         rows={2}
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value)}
@@ -324,7 +324,6 @@ function renderCell(
           cellInputClass,
           type === 'CURRENCY_AMOUNT' ? 'text-right' : 'text-center',
         )}
-        placeholder={label ? `${label}…` : undefined}
         type='number'
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value)}
@@ -353,7 +352,6 @@ function renderCell(
   return withLabel(
     <input
       className={cellInputClass}
-      placeholder={label ? `${label}…` : undefined}
       value={value ?? ''}
       onChange={(event) => onChange(event.target.value)}
     />,

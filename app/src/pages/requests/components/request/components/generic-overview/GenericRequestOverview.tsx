@@ -325,10 +325,13 @@ const DocumentFormSplitLayout = ({
   const hasAgents = agentBlocks.length > 0
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
+  const initialAgentId = agentBlocks[0]?.id ?? null
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
-    null,
+    initialAgentId,
   )
-  const [activeTab, setActiveTab] = useState('summary')
+  const [activeTab, setActiveTab] = useState(
+    initialAgentId ? `agent:${initialAgentId}` : 'summary',
+  )
   const prevAgentResponseTabKey = useRef('')
 
   // When a new agent response arrives (or on first load), open that tab first.
@@ -493,7 +496,7 @@ const DocumentFormSplitLayout = ({
 
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
         {agentBlocks.length > 0 && (
-          <div className='pb-5 mt-5 mr-5 ml-5'>
+          <div className='mb-4 px-4 pt-3'>
             <AgentSummaryBoxes
               agentBlocks={agentBlocks}
               selectedAgentBlockId={selectedAgentBlockId}
@@ -510,9 +513,9 @@ const DocumentFormSplitLayout = ({
             />
           </div>
         )}
-        <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+        <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4 pt-2'>
           <div className='flex items-center justify-between gap-4'>
-            <div className='flex items-center gap-2 sm:gap-6 md:gap-8 ml-5 min-w-0 overflow-x-auto no-scrollbar'>
+            <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -539,7 +542,7 @@ const DocumentFormSplitLayout = ({
 
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-            <div className='flex min-h-0 flex-1 flex-col m-5 overflow-y-auto pr-3.5'>
+            <div className='mx-4 mt-3 mb-4 flex min-h-0 flex-1 flex-col overflow-y-auto'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
                 attachments={attachments}

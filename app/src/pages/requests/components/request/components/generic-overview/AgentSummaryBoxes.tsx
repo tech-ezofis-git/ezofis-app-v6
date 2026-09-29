@@ -1,7 +1,7 @@
 import React from 'react'
 import { Icon } from '@iconify/react'
 import cn from '@/utils/cn'
-import { summarizeQualifierResult } from './qualifierResultUtils'
+import { summarizeQualifierResult, qualifyDecisionStyle } from './qualifierResultUtils'
 import { summarizeQuoteResult } from './quoteResultUtils'
 
 export interface AgentBlock {
@@ -103,11 +103,9 @@ export const getAgentResponseTabs = (
   )
   if (visible.length > 0) return [...visible].reverse()
 
-  // Stub / early processing before stage maps to an agent label — still show
-  // the first agent tab so the user can see "Agent is processing..."
-  if (requestData?.isProcessing && agentBlocks.length > 0) {
-    return [agentBlocks[0]]
-  }
+  // Before a response exists, open the first agent directly so the process
+  // is shown instead of Extracted Data.
+  if (agentBlocks.length > 0) return [agentBlocks[0]]
   return []
 }
 
@@ -152,7 +150,7 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
   return (
     <div
       className={cn(
-        'grid gap-3 pb-4',
+        'grid gap-3',
         agentBlocks.length <= 3 && 'grid-cols-1 sm:grid-cols-3',
         agentBlocks.length === 4 && 'grid-cols-2 md:grid-cols-2 xl:grid-cols-4',
         agentBlocks.length === 5 && 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
@@ -175,13 +173,10 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
           const qualifyResult = requestData?.qualifyAgentResponse?.qualifier_result
           if (qualifyResult) {
             const summary = summarizeQualifierResult(qualifyResult)
-            status = summary.qualify || 'Processed'
-            if (status.toLowerCase() === 'qualify') {
-              statusColor = 'text-green-10 bg-green-2 border-green-3'
-            } else if (status.toLowerCase() === 'disqualify') {
-              statusColor = 'text-red-10 bg-red-2 border-red-3'
-            } else {
-              statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            const decision = qualifyDecisionStyle(summary.qualify)
+            if (summary.qualify) {
+              status = decision.label
+              statusColor = decision.className
             }
             value = summary.title
           } else if (requestData?.stage === label && !requestData?.qualifyAgentResponse) {
