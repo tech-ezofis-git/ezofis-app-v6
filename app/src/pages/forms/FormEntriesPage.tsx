@@ -61,17 +61,45 @@ const FormEntriesChoiceInput = ({
   field,
   val,
   isMultiple,
+  allFields = [],
+  formModel = {},
   onChange,
 }: {
   field: Question
   val: any
   isMultiple?: boolean
+  allFields?: Question[]
+  formModel?: Record<string, any>
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
     field.settings?.specific?.optionsType || 'CUSTOM',
   ).toUpperCase()
   const masterInfo = getMasterFormInfo(field)
+
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
     enabled: optionsType === 'USER_LIST',
@@ -88,11 +116,17 @@ const FormEntriesChoiceInput = ({
       'formEntriesChoiceMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -187,11 +221,15 @@ const FormEntriesSelectInput = ({
   field,
   val,
   fieldDistinctOptions = [],
+  allFields = [],
+  formModel = {},
   onChange,
 }: {
   field: Question
   val: any
   fieldDistinctOptions?: Option[]
+  allFields?: Question[]
+  formModel?: Record<string, any>
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -199,6 +237,30 @@ const FormEntriesSelectInput = ({
   ).toUpperCase()
   const facetSource = getDropdownFacetSource(field)
   const masterInfo = getMasterFormInfo(field)
+
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     enabled: facetSource.enabled,
@@ -234,11 +296,17 @@ const FormEntriesSelectInput = ({
       'formEntriesMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -2038,7 +2106,9 @@ const FormEntriesPage = () => {
                             </div>
                           ) : type === 'SINGLE_CHOICE' ? (
                             <FormEntriesChoiceInput
+                              allFields={renderableFields}
                               field={field}
+                              formModel={editValues}
                               val={val}
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
@@ -2046,7 +2116,9 @@ const FormEntriesPage = () => {
                             />
                           ) : type === 'MULTIPLE_CHOICE' ? (
                             <FormEntriesChoiceInput
+                              allFields={renderableFields}
                               field={field}
+                              formModel={editValues}
                               isMultiple
                               val={val}
                               onChange={(next) =>
@@ -2056,10 +2128,12 @@ const FormEntriesPage = () => {
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
                             <FormEntriesSelectInput
+                              allFields={renderableFields}
                               field={field}
                               fieldDistinctOptions={
                                 fieldDistinctOptions[field.id] || []
                               }
+                              formModel={editValues}
                               val={val}
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)

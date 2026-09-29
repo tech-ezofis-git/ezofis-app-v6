@@ -302,6 +302,37 @@ const normalizeDictList = (raw: any): any[] => {
   return result
 }
 
+export const extractScalarStrings = (val: any): string[] => {
+  if (val === undefined || val === null || val === '') return []
+  if (typeof val === 'number' || typeof val === 'boolean') return [String(val)]
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (!trimmed) return []
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return extractScalarStrings(parsed)
+      } catch {
+        // Fall back to plain string
+      }
+    }
+    return [trimmed]
+  }
+  if (Array.isArray(val)) {
+    return val.flatMap(extractScalarStrings)
+  }
+  if (typeof val === 'object') {
+    const candidate = val.id ?? val.value ?? val.name ?? val.label
+    if (candidate !== undefined && candidate !== null && candidate !== val) {
+      return extractScalarStrings(candidate)
+    }
+  }
+  return []
+}
+
 export const fetchMasterFormColumnOptions = async (
   masterFormId: string,
   masterFormColumn?: string,
@@ -369,10 +400,54 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
+    // Prepare parent column candidate keys if parent filtering is active
+    const parentCandidateKeys = new Set<string>()
+    if (parentMasterColumn) {
+      parentCandidateKeys.add(parentMasterColumn)
+      parentCandidateKeys.add(parentMasterColumn.trim())
+      parentCandidateKeys.add(parentMasterColumn.trim().toLowerCase())
+      const matchedParentField = formFields.find(
+        (f: any) =>
+          f.id === parentMasterColumn ||
+          f.id?.trim() === parentMasterColumn?.trim() ||
+          f.label?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase() ||
+          f.name?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase(),
+      )
+      if (matchedParentField) {
+        if (matchedParentField.id) {
+          parentCandidateKeys.add(matchedParentField.id)
+          parentCandidateKeys.add(matchedParentField.id.trim())
+          parentCandidateKeys.add(matchedParentField.id.trim().toLowerCase())
+        }
+        if (matchedParentField.label) {
+          parentCandidateKeys.add(matchedParentField.label)
+          parentCandidateKeys.add(matchedParentField.label.trim())
+          parentCandidateKeys.add(matchedParentField.label.trim().toLowerCase())
+        }
+        if (matchedParentField.name) {
+          parentCandidateKeys.add(matchedParentField.name)
+          parentCandidateKeys.add(matchedParentField.name.trim())
+          parentCandidateKeys.add(matchedParentField.name.trim().toLowerCase())
+        }
+      }
+    }
+
+    const hasParentFilter = Boolean(
+      parentMasterColumn && String(parentMasterColumn).trim(),
+    )
+    const targetParentVals = extractScalarStrings(parentValue)
+    const targetParentSet = new Set(
+      targetParentVals.map((s) => s.trim().toLowerCase()),
+    )
+
+    if (hasParentFilter && targetParentSet.size === 0 && !showAllData) {
+      return []
+    }
+
     const uniqueValues = new Set<string>()
 
-    // Include custom options defined on the master form column schema as baseline options
-    if (matchedField) {
+    // Include custom options defined on the master form column schema ONLY when parent filter is NOT active
+    if (!hasParentFilter && matchedField) {
       const schemaOptions = getFieldOptions(matchedField)
       for (const opt of schemaOptions) {
         if (opt.name && opt.name.trim()) {
@@ -417,40 +492,6 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    // Prepare parent column candidate keys if parent filtering is active
-    const parentCandidateKeys = new Set<string>()
-    if (parentMasterColumn) {
-      parentCandidateKeys.add(parentMasterColumn)
-      parentCandidateKeys.add(parentMasterColumn.trim())
-      parentCandidateKeys.add(parentMasterColumn.trim().toLowerCase())
-      const matchedParentField = formFields.find(
-        (f: any) =>
-          f.id === parentMasterColumn ||
-          f.id?.trim() === parentMasterColumn?.trim() ||
-          f.label?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase() ||
-          f.name?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase(),
-      )
-      if (matchedParentField) {
-        if (matchedParentField.id) {
-          parentCandidateKeys.add(matchedParentField.id)
-          parentCandidateKeys.add(matchedParentField.id.trim())
-          parentCandidateKeys.add(matchedParentField.id.trim().toLowerCase())
-        }
-        if (matchedParentField.label) {
-          parentCandidateKeys.add(matchedParentField.label)
-          parentCandidateKeys.add(matchedParentField.label.trim())
-          parentCandidateKeys.add(matchedParentField.label.trim().toLowerCase())
-        }
-      }
-    }
-
-    const hasParentFilter =
-      parentMasterColumn &&
-      parentValue !== undefined &&
-      parentValue !== null &&
-      String(parentValue).trim() !== ''
-    const normalizedParentVal = String(parentValue || '').trim().toLowerCase()
-
     const extractFromDict = (dictionary: any, keys: Set<string>): any => {
       if (!dictionary || typeof dictionary !== 'object') return undefined
       if (!Array.isArray(dictionary)) {
@@ -476,7 +517,14 @@ export const fetchMasterFormColumnOptions = async (
         for (const item of dictionary) {
           if (item && typeof item === 'object') {
             const itemKey = String(
-              item.id || item.name || item.label || item.column || item.key || '',
+              item.id ||
+                item.name ||
+                item.label ||
+                item.column ||
+                item.key ||
+                item.fieldName ||
+                item.fieldId ||
+                '',
             )
               .trim()
               .toLowerCase()
@@ -498,15 +546,34 @@ export const fetchMasterFormColumnOptions = async (
         ...normalizeDictList(entry),
       ]
 
-      if (hasParentFilter) {
+      if (hasParentFilter && targetParentSet.size > 0) {
         let entryParentVal: any = undefined
         for (const dict of dicts) {
           entryParentVal = extractFromDict(dict, parentCandidateKeys)
-          if (entryParentVal !== undefined) break
+          if (
+            entryParentVal !== undefined &&
+            entryParentVal !== null &&
+            entryParentVal !== ''
+          ) {
+            break
+          }
         }
-        if (entryParentVal === undefined || entryParentVal === null) continue
-        const normEntryParentVal = String(entryParentVal).trim().toLowerCase()
-        if (normEntryParentVal !== normalizedParentVal) {
+
+        if (
+          entryParentVal === undefined ||
+          entryParentVal === null ||
+          entryParentVal === ''
+        ) {
+          continue
+        }
+
+        const entryParentStrings = extractScalarStrings(entryParentVal).map(
+          (s) => s.trim().toLowerCase(),
+        )
+        const matchesParent = entryParentStrings.some((s) =>
+          targetParentSet.has(s),
+        )
+        if (!matchesParent) {
           continue
         }
       }
@@ -518,10 +585,13 @@ export const fetchMasterFormColumnOptions = async (
       }
 
       if (val !== undefined && val !== null && val !== '') {
-        const splitVals = splitStoredSelectValues(val)
-        for (const item of splitVals) {
-          const itemStr = item.trim()
-          if (itemStr) uniqueValues.add(itemStr)
+        const extractedStrings = extractScalarStrings(val)
+        for (const rawStr of extractedStrings) {
+          const splitVals = splitStoredSelectValues(rawStr)
+          for (const item of splitVals) {
+            const itemStr = item.trim()
+            if (itemStr) uniqueValues.add(itemStr)
+          }
         }
       }
     }

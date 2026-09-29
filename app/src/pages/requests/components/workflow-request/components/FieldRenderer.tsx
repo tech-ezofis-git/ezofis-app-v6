@@ -545,19 +545,27 @@ const FieldRenderer = ({
   )
   const parentField = useMemo(() => {
     if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
     return allFields.find(
-      (f: any) => f.id === masterInfo.masterFormParentColumn,
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
 
-  const parentValue =
-    masterInfo.masterFormParentColumn && formModel
-      ? formModel[masterInfo.masterFormParentColumn]
-      : undefined
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
 
   const parentMasterColumn = parentField
-    ? getMasterFormInfo(parentField).masterFormColumn || parentField.label || parentField.id
-    : undefined
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,

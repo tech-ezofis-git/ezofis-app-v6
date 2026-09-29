@@ -4279,6 +4279,7 @@ const QuestionSettings = ({
                       <InputSelect
                         options={logicFieldOptions}
                         placeholder='Select a field'
+                        searchable
                         value={
                           logicFieldOptions.find(
                             (o) => o.id === rule.fieldId,
