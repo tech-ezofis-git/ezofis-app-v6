@@ -395,7 +395,11 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         isSubmitting={isSubmitting}
         title={t`New Request`}
         onClose={onClose}
-        onSubmit={createdInstanceId || agentBlocks.length > 0 ? undefined : handleSubmit}
+        onSubmit={
+          createdInstanceId || (isDocumentForm && hasAgents)
+            ? undefined
+            : handleSubmit
+        }
       />
 
       {isLoadingForm ? (
