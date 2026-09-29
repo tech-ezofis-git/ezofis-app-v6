@@ -965,11 +965,33 @@ const FormEntriesPage = () => {
 
   // Helper to match createdBy user ID to user name or logged in user name
   const resolveUserName = (userId: string) => {
+    const store = authUserStore.getState()
+    const loggedInSession = store.session
+    const loggedInUser = store.user
+    const currentUserName =
+      loggedInSession?.name ||
+      (loggedInSession?.firstName
+        ? `${loggedInSession.firstName} ${loggedInSession.lastName || ''}`.trim()
+        : '') ||
+      loggedInSession?.email ||
+      loggedInUser?.name ||
+      loggedInUser?.email ||
+      ''
+
+    if (
+      !userId ||
+      userId === 'unknown@ezofis.com' ||
+      userId.toLowerCase() === 'unknown'
+    ) {
+      return currentUserName || 'System'
+    }
+
     if (usersData && Array.isArray(usersData)) {
       const user = usersData.find(
         (u: any) =>
           String(u.id) === String(userId) ||
-          String(u.userId) === String(userId),
+          String(u.userId) === String(userId) ||
+          String(u.email || '').toLowerCase() === String(userId).toLowerCase(),
       )
       if (user) {
         const fullName =
@@ -984,14 +1006,13 @@ const FormEntriesPage = () => {
       }
     }
 
-    const store = authUserStore.getState()
-    const loggedInUser = store.session
-    if (loggedInUser && String(loggedInUser.id) === String(userId)) {
-      const fullName =
-        loggedInUser.name ||
-        `${loggedInUser.firstName} ${loggedInUser.lastName || ''}`.trim() ||
-        loggedInUser.email
-      if (fullName) return fullName
+    if (
+      loggedInSession &&
+      (String(loggedInSession.id) === String(userId) ||
+        String(loggedInSession.email || '').toLowerCase() ===
+          String(userId).toLowerCase())
+    ) {
+      if (currentUserName) return currentUserName
     }
 
     return userId
@@ -1171,9 +1192,31 @@ const FormEntriesPage = () => {
           })
         }
 
+        const store = authUserStore.getState()
+        const loggedInUserEmail =
+          store.session?.email ||
+          store.user?.email ||
+          store.session?.name ||
+          store.user?.name ||
+          ''
+
+        const rawCreatedBy =
+          e.createdBy ??
+          e.CreatedBy ??
+          e.created_by ??
+          e.createdUser ??
+          e.user ??
+          e.userId ??
+          e.createdById
+
+        const createdBy =
+          rawCreatedBy && rawCreatedBy !== 'unknown@ezofis.com'
+            ? rawCreatedBy
+            : loggedInUserEmail || 'unknown@ezofis.com'
+
         return {
-          createdAt: e.createdAt || new Date().toISOString(),
-          createdBy: e.createdBy || 'unknown@ezofis.com',
+          createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
+          createdBy,
           entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           id: e.itemId
             ? `Entry #${e.itemId}`
