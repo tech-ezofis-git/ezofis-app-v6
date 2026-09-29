@@ -898,7 +898,7 @@ function CreateRolePage({
         setShowErrors(true)
         showToast({
           message: getRequiredFieldErrorMessage(missingLabels),
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -916,7 +916,7 @@ function CreateRolePage({
       if (activeStep !== 0) onStepChange(0)
       showToast({
         message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -935,7 +935,7 @@ function CreateRolePage({
           onStepChange(index)
           showToast({
             message: getRequiredFieldErrorMessage(missingLabels),
-            variant: 'error',
+            variant: 'info',
           })
           return
         }

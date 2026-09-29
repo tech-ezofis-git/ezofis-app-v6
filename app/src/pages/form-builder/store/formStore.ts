@@ -277,6 +277,8 @@ export interface Question {
         name: string
         settings?: {
           lookupSettings?: {
+            /** LOOKUP = repository facets; API = FTL catalog on focus/select */
+            optionsSource?: 'LOOKUP' | 'API'
             repositoryField?: string
             repositoryId?: string
           }

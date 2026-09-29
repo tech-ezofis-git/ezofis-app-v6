@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -14,7 +14,9 @@ import WorkflowFormRenderer from './WorkflowFormRenderer'
 import AttachmentsPanel from './components/AttachmentsPanel'
 import CommentsPanel from './components/CommentsPanel'
 import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
-import AgentSummaryBoxes from '../request/components/generic-overview/AgentSummaryBoxes'
+import AgentSummaryBoxes, {
+  getAgentResponseTabs,
+} from '../request/components/generic-overview/AgentSummaryBoxes'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
@@ -53,26 +55,68 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     workflow?.id,
     createdInstanceId,
     null,
-    true
+    true,
+    workflow?.formId ||
+      workflow?.wFormId ||
+      workflow?.settings?.general?.initiateUsing?.formId ||
+      null,
   )
 
-  const isDocumentForm =
-    workflow?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
-    workflow?.workflowJson?.settings?.general?.initiateUsing?.type ===
-      'DOCUMENT_FORM'
+  const initiateType = String(
+    workflow?.settings?.general?.initiateUsing?.type ||
+      workflow?.workflowJson?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+  const isDocumentForm = initiateType === 'DOCUMENTFORM'
 
   const agentBlocks = useMemo(() => {
     const blocks = extractBlocks(workflow)
     return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
   }, [workflow])
 
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const agentResponseTabs = useMemo(
+    () => getAgentResponseTabs(agentBlocks, requestData),
+    [agentBlocks, requestData],
+  )
+  const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
+  const hasAgents = agentBlocks.length > 0
+  const hasAgentResponseTabs = agentResponseTabs.length > 0
+
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
+    null,
+  )
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
-    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+    return agentBlocks.find((b) => b.id === selectedAgentBlockId) || null
   }, [selectedAgentBlockId, agentBlocks])
 
   const [activeTab, setActiveTab] = useState('summary')
+  const prevAgentResponseTabKey = useRef('')
+
+  useEffect(() => {
+    if (!hasAgentResponseTabs) return
+    const newestId = agentResponseTabs[0]?.id
+    if (!newestId) return
+    const prevKey = prevAgentResponseTabKey.current
+    const isFirstLoad = prevKey === ''
+    const isNewResponse = prevKey !== agentResponseTabKey
+    prevAgentResponseTabKey.current = agentResponseTabKey
+    if (isFirstLoad || isNewResponse) {
+      setSelectedAgentBlockId(newestId)
+      setActiveTab(`agent:${newestId}`)
+    }
+  }, [agentResponseTabKey, agentResponseTabs, hasAgentResponseTabs])
+
+  const selectTab = (tabId: string) => {
+    setActiveTab(tabId)
+    if (tabId.startsWith('agent:')) {
+      setSelectedAgentBlockId(tabId.slice('agent:'.length))
+    } else {
+      setSelectedAgentBlockId(null)
+    }
+  }
 
   const handleFieldFocus = (value: any) => {
     const str = value == null ? '' : String(value).trim()
@@ -225,7 +269,76 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     return { ids, hasLineItems }
   }, [panels])
 
+  const standardTabs = useMemo(
+    () =>
+      [
+        { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
+        lineItemsHiddenFieldIds.hasLineItems
+          ? {
+              icon: 'tabler:layers-linked',
+              id: 'line_items',
+              label: t`Line Items`,
+            }
+          : null,
+        {
+          count: attachments.length,
+          icon: 'tabler:paperclip',
+          id: 'attachments',
+          label: t`Attachments`,
+        },
+        {
+          count: comments.length,
+          icon: 'tabler:message-circle',
+          id: 'comments',
+          label: t`Comments`,
+        },
+        { icon: 'tabler:history', id: 'history', label: t`History` },
+      ].filter(Boolean) as Array<{
+        count?: number
+        icon: string
+        id: string
+        label: string
+      }>,
+    [
+      attachments.length,
+      comments.length,
+      lineItemsHiddenFieldIds.hasLineItems,
+      t,
+    ],
+  )
 
+  const tabs = useMemo(() => {
+    if (!hasAgents || !hasAgentResponseTabs) return standardTabs
+    const agentTabs = agentResponseTabs.map((block) => ({
+      icon: block.icon || 'lucide:cpu',
+      id: `agent:${block.id}`,
+      label: block.settings?.label || t`Agent`,
+    }))
+    return [
+      ...agentTabs,
+      {
+        count: attachments.length,
+        icon: 'tabler:paperclip',
+        id: 'attachments',
+        label: t`Attachments`,
+      },
+      {
+        count: comments.length,
+        icon: 'tabler:message-circle',
+        id: 'comments',
+        label: t`Comments`,
+      },
+      { icon: 'tabler:history', id: 'history', label: t`History` },
+    ]
+  }, [
+    agentResponseTabs,
+    attachments.length,
+    comments.length,
+    hasAgentResponseTabs,
+    hasAgents,
+    standardTabs,
+    t,
+  ])
 
   const handleSubmit = async () => {
     const result = await submit()
@@ -236,7 +349,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       showToast({
         message:
           submitError || t`Failed to start the workflow. Please try again.`,
-        variant: isMissingFieldsMessage ? 'default' : 'error',
+        variant: isMissingFieldsMessage ? 'info' : 'error',
       })
       const firstMissingId = missingMandatoryFieldIds.values().next().value
       if (firstMissingId) {
@@ -313,8 +426,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
               }}
             />
           ) : isDocumentForm && (uploadedFiles.length > 0 || createdInstanceId || isStartingAgentWorkflow) ? (
-            <div className='flex min-w-0 flex-1 gap-5 overflow-hidden p-5 bg-gray-1'>
-              <div className='flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+            <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-[var(--gray-1)]'>
+              <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
@@ -323,65 +436,77 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   onSelectKey={setActiveFileKey}
                 />
               </div>
-              <div className='flex w-[500px] xl:w-[650px] 2xl:w-[800px] shrink-0 flex-col overflow-hidden'>
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
                 {agentBlocks.length > 0 && (
-                  <div className='pb-5'>
+                  <div className='pb-5 mt-5 mr-5 ml-5'>
                     <AgentSummaryBoxes
                       agentBlocks={agentBlocks}
                       selectedAgentBlockId={selectedAgentBlockId}
-                      onAgentClick={setSelectedAgentBlockId}
+                      onAgentClick={(blockId) => {
+                        if (!blockId) {
+                          setSelectedAgentBlockId(null)
+                          setActiveTab(
+                            hasAgentResponseTabs
+                              ? `agent:${agentResponseTabs[0]?.id}`
+                              : 'summary',
+                          )
+                          return
+                        }
+                        setSelectedAgentBlockId(blockId)
+                        setActiveTab(`agent:${blockId}`)
+                      }}
                       requestData={requestData || null}
                     />
                   </div>
                 )}
-                {!selectedAgentBlock && agentBlocks.length > 0 && (
-                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
-                    <div className='flex items-center justify-between gap-4'>
-                      <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
-                        {[
-                          { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
-                          lineItemsHiddenFieldIds.hasLineItems ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
-                          { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments`, count: attachments.length },
-                          { icon: 'tabler:message-circle', id: 'comments', label: t`Comments`, count: comments.length },
-                          { icon: 'tabler:history', id: 'history', label: t`History` },
-                        ].filter(Boolean).map((tab: any) => (
-                          <button
-                            key={tab.id}
-                            className={cn(
-                              '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
-                              activeTab === tab.id
-                                ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                                : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                            )}
-                            onClick={() => setActiveTab(tab.id)}
-                          >
-                            <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
-                            <span>{tab.label}</span>
-                            {tab.count !== undefined && (
-                              <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
-                                {tab.count}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+                  <div className='flex items-center justify-between gap-4'>
+                    <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          className={cn(
+                            '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                            activeTab === tab.id
+                              ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                              : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                          )}
+                          onClick={() => selectTab(tab.id)}
+                        >
+                          <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                          <span>{tab.label}</span>
+                          {'count' in tab && tab.count !== undefined && (
+                            <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                              {tab.count}
+                            </span>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
+                </div>
                 <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-                  {selectedAgentBlock ? (
+                  {activeTab.startsWith('agent:') && selectedAgentBlock ? (
                     <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
                       <AgentDetailPlaceholder
                         agentBlock={selectedAgentBlock}
                         formModel={formModel}
-                        onBack={() => setSelectedAgentBlockId(null)}
+                        hideBack={hasAgentResponseTabs}
+                        onBack={() => {
+                          setSelectedAgentBlockId(null)
+                          setActiveTab(
+                            hasAgentResponseTabs
+                              ? `agent:${agentResponseTabs[0]?.id}`
+                              : 'summary',
+                          )
+                        }}
                         onFieldChange={setFieldValue}
                         rawWorkflowData={workflow}
                         requestData={requestData || null}
                       />
                     </div>
-                  ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                  ) : activeTab === 'summary' ? (
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
                       <WorkflowFormRenderer
                         formModel={formModel}
                         hasAttemptedSubmit={hasAttemptedSubmit}
@@ -389,6 +514,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         hidePanels={agentBlocks.length > 0}
                         missingMandatoryFieldIds={missingMandatoryFieldIds}
                         panels={panels}
+                        presentation='extracted'
                         repoFieldHints={repoFieldHints}
                         repositoryId={workflow?.repositoryId}
                         onFieldChange={setFieldValue}
@@ -396,7 +522,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'line_items' && lineItemsHiddenFieldIds.hasLineItems ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                    <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
                       <WorkflowFormRenderer
                         formModel={formModel}
                         hasAttemptedSubmit={hasAttemptedSubmit}

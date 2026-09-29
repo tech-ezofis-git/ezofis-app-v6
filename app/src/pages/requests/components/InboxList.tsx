@@ -1617,10 +1617,6 @@ const InboxList: React.FC<InboxListProps> = ({
   const processingProcesses = requestStore((state) => state.processingProcesses)
 
   const finalData = useMemo(() => {
-    if (activeTab !== 'Inbox' && viewMode !== 'kanban') {
-      return filteredData
-    }
-
     const existingIds = new Set()
     const outData = (filteredData || []).map((g) => {
       const updatedItems = (g.items || []).map((i: any) => {
@@ -1636,15 +1632,35 @@ const InboxList: React.FC<InboxListProps> = ({
           String(i.stageType).includes('AGENT') ||
           String(i.stage).toLowerCase().includes('agent')
 
-        if (!isProcessing && activeTab === 'Inbox' && isAgentStage) {
+        // Mark loading on Inbox / Sent / Completed when an agent stage
+        // still has no agent response payload.
+        if (
+          !isProcessing &&
+          isAgentStage &&
+          (activeTab === 'Inbox' ||
+            activeTab === 'Sent' ||
+            activeTab === 'Closed' ||
+            activeTab === 'Completed' ||
+            viewMode === 'kanban')
+        ) {
           if (!isApAgent) {
-            const hasAgentData = 
-              i.qualifyAgentResponse != null || 
-              i.quoteAgentResponse != null || 
-              i.documentGenerateResponse != null || 
-              i.agentResponse != null || 
-              i._agentResponse != null
-              
+            const stageLower = String(i.stage || '').toLowerCase()
+            let hasAgentData = false
+            if (stageLower.includes('document')) {
+              hasAgentData = i.documentGenerateResponse != null
+            } else if (stageLower.includes('quote')) {
+              hasAgentData = i.quoteAgentResponse != null
+            } else if (stageLower.includes('qualify')) {
+              hasAgentData = i.qualifyAgentResponse != null
+            } else {
+              hasAgentData =
+                i.qualifyAgentResponse != null ||
+                i.quoteAgentResponse != null ||
+                i.documentGenerateResponse != null ||
+                i.agentResponse != null ||
+                i._agentResponse != null
+            }
+
             if (!hasAgentData) {
               isProcessing = true
             }
@@ -1658,6 +1674,11 @@ const InboxList: React.FC<InboxListProps> = ({
       })
       return { ...g, items: updatedItems }
     })
+
+    // Only inject local processingProcesses into Inbox / kanban.
+    if (activeTab !== 'Inbox' && viewMode !== 'kanban') {
+      return outData
+    }
 
     const newProcessingItems = (processingProcesses || [])
       .filter((p) => !existingIds.has(String(p.processId || p.id)))

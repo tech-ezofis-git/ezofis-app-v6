@@ -5,6 +5,8 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
+import cn from '@/utils/cn'
+import ExtractedFieldCell from './components/ExtractedFieldCell'
 import FieldRenderer from './components/FieldRenderer'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import {
@@ -15,6 +17,19 @@ import {
   isFieldRequired,
 } from './utils/fieldRendering'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
+
+const EXTRACTED_FALLBACK_TYPES = new Set([
+  'TABLE',
+  'DYNAMIC_TABLE',
+  'FILE_UPLOAD',
+  'IMAGE_UPLOAD',
+  'SIGNATURE',
+  'CHECKBOX',
+  'MULTI_SELECT',
+  'MULTIPLE_CHOICE',
+  'USER',
+  'USERS',
+])
 
 interface Props {
   formModel: Record<string, any>
@@ -42,6 +57,8 @@ interface Props {
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
   openValue?: string | null
+  // AP-style dense label/value grid (click-to-edit) instead of Input cards.
+  presentation?: 'default' | 'extracted'
   preparePhase?: 'extracting' | 'uploading' | null
   preparingFieldId?: string | null
   // Field ids the current acting user can see but not edit, from the same
@@ -80,6 +97,7 @@ const WorkflowFormRenderer = ({
   missingMandatoryFieldIds,
   openValue,
   panels,
+  presentation = 'default',
   preparePhase,
   preparingFieldId,
   readOnlyFieldIds,
@@ -146,6 +164,104 @@ const WorkflowFormRenderer = ({
     getPanelValue?.(panel, index) || `panel-${index}`
 
   const renderVisibleFields = (visibleFields: any[]) => {
+    if (presentation === 'extracted') {
+      const scalarFields = visibleFields.filter(
+        (field) => !EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
+      )
+      const complexFields = visibleFields.filter((field) =>
+        EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
+      )
+
+      return (
+        <div className='flex max-w-full min-w-0 flex-col gap-6'>
+          <div className='grid grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2'>
+            {scalarFields.map((field: any) => {
+              const fieldError =
+                hasAttemptedSubmit &&
+                (missingMandatoryFieldIds?.has(String(field.id)) ||
+                  (field.jsonId &&
+                    missingMandatoryFieldIds?.has(String(field.jsonId))))
+                  ? t`This field is required.`
+                  : undefined
+              const isReadOnly =
+                viewOnly ||
+                Boolean(readOnlyFieldIds?.has(String(field.id))) ||
+                isFieldReadOnly(field)
+
+              return (
+                <ExtractedFieldCell
+                  error={fieldError}
+                  field={field}
+                  key={field.id}
+                  readOnly={isReadOnly}
+                  source={
+                    formModel[field.id] != null && formModel[field.id] !== ''
+                      ? 'ocr'
+                      : 'ocr'
+                  }
+                  value={formModel[field.id]}
+                  onChange={(value) => onFieldChange(field.id, value)}
+                />
+              )
+            })}
+          </div>
+          {complexFields.map((field: any) => {
+            const isTableField =
+              field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
+            const sizeClass = getColumnSizeClass(
+              isTableField
+                ? field.settings?.general?.size || 'col-12'
+                : field.settings?.general?.size,
+            )
+            return (
+              <div
+                className={`${sizeClass} max-w-full min-w-0 px-1 pb-2`}
+                data-field-id={field.id}
+                key={field.id}
+              >
+                <FieldRenderer
+                  fallbackAttachments={attachmentsByField[field.id]}
+                  field={field}
+                  formModel={formModel}
+                  panels={panels}
+                  preparePhase={preparePhase}
+                  repoFieldHints={repoFieldHints}
+                  repositoryId={repositoryId}
+                  value={formModel[field.id]}
+                  error={
+                    hasAttemptedSubmit &&
+                    (missingMandatoryFieldIds?.has(String(field.id)) ||
+                      (field.jsonId &&
+                        missingMandatoryFieldIds?.has(String(field.jsonId))))
+                      ? t`This field is required.`
+                      : undefined
+                  }
+                  isPreparing={
+                    Boolean(preparePhase) &&
+                    preparingFieldId === String(field.id)
+                  }
+                  viewOnly={
+                    viewOnly ||
+                    Boolean(readOnlyFieldIds?.has(String(field.id)))
+                  }
+                  onChange={(value) => onFieldChange(field.id, value)}
+                  onOcrFieldList={onOcrFieldList}
+                  onOpenAttachment={onOpenAttachment}
+                  onRequestUpload={
+                    onRequestUpload &&
+                    !viewOnly &&
+                    !readOnlyFieldIds?.has(String(field.id))
+                      ? (file) => onRequestUpload(field.id, file)
+                      : undefined
+                  }
+                />
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+
     return (
       <div className='-mx-2 -mb-4 flex max-w-full min-w-0 flex-wrap'>
         {visibleFields.map((field: any) => {
@@ -162,7 +278,11 @@ const WorkflowFormRenderer = ({
 
           return (
             <div
-              className={`${sizeClass} max-w-full min-w-0 px-2 pb-4`}
+              className={cn(
+                sizeClass,
+                'max-w-full min-w-0 px-2',
+                isTableField ? 'pb-6' : 'pb-4',
+              )}
               data-field-id={field.id}
               key={field.id}
             >
@@ -217,12 +337,18 @@ const WorkflowFormRenderer = ({
       <div
         className={
           disableOwnScroll
-            ? 'w-full min-w-0 max-w-full'
-            : 'w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'
+            ? cn(
+                'w-full min-w-0 max-w-full',
+                presentation === 'extracted' && 'p-2',
+              )
+            : cn(
+                'w-full min-w-0 max-w-full overflow-x-hidden',
+                presentation === 'extracted' ? 'px-4 py-4' : 'px-6 py-6',
+              )
         }
       >
         <AnimateFadeIn delay={0.1}>
-          <div className='flex flex-col gap-2'>
+          <div className='flex flex-col gap-6'>
             {panels.map((panel: any, panelIndex: number) => {
               const visibleFields = (panel.fields || []).filter((field: any) => {
                 const state = evaluatedFieldStates[field.id]

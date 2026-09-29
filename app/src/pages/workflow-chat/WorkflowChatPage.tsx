@@ -43,6 +43,7 @@ import {
 } from '@/pages/folders/components/Ui'
 import LineItemTable from '@/pages/requests/components/request/components/sections/overview/LineItemTable'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import {
   buildRepoMetadata,
   extractOcrText,
@@ -228,34 +229,34 @@ const TableInputWidget = ({
   const dynamicColumns =
     rawColumns.length > 0
       ? rawColumns.map((column: any, index: number) => ({
-        id:
-          column.id ||
-          column.jsonId ||
-          column.name ||
-          column.label ||
-          `column_${index}`,
+          id:
+            column.id ||
+            column.jsonId ||
+            column.name ||
+            column.label ||
+            `column_${index}`,
 
-        label:
-          column.label || column.name || column.id || `Column ${index + 1}`,
-      }))
+          label:
+            column.label || column.name || column.id || `Column ${index + 1}`,
+        }))
       : [
-        {
-          id: 'Description',
-          label: 'Description',
-        },
-        {
-          id: 'Quantity',
-          label: 'Quantity',
-        },
-        {
-          id: 'Unit Price',
-          label: 'Unit Price',
-        },
-        {
-          id: 'Line Amount',
-          label: 'Line Amount',
-        },
-      ]
+          {
+            id: 'Description',
+            label: 'Description',
+          },
+          {
+            id: 'Quantity',
+            label: 'Quantity',
+          },
+          {
+            id: 'Unit Price',
+            label: 'Unit Price',
+          },
+          {
+            id: 'Line Amount',
+            label: 'Line Amount',
+          },
+        ]
 
   const handleCellChange = (
     rowIndex: number,
@@ -373,9 +374,7 @@ const TableInputWidget = ({
             {rows.length} {rows.length === 1 ? 'row' : 'rows'}
           </span>
 
-          <PrimaryButton onClick={handleSubmit}>
-            Submit Table
-          </PrimaryButton>
+          <PrimaryButton onClick={handleSubmit}>Submit Table</PrimaryButton>
         </div>
       </div>
     </div>
@@ -428,9 +427,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     initialState?.awaitingDoc || null,
   )
   const [awaitingPanelForm, setAwaitingPanelForm] =
-    useState<PanelFormPayload | null>(
-      initialState?.awaitingPanelForm || null,
-    )
+    useState<PanelFormPayload | null>(initialState?.awaitingPanelForm || null)
   const [completedPanelIndexes, setCompletedPanelIndexes] = useState<number[]>(
     () => initialState?.completedPanelIndexes || [],
   )
@@ -599,11 +596,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           workflowsList.length > 0
             ? workflowsList.map((w) => w.name)
             : [
-              'Accounts Payable',
-              'Vendor Registration',
-              'Order-to-Cash',
-              'Purchase Request',
-            ]
+                'Accounts Payable',
+                'Vendor Registration',
+                'Order-to-Cash',
+                'Purchase Request',
+              ]
         setMessages([
           {
             htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Which workflow would you like to start?`,
@@ -617,11 +614,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           workflowsList.length > 0
             ? workflowsList.map((w) => w.name)
             : [
-              'Accounts Payable',
-              'Vendor Registration',
-              'Order-to-Cash',
-              'Purchase Request',
-            ]
+                'Accounts Payable',
+                'Vendor Registration',
+                'Order-to-Cash',
+                'Purchase Request',
+              ]
         setMessages([
           {
             htmlContent: `Select a workflow below to filter, or type a request ID or keyword to search:`,
@@ -703,10 +700,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const resolveControlRequired = (ctrl: any) =>
     Boolean(
       ctrl?.isRequired ||
-        ctrl?.required ||
-        ctrl?.isMandatory ||
-        isFieldRequired(ctrl) ||
-        ctrl?.settings?.validation?.fieldRule === 'REQUIRED',
+      ctrl?.required ||
+      ctrl?.isMandatory ||
+      isFieldRequired(ctrl) ||
+      ctrl?.settings?.validation?.fieldRule === 'REQUIRED',
     )
 
   const parseControlToFieldOrDoc = (
@@ -732,11 +729,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         `Field ${idx + 1}`,
     )
     const type = String(
-      ctrl.type ||
-        ctrl.control ||
-        ctrl.controlType ||
-        ctrl.dataType ||
-        'text',
+      ctrl.type || ctrl.control || ctrl.controlType || ctrl.dataType || 'text',
     ).toLowerCase()
     const required = resolveControlRequired(ctrl)
 
@@ -759,7 +752,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     ) {
       return {
         doc: {
-          accept: ctrl.accept || ctrl.settings?.specific?.accept || '.pdf,.doc,.docx,.png,.jpg',
+          accept:
+            ctrl.accept || ctrl.settings?.specific?.accept || DOCUMENT_ACCEPT,
           id,
           label,
           panelIndex,
@@ -814,7 +808,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             : String(specific.customOptions).split(',')
         options = parts.map((s: string) => s.trim()).filter(Boolean)
       }
-      if (Array.isArray(specific?.options) && (!options || options.length === 0)) {
+      if (
+        Array.isArray(specific?.options) &&
+        (!options || options.length === 0)
+      ) {
         options = specific.options
           .map((o: any) =>
             typeof o === 'string'
@@ -860,7 +857,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     const parsedFields: ParsedField[] = []
     const parsedDocs: ParsedDoc[] = []
 
-    if (!formJsonObj) return { docs: parsedDocs, fields: parsedFields, panels: [] }
+    if (!formJsonObj)
+      return { docs: parsedDocs, fields: parsedFields, panels: [] }
 
     let target = formJsonObj
     if (typeof target === 'string') {
@@ -887,11 +885,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       ...(Array.isArray(target?.secondaryPanels) ? target.secondaryPanels : []),
     ]
 
-    const pushParsed = (
-      ctrl: any,
-      idx: number,
-      panelIndex: number,
-    ) => {
+    const pushParsed = (ctrl: any, idx: number, panelIndex: number) => {
       const parsed = parseControlToFieldOrDoc(ctrl, idx, panelIndex)
       if (parsed.doc) parsedDocs.push(parsed.doc)
       if (parsed.field) parsedFields.push(parsed.field)
@@ -928,7 +922,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   }
 
   const buildSingleFieldQuestionMessage = (field: ParsedField): Message => {
-    const type = String(field.type || field.rawControl?.type || '').toUpperCase()
+    const type = String(
+      field.type || field.rawControl?.type || '',
+    ).toUpperCase()
     const isSelect =
       type.includes('SELECT') ||
       type.includes('CHOICE') ||
@@ -1004,7 +1000,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
       // Upload-first when this panel has file controls mixed with questions,
       // or more than one control overall → inline panel form.
-      if (controlCount > 1 || (panelDocs.length > 0 && panelFields.length > 0)) {
+      if (
+        controlCount > 1 ||
+        (panelDocs.length > 0 && panelFields.length > 0)
+      ) {
         const panelForm: PanelFormPayload = {
           docs: [
             ...panelDocs.filter((d) => d.required),
@@ -1057,8 +1056,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     const remainingF = sortFieldsMandatoryFirst(
       sourceFields.filter(
         (f) =>
-          !skipped.has(f.panelIndex ?? 0) &&
-          !isAnswerFilled(nextAnswers[f.id]),
+          !skipped.has(f.panelIndex ?? 0) && !isAnswerFilled(nextAnswers[f.id]),
       ),
     )
     const remainingD = sourceDocs.filter(
@@ -1612,14 +1610,14 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           ]
           parsedD = [
             {
-              accept: '.pdf,.doc,.docx,.png,.jpg',
+              accept: DOCUMENT_ACCEPT,
               id: 'registration_cert',
               label: 'Registration Certificate',
               panelIndex: 0,
               required: true,
             },
             {
-              accept: '.pdf,.doc,.docx',
+              accept: DOCUMENT_ACCEPT,
               id: 'tax_cert',
               label: 'Tax Certificate',
               panelIndex: 0,
@@ -1661,7 +1659,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           ]
           parsedD = [
             {
-              accept: '.pdf,.png,.jpg',
+              accept: DOCUMENT_ACCEPT,
               id: 'invoice_file',
               label: 'Invoice Upload',
               panelIndex: 0,
@@ -1709,7 +1707,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           ]
           parsedD = [
             {
-              accept: '.pdf,.doc,.docx,.png,.jpg',
+              accept: DOCUMENT_ACCEPT,
               id: 'support_doc',
               label: 'Supporting Document',
               panelIndex: 0,
@@ -1719,7 +1717,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         }
       }
 
-      if ((!parsedP || parsedP.length === 0) && (parsedF.length > 0 || parsedD.length > 0)) {
+      if (
+        (!parsedP || parsedP.length === 0) &&
+        (parsedF.length > 0 || parsedD.length > 0)
+      ) {
         parsedP = [
           {
             fields: [
@@ -1778,9 +1779,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         ...parsedF.map((f) => String(f.id)),
         ...parsedD.map((d) => String(d.id)),
       ]
-      const currentUserId = String(
-        authUserStore.getState().session?.id || '',
-      )
+      const currentUserId = String(authUserStore.getState().session?.id || '')
       const stageAccess = resolveStartStageFieldAccess(
         workflowJson,
         allIds,
@@ -1798,14 +1797,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       }
 
       // Stage Mandatory Fields override / extend form-level required flags.
-      parsedF = applyStageMandatoryFlags(
-        parsedF,
-        stageAccess.mandatoryFieldIds,
-      )
-      parsedD = applyStageMandatoryFlags(
-        parsedD,
-        stageAccess.mandatoryFieldIds,
-      )
+      parsedF = applyStageMandatoryFlags(parsedF, stageAccess.mandatoryFieldIds)
+      parsedD = applyStageMandatoryFlags(parsedD, stageAccess.mandatoryFieldIds)
       setFields(parsedF)
       setDocuments(parsedD)
 
@@ -2035,7 +2028,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             ) {
               const item = inboxRes.data.items[0]
               const currentStage =
-                item.stage || item.activityName || item.status || 'Finalizing Results...'
+                item.stage ||
+                item.activityName ||
+                item.status ||
+                'Finalizing Results...'
               setTypingText(currentStage)
 
               if (item.formData) {
@@ -2046,7 +2042,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
                 let nonEmptyCount = 0
                 Object.values(formDataObj).forEach((v) => {
-                  if (v !== undefined && v !== null && String(v).trim() !== '') {
+                  if (
+                    v !== undefined &&
+                    v !== null &&
+                    String(v).trim() !== ''
+                  ) {
                     nonEmptyCount++
                   }
                 })
@@ -2185,7 +2185,12 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           const { data, error } = await uploadAndIndexApi.uploadWithOcr({
             fields: hints,
             file: attachment.rawFile,
-            metadata: buildRepoMetadata([], panels, formModel, attachment.fileName),
+            metadata: buildRepoMetadata(
+              [],
+              panels,
+              formModel,
+              attachment.fileName,
+            ),
             ocrFieldList: attachment.ocrFieldList,
             ocrJson: attachment.ocrJson,
             ocrText: extractOcrText(attachment.ocrJson),
@@ -2273,8 +2278,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       submitted = true
     } catch (err) {
       console.warn('Real API workflow submit fallback:', err)
-      const message =
-        err instanceof Error ? err.message : 'Please try again.'
+      const message = err instanceof Error ? err.message : 'Please try again.'
       setMessages((prev) => [
         ...prev,
         {
@@ -2442,7 +2446,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       return
     }
 
-    if (msgId === 'msg-init-pending-choices' || msgId.includes('-pending-choices')) {
+    if (
+      msgId === 'msg-init-pending-choices' ||
+      msgId.includes('-pending-choices')
+    ) {
       const matchedWf = workflowsList.find(
         (w) => w.name === label || label.includes(w.name),
       )
@@ -2572,7 +2579,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               return (
                 <React.Fragment key={msg.id}>
                   <div className='flex max-w-[640px] items-start gap-3'>
-                    <div className='mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary-1 text-primary-9 border border-primary-3/60 shadow-xs'>
+                    <div className='mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-primary-3/60 bg-primary-1 text-primary-9 shadow-xs'>
                       <Bot className='h-4.5 w-4.5' />
                     </div>
                     <div
@@ -2618,10 +2625,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                         </div>
                         <div className='text-[11px] text-gray-9'>
                           or click to browse ·{' '}
-                          {msg.uploadCardDoc.accept || '.pdf,.jpg,.png'}
+                          {msg.uploadCardDoc.accept &&
+                          msg.uploadCardDoc.accept !== DOCUMENT_ACCEPT
+                            ? msg.uploadCardDoc.accept
+                            : 'PDF, Word, Excel, PowerPoint, Images & Documents'}
                         </div>
                         <input
-                          accept={msg.uploadCardDoc.accept}
+                          accept={msg.uploadCardDoc.accept || DOCUMENT_ACCEPT}
                           className='hidden'
                           ref={fileInputRef}
                           type='file'
@@ -2683,14 +2693,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                                 ? 'cursor-default border-primary-9 bg-primary-9 text-white'
                                 : 'border-primary-4 bg-surface text-primary-9 hover:bg-primary-2',
                               msg.selectedPill &&
-                              !isSelected &&
-                              'pointer-events-none opacity-50 grayscale',
+                                !isSelected &&
+                                'pointer-events-none opacity-50 grayscale',
                             )}
                             onClick={() =>
                               !msg.selectedPill && handlePillClick(msg.id, pill)
                             }
                           >
-
                             {pill}
                           </button>
                         )
@@ -2754,10 +2763,14 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                 <div className='mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center'>
                   <AiBrandIcon className='h-4 w-4' variant='default' />
                 </div>
-                <div className={cn(
-                  'rounded-2xl rounded-tl-sm border border-gray-4/50 bg-gray-2 shadow-sm',
-                  typingText ? 'px-5 py-3.5 text-[13.5px] leading-relaxed text-gray-12' : 'flex items-center gap-1 px-4 py-4'
-                )}>
+                <div
+                  className={cn(
+                    'rounded-2xl rounded-tl-sm border border-gray-4/50 bg-gray-2 shadow-sm',
+                    typingText
+                      ? 'px-5 py-3.5 text-[13.5px] leading-relaxed text-gray-12'
+                      : 'flex items-center gap-1 px-4 py-4',
+                  )}
+                >
                   {typingText ? (
                     <div className='flex items-center gap-2'>
                       <div className='size-1.5 animate-ping rounded-full bg-primary-9' />
@@ -2802,10 +2815,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               />
               <button
                 disabled={!inputText.trim()}
-                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${inputText.trim()
-                  ? 'cursor-pointer bg-primary-9 text-white'
-                  : 'cursor-not-allowed bg-gray-4 text-white'
-                  }`}
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${
+                  inputText.trim()
+                    ? 'cursor-pointer bg-primary-9 text-white'
+                    : 'cursor-not-allowed bg-gray-4 text-white'
+                }`}
                 onClick={() => handleSendMessage()}
               >
                 <Send className='h-4 w-4' />
@@ -2817,8 +2831,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         {/* Context Sidebar */}
         <div
           id='context-col'
-          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${(embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
-            }`}
+          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${
+            (embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
+          }`}
         >
           <div className='flex items-center justify-between border-b border-gray-4 px-[18px] pt-4 pb-3'>
             <h3 className='m-0 text-sm font-bold text-gray-12'>
@@ -2889,9 +2904,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                           {panelFields.map((ctrl: any, ctrlIndex: number) => {
                             const id = String(
                               ctrl.jsonId ||
-                              ctrl.id ||
-                              ctrl.name ||
-                              ctrl.columnName,
+                                ctrl.id ||
+                                ctrl.name ||
+                                ctrl.columnName,
                             )
                             const isDone =
                               answers[id] !== undefined && answers[id] !== ''
@@ -2979,8 +2994,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               <div className='flex items-center justify-between border-t border-gray-4 pt-3 text-xs'>
                 <span className='text-gray-9'>Status</span>
                 <span
-                  className={`font-bold ${mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
-                    }`}
+                  className={`font-bold ${
+                    mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
+                  }`}
                 >
                   {mode === 'submitted'
                     ? 'Submitted'

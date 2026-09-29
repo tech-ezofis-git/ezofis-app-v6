@@ -1447,7 +1447,7 @@ export default function DmsFolderConfiguration({
   }) => {
     const trimmedName = payload.folderName.trim()
     if (!trimmedName) {
-      showToast({ message: t`Please enter a folder name.`, variant: 'error' })
+      showToast({ message: t`Please enter a folder name.`, variant: 'info' })
       return
     }
 
@@ -1589,7 +1589,7 @@ export default function DmsFolderConfiguration({
   const handleCreateRepository = async () => {
     const trimmedName = folderName.trim()
     if (!trimmedName) {
-      showToast({ message: t`Please enter a folder name.`, variant: 'error' })
+      showToast({ message: t`Please enter a folder name.`, variant: 'info' })
       setStep(1)
       return
     }

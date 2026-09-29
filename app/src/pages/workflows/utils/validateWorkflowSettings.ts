@@ -76,7 +76,13 @@ export const validateWorkflowSettings = (settings: {
   initiateUsing?: string | null
   folder?: string | number | null
   form?: string | number | null
+  status?: string | null
 }): WorkflowValidationResult => {
+  const isDraft = String(settings.status || '').toLowerCase() === 'draft'
+  if (isDraft) {
+    return { errors: {}, isValid: true }
+  }
+
   const errors: WorkflowValidationErrors = {}
   let firstError: string | undefined
   let failedSection: 'general' | 'configuration' | undefined

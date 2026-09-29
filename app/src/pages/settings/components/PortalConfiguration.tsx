@@ -994,7 +994,7 @@ function PortalSetup({
         setShowErrors(true)
         showToast({
           message: t`Please complete all required portal details before continuing.`,
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -1016,7 +1016,7 @@ function PortalSetup({
       } else onStepChange(2)
       showToast({
         message: t`Please complete all required portal details before continuing.`,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -1033,7 +1033,7 @@ function PortalSetup({
           onStepChange(index)
           showToast({
             message: t`Please complete all required portal details before continuing.`,
-            variant: 'error',
+            variant: 'info',
           })
           return
         }

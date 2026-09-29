@@ -1,6 +1,8 @@
 import React from 'react'
 import { Icon } from '@iconify/react'
 import cn from '@/utils/cn'
+import { summarizeQualifierResult } from './qualifierResultUtils'
+import { summarizeQuoteResult } from './quoteResultUtils'
 
 export interface AgentBlock {
   id: string
@@ -11,6 +13,102 @@ export interface AgentBlock {
     label?: string
     [key: string]: any
   }
+}
+
+/** True when this agent block already has a persisted response payload. */
+export const agentHasResponse = (
+  block: AgentBlock | null | undefined,
+  requestData: any,
+) => {
+  if (!block) return false
+  const type = String(block.type || '')
+  const label = String(block.settings?.label || '')
+  const subtype = String(block.settings?.subtype || '').toUpperCase()
+
+  if (
+    type === 'QUALIFY_AGENT' ||
+    subtype === 'QUALIFY' ||
+    label.includes('Qualify')
+  ) {
+    return Boolean(requestData?.qualifyAgentResponse)
+  }
+  if (
+    type === 'QUOTE_AGENT' ||
+    subtype === 'QUOTE' ||
+    label.includes('Quote')
+  ) {
+    return Boolean(requestData?.quoteAgentResponse)
+  }
+  if (
+    type === 'DOCUMENT_GENERATE_AGENT' ||
+    subtype === 'DOCUMENT_GENERATE' ||
+    label.includes('Document Generate')
+  ) {
+    return Boolean(requestData?.documentGenerateResponse)
+  }
+  if (
+    type === 'AP_AGENT' ||
+    subtype === 'AP_AGENT' ||
+    label.includes('AP Agent')
+  ) {
+    return Boolean(
+      requestData?.agentResponse ||
+        (requestData?._agentData && requestData._agentData.length > 0),
+    )
+  }
+  return Boolean(
+    requestData?.agentResponse ||
+      (requestData?._agentData && requestData._agentData.length > 0),
+  )
+}
+
+/** True when the request is currently at this agent's stage (running). */
+export const agentIsRunning = (
+  block: AgentBlock | null | undefined,
+  requestData: any,
+) => {
+  if (!block || !requestData) return false
+  if (agentHasResponse(block, requestData)) return false
+  const label = String(block.settings?.label || '').trim()
+  if (!label) return false
+  const stageCandidates = [
+    requestData.stage,
+    requestData.currentStage,
+    requestData.lastActionStageName,
+    requestData.activityName,
+  ]
+    .map((s) => String(s || '').trim())
+    .filter(Boolean)
+  if (stageCandidates.some((stage) => stage === label)) return true
+  // Soft match: "Qualify Agent" vs stage "Qualify"
+  return stageCandidates.some(
+    (stage) =>
+      label.toLowerCase().includes(stage.toLowerCase()) ||
+      stage.toLowerCase().includes(label.toLowerCase()),
+  )
+}
+
+/**
+ * Agents that should appear as tabs: those with a response, plus the agent
+ * currently running — newest-first (pipeline order reversed).
+ */
+export const getAgentResponseTabs = (
+  agentBlocks: AgentBlock[],
+  requestData: any,
+) => {
+  const visible = agentBlocks.filter(
+    (block) =>
+      agentHasResponse(block, requestData) ||
+      agentIsRunning(block, requestData),
+  )
+  if (visible.length > 0) return [...visible].reverse()
+
+  // Stub / early processing before stage maps to an agent label — still show
+  // the first agent tab so the user can see "Agent is processing..."
+  if (requestData?.isProcessing && agentBlocks.length > 0) {
+    return [agentBlocks[0]]
+  }
+  return []
 }
 
 interface AgentSummaryBoxesProps {
@@ -76,7 +174,8 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
         if (block.type === 'QUALIFY_AGENT') {
           const qualifyResult = requestData?.qualifyAgentResponse?.qualifier_result
           if (qualifyResult) {
-            status = qualifyResult.Qualify || 'Processed'
+            const summary = summarizeQualifierResult(qualifyResult)
+            status = summary.qualify || 'Processed'
             if (status.toLowerCase() === 'qualify') {
               statusColor = 'text-green-10 bg-green-2 border-green-3'
             } else if (status.toLowerCase() === 'disqualify') {
@@ -84,8 +183,7 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
             } else {
               statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
             }
-            // Value can be project name or project type
-            value = qualifyResult['Project Name'] || qualifyResult['Project Type'] || 'Completed'
+            value = summary.title
           } else if (requestData?.stage === label && !requestData?.qualifyAgentResponse) {
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
@@ -95,10 +193,13 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
           status = 'Pending'
           statusColor = 'text-gray-10 bg-gray-2 border-gray-3'
           value = '-'
-          if (requestData?.quoteAgentResponse) {
+          if (requestData?.quoteAgentResponse?.quote_result) {
             status = 'Processed'
             statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
-            value = 'Completed'
+            const summary = summarizeQuoteResult(
+              requestData.quoteAgentResponse.quote_result,
+            )
+            value = summary.title
           } else if (requestData?.stage === label) {
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'

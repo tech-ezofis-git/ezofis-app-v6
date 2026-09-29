@@ -70,7 +70,7 @@ export default function AiWorkflowBuilder({
     if (!text) {
       showToast({
         message: t`Please describe the workflow you want to create.`,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
