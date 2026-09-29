@@ -3,7 +3,6 @@ import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiCatalogSelect } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import { fetchFtlCatalogProduct } from '@/api/v6/ftlCatalog'
-import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import {
   collectFormTableFields,
@@ -85,6 +84,20 @@ const isEmptyValue = (value: unknown) =>
  * Prefer form column UUID values over leftover agent keys (Product/Qty/Price).
  * Stale name-keys were overwriting the real price after catalog select.
  */
+const readNamedField = (
+  row: Record<string, any>,
+  canonical: string,
+  aliases: string[],
+) => {
+  if (!isEmptyValue(row?.[canonical])) return row[canonical]
+  for (const [key, value] of Object.entries(row || {})) {
+    if (key.startsWith('_')) continue
+    if (!headingMatchesAliases(key, aliases)) continue
+    if (!isEmptyValue(value)) return value
+  }
+  return undefined
+}
+
 const resolveLineFieldValue = (
   row: Record<string, any>,
   columns: any[] | undefined,
@@ -92,22 +105,32 @@ const resolveLineFieldValue = (
 ) => {
   const aliases = LINE_FIELD_ALIASES[canonical] || [canonical]
   const col = findColumnForCanonical(columns, canonical)
+  const named = readNamedField(row, canonical, aliases)
+  const fromColumn = col?.id != null ? row?.[col.id] : undefined
+  const textValue = (value: unknown) => String(value ?? '').trim()
+  const isBareNumber = (value: unknown) => /^\d+(\.\d+)?$/.test(textValue(value))
+  const qtyValue = row?.Qty ?? row?.Quantity ?? row?.qty ?? row?.quantity
 
-  if (col?.id != null && !isEmptyValue(row?.[col.id])) {
-    return row[col.id]
+  // Description text was being replaced by the qty stored on that column.
+  if (canonical === 'Description') {
+    const namedText = textValue(named)
+    const columnText = textValue(fromColumn)
+    const columnIsQty =
+      isBareNumber(fromColumn) &&
+      (qtyValue == null ||
+        textValue(qtyValue) === '' ||
+        Number(columnText) === Number(qtyValue))
+    if (namedText && !isBareNumber(named)) return named
+    if (columnIsQty) return namedText && !isBareNumber(named) ? named : ''
   }
 
-  if (!isEmptyValue(row?.[canonical])) {
-    return row[canonical]
-  }
+  // The quote result's Qty/Quantity is the quantity. A form column that
+  // picked up Price or another field must not replace it.
+  if (canonical === 'Qty' && !isEmptyValue(named)) return named
 
-  for (const [key, value] of Object.entries(row || {})) {
-    if (key.startsWith('_')) continue
-    if (!headingMatchesAliases(key, aliases)) continue
-    if (!isEmptyValue(value)) return value
-  }
-
-  return row?.[col?.id ?? canonical] ?? ''
+  if (!isEmptyValue(fromColumn)) return fromColumn
+  if (!isEmptyValue(named)) return named
+  return ''
 }
 
 const parseLooseNumber = (value: unknown) => {
@@ -181,7 +204,17 @@ export const normalizeLineItemRow = (
     const value = resolveLineFieldValue(row, columns, canonical)
     next[canonical] = value
     const col = findColumnForCanonical(columns, canonical)
-    if (col?.id) next[col.id] = value
+    const blockedIds = new Set([
+      'Product',
+      'Description',
+      'Qty',
+      'Price',
+      'Subtotal',
+      'Note',
+      'Category',
+    ])
+    blockedIds.delete(canonical)
+    if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = value
   })
 
   const noteCol = findColumnForCanonical(columns, 'Note')
@@ -538,22 +571,22 @@ const QuoteLineItemsTable = ({
         )}
       </div>
       <div className='overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full text-left text-sm'>
+        <table className='w-full border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
-              <th className='min-w-[180px] p-3 font-semibold'>Product</th>
-              <th className='min-w-[160px] p-3 font-semibold'>Description</th>
-              <th className='w-24 p-3 text-center font-semibold'>Qty</th>
-              <th className='w-28 p-3 text-right font-semibold'>Price</th>
-              <th className='w-28 p-3 text-right font-semibold'>Subtotal</th>
+              <th className='min-w-[220px] border border-gray-3 p-3 font-semibold'>Product</th>
+              <th className='w-24 border border-gray-3 p-3 text-center font-semibold'>Qty</th>
+              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>Price</th>
+              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>Subtotal</th>
               {canEdit && (
-                <th className='w-24 p-3 text-right font-semibold'>
-                  {t`Actions`}
-                </th>
+                <th
+                  aria-label={t`Actions`}
+                  className='w-px border border-gray-3 p-2 whitespace-nowrap'
+                />
               )}
             </tr>
           </thead>
-          <tbody className='divide-y divide-gray-2 bg-surface'>
+          <tbody className='bg-surface'>
             {rows.map((item, i) => (
               <QuoteLineRow
                 canEdit={canEdit}
@@ -577,16 +610,97 @@ const QuoteLineItemsTable = ({
 const cellInputClass =
   'w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-white'
 
-const withCellLabel = (label: string, control: ReactNode) => (
-  <Tooltip
-    className='block w-full min-w-0 max-w-full'
-    content={label}
-    openDelay={200}
-    position='top'
-  >
-    <div className='w-full min-w-0 max-w-full'>{control}</div>
-  </Tooltip>
-)
+function HoverValue({
+  canEdit,
+  className,
+  display,
+  input,
+  keepOpenOnPortal = false,
+}: {
+  canEdit: boolean
+  className?: string
+  display: ReactNode
+  input: (close: () => void) => ReactNode
+  /** Combobox / popover menus render in a portal — don't close on their clicks. */
+  keepOpenOnPortal?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const close = () => setOpen(false)
+
+  useEffect(() => {
+    if (!open) return
+    const isInsidePortal = (node: EventTarget | null) => {
+      if (!(node instanceof Element)) return false
+      return Boolean(
+        node.closest(
+          '[data-combobox-dropdown], [data-dates-dropdown], .mantine-Popover-dropdown, .mantine-Combobox-dropdown',
+        ),
+      )
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const path = event.composedPath()
+      if (rootRef.current && path.includes(rootRef.current)) return
+      if (keepOpenOnPortal && path.some(isInsidePortal)) return
+      setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    // Defer so the click that opened edit mode doesn't immediately close it,
+    // and so Combobox portal mount isn't treated as an outside click.
+    const timer = window.setTimeout(() => {
+      document.addEventListener('pointerdown', onPointerDown, true)
+      document.addEventListener('keydown', onKeyDown)
+    }, 0)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [keepOpenOnPortal, open])
+
+  if (!canEdit) return <>{display}</>
+
+  return (
+    <div
+      className={cn(
+        'group min-w-0',
+        open ? 'block w-full' : 'inline-flex max-w-full items-center gap-1',
+      )}
+      ref={rootRef}
+    >
+      {open ? (
+        input(close)
+      ) : (
+        <>
+          <button
+            className={cn(
+              'min-w-0 flex-1 cursor-text border-0 bg-transparent p-0 text-inherit',
+              className,
+            )}
+            type='button'
+            onClick={() => setOpen(true)}
+          >
+            {display}
+          </button>
+          <button
+            aria-label='Edit'
+            className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+            type='button'
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              setOpen(true)
+            }}
+          >
+            <Icon className='size-3.5' icon='lucide:pencil' />
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
 
 function QuoteLineRow({
   canEdit,
@@ -618,127 +732,151 @@ function QuoteLineRow({
   const noteText = String(item.Note || '').trim()
   // Show warning until the user Approves this row.
   const showWarning = !approved && !item._hideNote && (Boolean(noteText) || needsReview)
-  const warningMessage =
-    noteText || (needsReview ? t`Needs Engineering Review` : '')
 
   const productLabel =
     String(productColumn?.name || productColumn?.label || '') || t`Product`
   const lineSubtotal = computeLineSubtotal(item)
+  const description = String(item.Description || '').trim()
 
   return (
-    <>
-      <tr className='group'>
-        <td className='max-w-[220px] p-3 align-top font-medium text-gray-12'>
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-start gap-2'>
-              {canEdit && useApiProduct
-                ? withCellLabel(
-                    productLabel,
-                    <div className='min-w-0 w-full max-w-[200px]'>
-                      <ApiCatalogSelect
-                        compact
-                        col={productColumn}
-                        value={item.Product}
-                        onSelectProduct={onSelectProduct}
-                      />
-                    </div>,
-                  )
-                : canEdit
-                  ? withCellLabel(
-                      productLabel,
-                      <input
-                        className={cn(cellInputClass, 'max-w-full font-medium')}
-                        value={item.Product ?? ''}
-                        onChange={(event) =>
-                          onChange('Product', event.target.value)
-                        }
-                      />,
-                    )
-                  : withCellLabel(
-                      productLabel,
-                      <span
-                        className='block truncate'
-                        title={String(item.Product ?? '')}
-                      >
-                        {item.Product}
-                      </span>,
-                    )}
-              {showWarning && (
-                <span
-                  className='flex'
-                  title={warningMessage || t`Needs Engineering Review`}
-                >
-                  <Icon
-                    className='h-4 w-4 shrink-0 text-orange-9'
-                    icon='tabler:alert-triangle'
+    <tr className='group'>
+      <td className='min-w-[220px] border border-gray-3 p-3 text-left align-top'>
+        <div className='flex flex-col items-start gap-1 text-left'>
+          <HoverValue
+            canEdit={canEdit}
+            className='text-left'
+            keepOpenOnPortal={useApiProduct}
+            display={
+              <span className='block text-left font-semibold text-[var(--primary-11)]'>
+                {item.Product || 'NA'}
+              </span>
+            }
+            input={(close) =>
+              useApiProduct ? (
+                <div className='min-w-0 w-full max-w-[280px]'>
+                  <ApiCatalogSelect
+                    autoOpen
+                    compact
+                    col={productColumn}
+                    value={item.Product}
+                    onSelectProduct={async (code) => {
+                      await onSelectProduct(code)
+                      close()
+                    }}
                   />
+                </div>
+              ) : (
+                <input
+                  autoFocus
+                  aria-label={productLabel}
+                  className={cn(cellInputClass, 'max-w-full font-semibold')}
+                  value={item.Product ?? ''}
+                  onChange={(event) => onChange('Product', event.target.value)}
+                />
+              )
+            }
+          />
+          {description ? (
+            <HoverValue
+              canEdit={canEdit}
+              className='text-left text-xs text-gray-11'
+              display={
+                <span className='text-xs break-words text-gray-11'>
+                  {description}
                 </span>
-              )}
-            </div>
-            {item.Category ? (
-              <div className='text-xs text-gray-9'>{item.Category}</div>
-            ) : null}
-          </div>
-        </td>
-        <td className='min-w-0 p-3 align-top text-gray-11'>
-          {canEdit
-            ? withCellLabel(
-                t`Description`,
+              }
+              input={() => (
                 <textarea
+                  autoFocus
+                  aria-label={t`Description`}
                   className={cn(
                     cellInputClass,
-                    'min-h-[2.5rem] max-w-full resize-y break-words',
+                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
                   )}
                   rows={2}
                   value={item.Description ?? ''}
                   onChange={(event) =>
                     onChange('Description', event.target.value)
                   }
-                />,
-              )
-            : withCellLabel(
-                t`Description`,
-                <span className='break-words'>{item.Description}</span>,
+                />
               )}
-        </td>
-        <td className='w-24 p-3 text-center align-top text-gray-12'>
-          {canEdit
-            ? withCellLabel(
-                t`Qty`,
-                <input
-                  className={cn(cellInputClass, 'text-center')}
-                  inputMode='decimal'
-                  type='number'
-                  value={item.Qty ?? ''}
-                  onChange={(event) => onChange('Qty', event.target.value)}
-                />,
-              )
-            : withCellLabel(t`Qty`, <>{item.Qty}</>)}
-        </td>
-        <td className='w-28 p-3 text-right align-top text-gray-12'>
-          {canEdit
-            ? withCellLabel(
-                t`Price`,
-                <input
-                  className={cn(cellInputClass, 'text-right')}
-                  inputMode='decimal'
-                  type='number'
-                  value={item.Price ?? ''}
-                  onChange={(event) => onChange('Price', event.target.value)}
-                />,
-              )
-            : withCellLabel(t`Price`, <>${toMoney(item.Price)}</>)}
-        </td>
-        <td className='w-28 p-3 text-right align-top'>
-          {withCellLabel(
-            t`Subtotal`,
-            <span className='font-semibold text-gray-12'>
-              ${toMoney(lineSubtotal)}
-            </span>,
+            />
+          ) : canEdit ? (
+            <HoverValue
+              canEdit={canEdit}
+              className='text-left text-xs text-gray-9'
+              display={<span className='text-xs text-gray-9'>NA</span>}
+              input={() => (
+                <textarea
+                  autoFocus
+                  aria-label={t`Description`}
+                  className={cn(
+                    cellInputClass,
+                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
+                  )}
+                  rows={2}
+                  value={item.Description ?? ''}
+                  onChange={(event) =>
+                    onChange('Description', event.target.value)
+                  }
+                />
+              )}
+            />
+          ) : (
+            <span className='text-xs text-gray-9'>NA</span>
           )}
+          {showWarning && needsReview ? (
+            <div className='mt-1 flex items-center gap-1.5 text-xs font-semibold text-red-11'>
+              <span className='inline-block size-2.5 shrink-0 bg-red-9' />
+              {t`needs engineering review`}
+            </div>
+          ) : null}
+          {showWarning && noteText ? (
+            <p className='text-xs leading-5 break-words text-gray-9'>{noteText}</p>
+          ) : null}
+        </div>
+      </td>
+        <td className='w-24 border border-gray-3 p-3 text-center align-top text-gray-12'>
+          <HoverValue
+            canEdit={canEdit}
+            className='text-center'
+            display={<span>{item.Qty === '' || item.Qty == null ? 'NA' : item.Qty}</span>}
+            input={() => (
+              <input
+                autoFocus
+                aria-label={t`Qty`}
+                className={cn(cellInputClass, 'text-center')}
+                inputMode='decimal'
+                value={item.Qty ?? ''}
+                onChange={(event) => onChange('Qty', event.target.value)}
+              />
+            )}
+          />
+        </td>
+        <td className='w-28 border border-gray-3 p-3 text-right align-top text-gray-12'>
+          <HoverValue
+            canEdit={canEdit}
+            className='text-right'
+            display={<span>${toMoney(item.Price)}</span>}
+            input={() => (
+              <input
+                autoFocus
+                aria-label={t`Price`}
+                className={cn(cellInputClass, 'text-right')}
+                inputMode='decimal'
+                value={item.Price ?? ''}
+                onChange={(event) => onChange('Price', event.target.value)}
+              />
+            )}
+          />
+        </td>
+        <td className='w-28 border border-gray-3 p-3 text-right align-top'>
+          <span className='font-semibold text-gray-12'>
+            ${toMoney(lineSubtotal)}
+          </span>
         </td>
         {canEdit && (
-          <td className='p-3 text-right align-top'>
+          <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
             <div className='inline-flex items-center justify-end gap-1'>
               {approved ? (
                 <span
@@ -772,20 +910,6 @@ function QuoteLineRow({
           </td>
         )}
       </tr>
-      {showWarning && (
-        <tr>
-          <td className='px-3 pt-0 pb-3' colSpan={canEdit ? 6 : 5}>
-            <div className='flex items-start gap-2 rounded border border-orange-3 bg-orange-2/30 p-2 text-xs text-orange-11'>
-              <Icon
-                className='mt-0.5 h-4 w-4 shrink-0'
-                icon='tabler:alert-triangle'
-              />
-              <span>{warningMessage}</span>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
   )
 }
 

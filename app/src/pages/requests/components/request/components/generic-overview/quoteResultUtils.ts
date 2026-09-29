@@ -92,6 +92,9 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(num) ? num : 0
 }
 
+const displayTotalLabel = (label: string) =>
+  label.trim().toLowerCase() === 'hst' ? 'HST' : label
+
 const TOTAL_SORT: Record<QuoteTotalKind, number> = {
   freight: 1,
   other: 4,
@@ -159,7 +162,7 @@ export const buildQuoteViewModel = (
     totals.push({
       field,
       kind,
-      label: field ? getFieldHeading(field) : resultKey,
+      label: displayTotalLabel(field ? getFieldHeading(field) : resultKey),
       resultKey,
       value: toNumber(value),
     })

@@ -5,9 +5,16 @@ import React, { useMemo } from 'react'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import {
+  getFirstReceivedAttachment,
+  getLatestAttachment,
+} from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import QualifyAgentResultView from './QualifyAgentResultView'
 import QuoteAgentResultView from './QuoteAgentResultView'
-import type { AgentBlock } from './AgentSummaryBoxes'
+import {
+  documentGenerateIsComplete,
+  type AgentBlock,
+} from './AgentSummaryBoxes'
 
 interface AgentDetailPlaceholderProps {
   agentBlock: AgentBlock
@@ -24,6 +31,9 @@ interface AgentDetailPlaceholderProps {
   onBack: () => void
   onFieldChange?: (fieldId: string, value: any) => void
 }
+
+const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
+  String(file?.itemId || file?.fileId || file?.id || '')
 
 const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   agentBlock,
@@ -55,26 +65,33 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const isAPAgent =
     agentBlock.settings?.subtype === 'AP_AGENT' || label.includes('AP Agent')
 
-  const firstAttachment = attachments[0] || null
+  // Document Generate: only a distinct generated/recent file — never mirror
+  // the same single inbound upload already shown on the left.
   const docPreviewAttachment = useMemo(() => {
     if (!isDocGen) return null
-    if (firstAttachment) {
+
+    const firstReceived = getFirstReceivedAttachment(attachments)
+    const latest = getLatestAttachment(attachments)
+    const firstId = attachmentIdOf(firstReceived)
+    const latestId = attachmentIdOf(latest)
+    const requestItemId = String(requestData?.itemId || '')
+
+    if (latest && firstId && latestId && latestId !== firstId) {
       return {
-        ...firstAttachment,
-        itemId:
-          requestData?.itemId ||
-          firstAttachment.itemId ||
-          firstAttachment.id,
+        ...latest,
+        itemId: latest.itemId || latest.id || latest.fileId,
         repositoryId:
-          requestData?.repositoryId ||
-          repositoryId ||
-          firstAttachment.repositoryId,
+          latest.repositoryId || repositoryId || requestData?.repositoryId,
       }
     }
-    if (requestData?.itemId || requestData?._localFileUrl) {
+
+    if (requestItemId && firstId && requestItemId !== firstId) {
       return {
-        itemId: requestData?.itemId,
-        repositoryId: requestData?.repositoryId || repositoryId,
+        itemId: requestData.itemId,
+        repositoryId:
+          requestData.repositoryId ||
+          repositoryId ||
+          firstReceived?.repositoryId,
         fileName:
           requestData?.repositoryItem?.fileName || requestData?.name,
         name: requestData?.repositoryItem?.fileName || requestData?.name,
@@ -83,11 +100,15 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
         _localFileUrl: requestData?._localFileUrl,
       }
     }
+
+    // Only one inbound file — left pane owns that preview.
     return null
-  }, [firstAttachment, isDocGen, repositoryId, requestData])
+  }, [attachments, isDocGen, repositoryId, requestData])
 
   const docRepoId =
-    docPreviewAttachment?.repositoryId || repositoryId || requestData?.repositoryId
+    docPreviewAttachment?.repositoryId ||
+    repositoryId ||
+    requestData?.repositoryId
   const { isLoading: docLoading, mimeType, previewUrl } =
     useAttachmentPreviewUrl(
       isDocGen ? (docPreviewAttachment as any) : null,
@@ -100,9 +121,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   } else if (isQuote) {
     hasAgentResponse = !!requestData?.quoteAgentResponse
   } else if (isDocGen) {
-    // Document agent always has a view once there is a first document.
+    // Document agent has no result payload — only a distinct generated file
+    // or a real completed doc-gen stage counts as a response.
     hasAgentResponse =
-      !!requestData?.documentGenerateResponse || Boolean(docPreviewAttachment)
+      !!requestData?.documentGenerateResponse ||
+      Boolean(docPreviewAttachment) ||
+      documentGenerateIsComplete(requestData, agentBlock)
   } else if (isAPAgent) {
     hasAgentResponse =
       !!requestData?.agentResponse ||
@@ -114,21 +138,17 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       (requestData?._agentData && requestData._agentData.length > 0)
   }
 
-  const stage = String(
-    requestData?.stage ||
-      requestData?.currentStage ||
-      requestData?.lastActionStageName ||
-      '',
+  const status = String(requestData?.status || '').toLowerCase().trim()
+  const isDone = Boolean(
+    requestData?.completedAtUtc ||
+      requestData?.completedAt ||
+      status === 'completed' ||
+      status === 'complete' ||
+      status === 'closed' ||
+      status.includes('success') ||
+      (isDocGen && documentGenerateIsComplete(requestData, agentBlock)),
   )
-  const stageMatchesLabel =
-    Boolean(stage) &&
-    (stage === label ||
-      label.toLowerCase().includes(stage.toLowerCase()) ||
-      stage.toLowerCase().includes(label.toLowerCase()))
-
-  const isProcessing =
-    !hasAgentResponse &&
-    (Boolean(requestData?.isProcessing) || stageMatchesLabel)
+  const isProcessing = !hasAgentResponse && !isDone
 
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
@@ -140,7 +160,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       : undefined)
 
   return (
-    <div className='flex flex-col gap-5 pb-5'>
+    <div className='flex flex-col gap-4'>
       {!hideBack && (
         <div className='flex items-center gap-3'>
           <button
@@ -172,6 +192,19 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
               isLoading={docLoading}
               isPdf={isPdf}
             />
+          </div>
+        ) : isDocGen ? (
+          <div className='flex flex-col items-center justify-center gap-3 py-12 text-center'>
+            <Icon
+              className='h-10 w-10 text-gray-7'
+              icon='tabler:file-off'
+            />
+            <h3 className='text-base font-medium text-gray-12'>
+              {t`No generated document yet`}
+            </h3>
+            <p className='max-w-md text-13 text-gray-9'>
+              {t`The uploaded file is shown on the left. A generated document will appear here when it is available.`}
+            </p>
           </div>
         ) : isProcessing ? (
           <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>

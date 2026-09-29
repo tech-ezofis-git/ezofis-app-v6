@@ -43,9 +43,9 @@ const generateRowId = () => {
   }
 }
 
-interface TableColumn {
+export interface TableColumn {
   id: string
-  name: string
+  name?: string
   size?: 'SMALL' | 'MEDIUM' | 'LARGE'
   type?: string
   settings?: {
@@ -254,12 +254,14 @@ const toCatalogOptions = (
 const TABLE_CATALOG_DROPDOWN_WIDTH = 220
 
 const ApiCatalogSelect = ({
+  autoOpen = false,
   col,
   compact = false,
   readOnly,
   value,
   onSelectProduct,
 }: {
+  autoOpen?: boolean
   col?: TableColumn | null
   /** Narrow trigger + fixed dropdown width for table cells. */
   compact?: boolean
@@ -351,10 +353,12 @@ const ApiCatalogSelect = ({
 
   return (
     <Combobox
+      autoOpen={autoOpen}
       className={compact ? 'w-full min-w-0 max-w-[220px]' : 'w-full'}
       loading={loading || loadingDetails}
       options={options}
       placeholder={placeholder}
+      readOnly={readOnly}
       search={search}
       searchable
       searchPlaceholder='Search...'
@@ -1088,7 +1092,7 @@ const TableFieldRenderer = ({
                     <Td className='p-1.5 align-middle' key={col.id}>
                       {renderCellInput(
                         col,
-                        resolvedRow[col.id] ?? resolvedRow[col.name],
+                        resolvedRow[col.id] ?? (col.name ? resolvedRow[col.name] : undefined),
                         (cellVal) =>
                           handleCellChange(rowIndex, col.id, cellVal),
                         readOnly,
