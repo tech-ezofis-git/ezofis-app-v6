@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import {
   extractPreviewValues,
@@ -83,13 +84,20 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     )
   }, [workflow, previewValues])
 
-  const dynamicFieldRows = useMemo(() => {
-    const rows: (typeof dynamicFields)[] = []
-    for (let i = 0; i < dynamicFields.length; i += 3) {
-      rows.push(dynamicFields.slice(i, i + 3))
-    }
-    return rows
-  }, [dynamicFields])
+  const aiInsight = useMemo(() => {
+    const agentData =
+      row?._agentResponse || row?._agentData?.[0] || row?._agentData || {}
+    const qualify = row?.qualifyAgentResponse?.qualifier_result
+    return String(
+      agentData?.ai_insight ||
+        agentData?.aiInsight ||
+        agentData?.ai_insect ||
+        qualify?.['AI Insight'] ||
+        qualify?.['Ai Insight'] ||
+        qualify?.aiInsight ||
+        '',
+    ).trim()
+  }, [row])
 
   const isDocumentApproval = workflow?.name === 'Document Approval'
   const configuredTitle = resolveConfiguredTitle(row, workflow, isDocumentApproval)
@@ -167,25 +175,35 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           />
         </div>
 
-        {dynamicFieldRows.length > 0 && (
-          <div className='mt-1.5 flex flex-col gap-1 min-w-0 max-w-full overflow-hidden'>
-            {dynamicFieldRows.map((fieldRow, rowIdx) => (
-              <div
-                className='flex flex-wrap items-center gap-1.5 min-w-0 max-w-full overflow-hidden'
-                key={fieldRow.map((col) => col.id).join('-') || rowIdx}
+        {dynamicFields.length > 0 && (
+          <div className='mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 overflow-hidden'>
+            {dynamicFields.map((col, idx) => (
+              <span
+                className='flex max-w-full min-w-0 items-center gap-1.5'
+                key={col.id}
               >
-                {fieldRow.map((col, idx) => (
-                  <span className='flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden' key={col.id}>
-                    {idx > 0 && <span className='text-gray-6 shrink-0'>·</span>}
-                    <div className='min-w-0 max-w-full overflow-hidden text-11 font-medium text-gray-10'>
-                      {col.renderCell?.(row) ?? '-'}
-                    </div>
-                  </span>
-                ))}
-              </div>
+                {idx > 0 && <span className='shrink-0 text-gray-6'>·</span>}
+                <div className='min-w-0 truncate text-11 font-medium text-gray-10'>
+                  {col.renderCell?.(row) ?? '-'}
+                </div>
+              </span>
             ))}
           </div>
         )}
+      </div>
+
+      <div className='hidden w-[240px] shrink-0 items-center justify-center px-3 md:flex'>
+        {aiInsight ? (
+          <div className='flex min-w-0 max-w-full items-center gap-1.5'>
+            <AiBrandIcon
+              className='size-3.5 shrink-0 text-[var(--primary-9)]'
+              variant='outline-purple'
+            />
+            <span className='truncate text-12 font-medium text-gray-11'>
+              {aiInsight}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Right Side: Raised By & Date + Running Time from Last Action */}

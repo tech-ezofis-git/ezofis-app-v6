@@ -467,7 +467,6 @@ const Header: React.FC<HeaderProps> = ({
       id: 'overview' | 'history' | 'attachments' | 'comments'
       label: string
     }[] = [
-        { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
         {
           count: attachmentCount,
           icon: 'tabler:paperclip',
@@ -480,6 +479,7 @@ const Header: React.FC<HeaderProps> = ({
           id: 'comments',
           label: t`Comments`,
         },
+        { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
       ]
 
     return (
