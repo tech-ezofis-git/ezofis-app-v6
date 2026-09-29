@@ -827,6 +827,37 @@ export const revokeRepositoryShare = async (payload: {
   return response
 }
 
+export const deleteRepositoryItem = async (
+  repositoryId: string,
+  itemId: string,
+  tenantId?: string,
+) => {
+  const response: { data: boolean; error: string } = {
+    data: false,
+    error: '',
+  }
+
+  try {
+    const { status } = await axiosV6({
+      headers: getFolderTenantHeaders(tenantId),
+      method: 'DELETE',
+      url: `/repositories/${repositoryId}/items/${itemId}`,
+    })
+
+    if (status !== 200 && status !== 204) throw 'invalid status code'
+    response.data = true
+  } catch (e: any) {
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      e?.message ||
+      'error deleting repository item'
+  }
+
+  return response
+}
+
   // Keep the API object extensible for existing imports.
   ; (authApiV6 as any).getRepositoryItems = getRepositoryItems
   ; (authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
@@ -834,6 +865,7 @@ export const revokeRepositoryShare = async (payload: {
   ; (authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
   ; (authApiV6 as any).getSharedWithMe = getSharedWithMe
   ; (authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
+  ; (authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>

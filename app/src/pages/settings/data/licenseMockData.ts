@@ -17,11 +17,182 @@ export type RecentTrialResourceDef = {
   createdBy: string
   id: string
   name: string
-  type: RecentTrialResourceType
+  type: 'folder' | 'workflow' | 'document' | 'user'
   updatedAtLabel: string
 }
 
-export type RecentTrialResourceType = 'document' | 'folder' | 'workflow'
+export type LicenseResourceCategory = 'users' | 'workflows' | 'folders' | 'files'
+
+export type UserResourceItem = {
+  email: string
+  group: string
+  id: string
+  lastActive: string
+  name: string
+  role: string
+  status: 'active' | 'invited'
+}
+
+export type WorkflowResourceItem = {
+  id: string
+  owner: string
+  status: 'Draft' | 'Published'
+  title: string
+  updatedAtLabel: string
+}
+
+export type FolderResourceItem = {
+  createdBy: string
+  id: string
+  level: string
+  name: string
+  updatedAtLabel: string
+}
+
+export type FileResourceItem = {
+  id: string
+  name: string
+  size: string
+  type: string
+  updatedAtLabel: string
+  uploadedBy: string
+}
+
+export const mockUsersList: UserResourceItem[] = [
+  {
+    email: 'alex.lewis@ezofis.com',
+    group: 'Product Engineering',
+    id: 'u-1',
+    lastActive: '10 mins ago',
+    name: 'Alex Lewis',
+    role: 'Workspace Admin',
+    status: 'active',
+  },
+  {
+    email: 'john.doe@ezofis.com',
+    group: 'Operations & IT',
+    id: 'u-2',
+    lastActive: 'Just now',
+    name: 'John Doe (You)',
+    role: 'System Administrator',
+    status: 'active',
+  },
+  {
+    email: 'sara.ray@ezofis.com',
+    group: 'Design & Marketing',
+    id: 'u-3',
+    lastActive: '2 hours ago',
+    name: 'Sara Ray',
+    role: 'Content Lead',
+    status: 'active',
+  },
+  {
+    email: 'michael.chen@ezofis.com',
+    group: 'Finance & Compliance',
+    id: 'u-4',
+    lastActive: 'Yesterday',
+    name: 'Michael Chen',
+    role: 'Financial Analyst',
+    status: 'invited',
+  },
+]
+
+export const mockWorkflowsList: WorkflowResourceItem[] = [
+  {
+    id: 'wf-1',
+    owner: 'John Doe (You)',
+    status: 'Published',
+    title: 'Automated Billing Sync Workflow',
+    updatedAtLabel: 'Yesterday',
+  },
+  {
+    id: 'wf-2',
+    owner: 'Alex Lewis',
+    status: 'Published',
+    title: 'Customer Onboarding Approval',
+    updatedAtLabel: '3 days ago',
+  },
+  {
+    id: 'wf-3',
+    owner: 'Sara Ray',
+    status: 'Draft',
+    title: 'Vendor Contract Review Process',
+    updatedAtLabel: 'Aug 24, 2026',
+  },
+  {
+    id: 'wf-4',
+    owner: 'Michael Chen',
+    status: 'Published',
+    title: 'Employee Expenses Approval Pipeline',
+    updatedAtLabel: 'Aug 18, 2026',
+  },
+]
+
+export const mockFoldersList: FolderResourceItem[] = [
+  {
+    createdBy: 'Alex Lewis',
+    id: 'fold-1',
+    level: 'Root / Marketing',
+    name: 'Marketing Q3 Campaign Assets',
+    updatedAtLabel: '2 hours ago',
+  },
+  {
+    createdBy: 'Sara Ray',
+    id: 'fold-2',
+    level: 'Root / Legal',
+    name: 'Executive Board Meeting Minutes 2026',
+    updatedAtLabel: 'Yesterday',
+  },
+  {
+    createdBy: 'John Doe (You)',
+    id: 'fold-3',
+    level: 'Root / Finance / Receipts',
+    name: 'Tax Audit Documentation & Statements',
+    updatedAtLabel: 'Aug 15, 2026',
+  },
+  {
+    createdBy: 'Michael Chen',
+    id: 'fold-4',
+    level: 'Root / HR',
+    name: 'Quarterly Performance Reviews',
+    updatedAtLabel: 'Aug 10, 2026',
+  },
+]
+
+export const mockFilesList: FileResourceItem[] = [
+  {
+    id: 'file-1',
+    name: 'Engineering Product Architecture 2026.pdf',
+    size: '14.8 MB',
+    type: 'PDF Document',
+    updatedAtLabel: 'Aug 12, 2026',
+    uploadedBy: 'Sara Ray',
+  },
+  {
+    id: 'file-2',
+    name: 'Q3 Financial Projections & Budget.xlsx',
+    size: '4.2 MB',
+    type: 'Spreadsheet',
+    updatedAtLabel: 'Aug 20, 2026',
+    uploadedBy: 'Michael Chen',
+  },
+  {
+    id: 'file-3',
+    name: 'Brand Guidelines & Identity Assets.zip',
+    size: '128.5 MB',
+    type: 'Archive',
+    updatedAtLabel: 'Aug 22, 2026',
+    uploadedBy: 'Alex Lewis',
+  },
+  {
+    id: 'file-4',
+    name: 'System Security Audit & Compliance Report.docx',
+    size: '2.1 MB',
+    type: 'Word Document',
+    updatedAtLabel: 'Aug 25, 2026',
+    uploadedBy: 'John Doe (You)',
+  },
+]
 
 export const recentTrialResources: RecentTrialResourceDef[] = [
   {

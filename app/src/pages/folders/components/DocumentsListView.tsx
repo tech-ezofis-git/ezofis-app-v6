@@ -19,6 +19,7 @@ import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import Tooltip from '@/components/base/Tooltip'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
@@ -111,6 +112,7 @@ type DocumentsListViewProps = {
   onFiltersChange?: (filters: Record<string, string>) => void
   onIntelligentUpload?: () => void
   onOpenFile: (id: string) => void
+  onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
   onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onExportStagedFile?: (file: FileItem) => Promise<void>
@@ -124,7 +126,7 @@ type DocumentsListViewProps = {
   onShareFilter?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
   onUploadFile?: (files: File[]) => void
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
   setView: (view: ExplorerView) => void
 }
 
@@ -407,6 +409,7 @@ export function DocumentsListView({
   onFiltersChange,
   onIntelligentUpload,
   onOpenFile,
+  onDeleteFile,
   onDeleteStagedFile,
   onDeleteStagedFiles,
   onExportStagedFile,
@@ -428,6 +431,8 @@ export function DocumentsListView({
     useState<ActionMenuPosition | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(searchQueryProp)
+  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(null)
+  const [isDeletingFile, setIsDeletingFile] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   const handleOpenFolder = useCallback(
@@ -725,10 +730,6 @@ export function DocumentsListView({
       size: 48,
       cell: ({ row }) => {
         const file = row.original
-        if (!isUnarchivedStageFile(file)) {
-          return null
-        }
-
         const fileId = getFileId(file)
         const isSelected = selectedIds.includes(fileId)
 
@@ -738,7 +739,7 @@ export function DocumentsListView({
             onClick={(e) => e.stopPropagation()}
           >
             <InputCheckbox
-              aria-label={t`Select staged file`}
+              aria-label={t`Select file`}
               checked={isSelected}
               onChange={() => toggleSelect(fileId)}
             />
@@ -747,37 +748,35 @@ export function DocumentsListView({
       },
       header: () => {
         const isAllSelected =
-          stagedFilesList.length > 0 &&
-          selectedStagedCount === stagedFilesList.length
+          visibleFiles.length > 0 &&
+          selectedVisibleCount === visibleFiles.length
         const isIndeterminate =
-          selectedStagedCount > 0 && !isAllSelected
+          selectedVisibleCount > 0 && !isAllSelected
 
         return (
           <div
             className='flex w-full items-center justify-center'
             onClick={(e) => e.stopPropagation()}
           >
-            {hasStagedFiles ? (
-              <InputCheckbox
-                aria-label={t`Select all staged files`}
-                checked={isAllSelected}
-                indeterminate={isIndeterminate}
-                onChange={(checked) => {
-                  if (checked) {
-                    setSelectedIds((prev) =>
-                      Array.from(
-                        new Set([...prev, ...stagedFilesList.map(getFileId)]),
-                      ),
-                    )
-                  } else {
-                    const stagedIdSet = new Set(stagedFilesList.map(getFileId))
-                    setSelectedIds((prev) =>
-                      prev.filter((id) => !stagedIdSet.has(id)),
-                    )
-                  }
-                }}
-              />
-            ) : null}
+            <InputCheckbox
+              aria-label={t`Select all files`}
+              checked={isAllSelected}
+              indeterminate={isIndeterminate}
+              onChange={(checked) => {
+                if (checked) {
+                  setSelectedIds((prev) =>
+                    Array.from(
+                      new Set([...prev, ...visibleFiles.map(getFileId)]),
+                    ),
+                  )
+                } else {
+                  const visibleIdSet = new Set(visibleFiles.map(getFileId))
+                  setSelectedIds((prev) =>
+                    prev.filter((id) => !visibleIdSet.has(id)),
+                  )
+                }
+              }}
+            />
           </div>
         )
       },
@@ -936,9 +935,7 @@ export function DocumentsListView({
       },
     }
 
-    return hasStagedFiles || selectionEnabled
-      ? [selectColumn, ...dynamicColumns, actionColumn]
-      : [...dynamicColumns, actionColumn]
+    return [selectColumn, ...dynamicColumns, actionColumn]
   }, [
     allVisibleSelected,
     columns,
@@ -1187,28 +1184,32 @@ export function DocumentsListView({
                     </div>
                     <div className='flex items-center gap-2'>
                       {canBulkExport && onExportStagedFiles ? (
-                        <BaseButton
-                          color='primary'
-                          disabled={isBulkExporting || isBulkDeleting}
-                          loading={isBulkExporting}
-                          size='xs'
-                          onClick={() => setIsBulkExportConfirmOpen(true)}
-                        >
-                          <Icon className='size-3.5' name='tabler:file-export' />
-                          {t`Export Selected (${selectedStagedCount})`}
-                        </BaseButton>
+                        <Tooltip content={t`Export selected staged files`} position='top'>
+                          <BaseButton
+                            color='primary'
+                            disabled={isBulkExporting || isBulkDeleting}
+                            loading={isBulkExporting}
+                            size='xs'
+                            onClick={() => setIsBulkExportConfirmOpen(true)}
+                          >
+                            <Icon className='size-3.5' name='tabler:file-export' />
+                            {t`Export Selected (${selectedStagedCount})`}
+                          </BaseButton>
+                        </Tooltip>
                       ) : null}
                       {onDeleteStagedFiles ? (
-                        <BaseButton
-                          color='red'
-                          disabled={isBulkDeleting || isBulkExporting}
-                          loading={isBulkDeleting}
-                          size='xs'
-                          onClick={() => setIsBulkConfirmOpen(true)}
-                        >
-                          <DynamicIcon className='size-3.5' name='trash' />
-                          {t`Delete Selected (${selectedStagedCount})`}
-                        </BaseButton>
+                        <Tooltip content={t`Delete selected staged files`} position='top'>
+                          <BaseButton
+                            color='red'
+                            disabled={isBulkDeleting || isBulkExporting}
+                            loading={isBulkDeleting}
+                            size='xs'
+                            onClick={() => setIsBulkConfirmOpen(true)}
+                          >
+                            <DynamicIcon className='size-3.5' name='trash' />
+                            {t`Delete Selected (${selectedStagedCount})`}
+                          </BaseButton>
+                        </Tooltip>
                       ) : null}
                     </div>
                   </div>
@@ -1304,27 +1305,57 @@ export function DocumentsListView({
             label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
-          <MenuItem
-            icon='play'
-            label={t`Start Workflow`}
-            onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
-          />
+          {onWorkflow ? (
+            <MenuItem
+              icon='play'
+              label={t`Start Workflow`}
+              onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
+            />
+          ) : null}
 
-          {permissions?.delete === true ? (
+          {permissions?.delete !== false ? (
             <>
               <div className='my-2 border-t border-gray-3' />
               <MenuItem
                 icon='trash'
                 label={t`Delete`}
                 danger
-                onClick={() =>
-                  closeAndRun(() => console.log('delete file:', openMenuId))
-                }
+                onClick={() => {
+                  const targetId = openMenuId
+                  closeAndRun(() => {
+                    if (targetId) setConfirmDeleteFileId(targetId)
+                  })
+                }}
               />
             </>
           ) : null}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to delete this document? This action cannot be undone.`}
+        isConfirming={isDeletingFile}
+        opened={Boolean(confirmDeleteFileId)}
+        title={t`Delete Document`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingFile) setConfirmDeleteFileId(null)
+        }}
+        onConfirm={async () => {
+          if (!confirmDeleteFileId || isDeletingFile) return
+          setIsDeletingFile(true)
+          try {
+            await onDeleteFile?.(confirmDeleteFileId)
+            setConfirmDeleteFileId(null)
+          } catch {
+            // error handled by caller toast
+          } finally {
+            setIsDeletingFile(false)
+          }
+        }}
+      />
 
       <ConfirmDialog
         cancelLabel={t`Cancel`}

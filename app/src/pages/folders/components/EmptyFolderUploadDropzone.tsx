@@ -53,7 +53,7 @@ export function EmptyFolderUploadDropzone({
         message: tooLarge
           ? t`File is too large. Max size is 50MB.`
           : t`Invalid file type. Please upload a PDF or Image.`,
-        variant: 'error',
+        variant: 'info',
       })
       resetInput()
       return
@@ -62,7 +62,7 @@ export function EmptyFolderUploadDropzone({
     if (validFiles.length < files.length) {
       showToast({
         message: t`Some files were skipped (unsupported type or too large).`,
-        variant: 'error',
+        variant: 'info',
       })
     }
 

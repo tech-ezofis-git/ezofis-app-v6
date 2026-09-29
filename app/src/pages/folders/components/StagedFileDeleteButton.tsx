@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
 import { DynamicIcon } from './icons'
 
@@ -80,19 +81,20 @@ export function StagedFileExportButton({
 
   return (
     <>
-      <button
-        aria-label={t`Export`}
-        title={t`Export staged file`}
-        className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary-10 transition-all hover:bg-primary-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={disabled || isConfirming}
-        type='button'
-        onClick={(event) => {
-          event.stopPropagation()
-          setOpened(true)
-        }}
-      >
-        <Icon className='size-4' name='tabler:file-export' />
-      </button>
+      <Tooltip content={t`Export staged file`} position='top'>
+        <button
+          aria-label={t`Export`}
+          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary-10 transition-all hover:bg-primary-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+          disabled={disabled || isConfirming}
+          type='button'
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpened(true)
+          }}
+        >
+          <Icon className='size-4' name='tabler:file-export' />
+        </button>
+      </Tooltip>
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Export`}
@@ -137,19 +139,20 @@ export function StagedFileDeleteButton({
 
   return (
     <>
-      <button
-        aria-label={t`Delete`}
-        title={t`Delete staged file`}
-        className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-9 transition-all hover:bg-red-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={disabled || isConfirming}
-        type='button'
-        onClick={(event) => {
-          event.stopPropagation()
-          setOpened(true)
-        }}
-      >
-        <DynamicIcon className='h-4 w-4' name='trash' />
-      </button>
+      <Tooltip content={t`Delete staged file`} position='top'>
+        <button
+          aria-label={t`Delete`}
+          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-9 transition-all hover:bg-red-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+          disabled={disabled || isConfirming}
+          type='button'
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpened(true)
+          }}
+        >
+          <DynamicIcon className='h-4 w-4' name='trash' />
+        </button>
+      </Tooltip>
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Delete`}

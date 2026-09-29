@@ -2,22 +2,27 @@ import { useLingui } from '@lingui/react/macro'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
-import showToast from '@/components/base/toast/showToast'
 import uploadAndIndexApi, {
   type IndexStageFileRequest,
 } from '@/api/v6/uploadAndIndex'
+import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
-import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
+import { isDemoAppOrigin } from '@/utils/origin'
 import type { AppView, FileItem } from '../types/folderTypes'
+import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
+import { useHasDocumentApprovalWorkflow } from '../hooks/useDocumentApprovalWorkflow'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import {
+  RESET_FOLDER_VIEW_EVENT,
+  markFolderExplorerAskAiQuery,
+} from '../utils/folderExplorerSession'
+import {
   findRepositoryNodeId,
   getRepositoryRootNodeId,
 } from '../utils/folderExplorerUtils'
-import { markFolderExplorerAskAiQuery } from '../utils/folderExplorerSession'
+import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -28,10 +33,10 @@ import IntelligentUploadView from './IntelligentUpload/IntelligentUploadView'
 import { StartWorkflowView } from './StartWorkflowView'
 import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
-import { isDemoAppOrigin } from '@/utils/origin'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
+  const hasDocumentApprovalWorkflow = useHasDocumentApprovalWorkflow()
   const {
     activeFolder,
     appView,
@@ -314,9 +319,7 @@ export function FolderExplorer() {
         fields,
         itemId: null,
         ocrResult: null,
-        repositoryId: String(
-          file.repositoryId || resolvedRepositoryId || '',
-        ),
+        repositoryId: String(file.repositoryId || resolvedRepositoryId || ''),
         status: 'Indexing',
       }
     },
@@ -338,10 +341,7 @@ export function FolderExplorer() {
       }
 
       const payload = buildStageFileIndexPayload(file)
-      const { error } = await uploadAndIndexApi.indexStageFile(
-        stageId,
-        payload,
-      )
+      const { error } = await uploadAndIndexApi.indexStageFile(stageId, payload)
 
       if (error) {
         showToast({
@@ -404,6 +404,44 @@ export function FolderExplorer() {
       }
     },
     [buildStageFileIndexPayload, refreshData, t],
+  )
+
+  const handleDeleteArchivedFile = useCallback(
+    async (fileId: string) => {
+      const targetId = String(fileId || '').trim()
+      const file = files.find((f) => f.id === targetId)
+      const repositoryId = String(
+        file?.repositoryId || resolvedRepositoryId || '',
+      ).trim()
+
+      if (!targetId || !repositoryId) {
+        showToast({
+          message: t`Couldn't delete this document. Missing document or repository ID.`,
+          variant: 'error',
+        })
+        throw new Error('missing file id or repository id')
+      }
+
+      const { error } = await folderApi.deleteRepositoryItem({
+        itemId: targetId,
+        repositoryId,
+      })
+
+      if (error) {
+        showToast({
+          message: String(error),
+          variant: 'error',
+        })
+        throw new Error(error)
+      }
+
+      showToast({
+        message: t`Document deleted successfully.`,
+        variant: 'success',
+      })
+      await refreshData()
+    },
+    [files, refreshData, resolvedRepositoryId, t],
   )
 
   const selectRepositoryById = useCallback(
@@ -485,6 +523,9 @@ export function FolderExplorer() {
     if (appView === 'editMetadata' && !folderPermissions.editMetadata) {
       setAppView(selectedFile ? 'details' : 'explorer')
     }
+    if (appView === 'workflow' && !selectedFile) {
+      setAppView('explorer')
+    }
   }, [
     appView,
     exitUpload,
@@ -493,6 +534,16 @@ export function FolderExplorer() {
     selectedFile,
     setAppView,
   ])
+
+  useEffect(() => {
+    const handleReset = () => {
+      setAppView('explorer')
+    }
+    window.addEventListener(RESET_FOLDER_VIEW_EVENT, handleReset)
+    return () => {
+      window.removeEventListener(RESET_FOLDER_VIEW_EVENT, handleReset)
+    }
+  }, [setAppView])
 
   useEffect(() => {
     setPageContext({
@@ -763,7 +814,11 @@ export function FolderExplorer() {
           openFileAction(relatedId, 'details')
         }}
         onShareOpened={() => setPendingOpenShare(false)}
-        onWorkflow={() => setAppView('workflow')}
+        onWorkflow={
+          hasDocumentApprovalWorkflow
+            ? () => setAppView('workflow')
+            : undefined
+        }
       />
     )
   }
@@ -815,9 +870,31 @@ export function FolderExplorer() {
         candidateRepositories={candidateRepos}
         repositoryId={resolvedRepositoryId || null}
         onBack={() => setAppView('explorer')}
-        onDone={async () => {
-          setAppView('explorer')
-          await refreshData()
+        onDone={async (targetRepositoryId?: string) => {
+          console.log(
+            '[FolderExplorer] onDone triggered with targetRepositoryId:',
+            targetRepositoryId,
+          )
+          if (targetRepositoryId) {
+            const targetNodeId =
+              findRepositoryNodeId(tree, targetRepositoryId) ||
+              encodeRepositoryNodeId({
+                kind: 'repository',
+                label: 'Repository',
+                repositoryId: targetRepositoryId,
+              })
+            console.log(
+              '[FolderExplorer] Resolved targetNodeId in tree for selectFolder:',
+              targetNodeId,
+            )
+            selectFolder(targetNodeId)
+          } else {
+            console.log(
+              '[FolderExplorer] Navigating back to main explorer view',
+            )
+            setAppView('explorer')
+            await refreshData()
+          }
         }}
       />
     )
@@ -845,15 +922,21 @@ export function FolderExplorer() {
   }
 
   if (appView === 'workflow') {
+    if (!selectedFile) {
+      setAppView('explorer')
+      return null
+    }
+    const resolvedRepoId = String(
+      getRepositoryIdFromFolder(activeFolder) ||
+        selectedRepository?.id ||
+        files.find((f) => f.id === selectedFile)?.repositoryId ||
+        '',
+    )
     return (
       <StartWorkflowView
         id={selectedFile}
-        repositoryId={String(
-          selectedRepository?.id ||
-            getRepositoryIdFromFolder(activeFolder) ||
-            '',
-        )}
-        onBack={() => setAppView('details')}
+        repositoryId={resolvedRepoId}
+        onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
       />
     )
   }
@@ -900,11 +983,16 @@ export function FolderExplorer() {
           setView={changeViewMode}
           onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
+          onDeleteFile={handleDeleteArchivedFile}
+          onDeleteStagedFile={handleDeleteStagedFile}
+          onDeleteStagedFiles={handleDeleteStagedFiles}
           onEdit={
             folderPermissions.editMetadata
               ? (id) => handleFileAction(id, 'editMetadata')
               : undefined
           }
+          onExportStagedFile={handleExportStagedFile}
+          onExportStagedFiles={handleExportStagedFiles}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
@@ -929,16 +1017,15 @@ export function FolderExplorer() {
           onShareFilter={handleShareFilter}
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFiles : undefined}
-          onWorkflow={(id) => openFileAction(id, 'workflow')}
-          onDeleteStagedFile={handleDeleteStagedFile}
-          onDeleteStagedFiles={handleDeleteStagedFiles}
-          onExportStagedFile={handleExportStagedFile}
-          onExportStagedFiles={handleExportStagedFiles}
+          onWorkflow={
+            hasDocumentApprovalWorkflow
+              ? (id) => openFileAction(id, 'workflow')
+              : undefined
+          }
         />
       </div>
     )
   }
-
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
@@ -999,7 +1086,6 @@ export function FolderExplorer() {
         <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
-              repositoryId={resolvedRepositoryId}
               fileColumns={fileColumns}
               fileFilters={fileFilters}
               filePage={filePage}
@@ -1016,16 +1102,22 @@ export function FolderExplorer() {
               loadingPage={loadingPage}
               permissions={folderPermissions}
               refreshing={refreshing}
+              repositoryId={resolvedRepositoryId}
               uploadDisabled={!canUpload}
               folderTotalCount={
                 activeFolder ? folderPage?.totalCount : displayFolders.length
               }
               onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
+              onDeleteFile={handleDeleteArchivedFile}
+              onDeleteStagedFile={handleDeleteStagedFile}
+              onDeleteStagedFiles={handleDeleteStagedFiles}
               onEditMetadata={
                 folderPermissions.editMetadata
                   ? (id) => handleFileAction(id, 'editMetadata')
                   : undefined
               }
+              onExportStagedFile={handleExportStagedFile}
+              onExportStagedFiles={handleExportStagedFiles}
               onLoadMoreFolders={loadMoreFolders}
               onOpenFile={openDetailsFile}
               onOpenFolder={openFolder}
@@ -1034,11 +1126,11 @@ export function FolderExplorer() {
               onShare={openShareForFile}
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
-              onWorkflow={(id) => handleFileAction(id, 'workflow')}
-              onDeleteStagedFile={handleDeleteStagedFile}
-              onDeleteStagedFiles={handleDeleteStagedFiles}
-              onExportStagedFile={handleExportStagedFile}
-              onExportStagedFiles={handleExportStagedFiles}
+              onWorkflow={
+                hasDocumentApprovalWorkflow
+                  ? (id) => handleFileAction(id, 'workflow')
+                  : undefined
+              }
             />
           </div>
         </main>

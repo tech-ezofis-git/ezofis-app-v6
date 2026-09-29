@@ -708,6 +708,9 @@ export default function CustomFilter({
               >
                 {qf.icon && <Icon className='size-3.5' name={qf.icon} />}
                 <span className='truncate'>{qf.label}</span>
+                {typeof qf.count === 'number' && (
+                  <span className={FILTER_CHIP_COUNT}>{qf.count}</span>
+                )}
               </button>
             )
           })}

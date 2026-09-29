@@ -290,4 +290,33 @@ const authUserStore = create<Store>()((set) => {
   }
 })
 
+if (globalThis.window !== undefined) {
+  const syncTabAuth = () => {
+    const { isAuthenticated } = authUserStore.getState()
+    if (isAuthenticated) {
+      const storedIdentity = globalThis.localStorage.getItem('identity')
+      if (!storedIdentity) {
+        authUserStore.getState().resetAuthState()
+      }
+    }
+  }
+
+  globalThis.window.addEventListener('storage', (event) => {
+    if (event.key === 'identity' || event.key === 'session') {
+      if (!event.newValue) {
+        authUserStore.getState().resetAuthState()
+      }
+    }
+  })
+
+  globalThis.window.addEventListener('visibilitychange', () => {
+    if (globalThis.document.visibilityState === 'visible') {
+      syncTabAuth()
+    }
+  })
+
+  globalThis.window.addEventListener('focus', syncTabAuth)
+}
+
 export default authUserStore
+

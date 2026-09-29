@@ -235,14 +235,14 @@ export default function FolderRetentionPolicyWizard({
       if (nextStep > step && step === 0 && !policy.name.trim()) {
         showToast({
           message: t`Please enter a policy name.`,
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
       if (nextStep > step && step === 1 && ruleStage !== 'form') {
         showToast({
           message: t`Please choose what should happen and how the rule should work.`,
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -254,7 +254,7 @@ export default function FolderRetentionPolicyWizard({
     if (!policy.name.trim()) {
       showToast({
         message: t`Please enter a policy name.`,
-        variant: 'error',
+        variant: 'info',
       })
       setStep(0)
       return
@@ -262,7 +262,7 @@ export default function FolderRetentionPolicyWizard({
     if (!policy.triggerField) {
       showToast({
         message: t`Please select the field that determines when this rule should apply.`,
-        variant: 'error',
+        variant: 'info',
       })
       setStep(1)
       return

@@ -55,6 +55,7 @@ import {
 } from '@/services/ai/dashboardAi'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { parseInsightText } from '@/utils/parseInsightText'
 
 interface Props {
   repositoryId: string
@@ -1470,7 +1471,9 @@ function renderWidgetComponent(
                     <AiBrandIcon className='size-3.5 shrink-0' />
                   </span>
                 )}
-                <span className='flex-1 leading-relaxed'>{item.text}</span>
+                <span className='flex-1 leading-relaxed'>
+                  {parseInsightText(item.text)}
+                </span>
               </div>
             )
           })}

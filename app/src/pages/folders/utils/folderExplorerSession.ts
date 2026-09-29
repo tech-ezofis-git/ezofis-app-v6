@@ -1,6 +1,18 @@
 export const FOLDER_EXPLORER_SESSION_KEY = 'ezofis_folder_explorer_state'
 export const FOLDER_ASK_AI_QUERY_MARKER = 'ezofis_folder_ask_ai_query'
 export const FOLDER_ENTERING_FROM_OUTSIDE_KEY = 'ezofis_entering_folders'
+export const RESET_FOLDER_VIEW_EVENT = 'ezofis_reset_folder_view'
+
+export function triggerResetFolderView() {
+  try {
+    writeFolderExplorerStoredState({ appView: 'explorer' })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(RESET_FOLDER_VIEW_EVENT))
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export type FolderExplorerStoredState = {
   activeFolder?: string

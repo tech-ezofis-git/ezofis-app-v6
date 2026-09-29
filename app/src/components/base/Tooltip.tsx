@@ -68,7 +68,7 @@ const Tooltip = ({
     >
       <div
         className={cn(
-          'group inline-flex items-center justify-center',
+          'group inline-flex min-w-0 max-w-full items-center justify-center',
           className,
         )}
       >

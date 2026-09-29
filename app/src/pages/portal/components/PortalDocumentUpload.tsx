@@ -7,6 +7,7 @@ import {
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
 import { getFileExtension } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import cn from '@/utils/cn'
 
 type PortalDocumentUploadProps = {
@@ -73,7 +74,10 @@ const PortalDocumentUpload = ({
       <div className='min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm'>
         <div className='flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-1'>
           <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
-            <Icon className='size-4 text-[var(--primary-9)]' name='tabler:upload' />
+            <Icon
+              className='size-4 text-[var(--primary-9)]'
+              name='tabler:upload'
+            />
           </div>
           <div className='min-w-0 flex-1 text-14 font-bold tracking-tight text-gray-13'>
             {label}
@@ -83,7 +87,7 @@ const PortalDocumentUpload = ({
         <div className='min-w-0 overflow-hidden px-6 pt-2 pb-6'>
           {file ? (
             <div className='space-y-2.5'>
-              <div className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface p-2.5 transition-all shadow-2xs hover:border-gray-4'>
+              <div className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface p-2.5 shadow-2xs transition-all hover:border-gray-4'>
                 <div
                   className={cn(
                     'flex size-10 shrink-0 items-center justify-center rounded-lg',
@@ -119,7 +123,7 @@ const PortalDocumentUpload = ({
                       </span>
                     </div>
                   ) : (
-                    <div className='mt-0.5 text-11 font-medium text-emerald-9'>
+                    <div className='text-emerald-9 mt-0.5 text-11 font-medium'>
                       {analyzed ? t`Data extracted` : t`Document uploaded`}
                     </div>
                   )}
@@ -139,8 +143,8 @@ const PortalDocumentUpload = ({
             </div>
           ) : (
             <CompactDropzone
-              accept='application/pdf,image/*'
-              helperText={t`Supports PDF and images · Max 10 MB`}
+              accept={DOCUMENT_ACCEPT}
+              helperText={t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB`}
               loadingText={t`Extracting data from document...`}
               onFiles={handleFileChange}
             />

@@ -738,7 +738,7 @@ function GroupSetup({
         setShowErrors(true)
         showToast({
           message: getRequiredFieldErrorMessage(missingLabels),
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -760,7 +760,7 @@ function GroupSetup({
       }
       showToast({
         message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -779,7 +779,7 @@ function GroupSetup({
           onStepChange(index)
           showToast({
             message: getRequiredFieldErrorMessage(missingLabels),
-            variant: 'error',
+            variant: 'info',
           })
           return
         }

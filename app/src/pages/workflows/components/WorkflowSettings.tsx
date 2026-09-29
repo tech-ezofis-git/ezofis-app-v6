@@ -737,6 +737,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               initiateUsing,
               folder,
               form,
+              status: workflowStatus,
             })
             if (!validation.isValid) {
               setSettingsValidationErrors(validation.errors)

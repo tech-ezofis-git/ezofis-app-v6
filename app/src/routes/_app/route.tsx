@@ -13,6 +13,13 @@ export const Route = createFileRoute('/_app')({
     pageTitle: 'App Layout',
   },
   beforeLoad: ({ location }) => {
+    if (globalThis.window !== undefined) {
+      const storedIdentity = localStorage.getItem('identity')
+      if (!storedIdentity && authUserStore.getState().isAuthenticated) {
+        authUserStore.getState().resetAuthState()
+      }
+    }
+
     const { isAuthenticated, session } = authUserStore.getState()
 
     if (!isAuthenticated) {

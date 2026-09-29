@@ -12,6 +12,7 @@ import {
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
 import {
   applyFilenamePreFillToFormModel,
@@ -151,9 +152,9 @@ const PortalWizard = ({
   const panels = useMemo(() => source?.panels || [], [source])
   const needsDocumentSection = Boolean(
     source &&
-      (source.isAccountsPayable ||
-        source.repositoryId ||
-        source.fileFields.length > 0),
+    (source.isAccountsPayable ||
+      source.repositoryId ||
+      source.fileFields.length > 0),
   )
   const documentTitle =
     source?.fileFields[0]?.label ||
@@ -259,15 +260,9 @@ const PortalWizard = ({
       })
     })
     return ids
-  }, [
-    formPanels,
-    hiddenFileFieldIds,
-    portalFormModel,
-    repoFieldDescriptors,
-  ])
+  }, [formPanels, hiddenFileFieldIds, portalFormModel, repoFieldDescriptors])
 
-  const wizardStepCount =
-    formPanels.length + 1 + (needsDocumentSection ? 1 : 0)
+  const wizardStepCount = formPanels.length + 1 + (needsDocumentSection ? 1 : 0)
 
   const selectSection = (id: string) => {
     const root = scrollEl
@@ -405,7 +400,8 @@ const PortalWizard = ({
         if (!name) return
         const folderLabel = name.trim().toLowerCase()
         const ocrItem = (ocrFieldList || []).find(
-          (item) => item?.name && item.name.trim().toLowerCase() === folderLabel,
+          (item) =>
+            item?.name && item.name.trim().toLowerCase() === folderLabel,
         )
         const value =
           ocrItem?.value ??
@@ -836,7 +832,7 @@ const PortalWizard = ({
     if (missing.length > 0) {
       showToast({
         message: t`Please complete all required fields before continuing.`,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -1027,7 +1023,9 @@ const PortalWizard = ({
               onRemoveFile={() => removeFile(0)}
             />
             {fieldError ? (
-              <p className='mt-3 text-12 font-medium text-red-9'>{fieldError}</p>
+              <p className='mt-3 text-12 font-medium text-red-9'>
+                {fieldError}
+              </p>
             ) : null}
           </div>
         ) : null}
@@ -1076,7 +1074,8 @@ const PortalWizard = ({
             </div>
           ) : (
             <CompactDropzone
-              accept='application/pdf,image/*'
+              accept={DOCUMENT_ACCEPT}
+              helperText={t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB`}
               loadingText={t`Extracting data from the document…`}
               multiple
               onFiles={handleExtraFiles}

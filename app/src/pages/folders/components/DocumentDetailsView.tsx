@@ -1878,13 +1878,13 @@ export function DocumentDetailsView({
         />
       ) : null}
 
-      <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-5'>
-        <div className='mr-4 flex min-w-0 flex-1 items-center gap-3'>
+      <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-3 sm:px-5'>
+        <div className='mr-2 flex min-w-0 flex-1 items-center gap-2 sm:mr-4 sm:gap-3'>
           {forceSigning || !onBack ? (
             <div className='h-8 w-[72px] shrink-0' aria-hidden />
           ) : (
             <Button
-              className='h-8 shrink-0 border-transparent px-3 text-[13px] shadow-none'
+              className='h-8 shrink-0 border-transparent px-2.5 text-[13px] shadow-none sm:px-3'
               onClick={onBack}
             >
               <ArrowLeft size={12} /> {t`Back`}
@@ -1892,13 +1892,13 @@ export function DocumentDetailsView({
           )}
 
           {data?.fileName && (
-            <Tooltip content={data.fileName} position='bottom' width={240}>
-              <div className='flex min-w-0 items-center gap-2 select-none'>
+            <Tooltip content={data.fileName} position='bottom' width={240} className='min-w-0 max-w-full'>
+              <div className='flex min-w-0 max-w-full items-center gap-2 select-none'>
                 <Icon
                   className='size-5 shrink-0 text-gray-10'
                   name={getFileIcon(data.fileName)}
                 />
-                <span className='max-w-[200px] truncate text-[14px] font-semibold text-gray-12 sm:max-w-[300px] md:max-w-[400px]'>
+                <span className='min-w-0 truncate text-[14px] font-semibold text-gray-12 max-w-[140px] xs:max-w-[200px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px]'>
                   {data.fileName}
                 </span>
               </div>
@@ -1906,7 +1906,7 @@ export function DocumentDetailsView({
           )}
         </div>
 
-        <div className='flex shrink-0 items-center gap-1.5'>
+        <div className='flex shrink-0 items-center gap-1 sm:gap-1.5'>
           {!compactActions ? (
             <>
               {isEditableDocType && canEditDocument ? (
@@ -1956,30 +1956,31 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              <button
-                aria-label={t`Start Workflow`}
-                className='inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-gray-3 bg-surface px-3.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                disabled={!onWorkflow}
-                type='button'
-                onClick={() => onWorkflow?.()}
-              >
-                <DynamicIcon className='h-4 w-4 text-blue-9' name='play' />
-                <span>{t`Start Workflow`}</span>
-              </button>
+              {onWorkflow ? (
+                <button
+                  aria-label={t`Start Workflow`}
+                  className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
+                  type='button'
+                  onClick={() => onWorkflow?.()}
+                >
+                  <DynamicIcon className='h-4 w-4 text-blue-9' name='play' />
+                  <span className='hidden sm:inline'>{t`Start Workflow`}</span>
+                </button>
+              ) : null}
               <button
                 aria-label={t`AI Summary`}
-                className='inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-gray-3 bg-surface px-3.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
                 disabled={!onAiSummary}
                 type='button'
                 onClick={() => onAiSummary?.()}
               >
                 <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
-                <span>{t`AI Summary`}</span>
+                <span className='hidden sm:inline'>{t`AI Summary`}</span>
               </button>
               {canSendForSignature ? (
                 <button
                   aria-label={t`Sign Document`}
-                  className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5 ${
                     isSigning
                       ? 'border-accent-primary bg-accent-soft text-accent-primary'
                       : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
@@ -1992,7 +1993,7 @@ export function DocumentDetailsView({
                     className='h-4 w-4 text-accent-primary'
                     name='pen-tool'
                   />
-                  <span>{isSigning ? t`Exit Signing` : t`Sign Document`}</span>
+                  <span className='hidden sm:inline'>{isSigning ? t`Exit Signing` : t`Sign Document`}</span>
                 </button>
               ) : null}
               <div>
@@ -2183,15 +2184,15 @@ export function DocumentDetailsView({
         </div>
       </div>
 
-      <div className='min-h-0 flex-1 overflow-hidden p-5'>
+      <div className='min-h-0 flex-1 overflow-hidden p-3 sm:p-5'>
         <div
-          className={`grid h-full gap-5 ${
+          className={`grid h-full gap-4 sm:gap-5 ${
             forceSigning && infoCards.length === 0
               ? 'grid-cols-1'
-              : 'grid-cols-[minmax(0,1fr)_400px]'
+              : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_400px]'
           }`}
         >
-          <main className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-2'>
+          <main className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-6'>
             {data.alert ? (
               <div className='flex items-center justify-between rounded-xl border border-orange-5 bg-orange-2 px-4 py-3'>
                 <div className='flex items-start gap-3'>
@@ -2956,7 +2957,7 @@ export function DocumentDetailsView({
           </main>
 
           {infoCards.length > 0 || ticketData ? (
-            <aside className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-2'>
+            <aside className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-6'>
               {ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>

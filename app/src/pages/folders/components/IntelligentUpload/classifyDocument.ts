@@ -1,4 +1,9 @@
 import type {
+  DocumentIntelligentCandidate,
+  DocumentIntelligentResult,
+} from '@/api/v6/uploadAndIndex'
+import { uploadAndClassifyDocument } from '@/api/v6/uploadAndIndex'
+import type {
   CandidateRepository,
   ClassificationResult,
   ClassificationSuggestion,
@@ -6,10 +11,9 @@ import type {
 
 export const CLASSIFICATION_STAGES = [
   'Reading document content...',
-  'Analyzing entity and metadata...',
+  'Analyzing document with AI Agent...',
   'Matching repository schemas...',
-  'Evaluating classification confidence...',
-  'Finalizing AI recommendations...',
+  'Finalizing recommendations...',
 ] as const
 
 interface DocProfile {
@@ -121,105 +125,125 @@ const FALLBACK_PROFILE: DocProfile = {
   type: 'General Business Document',
 }
 
-const FALLBACK_CANDIDATE_REPOSITORIES: CandidateRepository[] = [
-  { id: 'repo-finance', name: 'Finance & Invoices' },
-  { id: 'repo-legal', name: 'Legal & Contracts' },
-  { id: 'repo-hr', name: 'Human Resources' },
-  { id: 'repo-operations', name: 'Operations & Logistics' },
-  { id: 'repo-general', name: 'General Documents' },
-]
-
-function detectProfile(fileName: string): DocProfile {
-  const lowerName = fileName.toLowerCase()
-  for (const profile of DOCUMENT_PROFILES) {
-    if (profile.matchKeywords.some((keyword) => lowerName.includes(keyword))) {
-      return profile
-    }
-  }
-  return FALLBACK_PROFILE
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 /**
- * Classifies a document against candidate repositories.
- * Currently backed by a simulated multi-stage AI service layer with realistic delays.
- * When real backend endpoints are ready, only this function's body needs replacement.
+ * Classifies a document against candidate repositories using the backend Document Intelligent Agent API.
+ * Falls back to client heuristic matching if the backend API service is unreachable.
  */
 export async function classifyDocument(
   file: File,
   candidateRepositories: CandidateRepository[] = [],
   onStageChange?: (stage: string) => void,
 ): Promise<ClassificationResult> {
-  const pool =
-    candidateRepositories.length > 0
-      ? candidateRepositories
-      : FALLBACK_CANDIDATE_REPOSITORIES
+  onStageChange?.('Analyzing document with AI Agent...')
 
-  // Cycle through progressive classification stages
-  for (const stage of CLASSIFICATION_STAGES) {
-    onStageChange?.(stage)
-    const stageDuration = Math.floor(250 + Math.random() * 250)
-    await sleep(stageDuration)
-  }
+  const { data, error } = await uploadAndClassifyDocument(file)
 
-  const profile = detectProfile(file.name)
-
-  // Rank candidate repositories by matching name semantics with profile
-  const ranked = [...pool].sort((a, b) => {
-    const aMatch = profile.matchKeywords.some((k) =>
-      a.name.toLowerCase().includes(k),
-    )
-    const bMatch = profile.matchKeywords.some((k) =>
-      b.name.toLowerCase().includes(k),
-    )
-    if (aMatch && !bMatch) return -1
-    if (!aMatch && bMatch) return 1
-    return 0
-  })
-
-  // Build realistic confidence scores: top ≥ 0.85, 2nd ~0.65-0.78, 3rd ~0.35-0.48
-  const baseConfidences = [
-    0.88 + Math.round(Math.random() * 8) / 100, // 0.88 - 0.96
-    0.64 + Math.round(Math.random() * 12) / 100, // 0.64 - 0.76
-    0.36 + Math.round(Math.random() * 12) / 100, // 0.36 - 0.48
-    0.22 + Math.round(Math.random() * 8) / 100, // 0.22 - 0.30
-    0.12 + Math.round(Math.random() * 6) / 100, // 0.12 - 0.18
-  ]
-
-  const suggestions: ClassificationSuggestion[] = ranked
-    .slice(0, Math.min(ranked.length, 6))
-    .map((repo, idx) => {
-      const confidence = Math.min(
-        0.98,
-        Math.max(0.1, Number((baseConfidences[idx] ?? 0.15).toFixed(2))),
-      )
-
-      const reason =
-        idx === 0
-          ? profile.reason
-          : idx === 1
-            ? `Partial schema overlap with secondary attributes in ${repo.name}.`
-            : `Contains secondary reference tokens loosely matching ${repo.name}.`
-
-      const keywords =
-        idx === 0
-          ? profile.defaultKeywords
-          : profile.defaultKeywords.slice(0, Math.max(2, 4 - idx))
-
-      return {
-        confidence,
-        keywords,
-        reason,
-        repositoryId: repo.id,
-        repositoryName: repo.name,
+  const res =
+    (
+      data as unknown as {
+        document_intelligent_result?: DocumentIntelligentResult
       }
-    })
-    .sort((a, b) => b.confidence - a.confidence)
+    )?.document_intelligent_result ||
+    ((data as unknown as Record<string, unknown>)?.repository_id ||
+    (data as unknown as Record<string, unknown>)?.candidates
+      ? (data as unknown as DocumentIntelligentResult)
+      : null)
 
-  return {
-    documentType: profile.type,
-    keywords: profile.defaultKeywords,
-    suggestions,
+  function safeIdMatch(a?: string | null, b?: string | null): boolean {
+    if (!a || !b) return false
+    return String(a).toLowerCase() === String(b).toLowerCase()
   }
+
+  if (
+    !error &&
+    res &&
+    (res.repository_id || (res.candidates && res.candidates.length > 0))
+  ) {
+    onStageChange?.('Finalizing AI recommendations...')
+
+    const parseScore = (val: unknown) =>
+      typeof val === 'number' ? val : parseFloat(String(val)) || 0
+
+    const normalizeScore = (score: unknown) => {
+      const num = parseScore(score)
+      return num > 1 ? Number((num / 100).toFixed(2)) : Number(num.toFixed(2))
+    }
+
+    const suggestions: ClassificationSuggestion[] = []
+
+    if (res.candidates && res.candidates.length > 0) {
+      res.candidates.forEach((cand: DocumentIntelligentCandidate) => {
+        const matchingRepo = candidateRepositories.find((r) =>
+          safeIdMatch(r.id, cand.repository_id),
+        )
+        const targetId = matchingRepo ? matchingRepo.id : cand.repository_id
+        suggestions.push({
+          confidence: normalizeScore(cand.score),
+          keywords: [],
+          reason: safeIdMatch(cand.repository_id, res.repository_id)
+            ? res.rationale || 'Selected by Document Intelligent Agent.'
+            : `Candidate match score: ${cand.score}`,
+          repositoryId: targetId,
+          repositoryName:
+            matchingRepo?.name || cand.repository_name || cand.repository_id,
+          score: cand.score,
+        })
+      })
+    }
+
+    // Ensure the top recommended repository is present as the first suggestion
+    if (res.repository_id) {
+      const topExists = suggestions.some((s) =>
+        safeIdMatch(s.repositoryId, res.repository_id),
+      )
+      if (!topExists) {
+        const matchingRepo = candidateRepositories.find((r) =>
+          safeIdMatch(r.id, res.repository_id),
+        )
+        const targetId = matchingRepo ? matchingRepo.id : res.repository_id
+        suggestions.unshift({
+          confidence: normalizeScore(res.confidence_score || 88),
+          keywords: [],
+          reason: res.rationale || 'Top AI classification match.',
+          repositoryId: targetId,
+          repositoryName:
+            matchingRepo?.name || res.repository_name || res.repository_id,
+          score: res.confidence_score,
+        })
+      }
+    }
+
+    suggestions.sort((a, b) => b.confidence - a.confidence)
+
+    const profile = detectProfile(file.name)
+
+    return {
+      documentType: res.repository_name || profile.type,
+      keywords: profile.defaultKeywords,
+      ocrText: res.ocr_text,
+      rationale: res.rationale,
+      sourceReference: res.source_reference || file.name,
+      suggestions,
+    }
+  }
+
+  const cleanError =
+    error &&
+    !error.includes('Cannot read properties') &&
+    !error.includes('toLowerCase') &&
+    !error.includes('TypeError')
+      ? error
+      : 'Classification failed for this document. Please try again.'
+
+  throw new Error(cleanError)
+}
+
+function detectProfile(fileName?: string): DocProfile {
+  const lowerName = (fileName || '').toLowerCase()
+  for (const profile of DOCUMENT_PROFILES) {
+    if (profile.matchKeywords.some((keyword) => lowerName.includes(keyword))) {
+      return profile
+    }
+  }
+  return FALLBACK_PROFILE
 }

@@ -54,6 +54,7 @@ import { DynamicIcon } from './icons'
 import Button from '@/components/base/button/Button'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import Tooltip from '@/components/base/Tooltip'
 import {
   hasAllMandatoryFieldsFilled,
   isArchivedFile,
@@ -147,6 +148,8 @@ type FolderTableDataTableSplitProps = {
 
   onOpenFolder: (id: string) => void
 
+  onDeleteFile?: (fileId: string) => Promise<void>
+
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
 
   onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
@@ -175,7 +178,7 @@ type FolderTableDataTableSplitProps = {
 
   uploadDisabled?: boolean
 
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
 }
 
 const folderColumnHelper = createColumnHelper<FolderRow>()
@@ -221,10 +224,10 @@ const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 const getFileId = (file: any) =>
   String(
     (file as any)?.id ??
-      (file as any)?.stageFileId ??
-      (file as any)?.ItemId ??
-      (file as any)?.itemId ??
-      '',
+    (file as any)?.stageFileId ??
+    (file as any)?.ItemId ??
+    (file as any)?.itemId ??
+    '',
   )
 
 const getFileColumnSizing = (
@@ -352,6 +355,8 @@ export default function FolderTableDataTableSplit({
 
   onOpenFolder,
 
+  onDeleteFile,
+
   onDeleteStagedFile,
 
   onDeleteStagedFiles,
@@ -400,7 +405,7 @@ export default function FolderTableDataTableSplit({
           page: targetPage,
           pageSize: targetPageSize,
           skipTotal: false,
-          sortBy: 'DocumentDate',
+          sortBy: 'id',
           sortOrder: 'desc',
         })
         if (response && !response.error && response.data) {
@@ -724,6 +729,7 @@ export default function FolderTableDataTableSplit({
             onReload={handleReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
+            onDeleteFile={onDeleteFile}
             onDeleteStagedFile={onDeleteStagedFile}
             onDeleteStagedFiles={onDeleteStagedFiles}
             onExportStagedFile={onExportStagedFile}
@@ -834,6 +840,7 @@ function FileDataTableSection({
   onReload,
   onShare,
   onWorkflow,
+  onDeleteFile,
   onDeleteStagedFile,
   onDeleteStagedFiles,
   onExportStagedFile,
@@ -861,7 +868,8 @@ function FileDataTableSection({
   onPageSizeChange?: (pageSize: number) => void
   onReload?: () => void
   onShare: (id: string) => void
-  onWorkflow: (id: string) => void
+  onWorkflow?: (id: string) => void
+  onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
   onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onExportStagedFile?: (file: FileItem) => Promise<void>
@@ -873,6 +881,8 @@ function FileDataTableSection({
 }) {
   const { t } = useLingui()
   const [selectedStagedIds, setSelectedStagedIds] = useState<string[]>([])
+  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(null)
+  const [isDeletingFile, setIsDeletingFile] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
   const [isBulkExporting, setIsBulkExporting] = useState(false)
@@ -961,11 +971,10 @@ function FileDataTableSection({
       filteredFiles.map((file) => {
         const nameVal = primaryNameCol
           ? getRepositoryFieldValue(
-              file as any,
-              primaryNameCol.key,
-              folderContextFilters,
-              primaryNameCol.dataType,
-            )
+            file as any,
+            primaryNameCol.key,
+            folderContextFilters,
+          )
           : ''
 
         const row: FileRow = {
@@ -1016,11 +1025,11 @@ function FileDataTableSection({
       } as DynamicRepositoryColumn,
       ...(isAPFolder
         ? [
-            {
-              key: '__status',
-              label: t`Current Stage`,
-            } as DynamicRepositoryColumn,
-          ]
+          {
+            key: '__status',
+            label: t`Current Stage`,
+          } as DynamicRepositoryColumn,
+        ]
         : []),
       ...normalColumns,
     ]
@@ -1091,83 +1100,76 @@ function FileDataTableSection({
       })
     })
 
-    const selectionColumn = hasStagedFiles
-      ? [
-          fileColumnHelper.display({
-            enableResizing: false,
-            enableSorting: false,
-            header: () => {
-              const isAllSelected =
-                stagedFilesList.length > 0 &&
-                validSelectedStagedFiles.length === stagedFilesList.length
-              const isIndeterminate =
-                validSelectedStagedFiles.length > 0 && !isAllSelected
+    const selectionColumn = [
+      fileColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: () => {
+          const isAllSelected =
+            filteredFiles.length > 0 &&
+            validSelectedStagedFiles.length === filteredFiles.length
+          const isIndeterminate =
+            validSelectedStagedFiles.length > 0 && !isAllSelected
 
-              return (
-                <div
-                  className='flex w-full items-center justify-center'
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <InputCheckbox
-                    aria-label={t`Select all staged files`}
-                    checked={isAllSelected}
-                    indeterminate={isIndeterminate}
-                    onChange={(checked) => {
-                      if (checked) {
-                        setSelectedStagedIds(
-                          stagedFilesList.map((f) => getFileId(f as any)),
-                        )
-                      } else {
-                        setSelectedStagedIds([])
-                      }
-                    }}
-                  />
-                </div>
-              )
-            },
-            id: 'select',
-            maxSize: 48,
-            meta: {
-              className: '!px-0 !pl-0 !pr-0 text-center',
-              headerClassName: '!px-0 !pl-0 !pr-0 text-center',
-              headerAlign: 'center' as const,
-              disableEllipsis: true,
-            },
-            minSize: 48,
-            size: 48,
-            cell: ({ row }) => {
-              const file = row.original.raw as FileItem
-              if (!isUnarchivedStageFile(file)) {
-                return null
-              }
+          return (
+            <div
+              className='flex w-full items-center justify-center'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <InputCheckbox
+                aria-label={t`Select all files`}
+                checked={isAllSelected}
+                indeterminate={isIndeterminate}
+                onChange={(checked) => {
+                  if (checked) {
+                    setSelectedStagedIds(
+                      filteredFiles.map((f) => getFileId(f as any)),
+                    )
+                  } else {
+                    setSelectedStagedIds([])
+                  }
+                }}
+              />
+            </div>
+          )
+        },
+        id: 'select',
+        maxSize: 48,
+        meta: {
+          className: '!px-0 !pl-0 !pr-0 text-center',
+          headerClassName: '!px-0 !pl-0 !pr-0 text-center',
+          headerAlign: 'center' as const,
+          disableEllipsis: true,
+        },
+        minSize: 48,
+        size: 48,
+        cell: ({ row }) => {
+          const fileId = row.original.id
+          const isChecked = selectedStagedIds.includes(fileId)
 
-              const fileId = row.original.id
-              const isChecked = selectedStagedIds.includes(fileId)
-
-              return (
-                <div
-                  className='flex w-full items-center justify-center'
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <InputCheckbox
-                    aria-label={t`Select staged file`}
-                    checked={isChecked}
-                    onChange={(checked) => {
-                      setSelectedStagedIds((prev) =>
-                        checked
-                          ? prev.includes(fileId)
-                            ? prev
-                            : [...prev, fileId]
-                          : prev.filter((id) => id !== fileId),
-                      )
-                    }}
-                  />
-                </div>
-              )
-            },
-          }),
-        ]
-      : []
+          return (
+            <div
+              className='flex w-full items-center justify-center'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <InputCheckbox
+                aria-label={t`Select file`}
+                checked={isChecked}
+                onChange={(checked) => {
+                  setSelectedStagedIds((prev) =>
+                    checked
+                      ? prev.includes(fileId)
+                        ? prev
+                        : [...prev, fileId]
+                      : prev.filter((id) => id !== fileId),
+                  )
+                }}
+              />
+            </div>
+          )
+        },
+      }),
+    ]
 
     return [
       ...selectionColumn,
@@ -1256,11 +1258,13 @@ function FileDataTableSection({
                   label={t`Share`}
                   onClick={() => onShare(fileId)}
                 />
-                <MenuItem
-                  icon='lucide:play'
-                  label={t`Start Workflow`}
-                  onClick={() => onWorkflow(fileId)}
-                />
+                {onWorkflow ? (
+                  <MenuItem
+                    icon='lucide:play'
+                    label={t`Start Workflow`}
+                    onClick={() => onWorkflow(fileId)}
+                  />
+                ) : null}
                 {permissions?.delete !== false ? (
                   <>
                     <MenuDivider />
@@ -1269,6 +1273,7 @@ function FileDataTableSection({
                       icon='lucide:trash-2'
                       iconClass='text-red-9'
                       label={t`Delete`}
+                      onClick={() => setConfirmDeleteFileId(fileId)}
                     />
                   </>
                 ) : null}
@@ -1281,6 +1286,7 @@ function FileDataTableSection({
   }, [
     columns,
     folderContextFilters,
+    filteredFiles,
     hasStagedFiles,
     stagedFilesList,
     validSelectedStagedFiles,
@@ -1318,7 +1324,7 @@ function FileDataTableSection({
     getRowId: (row) => `file-${row.id}`,
     initialState: {
       columnPinning: {
-        left: hasStagedFiles ? ['select', '__name'] : ['__name'],
+        left: ['select', '__name'],
         right: ['actions'],
       },
     },
@@ -1380,28 +1386,32 @@ function FileDataTableSection({
           </div>
           <div className='flex items-center gap-2'>
             {canBulkExport && onExportStagedFiles ? (
-              <Button
-                color='primary'
-                disabled={isBulkExporting || isBulkDeleting}
-                loading={isBulkExporting}
-                size='xs'
-                onClick={() => setIsBulkExportConfirmOpen(true)}
-              >
-                <Icon className='size-3.5' name='tabler:file-export' />
-                {t`Export Selected (${selectedStagedCount})`}
-              </Button>
+              <Tooltip content={t`Export selected staged files`} position='top'>
+                <Button
+                  color='primary'
+                  disabled={isBulkExporting || isBulkDeleting}
+                  loading={isBulkExporting}
+                  size='xs'
+                  onClick={() => setIsBulkExportConfirmOpen(true)}
+                >
+                  <Icon className='size-3.5' name='tabler:file-export' />
+                  {t`Export Selected (${selectedStagedCount})`}
+                </Button>
+              </Tooltip>
             ) : null}
             {onDeleteStagedFiles ? (
-              <Button
-                color='red'
-                disabled={isBulkDeleting || isBulkExporting}
-                loading={isBulkDeleting}
-                size='xs'
-                onClick={() => setIsBulkConfirmOpen(true)}
-              >
-                <DynamicIcon className='size-3.5' name='trash' />
-                {t`Delete Selected (${selectedStagedCount})`}
-              </Button>
+              <Tooltip content={t`Delete selected staged files`} position='top'>
+                <Button
+                  color='red'
+                  disabled={isBulkDeleting || isBulkExporting}
+                  loading={isBulkDeleting}
+                  size='xs'
+                  onClick={() => setIsBulkConfirmOpen(true)}
+                >
+                  <DynamicIcon className='size-3.5' name='trash' />
+                  {t`Delete Selected (${selectedStagedCount})`}
+                </Button>
+              </Tooltip>
             ) : null}
           </div>
         </div>
@@ -1477,6 +1487,31 @@ function FileDataTableSection({
             // error handled by caller toast
           } finally {
             setIsBulkDeleting(false)
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to delete this document? This action cannot be undone.`}
+        isConfirming={isDeletingFile}
+        opened={Boolean(confirmDeleteFileId)}
+        title={t`Delete Document`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingFile) setConfirmDeleteFileId(null)
+        }}
+        onConfirm={async () => {
+          if (!confirmDeleteFileId || isDeletingFile) return
+          setIsDeletingFile(true)
+          try {
+            await onDeleteFile?.(confirmDeleteFileId)
+            setConfirmDeleteFileId(null)
+          } catch {
+            // error handled by caller toast
+          } finally {
+            setIsDeletingFile(false)
           }
         }}
       />
