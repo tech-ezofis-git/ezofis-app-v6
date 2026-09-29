@@ -874,6 +874,16 @@ const Request = ({
     selectedWorkflow?.id || workflowId || selectedWorkflowId
   const isGenericWorkflow = !isAccountsPayableWorkflow(rawWorkflowData)
 
+  const workflowFormId =
+    rawWorkflowData?.formId ||
+    rawWorkflowData?.wFormId ||
+    rawWorkflowData?.settings?.general?.initiateUsing?.formId ||
+    selectedItem?.formId ||
+    null
+
+  const hasWorkflowFormPanels =
+    getFormPanels(rawWorkflowData).length > 0
+
   // Fetched once here (rather than separately inside the header badge and
   // the overview's own Attachments panel) so the header's attachment count,
   // the overview's file-field display, and the Attachments panel list all
@@ -951,49 +961,92 @@ const Request = ({
     selectedItem?.processId,
     selectedItem?.transactionId,
     initialProcessing,
+    workflowFormId,
   )
 
-  // Fetch workflow data if rawWorkflowData is missing or mismatched
+  // Fetch workflow (+ form schema) when missing, mismatched, or panels empty.
+  // Opening another ticket on the same workflow used to skip the form GET,
+  // leaving Qualify/Extracted Data without field labels.
   useEffect(() => {
-    if (
-      resolvedWorkflowId &&
-      (!rawWorkflowData ||
-        String(rawWorkflowData.id) !== String(resolvedWorkflowId))
-    ) {
-      const fetchWorkflow = async () => {
-        try {
-          const res = await workflowsApiV6.getWorkflowById(
-            String(resolvedWorkflowId),
-          )
-          if (res?.data) {
-            const wf = res.data
-            const wFormId =
-              wf.formId ??
-              wf.wFormId ??
-              wf.settings?.general?.initiateUsing?.formId ??
-              ''
-            let formJson = wf.formJson
-            if (wFormId) {
-              const formRes = await formApi.getFormDataById(String(wFormId))
-              if (formRes?.data) {
-                formJson = formRes.data.formJson ?? formRes.data
-              }
-            }
-            requestStore
-              .getState()
-              .setRawWorkflowData({ ...wf, formJson, id: resolvedWorkflowId })
-          }
-        } catch (e) {
-          console.error(
-            'Error loading raw workflow data in Request detail view:',
-            e,
-          )
-        }
-      }
-      fetchWorkflow()
-    }
-  }, [resolvedWorkflowId, rawWorkflowData?.id])
+    if (!resolvedWorkflowId) return
+    const idMismatch =
+      !rawWorkflowData ||
+      String(rawWorkflowData.id) !== String(resolvedWorkflowId)
+    if (!idMismatch && hasWorkflowFormPanels) return
 
+    let cancelled = false
+    const fetchWorkflow = async () => {
+      try {
+        const res = await workflowsApiV6.getWorkflowById(
+          String(resolvedWorkflowId),
+        )
+        if (cancelled || !res?.data) return
+        const wf = res.data
+        const wFormId =
+          wf.formId ??
+          wf.wFormId ??
+          wf.settings?.general?.initiateUsing?.formId ??
+          workflowFormId ??
+          ''
+        let formJson = wf.formJson
+        if (wFormId) {
+          const formRes = await formApi.getFormDataById(String(wFormId))
+          if (formRes?.data) {
+            formJson = formRes.data.formJson ?? formRes.data
+          }
+        }
+        if (cancelled) return
+        requestStore
+          .getState()
+          .setRawWorkflowData({ ...wf, formJson, id: resolvedWorkflowId })
+      } catch (e) {
+        console.error(
+          'Error loading raw workflow data in Request detail view:',
+          e,
+        )
+      }
+    }
+    fetchWorkflow()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    resolvedWorkflowId,
+    rawWorkflowData?.id,
+    hasWorkflowFormPanels,
+    workflowFormId,
+  ])
+
+  // When ticket detail returns a form definition and the store has no panels,
+  // merge it so generic overview / agent views get field labels.
+  useEffect(() => {
+    const def = request?._formDefinition
+    if (!def || !rawWorkflowData || hasWorkflowFormPanels) return
+    const formJson = def.formJson ?? def
+    if (!formJson || getFormPanels({ formJson }).length === 0) return
+    requestStore.getState().setRawWorkflowData({
+      ...rawWorkflowData,
+      formJson,
+      formId: request?.formId || rawWorkflowData.formId,
+    })
+  }, [
+    request?._formDefinition,
+    request?.formId,
+    rawWorkflowData,
+    hasWorkflowFormPanels,
+  ])
+
+  // Prefer ticket form definition immediately even before store merge settles.
+  const overviewWorkflowData = useMemo(() => {
+    if (hasWorkflowFormPanels || !rawWorkflowData) return rawWorkflowData
+    const def = request?._formDefinition
+    if (!def) return rawWorkflowData
+    const formJson = def.formJson ?? def
+    if (!formJson || getFormPanels({ formJson }).length === 0) {
+      return rawWorkflowData
+    }
+    return { ...rawWorkflowData, formJson }
+  }, [rawWorkflowData, request?._formDefinition, hasWorkflowFormPanels])
   // Synchronize store's selectedItem with the loaded request data
   useEffect(() => {
     if (request && selectedItem) {
@@ -2188,7 +2241,7 @@ const Request = ({
                 comments={genericComments}
                 documentRequired={!!currentBlockSettings.documentRequired}
                 formModel={genericFormModel}
-                rawWorkflowData={rawWorkflowData}
+                rawWorkflowData={overviewWorkflowData}
                 rightView={rightView}
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}

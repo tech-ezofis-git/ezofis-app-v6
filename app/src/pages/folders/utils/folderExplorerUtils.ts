@@ -26,6 +26,38 @@ export function formatFolderModifiedDate(value?: string | null) {
   return parsed.format('DD-MMM-YYYY')
 }
 
+/** True for repository DATE / DATE_TIME (and loose "date" keys). */
+export function isRepositoryDateDataType(dataType?: string | null) {
+  const normalized = String(dataType || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+  return (
+    normalized === 'date' ||
+    normalized === 'datetime' ||
+    normalized === 'timestamp'
+  )
+}
+
+/**
+ * Format repository date/datetime cell values as DD-MM-YYYY (no time).
+ * Accepts ISO strings, "YYYY-MM-DD HH:mm:ss.SS", etc.
+ */
+export function formatRepositoryDateDisplay(value?: unknown) {
+  if (value === undefined || value === null || value === '') return '-'
+  const raw = String(value).trim()
+  if (!raw || raw === '-') return '-'
+
+  const parsed = dayjs(raw)
+  if (parsed.isValid()) return parsed.format('DD-MM-YYYY')
+
+  // Fallback for "2024-05-24 16:35:59.00" when dayjs needs a tweak
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`
+
+  return raw
+}
+
 export type FolderFilterOption = { label: string; value: string }
 export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
 

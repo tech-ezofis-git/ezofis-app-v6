@@ -49,7 +49,10 @@ import DocumentPreviewViewer from '@/components/common/document-preview/Document
 import folderApi from '@/pages/folders/api/folderApi'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
-import AgentSummaryBoxes, { type AgentBlock } from './AgentSummaryBoxes'
+import AgentSummaryBoxes, {
+  getAgentResponseTabs,
+  type AgentBlock,
+} from './AgentSummaryBoxes'
 import AgentDetailPlaceholder from './AgentDetailPlaceholder'
 
 interface ChecklistItem {
@@ -191,8 +194,8 @@ const DocumentApprovalSplitLayout = ({
   }, [targetItemId, targetRepoId])
 
   return (
-    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1 p-5 gap-5'>
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-[var(--gray-1)]'>
+      <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
             fileName={previewAttachment.fileName || previewAttachment.name || (previewAttachment.fileExtension ? `file.${previewAttachment.fileExtension}` : undefined)}
@@ -205,7 +208,7 @@ const DocumentApprovalSplitLayout = ({
         )}
       </div>
 
-      <div className='flex w-[400px] xl:w-[480px] shrink-0 flex-col gap-5 overflow-hidden'>
+      <div className='flex min-w-0 flex-1 flex-col gap-5 overflow-hidden bg-[var(--gray-1)] p-4'>
         <ScrollArea className='flex-1 pr-3.5' height='100%' type='always'>
           <div className='space-y-4 pb-4'>
             <div className='rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
@@ -314,30 +317,139 @@ const DocumentFormSplitLayout = ({
     return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
   }, [rawWorkflowData])
 
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const agentResponseTabs = useMemo(
+    () => getAgentResponseTabs(agentBlocks, selectedItem),
+    [agentBlocks, selectedItem],
+  )
+  const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
+  const hasAgents = agentBlocks.length > 0
+  const hasAgentResponseTabs = agentResponseTabs.length > 0
+
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
+    null,
+  )
+  const [activeTab, setActiveTab] = useState('summary')
+  const prevAgentResponseTabKey = useRef('')
+
+  // When a new agent response arrives (or on first load), open that tab first.
+  // Do not re-open agent tabs when the user navigates to Attachments/Comments/History.
+  useEffect(() => {
+    if (!hasAgentResponseTabs) return
+    const newestId = agentResponseTabs[0]?.id
+    if (!newestId) return
+    const prevKey = prevAgentResponseTabKey.current
+    const isFirstLoad = prevKey === ''
+    const isNewResponse = prevKey !== agentResponseTabKey
+    prevAgentResponseTabKey.current = agentResponseTabKey
+    if (isFirstLoad || isNewResponse) {
+      setSelectedAgentBlockId(newestId)
+      setActiveTab(`agent:${newestId}`)
+    }
+  }, [agentResponseTabKey, agentResponseTabs, hasAgentResponseTabs])
 
   useEffect(() => {
-    if (!selectedAgentBlockId && agentBlocks.length > 0) {
-      if (selectedItem?.isProcessing) {
-        const activeStage = selectedItem?.stage || selectedItem?.currentStage
-        if (activeStage) {
-          const matchingBlock = agentBlocks.find(b => b.settings?.label === activeStage)
-          if (matchingBlock) {
-            setSelectedAgentBlockId(matchingBlock.id)
-            return
-          }
+    if (selectedAgentBlockId || !hasAgents) return
+    if (selectedItem?.isProcessing) {
+      const activeStage = selectedItem?.stage || selectedItem?.currentStage
+      if (activeStage) {
+        const matchingBlock = agentBlocks.find(
+          (b) => b.settings?.label === activeStage,
+        )
+        if (matchingBlock) {
+          setSelectedAgentBlockId(matchingBlock.id)
+          setActiveTab(`agent:${matchingBlock.id}`)
         }
-        setSelectedAgentBlockId(agentBlocks[0].id)
       }
     }
-  }, [selectedItem?.isProcessing, selectedItem?.stage, selectedItem?.currentStage, selectedAgentBlockId, agentBlocks])
+  }, [
+    selectedItem?.isProcessing,
+    selectedItem?.stage,
+    selectedItem?.currentStage,
+    selectedAgentBlockId,
+    agentBlocks,
+    hasAgents,
+  ])
 
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
-    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+    return agentBlocks.find((b) => b.id === selectedAgentBlockId) || null
   }, [selectedAgentBlockId, agentBlocks])
 
-  const [activeTab, setActiveTab] = useState('summary')
+  const standardTabs = useMemo(
+    () =>
+      [
+        { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
+        lineItemsNode
+          ? {
+              icon: 'tabler:layers-linked',
+              id: 'line_items',
+              label: t`Line Items`,
+            }
+          : null,
+        {
+          count: attachmentsCount,
+          icon: 'tabler:paperclip',
+          id: 'attachments',
+          label: t`Attachments`,
+        },
+        {
+          count: commentsCount,
+          icon: 'tabler:message-circle',
+          id: 'comments',
+          label: t`Comments`,
+        },
+        { icon: 'tabler:history', id: 'history', label: t`History` },
+      ].filter(Boolean) as Array<{
+        count?: number
+        icon: string
+        id: string
+        label: string
+      }>,
+    [attachmentsCount, commentsCount, lineItemsNode, t],
+  )
+
+  const tabs = useMemo(() => {
+    if (!hasAgents) return standardTabs
+    if (!hasAgentResponseTabs) return standardTabs
+    const agentTabs = agentResponseTabs.map((block) => ({
+      icon: block.icon || 'lucide:cpu',
+      id: `agent:${block.id}`,
+      label: block.settings?.label || t`Agent`,
+    }))
+    return [
+      ...agentTabs,
+      {
+        count: attachmentsCount,
+        icon: 'tabler:paperclip',
+        id: 'attachments',
+        label: t`Attachments`,
+      },
+      {
+        count: commentsCount,
+        icon: 'tabler:message-circle',
+        id: 'comments',
+        label: t`Comments`,
+      },
+      { icon: 'tabler:history', id: 'history', label: t`History` },
+    ]
+  }, [
+    agentResponseTabs,
+    attachmentsCount,
+    commentsCount,
+    hasAgentResponseTabs,
+    hasAgents,
+    standardTabs,
+    t,
+  ])
+
+  const selectTab = (tabId: string) => {
+    setActiveTab(tabId)
+    if (tabId.startsWith('agent:')) {
+      setSelectedAgentBlockId(tabId.slice('agent:'.length))
+    } else {
+      setSelectedAgentBlockId(null)
+    }
+  }
 
   const targetRepoId = selectedItem?.repositoryId || repositoryId || firstAttachment?.repositoryId
   const targetItemId = selectedItem?.itemId || firstAttachment?.itemId || firstAttachment?.id
@@ -365,8 +477,8 @@ const DocumentFormSplitLayout = ({
   )
 
   return (
-    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1 p-5 gap-5'>
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-[var(--gray-1)]'>
+      <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
             fileName={previewAttachment.fileName || previewAttachment.name || (previewAttachment.fileExtension ? `file.${previewAttachment.fileExtension}` : undefined)}
@@ -379,67 +491,77 @@ const DocumentFormSplitLayout = ({
         )}
       </div>
 
-      <div className='flex w-[500px] xl:w-[650px] 2xl:w-[800px] shrink-0 flex-col overflow-hidden'>
+      <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
         {agentBlocks.length > 0 && (
-          <div className='pb-5'>
+          <div className='pb-5 mt-5 mr-5 ml-5'>
             <AgentSummaryBoxes
               agentBlocks={agentBlocks}
               selectedAgentBlockId={selectedAgentBlockId}
-              onAgentClick={setSelectedAgentBlockId}
+              onAgentClick={(blockId) => {
+                if (!blockId) {
+                  setSelectedAgentBlockId(null)
+                  setActiveTab(hasAgentResponseTabs ? `agent:${agentResponseTabs[0]?.id}` : 'summary')
+                  return
+                }
+                setSelectedAgentBlockId(blockId)
+                setActiveTab(`agent:${blockId}`)
+              }}
               requestData={selectedItem}
             />
           </div>
         )}
-        {!selectedAgentBlock && agentBlocks.length > 0 && (
-          <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
-            <div className='flex items-center justify-between gap-4'>
-              <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
-                {[
-                  { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
-                  lineItemsNode ? { icon: 'tabler:layers-linked', id: 'line_items', label: t`Line Items` } : null,
-                  { icon: 'tabler:paperclip', id: 'attachments', label: t`Attachments`, count: attachmentsCount },
-                  { icon: 'tabler:message-circle', id: 'comments', label: t`Comments`, count: commentsCount },
-                  { icon: 'tabler:history', id: 'history', label: t`History` },
-                ].filter(Boolean).map((tab: any) => (
-                  <button
-                    key={tab.id}
-                    className={cn(
-                      '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
-                      activeTab === tab.id
-                        ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                        : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                    )}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
-                    <span>{tab.label}</span>
-                    {tab.count !== undefined && (
-                      <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+        <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+          <div className='flex items-center justify-between gap-4'>
+            <div className='flex items-center gap-2 sm:gap-6 md:gap-8 ml-5 min-w-0 overflow-x-auto no-scrollbar'>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={cn(
+                    '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                    activeTab === tab.id
+                      ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                      : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                  )}
+                  onClick={() => selectTab(tab.id)}
+                >
+                  <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                  <span>{tab.label}</span>
+                  {'count' in tab && tab.count !== undefined && (
+                    <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
-        )}
+        </div>
 
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-          {selectedAgentBlock ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+          {activeTab.startsWith('agent:') && selectedAgentBlock ? (
+            <div className='flex min-h-0 flex-1 flex-col m-5 overflow-y-auto pr-3.5'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
+                attachments={attachments}
                 formModel={formModel}
-                onBack={() => setSelectedAgentBlockId(null)}
+                hideBack={hasAgentResponseTabs}
+                onBack={() => {
+                  setSelectedAgentBlockId(null)
+                  setActiveTab(
+                    hasAgentResponseTabs
+                      ? `agent:${agentResponseTabs[0]?.id}`
+                      : 'summary',
+                  )
+                }}
                 onFieldChange={onFieldChange}
                 rawWorkflowData={rawWorkflowData}
+                repositoryId={repositoryId}
                 requestData={selectedItem}
                 viewOnly={viewOnly}
               />
             </div>
-          ) : activeTab === 'summary' || agentBlocks.length === 0 ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+          ) : activeTab === 'summary' || (!hasAgents && activeTab === 'summary') ? (
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
               {taskNode}
               {formNode}
             </div>
@@ -456,7 +578,7 @@ const DocumentFormSplitLayout = ({
               {historyNode}
             </div>
           ) : activeTab === 'line_items' && lineItemsNode ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+            <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
               {lineItemsNode}
             </div>
           ) : (
@@ -1053,6 +1175,7 @@ const GenericRequestOverview = ({
                 panels={panels}
                 preparePhase={preparePhase}
                 preparingFieldId={preparingFieldId}
+                presentation='extracted'
                 readOnlyFieldIds={readOnlyFieldIds}
                 repositoryId={repositoryId}
                 viewOnly={viewOnly}
@@ -1147,10 +1270,12 @@ const GenericRequestOverview = ({
                 <div className='p-6 pt-2'>
                   <AgentDetailPlaceholder
                     agentBlock={selectedAgentBlock}
+                    attachments={attachments}
                     formModel={formModel}
                     onBack={() => setSelectedAgentBlockId(null)}
                     onFieldChange={onFieldChange}
                     rawWorkflowData={rawWorkflowData}
+                    repositoryId={repositoryId}
                     requestData={selectedItem}
                     viewOnly={viewOnly}
                   />

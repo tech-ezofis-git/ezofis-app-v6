@@ -4,11 +4,30 @@ import type {
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
 import { getRepositoryItemFilterFields } from '@/api/v6/folder/folder'
+import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import FormulaBuilder from './FormulaBuilder'
+
+const OPTIONS_SOURCE = {
+  API: 2,
+  LOOKUP: 1,
+} as const
+
+const optionsSourceRadio = [
+  {
+    description: 'Load options from a repository field',
+    id: OPTIONS_SOURCE.LOOKUP,
+    name: 'Lookup',
+  },
+  {
+    description: 'Load DATA From API',
+    id: OPTIONS_SOURCE.API,
+    name: 'API',
+  },
+]
 
 export type TableColumn = NonNullable<
   Question['settings']['specific']['tableColumns']
@@ -61,9 +80,13 @@ const TableColumnSettingsPanel = ({
 
   const repositoryId = column.settings?.lookupSettings?.repositoryId || ''
   const repositoryField = column.settings?.lookupSettings?.repositoryField || ''
+  const optionsSource =
+    column.settings?.lookupSettings?.optionsSource === 'API' ? 'API' : 'LOOKUP'
+  const optionsSourceId =
+    optionsSource === 'API' ? OPTIONS_SOURCE.API : OPTIONS_SOURCE.LOOKUP
 
   const { data: repositoryFields = [] } = useQuery({
-    enabled: showOptions && !!repositoryId,
+    enabled: showOptions && optionsSource === 'LOOKUP' && !!repositoryId,
     queryKey: ['tableColumnRepositoryFields', repositoryId],
     queryFn: async () => {
       if (!repositoryId) return []
@@ -99,7 +122,7 @@ const TableColumnSettingsPanel = ({
       {showOptions && (
         <>
           <InputTextarea
-            description='Comma-separated list of options shown for this column. Ignored when a lookup is configured below.'
+            description='Comma-separated list of options shown for this column. Ignored when Lookup or API is configured below.'
             label='Options'
             placeholder='Option 1, Option 2, Option 3'
             rows={2}
@@ -111,43 +134,79 @@ const TableColumnSettingsPanel = ({
 
           <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
             <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
-              Lookup (optional)
+              Options Source
             </label>
-            <InputSelect
-              options={repositories}
-              placeholder='Select a repository'
-              value={repositories.find((r) => r.id === repositoryId) || null}
-              onChange={(opt) =>
+            <InputRadioGroup
+              options={optionsSourceRadio}
+              optionsPerLine={2}
+              value={optionsSourceId}
+              onChange={(id) =>
                 onUpdate({
                   lookupSettings: {
-                    repositoryField: '',
-                    repositoryId: opt?.id != null ? String(opt.id) : '',
+                    optionsSource:
+                      id === OPTIONS_SOURCE.API ? 'API' : 'LOOKUP',
+                    ...(id === OPTIONS_SOURCE.API
+                      ? { repositoryField: '', repositoryId: '' }
+                      : {}),
                   },
                 })
               }
             />
-            <InputSelect
-              disabled={!repositoryId}
-              options={repositoryFields.map((f: any) => ({
-                id: f.name,
-                name: f.name,
-              }))}
-              placeholder={
-                repositoryId ? 'Select a field' : 'Select a repository first'
-              }
-              value={
-                repositoryFields.find((f: any) => f.name === repositoryField)
-                  ? { id: repositoryField, name: repositoryField }
-                  : null
-              }
-              onChange={(opt) =>
-                onUpdate({
-                  lookupSettings: {
-                    repositoryField: opt?.id != null ? String(opt.id) : '',
-                  },
-                })
-              }
-            />
+
+            {optionsSource === 'LOOKUP' ? (
+              <>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                  Lookup
+                </label>
+                <InputSelect
+                  options={repositories}
+                  placeholder='Select a repository'
+                  value={
+                    repositories.find((r) => r.id === repositoryId) || null
+                  }
+                  onChange={(opt) =>
+                    onUpdate({
+                      lookupSettings: {
+                        optionsSource: 'LOOKUP',
+                        repositoryField: '',
+                        repositoryId: opt?.id != null ? String(opt.id) : '',
+                      },
+                    })
+                  }
+                />
+                <InputSelect
+                  disabled={!repositoryId}
+                  options={repositoryFields.map((f: any) => ({
+                    id: f.name,
+                    name: f.name,
+                  }))}
+                  placeholder={
+                    repositoryId
+                      ? 'Select a field'
+                      : 'Select a repository first'
+                  }
+                  value={
+                    repositoryFields.find(
+                      (f: any) => f.name === repositoryField,
+                    )
+                      ? { id: repositoryField, name: repositoryField }
+                      : null
+                  }
+                  onChange={(opt) =>
+                    onUpdate({
+                      lookupSettings: {
+                        optionsSource: 'LOOKUP',
+                        repositoryField: opt?.id != null ? String(opt.id) : '',
+                      },
+                    })
+                  }
+                />
+              </>
+            ) : (
+              <p className='text-11 leading-relaxed text-gray-9'>
+                On focus, loads Data from API
+              </p>
+            )}
           </div>
         </>
       )}
@@ -155,7 +214,7 @@ const TableColumnSettingsPanel = ({
       {isCalculated && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
           <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
-            Formula (uses this row's other columns)
+            Formula (uses this row&apos;s other columns)
           </label>
           <FormulaBuilder
             activeQuestion={pseudoQuestion}

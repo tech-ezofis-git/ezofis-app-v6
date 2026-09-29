@@ -201,8 +201,32 @@ export const transformProcess = (
     parsedAgentResponse?.decision ||
     process.completedAtUtc
   )
+  const stageTypeUpper = String(process.stageType || '').toUpperCase()
+  const stageLower = String(process.stage || '').toLowerCase()
+  const isAgentStage =
+    stageTypeUpper.includes('AGENT') ||
+    stageTypeUpper === 'INTERNAL_ACTOR' ||
+    stageLower.includes('agent')
+  const hasStageAgentPayload = (() => {
+    if (stageLower.includes('document')) {
+      return process.documentGenerateResponse != null
+    }
+    if (stageLower.includes('quote')) {
+      return process.quoteAgentResponse != null
+    }
+    if (stageLower.includes('qualify')) {
+      return process.qualifyAgentResponse != null
+    }
+    return (
+      hasAgentResponse ||
+      process.qualifyAgentResponse != null ||
+      process.quoteAgentResponse != null ||
+      process.documentGenerateResponse != null
+    )
+  })()
   const isAgentProcessing =
-    process.stageType === 'AP_AGENT' && !hasAgentDecision
+    (process.stageType === 'AP_AGENT' && !hasAgentDecision) ||
+    (isAgentStage && !hasStageAgentPayload && !process.completedAtUtc)
 
   if (parsedAgentResponse) {
     parsedAgentResponse = {
@@ -281,6 +305,81 @@ export const transformProcess = (
 
 const listItemKey = (item: any): string =>
   String(item?.workflowInstanceId || item?.processId || item?.id || '')
+
+/** True when a list row is still waiting on an agent / job (should auto-refresh). */
+export const isListTicketLoading = (item: any): boolean => {
+  if (!item || typeof item !== 'object') return false
+  if (item.isProcessing === true) return true
+  if (item.apAgentJobId) return true
+
+  const status = String(item.status || '').toLowerCase()
+  if (status === 'progressing' || status === 'processing') return true
+
+  const stageType = String(item.stageType || '').toUpperCase()
+  const stage = String(item.stage || item.currentStage || '').toLowerCase()
+  const isAgentStage =
+    stageType.includes('AGENT') ||
+    stageType === 'INTERNAL_ACTOR' ||
+    stage.includes('agent')
+
+  if (!isAgentStage) return false
+
+  // Require the response that matches the current agent stage.
+  if (stage.includes('document')) {
+    return item.documentGenerateResponse == null
+  }
+  if (stage.includes('quote')) {
+    return item.quoteAgentResponse == null
+  }
+  if (stage.includes('qualify')) {
+    return item.qualifyAgentResponse == null
+  }
+
+  const hasAgentData =
+    item.qualifyAgentResponse != null ||
+    item.quoteAgentResponse != null ||
+    item.documentGenerateResponse != null ||
+    item.agentResponse != null ||
+    item._agentResponse != null ||
+    (Array.isArray(item._agentData) && item._agentData.length > 0)
+
+  return !hasAgentData
+}
+
+const ticketListHasLoading = (rawData: unknown): boolean => {
+  if (!rawData) return false
+
+  // Selected shape: { data: TableGroup[] } or TableGroup[]
+  const maybeGroups = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray((rawData as any)?.data)
+      ? (rawData as any).data
+      : null
+
+  if (Array.isArray(maybeGroups)) {
+    for (const group of maybeGroups) {
+      const rows = Array.isArray(group?.items)
+        ? group.items
+        : Array.isArray(group?.value)
+          ? group.value
+          : null
+      if (!rows) {
+        // Flat API row nested as group itself
+        if (isListTicketLoading(group)) return true
+        continue
+      }
+      for (const row of rows) {
+        if (Array.isArray(row?.value)) {
+          if (row.value.some(isListTicketLoading)) return true
+        } else if (isListTicketLoading(row)) {
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
 
 const mergeKanbanLists = (
   inboxItems: any[],
@@ -564,40 +663,12 @@ export const useInboxData = (
     retry: 1,
     staleTime: 10000,
     refetchInterval: (query: any) => {
-      const rawData = query.state?.data?.data
-      if (!Array.isArray(rawData)) return false
-
-      let hasLoading = false
-      for (const outer of rawData) {
-        if (outer && Array.isArray(outer.value)) {
-          for (const inner of outer.value) {
-            if (inner && Array.isArray(inner.value)) {
-              for (const p of inner.value) {
-                if (
-                  p?.stageType?.toUpperCase().includes('AGENT') ||
-                  p?.isProcessing ||
-                  p?.apAgentJobId
-                ) {
-                  hasLoading = true
-                  break
-                }
-              }
-            } else if (inner) {
-              if (
-                inner.stageType?.toUpperCase().includes('AGENT') ||
-                inner.isProcessing ||
-                inner.apAgentJobId
-              ) {
-                hasLoading = true
-                break
-              }
-            }
-            if (hasLoading) break
-          }
-        }
-        if (hasLoading) break
-      }
-      return hasLoading ? 20000 : false
+      // Prefer selected/observer data; fall back to raw cache payload.
+      const selected = query.state?.data
+      const raw = query.state?.data?.data ?? query.state?.data
+      const hasLoading =
+        ticketListHasLoading(selected) || ticketListHasLoading(raw)
+      return hasLoading ? 15_000 : false
     },
 
     queryFn: async () => {
