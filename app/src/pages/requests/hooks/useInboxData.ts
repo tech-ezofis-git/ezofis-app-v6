@@ -203,10 +203,10 @@ export const transformProcess = (
   )
   const stageTypeUpper = String(process.stageType || '').toUpperCase()
   const stageLower = String(process.stage || '').toLowerCase()
+  // Manual user steps (INTERNAL_ACTOR) keep their action button. A later
+  // Document Generate agent does not put the current human stage into processing.
   const isAgentStage =
-    stageTypeUpper.includes('AGENT') ||
-    stageTypeUpper === 'INTERNAL_ACTOR' ||
-    stageLower.includes('agent')
+    stageTypeUpper.includes('AGENT') || stageLower.includes('agent')
   const hasStageAgentPayload = (() => {
     if (stageLower.includes('document')) {
       return process.documentGenerateResponse != null
@@ -318,9 +318,7 @@ export const isListTicketLoading = (item: any): boolean => {
   const stageType = String(item.stageType || '').toUpperCase()
   const stage = String(item.stage || item.currentStage || '').toLowerCase()
   const isAgentStage =
-    stageType.includes('AGENT') ||
-    stageType === 'INTERNAL_ACTOR' ||
-    stage.includes('agent')
+    stageType.includes('AGENT') || stage.includes('agent')
 
   if (!isAgentStage) return false
 

@@ -43,19 +43,19 @@ const Header = ({
     id: SidePanel
     label: string
   }[] = [
-    {
-      count: attachmentCount,
-      icon: 'tabler:paperclip',
-      id: 'attachments',
-      label: t`Attachments`,
-    },
-    {
-      count: commentCount,
-      icon: 'tabler:message-circle',
-      id: 'comments',
-      label: t`Comments`,
-    },
-  ]
+      {
+        count: attachmentCount,
+        icon: 'tabler:paperclip',
+        id: 'attachments',
+        label: t`Attachments`,
+      },
+      {
+        count: commentCount,
+        icon: 'tabler:message-circle',
+        id: 'comments',
+        label: t`Comments`,
+      },
+    ]
 
   return (
     <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-2'>
@@ -83,7 +83,7 @@ const Header = ({
       </div>
 
       <div className='flex items-center gap-1'>
-        <Tooltip content={t`Console / Workflow API`} position='bottom'>
+        {/* <Tooltip content={t`Console / Workflow API`} position='bottom'>
           <button
             aria-label={t`Console`}
             type='button'
@@ -103,7 +103,7 @@ const Header = ({
           >
             <Icon className='size-4' name='tabler:terminal-2' />
           </button>
-        </Tooltip>
+        </Tooltip> */}
 
         {onTogglePanel &&
           panelButtons.map((panel) => (

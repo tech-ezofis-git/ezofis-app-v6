@@ -811,6 +811,14 @@ const GenericRequestOverview = ({
     return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
   }, [rawWorkflowData])
 
+  const showAgentProcess = agentBlocks.some((block) => {
+    const type = String(block.type || '')
+    const subtype = String(block.settings?.subtype || '').toUpperCase()
+    return (
+      type !== 'DOCUMENT_GENERATE_AGENT' && subtype !== 'DOCUMENT_GENERATE'
+    )
+  })
+
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
@@ -1275,7 +1283,7 @@ const GenericRequestOverview = ({
           />
         ) : (
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            {agentBlocks.length > 0 && (
+            {showAgentProcess && (
               <div className='px-6 pt-5 pb-1'>
                 <AgentSummaryBoxes
                   agentBlocks={agentBlocks}
@@ -1302,7 +1310,12 @@ const GenericRequestOverview = ({
                   />
                 </div>
               ) : (
-                <div className='flex flex-col'>
+                <div
+                  className={cn(
+                    'flex flex-col',
+                    agentBlocks.length > 0 && 'px-6 pt-4 pb-6',
+                  )}
+                >
                   <TaskRequirements
                     attachmentCount={attachments.length}
                     checklistChecked={checklistChecked}

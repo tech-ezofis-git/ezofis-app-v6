@@ -939,6 +939,23 @@ const Request = ({
   const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
 
   const initialProcessing = useMemo(() => {
+    const stage = selectedItem?.stage || selectedItem?.currentStage
+    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    const activityBlock = blocks.find(
+      (b: any) => b.id === selectedItem?.activityId,
+    )
+    const blockType = String(
+      activityBlock?.type || selectedItem?.stageType || '',
+    ).toUpperCase()
+    const stageName = String(stage || '').toLowerCase()
+    const currentIsAgent =
+      blockType.includes('AGENT') ||
+      (!activityBlock && stageName.includes('agent'))
+
+    // Checker / maker steps still need Verify, Approve, or Submit.
+    // Only the agent node itself waits on a response.
+    if (!currentIsAgent) return false
+
     const fromStore = processingProcesses.some(
       (p) =>
         String(p.processId || p.id) ===
@@ -947,11 +964,14 @@ const Request = ({
 
     if (fromStore) return true
 
-    // Check if it's currently on an agent stage that hasn't responded yet
-    const stage = selectedItem?.stage || selectedItem?.currentStage
-    const blocks = rawWorkflowData?.workflowJson?.blocks || []
-    const isAgentStage = blocks.some((b: any) => b.type?.includes('AGENT') && b.settings?.label === stage)
-    const hasDecision = !!(selectedItem?.qualifyAgentResponse?.qualifier_result || selectedItem?.agentResponse || selectedItem?._agentData?.length)
+    const isAgentStage = blocks.some(
+      (b: any) => b.type?.includes('AGENT') && b.settings?.label === stage,
+    )
+    const hasDecision = !!(
+      selectedItem?.qualifyAgentResponse?.qualifier_result ||
+      selectedItem?.agentResponse ||
+      selectedItem?._agentData?.length
+    )
 
     return isAgentStage && !hasDecision
   }, [processingProcesses, selectedItem, rawWorkflowData])
