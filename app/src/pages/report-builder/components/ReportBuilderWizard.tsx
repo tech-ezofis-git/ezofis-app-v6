@@ -17,10 +17,8 @@ import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
 import FiltersStep from './steps/FiltersStep'
 import ScheduleStep from './steps/ScheduleStep'
+import SourceSelectionSection from './steps/SourceSelectionSection'
 
-// Creating a new report (default) starts with the optional Ask AI step;
-// clicking "Build manually", or editing an existing report (Ask AI never
-// makes sense there), drops it entirely rather than just skipping past it.
 const AI_STEP_IDS = [
   'ask-ai',
   'details',
@@ -47,7 +45,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const publishReportMutation = usePublishReportBuilderReportMutation()
 
   const isEditing = Boolean(draft.editingReportId)
+  const [isSourceConfirmed, setIsSourceConfirmed] = useState(
+    Boolean(isEditing || (draft.sourceId && draft.domain)),
+  )
   const [isManualMode, setIsManualMode] = useState(isEditing)
+
   const stepIds: readonly StepId[] = isManualMode
     ? MANUAL_STEP_IDS
     : AI_STEP_IDS
@@ -188,11 +190,36 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     onBack()
   }
 
+  // Render initial source selection section if source is not selected/confirmed
+  if (!isSourceConfirmed) {
+    return (
+      <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6'>
+        <SourceSelectionSection
+          onBack={handleCancel}
+          onProceed={(mode) => {
+            if (mode === 'manual') {
+              setIsManualMode(true)
+              setActiveIndex(0)
+            } else {
+              setIsManualMode(false)
+              setActiveIndex(0)
+            }
+            setIsSourceConfirmed(true)
+          }}
+        />
+      </AnimateFadeIn>
+    )
+  }
+
   const renderStep = () => {
     let content: React.ReactNode = null
     switch (stepIds[activeIndex]) {
       case 'ask-ai':
-        content = <AskAiStep />
+        content = (
+          <AskAiStep
+            onChangeSource={() => setIsSourceConfirmed(false)}
+          />
+        )
         break
       case 'details':
         content = <DetailsStep />
