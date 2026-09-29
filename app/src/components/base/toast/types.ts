@@ -7,4 +7,4 @@ export interface Toast {
   variant?: ToastVariant
 }
 
-export type ToastVariant = 'default' | 'error' | 'success' | 'warning'
+export type ToastVariant = 'default' | 'error' | 'success' | 'warning' | 'info'

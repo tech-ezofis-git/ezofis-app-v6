@@ -45,7 +45,7 @@ function getNodeDefaults(toolType: string) {
     return {
       icon: 'lucide:file-text',
       iconColor: '#4f46e5',
-      subLabel: 'Generate PDF & Word docs from templates',
+      subLabel: 'Generate PDF documents from a template',
     }
   if (typeStr === NODE_TOOL_TYPE.QUALIFY_AGENT || typeStr.includes('qualify'))
     return {
@@ -488,6 +488,20 @@ export const importWorkflow = (
       nodeLabel = block.settings?.label || providerLabels[toolType] || 'Node'
     }
 
+    const templateSource =
+      block.settings?.templateJson ??
+      block.templateJson ??
+      block.settings?.documentGenerateAgent?.templateJson ??
+      block.settings?.documentGenerate?.templateJson ??
+      block.settings?.pdfTemplateJson ??
+      block.settings?.pdfTemplate
+    const templateJsonString =
+      typeof templateSource === 'string'
+        ? templateSource
+        : templateSource && typeof templateSource === 'object'
+          ? JSON.stringify(templateSource, null, 2)
+          : ''
+
     return {
       data: {
         // Map condition-specific settings for legacy import
@@ -503,13 +517,13 @@ export const importWorkflow = (
             (Array.isArray(block.settings?.generatePDFFields) &&
               block.settings.generatePDFFields.length > 0),
         ),
-        pdfTemplate: block.settings?.pdfTemplate,
-        pdfTemplateJson:
-          typeof block.settings?.pdfTemplateJson === 'string'
-            ? block.settings.pdfTemplateJson
-            : block.settings?.pdfTemplate
-              ? JSON.stringify(block.settings.pdfTemplate, null, 2)
-              : '',
+        pdfTemplate:
+          block.settings?.pdfTemplate ??
+          (templateSource && typeof templateSource === 'object'
+            ? templateSource
+            : undefined),
+        pdfTemplateJson: templateJsonString,
+        ...(templateJsonString ? { templateJson: templateJsonString } : {}),
         hasAttachmentEnabled,
         icon: defaults.icon,
         iconColor: defaults.iconColor,

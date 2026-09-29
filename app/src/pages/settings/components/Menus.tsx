@@ -654,7 +654,7 @@ function MenuSetup({
         setShowErrors(true)
         showToast({
           message: t`Please complete all required menu details before continuing.`,
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -682,7 +682,7 @@ function MenuSetup({
       }
       showToast({
         message: t`Please complete all required menu details before continuing.`,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -701,7 +701,7 @@ function MenuSetup({
           onStepChange(index)
           showToast({
             message: t`Please complete all required menu details before continuing.`,
-            variant: 'error',
+            variant: 'info',
           })
           return
         }

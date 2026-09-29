@@ -389,7 +389,7 @@ export default function FolderSecurityPolicyWizard({
     setShowSelectionError(true)
     showToast({
       message: t`Select at least one user or group to continue.`,
-      variant: 'error',
+      variant: 'info',
     })
     return false
   }
@@ -423,7 +423,7 @@ export default function FolderSecurityPolicyWizard({
 
   const savePolicy = async () => {
     if (selectedPrincipals.length === 0) {
-      showToast({ message: t`Select at least one user or group for this policy.`, variant: 'error' })
+      showToast({ message: t`Select at least one user or group for this policy.`, variant: 'info' })
       setStep(0)
       return
     }

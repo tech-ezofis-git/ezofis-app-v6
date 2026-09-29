@@ -8,6 +8,7 @@ import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
+import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
@@ -57,6 +58,9 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
             }
             if (route === '/') {
               exitSetupToDashboard()
+            }
+            if (route === '/folders') {
+              triggerResetFolderView()
             }
           }}
         >

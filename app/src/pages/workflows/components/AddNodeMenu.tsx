@@ -325,7 +325,7 @@ const AddNodeMenu = () => {
     {
       bgColor: 'bg-indigo-50',
       category: 'agents',
-      description: 'Generate PDF & Word docs from templates',
+      description: 'Generate PDF documents from a template',
       icon: 'lucide:file-text',
       iconColor: '#4f46e5',
       label: 'Document Generate Agent',

@@ -28,11 +28,13 @@ const BuilderHeader = () => {
     }
 
     const state = useWorkflowStore.getState()
+    const currentStatus = targetStatus || state.workflowStatus
     const validation = validateWorkflowSettings({
       workflowName: state.workflowName,
       initiateUsing: state.initiateUsing,
       folder: state.folder,
       form: state.form,
+      status: currentStatus,
     })
 
     if (!validation.isValid) {
@@ -50,7 +52,6 @@ const BuilderHeader = () => {
 
     state.setSettingsValidationErrors(null)
 
-    const currentStatus = targetStatus || state.workflowStatus
     const isPublished = String(currentStatus).toLowerCase() === 'published'
 
     state.setWorkflowStatus(isPublished ? 'published' : 'draft')

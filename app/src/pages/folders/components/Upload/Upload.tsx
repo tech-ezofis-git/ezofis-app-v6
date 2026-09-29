@@ -1455,7 +1455,7 @@ export default function Upload({
     if (!entry.file) {
       showToast({
         message: t`This file can't be retried automatically — remove it and add it again.`,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -1497,7 +1497,7 @@ export default function Upload({
           : invalidType
             ? t`Invalid file type. Please upload a supported document.`
             : t`No valid files selected.`,
-        variant: 'error',
+        variant: 'info',
       })
       resetInput()
       return
@@ -1560,7 +1560,7 @@ export default function Upload({
         if (newFiles.length < validFiles.length) {
           showToast({
             message: t`Some files were already in the queue and were skipped.`,
-            variant: 'error',
+            variant: 'info',
           })
         }
 
@@ -1800,7 +1800,7 @@ export default function Upload({
       const fieldName = missingField.name
       showToast({
         message: t`Please enter ${fieldName}.`,
-        variant: 'error',
+        variant: 'info',
       })
       return false
     }
@@ -1822,7 +1822,7 @@ export default function Upload({
       if (!entry) {
         showToast({
           message: t`Please select a file to upload.`,
-          variant: 'error',
+          variant: 'info',
         })
         return null
       }
@@ -1842,7 +1842,7 @@ export default function Upload({
       if (!entry.stageFileId) {
         showToast({
           message: t`This file hasn't finished staging yet. Please wait a moment and try again.`,
-          variant: 'error',
+          variant: 'info',
         })
         return null
       }

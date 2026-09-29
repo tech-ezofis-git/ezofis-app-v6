@@ -10,10 +10,14 @@ import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActio
 import { isDemoAppOrigin } from '@/utils/origin'
 import type { AppView, FileItem } from '../types/folderTypes'
 import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
+import { useHasDocumentApprovalWorkflow } from '../hooks/useDocumentApprovalWorkflow'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
-import { markFolderExplorerAskAiQuery } from '../utils/folderExplorerSession'
+import {
+  RESET_FOLDER_VIEW_EVENT,
+  markFolderExplorerAskAiQuery,
+} from '../utils/folderExplorerSession'
 import {
   findRepositoryNodeId,
   getRepositoryRootNodeId,
@@ -32,6 +36,7 @@ import Upload from './Upload/Upload'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
+  const hasDocumentApprovalWorkflow = useHasDocumentApprovalWorkflow()
   const {
     activeFolder,
     appView,
@@ -518,6 +523,9 @@ export function FolderExplorer() {
     if (appView === 'editMetadata' && !folderPermissions.editMetadata) {
       setAppView(selectedFile ? 'details' : 'explorer')
     }
+    if (appView === 'workflow' && !selectedFile) {
+      setAppView('explorer')
+    }
   }, [
     appView,
     exitUpload,
@@ -526,6 +534,16 @@ export function FolderExplorer() {
     selectedFile,
     setAppView,
   ])
+
+  useEffect(() => {
+    const handleReset = () => {
+      setAppView('explorer')
+    }
+    window.addEventListener(RESET_FOLDER_VIEW_EVENT, handleReset)
+    return () => {
+      window.removeEventListener(RESET_FOLDER_VIEW_EVENT, handleReset)
+    }
+  }, [setAppView])
 
   useEffect(() => {
     setPageContext({
@@ -796,7 +814,11 @@ export function FolderExplorer() {
           openFileAction(relatedId, 'details')
         }}
         onShareOpened={() => setPendingOpenShare(false)}
-        onWorkflow={() => setAppView('workflow')}
+        onWorkflow={
+          hasDocumentApprovalWorkflow
+            ? () => setAppView('workflow')
+            : undefined
+        }
       />
     )
   }
@@ -900,15 +922,21 @@ export function FolderExplorer() {
   }
 
   if (appView === 'workflow') {
+    if (!selectedFile) {
+      setAppView('explorer')
+      return null
+    }
+    const resolvedRepoId = String(
+      getRepositoryIdFromFolder(activeFolder) ||
+        selectedRepository?.id ||
+        files.find((f) => f.id === selectedFile)?.repositoryId ||
+        '',
+    )
     return (
       <StartWorkflowView
         id={selectedFile}
-        repositoryId={String(
-          selectedRepository?.id ||
-            getRepositoryIdFromFolder(activeFolder) ||
-            '',
-        )}
-        onBack={() => setAppView('details')}
+        repositoryId={resolvedRepoId}
+        onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
       />
     )
   }
@@ -989,7 +1017,11 @@ export function FolderExplorer() {
           onShareFilter={handleShareFilter}
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFiles : undefined}
-          onWorkflow={(id) => openFileAction(id, 'workflow')}
+          onWorkflow={
+            hasDocumentApprovalWorkflow
+              ? (id) => openFileAction(id, 'workflow')
+              : undefined
+          }
         />
       </div>
     )
@@ -1094,7 +1126,11 @@ export function FolderExplorer() {
               onShare={openShareForFile}
               onUpload={canUpload ? handleUpload : undefined}
               onUploadFile={canUpload ? handleUploadFiles : undefined}
-              onWorkflow={(id) => handleFileAction(id, 'workflow')}
+              onWorkflow={
+                hasDocumentApprovalWorkflow
+                  ? (id) => handleFileAction(id, 'workflow')
+                  : undefined
+              }
             />
           </div>
         </main>

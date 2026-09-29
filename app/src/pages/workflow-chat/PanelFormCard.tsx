@@ -12,10 +12,8 @@ import {
   mapOcrFieldsToModel,
   mergeOcrFieldHints,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import {
-  type ParsedDoc,
-  type ParsedField,
-} from '@/services/ai/workflowChatAi'
+import { type ParsedDoc, type ParsedField } from '@/services/ai/workflowChatAi'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import cn from '@/utils/cn'
 
 export type PanelFormPayload = {
@@ -102,24 +100,17 @@ const isParsedFieldHidden = (
 ) => {
   const formField = field.rawControl || field
   return (
-    isFieldHidden(formField) ||
-    Boolean(hiddenFieldIds?.has(String(field.id)))
+    isFieldHidden(formField) || Boolean(hiddenFieldIds?.has(String(field.id)))
   )
 }
 
-const isParsedDocHidden = (
-  doc: ParsedDoc,
-  hiddenFieldIds?: Set<string>,
-) => {
+const isParsedDocHidden = (doc: ParsedDoc, hiddenFieldIds?: Set<string>) => {
   if (doc.rawControl && isFieldHidden(doc.rawControl)) return true
   return Boolean(hiddenFieldIds?.has(String(doc.id)))
 }
 
 /** Build a FieldRenderer-compatible field from chat ParsedField. */
-const toFormField = (
-  field: ParsedField,
-  mandatoryFieldIds?: Set<string>,
-) => {
+const toFormField = (field: ParsedField, mandatoryFieldIds?: Set<string>) => {
   // Always key by ParsedField.id (jsonId-first) so draft answers, panels,
   // and startWorkflowJson formData stay aligned with the request page.
   const id = field.id
@@ -135,7 +126,9 @@ const toFormField = (
         ...field.rawControl.settings,
         validation: {
           ...field.rawControl.settings?.validation,
-          fieldRule: required ? 'REQUIRED' : field.rawControl.settings?.validation?.fieldRule || 'OPTIONAL',
+          fieldRule: required
+            ? 'REQUIRED'
+            : field.rawControl.settings?.validation?.fieldRule || 'OPTIONAL',
         },
       },
     }
@@ -235,8 +228,7 @@ export default function PanelFormCard({
   }, [answers, payload.completed, payload.fields])
 
   const visibleDocs = useMemo(
-    () =>
-      payload.docs.filter((doc) => !isParsedDocHidden(doc, hiddenFieldIds)),
+    () => payload.docs.filter((doc) => !isParsedDocHidden(doc, hiddenFieldIds)),
     [hiddenFieldIds, payload.docs],
   )
 
@@ -412,9 +404,7 @@ export default function PanelFormCard({
       type === 'FILE_UPLOAD' ||
       type === 'IMAGE_UPLOAD'
     ) {
-      return getColumnSizeClass(
-        formField.settings?.general?.size || 'col-12',
-      )
+      return getColumnSizeClass(formField.settings?.general?.size || 'col-12')
     }
     return getColumnSizeClass(formField.settings?.general?.size || 'col-4')
   }
@@ -436,9 +426,11 @@ export default function PanelFormCard({
           </span>
         ) : (
           <span className='rounded-full bg-primary-2 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-11 uppercase'>
-            {visibleFields.filter((field) =>
-              fieldIsRequired(field, mandatoryFieldIds),
-            ).length}{' '}
+            {
+              visibleFields.filter((field) =>
+                fieldIsRequired(field, mandatoryFieldIds),
+              ).length
+            }{' '}
             required
           </span>
         )}
@@ -480,9 +472,7 @@ export default function PanelFormCard({
                       <button
                         className='shrink-0 text-[11px] font-semibold text-primary-9 hover:underline'
                         type='button'
-                        onClick={() =>
-                          fileInputRefs.current[doc.id]?.click()
-                        }
+                        onClick={() => fileInputRefs.current[doc.id]?.click()}
                       >
                         Replace
                       </button>
@@ -500,12 +490,14 @@ export default function PanelFormCard({
                       Upload {doc.label}
                     </span>
                     <span className='text-[11px] text-gray-9'>
-                      {doc.accept || '.pdf,.jpg,.png'}
+                      {doc.accept && doc.accept !== DOCUMENT_ACCEPT
+                        ? doc.accept
+                        : 'PDF, Word, Excel, PowerPoint, Images & Documents'}
                     </span>
                   </button>
                 )}
                 <input
-                  accept={doc.accept}
+                  accept={doc.accept || DOCUMENT_ACCEPT}
                   className='hidden'
                   ref={(node) => {
                     fileInputRefs.current[doc.id] = node

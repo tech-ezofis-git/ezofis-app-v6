@@ -2710,7 +2710,7 @@ function UserSetup({
         setShowErrors(true)
         showToast({
           message: validationMessage,
-          variant: 'error',
+          variant: 'info',
         })
         return
       }
@@ -2727,7 +2727,7 @@ function UserSetup({
       setShowErrors(true)
       showToast({
         message: validationMessage,
-        variant: 'error',
+        variant: 'info',
       })
       return
     }
@@ -2751,7 +2751,7 @@ function UserSetup({
           onStepChange(index)
           showToast({
             message: validationMessage,
-            variant: 'error',
+            variant: 'info',
           })
           return
         }

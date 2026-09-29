@@ -20,6 +20,23 @@ const PDF_TEMPLATE_PLACEHOLDER = `{
   "fields": []
 }`
 
+const readTemplateValue = (nodeData: Record<string, any>): unknown => {
+  const candidates = [
+    nodeData.templateJson,
+    nodeData.settings?.templateJson,
+    nodeData.documentGenerateAgent?.templateJson,
+    nodeData.documentGenerate?.templateJson,
+    nodeData.pdfTemplateJson,
+    nodeData.settings?.pdfTemplateJson,
+    nodeData.pdfTemplate,
+    nodeData.settings?.pdfTemplate,
+  ]
+  return candidates.find((value) => {
+    if (typeof value === 'string') return value.trim().length > 0
+    return value != null && typeof value === 'object'
+  })
+}
+
 const toTemplateJsonString = (value: unknown): string => {
   if (typeof value === 'string') {
     const trimmed = value.trim()
@@ -55,9 +72,7 @@ export default function DocumentGenerateAgentSettingsPanel({
 
   // Template JSON Input State
   const [templateJson, setTemplateJson] = useState(() =>
-    toTemplateJsonString(
-      nodeData.templateJson ?? nodeData.pdfTemplateJson ?? nodeData.pdfTemplate,
-    ),
+    toTemplateJsonString(readTemplateValue(nodeData)),
   )
   const [jsonError, setJsonError] = useState('')
   const [jsonCopied, setJsonCopied] = useState(false)
@@ -83,12 +98,11 @@ export default function DocumentGenerateAgentSettingsPanel({
 
   // Sync state if node changes externally
   useEffect(() => {
-    setTemplateJson(
-      toTemplateJsonString(
-        nodeData.templateJson ?? nodeData.pdfTemplateJson ?? nodeData.pdfTemplate,
-      ),
-    )
+    setTemplateJson(toTemplateJsonString(readTemplateValue(nodeData)))
     setJsonError('')
+    // Reload when a different node is selected. Typing updates node data and
+    // must not overwrite the field on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentNode?.id])
 
   const handleTemplateJsonChange = (val: string) => {

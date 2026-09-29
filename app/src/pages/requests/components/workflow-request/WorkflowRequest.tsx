@@ -56,10 +56,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     true
   )
 
-  const isDocumentForm =
-    workflow?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
-    workflow?.workflowJson?.settings?.general?.initiateUsing?.type ===
-      'DOCUMENT_FORM'
+  const initiateType = String(
+    workflow?.settings?.general?.initiateUsing?.type ||
+      workflow?.workflowJson?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+  const isDocumentForm = initiateType === 'DOCUMENTFORM'
 
   const agentBlocks = useMemo(() => {
     const blocks = extractBlocks(workflow)
@@ -236,7 +240,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       showToast({
         message:
           submitError || t`Failed to start the workflow. Please try again.`,
-        variant: isMissingFieldsMessage ? 'default' : 'error',
+        variant: isMissingFieldsMessage ? 'info' : 'error',
       })
       const firstMissingId = missingMandatoryFieldIds.values().next().value
       if (firstMissingId) {
