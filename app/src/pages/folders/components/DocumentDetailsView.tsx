@@ -308,6 +308,16 @@ const buildInfoCards = (
     .filter((card) => card.rows.length > 0)
 }
 
+const isMissingDocumentError = (message: string) => {
+  const text = message.trim().toLowerCase()
+  return (
+    text === 'not found' ||
+    text.includes('not found') ||
+    text.includes('does not exist') ||
+    text.includes('404')
+  )
+}
+
 const toUiErrorMessage = (value: unknown, fallback: string) => {
   if (value == null || value === '') return fallback
   if (typeof value === 'string') return value.trim() || fallback
@@ -330,6 +340,7 @@ const toUiErrorMessage = (value: unknown, fallback: string) => {
 export function DocumentDetailsView({
   autoOpenShare = false,
   compactActions = false,
+  fileName = '',
   forceSigning = false,
   id,
   invitePreview = null,
@@ -350,6 +361,8 @@ export function DocumentDetailsView({
   autoOpenShare?: boolean
   /** Hide AI/Share/Workflow when opened from invite. */
   compactActions?: boolean
+  /** Name from search or the folder list, used when the file no longer exists. */
+  fileName?: string
   /** Open directly in assigned-field signing mode (invite / pending). */
   forceSigning?: boolean
   id: string
@@ -1626,7 +1639,11 @@ export function DocumentDetailsView({
           </Button>
         ) : null}
         <div className='rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
-          {error}
+          {isMissingDocumentError(error)
+            ? fileName.trim()
+              ? t`${fileName.trim()} was deleted. Kindly try a new file.`
+              : t`This file was deleted. Kindly try a new file.`
+            : error}
         </div>
       </div>
     )

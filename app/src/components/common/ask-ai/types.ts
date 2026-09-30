@@ -85,6 +85,7 @@ export type AskAiPendingAction = {
   ephemeral?: boolean
   fileSearch?: string
   filters: Record<string, string>
+  itemName?: string
   openItemId?: string
   repositoryId?: string
   repositoryLabel?: string

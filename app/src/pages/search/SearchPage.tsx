@@ -253,6 +253,7 @@ export default function SearchPage() {
     setPending({
       fileSearch: undefined,
       filters: {},
+      itemName: itemId ? title : undefined,
       openItemId: itemId || undefined,
       repositoryId: repositoryId || undefined,
       repositoryLabel,
@@ -262,6 +263,7 @@ export default function SearchPage() {
       search: {
         ...(repositoryId ? { repositoryId } : {}),
         ...(itemId ? { itemId } : {}),
+        ...(itemId && title ? { itemName: title } : {}),
       },
       to: '/folders',
     })

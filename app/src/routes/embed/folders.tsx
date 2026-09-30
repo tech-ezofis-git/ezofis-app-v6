@@ -13,6 +13,7 @@ export const Route = createFileRoute('/embed/folders')({
     email: typeof search.email === 'string' ? search.email : undefined,
     folderId: typeof search.folderId === 'string' ? search.folderId : undefined,
     itemId: typeof search.itemId === 'string' ? search.itemId : undefined,
+    itemName: typeof search.itemName === 'string' ? search.itemName : undefined,
     repositoryId:
       typeof search.repositoryId === 'string' ? search.repositoryId : undefined,
     view: typeof search.view === 'string' ? search.view : undefined,

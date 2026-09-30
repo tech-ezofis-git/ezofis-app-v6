@@ -330,6 +330,7 @@ const GlobalSearch = () => {
     setPending({
       fileSearch: undefined,
       filters: {},
+      itemName: itemId ? title : undefined,
       openItemId: itemId || undefined,
       repositoryId: repositoryId || undefined,
       repositoryLabel,
@@ -339,6 +340,7 @@ const GlobalSearch = () => {
       search: {
         ...(repositoryId ? { repositoryId } : {}),
         ...(itemId ? { itemId } : {}),
+        ...(itemId && title ? { itemName: title } : {}),
       },
       to: '/folders',
     })
