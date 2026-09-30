@@ -97,6 +97,15 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
+      } else if (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT' || field.type === 'SINGLE_CHOICE' || field.type === 'MULTIPLE_CHOICE') {
+        const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+        if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
+          const opts = getFieldOptions(field)
+          if (opts.length === 1) {
+            const val = selectOptionStoredValue(opts[0], opts)
+            model[field.id] = (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') ? [val] : val
+          }
+        }
       } else if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
         const rowsType = specific.rowsType || 'ON_DEMAND'
         const fixedRowCount = specific.fixedRowCount || 5
@@ -635,21 +644,37 @@ export const withExtraFieldOptions = (
   return next
 }
 
+export interface DropdownFacetSource {
+  enabled: boolean
+  fieldName: string
+  repositoryId: string
+  repositoryFieldParent?: string
+}
+
 export const getDropdownFacetSource = (
   field: any,
   fallbackRepositoryId?: string,
-): { enabled: boolean; fieldName: string; repositoryId: string } => {
+): DropdownFacetSource => {
   const isSelect =
-    field?.type === 'SINGLE_SELECT' || field?.type === 'MULTI_SELECT'
+    field?.type === 'SINGLE_SELECT' ||
+    field?.type === 'MULTI_SELECT' ||
+    field?.type === 'SINGLE_CHOICE' ||
+    field?.type === 'MULTIPLE_CHOICE'
   const specific = field?.settings?.specific || {}
-  const optionsType = specific.optionsType || 'CUSTOM'
+  const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+  const optionsSource = String(
+    specific.optionsSource || optionsType,
+  ).toUpperCase()
+  const isRepo = optionsType === 'REPOSITORY' || optionsSource === 'REPOSITORY'
+
   const repositoryId = String(
     specific.repositoryId || fallbackRepositoryId || '',
   ).trim()
   const fieldName = String(
-    optionsType === 'REPOSITORY'
-      ? specific.repositoryField || ''
-      : field?.label || '',
+    isRepo ? specific.repositoryField || '' : field?.label || '',
+  ).trim()
+  const repositoryFieldParent = String(
+    specific.repositoryFieldParent || specific.masterFormParentColumn || '',
   ).trim()
 
   return {
@@ -657,7 +682,104 @@ export const getDropdownFacetSource = (
       isSelect && optionsType !== 'DYNAMIC' && !!repositoryId && !!fieldName,
     fieldName,
     repositoryId,
+    repositoryFieldParent,
   }
+}
+
+export const getDependentChildFieldIds = (
+  parentFieldId: string,
+  panelsOrFields: any[],
+): string[] => {
+  if (!parentFieldId || !panelsOrFields?.length) return []
+
+  let allFields: any[] = []
+  if (Array.isArray(panelsOrFields)) {
+    if (panelsOrFields.length > 0) {
+      if (panelsOrFields[0].fields && Array.isArray(panelsOrFields[0].fields)) {
+        allFields = panelsOrFields.flatMap((p: any) => p.fields || [])
+      } else {
+        allFields = panelsOrFields
+      }
+    }
+  }
+
+  const parentField = allFields.find(
+    (f: any) =>
+      String(f.id) === String(parentFieldId) ||
+      String(f.jsonId || '') === String(parentFieldId),
+  )
+  if (!parentField) return []
+
+  const parentKeys = new Set<string>()
+  if (parentField.id) {
+    parentKeys.add(String(parentField.id))
+    parentKeys.add(String(parentField.id).trim())
+    parentKeys.add(String(parentField.id).trim().toLowerCase())
+  }
+  if (parentField.jsonId) {
+    parentKeys.add(String(parentField.jsonId))
+    parentKeys.add(String(parentField.jsonId).trim())
+    parentKeys.add(String(parentField.jsonId).trim().toLowerCase())
+  }
+  if (parentField.label) {
+    parentKeys.add(String(parentField.label))
+    parentKeys.add(String(parentField.label).trim())
+    parentKeys.add(String(parentField.label).trim().toLowerCase())
+  }
+  const parentMasterCol = parentField.settings?.specific?.masterFormColumn
+  if (parentMasterCol) {
+    const pMc = Array.isArray(parentMasterCol)
+      ? String(parentMasterCol[0] || '').trim()
+      : String(parentMasterCol).trim()
+    if (pMc) {
+      parentKeys.add(pMc)
+      parentKeys.add(pMc.toLowerCase())
+    }
+  }
+  const parentRepoField = parentField.settings?.specific?.repositoryField
+  if (parentRepoField) {
+    const pRf = String(parentRepoField).trim()
+    if (pRf) {
+      parentKeys.add(pRf)
+      parentKeys.add(pRf.toLowerCase())
+    }
+  }
+
+  const directChildIds: string[] = []
+
+  for (const field of allFields) {
+    const fieldId = String(field.id || field.jsonId || '')
+    if (fieldId === String(parentFieldId)) continue
+
+    const masterParent = String(
+      field.settings?.specific?.masterFormParentColumn || '',
+    ).trim()
+    const repoParent = String(
+      field.settings?.specific?.repositoryFieldParent || '',
+    ).trim()
+
+    const matchesMasterParent =
+      masterParent &&
+      (parentKeys.has(masterParent) ||
+        parentKeys.has(masterParent.toLowerCase()))
+    const matchesRepoParent =
+      repoParent &&
+      (parentKeys.has(repoParent) || parentKeys.has(repoParent.toLowerCase()))
+
+    if (matchesMasterParent || matchesRepoParent) {
+      if (fieldId) directChildIds.push(fieldId)
+    }
+  }
+
+  const allDependentIds = new Set<string>(directChildIds)
+  for (const childId of directChildIds) {
+    const subChildren = getDependentChildFieldIds(childId, allFields)
+    for (const subId of subChildren) {
+      allDependentIds.add(subId)
+    }
+  }
+
+  return Array.from(allDependentIds)
 }
 
 const scalarFromSelectItem = (item: unknown): string[] => {

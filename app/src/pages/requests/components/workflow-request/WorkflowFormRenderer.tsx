@@ -11,6 +11,7 @@ import FieldRenderer from './components/FieldRenderer'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import {
   getColumnSizeClass,
+  getDependentChildFieldIds,
   isFieldFilled,
   isFieldHidden,
   isFieldReadOnly,
@@ -160,6 +161,20 @@ const WorkflowFormRenderer = ({
     [panels, formModel],
   )
 
+  const handleFieldChangeWithCascade = (fieldId: string, value: any) => {
+    onFieldChange(fieldId, value)
+    const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+    for (const childId of dependentChildIds) {
+      if (
+        formModel?.[childId] !== undefined &&
+        formModel?.[childId] !== null &&
+        formModel?.[childId] !== ''
+      ) {
+        onFieldChange(childId, null)
+      }
+    }
+  }
+
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
 
@@ -200,7 +215,7 @@ const WorkflowFormRenderer = ({
                       : 'ocr'
                   }
                   value={formModel[field.id]}
-                  onChange={(value) => onFieldChange(field.id, value)}
+                  onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                 />
               )
             })}
@@ -244,7 +259,7 @@ const WorkflowFormRenderer = ({
                     viewOnly ||
                     Boolean(readOnlyFieldIds?.has(String(field.id)))
                   }
-                  onChange={(value) => onFieldChange(field.id, value)}
+                  onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                   onOcrFieldList={onOcrFieldList}
                   onOpenAttachment={onOpenAttachment}
                   onRequestUpload={
@@ -313,7 +328,7 @@ const WorkflowFormRenderer = ({
                   Boolean(readOnlyFieldIds?.has(String(field.id))) ||
                   isReadOnlyByRule
                 }
-                onChange={(value) => onFieldChange(field.id, value)}
+                onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                 onOcrFieldList={onOcrFieldList}
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={

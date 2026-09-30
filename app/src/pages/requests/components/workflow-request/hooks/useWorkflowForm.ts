@@ -16,6 +16,7 @@ import {
   buildRepoFieldHints,
   buildRepoMetadata,
   extractOcrText,
+  getDependentChildFieldIds,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
   mapOcrFieldsToModel,
@@ -234,6 +235,10 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
       if (descriptor) {
         next[descriptor.fieldId] = value
         if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
+      }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
       }
       return applyCalculatedFields(panels, next)
     })

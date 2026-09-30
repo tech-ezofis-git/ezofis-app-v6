@@ -48,9 +48,11 @@ import GenericFormImportModal from './components/GenericFormImportModal'
 import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
 import {
+  extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   getConfiguredFieldOptions,
+  getDependentChildFieldIds,
   getDropdownFacetSource,
   getFieldOptions,
   getMasterFormInfo,
@@ -144,6 +146,26 @@ const FormEntriesChoiceInput = ({
     rawOptions.length > 0
       ? rawOptions.map((o) => o.name)
       : ['Option 1', 'Option 2', 'Option 3']
+
+  useEffect(() => {
+    if (rawOptions.length === 1) {
+      const singleOpt = rawOptions[0].name || String(rawOptions[0].id)
+      if (isMultiple) {
+        const selectedList = Array.isArray(val)
+          ? val
+          : val
+            ? String(val).split(',')
+            : []
+        if (selectedList.length === 0) {
+          onChange(singleOpt)
+        }
+      } else {
+        if (val === undefined || val === null || val === '') {
+          onChange(singleOpt)
+        }
+      }
+    }
+  }, [rawOptions, val, isMultiple, onChange])
 
   if (isMultiple) {
     const selectedList = Array.isArray(val)
@@ -262,18 +284,58 @@ const FormEntriesSelectInput = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+          facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+          facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+      repoParentField.label ||
+      repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? formModel?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && formModel
+    ? formModel[facetSource.repositoryFieldParent]
+    : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
-    enabled: facetSource.enabled,
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'formEntriesFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
@@ -332,6 +394,28 @@ const FormEntriesSelectInput = ({
   )
 
   const isMulti = field.type === 'MULTI_SELECT'
+
+  useEffect(() => {
+    if (selectOptions.length === 1) {
+      const singleOpt = selectOptions[0]
+      const singleVal = String(singleOpt.id ?? singleOpt.name)
+      if (isMulti) {
+        const selectedValues = val
+          ? String(val)
+              .split(',')
+              .map((v) => v.trim())
+              .filter(Boolean)
+          : []
+        if (selectedValues.length === 0) {
+          onChange(singleVal)
+        }
+      } else {
+        if (val === undefined || val === null || val === '') {
+          onChange(singleVal)
+        }
+      }
+    }
+  }, [selectOptions, val, isMulti, onChange])
 
   if (isMulti) {
     const selectedValues = val
@@ -1302,9 +1386,14 @@ const FormEntriesPage = () => {
   }, [fetchedEntries])
 
   const handleFieldChange = (fieldId: string, val: any) => {
-    setEditValues((prev) =>
-      applyCalculatedFields(panels, { ...prev, [fieldId]: val }),
-    )
+    setEditValues((prev) => {
+      const next = { ...prev, [fieldId]: val }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
+      }
+      return applyCalculatedFields(panels, next)
+    })
   }
 
   // Slide-in pane toggle functions

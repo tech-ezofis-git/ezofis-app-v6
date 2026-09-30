@@ -156,7 +156,7 @@ export const fromReportBuilderConfig = (data: unknown): Report => {
     sourceFormId: (record.sourceFormId as string) || '',
     sourceId:
       (record.sourceId as string) || (record.workflowId as string) || '',
-    sourceType: (record.sourceType as Report['sourceType']) || '',
+    sourceType: (record.sourceType as Report['sourceType']) || 'Workflow',
     status: (record.status as ReportStatus) || 'Draft',
     visibility: (record.visibility as ReportVisibility) || 'Private',
   }

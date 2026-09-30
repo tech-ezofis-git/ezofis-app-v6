@@ -30,10 +30,12 @@ import {
 } from '@/pages/form-builder/store/formStore'
 import {
   buildMergedOcrFieldHints,
+  extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   findFieldOption,
   getConfiguredFieldOptions,
+  getDependentChildFieldIds,
   getDropdownFacetSource,
   getFieldOptions as getSharedFieldOptions,
   getMasterFormInfo,
@@ -97,9 +99,14 @@ const LivePreview = () => {
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
-    setPreviewModel((prev) =>
-      applyCalculatedFields(panels, { ...prev, [fieldId]: value }),
-    )
+    setPreviewModel((prev) => {
+      const next = { ...prev, [fieldId]: value }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
+      }
+      return applyCalculatedFields(panels, next)
+    })
   }
 
   const handleOcrFileSelect = async (file: File, field: Question) => {
@@ -425,23 +432,63 @@ const LivePreviewDropdown = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+          facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+          facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+      repoParentField.label ||
+      repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? model?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && model
+    ? model[facetSource.repositoryFieldParent]
+    : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'livePreviewFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
       })
     },
-    enabled: facetSource.enabled,
   })
 
   const { data: userFieldOptions = [] } = useQuery({
@@ -485,6 +532,22 @@ const LivePreviewDropdown = ({
     ),
     masterFieldOptions,
   )
+
+  useEffect(() => {
+    if (selectOptions.length === 1) {
+      const singleOptVal = String(selectOptions[0].id ?? selectOptions[0].name)
+      if (multiple) {
+        const currentList = normalizeStoredMultiSelectValue(value)
+        if (currentList.length === 0) {
+          onChange([singleOptVal])
+        }
+      } else {
+        if (value === undefined || value === null || value === '') {
+          onChange(singleOptVal)
+        }
+      }
+    }
+  }, [selectOptions, value, multiple, onChange])
 
   if (multiple) {
     const seen = new Set<string>()
@@ -552,6 +615,20 @@ const LivePreviewChoiceGroup = ({
     : value
       ? [String(value)]
       : []
+
+  useEffect(() => {
+    if (allOptions.length === 1) {
+      if (isSingle) {
+        if (value === undefined || value === null || value === '') {
+          onChange(allOptions[0])
+        }
+      } else if (isMulti) {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          onChange([allOptions[0]])
+        }
+      }
+    }
+  }, [allOptions, value, isSingle, isMulti, onChange])
 
   const handleToggle = (opt: string) => {
     if (isSingle) {

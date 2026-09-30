@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -22,6 +22,7 @@ import {
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import {
   buildMergedOcrFieldHints,
+  extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   findFieldOption,
@@ -120,6 +121,16 @@ const ChoiceRadioGroupField = ({
     : Math.min(optionsPerLine, Math.max(allOptions.length, 1))
   const selectedValue =
     value !== undefined && value !== null ? String(value) : ''
+
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      allOptions.length === 1 &&
+      (value === undefined || value === null || value === '')
+    ) {
+      onChange(allOptions[0])
+    }
+  }, [allOptions, value, readOnly, onChange])
 
   const handleAddCustom = () => {
     const trimmed = newOptionText.trim()
@@ -304,6 +315,16 @@ const ChoiceCheckboxGroupField = ({
     : value
       ? [String(value)]
       : []
+
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      allOptions.length === 1 &&
+      (!value || (Array.isArray(value) && value.length === 0))
+    ) {
+      onChange([allOptions[0]])
+    }
+  }, [allOptions, value, readOnly, onChange])
 
   const handleToggle = (opt: string) => {
     if (readOnly) return
@@ -511,18 +532,63 @@ const FieldRenderer = ({
   const facetSource = getDropdownFacetSource(field, repositoryId)
   const masterInfo = getMasterFormInfo(field)
 
+  const allFields = useMemo(
+    () => (panels || []).flatMap((p: any) => p.fields || []),
+    [panels],
+  )
+
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+          facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+          facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+      repoParentField.label ||
+      repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? formModel?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && formModel
+    ? formModel[facetSource.repositoryFieldParent]
+    : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
-    enabled: facetSource.enabled,
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'repositoryItemFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
@@ -539,10 +605,6 @@ const FieldRenderer = ({
     },
   })
 
-  const allFields = useMemo(
-    () => (panels || []).flatMap((p: any) => p.fields || []),
-    [panels],
-  )
   const parentField = useMemo(() => {
     if (!masterInfo.masterFormParentColumn) return null
     const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
@@ -599,6 +661,29 @@ const FieldRenderer = ({
     ),
     masterFieldOptions,
   )
+
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT') &&
+      selectOptions.length === 1
+    ) {
+      const singleOptVal = selectOptionStoredValue(
+        selectOptions[0],
+        selectOptions,
+      )
+      if (field.type === 'SINGLE_SELECT') {
+        if (value === undefined || value === null || value === '') {
+          onChange(singleOptVal)
+        }
+      } else if (field.type === 'MULTI_SELECT') {
+        const currentList = normalizeStoredMultiSelectValue(value)
+        if (currentList.length === 0) {
+          onChange([singleOptVal])
+        }
+      }
+    }
+  }, [field.type, selectOptions, value, readOnly, onChange])
 
   const common = {
     disabled: readOnly,

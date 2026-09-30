@@ -8,6 +8,7 @@ import useDataTableState from '@/components/base/data-table/hooks/useDataTableSt
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
+import ReportSourceBadge from '@/components/common/ReportSourceBadge'
 import ReportStatusBadge from '@/components/common/ReportStatusBadge'
 import { REPORT_DOMAINS } from '@/pages/report-builder/constants'
 import {
@@ -81,6 +82,8 @@ const ReportsListView = ({
         const matches =
           report.name.toLowerCase().includes(query) ||
           report.domain.toLowerCase().includes(query) ||
+          (report.sourceType &&
+            report.sourceType.toLowerCase().includes(query)) ||
           report.owner.toLowerCase().includes(query)
         if (!matches) return false
       }
@@ -113,7 +116,7 @@ const ReportsListView = ({
         {
           id: 'name',
           label: t`Name`,
-          size: 240,
+          size: 220,
           renderCell: (row: Report) => (
             <span
               className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
@@ -126,9 +129,17 @@ const ReportsListView = ({
         {
           id: 'domain',
           label: t`Source`,
-          size: 200,
+          size: 180,
           renderCell: (row: Report) => (
             <span className='text-gray-10'>{row.domain}</span>
+          ),
+        },
+        {
+          id: 'sourceType',
+          label: t`Source Type`,
+          size: 130,
+          renderCell: (row: Report) => (
+            <ReportSourceBadge sourceType={row.sourceType} />
           ),
         },
         {
@@ -150,7 +161,7 @@ const ReportsListView = ({
       {
         id: 'name',
         label: t`Name`,
-        size: 220,
+        size: 200,
         renderCell: (row: Report) => (
           <span
             className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
@@ -163,21 +174,29 @@ const ReportsListView = ({
       {
         id: 'domain',
         label: t`Source`,
-        size: 180,
+        size: 160,
         renderCell: (row: Report) => (
           <span className='text-gray-10'>{row.domain}</span>
         ),
       },
       {
+        id: 'sourceType',
+        label: t`Source Type`,
+        size: 130,
+        renderCell: (row: Report) => (
+          <ReportSourceBadge sourceType={row.sourceType} />
+        ),
+      },
+      {
         id: 'status',
         label: t`Status`,
-        size: 120,
+        size: 110,
         renderCell: (row: Report) => <ReportStatusBadge status={row.status} />,
       },
       {
         id: 'scheduled',
         label: t`Scheduled`,
-        size: 110,
+        size: 100,
         renderCell: (row: Report) =>
           row.scheduled ? (
             <span className='inline-flex items-center gap-1 text-secondary-11'>
@@ -191,13 +210,13 @@ const ReportsListView = ({
       {
         id: 'owner',
         label: t`Owner`,
-        size: 160,
+        size: 140,
         renderCell: (row: Report) => row.owner,
       },
       {
         id: 'modified',
         label: t`Modified`,
-        size: 170,
+        size: 160,
         renderCell: (row: Report) => formatDatetime(row.modified, 'datetime'),
       },
       {

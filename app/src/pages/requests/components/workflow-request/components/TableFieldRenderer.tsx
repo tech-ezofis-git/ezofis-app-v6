@@ -395,6 +395,59 @@ const ApiCatalogSelect = ({
 
 export { ApiCatalogSelect }
 
+const TableCellSelect = ({
+  col,
+  val,
+  options,
+  isMulti,
+  onCellChange,
+}: {
+  col: TableColumn
+  val: any
+  options: { id: string; name: string }[]
+  isMulti?: boolean
+  onCellChange: (newVal: any) => void
+}) => {
+  useEffect(() => {
+    if (options.length === 1) {
+      const singleVal = options[0].id
+      if (isMulti) {
+        const selectedIds: string[] = Array.isArray(val) ? val : []
+        if (selectedIds.length === 0) {
+          onCellChange([singleVal])
+        }
+      } else {
+        if (val === undefined || val === null || val === '') {
+          onCellChange(singleVal)
+        }
+      }
+    }
+  }, [options, val, isMulti, onCellChange])
+
+  if (isMulti) {
+    const selectedIds: string[] = Array.isArray(val) ? val : []
+    return (
+      <InputSelectMultiple
+        className='w-full'
+        options={options}
+        placeholder={getColumnPlaceholder(col)}
+        value={options.filter((opt) => selectedIds.includes(opt.id))}
+        onChange={(opts) => onCellChange(opts.map((opt) => opt.id))}
+      />
+    )
+  }
+
+  return (
+    <InputSelect
+      className='w-full'
+      options={options}
+      placeholder={getColumnPlaceholder(col)}
+      value={options.find((opt) => opt.id === val) || null}
+      onChange={(opt) => onCellChange(opt ? opt.id : null)}
+    />
+  )
+}
+
 const renderCellInput = (
   col: TableColumn,
   val: any,
@@ -518,12 +571,11 @@ const renderCellInput = (
     case 'SINGLE_CHOICE': {
       const options = resolvedOptions || parseColumnOptions(col)
       return (
-        <InputSelect
-          className='w-full'
+        <TableCellSelect
+          col={col}
           options={options}
-          placeholder={getColumnPlaceholder(col)}
-          value={options.find((opt) => opt.id === val) || null}
-          onChange={(opt) => onCellChange(opt ? opt.id : null)}
+          val={val}
+          onCellChange={onCellChange}
         />
       )
     }
@@ -531,14 +583,13 @@ const renderCellInput = (
     case 'MULTI_SELECT':
     case 'MULTIPLE_CHOICE': {
       const options = resolvedOptions || parseColumnOptions(col)
-      const selectedIds: string[] = Array.isArray(val) ? val : []
       return (
-        <InputSelectMultiple
-          className='w-full'
+        <TableCellSelect
+          col={col}
+          isMulti
           options={options}
-          placeholder={getColumnPlaceholder(col)}
-          value={options.filter((opt) => selectedIds.includes(opt.id))}
-          onChange={(opts) => onCellChange(opts.map((opt) => opt.id))}
+          val={val}
+          onCellChange={onCellChange}
         />
       )
     }
