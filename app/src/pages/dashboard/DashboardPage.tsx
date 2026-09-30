@@ -40,6 +40,11 @@ type DashboardSourceOption = {
 const REPO_ICON = 'lucide:folder'
 const WORKFLOW_ICON = 'lucide:workflow'
 
+const isAccountsPayableName = (label: string) => {
+  const name = label.trim().toLowerCase()
+  return name === 'ap' || /accounts payable/i.test(label)
+}
+
 const DashboardPage = () => {
   const { t } = useLingui()
   const session = authUserStore((state) => state.session)
@@ -114,9 +119,7 @@ const DashboardPage = () => {
             const rawDesc = item?.description || item?.details || item?.subtitle
             const description = rawDesc
               ? String(rawDesc)
-              : /accounts payable/i.test(label) || id === 'ap'
-                ? t`Connect email, ERP, and storage to start invoice processing.`
-                : t`Manage files and metadata in ${label} repository`
+              : t`Manage files and metadata in ${label} repository`
             return {
               description,
               kind: 'repository' as const,
@@ -156,23 +159,13 @@ const DashboardPage = () => {
         if (existing) {
           setSelectedSourceId(existing.selectId)
         } else if (!repositoryId || repositoryId === 'ap') {
-          const apOpt =
-            mapped.find(
-              (opt) =>
-                opt.kind === 'workflow' && /accounts payable/i.test(opt.label),
-            ) ||
-            mapped.find(
-              (opt) =>
-                opt.kind === 'repository' &&
-                (/accounts payable/i.test(opt.label) || opt.value === 'ap'),
-            )
+          const apOpt = mapped.find(
+            (opt) =>
+              opt.kind === 'workflow' && isAccountsPayableName(opt.label),
+          )
           if (apOpt) {
             setSelectedSourceId(apOpt.selectId)
-            if (apOpt.kind === 'repository') {
-              setRepositoryId(apOpt.value)
-            } else {
-              setRepositoryId('')
-            }
+            setRepositoryId('')
           } else if (mapped[0]) {
             setSelectedSourceId(mapped[0].selectId)
             if (mapped[0].kind === 'repository') {
@@ -209,12 +202,11 @@ const DashboardPage = () => {
   const selectedSource =
     sourceOptions.find((opt) => opt.selectId === selectedSourceId) ||
     sourceOptions.find(
-      (opt) => opt.kind === 'workflow' && /accounts payable/i.test(opt.label),
+      (opt) =>
+        opt.kind === 'workflow' && isAccountsPayableName(opt.label),
     ) ||
     sourceOptions.find(
-      (opt) =>
-        opt.kind === 'repository' &&
-        (opt.value === repositoryId || /accounts payable/i.test(opt.label)),
+      (opt) => opt.kind === 'repository' && opt.value === repositoryId,
     ) ||
     sourceOptions[0] ||
     null
@@ -254,11 +246,11 @@ const DashboardPage = () => {
     }
   }, [activeRepositoryId, activeWorkflowId, savedHtmlHeader, session?.tenantId])
 
+  // Default AP command center is for the Accounts Payable workflow only.
+  // A repository with the same name uses the repository dashboard.
   const isApDashboard =
-    (!activeRepositoryId && !activeWorkflowId) ||
-    /accounts payable/i.test(selectedName) ||
-    selectedName.toLowerCase() === 'ap' ||
-    activeRepositoryId === 'ap'
+    (isWorkflowSource && isAccountsPayableName(selectedName)) ||
+    (!selectedSource && (!repositoryId || repositoryId === 'ap'))
 
   const isCustomerDocuments =
     !isWorkflowSource &&
