@@ -1621,14 +1621,18 @@ const InboxList: React.FC<InboxListProps> = ({
     const outData = (filteredData || []).map((g) => {
       const updatedItems = (g.items || []).map((i: any) => {
         existingIds.add(String(i.processId || i.id))
-        
-        const isApAgent = i.stageType === 'AP_AGENT' || String(i.workflowName).toLowerCase().includes('ap agent') || String(i.workflowName).toLowerCase().includes('accounts payable') || i.apAgentJobId != null
+
+        const isApAgent =
+          i.stageType === 'AP_AGENT' ||
+          String(i.workflowName).toLowerCase().includes('ap agent') ||
+          String(i.workflowName).toLowerCase().includes('accounts payable') ||
+          i.apAgentJobId != null
 
         let isProcessing = i.isProcessing || false
-        
-        const isAgentStage = 
-          i.stageType === 'INTERNAL_ACTOR' || 
-          i.stageType === 'AGENT' || 
+
+        const isAgentStage =
+          i.stageType === 'INTERNAL_ACTOR' ||
+          i.stageType === 'AGENT' ||
           String(i.stageType).includes('AGENT') ||
           String(i.stage).toLowerCase().includes('agent')
 
@@ -1669,7 +1673,7 @@ const InboxList: React.FC<InboxListProps> = ({
 
         return {
           ...i,
-          isProcessing
+          isProcessing,
         }
       })
       return { ...g, items: updatedItems }

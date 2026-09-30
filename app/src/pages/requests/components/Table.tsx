@@ -1,6 +1,6 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Request } from '@/types/request'
 import { getRequestGroupListQueryOptions } from '@/api/local/requests/queries'

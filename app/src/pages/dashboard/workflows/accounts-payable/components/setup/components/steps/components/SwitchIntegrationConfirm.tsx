@@ -11,9 +11,9 @@ interface Props {
 }
 
 const SwitchIntegrationConfirm = ({
-  opened,
   currentName,
   nextName,
+  opened,
   onCancel,
   onConfirm,
 }: Props) => {

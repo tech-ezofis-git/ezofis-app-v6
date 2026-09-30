@@ -135,6 +135,12 @@ export const addConnector = async (payload: any) => {
   return _response
 }
 
+export interface AuthorizeOAuthPayload {
+  name: string
+  providerCode: OAuthProviderCode
+  successRedirectUrl: string
+}
+
 export type OAuthProviderCode =
   | 'GMAIL'
   | 'OUTLOOK'
@@ -144,12 +150,6 @@ export type OAuthProviderCode =
   | 'ONEDRIVE'
   | 'SAP'
   | 'SAP_XSUAA'
-
-export interface AuthorizeOAuthPayload {
-  name: string
-  providerCode: OAuthProviderCode
-  successRedirectUrl: string
-}
 
 const extractAuthorizeUrl = (data: unknown): string => {
   if (typeof data === 'string' && data.startsWith('http')) return data
@@ -188,15 +188,11 @@ export const authorizeOAuth = async (payload: AuthorizeOAuthPayload) => {
     const store = authUserStore.getState()
     const tenantId = store.session?.tenantId || ''
 
-    const response = await axiosV6.post(
-      '/connector/oauth/authorize',
-      payload,
-      {
-        headers: {
-          'X-Tenant-Id': tenantId,
-        },
+    const response = await axiosV6.post('/connector/oauth/authorize', payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
       },
-    )
+    })
     const { data, status } = response
 
     if (status !== 200 && status !== 201) {
@@ -221,11 +217,11 @@ export const authorizeOAuth = async (payload: AuthorizeOAuthPayload) => {
 }
 
 export interface ConnectorDetails {
+  id: string
   createdAtUtc?: string
   createdBy?: string
   createdByEmail?: string
   externalAccountEmail?: string | null
-  id: string
   isDefault?: boolean
   isDeleted?: boolean
   modifiedAtUtc?: string

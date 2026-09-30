@@ -29,17 +29,6 @@ type InvoiceDetailScreenProps = {
   onBack?: () => void
 }
 
-function formatWhen(value?: string | number | Date | null) {
-  if (!value) return ''
-  try {
-    const formatted = formatUtcToLocalDateTime(value, '')
-    if (formatted) return formatted
-    return String(value).slice(0, 16)
-  } catch {
-    return String(value).slice(0, 16)
-  }
-}
-
 export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
@@ -92,8 +81,8 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
         <div className='border-t border-[var(--gray-3)] bg-surface-primary px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'>
           <AppButton
             className='min-h-10 text-12'
-            fullWidth
             trailingIcon={<Icon className='size-3.5' name='ArrowRight' />}
+            fullWidth
             onClick={handleVerify}
           >
             Verify invoice
@@ -103,7 +92,6 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
       header={
         <AppBar
           className='[&_h1]:text-[13px] [&_h1]:text-[var(--gray-13)] [&>div>div]:text-[10px]'
-          onBack={onBack}
           subtitle={detail.poSubtitle}
           title={detail.invoiceNumber}
           trailing={
@@ -130,12 +118,16 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                 onClick={() => void detail.refetch()}
               >
                 <Icon
-                  className={cn('size-3.5', detail.isFetching && 'animate-spin')}
                   name='Share2'
+                  className={cn(
+                    'size-3.5',
+                    detail.isFetching && 'animate-spin',
+                  )}
                 />
               </IconButton>
             </>
           }
+          onBack={onBack}
         />
       }
     >
@@ -178,6 +170,11 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                 value={detail.duplicateMessage}
               />
               <InsightCard
+                icon={<Icon className='size-3' name='Store' />}
+                label='Supplier Verification'
+                status={detail.supplierStatus}
+                statusType={detail.supplierTone}
+                value={detail.supplierValue}
                 action={
                   detail.supplierNeedsAction ? (
                     <AppButton
@@ -189,11 +186,6 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                     </AppButton>
                   ) : null
                 }
-                icon={<Icon className='size-3' name='Store' />}
-                label='Supplier Verification'
-                status={detail.supplierStatus}
-                statusType={detail.supplierTone}
-                value={detail.supplierValue}
               />
               <InsightCard
                 icon={<Icon className='size-3' name='CalendarDays' />}
@@ -209,14 +201,14 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                 const active = tab.id === activeTab
                 return (
                   <button
+                    key={tab.id}
+                    type='button'
                     className={cn(
                       'shrink-0 border-b-2 py-2 text-[11px] font-semibold transition-colors',
                       active
                         ? 'border-[var(--primary-9)] text-[var(--primary-11)]'
                         : 'border-transparent text-[var(--gray-11)]',
                     )}
-                    key={tab.id}
-                    type='button'
                     onClick={() => setActiveTab(tab.id)}
                   >
                     {tab.label}
@@ -242,10 +234,10 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
             {activeTab === 'line_items' ? (
               detail.lineItems.length === 0 ? (
                 <EmptyState
+                  message='No line items found'
                   icon={
                     <Icon className='size-4 text-[var(--gray-9)]' name='List' />
                   }
-                  message='No line items found'
                 />
               ) : (
                 <div className='flex flex-col gap-2'>
@@ -271,19 +263,20 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                 </p>
               ) : detail.attachments.length === 0 ? (
                 <EmptyState
+                  message='No attachments'
                   icon={
                     <Icon
                       className='size-4 text-[var(--gray-9)]'
                       name='Paperclip'
                     />
                   }
-                  message='No attachments'
                 />
               ) : (
                 <div className='rounded-xl border border-[var(--gray-3)] bg-surface-primary px-2.5'>
                   {detail.attachments.map((file) => (
                     <AttachmentRow
                       key={String(file.id || file.fileId || file.name)}
+                      name={file.name || 'Attachment'}
                       meta={[
                         file.uploadedBy,
                         file.contentType,
@@ -291,7 +284,6 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                       ]
                         .filter(Boolean)
                         .join(' · ')}
-                      name={file.name || 'Attachment'}
                       onOpen={() =>
                         toast({
                           message: file.name || 'Attachment',
@@ -317,8 +309,8 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                   <AppButton
                     className='mt-2 min-h-9 text-[11px]'
                     disabled={!detail.commentText.trim()}
-                    fullWidth
                     loading={detail.commentSubmitting}
+                    fullWidth
                     onClick={() => void detail.submitComment()}
                   >
                     Post comment
@@ -331,26 +323,26 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                   </p>
                 ) : detail.comments.length === 0 ? (
                   <EmptyState
+                    message='No comments yet'
                     icon={
                       <Icon
                         className='size-4 text-[var(--gray-9)]'
                         name='MessageSquare'
                       />
                     }
-                    message='No comments yet'
                   />
                 ) : (
                   detail.comments.map((c) => (
                     <CommentRow
+                      body={c.comments || '—'}
+                      key={String(c.id || c.createdAt)}
+                      time={formatWhen(c.createdAt)}
                       author={
                         c.createdByName ||
                         c.createdByEmail ||
                         c.createdBy ||
                         'User'
                       }
-                      body={c.comments || '—'}
-                      key={String(c.id || c.createdAt)}
-                      time={formatWhen(c.createdAt)}
                     />
                   ))
                 )}
@@ -364,13 +356,13 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                 </p>
               ) : detail.history.length === 0 ? (
                 <EmptyState
+                  message='No history yet'
                   icon={
                     <Icon
                       className='size-4 text-[var(--gray-9)]'
                       name='RotateCcw'
                     />
                   }
-                  message='No history yet'
                 />
               ) : (
                 <div className='rounded-xl border border-[var(--gray-3)] bg-surface-primary px-2.5 py-2.5'>
@@ -402,4 +394,15 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
       )}
     </ScreenShell>
   )
+}
+
+function formatWhen(value?: string | number | Date | null) {
+  if (!value) return ''
+  try {
+    const formatted = formatUtcToLocalDateTime(value, '')
+    if (formatted) return formatted
+    return String(value).slice(0, 16)
+  } catch {
+    return String(value).slice(0, 16)
+  }
 }

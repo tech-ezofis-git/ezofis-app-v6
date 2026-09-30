@@ -1,13 +1,23 @@
 import { useLingui } from '@lingui/react/macro'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import type { CommentItem } from '@/pages/requests/hooks/useComments'
 import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
-import cn from '@/utils/cn'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import folderApi from '@/pages/folders/api/folderApi'
+import { DynamicIcon } from '@/pages/folders/components/icons'
 import {
   buildMergedOcrFieldHints,
   buildRepoFieldHints,
@@ -20,12 +30,13 @@ import {
   attachmentToFormFileValue,
   getFirstFileUploadField,
   getFirstReceivedAttachment,
+  getFormPanels,
   getLatestAttachment,
   getWorkflowRepositoryId,
   hasStoredFileValue,
-  getFormPanels,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
@@ -33,28 +44,24 @@ import {
   uploadInstanceAttachment,
 } from '@/pages/requests/utils/instanceAttachmentUpload'
 import {
-  type RepositoryFieldSchema,
   applyFilenamePreFill,
   getFolderStructureFields,
+  type RepositoryFieldSchema,
   toUploadMetadata,
 } from '@/pages/requests/utils/repoFolderMetadata'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
+import AgentDetailPlaceholder from './AgentDetailPlaceholder'
+import AgentSummaryBoxes, {
+  type AgentBlock,
+  getAgentResponseTabs,
+} from './AgentSummaryBoxes'
 import AttachmentPreviewPanel from './AttachmentPreviewPanel'
 import AttachmentSplitView from './AttachmentSplitView'
 import TaskRequirements from './TaskRequirements'
-import ScrollArea from '@/components/base/scroll-area/ScrollArea'
-import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
-import folderApi from '@/pages/folders/api/folderApi'
-import { DynamicIcon } from '@/pages/folders/components/icons'
-import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
-import AgentSummaryBoxes, {
-  getAgentResponseTabs,
-  type AgentBlock,
-} from './AgentSummaryBoxes'
-import AgentDetailPlaceholder from './AgentDetailPlaceholder'
 
 interface ChecklistItem {
   id: string
@@ -137,16 +144,16 @@ interface Props {
 // Split layout tailored specifically for "Document Approval"
 const DocumentApprovalSplitLayout = ({
   attachments,
-  repositoryId,
   formNode,
-  taskNode,
+  repositoryId,
   selectedItem,
+  taskNode,
 }: {
   attachments: AttachmentItem[]
-  repositoryId: string | number | undefined
   formNode: ReactNode
-  taskNode: ReactNode
+  repositoryId: string | number | undefined
   selectedItem: any
+  taskNode: ReactNode
 }) => {
   const { t } = useLingui()
   const firstAttachment =
@@ -157,9 +164,7 @@ const DocumentApprovalSplitLayout = ({
   const [isDocDetailsOpen, setIsDocDetailsOpen] = useState(true)
 
   const targetRepoId =
-    firstAttachment?.repositoryId ||
-    repositoryId ||
-    selectedItem?.repositoryId
+    firstAttachment?.repositoryId || repositoryId || selectedItem?.repositoryId
   const targetItemId =
     firstAttachment?.itemId || firstAttachment?.id || selectedItem?.itemId
 
@@ -171,18 +176,18 @@ const DocumentApprovalSplitLayout = ({
       }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-          itemId: selectedItem?.itemId,
-          repositoryId: selectedItem?.repositoryId,
-          fileName:
-            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          _localFileUrl: selectedItem?._localFileUrl,
           fileExtension:
             selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-          _localFileUrl: selectedItem?._localFileUrl,
+          fileName:
+            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          itemId: selectedItem?.itemId,
+          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          repositoryId: selectedItem?.repositoryId,
         }
       : null
 
-  const { previewUrl, mimeType } = useAttachmentPreviewUrl(
+  const { mimeType, previewUrl } = useAttachmentPreviewUrl(
     previewAttachment as any,
     targetRepoId,
   )
@@ -206,8 +211,14 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            fileName={previewAttachment.fileName || previewAttachment.name || (previewAttachment.fileExtension ? `file.${previewAttachment.fileExtension}` : undefined)}
             fileUrl={previewUrl || null}
+            fileName={
+              previewAttachment.fileName ||
+              previewAttachment.name ||
+              (previewAttachment.fileExtension
+                ? `file.${previewAttachment.fileExtension}`
+                : undefined)
+            }
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -234,7 +245,7 @@ const DocumentApprovalSplitLayout = ({
                 />
               </button>
               {isApproversOpen && (
-                <div className='flex flex-col p-4 space-y-4'>
+                <div className='flex flex-col space-y-4 p-4'>
                   {taskNode}
                   {formNode}
                 </div>
@@ -247,7 +258,10 @@ const DocumentApprovalSplitLayout = ({
                 onClick={() => setIsDocDetailsOpen(!isDocDetailsOpen)}
               >
                 <h2 className='flex items-center gap-2 text-sm font-semibold text-gray-13'>
-                  <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                  <DynamicIcon
+                    className='h-4 w-4 text-blue-11'
+                    name='fileText'
+                  />
                   {t`Document Details`}
                 </h2>
                 <DynamicIcon
@@ -257,18 +271,28 @@ const DocumentApprovalSplitLayout = ({
               </button>
               {isDocDetailsOpen && (
                 <div className='flex flex-col'>
-                  {documentInfo?.infoCards?.flatMap((card: any) => card.rows || []).length > 0 ? (
-                    documentInfo.infoCards.flatMap((card: any) => card.rows || []).map((row: any, idx: number) => (
-                      <div key={idx} className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'>
-                        <span className='flex items-center gap-2 text-[12px] text-gray-9'>
-                          <DynamicIcon className='h-3.5 w-3.5 text-gray-8' name='maximize' />
-                          {row.label}
-                        </span>
-                        <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
-                          {row.value || '-'}
-                        </span>
-                      </div>
-                    ))
+                  {documentInfo?.infoCards?.flatMap(
+                    (card: any) => card.rows || [],
+                  ).length > 0 ? (
+                    documentInfo.infoCards
+                      .flatMap((card: any) => card.rows || [])
+                      .map((row: any, idx: number) => (
+                        <div
+                          className='flex items-center justify-between border-b border-gray-2 px-5 py-3 last:border-b-0'
+                          key={idx}
+                        >
+                          <span className='flex items-center gap-2 text-[12px] text-gray-9'>
+                            <DynamicIcon
+                              className='h-3.5 w-3.5 text-gray-8'
+                              name='maximize'
+                            />
+                            {row.label}
+                          </span>
+                          <span className='max-w-[200px] truncate text-[13px] font-medium text-gray-12'>
+                            {row.value || '-'}
+                          </span>
+                        </div>
+                      ))
                   ) : (
                     <div className='px-5 py-4 text-center text-xs text-gray-9'>
                       {t`No document details available.`}
@@ -286,34 +310,34 @@ const DocumentApprovalSplitLayout = ({
 
 const DocumentFormSplitLayout = ({
   attachments,
-  repositoryId,
+  attachmentsCount,
+  attachmentsNode,
+  commentsCount,
+  commentsNode,
   formModel,
   formNode,
-  taskNode,
-  selectedItem,
-  rawWorkflowData,
-  attachmentsNode,
-  commentsNode,
   historyNode,
   lineItemsNode,
-  attachmentsCount,
-  commentsCount,
+  rawWorkflowData,
+  repositoryId,
+  selectedItem,
+  taskNode,
   viewOnly,
   onFieldChange,
 }: {
   attachments: AttachmentItem[]
-  repositoryId: string | number | undefined
+  attachmentsCount?: number
+  attachmentsNode?: ReactNode
+  commentsCount?: number
+  commentsNode?: ReactNode
   formModel?: Record<string, any>
   formNode: ReactNode
-  taskNode: ReactNode
-  selectedItem: any
-  rawWorkflowData: any
-  attachmentsNode?: ReactNode
-  commentsNode?: ReactNode
   historyNode?: ReactNode
   lineItemsNode?: ReactNode
-  attachmentsCount?: number
-  commentsCount?: number
+  rawWorkflowData: any
+  repositoryId: string | number | undefined
+  selectedItem: any
+  taskNode: ReactNode
   viewOnly?: boolean
   onFieldChange?: (fieldId: string, value: any) => void
 }) => {
@@ -338,9 +362,9 @@ const DocumentFormSplitLayout = ({
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
   const initialAgentId = agentBlocks[0]?.id ?? null
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
-    initialAgentId,
-  )
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
+    string | null
+  >(initialAgentId)
   const [activeTab, setActiveTab] = useState(
     initialAgentId ? `agent:${initialAgentId}` : 'summary',
   )
@@ -467,9 +491,7 @@ const DocumentFormSplitLayout = ({
   }
 
   const targetRepoId =
-    firstAttachment?.repositoryId ||
-    repositoryId ||
-    selectedItem?.repositoryId
+    firstAttachment?.repositoryId || repositoryId || selectedItem?.repositoryId
   const targetItemId =
     firstAttachment?.itemId || firstAttachment?.id || selectedItem?.itemId
 
@@ -481,14 +503,14 @@ const DocumentFormSplitLayout = ({
       }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-          itemId: selectedItem?.itemId,
-          repositoryId: selectedItem?.repositoryId,
-          fileName:
-            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          _localFileUrl: selectedItem?._localFileUrl,
           fileExtension:
             selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-          _localFileUrl: selectedItem?._localFileUrl,
+          fileName:
+            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          itemId: selectedItem?.itemId,
+          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          repositoryId: selectedItem?.repositoryId,
         }
       : null
 
@@ -502,8 +524,14 @@ const DocumentFormSplitLayout = ({
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            fileName={previewAttachment.fileName || previewAttachment.name || (previewAttachment.fileExtension ? `file.${previewAttachment.fileExtension}` : undefined)}
             fileUrl={previewUrl || null}
+            fileName={
+              previewAttachment.fileName ||
+              previewAttachment.name ||
+              (previewAttachment.fileExtension
+                ? `file.${previewAttachment.fileExtension}`
+                : undefined)
+            }
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -517,17 +545,21 @@ const DocumentFormSplitLayout = ({
           <div className='mb-4 px-4 pt-3'>
             <AgentSummaryBoxes
               agentBlocks={agentBlocks}
+              requestData={selectedItem}
               selectedAgentBlockId={selectedAgentBlockId}
               onAgentClick={(blockId) => {
                 if (!blockId) {
                   setSelectedAgentBlockId(null)
-                  setActiveTab(hasAgentResponseTabs ? `agent:${agentResponseTabs[0]?.id}` : 'summary')
+                  setActiveTab(
+                    hasAgentResponseTabs
+                      ? `agent:${agentResponseTabs[0]?.id}`
+                      : 'summary',
+                  )
                   return
                 }
                 setSelectedAgentBlockId(blockId)
                 setActiveTab(`agent:${blockId}`)
               }}
-              requestData={selectedItem}
             />
           </div>
         )}
@@ -538,17 +570,17 @@ const DocumentFormSplitLayout = ({
                 <button
                   key={tab.id}
                   className={cn(
-                    '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                    '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
                     activeTab === tab.id
                       ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
                       : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
                   )}
                   onClick={() => selectTab(tab.id)}
                 >
-                  <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                  <Icon className='h-4 w-4 shrink-0' name={tab.icon} />
                   <span>{tab.label}</span>
                   {'count' in tab && tab.count !== undefined && (
-                    <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                    <span className='flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12'>
                       {tab.count}
                     </span>
                   )}
@@ -566,6 +598,10 @@ const DocumentFormSplitLayout = ({
                 attachments={attachments}
                 formModel={formModel}
                 hideBack={hasAgentResponseTabs}
+                rawWorkflowData={rawWorkflowData}
+                repositoryId={repositoryId}
+                requestData={selectedItem}
+                viewOnly={viewOnly}
                 onBack={() => {
                   setSelectedAgentBlockId(null)
                   setActiveTab(
@@ -575,13 +611,10 @@ const DocumentFormSplitLayout = ({
                   )
                 }}
                 onFieldChange={onFieldChange}
-                rawWorkflowData={rawWorkflowData}
-                repositoryId={repositoryId}
-                requestData={selectedItem}
-                viewOnly={viewOnly}
               />
             </div>
-          ) : activeTab === 'summary' || (!hasAgents && activeTab === 'summary') ? (
+          ) : activeTab === 'summary' ||
+            (!hasAgents && activeTab === 'summary') ? (
             <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
               {taskNode}
               {formNode}
@@ -641,7 +674,9 @@ const GenericRequestOverview = ({
   onSignatureToggle,
 }: Props) => {
   const { t } = useLingui()
-  const kanbanMissingFieldIds = requestStore((state) => state.kanbanMissingFieldIds)
+  const kanbanMissingFieldIds = requestStore(
+    (state) => state.kanbanMissingFieldIds,
+  )
   const storeSelectedItem = requestStore((state) => state.selectedItem)
   const missingMandatoryFieldIds = useMemo(
     () => new Set(kanbanMissingFieldIds || []),
@@ -657,8 +692,11 @@ const GenericRequestOverview = ({
     if (!kanbanMissingFieldIds?.length) return []
     const byId = new Map<string, string>()
     panels.forEach((panel: any) => {
-      ; (panel.fields || []).forEach((field: any) => {
-        byId.set(String(field.id), String(field.label || field.name || field.id))
+      ;(panel.fields || []).forEach((field: any) => {
+        byId.set(
+          String(field.id),
+          String(field.label || field.name || field.id),
+        )
       })
     })
     const labels: string[] = []
@@ -745,16 +783,16 @@ const GenericRequestOverview = ({
         ? new Set(allFieldIds)
         : access === 'CUSTOM'
           ? (() => {
-            const rules = Array.isArray(blockSettings.formEditControls)
-              ? blockSettings.formEditControls
-              : []
-            const rule = rules.find(
-              (r: any) => String(r.userId) === currentUserId,
-            )
-            if (!rule) return undefined
-            const editable = new Set((rule?.formFields || []).map(String))
-            return new Set(allFieldIds.filter((id) => !editable.has(id)))
-          })()
+              const rules = Array.isArray(blockSettings.formEditControls)
+                ? blockSettings.formEditControls
+                : []
+              const rule = rules.find(
+                (r: any) => String(r.userId) === currentUserId,
+              )
+              if (!rule) return undefined
+              const editable = new Set((rule?.formFields || []).map(String))
+              return new Set(allFieldIds.filter((id) => !editable.has(id)))
+            })()
           : undefined
 
     if (requestNumberFieldIds.size === 0) return base
@@ -779,7 +817,9 @@ const GenericRequestOverview = ({
   const summaryHiddenFieldIds = useMemo(() => {
     const ids = new Set(hiddenFieldIds || [])
     allFieldIds.forEach((id) => {
-      const field = panels.flatMap((p: any) => p.fields || []).find((f: any) => String(f.id) === id)
+      const field = panels
+        .flatMap((p: any) => p.fields || [])
+        .find((f: any) => String(f.id) === id)
       if (field && (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE')) {
         ids.add(id)
       }
@@ -791,14 +831,16 @@ const GenericRequestOverview = ({
     const ids = new Set(hiddenFieldIds || [])
     let hasLineItems = false
     allFieldIds.forEach((id) => {
-      const field = panels.flatMap((p: any) => p.fields || []).find((f: any) => String(f.id) === id)
+      const field = panels
+        .flatMap((p: any) => p.fields || [])
+        .find((f: any) => String(f.id) === id)
       if (field && (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE')) {
         hasLineItems = true
       } else {
         ids.add(id)
       }
     })
-    return { ids, hasLineItems }
+    return { hasLineItems, ids }
   }, [hiddenFieldIds, allFieldIds, panels])
 
   const workflowId = rawWorkflowData?.id
@@ -811,10 +853,12 @@ const GenericRequestOverview = ({
     return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
   }, [rawWorkflowData])
 
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
+    string | null
+  >(null)
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
-    return agentBlocks.find(b => b.id === selectedAgentBlockId) || null
+    return agentBlocks.find((b) => b.id === selectedAgentBlockId) || null
   }, [selectedAgentBlockId, agentBlocks])
 
   const showSidePanel = rightView !== 'overview'
@@ -956,9 +1000,9 @@ const GenericRequestOverview = ({
           String(repositoryId),
           existingItem
             ? {
-              itemId: existingItem.itemId,
-              repositoryId: existingItem.repositoryId || repositoryId,
-            }
+                itemId: existingItem.itemId,
+                repositoryId: existingItem.repositoryId || repositoryId,
+              }
             : undefined,
         )
         const formMeta = buildRepoMetadata(
@@ -1119,18 +1163,6 @@ const GenericRequestOverview = ({
             attachments={attachments}
             repositoryId={repositoryId}
             selectedItem={selectedItem || storeSelectedItem}
-            taskNode={
-              <TaskRequirements
-                attachmentCount={attachments.length}
-                checklistChecked={checklistChecked}
-                checklistItems={checklistItems}
-                documentRequired={documentRequired}
-                signatureConfirmed={signatureConfirmed}
-                userSignatureRequired={userSignatureRequired}
-                onChecklistToggle={onChecklistToggle}
-                onSignatureToggle={onSignatureToggle}
-              />
-            }
             formNode={
               <WorkflowFormRenderer
                 attachments={attachments}
@@ -1140,33 +1172,22 @@ const GenericRequestOverview = ({
                 hiddenFieldIds={hiddenFieldIds}
                 hidePanels={true}
                 instanceId={instanceId}
-                missingMandatoryFieldIds={
-                  missingMandatoryFieldIds.size > 0
-                    ? missingMandatoryFieldIds
-                    : undefined
-                }
                 panels={panels}
                 preparePhase={preparePhase}
                 preparingFieldId={preparingFieldId}
                 readOnlyFieldIds={readOnlyFieldIds}
                 repositoryId={repositoryId}
                 viewOnly={viewOnly}
+                missingMandatoryFieldIds={
+                  missingMandatoryFieldIds.size > 0
+                    ? missingMandatoryFieldIds
+                    : undefined
+                }
                 onFieldChange={onFieldChange}
                 onOpenAttachment={setOpenedAttachment}
                 onRequestUpload={viewOnly ? undefined : handleRequestUpload}
               />
             }
-          />
-        ) : rawWorkflowData?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ||
-          rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing?.type === 'DOCUMENT_FORM' ? (
-          <DocumentFormSplitLayout
-            attachments={attachments}
-            formModel={formModel}
-            repositoryId={repositoryId}
-            selectedItem={selectedItem || storeSelectedItem}
-            rawWorkflowData={rawWorkflowData}
-            viewOnly={viewOnly}
-            onFieldChange={onFieldChange}
             taskNode={
               <TaskRequirements
                 attachmentCount={attachments.length}
@@ -1179,59 +1200,20 @@ const GenericRequestOverview = ({
                 onSignatureToggle={onSignatureToggle}
               />
             }
-            formNode={
-              <WorkflowFormRenderer
-                attachments={attachments}
-                disableOwnScroll={true}
-                formModel={formModel}
-                hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                hiddenFieldIds={summaryHiddenFieldIds}
-                hidePanels={agentBlocks.length > 0}
-                instanceId={instanceId}
-                missingMandatoryFieldIds={
-                  missingMandatoryFieldIds.size > 0
-                    ? missingMandatoryFieldIds
-                    : undefined
-                }
-                panels={panels}
-                preparePhase={preparePhase}
-                preparingFieldId={preparingFieldId}
-                presentation='extracted'
-                readOnlyFieldIds={readOnlyFieldIds}
-                repositoryId={repositoryId}
-                viewOnly={viewOnly}
-                onFieldChange={onFieldChange}
-                onOpenAttachment={setOpenedAttachment}
-                onRequestUpload={viewOnly ? undefined : handleRequestUpload}
-              />
-            }
-            lineItemsNode={
-              lineItemsHiddenFieldIds.hasLineItems ? (
-                <WorkflowFormRenderer
-                  attachments={attachments}
-                  disableOwnScroll={true}
-                  formModel={formModel}
-                  hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                  hiddenFieldIds={lineItemsHiddenFieldIds.ids}
-                  hidePanels={agentBlocks.length > 0}
-                  instanceId={instanceId}
-                  missingMandatoryFieldIds={
-                    missingMandatoryFieldIds.size > 0
-                      ? missingMandatoryFieldIds
-                      : undefined
-                  }
-                  panels={panels}
-                  preparePhase={preparePhase}
-                  preparingFieldId={preparingFieldId}
-                  readOnlyFieldIds={readOnlyFieldIds}
-                  repositoryId={repositoryId}
-                  viewOnly={viewOnly}
-                  onFieldChange={onFieldChange}
-                  onOpenAttachment={setOpenedAttachment}
-                  onRequestUpload={viewOnly ? undefined : handleRequestUpload}
-                />
-              ) : undefined
-            }
+          />
+        ) : rawWorkflowData?.settings?.general?.initiateUsing?.type ===
+            'DOCUMENT_FORM' ||
+          rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing
+            ?.type === 'DOCUMENT_FORM' ? (
+          <DocumentFormSplitLayout
+            attachments={attachments}
+            attachmentsCount={attachments.length}
+            commentsCount={comments.length}
+            formModel={formModel}
+            rawWorkflowData={rawWorkflowData}
+            repositoryId={repositoryId}
+            selectedItem={selectedItem || storeSelectedItem}
+            viewOnly={viewOnly}
             attachmentsNode={
               <Attachments
                 canUpload={!viewOnly}
@@ -1254,24 +1236,90 @@ const GenericRequestOverview = ({
                 enabled
               />
             }
+            formNode={
+              <WorkflowFormRenderer
+                attachments={attachments}
+                disableOwnScroll={true}
+                formModel={formModel}
+                hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                hiddenFieldIds={summaryHiddenFieldIds}
+                hidePanels={agentBlocks.length > 0}
+                instanceId={instanceId}
+                panels={panels}
+                preparePhase={preparePhase}
+                preparingFieldId={preparingFieldId}
+                presentation='extracted'
+                readOnlyFieldIds={readOnlyFieldIds}
+                repositoryId={repositoryId}
+                viewOnly={viewOnly}
+                missingMandatoryFieldIds={
+                  missingMandatoryFieldIds.size > 0
+                    ? missingMandatoryFieldIds
+                    : undefined
+                }
+                onFieldChange={onFieldChange}
+                onOpenAttachment={setOpenedAttachment}
+                onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+              />
+            }
             historyNode={
               <History
                 instanceId={instanceId}
+                processId={processId}
+                workflowId={workflowId}
+                enabled
                 isCompleted={
                   selectedItem?.isCompleted ||
                   Boolean(selectedItem?.completedAtUtc) ||
                   Boolean(selectedItem?.completedAt) ||
                   ['completed', 'approved', 'closed', 'paid'].includes(
-                    String(selectedItem?.status || '').toLowerCase().trim(),
+                    String(selectedItem?.status || '')
+                      .toLowerCase()
+                      .trim(),
                   )
                 }
-                processId={processId}
-                workflowId={workflowId}
-                enabled
               />
             }
-            attachmentsCount={attachments.length}
-            commentsCount={comments.length}
+            lineItemsNode={
+              lineItemsHiddenFieldIds.hasLineItems ? (
+                <WorkflowFormRenderer
+                  attachments={attachments}
+                  disableOwnScroll={true}
+                  formModel={formModel}
+                  hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                  hiddenFieldIds={lineItemsHiddenFieldIds.ids}
+                  hidePanels={agentBlocks.length > 0}
+                  instanceId={instanceId}
+                  panels={panels}
+                  preparePhase={preparePhase}
+                  preparingFieldId={preparingFieldId}
+                  readOnlyFieldIds={readOnlyFieldIds}
+                  repositoryId={repositoryId}
+                  viewOnly={viewOnly}
+                  missingMandatoryFieldIds={
+                    missingMandatoryFieldIds.size > 0
+                      ? missingMandatoryFieldIds
+                      : undefined
+                  }
+                  onFieldChange={onFieldChange}
+                  onOpenAttachment={setOpenedAttachment}
+                  onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+                />
+              ) : undefined
+            }
+            taskNode={
+              <TaskRequirements
+                attachmentCount={attachments.length}
+                checklistChecked={checklistChecked}
+                checklistItems={checklistItems}
+                documentRequired={documentRequired}
+                signatureConfirmed={signatureConfirmed}
+                userSignatureRequired={userSignatureRequired}
+                onChecklistToggle={onChecklistToggle}
+                onSignatureToggle={onSignatureToggle}
+              />
+            }
+            onFieldChange={onFieldChange}
           />
         ) : (
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
@@ -1279,9 +1327,9 @@ const GenericRequestOverview = ({
               <div className='px-6 pt-5 pb-1'>
                 <AgentSummaryBoxes
                   agentBlocks={agentBlocks}
+                  requestData={selectedItem}
                   selectedAgentBlockId={selectedAgentBlockId}
                   onAgentClick={setSelectedAgentBlockId}
-                  requestData={selectedItem}
                 />
               </div>
             )}
@@ -1293,12 +1341,12 @@ const GenericRequestOverview = ({
                     agentBlock={selectedAgentBlock}
                     attachments={attachments}
                     formModel={formModel}
-                    onBack={() => setSelectedAgentBlockId(null)}
-                    onFieldChange={onFieldChange}
                     rawWorkflowData={rawWorkflowData}
                     repositoryId={repositoryId}
                     requestData={selectedItem}
                     viewOnly={viewOnly}
+                    onBack={() => setSelectedAgentBlockId(null)}
+                    onFieldChange={onFieldChange}
                   />
                 </div>
               ) : (
@@ -1326,17 +1374,17 @@ const GenericRequestOverview = ({
                     hiddenFieldIds={summaryHiddenFieldIds}
                     hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
-                    missingMandatoryFieldIds={
-                      missingMandatoryFieldIds.size > 0
-                        ? missingMandatoryFieldIds
-                        : undefined
-                    }
                     panels={panels}
                     preparePhase={preparePhase}
                     preparingFieldId={preparingFieldId}
                     readOnlyFieldIds={readOnlyFieldIds}
                     repositoryId={repositoryId}
                     viewOnly={viewOnly}
+                    missingMandatoryFieldIds={
+                      missingMandatoryFieldIds.size > 0
+                        ? missingMandatoryFieldIds
+                        : undefined
+                    }
                     onFieldChange={onFieldChange}
                     onOpenAttachment={setOpenedAttachment}
                     onRequestUpload={viewOnly ? undefined : handleRequestUpload}
@@ -1366,17 +1414,19 @@ const GenericRequestOverview = ({
                 <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
                   <History
                     instanceId={instanceId}
+                    processId={processId}
+                    workflowId={workflowId}
+                    enabled
                     isCompleted={
                       selectedItem?.isCompleted ||
                       Boolean(selectedItem?.completedAtUtc) ||
                       Boolean(selectedItem?.completedAt) ||
                       ['completed', 'approved', 'closed', 'paid'].includes(
-                        String(selectedItem?.status || '').toLowerCase().trim(),
+                        String(selectedItem?.status || '')
+                          .toLowerCase()
+                          .trim(),
                       )
                     }
-                    processId={processId}
-                    workflowId={workflowId}
-                    enabled
                   />
                 </div>
               </div>

@@ -1,10 +1,10 @@
 import {
   buildLocalFolderConfig,
-  generateFolderConfigViaGemini,
-  normalizeFolderDataType,
   type FolderConfigField,
   type FolderConfigReference,
   type FolderConfigSuggestion,
+  generateFolderConfigViaGemini,
+  normalizeFolderDataType,
 } from '@/services/ai/gemini'
 import {
   isQwenConfigured,
@@ -12,11 +12,7 @@ import {
   qwenChatCompletions,
 } from '@/services/ai/qwen'
 
-export type {
-  FolderConfigField,
-  FolderConfigReference,
-  FolderConfigSuggestion,
-}
+export type { FolderConfigField, FolderConfigReference, FolderConfigSuggestion }
 
 const FOLDER_DATA_TYPES = [
   'SHORT_TEXT',
@@ -56,50 +52,6 @@ const ACRONYMS = new Set([
   'API',
 ])
 
-export function shortenFolderName(input: string): string {
-  if (!input) return 'Custom Folder'
-
-  let cleaned = input
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i, '')
-    .replace(/^(a|an|the)\s+/i, '')
-    .replace(/\s+(folder|repository|system|process|layout)\s+for\s+/i, ' ')
-    .replace(/\s+for\s+/i, ' ')
-    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
-    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!cleaned) cleaned = input.trim().split('.')[0]
-
-  const words = cleaned.split(/\s+/).filter(Boolean)
-  if (words.length > 1 && words[words.length - 1].toLowerCase() === 'folder') {
-    words.pop()
-  }
-
-  let shortWords = words.slice(0, 3)
-  if (shortWords.length > 0 && ['&', '-', '/'].includes(shortWords[shortWords.length - 1])) {
-    shortWords.pop()
-  }
-
-  let result = shortWords.join(' ')
-  if (result.length > 25) {
-    result = result.slice(0, 25).trim()
-  }
-
-  if (!result) return 'Custom Folder'
-
-  return result
-    .split(' ')
-    .map((w) => {
-      const upper = w.toUpperCase()
-      if (ACRONYMS.has(upper)) return upper
-      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-    })
-    .join(' ')
-}
-
 export function shortenDescription(input: string, maxChars = 75): string {
   if (!input) return ''
 
@@ -124,33 +76,72 @@ export function shortenDescription(input: string, maxChars = 75): string {
     }
   }
 
-  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
+  if (
+    !cleaned.endsWith('.') &&
+    !cleaned.endsWith('!') &&
+    !cleaned.endsWith('?')
+  ) {
     cleaned += '.'
   }
 
   if (cleaned.length > maxChars) {
     const trimmed = cleaned.slice(0, maxChars)
     const lastSpace = trimmed.lastIndexOf(' ')
-    cleaned = (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
+    cleaned =
+      (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
   }
 
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
 }
 
-function resolveFolderAiProvider(): FolderAiProvider {
-  const configured = String(
-    import.meta.env.VITE_FOLDER_AI_PROVIDER || '',
-  )
-    .trim()
-    .toLowerCase()
+export function shortenFolderName(input: string): string {
+  if (!input) return 'Custom Folder'
 
-  if (configured === 'qwen' || configured === 'gemini' || configured === 'local') {
-    return configured
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(
+      /^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i,
+      '',
+    )
+    .replace(/^(a|an|the)\s+/i, '')
+    .replace(/\s+(folder|repository|system|process|layout)\s+for\s+/i, ' ')
+    .replace(/\s+for\s+/i, ' ')
+    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
+    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) cleaned = input.trim().split('.')[0]
+
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (words.length > 1 && words[words.length - 1].toLowerCase() === 'folder') {
+    words.pop()
   }
 
-  if (isQwenConfigured()) return 'qwen'
-  if (import.meta.env.VITE_GEMINI_API_KEY) return 'gemini'
-  return 'local'
+  const shortWords = words.slice(0, 3)
+  if (
+    shortWords.length > 0 &&
+    ['&', '-', '/'].includes(shortWords[shortWords.length - 1])
+  ) {
+    shortWords.pop()
+  }
+
+  let result = shortWords.join(' ')
+  if (result.length > 25) {
+    result = result.slice(0, 25).trim()
+  }
+
+  if (!result) return 'Custom Folder'
+
+  return result
+    .split(' ')
+    .map((w) => {
+      const upper = w.toUpperCase()
+      if (ACRONYMS.has(upper)) return upper
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    })
+    .join(' ')
 }
 
 function buildFolderConfigPrompt(
@@ -188,37 +179,6 @@ Respond ONLY with valid JSON using this shape:
     }
   ]
 }`
-}
-
-function normalizeSuggestion(
-  result: FolderConfigSuggestion,
-  source: FolderConfigSuggestion['source'],
-): FolderConfigSuggestion {
-  if (!result?.folderName || !Array.isArray(result.fields)) {
-    throw new Error('AI returned an invalid folder configuration')
-  }
-
-  const folderName = shortenFolderName(String(result.folderName))
-  const description = shortenDescription(
-    String(result.description || `Folder setup for ${folderName.toLowerCase()}.`),
-  )
-
-  return {
-    description,
-    fields: result.fields.map((field: FolderConfigField) => ({
-      dataType: normalizeFolderDataType(field.dataType),
-      fieldName: String(field.fieldName || 'Field').trim(),
-      iconKey: field.iconKey ? String(field.iconKey) : 'document',
-      includeInFolderStructure: Boolean(field.includeInFolderStructure),
-      isMandatory: Boolean(field.isMandatory),
-      settings: field.settings,
-    })),
-    folderName,
-    reply:
-      String(result.reply || '').trim() ||
-      `Prepared folder setup for "${folderName}".`,
-    source,
-  }
 }
 
 async function generateFolderConfigViaQwen(
@@ -260,6 +220,57 @@ async function generateFolderConfigViaQwen(
   }
 }
 
+function normalizeSuggestion(
+  result: FolderConfigSuggestion,
+  source: FolderConfigSuggestion['source'],
+): FolderConfigSuggestion {
+  if (!result?.folderName || !Array.isArray(result.fields)) {
+    throw new Error('AI returned an invalid folder configuration')
+  }
+
+  const folderName = shortenFolderName(String(result.folderName))
+  const description = shortenDescription(
+    String(
+      result.description || `Folder setup for ${folderName.toLowerCase()}.`,
+    ),
+  )
+
+  return {
+    description,
+    fields: result.fields.map((field: FolderConfigField) => ({
+      dataType: normalizeFolderDataType(field.dataType),
+      fieldName: String(field.fieldName || 'Field').trim(),
+      iconKey: field.iconKey ? String(field.iconKey) : 'document',
+      includeInFolderStructure: Boolean(field.includeInFolderStructure),
+      isMandatory: Boolean(field.isMandatory),
+      settings: field.settings,
+    })),
+    folderName,
+    reply:
+      String(result.reply || '').trim() ||
+      `Prepared folder setup for "${folderName}".`,
+    source,
+  }
+}
+
+function resolveFolderAiProvider(): FolderAiProvider {
+  const configured = String(import.meta.env.VITE_FOLDER_AI_PROVIDER || '')
+    .trim()
+    .toLowerCase()
+
+  if (
+    configured === 'qwen' ||
+    configured === 'gemini' ||
+    configured === 'local'
+  ) {
+    return configured
+  }
+
+  if (isQwenConfigured()) return 'qwen'
+  if (import.meta.env.VITE_GEMINI_API_KEY) return 'gemini'
+  return 'local'
+}
+
 export const generateFolderConfig = async (
   prompt: string,
   history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
@@ -272,7 +283,11 @@ export const generateFolderConfig = async (
   }
 
   if (provider === 'gemini') {
-    const suggestion = await generateFolderConfigViaGemini(prompt, history, reference)
+    const suggestion = await generateFolderConfigViaGemini(
+      prompt,
+      history,
+      reference,
+    )
     return normalizeSuggestion(suggestion, 'gemini')
   }
 

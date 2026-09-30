@@ -71,22 +71,6 @@ const OPTION_LABEL_CLASS = 'truncate transition-colors'
 const MENU_LABEL_CLASS =
   'mb-0.5 flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-13 font-semibold text-gray-12 transition-colors hover:bg-gray-2'
 
-function CompactRadioIndicator({ checked }: { checked?: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
-        checked
-          ? 'border-primary-9 bg-primary-9'
-          : 'border-gray-5 bg-transparent',
-      )}
-    >
-      {checked ? <span className='size-1 rounded-full bg-white' /> : null}
-    </span>
-  )
-}
-
 export default function ApColumnMapping({
   activeMappingTab,
   fieldDataTypes = {},
@@ -472,24 +456,24 @@ export default function ApColumnMapping({
                         {hasMapping ? (
                           <>
                             <Tooltip
+                              position='top'
                               content={
                                 FIELD_KIND_ICONS[selectedFieldKind!].label
                               }
-                              position='top'
                             >
                               <span
                                 className='inline-flex shrink-0'
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <Icon
-                                  name={
-                                    FIELD_KIND_ICONS[selectedFieldKind!].icon
-                                  }
                                   className={cn(
                                     'size-2.5',
                                     FIELD_KIND_ICONS[selectedFieldKind!]
                                       .className,
                                   )}
+                                  name={
+                                    FIELD_KIND_ICONS[selectedFieldKind!].icon
+                                  }
                                 />
                               </span>
                             </Tooltip>
@@ -574,13 +558,13 @@ export default function ApColumnMapping({
                               >
                                 <CompactRadioIndicator checked={isSelected} />
                                 <Icon
+                                  name={type.icon}
                                   className={cn(
                                     'size-3.5 shrink-0 transition-colors',
                                     isSelected
                                       ? 'text-primary-9'
                                       : 'text-gray-10 group-hover:text-gray-11',
                                   )}
-                                  name={type.icon}
                                 />
                                 <span className={OPTION_LABEL_CLASS}>
                                   {type.name}
@@ -630,11 +614,11 @@ export default function ApColumnMapping({
                             }}
                           >
                             <Icon
+                              name={FIELD_KIND_ICONS.predefined.icon}
                               className={cn(
                                 'size-3.5 shrink-0',
                                 FIELD_KIND_ICONS.predefined.className,
                               )}
-                              name={FIELD_KIND_ICONS.predefined.icon}
                             />
                             <span className='min-w-0 flex-1 truncate text-left'>
                               Master Fields
@@ -693,11 +677,11 @@ export default function ApColumnMapping({
                                 }}
                               >
                                 <Icon
+                                  name={FIELD_KIND_ICONS.custom.icon}
                                   className={cn(
                                     'size-3.5 shrink-0',
                                     FIELD_KIND_ICONS.custom.className,
                                   )}
-                                  name={FIELD_KIND_ICONS.custom.icon}
                                 />
                                 <span className='min-w-0 flex-1 truncate text-left'>
                                   Custom Fields
@@ -750,11 +734,11 @@ export default function ApColumnMapping({
                                   })}
                                   {showAddCustomField && (
                                     <button
+                                      type='button'
                                       className={cn(
                                         OPTION_ITEM_CLASS,
                                         OPTION_ITEM_IDLE_CLASS,
                                       )}
-                                      type='button'
                                       onClick={() =>
                                         handleCreateCustomField(
                                           excelCol,
@@ -781,11 +765,11 @@ export default function ApColumnMapping({
                         {/* Skip field */}
                         <div className='my-1.5 border-t border-gray-3' />
                         <button
+                          type='button'
                           className={cn(
                             OPTION_ITEM_CLASS,
                             'text-red-11 hover:bg-gray-2 hover:text-red-12',
                           )}
-                          type='button'
                           onClick={() => handleSelectField(excelCol, null)}
                         >
                           <Icon
@@ -808,7 +792,10 @@ export default function ApColumnMapping({
         {/* Status footer */}
         <div className='mt-2 flex flex-wrap items-center justify-end gap-3 border-t border-border-default pt-3 text-11 font-normal text-gray-11 select-none'>
           <span className='flex items-center gap-1.5'>
-            <Icon className='size-3.5 text-green-11' name='tabler:shield-check' />
+            <Icon
+              className='size-3.5 text-green-11'
+              name='tabler:shield-check'
+            />
             <span>Form datatypes automatically saved</span>
           </span>
         </div>
@@ -827,6 +814,22 @@ function applyNormalizedMapping(
     fieldDataTypes,
     templateSchema,
     DEFAULT_FIELD_TYPES,
+  )
+}
+
+function CompactRadioIndicator({ checked }: { checked?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+        checked
+          ? 'border-primary-9 bg-primary-9'
+          : 'border-gray-5 bg-transparent',
+      )}
+    >
+      {checked ? <span className='size-1 rounded-full bg-white' /> : null}
+    </span>
   )
 }
 

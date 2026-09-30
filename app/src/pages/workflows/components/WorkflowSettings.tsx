@@ -31,13 +31,13 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
-import SettingsSection from './settings/common/SettingsSection'
-import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
-import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
 import {
   normalizeInitiateUsing,
   validateWorkflowSettings,
 } from '../utils/validateWorkflowSettings'
+import SettingsSection from './settings/common/SettingsSection'
+import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
+import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
 
 type PreviewField = {
   key: string
@@ -65,9 +65,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     kanbanSettings,
     prefixSegments,
     previewValues,
-    requestTitleField,
     requestTabs,
-    settingsValidationErrors,
+    requestTitleField,
     workflowDescription,
     workflowName,
     workflowStatus,
@@ -77,9 +76,10 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setKanbanSettings,
     setPrefixSegments,
     setPreviewValues,
-    setRequestTitleField,
     setRequestTabs,
+    setRequestTitleField,
     setSettingsValidationErrors,
+    settingsValidationErrors,
     setWorkflowDescription,
     setWorkflowName,
     setWorkflowStatus,
@@ -87,7 +87,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
   const currentInitiateType = normalizeInitiateUsing(initiateUsing)
   const isFolderRequired =
-    currentInitiateType === 'DOCUMENT' || currentInitiateType === 'DOCUMENT_FORM'
+    currentInitiateType === 'DOCUMENT' ||
+    currentInitiateType === 'DOCUMENT_FORM'
   const isFormRequired =
     currentInitiateType === 'FORM' || currentInitiateType === 'DOCUMENT_FORM'
 
@@ -199,8 +200,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   )
 
   const titleFieldOptions: Option[] = useMemo(
-    () =>
-      previewFields.map((field) => ({ id: field.key, name: field.label })),
+    () => previewFields.map((field) => ({ id: field.key, name: field.label })),
     [previewFields],
   )
 
@@ -311,11 +311,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
         >
           {/* Name */}
           <Input
+            error={settingsValidationErrors?.name}
             label='Name'
             value={workflowName}
             clearable
             required
-            error={settingsValidationErrors?.name}
             onChange={(val) => {
               setWorkflowName(val)
               if (settingsValidationErrors?.name) {
@@ -413,11 +413,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
           {/* Folder */}
           <InputSelect
+            error={settingsValidationErrors?.folder}
             label='Folder'
             options={folderOptions}
             placeholder='Select'
             required={isFolderRequired}
-            error={settingsValidationErrors?.folder}
             value={
               folder
                 ? {
@@ -441,11 +441,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
           {/* Form */}
           <InputSelect
+            error={settingsValidationErrors?.form}
             label='Form'
             options={workflowForms}
             placeholder='Select'
             required={isFormRequired}
-            error={settingsValidationErrors?.form}
             value={
               form
                 ? {
@@ -490,6 +490,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Request Title'
             options={titleFieldOptions}
             placeholder='Select field for request title...'
+            clearable
+            searchable
             value={
               requestTitleField
                 ? {
@@ -500,8 +502,6 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   }
                 : null
             }
-            clearable
-            searchable
             onChange={(val: any) => setRequestTitleField(val?.id || null)}
           />
         </SettingsSection>
@@ -733,11 +733,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
         <Button
           onClick={() => {
             const validation = validateWorkflowSettings({
-              workflowName,
-              initiateUsing,
               folder,
               form,
+              initiateUsing,
               status: workflowStatus,
+              workflowName,
             })
             if (!validation.isValid) {
               setSettingsValidationErrors(validation.errors)

@@ -6,7 +6,11 @@ type Props = {
   title: string
 }
 
-export default function DashboardHtmlPreview({ className, html, title }: Props) {
+export default function DashboardHtmlPreview({
+  className,
+  html,
+  title,
+}: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -20,13 +24,13 @@ export default function DashboardHtmlPreview({ className, html, title }: Props) 
 
   return (
     <div
-      ref={hostRef}
       aria-label={title}
+      ref={hostRef}
+      role='region'
       className={
         className ||
         'min-h-[640px] w-full overflow-auto rounded-[16px] border border-border-default bg-white p-3'
       }
-      role='region'
     />
   )
 }

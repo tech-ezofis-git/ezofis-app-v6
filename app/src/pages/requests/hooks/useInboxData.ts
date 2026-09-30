@@ -662,15 +662,6 @@ export const useInboxData = (
     ],
     retry: 1,
     staleTime: 10000,
-    refetchInterval: (query: any) => {
-      // Prefer selected/observer data; fall back to raw cache payload.
-      const selected = query.state?.data
-      const raw = query.state?.data?.data ?? query.state?.data
-      const hasLoading =
-        ticketListHasLoading(selected) || ticketListHasLoading(raw)
-      return hasLoading ? 15_000 : false
-    },
-
     queryFn: async () => {
       const workflowId = selectedWorkflow?.id
       if (!workflowId || workflowId === 'procurement') {
@@ -706,6 +697,15 @@ export const useInboxData = (
         console.error(error)
         return { data: [], meta: { totalItems: 0 } }
       }
+    },
+
+    refetchInterval: (query: any) => {
+      // Prefer selected/observer data; fall back to raw cache payload.
+      const selected = query.state?.data
+      const raw = query.state?.data?.data ?? query.state?.data
+      const hasLoading =
+        ticketListHasLoading(selected) || ticketListHasLoading(raw)
+      return hasLoading ? 15_000 : false
     },
 
     select: (payload: any) => {

@@ -1,26 +1,26 @@
 import { useLingui } from '@lingui/react/macro'
 import { type DocumentLoadEvent, Viewer, Worker } from '@react-pdf-viewer/core'
 import {
-  searchPlugin,
   type HighlightArea,
   type RenderHighlightsProps,
+  searchPlugin,
 } from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import Icon from '@/components/base/icon/Icon'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
-import cn from '@/utils/cn'
+import CollaboraPreviewViewer from '@/pages/folders/components/CollaboraPreviewViewer'
+import {
+  getFileExtension,
+  resolveDocumentPreviewKind,
+} from '@/pages/folders/utils/documentDetailsUtils'
 import {
   buildFieldSearchKeywords,
   getFieldDisplayValue,
   getFieldSearchVariantStrings,
 } from '@/pages/folders/utils/fieldPdfSearch'
-import {
-  getFileExtension,
-  resolveDocumentPreviewKind,
-} from '@/pages/folders/utils/documentDetailsUtils'
-import CollaboraPreviewViewer from '@/pages/folders/components/CollaboraPreviewViewer'
+import cn from '@/utils/cn'
 import EmlPreview from './EmlPreview'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
@@ -131,19 +131,19 @@ type DocumentPreviewViewerProps = {
   isImage?: boolean
   isLoading?: boolean
   isPdf?: boolean
-  onProbeComplete?: (matchedValues: string[]) => void
-  probeTerms?: string[]
-  showScanOverlay?: boolean
+  isSigningMode?: boolean
   // Signature & edit permission props for Collabora / Office document signing
   permission?: 'edit' | 'readonly'
-  isSigningMode?: boolean
-  signRequestId?: string
   permissions?: any
+  probeTerms?: string[]
   restrictToFields?: boolean
+  showScanOverlay?: boolean
   signatureFields?: any[]
-  signerName?: string
   signerEmail?: string
+  signerName?: string
+  signRequestId?: string
   onCompleteSigning?: (placements: any[]) => Promise<void>
+  onProbeComplete?: (matchedValues: string[]) => void
 }
 
 type PdfViewerProps = {
@@ -153,8 +153,8 @@ type PdfViewerProps = {
   focusRequestId?: number
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
-  onProbeComplete?: (matchedValues: string[]) => void
   probeTerms?: string[]
+  onProbeComplete?: (matchedValues: string[]) => void
 }
 
 const hexToRgba = (color: string, alpha: number) => {
@@ -252,7 +252,7 @@ const scrollElementIntoView = (element: HTMLElement) => {
       parentRect.top -
       parentRect.height / 2 +
       elementRect.height / 2
-    scrollParent.scrollBy({ top: offset, behavior: 'smooth' })
+    scrollParent.scrollBy({ behavior: 'smooth', top: offset })
     return
   }
 
@@ -340,47 +340,6 @@ const applyHighlightStyles = (
   element.style.boxShadow = 'none'
 }
 
-function ZoomToolbar({
-  scale,
-  onZoom,
-}: {
-  scale: number
-  onZoom: (nextScale: number) => void
-}) {
-  const { t } = useLingui()
-  const zoomBy = (direction: -1 | 1) => {
-    const step = scale <= 1 ? 0.05 : 0.1
-    const next = Number((scale + direction * step).toFixed(2))
-    onZoom(Math.min(MAX_USER_ZOOM, Math.max(MIN_USER_ZOOM, next)))
-  }
-
-  return (
-    <div className='animate-in fade-in slide-in-from-bottom-2 absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 shadow-2xl backdrop-blur-sm duration-300'>
-      <button
-        aria-label={t`Zoom out`}
-        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={scale <= MIN_USER_ZOOM}
-        type='button'
-        onClick={() => zoomBy(-1)}
-      >
-        <Icon className='size-5' name='lucide:zoom-out' />
-      </button>
-      <span className='min-w-[40px] text-center text-[12px] font-semibold text-[var(--gray-13)]'>
-        {Math.round(scale * 100)}%
-      </span>
-      <button
-        aria-label={t`Zoom in`}
-        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={scale >= MAX_USER_ZOOM}
-        type='button'
-        onClick={() => zoomBy(1)}
-      >
-        <Icon className='size-5' name='lucide:zoom-in' />
-      </button>
-    </div>
-  )
-}
-
 export default function DocumentPreviewViewer({
   activeHighlightColor,
   activeHighlightTerm,
@@ -395,18 +354,18 @@ export default function DocumentPreviewViewer({
   isImage = false,
   isLoading = false,
   isPdf = false,
-  onProbeComplete,
-  probeTerms = [],
-  showScanOverlay = false,
-  permission = 'readonly',
   isSigningMode = false,
-  signRequestId,
+  permission = 'readonly',
   permissions,
+  probeTerms = [],
   restrictToFields = false,
+  showScanOverlay = false,
   signatureFields = [],
-  signerName,
   signerEmail,
+  signerName,
+  signRequestId,
   onCompleteSigning,
+  onProbeComplete,
 }: DocumentPreviewViewerProps) {
   const mode = resolveViewerMode({
     fileName,
@@ -429,15 +388,15 @@ export default function DocumentPreviewViewer({
         fileBlob={fileBlob}
         fileName={fileName}
         fileUrl={fileUrl}
-        permission={permission}
         isSigningMode={isSigningMode}
-        onCompleteSigning={onCompleteSigning}
+        permission={permission}
         permissions={permissions}
         restrictToFields={restrictToFields}
-        signRequestId={signRequestId}
         signatureFields={signatureFields}
         signerEmail={signerEmail}
         signerName={signerName}
+        signRequestId={signRequestId}
+        onCompleteSigning={onCompleteSigning}
       />
     )
   } else if (mode === 'pdf') {
@@ -458,8 +417,8 @@ export default function DocumentPreviewViewer({
           highlightColors={enableHighlight ? highlightColors : {}}
           highlightTerms={enableHighlight ? highlightTerms : []}
           key={fileUrl}
-          onProbeComplete={onProbeComplete}
           probeTerms={probeTerms}
+          onProbeComplete={onProbeComplete}
         />
       )
     }
@@ -467,8 +426,8 @@ export default function DocumentPreviewViewer({
     content = (
       <UnsupportedPreview
         fileName={fileName}
-        message='TIFF preview is not supported in the browser'
         hint='Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.'
+        message='TIFF preview is not supported in the browser'
       />
     )
   } else if (mode === 'image' && fileUrl) {
@@ -488,8 +447,8 @@ export default function DocumentPreviewViewer({
       <UnsupportedPreview
         fileName={fileName}
         fileUrl={fileUrl}
-        message='Preview not available'
         hint='This file type cannot be previewed here. Open or download it instead.'
+        message='Preview not available'
       />
     )
   }
@@ -508,42 +467,6 @@ export default function DocumentPreviewViewer({
             style={{ animationDuration: '8s' }}
           />
         </div>
-      ) : null}
-    </div>
-  )
-}
-
-function UnsupportedPreview({
-  fileName,
-  fileUrl,
-  hint,
-  message,
-}: {
-  fileName?: string
-  fileUrl?: string | null
-  hint?: string
-  message: string
-}) {
-  return (
-    <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
-      <FileText className='text-[var(--primary-9)]' size={40} />
-      <p className='text-sm font-semibold text-[var(--gray-13)]'>{message}</p>
-      {fileName ? (
-        <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
-      ) : null}
-      {hint ? (
-        <p className='max-w-sm text-xs text-[var(--gray-10)]'>{hint}</p>
-      ) : null}
-      {fileUrl ? (
-        <a
-          className='mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-1.5 text-xs font-semibold text-[var(--primary-9)] transition hover:bg-[var(--primary-1)]'
-          href={fileUrl}
-          rel='noreferrer'
-          target='_blank'
-        >
-          <Icon className='size-3.5' name='lucide:external-link' />
-          Open file
-        </a>
       ) : null}
     </div>
   )
@@ -646,13 +569,13 @@ function SpreadsheetPreview({
         <div className='flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--gray-3)] bg-surface px-3 py-2'>
           {sheetNames.map((name) => (
             <button
+              key={name}
+              type='button'
               className={`rounded-md px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition ${
                 name === activeSheet
                   ? 'bg-[var(--primary-9)] text-white'
                   : 'bg-[var(--gray-2)] text-[var(--gray-11)] hover:bg-[var(--gray-3)]'
               }`}
-              key={name}
-              type='button'
               onClick={() => setActiveSheet(name)}
             >
               {name}
@@ -670,12 +593,12 @@ function SpreadsheetPreview({
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr
+                  key={`row-${rowIndex}`}
                   className={
                     rowIndex === 0
                       ? 'bg-[var(--gray-2)] font-semibold text-[var(--gray-13)]'
                       : 'text-[var(--gray-12)]'
                   }
-                  key={`row-${rowIndex}`}
                 >
                   {Array.from({ length: colCount }, (_, colIndex) => (
                     <td
@@ -696,6 +619,42 @@ function SpreadsheetPreview({
         Showing first {rows.length} row{rows.length === 1 ? '' : 's'}
         {fileName ? ` · ${fileName}` : ''}
       </div>
+    </div>
+  )
+}
+
+function UnsupportedPreview({
+  fileName,
+  fileUrl,
+  hint,
+  message,
+}: {
+  fileName?: string
+  fileUrl?: string | null
+  hint?: string
+  message: string
+}) {
+  return (
+    <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+      <FileText className='text-[var(--primary-9)]' size={40} />
+      <p className='text-sm font-semibold text-[var(--gray-13)]'>{message}</p>
+      {fileName ? (
+        <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+      ) : null}
+      {hint ? (
+        <p className='max-w-sm text-xs text-[var(--gray-10)]'>{hint}</p>
+      ) : null}
+      {fileUrl ? (
+        <a
+          className='mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-1.5 text-xs font-semibold text-[var(--primary-9)] transition hover:bg-[var(--primary-1)]'
+          href={fileUrl}
+          rel='noreferrer'
+          target='_blank'
+        >
+          <Icon className='size-3.5' name='lucide:external-link' />
+          Open file
+        </a>
+      ) : null}
     </div>
   )
 }
@@ -726,6 +685,81 @@ function WordPreview({
       hint='Legacy Word (.doc) and some Office formats cannot be rendered in the browser. Open the file instead.'
       message='Preview not available'
     />
+  )
+}
+
+function ZoomToolbar({
+  currentPage,
+  scale,
+  totalPages,
+  onPageChange,
+  onZoom,
+}: {
+  currentPage?: number
+  scale: number
+  totalPages?: number
+  onPageChange?: (pageIndex: number) => void
+  onZoom: (nextScale: number) => void
+}) {
+  const { t } = useLingui()
+  const zoomBy = (direction: -1 | 1) => {
+    const step = scale <= 1 ? 0.05 : 0.1
+    const next = Number((scale + direction * step).toFixed(2))
+    onZoom(Math.min(MAX_USER_ZOOM, Math.max(MIN_USER_ZOOM, next)))
+  }
+
+  return (
+    <div className='animate-in fade-in slide-in-from-bottom-2 absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 shadow-2xl backdrop-blur-sm duration-300'>
+      {typeof currentPage === 'number' &&
+        typeof totalPages === 'number' &&
+        totalPages > 0 && (
+          <>
+            <button
+              aria-label={t`Previous page`}
+              className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+              disabled={currentPage <= 0}
+              type='button'
+              onClick={() => onPageChange?.(currentPage - 1)}
+            >
+              <Icon className='size-5' name='lucide:chevron-up' />
+            </button>
+            <span className='min-w-[40px] text-center text-[12px] font-semibold text-[var(--gray-13)]'>
+              {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              aria-label={t`Next page`}
+              className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+              disabled={currentPage >= totalPages - 1}
+              type='button'
+              onClick={() => onPageChange?.(currentPage + 1)}
+            >
+              <Icon className='size-5' name='lucide:chevron-down' />
+            </button>
+            <div className='h-4 w-px bg-[var(--gray-4)]' />
+          </>
+        )}
+      <button
+        aria-label={t`Zoom out`}
+        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+        disabled={scale <= MIN_USER_ZOOM}
+        type='button'
+        onClick={() => zoomBy(-1)}
+      >
+        <Icon className='size-5' name='lucide:zoom-out' />
+      </button>
+      <span className='min-w-[40px] text-center text-[12px] font-semibold text-[var(--gray-13)]'>
+        {Math.round(scale * 100)}%
+      </span>
+      <button
+        aria-label={t`Zoom in`}
+        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+        disabled={scale >= MAX_USER_ZOOM}
+        type='button'
+        onClick={() => zoomBy(1)}
+      >
+        <Icon className='size-5' name='lucide:zoom-in' />
+      </button>
+    </div>
   )
 }
 
@@ -840,7 +874,7 @@ function DocxRenderedPreview({
           <SkeletonDocumentPreview />
         </div>
       )}
-      <div ref={styleRef} className='hidden' />
+      <div className='hidden' ref={styleRef} />
       {/* Scroll only this pane so the zoom toolbar stays pinned. */}
       <div className='h-full overflow-auto'>
         <div
@@ -850,8 +884,8 @@ function DocxRenderedPreview({
           )}
         >
           <div
-            ref={containerRef}
             className='ez-docx-preview origin-top transition-transform duration-200'
+            ref={containerRef}
             style={{ transform: `scale(${scale})` }}
           />
         </div>
@@ -881,6 +915,26 @@ function DocxRenderedPreview({
           padding: 4px 8px;
         }
       `}</style>
+    </div>
+  )
+}
+
+function OfficeOnlinePreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
+
+  return (
+    <div className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'>
+      <iframe
+        className='h-full w-full border-0'
+        src={embedUrl}
+        title={fileName || 'Office document preview'}
+      />
     </div>
   )
 }
@@ -943,26 +997,6 @@ function TextFilePreview({
   )
 }
 
-function OfficeOnlinePreview({
-  fileName,
-  fileUrl,
-}: {
-  fileName?: string
-  fileUrl: string
-}) {
-  const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
-
-  return (
-    <div className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'>
-      <iframe
-        className='h-full w-full border-0'
-        src={embedUrl}
-        title={fileName || 'Office document preview'}
-      />
-    </div>
-  )
-}
-
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, '&amp;')
@@ -979,14 +1013,6 @@ const decodeXmlEntities = (value: string) =>
     .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
-
-async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
-  const copy = Uint8Array.from(payload)
-  const stream = new Blob([copy])
-    .stream()
-    .pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
-}
 
 /**
  * Read `word/document.xml` from a .docx (ZIP) using the central directory.
@@ -1210,6 +1236,14 @@ function ImagePreview({
   )
 }
 
+async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
+  const copy = Uint8Array.from(payload)
+  const stream = new Blob([copy])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate-raw'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
 function PdfViewer({
   activeHighlightColor,
   activeHighlightTerm,
@@ -1217,8 +1251,8 @@ function PdfViewer({
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
-  onProbeComplete,
   probeTerms = [],
+  onProbeComplete,
 }: PdfViewerProps) {
   const colorsRef = useRef(highlightColors)
   colorsRef.current = highlightColors
@@ -1256,6 +1290,7 @@ function PdfViewer({
                 data-highlight-text={source}
                 data-index={index}
                 key={`${area.pageIndex}-${index}-${area.left.toFixed(2)}-${area.top.toFixed(2)}`}
+                title={source}
                 ref={(element) => {
                   if (!element) return
                   applyHighlightStyles(element, color, isActive)
@@ -1271,7 +1306,6 @@ function PdfViewer({
                   ...props.getCssProperties(area),
                   position: 'absolute',
                 }}
-                title={source}
               />
             )
           })}
@@ -1295,12 +1329,20 @@ function PdfViewer({
   const [renderAttempt, setRenderAttempt] = useState(0)
   const [pageScale, setPageScale] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const blankRetryUsedRef = useRef(false)
-  const viewerRef = useRef<{ zoom?: (nextScale: number) => void } | null>(null)
+  const viewerRef = useRef<{
+    jumpToPage?: (pageIndex: number) => void
+    zoom?: (nextScale: number) => void
+  } | null>(null)
 
   const zoomPluginInstance = useMemo(
     () => ({
-      install: (pluginFunctions: { zoom?: (nextScale: number) => void }) => {
+      install: (pluginFunctions: {
+        jumpToPage?: (pageIndex: number) => void
+        zoom?: (nextScale: number) => void
+      }) => {
         viewerRef.current = pluginFunctions
       },
       onViewerStateChange: (viewerState: any) => {
@@ -1310,6 +1352,9 @@ function PdfViewer({
               ? previous
               : viewerState.scale || previous,
           )
+        }
+        if (viewerState?.pageIndex !== undefined) {
+          setCurrentPage(viewerState.pageIndex)
         }
         return viewerState
       },
@@ -1329,8 +1374,16 @@ function PdfViewer({
     viewerRef.current?.zoom?.(boundedScale)
   }
 
+  const handlePageChange = (pageIndex: number) => {
+    if (pageIndex >= 0 && pageIndex < totalPages) {
+      setCurrentPage(pageIndex)
+      viewerRef.current?.jumpToPage?.(pageIndex)
+    }
+  }
+
   const handleDocumentLoad = (event: DocumentLoadEvent) => {
     setLoadError(null)
+    setTotalPages(event.doc.numPages)
 
     if (pageScale !== null) {
       setDocumentReady(true)
@@ -1403,6 +1456,8 @@ function PdfViewer({
     highlightElementsRef.current = new Map()
     probeRunIdRef.current += 1
     setScale(1)
+    setCurrentPage(0)
+    setTotalPages(0)
     viewerRef.current = null
   }, [fileUrl, renderAttempt])
 
@@ -1744,7 +1799,13 @@ function PdfViewer({
       </div>
 
       {documentReady && !loadError ? (
-        <ZoomToolbar scale={scale} onZoom={zoomTo} />
+        <ZoomToolbar
+          currentPage={currentPage}
+          scale={scale}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          onZoom={zoomTo}
+        />
       ) : null}
     </div>
   )

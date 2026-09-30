@@ -145,9 +145,9 @@ export interface V6WorkflowDetail {
   formJson?: any
   id?: string
   name?: string
+  steps?: any[]
   wFormId?: string | number
   workflowJson?: any
-  steps?: any[]
   settings?: {
     general?: {
       initiateUsing?: { formId?: string | number }
@@ -259,12 +259,12 @@ export interface StartWorkflowJsonPayload {
   envType?: string
   formData?: Record<string, any>
   stagedFiles?: {
-    fileId: string
-    repositoryId: string
     fieldId?: string
     fieldName?: string
+    fileId: string
     fileName?: string
     jsonId?: string
+    repositoryId: string
   }[]
 }
 

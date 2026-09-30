@@ -21,8 +21,8 @@ export type AiBrandIconVariant =
   | 'curved-black'
 
 interface AiBrandIconProps {
-  className?: string
   alt?: string
+  className?: string
   style?: CSSProperties
   variant?: AiBrandIconVariant
 }
@@ -35,8 +35,8 @@ const OUTLINE_PATH_D =
   'M12 0C12 6.6 6.6 12 0 12C6.6 12 12 17.4 12 24C12 17.4 17.4 12 24 12C17.4 12 12 6.6 12 0Z'
 
 export default function AiBrandIcon({
-  className,
   alt = 'AI Brand',
+  className,
   style,
   variant = 'outline-purple',
 }: AiBrandIconProps) {
@@ -48,8 +48,8 @@ export default function AiBrandIcon({
       <img
         alt={alt}
         className={cn('object-contain', className)}
-        style={style}
         src={iconSrc}
+        style={style}
       />
     )
   }

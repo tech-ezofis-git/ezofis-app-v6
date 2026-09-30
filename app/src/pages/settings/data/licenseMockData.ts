@@ -1,5 +1,28 @@
 import type { LicenseSummaryResponse } from '@/api/v6/license'
 
+export type FileResourceItem = {
+  id: string
+  name: string
+  size: string
+  type: string
+  updatedAtLabel: string
+  uploadedBy: string
+}
+
+export type FolderResourceItem = {
+  createdBy: string
+  id: string
+  level: string
+  name: string
+  updatedAtLabel: string
+}
+
+export type LicenseResourceCategory =
+  | 'users'
+  | 'workflows'
+  | 'folders'
+  | 'files'
+
 export type MigrationOptionDef = {
   badgeLabel: string
   badgeTone: 'safe' | 'warn' | 'danger'
@@ -21,8 +44,6 @@ export type RecentTrialResourceDef = {
   updatedAtLabel: string
 }
 
-export type LicenseResourceCategory = 'users' | 'workflows' | 'folders' | 'files'
-
 export type UserResourceItem = {
   email: string
   group: string
@@ -39,23 +60,6 @@ export type WorkflowResourceItem = {
   status: 'Draft' | 'Published'
   title: string
   updatedAtLabel: string
-}
-
-export type FolderResourceItem = {
-  createdBy: string
-  id: string
-  level: string
-  name: string
-  updatedAtLabel: string
-}
-
-export type FileResourceItem = {
-  id: string
-  name: string
-  size: string
-  type: string
-  updatedAtLabel: string
-  uploadedBy: string
 }
 
 export const mockUsersList: UserResourceItem[] = [

@@ -1,7 +1,7 @@
+import type { TreeNode } from '@/pages/folders/types/folderTypes'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import { getFolderContextFilters } from '@/pages/folders/api/folderApi'
 import { getFolderExplorerSearchSnapshot } from '@/pages/folders/stores/folderExplorerSearchCache'
-import type { TreeNode } from '@/pages/folders/types/folderTypes'
 import {
   getFileId,
   getRepositoryIdFromFolder,
@@ -120,17 +120,17 @@ const humanizeField = (key: string) =>
 /** Known AP form control jsonIds → UI labels (when workflow formJson is cold). */
 const KNOWN_FORM_FIELD_LABELS: Record<string, string> = {
   '9F6tPVHoRnmONGx3kYJu2': 'Invoice Date',
-  BsPnOsYv6F1fbzWsTpXCW: 'Payment Terms',
-  RXwLGHILLrreMmRqlk9mj: 'PO Number',
-  WksH1Mrs42X4J9AHgoBtw: 'Invoice Amount',
-  kvcYuknkDumkTenjvrVLj: 'Invoice No',
-  suyqsm0SYii_8vsj4p0c_: 'Invoice Amount',
-  'UtfgJy6Z0qyfRC5Bclf-c': 'Supplier Name',
-  UtfgJy6Z0qyfRC5Bclf_c: 'Supplier Name',
   '792IWMnNXLKyfXjCGcowU': 'Due Date',
-  kjQFGFMRYBzLnAz9Yrx_c: 'Due Date',
-  'vxnKCXsXkz8_acPogKe': 'Payment Terms',
+  'BsPnOsYv6F1fbzWsTpXCW': 'Payment Terms',
+  'kjQFGFMRYBzLnAz9Yrx_c': 'Due Date',
+  'kvcYuknkDumkTenjvrVLj': 'Invoice No',
+  'RXwLGHILLrreMmRqlk9mj': 'PO Number',
+  'suyqsm0SYii_8vsj4p0c_': 'Invoice Amount',
+  'UtfgJy6Z0qyfRC5Bclf-c': 'Supplier Name',
+  'UtfgJy6Z0qyfRC5Bclf_c': 'Supplier Name',
   'vxnKCXs-Xkz8_acPog-Ke': 'Payment Terms',
+  'vxnKCXsXkz8_acPogKe': 'Payment Terms',
+  'WksH1Mrs42X4J9AHgoBtw': 'Invoice Amount',
 }
 
 const looksLikeJsonId = (key: string) => {
@@ -139,24 +139,13 @@ const looksLikeJsonId = (key: string) => {
     return false
   }
   // Nanoid-like control ids (e.g. kvcYuknkDumkTenjvrVLj) — not human labels.
-  return /^[A-Za-z0-9_-]+$/.test(text) && /[A-Z]/.test(text) && /[a-z]/.test(text)
+  return (
+    /^[A-Za-z0-9_-]+$/.test(text) && /[A-Z]/.test(text) && /[a-z]/.test(text)
+  )
 }
 
 let cachedFieldMetaMap: Map<string, string> | null = null
 let cachedFieldMetaWorkflowId: string | null = null
-
-function parseWorkflowFormJson(raw: unknown): Record<string, any> | null {
-  if (!raw) return null
-  if (typeof raw === 'object') return raw as Record<string, any>
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as Record<string, any>
-    } catch {
-      return null
-    }
-  }
-  return null
-}
 
 function getRequestFieldLabelMap() {
   const state = requestStore.getState()
@@ -203,11 +192,7 @@ function getRequestFieldLabelMap() {
       }
       if (!entry || typeof entry !== 'object') continue
       const panel = entry as Record<string, unknown>
-      ;[
-        panel.controlList,
-        panel.controllist,
-        panel.fields,
-      ].forEach((list) => {
+      ;[panel.controlList, panel.controllist, panel.fields].forEach((list) => {
         if (Array.isArray(list)) list.forEach(addControl)
       })
     }
@@ -216,30 +201,6 @@ function getRequestFieldLabelMap() {
   cachedFieldMetaMap = map
   cachedFieldMetaWorkflowId = workflowId
   return map
-}
-
-function resolveDisplayFieldLabel(key: string): string {
-  const raw = String(key || '').trim()
-  if (!raw) return raw
-
-  const known =
-    KNOWN_FORM_FIELD_LABELS[raw] ||
-    KNOWN_FORM_FIELD_LABELS[raw.replace(/-/g, '_')] ||
-    KNOWN_FORM_FIELD_LABELS[raw.replace(/_/g, '-')]
-  if (known) return known === 'Invoice Number' ? 'Invoice No' : known
-
-  const schemaMap = getRequestFieldLabelMap()
-  const fromSchema =
-    schemaMap.get(raw) ||
-    schemaMap.get(raw.toLowerCase()) ||
-    ''
-  if (fromSchema && !looksLikeJsonId(fromSchema)) {
-    return fromSchema === 'Invoice Number' ? 'Invoice No' : fromSchema
-  }
-
-  // Never show camel-split gibberish for control ids.
-  if (looksLikeJsonId(raw)) return 'Value'
-  return humanizeField(raw)
 }
 
 /** Remap formData.fields from jsonId keys → proper labels like "Invoice No". */
@@ -254,6 +215,41 @@ function labelFormFieldRecord(
     if (out[label] == null) out[label] = value
   }
   return out
+}
+
+function parseWorkflowFormJson(raw: unknown): Record<string, any> | null {
+  if (!raw) return null
+  if (typeof raw === 'object') return raw as Record<string, any>
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw) as Record<string, any>
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+function resolveDisplayFieldLabel(key: string): string {
+  const raw = String(key || '').trim()
+  if (!raw) return raw
+
+  const known =
+    KNOWN_FORM_FIELD_LABELS[raw] ||
+    KNOWN_FORM_FIELD_LABELS[raw.replace(/-/g, '_')] ||
+    KNOWN_FORM_FIELD_LABELS[raw.replace(/_/g, '-')]
+  if (known) return known === 'Invoice Number' ? 'Invoice No' : known
+
+  const schemaMap = getRequestFieldLabelMap()
+  const fromSchema =
+    schemaMap.get(raw) || schemaMap.get(raw.toLowerCase()) || ''
+  if (fromSchema && !looksLikeJsonId(fromSchema)) {
+    return fromSchema === 'Invoice Number' ? 'Invoice No' : fromSchema
+  }
+
+  // Never show camel-split gibberish for control ids.
+  if (looksLikeJsonId(raw)) return 'Value'
+  return humanizeField(raw)
 }
 
 const queryNeedles = (query: string) =>
@@ -527,9 +523,7 @@ function harvestRepositories(query: string): GlobalSearchHit[] {
   }
 
   for (const folder of snap.folders || []) {
-    const title = String(
-      (folder as any).title || (folder as any).name || '',
-    )
+    const title = String((folder as any).title || (folder as any).name || '')
     const id = String((folder as any).id || '')
     if (!title && !id) continue
     if (!matchesQuery(`${title} ${id} ${contextText}`, query)) continue
@@ -571,6 +565,161 @@ const getPrimaryFileName = (file: Record<string, any>) => {
     file?.documentName
   if (direct != null && String(direct).trim()) return String(direct)
   return getFileId(file) || 'Document'
+}
+
+/**
+ * Unified local search used by the Global Search dropdown:
+ * Prefer live Folders/Forms/Requests/Workflows data, then API cache.
+ */
+export function searchAllLocalData(query: string): GlobalSearchHit[] {
+  const needle = String(query || '').trim()
+  if (!needle) return []
+
+  const appLocal = searchLocalAppData(needle)
+  const exactApi = getCachedHitsForQuery(needle) || []
+  const fuzzyApi = filterCachedGlobalSearchHits(needle)
+
+  return mergeSearchHits(appLocal, exactApi, fuzzyApi).map((hit) => {
+    const normalizeFound = (found?: GlobalSearchHit['found']) =>
+      (found || [])
+        .map((item) => ({
+          ...item,
+          field: resolveDisplayFieldLabel(
+            String(item.field || item.name || ''),
+          ),
+        }))
+        .filter((item) => item.field && item.field !== 'Value')
+
+    if (hit.found?.length) {
+      return {
+        ...hit,
+        found: normalizeFound(hit.found),
+        matchSource: hit.matchSource,
+        needles: hit.needles?.length ? hit.needles : queryNeedles(needle),
+      }
+    }
+    const enriched = withMatchHints(
+      hit,
+      needle,
+      [
+        hit as unknown as Record<string, unknown>,
+        hit.metadata,
+        hit.id as unknown as Record<string, unknown>,
+      ],
+      { field: 'Name', value: getSearchHitTitle(hit) },
+    )
+    return {
+      ...enriched,
+      found: normalizeFound(enriched.found),
+    }
+  })
+}
+
+/**
+ * Search already-loaded app data from React Query caches
+ * (folders, workflows, forms, requests) — not only Global Search API cache.
+ */
+export function searchLocalAppData(query: string): GlobalSearchHit[] {
+  const needle = String(query || '').trim()
+  if (!needle) return []
+
+  return mergeSearchHits(
+    harvestRepositories(needle),
+    harvestExplorerDocuments(needle),
+    harvestWorkflows(needle),
+    harvestForms(needle),
+    harvestRequests(needle),
+  )
+}
+
+function asFieldRecord(fields: unknown): Record<string, unknown> | undefined {
+  if (!fields) return undefined
+  if (Array.isArray(fields)) {
+    const out: Record<string, unknown> = {}
+    for (const item of fields) {
+      if (!item || typeof item !== 'object') continue
+      const row = item as Record<string, unknown>
+      const key = String(row.name || row.label || row.key || row.id || '')
+      if (!key) continue
+      out[key] = row.value ?? row.text ?? row.displayValue
+    }
+    return out
+  }
+  if (typeof fields === 'object') return fields as Record<string, unknown>
+  return undefined
+}
+
+/** Walk raw inbox API payloads (grouped `{ value: [] }` or flat items). */
+function collectInboxRows(data: unknown, out: any[] = []): any[] {
+  if (!data) return out
+  if (Array.isArray(data)) {
+    for (const item of data) collectInboxRows(item, out)
+    return out
+  }
+  if (typeof data !== 'object') return out
+  const row = data as Record<string, unknown>
+  if (row.workflowInstanceId || row.processId || (row.id && row.stageType)) {
+    out.push(row)
+  }
+  if (Array.isArray(row.value)) collectInboxRows(row.value, out)
+  if (Array.isArray(row.items)) collectInboxRows(row.items, out)
+  if (Array.isArray(row.data)) collectInboxRows(row.data, out)
+  else if (row.data && typeof row.data === 'object') {
+    collectInboxRows(row.data, out)
+  }
+  return out
+}
+
+function extractFormRows(data: unknown): any[] {
+  const rawList = findDeepFormList(data) || []
+  if (!rawList.length) return []
+
+  const first = rawList[0]
+  const isGrouped =
+    first &&
+    typeof first === 'object' &&
+    'key' in first &&
+    ('value' in first || 'data' in first)
+
+  if (isGrouped) {
+    return rawList.flatMap((group: any) => {
+      if (Array.isArray(group?.value)) return group.value
+      if (Array.isArray(group?.data)) return group.data
+      return []
+    })
+  }
+
+  return rawList
+}
+
+/** Deep walk like FormsPage.findDeepData — list API returns `{ data, error }`. */
+function findDeepFormList(obj: unknown): any[] | null {
+  if (Array.isArray(obj)) return obj
+  if (!obj || typeof obj !== 'object') return null
+  const record = obj as Record<string, unknown>
+  if (record.data) {
+    const nested = findDeepFormList(record.data)
+    if (nested) return nested
+  }
+  if (record.value) {
+    const nested = findDeepFormList(record.value)
+    if (nested) return nested
+  }
+  for (const key of Object.keys(record)) {
+    if (
+      key === 'data' ||
+      key === 'value' ||
+      key === 'error' ||
+      key === 'meta'
+    ) {
+      continue
+    }
+    if (typeof record[key] === 'object') {
+      const nested = findDeepFormList(record[key])
+      if (nested) return nested
+    }
+  }
+  return null
 }
 
 function harvestExplorerDocuments(query: string): GlobalSearchHit[] {
@@ -636,150 +785,6 @@ function harvestExplorerDocuments(query: string): GlobalSearchHit[] {
   return hits
 }
 
-function mergeUniqueFiles(
-  current: Array<Record<string, any>>,
-  recent: Array<Record<string, any>>,
-) {
-  const map = new Map<string, Record<string, any>>()
-  for (const file of [...recent, ...current]) {
-    const id = getFileId(file)
-    if (id) map.set(id, file)
-  }
-  return Array.from(map.values())
-}
-
-function harvestWorkflows(query: string): GlobalSearchHit[] {
-  const hits: GlobalSearchHit[] = []
-  const queries = queryClient.getQueriesData({ queryKey: ['workflows', 'all'] })
-
-  for (const [, data] of queries) {
-    const groups = Array.isArray((data as any)?.data)
-      ? ((data as any).data as Array<{ value?: any[] }>)
-      : []
-    const rows = groups.flatMap((group) =>
-      Array.isArray(group?.value) ? group.value : [],
-    )
-
-    for (const row of rows) {
-      const id = String(row?.id || '')
-      const name = String(row?.name || row?.title || 'Workflow')
-      const description = String(row?.description || '')
-      const status = String(row?.flowStatus || row?.status || '')
-      if (!id) continue
-      if (!matchesQuery(`${name} ${description} ${status} ${id}`, query)) continue
-
-      hits.push(
-        withSourceBadge(
-          {
-            description: description || status || 'Workflow',
-            entity_id: id,
-            entity_name: name,
-            entity_type: 'workflow',
-            id: {
-              workflowId: id,
-              workflowName: name,
-            },
-            name,
-            title: name,
-            type: 'workflow',
-          },
-          'workflow',
-        ),
-      )
-    }
-  }
-
-  // Single workflow detail caches.
-  for (const [key, data] of queryClient.getQueriesData({
-    queryKey: ['workflows'],
-  })) {
-    if (!Array.isArray(key) || key[1] === 'all' || !data) continue
-    const workflow = (data as any)?.data || data
-    const id = String(workflow?.id || key[1] || '')
-    const name = String(workflow?.name || workflow?.workflowName || 'Workflow')
-    if (!id || id === 'all') continue
-    if (!matchesQuery(`${name} ${id}`, query)) continue
-    hits.push(
-      withSourceBadge(
-        {
-          description: 'Workflow',
-          entity_id: id,
-          entity_name: name,
-          entity_type: 'workflow',
-          id: { workflowId: id, workflowName: name },
-          name,
-          title: name,
-          type: 'workflow',
-        },
-        'workflow',
-      ),
-    )
-  }
-
-  return hits
-}
-
-function parseFormJson(row: any): Record<string, any> | null {
-  const raw = row?._json ?? row?.formJson
-  if (!raw) return null
-  if (typeof raw === 'object') return raw as Record<string, any>
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as Record<string, any>
-    } catch {
-      return null
-    }
-  }
-  return null
-}
-
-/** Deep walk like FormsPage.findDeepData — list API returns `{ data, error }`. */
-function findDeepFormList(obj: unknown): any[] | null {
-  if (Array.isArray(obj)) return obj
-  if (!obj || typeof obj !== 'object') return null
-  const record = obj as Record<string, unknown>
-  if (record.data) {
-    const nested = findDeepFormList(record.data)
-    if (nested) return nested
-  }
-  if (record.value) {
-    const nested = findDeepFormList(record.value)
-    if (nested) return nested
-  }
-  for (const key of Object.keys(record)) {
-    if (key === 'data' || key === 'value' || key === 'error' || key === 'meta') {
-      continue
-    }
-    if (typeof record[key] === 'object') {
-      const nested = findDeepFormList(record[key])
-      if (nested) return nested
-    }
-  }
-  return null
-}
-
-function extractFormRows(data: unknown): any[] {
-  const rawList = findDeepFormList(data) || []
-  if (!rawList.length) return []
-
-  const first = rawList[0]
-  const isGrouped =
-    first &&
-    typeof first === 'object' &&
-    'key' in first &&
-    ('value' in first || 'data' in first)
-
-  if (isGrouped) {
-    return rawList.flatMap((group: any) => {
-      if (Array.isArray(group?.value)) return group.value
-      if (Array.isArray(group?.data)) return group.data
-      return []
-    })
-  }
-
-  return rawList
-}
-
 function harvestForms(query: string): GlobalSearchHit[] {
   const hits: GlobalSearchHit[] = []
   const seen = new Set<string>()
@@ -789,10 +794,7 @@ function harvestForms(query: string): GlobalSearchHit[] {
     if (!id || seen.has(id)) return
     const json = parseFormJson(row)
     const name = String(
-      json?.settings?.general?.name ||
-        row?.name ||
-        row?.formName ||
-        'Form',
+      json?.settings?.general?.name || row?.name || row?.formName || 'Form',
     )
     const typeLabel = String(
       row?.type ||
@@ -811,7 +813,10 @@ function harvestForms(query: string): GlobalSearchHit[] {
       row?.description || json?.settings?.general?.description || '',
     )
     if (
-      !matchesQuery(`${name} ${typeLabel} ${status} ${description} ${id}`, query)
+      !matchesQuery(
+        `${name} ${typeLabel} ${status} ${description} ${id}`,
+        query,
+      )
     ) {
       return
     }
@@ -938,46 +943,6 @@ function harvestForms(query: string): GlobalSearchHit[] {
   return hits
 }
 
-/** Walk raw inbox API payloads (grouped `{ value: [] }` or flat items). */
-function collectInboxRows(data: unknown, out: any[] = []): any[] {
-  if (!data) return out
-  if (Array.isArray(data)) {
-    for (const item of data) collectInboxRows(item, out)
-    return out
-  }
-  if (typeof data !== 'object') return out
-  const row = data as Record<string, unknown>
-  if (row.workflowInstanceId || row.processId || (row.id && row.stageType)) {
-    out.push(row)
-  }
-  if (Array.isArray(row.value)) collectInboxRows(row.value, out)
-  if (Array.isArray(row.items)) collectInboxRows(row.items, out)
-  if (Array.isArray(row.data)) collectInboxRows(row.data, out)
-  else if (row.data && typeof row.data === 'object') {
-    collectInboxRows(row.data, out)
-  }
-  return out
-}
-
-function asFieldRecord(
-  fields: unknown,
-): Record<string, unknown> | undefined {
-  if (!fields) return undefined
-  if (Array.isArray(fields)) {
-    const out: Record<string, unknown> = {}
-    for (const item of fields) {
-      if (!item || typeof item !== 'object') continue
-      const row = item as Record<string, unknown>
-      const key = String(row.name || row.label || row.key || row.id || '')
-      if (!key) continue
-      out[key] = row.value ?? row.text ?? row.displayValue
-    }
-    return out
-  }
-  if (typeof fields === 'object') return fields as Record<string, unknown>
-  return undefined
-}
-
 function harvestRequests(query: string): GlobalSearchHit[] {
   const hits: GlobalSearchHit[] = []
   const seen = new Set<string>()
@@ -996,9 +961,7 @@ function harvestRequests(query: string): GlobalSearchHit[] {
 
       const formEntryId = row?.formEntryId
       const referenceNumber =
-        row?.referenceNumber == null
-          ? ''
-          : String(row.referenceNumber).trim()
+        row?.referenceNumber == null ? '' : String(row.referenceNumber).trim()
       const requestNo = String(
         row?.requestNo ||
           row?.documentNumber ||
@@ -1012,10 +975,7 @@ function harvestRequests(query: string): GlobalSearchHit[] {
       const stage = String(row?.stage || row?.stageType || '')
       const status = String(row?.status || '')
       const raisedBy = String(
-        row?.raisedBy ||
-          row?.transactionCreatedByEmail ||
-          row?.createdBy ||
-          '',
+        row?.raisedBy || row?.transactionCreatedByEmail || row?.createdBy || '',
       )
       const parsedFormData =
         typeof row?.formData === 'string'
@@ -1088,65 +1048,100 @@ function harvestRequests(query: string): GlobalSearchHit[] {
   return hits
 }
 
-/**
- * Search already-loaded app data from React Query caches
- * (folders, workflows, forms, requests) — not only Global Search API cache.
- */
-export function searchLocalAppData(query: string): GlobalSearchHit[] {
-  const needle = String(query || '').trim()
-  if (!needle) return []
+function harvestWorkflows(query: string): GlobalSearchHit[] {
+  const hits: GlobalSearchHit[] = []
+  const queries = queryClient.getQueriesData({ queryKey: ['workflows', 'all'] })
 
-  return mergeSearchHits(
-    harvestRepositories(needle),
-    harvestExplorerDocuments(needle),
-    harvestWorkflows(needle),
-    harvestForms(needle),
-    harvestRequests(needle),
-  )
+  for (const [, data] of queries) {
+    const groups = Array.isArray((data as any)?.data)
+      ? ((data as any).data as Array<{ value?: any[] }>)
+      : []
+    const rows = groups.flatMap((group) =>
+      Array.isArray(group?.value) ? group.value : [],
+    )
+
+    for (const row of rows) {
+      const id = String(row?.id || '')
+      const name = String(row?.name || row?.title || 'Workflow')
+      const description = String(row?.description || '')
+      const status = String(row?.flowStatus || row?.status || '')
+      if (!id) continue
+      if (!matchesQuery(`${name} ${description} ${status} ${id}`, query))
+        continue
+
+      hits.push(
+        withSourceBadge(
+          {
+            description: description || status || 'Workflow',
+            entity_id: id,
+            entity_name: name,
+            entity_type: 'workflow',
+            id: {
+              workflowId: id,
+              workflowName: name,
+            },
+            name,
+            title: name,
+            type: 'workflow',
+          },
+          'workflow',
+        ),
+      )
+    }
+  }
+
+  // Single workflow detail caches.
+  for (const [key, data] of queryClient.getQueriesData({
+    queryKey: ['workflows'],
+  })) {
+    if (!Array.isArray(key) || key[1] === 'all' || !data) continue
+    const workflow = (data as any)?.data || data
+    const id = String(workflow?.id || key[1] || '')
+    const name = String(workflow?.name || workflow?.workflowName || 'Workflow')
+    if (!id || id === 'all') continue
+    if (!matchesQuery(`${name} ${id}`, query)) continue
+    hits.push(
+      withSourceBadge(
+        {
+          description: 'Workflow',
+          entity_id: id,
+          entity_name: name,
+          entity_type: 'workflow',
+          id: { workflowId: id, workflowName: name },
+          name,
+          title: name,
+          type: 'workflow',
+        },
+        'workflow',
+      ),
+    )
+  }
+
+  return hits
 }
 
-/**
- * Unified local search used by the Global Search dropdown:
- * Prefer live Folders/Forms/Requests/Workflows data, then API cache.
- */
-export function searchAllLocalData(query: string): GlobalSearchHit[] {
-  const needle = String(query || '').trim()
-  if (!needle) return []
+function mergeUniqueFiles(
+  current: Array<Record<string, any>>,
+  recent: Array<Record<string, any>>,
+) {
+  const map = new Map<string, Record<string, any>>()
+  for (const file of [...recent, ...current]) {
+    const id = getFileId(file)
+    if (id) map.set(id, file)
+  }
+  return Array.from(map.values())
+}
 
-  const appLocal = searchLocalAppData(needle)
-  const exactApi = getCachedHitsForQuery(needle) || []
-  const fuzzyApi = filterCachedGlobalSearchHits(needle)
-
-  return mergeSearchHits(appLocal, exactApi, fuzzyApi).map((hit) => {
-    const normalizeFound = (found?: GlobalSearchHit['found']) =>
-      (found || [])
-        .map((item) => ({
-          ...item,
-          field: resolveDisplayFieldLabel(String(item.field || item.name || '')),
-        }))
-        .filter((item) => item.field && item.field !== 'Value')
-
-    if (hit.found?.length) {
-      return {
-        ...hit,
-        found: normalizeFound(hit.found),
-        matchSource: hit.matchSource,
-        needles: hit.needles?.length ? hit.needles : queryNeedles(needle),
-      }
+function parseFormJson(row: any): Record<string, any> | null {
+  const raw = row?._json ?? row?.formJson
+  if (!raw) return null
+  if (typeof raw === 'object') return raw as Record<string, any>
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw) as Record<string, any>
+    } catch {
+      return null
     }
-    const enriched = withMatchHints(
-      hit,
-      needle,
-      [
-        hit as unknown as Record<string, unknown>,
-        hit.metadata,
-        hit.id as unknown as Record<string, unknown>,
-      ],
-      { field: 'Name', value: getSearchHitTitle(hit) },
-    )
-    return {
-      ...enriched,
-      found: normalizeFound(enriched.found),
-    }
-  })
+  }
+  return null
 }

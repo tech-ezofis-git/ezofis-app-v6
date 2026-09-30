@@ -1,11 +1,9 @@
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
 import showToast from '@/components/base/toast/showToast'
-import {
-  requirementsConfig,
-} from '@/layouts/auth/components/PasswordRequirements'
+import { requirementsConfig } from '@/layouts/auth/components/PasswordRequirements'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -61,7 +59,8 @@ export function CompleteSetupScreen() {
       if (unmet) {
         return "Your password doesn't meet the requirements. Please check the password requirements and try again."
       }
-      if (password !== confirmPassword) return "The passwords don't match. Please try again."
+      if (password !== confirmPassword)
+        return "The passwords don't match. Please try again."
     }
     return null
   }
@@ -210,9 +209,11 @@ export function CompleteSetupScreen() {
                 value={password}
                 trailing={
                   <button
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     className='inline-flex size-8 items-center justify-center rounded-lg text-text-muted'
                     type='button'
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
                     onClick={() => setShowPassword((v) => !v)}
                   >
                     <Icon
@@ -232,11 +233,13 @@ export function CompleteSetupScreen() {
                   const ok = req.regex.test(password)
                   return (
                     <li
+                      key={req.id}
                       className={cn(
                         'flex items-center gap-1.5 text-11',
-                        ok ? 'font-medium text-success-main' : 'text-text-muted',
+                        ok
+                          ? 'font-medium text-success-main'
+                          : 'text-text-muted',
                       )}
-                      key={req.id}
                     >
                       <Icon
                         className='size-3.5'
@@ -272,9 +275,9 @@ export function CompleteSetupScreen() {
 
         <AppButton
           className='mt-4 min-h-12 text-14'
-          fullWidth
           loading={loading}
           type='submit'
+          fullWidth
         >
           Create Account
         </AppButton>

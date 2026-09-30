@@ -28,9 +28,7 @@ const StepThree = () => {
             ? event.data.email
             : ''
       const connectorId =
-        typeof event.data.connectorId === 'string'
-          ? event.data.connectorId
-          : ''
+        typeof event.data.connectorId === 'string' ? event.data.connectorId : ''
       const connector =
         typeof event.data.connector === 'string' ? event.data.connector : ''
       const current = setupStore.getState().storageSettings

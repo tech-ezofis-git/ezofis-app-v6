@@ -36,9 +36,11 @@ const ChangeTheme = () => {
             <Button
               color='gray'
               icon={selectedColorScheme.icon}
-              label={labels[selectedColorScheme.value] ?? selectedColorScheme.label}
               suffixIcon='lucide:chevron-down'
               variant='outline'
+              label={
+                labels[selectedColorScheme.value] ?? selectedColorScheme.label
+              }
             />
           }
         >

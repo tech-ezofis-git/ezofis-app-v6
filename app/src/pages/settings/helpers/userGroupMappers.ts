@@ -86,7 +86,11 @@ const normalizeStatus = (value: unknown): SettingsUser['status'] => {
 }
 
 const mapAuthStrategyToLoginType = (authStrategy: string) => {
-  switch (String(authStrategy || '').trim().toLowerCase()) {
+  switch (
+    String(authStrategy || '')
+      .trim()
+      .toLowerCase()
+  ) {
     case 'googlesso':
     case 'google':
     case 'google sso':
@@ -171,7 +175,10 @@ const extractMfaMethods = (raw: Record<string, any>): string[] => {
     if (candidate == null || candidate === '') continue
 
     if (Array.isArray(candidate)) {
-      const mapped = candidate.map(String).map((item) => item.trim()).filter(Boolean)
+      const mapped = candidate
+        .map(String)
+        .map((item) => item.trim())
+        .filter(Boolean)
       if (mapped.length) return mapped
       continue
     }
@@ -361,10 +368,7 @@ export const mapApiUserToSettingsUser = (
     lastName,
     location: pickRawText(raw, ['location', 'Location']),
     loginType: normalizeLoginType(
-      raw.loginType ||
-        raw.LoginType ||
-        raw.authStrategy ||
-        '',
+      raw.loginType || raw.LoginType || raw.authStrategy || '',
     ),
     manager: pickRawText(raw, ['Manager', 'manager']),
     mfaEnabled: normalizeYesNoFlag(
@@ -382,11 +386,7 @@ export const mapApiUserToSettingsUser = (
       raw.phoneNo || raw.phoneNumber || raw.PhoneNO || raw.PhoneNo || '',
     ),
     role: String(
-      raw.role ||
-        raw.roleName ||
-        raw.userType ||
-        raw.UserType ||
-        '',
+      raw.role || raw.roleName || raw.userType || raw.UserType || '',
     ).trim(),
     status: normalizeStatus(raw.status ?? raw.isActive),
     username: loginName || resolvedEmail.split('@')[0],
@@ -449,9 +449,14 @@ export const mapApiGroupToSettingsGroup = (
     Number(raw.userCount ?? raw.memberCount ?? 0)
 
   return {
-    created: String(
-      raw.createdAtUtc || raw.created || raw.createdAt || raw.createdDate || '',
-    ) || '—',
+    created:
+      String(
+        raw.createdAtUtc ||
+          raw.created ||
+          raw.createdAt ||
+          raw.createdDate ||
+          '',
+      ) || '—',
     createdBy: pickCreatedBy(raw),
     description: String(
       raw.description || raw.groupDescription || raw.caption || '',

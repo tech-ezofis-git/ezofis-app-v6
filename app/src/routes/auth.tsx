@@ -67,7 +67,8 @@ type AuthSearch = {
 export const Route = createFileRoute('/auth')({
   component: AuthPage,
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
-    connector: typeof search.connector === 'string' ? search.connector : undefined,
+    connector:
+      typeof search.connector === 'string' ? search.connector : undefined,
     connectorId:
       typeof search.connectorId === 'string' ? search.connectorId : undefined,
     connectorOAuth:
@@ -84,13 +85,11 @@ function AuthPage() {
     Route.useSearch()
 
   const hasCompleted = useRef(false)
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
-    () => {
-      if (connectorOAuth === 'success' && connectorId) return 'loading'
-      if (grant === 'success') return 'success'
-      return 'error'
-    },
-  )
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(() => {
+    if (connectorOAuth === 'success' && connectorId) return 'loading'
+    if (grant === 'success') return 'success'
+    return 'error'
+  })
   const [connectedEmail, setConnectedEmail] = useState('')
 
   useEffect(() => {

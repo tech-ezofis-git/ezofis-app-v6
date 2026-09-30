@@ -57,7 +57,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     value: boolean,
   ) => {
     setEdges((eds) =>
-      eds.map((e) => (e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e)),
+      eds.map((e) =>
+        e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e,
+      ),
     )
   }
 
@@ -117,7 +119,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
               new Set([
                 ...routingActionOptions.map((o) => o.name),
                 ...edges
-                  .map((e) => getRoutingAction(e.data as Record<string, unknown>))
+                  .map((e) =>
+                    getRoutingAction(e.data as Record<string, unknown>),
+                  )
                   .filter(Boolean),
               ]),
             ).map((name, index) => ({ id: index + 1, name }))
@@ -136,7 +140,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
         const norm = String(rawAction).toUpperCase().replace(/_/g, ' ')
         action = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'
       } else if (isApAgent) {
-        const norm = String(rawAction).toUpperCase().replace(/[\s_-]+/g, ' ')
+        const norm = String(rawAction)
+          .toUpperCase()
+          .replace(/[\s_-]+/g, ' ')
         if (norm.includes('PARTIAL')) {
           action = 'PARTIALLY MATCHED'
         } else if (norm.includes('NOT') || norm.includes('UNMATCH')) {
@@ -226,13 +232,13 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                   options={dynamicActions}
                   placeholder='Select Action Type'
                   rightSectionIcon='lucide:chevrons-up-down'
+                  searchable
                   creatable={
                     !isQualifyAgent &&
                     !isConditionNode &&
                     !isApAgent &&
                     !isFtpAgent
                   }
-                  searchable
                   value={
                     dynamicActions.find((o) => o.name === conn.action) ||
                     (conn.action ? { id: -1, name: conn.action } : null)
@@ -248,7 +254,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
               {isManualUser && (
                 <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
                   <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>Remarks required</span>
+                    <span className='text-12 text-gray-11'>
+                      Remarks required
+                    </span>
                     <InputSwitch
                       checked={conn.remarks}
                       onChange={(checked) =>
@@ -257,7 +265,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                     />
                   </div>
                   <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>Confirmation dialog</span>
+                    <span className='text-12 text-gray-11'>
+                      Confirmation dialog
+                    </span>
                     <InputSwitch
                       checked={conn.confirm}
                       onChange={(checked) =>
@@ -266,7 +276,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                     />
                   </div>
                   <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>Password verification</span>
+                    <span className='text-12 text-gray-11'>
+                      Password verification
+                    </span>
                     <InputSwitch
                       checked={conn.passwordAccess}
                       onChange={(checked) =>
@@ -275,7 +287,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                     />
                   </div>
                   <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>Signature required</span>
+                    <span className='text-12 text-gray-11'>
+                      Signature required
+                    </span>
                     <InputSwitch
                       checked={conn.signature}
                       onChange={(checked) =>

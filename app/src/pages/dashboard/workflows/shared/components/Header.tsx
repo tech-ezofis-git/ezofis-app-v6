@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   // Search,
   ChevronDown,
@@ -8,7 +9,6 @@ import {
   X,
 } from 'lucide-react'
 import React from 'react'
-import { useLingui } from '@lingui/react/macro'
 import {
   Area,
   AreaChart,
@@ -26,21 +26,14 @@ import {
   YAxis,
 } from 'recharts'
 import { getDashboardData } from '@/api/v6/dashboard'
+import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
+import { SkeletonCard } from '@/components/common/skeletons'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import { TODAY } from '@/pages/dashboard/utils/dashboardData'
-import { parseFilterValues } from '@/utils/filterUtils'
 import cn from '@/utils/cn'
-import showToast from '@/components/base/toast/showToast'
+import { parseFilterValues } from '@/utils/filterUtils'
 import { parseInsightText } from '@/utils/parseInsightText'
-import { SkeletonCard } from '@/components/common/skeletons'
-
-function hasData(obj: any): boolean {
-  if (obj === null || obj === undefined) return false
-  if (Array.isArray(obj)) return obj.length > 0
-  if (typeof obj === 'object') return Object.keys(obj).length > 0
-  return true
-}
 
 function fmtMoney(v: number, currency = 'USD') {
   const sym =
@@ -65,7 +58,10 @@ function formatContextLabel(label?: string): string {
   return segments
     .map((seg) => {
       if (seg.includes(',')) {
-        const items = seg.split(',').map((s) => s.trim()).filter(Boolean)
+        const items = seg
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
         if (items.length > 2) {
           const firstTwo = items.slice(0, 2).join(', ')
           const remaining = items.length - 2
@@ -76,6 +72,13 @@ function formatContextLabel(label?: string): string {
       return seg
     })
     .join(' · ')
+}
+
+function hasData(obj: any): boolean {
+  if (obj === null || obj === undefined) return false
+  if (Array.isArray(obj)) return obj.length > 0
+  if (typeof obj === 'object') return Object.keys(obj).length > 0
+  return true
 }
 
 const BulletIcon = () => (
@@ -202,8 +205,8 @@ export default function DashboardCharts() {
     quarter: 'quarter',
     this_month: 'thisMonth',
     this_week: 'week',
-    thisMonth: 'thisMonth',
     this_year: 'fy',
+    thisMonth: 'thisMonth',
     today: 'today',
     week: 'week',
   }
@@ -356,7 +359,7 @@ export default function DashboardCharts() {
 
       console.log('[AP Dashboard] Sending filter payload:', payload)
       const res = await getDashboardData(payload)
-      
+
       if (!isMounted) return
 
       console.log('[AP Dashboard] Received response:', res)
@@ -373,14 +376,6 @@ export default function DashboardCharts() {
           const prevOptions: any = prev?.filterOptions || {}
           const newOptions: any = data?.filterOptions || {}
           const mergedFilterOptions = {
-            departments:
-              (newOptions.departments?.length
-                ? newOptions.departments
-                : prevOptions.departments) || [],
-            suppliers:
-              (newOptions.suppliers?.length
-                ? newOptions.suppliers
-                : prevOptions.suppliers) || [],
             approvalStatuses:
               (newOptions.approvalStatuses?.length
                 ? newOptions.approvalStatuses
@@ -389,14 +384,22 @@ export default function DashboardCharts() {
               (newOptions.currencies?.length
                 ? newOptions.currencies
                 : prevOptions.currencies) || [],
-            requestStatuses:
-              (newOptions.requestStatuses?.length
-                ? newOptions.requestStatuses
-                : prevOptions.requestStatuses) || [],
+            departments:
+              (newOptions.departments?.length
+                ? newOptions.departments
+                : prevOptions.departments) || [],
             poAmountTiers:
               (newOptions.poAmountTiers?.length
                 ? newOptions.poAmountTiers
                 : prevOptions.poAmountTiers) || [],
+            requestStatuses:
+              (newOptions.requestStatuses?.length
+                ? newOptions.requestStatuses
+                : prevOptions.requestStatuses) || [],
+            suppliers:
+              (newOptions.suppliers?.length
+                ? newOptions.suppliers
+                : prevOptions.suppliers) || [],
             ...newOptions,
           }
 
@@ -416,7 +419,7 @@ export default function DashboardCharts() {
       }
       setIsLoading(false)
     }
-    
+
     fetchData()
 
     return () => {
@@ -557,9 +560,14 @@ export default function DashboardCharts() {
   }
 
   const aiInsightsList = React.useMemo(() => {
-    const list = dashboardData?.aiGeneratedInsights || dashboardData?.insights || []
+    const list =
+      dashboardData?.aiGeneratedInsights || dashboardData?.insights || []
     return list.map((insight: any) => {
-      if (typeof insight === 'object' && insight !== null && 'node' in insight) {
+      if (
+        typeof insight === 'object' &&
+        insight !== null &&
+        'node' in insight
+      ) {
         return insight
       }
       const textVal =
@@ -626,10 +634,10 @@ export default function DashboardCharts() {
   const invoiceAgingData = React.useMemo(() => {
     return (dashboardData?.invoiceAgingAnalysis?.buckets || []).map(
       (bucket: any) => ({
-        name: bucket.label,
-        value: bucket.invoiceCount ?? bucket.amount ?? 0,
         amount: bucket.amount ?? 0,
         amountDisplay: bucket.amountDisplay || '',
+        name: bucket.label,
+        value: bucket.invoiceCount ?? bucket.amount ?? 0,
       }),
     )
   }, [dashboardData])
@@ -906,7 +914,7 @@ export default function DashboardCharts() {
               {_isLoading ? (
                 <span className='inline-block h-5 w-12 animate-pulse rounded bg-gray-3' />
               ) : (
-                dashboardData?.header?.openInvoices ?? metrics.openInvoices
+                (dashboardData?.header?.openInvoices ?? metrics.openInvoices)
               )}
             </span>
           </div>
@@ -936,66 +944,64 @@ export default function DashboardCharts() {
       {/* 3. KPI STRIP */}
       {isCommandCenterExpanded && (
         <div className='animate-in fade-in grid grid-cols-1 gap-4 duration-300 sm:grid-cols-2 md:grid-cols-6'>
-          {_isLoading ? (
-            Array.from({ length: 6 }).map((_, idx) => (
-              <div
-                key={idx}
-                className='rounded-lg border border-border-default bg-surface p-4 shadow-xs'
-              >
-                <div className='h-2.5 w-20 animate-pulse rounded bg-gray-3' />
-                <div className='mt-2.5 h-6 w-24 animate-pulse rounded bg-gray-3' />
-                <div className='mt-3 flex items-center gap-1.5'>
-                  <div className='h-4 w-10 animate-pulse rounded bg-gray-3' />
-                  <div className='h-3 w-16 animate-pulse rounded bg-gray-2' />
-                </div>
-              </div>
-            ))
-          ) : (
-            (dashboardData?.kpis || []).map((kpi: any) => {
-              const config = getKpiConfig(kpi.key)
-              const trendVal =
-                kpi.changePercent !== null && kpi.changePercent !== undefined
-                  ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
-                  : kpi.trend === 'flat'
-                    ? t`Flat`
-                    : kpi.trend
-
-              return (
+          {_isLoading
+            ? Array.from({ length: 6 }).map((_, idx) => (
                 <div
-                  key={kpi.key}
-                  className={cn(
-                    'cursor-pointer rounded-lg border border-t-3 border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5',
-                    config.color,
-                    activeDrill === kpi.label &&
-                      'shadow-md ring-2 ring-primary-9/40',
-                  )}
-                  onClick={() => handleKpiClick(kpi.label)}
+                  className='rounded-lg border border-border-default bg-surface p-4 shadow-xs'
+                  key={idx}
                 >
-                  <div className='text-8 font-poppins font-semibold uppercase'>
-                    {kpi.label}
-                  </div>
-                  <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
-                    {kpi.displayValue}
-                  </div>
-                  <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
-                    <span
-                      className={cn(
-                        'rounded px-1.5 py-0.5',
-                        config.isGood
-                          ? 'bg-success-light text-success'
-                          : 'bg-red-2 text-red-11',
-                      )}
-                    >
-                      {trendVal}
-                    </span>
-                    <span className='font-inter font-normal text-text-muted'>
-                      vs last month
-                    </span>
+                  <div className='h-2.5 w-20 animate-pulse rounded bg-gray-3' />
+                  <div className='mt-2.5 h-6 w-24 animate-pulse rounded bg-gray-3' />
+                  <div className='mt-3 flex items-center gap-1.5'>
+                    <div className='h-4 w-10 animate-pulse rounded bg-gray-3' />
+                    <div className='h-3 w-16 animate-pulse rounded bg-gray-2' />
                   </div>
                 </div>
-              )
-            })
-          )}
+              ))
+            : (dashboardData?.kpis || []).map((kpi: any) => {
+                const config = getKpiConfig(kpi.key)
+                const trendVal =
+                  kpi.changePercent !== null && kpi.changePercent !== undefined
+                    ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
+                    : kpi.trend === 'flat'
+                      ? t`Flat`
+                      : kpi.trend
+
+                return (
+                  <div
+                    key={kpi.key}
+                    className={cn(
+                      'cursor-pointer rounded-lg border border-t-3 border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5',
+                      config.color,
+                      activeDrill === kpi.label &&
+                        'shadow-md ring-2 ring-primary-9/40',
+                    )}
+                    onClick={() => handleKpiClick(kpi.label)}
+                  >
+                    <div className='text-8 font-poppins font-semibold uppercase'>
+                      {kpi.label}
+                    </div>
+                    <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
+                      {kpi.displayValue}
+                    </div>
+                    <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
+                      <span
+                        className={cn(
+                          'rounded px-1.5 py-0.5',
+                          config.isGood
+                            ? 'bg-success-light text-success'
+                            : 'bg-red-2 text-red-11',
+                        )}
+                      >
+                        {trendVal}
+                      </span>
+                      <span className='font-inter font-normal text-text-muted'>
+                        vs last month
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
         </div>
       )}
 
@@ -1087,7 +1093,7 @@ export default function DashboardCharts() {
             </div>
           ) : (
             <div className='py-6 text-center text-12 text-text-muted'>
-{t`No matching invoice records in this slice.`}
+              {t`No matching invoice records in this slice.`}
             </div>
           )}
         </div>
@@ -1119,8 +1125,8 @@ export default function DashboardCharts() {
                   <div className='flex flex-col gap-3 py-2'>
                     {Array.from({ length: 4 }).map((_, idx) => (
                       <div className='flex items-center gap-3' key={idx}>
-                        <div className='h-4 w-4 shrink-0 rounded-full bg-gray-3 animate-pulse' />
-                        <div className='h-4 w-full rounded bg-gray-3 animate-pulse' />
+                        <div className='h-4 w-4 shrink-0 animate-pulse rounded-full bg-gray-3' />
+                        <div className='h-4 w-full animate-pulse rounded bg-gray-3' />
                       </div>
                     ))}
                   </div>
@@ -1206,10 +1212,12 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  {dashboardData?.profitabilityCashPosition?.title || 'Profitability & Cash Position'}
+                  {dashboardData?.profitabilityCashPosition?.title ||
+                    'Profitability & Cash Position'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  {dashboardData?.profitabilityCashPosition?.subtitle || 'Is payables growth eating margin · future liquidity needs'}
+                  {dashboardData?.profitabilityCashPosition?.subtitle ||
+                    'Is payables growth eating margin · future liquidity needs'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
@@ -1244,8 +1252,10 @@ export default function DashboardCharts() {
                   <span className='text-15 font-semibold text-primary-9'>
                     {_isLoading ? (
                       <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : peakWeekKpi?.value ? (
+                      peakWeekKpi?.displayValue
                     ) : (
-                     peakWeekKpi?.value ? peakWeekKpi?.displayValue : 'None'
+                      'None'
                     )}
                   </span>
                 </div>
@@ -1259,8 +1269,8 @@ export default function DashboardCharts() {
               </div>
             </div>
 
-            {isProfitabilityExpanded && (
-              !hasData(dashboardData?.profitabilityCashPosition) ? (
+            {isProfitabilityExpanded &&
+              (!hasData(dashboardData?.profitabilityCashPosition) ? (
                 <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
                   <p className='text-13 font-medium text-text-secondary'>
                     No data available
@@ -1280,7 +1290,10 @@ export default function DashboardCharts() {
                     <div className='h-64'>
                       <ResponsiveContainer height='100%' width='100%'>
                         <ComposedChart data={profitVsApData}>
-                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            vertical={false}
+                          />
                           <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                           <YAxis
                             tick={{ fontSize: 11 }}
@@ -1362,7 +1375,10 @@ export default function DashboardCharts() {
                               />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            vertical={false}
+                          />
                           <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                           <YAxis tick={{ fontSize: 11 }} />
                           <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
@@ -1411,7 +1427,10 @@ export default function DashboardCharts() {
                               />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            vertical={false}
+                          />
                           <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                           <YAxis tick={{ fontSize: 11 }} />
                           <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
@@ -1428,8 +1447,7 @@ export default function DashboardCharts() {
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
           </div>
 
           {/* Supplier Concentration Section */}
@@ -1447,7 +1465,8 @@ export default function DashboardCharts() {
                   {supplierRiskData?.title || 'Supplier Concentration & Risk'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  {supplierRiskData?.subtitle || 'Where spend concentrates · vendor risk exposure'}
+                  {supplierRiskData?.subtitle ||
+                    'Where spend concentrates · vendor risk exposure'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
@@ -1497,8 +1516,8 @@ export default function DashboardCharts() {
               </div>
             </div>
 
-            {isSupplierConcentrationExpanded && (
-              !hasData(supplierRiskData) ? (
+            {isSupplierConcentrationExpanded &&
+              (!hasData(supplierRiskData) ? (
                 <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
                   <p className='text-13 font-medium text-text-secondary'>
                     No data available
@@ -1524,30 +1543,36 @@ export default function DashboardCharts() {
                       <ResponsiveContainer height='100%' width='100%'>
                         <PieChart>
                           <Pie
-                            data={topSuppliersData}
-                            dataKey='value'
-                            nameKey='name'
                             cx='50%'
                             cy='50%'
+                            data={topSuppliersData}
+                            dataKey='value'
                             innerRadius={50}
+                            nameKey='name'
                             outerRadius={75}
                             paddingAngle={2}
                           >
-                            {topSuppliersData.map((_entry: any, idx: number) => (
-                              <Cell
-                                key={idx}
-                                fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                              />
-                            ))}
+                            {topSuppliersData.map(
+                              (_entry: any, idx: number) => (
+                                <Cell
+                                  fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                                  key={idx}
+                                />
+                              ),
+                            )}
                           </Pie>
                           <Tooltip
                             content={({ active, payload }: any) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload
                                 return (
-                                  <div className='rounded-lg border border-border-default bg-surface p-2.5 shadow-md text-11'>
-                                    <div className='font-semibold text-text-primary'>{data.name}</div>
-                                    <div className='text-text-secondary mt-0.5'>{fmtMoney(data.value)}</div>
+                                  <div className='rounded-lg border border-border-default bg-surface p-2.5 text-11 shadow-md'>
+                                    <div className='font-semibold text-text-primary'>
+                                      {data.name}
+                                    </div>
+                                    <div className='mt-0.5 text-text-secondary'>
+                                      {fmtMoney(data.value)}
+                                    </div>
                                   </div>
                                 )
                               }
@@ -1557,27 +1582,27 @@ export default function DashboardCharts() {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className='mt-4 max-h-44 overflow-y-auto minimal-scrollbar space-y-1.5 pr-1'>
+                    <div className='minimal-scrollbar mt-4 max-h-44 space-y-1.5 overflow-y-auto pr-1'>
                       {topSuppliersData.map((entry: any, idx: number) => {
                         const color = CHART_COLORS[idx % CHART_COLORS.length]
                         return (
                           <div
+                            className='flex items-center justify-between rounded px-1 py-0.5 text-11 transition-colors hover:bg-surface-hover'
                             key={idx}
-                            className='flex items-center justify-between text-11 py-0.5 hover:bg-surface-hover px-1 rounded transition-colors'
                           >
-                            <div className='flex items-center gap-2 min-w-0 mr-2'>
+                            <div className='mr-2 flex min-w-0 items-center gap-2'>
                               <span
                                 className='h-2.5 w-2.5 shrink-0 rounded-xs'
                                 style={{ backgroundColor: color }}
                               />
                               <span
-                                className='font-medium text-text-secondary truncate'
+                                className='truncate font-medium text-text-secondary'
                                 title={entry.name}
                               >
                                 {entry.name}
                               </span>
                             </div>
-                            <span className='font-semibold text-text-primary shrink-0'>
+                            <span className='shrink-0 font-semibold text-text-primary'>
                               {fmtMoney(entry.value)}
                             </span>
                           </div>
@@ -1598,35 +1623,43 @@ export default function DashboardCharts() {
                         <ResponsiveContainer height='100%' width='100%'>
                           <PieChart>
                             <Pie
-                              data={outstandingSuppliersData}
-                              dataKey='value'
-                              nameKey='name'
                               cx='50%'
                               cy='50%'
+                              data={outstandingSuppliersData}
+                              dataKey='value'
                               innerRadius={50}
+                              nameKey='name'
                               outerRadius={75}
                               paddingAngle={2}
                             >
-                              {outstandingSuppliersData.map((entry: any, idx: number) => (
-                                <Cell
-                                  key={idx}
-                                  className='cursor-pointer'
-                                  fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                                  onClick={() => {
-                                    setDrillSupplier(entry?.name ?? null)
-                                    setActiveDrill('Outstanding Payables')
-                                  }}
-                                />
-                              ))}
+                              {outstandingSuppliersData.map(
+                                (entry: any, idx: number) => (
+                                  <Cell
+                                    className='cursor-pointer'
+                                    key={idx}
+                                    fill={
+                                      CHART_COLORS[idx % CHART_COLORS.length]
+                                    }
+                                    onClick={() => {
+                                      setDrillSupplier(entry?.name ?? null)
+                                      setActiveDrill('Outstanding Payables')
+                                    }}
+                                  />
+                                ),
+                              )}
                             </Pie>
                             <Tooltip
                               content={({ active, payload }: any) => {
                                 if (active && payload && payload.length) {
                                   const data = payload[0].payload
                                   return (
-                                    <div className='rounded-lg border border-border-default bg-surface p-2.5 shadow-md text-11'>
-                                      <div className='font-semibold text-text-primary'>{data.name}</div>
-                                      <div className='text-text-secondary mt-0.5'>{fmtMoney(data.value)}</div>
+                                    <div className='rounded-lg border border-border-default bg-surface p-2.5 text-11 shadow-md'>
+                                      <div className='font-semibold text-text-primary'>
+                                        {data.name}
+                                      </div>
+                                      <div className='mt-0.5 text-text-secondary'>
+                                        {fmtMoney(data.value)}
+                                      </div>
                                     </div>
                                   )
                                 }
@@ -1636,36 +1669,39 @@ export default function DashboardCharts() {
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className='mt-4 max-h-44 overflow-y-auto minimal-scrollbar space-y-1.5 pr-1'>
-                        {outstandingSuppliersData.map((entry: any, idx: number) => {
-                          const color = CHART_COLORS[idx % CHART_COLORS.length]
-                          return (
-                            <div
-                              key={idx}
-                              className='flex items-center justify-between text-11 py-0.5 hover:bg-surface-hover px-1 rounded transition-colors cursor-pointer'
-                              onClick={() => {
-                                setDrillSupplier(entry?.name ?? null)
-                                setActiveDrill('Outstanding Payables')
-                              }}
-                            >
-                              <div className='flex items-center gap-2 min-w-0 mr-2'>
-                                <span
-                                  className='h-2.5 w-2.5 shrink-0 rounded-xs'
-                                  style={{ backgroundColor: color }}
-                                />
-                                <span
-                                  className='font-medium text-text-secondary truncate'
-                                  title={entry.name}
-                                >
-                                  {entry.name}
+                      <div className='minimal-scrollbar mt-4 max-h-44 space-y-1.5 overflow-y-auto pr-1'>
+                        {outstandingSuppliersData.map(
+                          (entry: any, idx: number) => {
+                            const color =
+                              CHART_COLORS[idx % CHART_COLORS.length]
+                            return (
+                              <div
+                                className='flex cursor-pointer items-center justify-between rounded px-1 py-0.5 text-11 transition-colors hover:bg-surface-hover'
+                                key={idx}
+                                onClick={() => {
+                                  setDrillSupplier(entry?.name ?? null)
+                                  setActiveDrill('Outstanding Payables')
+                                }}
+                              >
+                                <div className='mr-2 flex min-w-0 items-center gap-2'>
+                                  <span
+                                    className='h-2.5 w-2.5 shrink-0 rounded-xs'
+                                    style={{ backgroundColor: color }}
+                                  />
+                                  <span
+                                    className='truncate font-medium text-text-secondary'
+                                    title={entry.name}
+                                  >
+                                    {entry.name}
+                                  </span>
+                                </div>
+                                <span className='shrink-0 font-semibold text-text-primary'>
+                                  {fmtMoney(entry.value)}
                                 </span>
                               </div>
-                              <span className='font-semibold text-text-primary shrink-0'>
-                                {fmtMoney(entry.value)}
-                              </span>
-                            </div>
-                          )
-                        })}
+                            )
+                          },
+                        )}
                       </div>
                     </div>
                   )}
@@ -1751,8 +1787,7 @@ export default function DashboardCharts() {
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
           </div>
 
           {/* Aging Section */}
@@ -1768,7 +1803,8 @@ export default function DashboardCharts() {
                   {agingOversightData?.title || 'Aging & Process Oversight'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  {agingOversightData?.subtitle || 'Portfolio-level view of overdue exposure and approval cycles'}
+                  {agingOversightData?.subtitle ||
+                    'Portfolio-level view of overdue exposure and approval cycles'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
@@ -1818,8 +1854,8 @@ export default function DashboardCharts() {
               </div>
             </div>
 
-            {isSupplierFollowUpExpanded && (
-              !hasData(agingOversightData) ? (
+            {isSupplierFollowUpExpanded &&
+              (!hasData(agingOversightData) ? (
                 <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
                   <p className='text-13 font-medium text-text-secondary'>
                     No data available
@@ -1829,13 +1865,17 @@ export default function DashboardCharts() {
                 <div className='grid grid-cols-12 gap-5'>
                   <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      {dashboardData?.invoiceAgingAnalysis?.title || 'Invoice aging analysis'}
+                      {dashboardData?.invoiceAgingAnalysis?.title ||
+                        'Invoice aging analysis'}
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      {dashboardData?.invoiceAgingAnalysis?.subtitle || 'Click a segment to drill into invoices'}
+                      {dashboardData?.invoiceAgingAnalysis?.subtitle ||
+                        'Click a segment to drill into invoices'}
                     </div>
                     <div className='h-64'>
-                      {!hasData(dashboardData?.invoiceAgingAnalysis?.buckets) ? (
+                      {!hasData(
+                        dashboardData?.invoiceAgingAnalysis?.buckets,
+                      ) ? (
                         <div className='flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 text-center'>
                           <p className='text-12 font-medium text-text-secondary'>
                             No records found
@@ -1844,14 +1884,20 @@ export default function DashboardCharts() {
                       ) : (
                         <ResponsiveContainer height='100%' width='100%'>
                           <BarChart
-                            margin={{ bottom: 10 }}
                             data={invoiceAgingData}
+                            margin={{ bottom: 10 }}
                           >
-                            <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                            <CartesianGrid
+                              strokeDasharray='3 3'
+                              vertical={false}
+                            />
                             <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                             <YAxis tick={{ fontSize: 11 }} />
                             <Tooltip
-                              formatter={(v: any) => [`${v} Invoices`, 'Volume']}
+                              formatter={(v: any) => [
+                                `${v} Invoices`,
+                                'Volume',
+                              ]}
                             />
                             <Bar
                               barSize={24}
@@ -1928,8 +1974,7 @@ export default function DashboardCharts() {
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
           </div>
         </div>
       ) : (
@@ -1957,8 +2002,8 @@ export default function DashboardCharts() {
                   <div className='flex flex-col gap-3 py-2'>
                     {Array.from({ length: 4 }).map((_, idx) => (
                       <div className='flex items-center gap-3' key={idx}>
-                        <div className='h-4 w-4 shrink-0 rounded-full bg-gray-3 animate-pulse' />
-                        <div className='h-4 w-full rounded bg-gray-3 animate-pulse' />
+                        <div className='h-4 w-4 shrink-0 animate-pulse rounded-full bg-gray-3' />
+                        <div className='h-4 w-full animate-pulse rounded bg-gray-3' />
                       </div>
                     ))}
                   </div>
@@ -2742,10 +2787,12 @@ export default function DashboardCharts() {
                   )}
                 >
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    {dashboardData?.invoiceAgingAnalysis?.title || 'Invoice aging analysis'}
+                    {dashboardData?.invoiceAgingAnalysis?.title ||
+                      'Invoice aging analysis'}
                   </h3>
                   <div className='mb-4 font-inter text-11 text-text-muted'>
-                    {dashboardData?.invoiceAgingAnalysis?.subtitle || 'Click a segment to drill into aging details'}
+                    {dashboardData?.invoiceAgingAnalysis?.subtitle ||
+                      'Click a segment to drill into aging details'}
                   </div>
                   <div className='h-60'>
                     {!hasData(dashboardData?.invoiceAgingAnalysis?.buckets) ? (
@@ -2756,10 +2803,11 @@ export default function DashboardCharts() {
                       </div>
                     ) : (
                       <ResponsiveContainer height='100%' width='100%'>
-                        <BarChart
-                          data={invoiceAgingData}
-                        >
-                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                        <BarChart data={invoiceAgingData}>
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            vertical={false}
+                          />
                           <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                           <YAxis tick={{ fontSize: 11 }} />
                           <Tooltip

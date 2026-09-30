@@ -1,7 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import type { SignRequestSigningMode } from '@/api/v6/folder/signRequest'
 import { getUserListQueryOptions } from '@/api/userQueries'
@@ -532,7 +539,7 @@ export default function FolderSharePopover({
         aria-label={triggerLabel || t`Share`}
         type='button'
         className={cn(
-          'flex h-8 shrink-0 box-border cursor-pointer items-center justify-center gap-2 rounded-md border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+          'box-border flex h-8 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
           iconOnly ? 'w-8 px-0' : 'px-3.5',
           showShare
             ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
@@ -676,7 +683,10 @@ export default function FolderSharePopover({
                           onClick={handleAddEmail}
                         >
                           <div className='flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-9)] transition-colors group-hover:bg-[var(--primary-4)]'>
-                            <Icon className='size-3.5' name='lucide:user-plus' />
+                            <Icon
+                              className='size-3.5'
+                              name='lucide:user-plus'
+                            />
                           </div>
                           <div className='min-w-0 flex-1'>
                             <p className='truncate text-[13px] font-medium text-[var(--primary-11)]'>

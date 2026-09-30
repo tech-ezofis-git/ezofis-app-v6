@@ -12,21 +12,21 @@ export type PortalAuthUser = {
 }
 
 type PortalSessionState = {
-  clearSession: (portalId: string) => void
   sessions: Record<string, PortalAuthUser>
+  clearSession: (portalId: string) => void
   setSession: (portalId: string, user: PortalAuthUser) => void
 }
 
 const usePortalSessionStore = create<PortalSessionState>()(
   persist(
     (set) => ({
+      sessions: {},
       clearSession: (portalId) =>
         set((state) => {
           const next = { ...state.sessions }
           delete next[portalId]
           return { sessions: next }
         }),
-      sessions: {},
       setSession: (portalId, user) =>
         set((state) => ({
           sessions: {

@@ -815,13 +815,13 @@ export default function DynamicFilter({
           <div className='flex items-center gap-0.5 rounded-md border border-border-default p-0.5'>
             <Tooltip content={t`Grid View`}>
               <button
+                type='button'
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded transition-colors',
                   viewMode === 'grid'
                     ? 'bg-primary-3 text-primary-9'
                     : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
                 )}
-                type='button'
                 onClick={() => onViewModeChange('grid')}
               >
                 <Icon className='h-4 w-4' name='lucide:layout-grid' />
@@ -829,13 +829,13 @@ export default function DynamicFilter({
             </Tooltip>
             <Tooltip content={t`Table View`}>
               <button
+                type='button'
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded transition-colors',
                   viewMode === 'table'
                     ? 'bg-primary-3 text-primary-9'
                     : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
                 )}
-                type='button'
                 onClick={() => onViewModeChange('table')}
               >
                 <Icon className='h-4 w-4' name='lucide:list' />
@@ -843,13 +843,13 @@ export default function DynamicFilter({
             </Tooltip>
             <Tooltip content={t`Kanban View`}>
               <button
+                type='button'
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded transition-colors',
                   viewMode === 'kanban'
                     ? 'bg-primary-3 text-primary-9'
                     : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
                 )}
-                type='button'
                 onClick={() => onViewModeChange('kanban')}
               >
                 <Icon className='h-4 w-4' name='lucide:columns-3' />

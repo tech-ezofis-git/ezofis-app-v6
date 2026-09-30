@@ -1,9 +1,9 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   createColumnHelper,
   getFilteredRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -30,8 +30,8 @@ export type FolderRetentionProps = {
   folderName: string
   policies: RetentionPolicy[]
   onAddPolicy: () => void
-  onEditPolicy: (index: number) => void
   onDeletePolicy: (index: number) => void
+  onEditPolicy: (index: number) => void
 }
 
 const ACTION_BADGE_CLASS: Record<string, string> = {
@@ -44,8 +44,8 @@ export default function FolderRetention({
   folderName,
   policies,
   onAddPolicy,
-  onEditPolicy,
   onDeletePolicy,
+  onEditPolicy,
 }: FolderRetentionProps) {
   const { t } = useLingui()
   const {

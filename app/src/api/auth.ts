@@ -111,14 +111,11 @@ const getSession = async (identityKeys?: IdentityKeys) => {
   }
 
   try {
-    const { data, status } = await _axios.get(
-      '/authentication/userSession',
-      {
-        // Optional: you could pass the token here for immediate use,
-        // but the Request Interceptor should already read it from the store.
-        // This is primarily for future proofing if you remove store dependency in interceptors.
-      },
-    )
+    const { data, status } = await _axios.get('/authentication/userSession', {
+      // Optional: you could pass the token here for immediate use,
+      // but the Request Interceptor should already read it from the store.
+      // This is primarily for future proofing if you remove store dependency in interceptors.
+    })
 
     if (status !== 200) {
       throw new Error('invalid status code')

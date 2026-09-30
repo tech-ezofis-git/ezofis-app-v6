@@ -43,12 +43,12 @@ const steps = [
 ]
 
 const getSetupProgress = (state: {
-  folderName?: string
   fields?: unknown[]
+  folderName?: string
   isSetupCompleted?: boolean
   step?: number
-  storageProviderCode?: string
   storageConnectorId?: string | null
+  storageProviderCode?: string
 }) => {
   if (state?.isSetupCompleted) return 100
 
@@ -162,7 +162,7 @@ const DocumentRepositorySteps = () => {
         </AnimateSlideUp>
 
         <div
-          className='col-span-1 h-full min-h-0 w-full overflow-y-auto scrollbar'
+          className='scrollbar col-span-1 h-full min-h-0 w-full overflow-y-auto'
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>

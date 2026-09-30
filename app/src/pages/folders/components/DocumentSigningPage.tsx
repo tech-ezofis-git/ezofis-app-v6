@@ -1,21 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type DragEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type RefObject,
-} from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'motion/react'
-import SignatureCanvas from 'react-signature-canvas'
-import { Rnd } from 'react-rnd'
 import {
   ArrowLeft,
   Bookmark,
@@ -37,135 +20,148 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import type { Option } from '@/types/option'
-import { getUsers } from '@/api/v6/user'
+import { AnimatePresence, motion } from 'motion/react'
+import {
+  type ChangeEvent,
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { Rnd } from 'react-rnd'
+import SignatureCanvas from 'react-signature-canvas'
 import type { CreateSignRequestPayload } from '@/api/v6/folder/signRequest'
 import type { SignRequestFieldDto } from '@/api/v6/folder/signRequest'
+import type { Option } from '@/types/option'
 import {
   collectSignRequestFields,
   createSignRequest,
   submitSignRequest,
 } from '@/api/v6/folder/signRequest'
-import { saveSignRequestFields } from '../utils/signRequestFieldsStorage'
+import { getUsers } from '@/api/v6/user'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import Tooltip from '@/components/base/Tooltip'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { saveSignRequestFields } from '../utils/signRequestFieldsStorage'
 import styles from './DocumentSigningPage.module.css'
 import { SignRequestAssignForm } from './SignRequestAssignForm'
 
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
-export interface SavedSignature {
-  id: string
-  name: string
-  type: 'typed' | 'drawn' | 'uploaded'
-  imageUrl: string
-}
-
-export interface SignaturePlacement {
-  signatureId?: string
-  source: 'typed' | 'drawn' | 'uploaded' | 'saved'
-  imageDataUrl: string
-  /** PDF page (1-based) */
-  pageNumber: number
-  /** PDF points, origin top-left */
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-export interface SignatureAssignment {
-  assigneeName: string
-  assigneeEmail?: string
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 export interface DocumentSigningActionRef {
   save: () => Promise<void>
 }
 
-export interface DocumentSigningState {
-  canSave: boolean
-  isSaving: boolean
-  hasPlacements: boolean
-  workspaceMode: 'create' | 'assign'
-}
-
 export interface DocumentSigningPageProps {
   documentUrl: string
+  actionRef?:
+    | RefObject<DocumentSigningActionRef | null>
+    | React.MutableRefObject<DocumentSigningActionRef | null>
   documentName?: string
-  signerName?: string
-  savedSignatures?: SavedSignature[]
-  isLoading?: boolean
-  isPdf?: boolean
-  isImage?: boolean
-  /** page = full takeover; inline = menu picker + place on details viewer */
-  mode?: 'page' | 'inline'
   /** Required for mode="inline" — wraps the details DocumentPreviewViewer */
   externalSurfaceRef?: RefObject<HTMLDivElement | null>
-  /** Inline only: toolbar Sign button used to position the share-style menu. */
-  pickerAnchorRef?: RefObject<HTMLElement | null>
-  repositoryId?: string
+  isImage?: boolean
+  isLoading?: boolean
+  isPdf?: boolean
   itemId?: string
-  /** Existing sign request to submit against (Path B). If omitted, a single self-request is created first. */
-  signRequestId?: string
-  signerEmail?: string
-  /** Preset signature places from API — used when signing an invite/pending request. */
-  signatureFields?: SignRequestFieldDto[]
-  /** When true, signer may only fill their own active fields (no free placement). */
-  restrictToFields?: boolean
-  /**
-   * Inline only: draw assigned places on the details PDF without the signing toolbar.
-   * Used so places stay visible after Send / before the assignee clicks Sign.
-   */
-  overlayOnly?: boolean
+  /** page = full takeover; inline = menu picker + place on details viewer */
+  mode?: 'page' | 'inline'
   /**
    * Bump this when the user clicks Sign so the menu always opens
    * (even if the signing layer was already mounted in overlay-only mode).
    */
   openPickerKey?: number
-  actionRef?:
-    | RefObject<DocumentSigningActionRef | null>
-    | React.MutableRefObject<DocumentSigningActionRef | null>
-  onStateChange?: (state: DocumentSigningState) => void
+  /**
+   * Inline only: draw assigned places on the details PDF without the signing toolbar.
+   * Used so places stay visible after Send / before the assignee clicks Sign.
+   */
+  overlayOnly?: boolean
+  /** Inline only: toolbar Sign button used to position the share-style menu. */
+  pickerAnchorRef?: RefObject<HTMLElement | null>
+  repositoryId?: string
+  /** When true, signer may only fill their own active fields (no free placement). */
+  restrictToFields?: boolean
+  savedSignatures?: SavedSignature[]
+  /** Preset signature places from API — used when signing an invite/pending request. */
+  signatureFields?: SignRequestFieldDto[]
+  signerEmail?: string
+  signerName?: string
+  /** Existing sign request to submit against (Path B). If omitted, a single self-request is created first. */
+  signRequestId?: string
   onBack?: () => void
-  onSaveSignature?: (
-    signature: Omit<SavedSignature, 'id'>,
-  ) => void | Promise<void>
+  onCompleteSigning?: (placements: SignaturePlacement[]) => void | Promise<void>
   onDeleteSavedSignature?: (signatureId: string) => void | Promise<void>
-  onCompleteSigning?: (
-    placements: SignaturePlacement[],
-  ) => void | Promise<void>
   onSaveAssignment?: (
     assignments: SignatureAssignment[],
   ) => void | Promise<void>
+  onSaveSignature?: (
+    signature: Omit<SavedSignature, 'id'>,
+  ) => void | Promise<void>
   onSignRequestCreated?: (payload?: {
-    signRequestId: string
     fields?: SignRequestFieldDto[]
+    signRequestId: string
   }) => void
+  onStateChange?: (state: DocumentSigningState) => void
 }
 
-type SignatureTab = 'type' | 'draw' | 'upload' | 'saved'
-type SignatureSource = 'typed' | 'drawn' | 'uploaded' | 'saved'
-type WorkspaceMode = 'create' | 'assign'
-
-type ActiveSignature = {
-  source: SignatureSource
-  imageDataUrl: string
-  signatureId?: string
-  name?: string
+export interface DocumentSigningState {
+  canSave: boolean
+  hasPlacements: boolean
+  isSaving: boolean
+  workspaceMode: 'create' | 'assign'
 }
 
-type PlacementState = {
+export interface SavedSignature {
+  id: string
+  imageUrl: string
+  name: string
+  type: 'typed' | 'drawn' | 'uploaded'
+}
+
+export interface SignatureAssignment {
+  assigneeName: string
+  height: number
+  width: number
   x: number
   y: number
-  width: number
+  assigneeEmail?: string
+}
+
+export interface SignaturePlacement {
   height: number
+  imageDataUrl: string
+  /** PDF page (1-based) */
+  pageNumber: number
+  source: 'typed' | 'drawn' | 'uploaded' | 'saved'
+  width: number
+  /** PDF points, origin top-left */
+  x: number
+  y: number
+  signatureId?: string
+}
+
+type ActiveSignature = {
+  imageDataUrl: string
+  name?: string
+  signatureId?: string
+  source: SignatureSource
+}
+type HistorySnapshot = {
+  assignments: PlacedAssignment[]
+  placements: PlacedSignature[]
+}
+type PlacedAssignment = PlacementState & {
+  assigneeEmail?: string
+  assigneeName: string
+  id: string
 }
 
 type PlacedSignature = PlacementState & {
@@ -173,16 +169,18 @@ type PlacedSignature = PlacementState & {
   signature: ActiveSignature
 }
 
-type PlacedAssignment = PlacementState & {
-  id: string
-  assigneeName: string
-  assigneeEmail?: string
+type PlacementState = {
+  height: number
+  width: number
+  x: number
+  y: number
 }
 
-type HistorySnapshot = {
-  placements: PlacedSignature[]
-  assignments: PlacedAssignment[]
-}
+type SignatureSource = 'typed' | 'drawn' | 'uploaded' | 'saved'
+
+type SignatureTab = 'type' | 'draw' | 'upload' | 'saved'
+
+type WorkspaceMode = 'create' | 'assign'
 
 let boxIdCounter = 0
 function nextBoxId(prefix: string) {
@@ -191,31 +189,31 @@ function nextBoxId(prefix: string) {
 }
 
 const SIZE_PRESETS = {
-  small: { width: 120, height: 50 },
-  medium: { width: 180, height: 75 },
-  large: { width: 240, height: 100 },
+  large: { height: 100, width: 240 },
+  medium: { height: 75, width: 180 },
+  small: { height: 50, width: 120 },
 } as const
 
 const TYPED_STYLES = [
   {
+    fontFamily: '"Brush Script MT", "Segoe Script", cursive',
     id: 'brush',
     label: 'Brush',
-    fontFamily: '"Brush Script MT", "Segoe Script", cursive',
   },
   {
+    fontFamily: '"Lucida Handwriting", cursive',
     id: 'lucida',
     label: 'Lucida',
-    fontFamily: '"Lucida Handwriting", cursive',
   },
   {
+    fontFamily: '"Apple Chancery", cursive',
     id: 'chancery',
     label: 'Chancery',
-    fontFamily: '"Apple Chancery", cursive',
   },
   {
+    fontFamily: '"URW Chancery L", cursive',
     id: 'urw',
     label: 'URW',
-    fontFamily: '"URW Chancery L", cursive',
   },
 ] as const
 
@@ -232,58 +230,25 @@ const ACCEPTED_UPLOAD_TYPES = ['image/png', 'image/jpeg', 'image/jpg']
 const DEFAULT_PLACEMENT = SIZE_PRESETS.medium
 
 const RESIZE_HANDLES = {
-  topLeft: true,
-  topRight: true,
+  bottom: true,
   bottomLeft: true,
   bottomRight: true,
-  top: true,
-  right: true,
-  bottom: true,
   left: true,
+  right: true,
+  top: true,
+  topLeft: true,
+  topRight: true,
 } as const
 
 const RESIZE_HANDLE_CLASSES = {
-  topLeft: styles.handle,
-  topRight: styles.handle,
+  bottom: `${styles.handle} ${styles.handleBottom}`,
   bottomLeft: styles.handle,
   bottomRight: styles.handle,
-  top: `${styles.handle} ${styles.handleTop}`,
-  right: `${styles.handle} ${styles.handleRight}`,
-  bottom: `${styles.handle} ${styles.handleBottom}`,
   left: `${styles.handle} ${styles.handleLeft}`,
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max)
-}
-
-function normalizeCoord(value: number, total: number) {
-  if (!total) return 0
-  return clamp(Number((value / total).toFixed(4)), 0, 1)
-}
-
-async function toPngDataUrl(dataUrl: string): Promise<string> {
-  if (!dataUrl) return dataUrl
-  if (dataUrl.startsWith('data:image/png')) return dataUrl
-
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.max(1, img.naturalWidth || img.width || 1)
-      canvas.height = Math.max(1, img.naturalHeight || img.height || 1)
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        reject(new Error('Canvas unavailable'))
-        return
-      }
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/png'))
-    }
-    img.onerror = () => reject(new Error('Unable to convert signature image'))
-    img.src = dataUrl
-  })
+  right: `${styles.handle} ${styles.handleRight}`,
+  top: `${styles.handle} ${styles.handleTop}`,
+  topLeft: styles.handle,
+  topRight: styles.handle,
 }
 
 type PageRect = {
@@ -295,217 +260,32 @@ type PageRect = {
   width: number
 }
 
-/** react-pdf-viewer only mounts visible pages. Page index lives on the layer. */
-function readViewerPageNumber(el: HTMLElement, fallbackIndex: number) {
-  const layer = el.querySelector('[data-testid^="core__page-layer-"]')
-  const testId = layer?.getAttribute('data-testid') || ''
-  const fromTestId = testId.match(/core__page-layer-(\d+)$/)
-  if (fromTestId) return Number(fromTestId[1]) + 1
-
-  const fromLabel = (el.getAttribute('aria-label') || '').match(/(\d+)\s*$/)
-  if (fromLabel) return Number(fromLabel[1])
-
-  return fallbackIndex + 1
-}
-
-function getPageRects(
-  surfaceRoot: HTMLElement | null | undefined,
-  layerHost: HTMLElement,
-  zoom: number,
-): PageRect[] {
-  const hostRect = layerHost.getBoundingClientRect()
-  const pageEls = Array.from(
-    surfaceRoot?.querySelectorAll('.rpv-core__inner-page') || [],
-  ) as HTMLElement[]
-  if (pageEls.length === 0) {
-    return [
-      {
-        height: layerHost.offsetHeight,
-        left: 0,
-        pageNumber: 1,
-        top: 0,
-        width: layerHost.offsetWidth,
-      },
-    ]
-  }
-  return pageEls.map((el, index) => {
-    const r = el.getBoundingClientRect()
-    return {
-      height: r.height / zoom,
-      left: (r.left - hostRect.left) / zoom,
-      pageNumber: readViewerPageNumber(el, index),
-      top: (r.top - hostRect.top) / zoom,
-      width: r.width / zoom,
-    }
-  })
-}
-
-/**
- * Full PDF size lists are indexed by page. A list built from the mounted
- * pages is the same length as `pageRects` and is not page-indexed once the
- * viewer has virtualized past page 1.
- */
-function sizeForPage(
-  pageNumber: number,
-  pageSizesPt: Array<{ width: number; height: number }>,
-  pageRects: PageRect[],
-  rect: PageRect,
-) {
-  const size = pageSizesPt[pageNumber - 1]
-  const virtualFallback =
-    pageSizesPt.length === pageRects.length &&
-    pageRects.some((entry, index) => entry.pageNumber !== index + 1)
-  if (size && pageSizesPt.length >= pageNumber && !virtualFallback) {
-    return size
-  }
-  return { height: rect.height, width: rect.width }
-}
-
-function mapBoxToPdfPoints(
-  box: PlacementState,
-  pageRects: PageRect[],
-  pageSizesPt: Array<{ width: number; height: number }>,
-) {
-  const centerY = box.y + box.height / 2
-  const rect =
-    pageRects.find(
-      (entry) => centerY >= entry.top && centerY <= entry.top + entry.height,
-    ) || pageRects[0]
-  if (!rect) {
-    return {
-      height: box.height,
-      pageNumber: 1,
-      width: box.width,
-      x: box.x,
-      y: box.y,
-    }
-  }
-  const size = sizeForPage(rect.pageNumber, pageSizesPt, pageRects, rect)
-  const scaleX = size.width / Math.max(1, rect.width)
-  const scaleY = size.height / Math.max(1, rect.height)
-  return {
-    height: Number((box.height * scaleY).toFixed(2)),
-    pageNumber: rect.pageNumber,
-    width: Number((box.width * scaleX).toFixed(2)),
-    x: Number(((box.x - rect.left) * scaleX).toFixed(2)),
-    y: Number(((box.y - rect.top) * scaleY).toFixed(2)),
-  }
-}
-
-function mapPdfFieldToScreen(
-  field: {
-    pageNumber: number
-    x: number
-    y: number
-    width: number
-    height: number
-  },
-  pageRects: PageRect[],
-  pageSizesPt: Array<{ width: number; height: number }>,
-): PlacementState | null {
-  const pageNumber = Number(field.pageNumber) || 1
-  const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
-  if (!rect) return null
-  const size = sizeForPage(pageNumber, pageSizesPt, pageRects, rect)
-  const scaleX = rect.width / Math.max(1, size.width)
-  const scaleY = rect.height / Math.max(1, size.height)
-  return {
-    x: rect.left + Number(field.x) * scaleX,
-    y: rect.top + Number(field.y) * scaleY,
-    width: Math.max(48, Number(field.width) * scaleX),
-    height: Math.max(24, Number(field.height) * scaleY),
-  }
-}
-
-function fieldKey(field: SignRequestFieldDto, index: number) {
-  return (
-    field.fieldId ||
-    `${field.signerEmail || 'signer'}-${field.pageNumber}-${field.x}-${field.y}-${index}`
-  )
-}
-
-function isFieldForCurrentSigner(
-  field: SignRequestFieldDto,
-  currentEmail: string,
-) {
-  if (!currentEmail) return true
-  const fieldEmail = String(field.signerEmail || '')
-    .trim()
-    .toLowerCase()
-  if (!fieldEmail) return true
-  return fieldEmail === currentEmail
-}
-
-function isFieldSigned(field: SignRequestFieldDto) {
-  const status = String(field.status || '').toUpperCase()
-  return status === 'SIGNED' || Boolean(field.signedAtUtc)
-}
-
-function createTypedSignatureDataUrl(
-  name: string,
-  fontFamily: string,
-  color: string,
-) {
-  const safeName = name.trim() || 'Signature'
-  const width = Math.max(280, Math.min(640, safeName.length * 28))
-  const height = 96
-  const fill = resolveCssColor(color)
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <rect width="100%" height="100%" fill="transparent"/>
-  <text
-    x="50%"
-    y="58%"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    fill="${fill}"
-    font-family='${fontFamily.replace(/'/g, "\\'")}'
-    font-size="42"
-  >${safeName
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')}</text>
-</svg>`.trim()
-
-  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
-}
-
-function resolveCssColor(token: string) {
-  if (token === 'var(--text-primary)') return '#1a1a1a'
-  if (token === 'var(--accent-primary)') return '#1a1a1a'
-  if (token === 'var(--text-secondary)') return '#4b5563'
-  if (token === 'var(--text-muted)') return '#9ca3af'
-  if (token.startsWith('var(')) return '#1a1a1a'
-  return token || '#1a1a1a'
-}
-
 export function DocumentSigningPage({
-  documentUrl,
+  actionRef,
   documentName = 'Document.pdf',
-  signerName = '',
-  savedSignatures = [],
+  documentUrl,
+  externalSurfaceRef,
+  isImage = false,
   isLoading = false,
   isPdf = true,
-  isImage = false,
+  itemId = '',
   mode = 'page',
-  externalSurfaceRef,
+  openPickerKey = 0,
+  overlayOnly = false,
   pickerAnchorRef,
   repositoryId = '',
-  itemId = '',
-  signRequestId = '',
-  signerEmail = '',
-  signatureFields = EMPTY_SIGNATURE_FIELDS,
   restrictToFields = false,
-  overlayOnly = false,
-  openPickerKey = 0,
+  savedSignatures = [],
+  signatureFields = EMPTY_SIGNATURE_FIELDS,
+  signerEmail = '',
+  signerName = '',
+  signRequestId = '',
   onBack,
-  onSaveSignature,
-  onDeleteSavedSignature,
   onCompleteSigning,
+  onDeleteSavedSignature,
   onSaveAssignment,
+  onSaveSignature,
   onSignRequestCreated,
-  actionRef,
   onStateChange,
 }: DocumentSigningPageProps) {
   const { t } = useLingui()
@@ -517,8 +297,8 @@ export function DocumentSigningPage({
   // Request-sign must place new areas even if prior assigned fields exist.
   const fieldSigning = Boolean(
     restrictToFields &&
-      signatureFields.length > 0 &&
-      workspaceMode === 'create',
+    signatureFields.length > 0 &&
+    workspaceMode === 'create',
   )
   // Popup opens whenever full signing UI is active (not overlay-only markers).
   const [showPicker, setShowPicker] = useState(!overlayOnly)
@@ -553,7 +333,7 @@ export function DocumentSigningPage({
     Record<string, string>
   >({})
   const [pageSizesPt, setPageSizesPt] = useState<
-    Array<{ width: number; height: number }>
+    Array<{ height: number; width: number }>
   >([])
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
   const [assigneeOptions, setAssigneeOptions] = useState<Option[]>([])
@@ -578,8 +358,8 @@ export function DocumentSigningPage({
   const readySignatureRef = useRef(false)
   const closeSignaturePickerRef = useRef<() => void>(() => {})
   const [pickerPanelPos, setPickerPanelPos] = useState<{
-    top: number
     left: number
+    top: number
   } | null>(null)
   const historyRef = useRef<{ index: number; stack: HistorySnapshot[] }>({
     index: -1,
@@ -607,11 +387,11 @@ export function DocumentSigningPage({
         pdfjsLib.GlobalWorkerOptions.workerSrc =
           'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
         const pdf = await pdfjsLib.getDocument(documentUrl).promise
-        const sizes: Array<{ width: number; height: number }> = []
+        const sizes: Array<{ height: number; width: number }> = []
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           const page = await pdf.getPage(pageNumber)
           const viewport = page.getViewport({ scale: 1 })
-          sizes.push({ width: viewport.width, height: viewport.height })
+          sizes.push({ height: viewport.height, width: viewport.width })
         }
         if (!cancelled) setPageSizesPt(sizes)
       } catch (error) {
@@ -699,7 +479,9 @@ export function DocumentSigningPage({
       if (!mounted || response.error || !Array.isArray(response.data)) return
       setAssigneeOptions(
         response.data
-          .filter((user) => Boolean(user.displayName?.trim() || user.email?.trim()))
+          .filter((user) =>
+            Boolean(user.displayName?.trim() || user.email?.trim()),
+          )
           .map((user) => ({
             description: user.email || undefined,
             id: user.id || user.email,
@@ -715,7 +497,7 @@ export function DocumentSigningPage({
 
   useEffect(() => {
     const root = isInline
-      ? externalSurfaceRef?.current ?? null
+      ? (externalSurfaceRef?.current ?? null)
       : documentSurfaceRef.current
     if (!root || isLoading) {
       setLayerHost((previous) => (previous === null ? previous : null))
@@ -808,7 +590,8 @@ export function DocumentSigningPage({
 
   const typedStyle = useMemo(
     () =>
-      TYPED_STYLES.find((style) => style.id === typedStyleId) || TYPED_STYLES[0],
+      TYPED_STYLES.find((style) => style.id === typedStyleId) ||
+      TYPED_STYLES[0],
     [typedStyleId],
   )
 
@@ -824,16 +607,18 @@ export function DocumentSigningPage({
 
   const zoomPercent = Math.round(zoom * 100)
   const canUndo = historyRef.current.index >= 0
-  const canRedo =
-    historyRef.current.index < historyRef.current.stack.length - 1
+  const canRedo = historyRef.current.index < historyRef.current.stack.length - 1
 
   const commitSnapshot = useCallback(
-    (nextPlacements: PlacedSignature[], nextAssignments: PlacedAssignment[]) => {
+    (
+      nextPlacements: PlacedSignature[],
+      nextAssignments: PlacedAssignment[],
+    ) => {
       const { index, stack } = historyRef.current
       const trimmed = stack.slice(0, index + 1)
       trimmed.push({
-        placements: nextPlacements,
         assignments: nextAssignments,
+        placements: nextPlacements,
       })
       historyRef.current = { index: trimmed.length - 1, stack: trimmed }
       setPlacements(nextPlacements)
@@ -847,11 +632,11 @@ export function DocumentSigningPage({
     async (
       signature: ActiveSignature,
       options?: {
-        save?: boolean
-        name?: string
-        type?: SavedSignature['type']
         /** Keep the signature picker open (auto-sync from active tab). */
         keepPickerOpen?: boolean
+        name?: string
+        save?: boolean
+        type?: SavedSignature['type']
       },
     ) => {
       setActiveSignature(signature)
@@ -861,9 +646,9 @@ export function DocumentSigningPage({
 
       if (options?.save && onSaveSignature) {
         await onSaveSignature({
+          imageUrl: signature.imageDataUrl,
           name: options.name || options.type || 'Signature',
           type: options.type || 'drawn',
-          imageUrl: signature.imageDataUrl,
         })
       }
     },
@@ -878,7 +663,9 @@ export function DocumentSigningPage({
   const handleUseTyped = async (options?: { keepPickerOpen?: boolean }) => {
     if (!typedName.trim()) {
       if (!options?.keepPickerOpen) {
-        notifySigningError(t`Please enter your full name to create your signature.`)
+        notifySigningError(
+          t`Please enter your full name to create your signature.`,
+        )
       }
       return
     }
@@ -889,12 +676,12 @@ export function DocumentSigningPage({
       signatureColor,
     )
     await applyActiveSignature(
-      { source: 'typed', imageDataUrl, name: typedName.trim() },
+      { imageDataUrl, name: typedName.trim(), source: 'typed' },
       {
-        save: options?.keepPickerOpen ? false : saveTyped,
-        name: typedName.trim(),
-        type: 'typed',
         keepPickerOpen: options?.keepPickerOpen,
+        name: typedName.trim(),
+        save: options?.keepPickerOpen ? false : saveTyped,
+        type: 'typed',
       },
     )
   }
@@ -910,12 +697,16 @@ export function DocumentSigningPage({
     setValidationMessage('')
     const imageDataUrl = pad.toDataURL('image/png')
     await applyActiveSignature(
-      { source: 'drawn', imageDataUrl, name: typedName.trim() || t`Drawn signature` },
       {
-        save: options?.keepPickerOpen ? false : saveDrawn,
+        imageDataUrl,
         name: typedName.trim() || t`Drawn signature`,
-        type: 'drawn',
+        source: 'drawn',
+      },
+      {
         keepPickerOpen: options?.keepPickerOpen,
+        name: typedName.trim() || t`Drawn signature`,
+        save: options?.keepPickerOpen ? false : saveDrawn,
+        type: 'drawn',
       },
     )
   }
@@ -923,22 +714,24 @@ export function DocumentSigningPage({
   const handleUseUploaded = async (options?: { keepPickerOpen?: boolean }) => {
     if (!uploadedDataUrl) {
       if (!options?.keepPickerOpen) {
-        notifySigningError(t`Please upload your signature image before continuing.`)
+        notifySigningError(
+          t`Please upload your signature image before continuing.`,
+        )
       }
       return
     }
     setValidationMessage('')
     await applyActiveSignature(
       {
-        source: 'uploaded',
         imageDataUrl: uploadedDataUrl,
         name: uploadedFileName || t`Uploaded signature`,
+        source: 'uploaded',
       },
       {
-        save: options?.keepPickerOpen ? false : saveUploaded,
-        name: uploadedFileName || t`Uploaded signature`,
-        type: 'uploaded',
         keepPickerOpen: options?.keepPickerOpen,
+        name: uploadedFileName || t`Uploaded signature`,
+        save: options?.keepPickerOpen ? false : saveUploaded,
+        type: 'uploaded',
       },
     )
   }
@@ -946,10 +739,10 @@ export function DocumentSigningPage({
   const handleUseSaved = async (signature: SavedSignature) => {
     setSelectedSavedId(signature.id)
     await applyActiveSignature({
-      source: 'saved',
       imageDataUrl: signature.imageUrl,
-      signatureId: signature.id,
       name: signature.name,
+      signatureId: signature.id,
+      source: 'saved',
     })
   }
 
@@ -1021,13 +814,19 @@ export function DocumentSigningPage({
         return
       }
       const imageDataUrl = pad.toDataURL('image/png')
-      sigToUse = { source: 'drawn', imageDataUrl, name: typedName.trim() || t`Drawn signature` }
+      sigToUse = {
+        imageDataUrl,
+        name: typedName.trim() || t`Drawn signature`,
+        source: 'drawn',
+      }
       saveFlag = saveDrawn
       nameToUse = typedName.trim() || t`Drawn signature`
       typeToUse = 'drawn'
     } else if (activeTab === 'type') {
       if (!typedName.trim()) {
-        notifySigningError(t`Please enter your full name to create your signature.`)
+        notifySigningError(
+          t`Please enter your full name to create your signature.`,
+        )
         return
       }
       const imageDataUrl = createTypedSignatureDataUrl(
@@ -1035,34 +834,36 @@ export function DocumentSigningPage({
         typedStyle.fontFamily,
         signatureColor,
       )
-      sigToUse = { source: 'typed', imageDataUrl, name: typedName.trim() }
+      sigToUse = { imageDataUrl, name: typedName.trim(), source: 'typed' }
       saveFlag = saveTyped
       nameToUse = typedName.trim()
       typeToUse = 'typed'
     } else if (activeTab === 'upload') {
       if (!uploadedDataUrl) {
-        notifySigningError(t`Please upload your signature image before continuing.`)
+        notifySigningError(
+          t`Please upload your signature image before continuing.`,
+        )
         return
       }
       sigToUse = {
-        source: 'uploaded',
         imageDataUrl: uploadedDataUrl,
         name: uploadedFileName || t`Uploaded signature`,
+        source: 'uploaded',
       }
       saveFlag = saveUploaded
       nameToUse = uploadedFileName || t`Uploaded signature`
       typeToUse = 'uploaded'
     } else if (activeTab === 'saved') {
-      const savedSig = savedSignatures.find(s => s.id === selectedSavedId)
+      const savedSig = savedSignatures.find((s) => s.id === selectedSavedId)
       if (!savedSig) {
         notifySigningError(t`Select a saved signature first.`)
         return
       }
       sigToUse = {
-        source: 'saved',
         imageDataUrl: savedSig.imageUrl,
-        signatureId: savedSig.id,
         name: savedSig.name,
+        signatureId: savedSig.id,
+        source: 'saved',
       }
     }
 
@@ -1081,7 +882,10 @@ export function DocumentSigningPage({
       while (curr) {
         const style = window.getComputedStyle(curr)
         const overflow = style.overflowY || style.overflow || ''
-        if ((overflow.includes('auto') || overflow.includes('scroll')) && curr.scrollHeight > curr.clientHeight) {
+        if (
+          (overflow.includes('auto') || overflow.includes('scroll')) &&
+          curr.scrollHeight > curr.clientHeight
+        ) {
           scrollParent = curr
           break
         }
@@ -1094,7 +898,9 @@ export function DocumentSigningPage({
         clientWidth = scrollParent.clientWidth
       } else {
         // Fallback: look for generic detail scroll classes in preview
-        const docScroll = document.querySelector('.ez-detail-scroll') as HTMLElement | null
+        const docScroll = document.querySelector(
+          '.ez-detail-scroll',
+        ) as HTMLElement | null
         if (docScroll) {
           scrollTop = docScroll.scrollTop
           clientHeight = docScroll.clientHeight
@@ -1106,26 +912,30 @@ export function DocumentSigningPage({
       const height = DEFAULT_PLACEMENT.height
 
       x = Math.max(0, (clientWidth - width) / 2)
-      y = clamp(scrollTop + (clientHeight - height) / 2, 0, Math.max(0, layerHost.offsetHeight - height))
+      y = clamp(
+        scrollTop + (clientHeight - height) / 2,
+        0,
+        Math.max(0, layerHost.offsetHeight - height),
+      )
     }
 
     const box: PlacedSignature = {
+      height: DEFAULT_PLACEMENT.height,
       id: nextBoxId('sig'),
       signature: sigToUse,
+      width: DEFAULT_PLACEMENT.width,
       x,
       y,
-      width: DEFAULT_PLACEMENT.width,
-      height: DEFAULT_PLACEMENT.height,
     }
 
     setSelectedBoxId(box.id)
     commitSnapshot([...placements, box], assignments)
-    
+
     if (saveFlag && onSaveSignature && sigToUse.imageDataUrl) {
       await onSaveSignature({
+        imageUrl: sigToUse.imageDataUrl,
         name: nameToUse || typeToUse || 'Signature',
         type: typeToUse || 'drawn',
-        imageUrl: sigToUse.imageDataUrl,
       })
     }
 
@@ -1189,7 +999,11 @@ export function DocumentSigningPage({
     if (!host) return
     // Field-signing mode: only fill assigned boxes (no free placement).
     // Freeform sign invites (no assigned places) must still allow placement.
-    if (restrictToFields && workspaceMode === 'create' && signatureFields.length > 0)
+    if (
+      restrictToFields &&
+      workspaceMode === 'create' &&
+      signatureFields.length > 0
+    )
       return
 
     const canPlaceCreate =
@@ -1217,12 +1031,12 @@ export function DocumentSigningPage({
 
     if (canPlaceCreate && activeSignature) {
       const box: PlacedSignature = {
+        height,
         id: nextBoxId('sig'),
         signature: activeSignature,
+        width,
         x,
         y,
-        width,
-        height,
       }
       setSelectedBoxId(box.id)
       commitSnapshot([...placements, box], assignments)
@@ -1232,13 +1046,13 @@ export function DocumentSigningPage({
     }
 
     const box: PlacedAssignment = {
-      id: nextBoxId('assign'),
-      assigneeName: assigneeName.trim(),
       assigneeEmail: assigneeEmail.trim() || undefined,
+      assigneeName: assigneeName.trim(),
+      height,
+      id: nextBoxId('assign'),
+      width,
       x,
       y,
-      width,
-      height,
     }
     setSelectedBoxId(box.id)
     // Stay in mark mode so another place can be added for the same signer.
@@ -1284,21 +1098,21 @@ export function DocumentSigningPage({
       if (!onSaveSignature) return
       if (signature.source === 'typed' && saveTyped) {
         await onSaveSignature({
+          imageUrl: signature.imageDataUrl,
           name: signature.name || typedName.trim() || t`Typed signature`,
           type: 'typed',
-          imageUrl: signature.imageDataUrl,
         })
       } else if (signature.source === 'drawn' && saveDrawn) {
         await onSaveSignature({
+          imageUrl: signature.imageDataUrl,
           name: signature.name || t`Drawn signature`,
           type: 'drawn',
-          imageUrl: signature.imageDataUrl,
         })
       } else if (signature.source === 'uploaded' && saveUploaded) {
         await onSaveSignature({
+          imageUrl: signature.imageDataUrl,
           name: signature.name || uploadedFileName || t`Uploaded signature`,
           type: 'uploaded',
-          imageUrl: signature.imageDataUrl,
         })
       }
     },
@@ -1321,30 +1135,30 @@ export function DocumentSigningPage({
       if (activeTab === 'type' && typedName.trim()) {
         await handleUseTyped({ keepPickerOpen: true })
         signature = {
-          source: 'typed',
           imageDataUrl: createTypedSignatureDataUrl(
             typedName.trim(),
             typedStyle.fontFamily,
             signatureColor,
           ),
           name: typedName.trim(),
+          source: 'typed',
         }
       } else if (activeTab === 'draw') {
         const pad = signaturePadRef.current
         if (pad && !pad.isEmpty()) {
           await handleUseDrawn({ keepPickerOpen: true })
           signature = {
-            source: 'drawn',
             imageDataUrl: pad.toDataURL('image/png'),
             name: typedName.trim() || t`Drawn signature`,
+            source: 'drawn',
           }
         }
       } else if (activeTab === 'upload' && uploadedDataUrl) {
         await handleUseUploaded({ keepPickerOpen: true })
         signature = {
-          source: 'uploaded',
           imageDataUrl: uploadedDataUrl,
           name: uploadedFileName || t`Uploaded signature`,
+          source: 'uploaded',
         }
       }
     }
@@ -1392,8 +1206,8 @@ export function DocumentSigningPage({
       const width = clamp(next.width, 60, Math.max(60, surfaceWidth))
       const height = clamp(next.height, 28, Math.max(28, surfaceHeight))
       return {
-        width,
         height,
+        width,
         x: clamp(next.x, 0, Math.max(0, surfaceWidth - width)),
         y: clamp(next.y, 0, Math.max(0, surfaceHeight - height)),
       }
@@ -1551,8 +1365,8 @@ export function DocumentSigningPage({
             pageSizesPt.length > 0
               ? pageSizesPt
               : pageRects.map((rect) => ({
-                  width: rect.width,
                   height: rect.height,
+                  width: rect.width,
                 }))
 
           const fields = assignments.map((item, index) => {
@@ -1665,12 +1479,12 @@ export function DocumentSigningPage({
       }
 
       const payload: SignatureAssignment[] = assignments.map((item) => ({
-        assigneeName: item.assigneeName,
         assigneeEmail: item.assigneeEmail,
+        assigneeName: item.assigneeName,
+        height: normalizeCoord(item.height, surfaceHeight),
+        width: normalizeCoord(item.width, surfaceWidth),
         x: normalizeCoord(item.x, surfaceWidth),
         y: normalizeCoord(item.y, surfaceHeight),
-        width: normalizeCoord(item.width, surfaceWidth),
-        height: normalizeCoord(item.height, surfaceHeight),
       }))
 
       setCompleting(true)
@@ -1734,7 +1548,6 @@ export function DocumentSigningPage({
           } else if (signRequestId) {
             for (const placement of payload) {
               const submitted = await submitSignRequest({
-                signRequestId,
                 signature: {
                   fieldId: placement.signatureId,
                   height: placement.height,
@@ -1745,6 +1558,7 @@ export function DocumentSigningPage({
                   x: placement.x,
                   y: placement.y,
                 },
+                signRequestId,
               })
               if (submitted.error) throw new Error(String(submitted.error))
             }
@@ -1782,8 +1596,8 @@ export function DocumentSigningPage({
     try {
       const pageRects = getPageRects(surfaceRoot, layerHost, zoom)
       let pageSizesPt = pageRects.map((rect) => ({
-        width: rect.width,
         height: rect.height,
+        width: rect.width,
       }))
 
       if (isPdf && documentUrl) {
@@ -1792,11 +1606,11 @@ export function DocumentSigningPage({
           pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
           const pdf = await pdfjsLib.getDocument(documentUrl).promise
-          const sizes: Array<{ width: number; height: number }> = []
+          const sizes: Array<{ height: number; width: number }> = []
           for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
             const page = await pdf.getPage(pageNumber)
             const viewport = page.getViewport({ scale: 1 })
-            sizes.push({ width: viewport.width, height: viewport.height })
+            sizes.push({ height: viewport.height, width: viewport.width })
           }
           pageSizesPt = sizes
         } catch (error) {
@@ -1809,14 +1623,14 @@ export function DocumentSigningPage({
         const pdf = mapBoxToPdfPoints(item, pageRects, pageSizesPt)
         const imageDataUrl = await toPngDataUrl(item.signature.imageDataUrl)
         payload.push({
-          signatureId: item.signature.signatureId,
-          source: item.signature.source,
+          height: pdf.height,
           imageDataUrl,
           pageNumber: pdf.pageNumber,
+          signatureId: item.signature.signatureId,
+          source: item.signature.source,
+          width: pdf.width,
           x: pdf.x,
           y: pdf.y,
-          width: pdf.width,
-          height: pdf.height,
         })
       }
 
@@ -1827,7 +1641,6 @@ export function DocumentSigningPage({
         // Creating sign requests is Share / invite-others only.
         for (const placement of payload) {
           const submitted = await submitSignRequest({
-            signRequestId,
             signature: {
               height: placement.height,
               pageNumber: placement.pageNumber,
@@ -1837,6 +1650,7 @@ export function DocumentSigningPage({
               x: placement.x,
               y: placement.y,
             },
+            signRequestId,
           })
           if (submitted.error) {
             throw new Error(String(submitted.error))
@@ -1869,7 +1683,9 @@ export function DocumentSigningPage({
 
   useEffect(() => {
     if (actionRef) {
-      ;(actionRef as React.MutableRefObject<DocumentSigningActionRef | null>).current = {
+      ;(
+        actionRef as React.MutableRefObject<DocumentSigningActionRef | null>
+      ).current = {
         save: handleCompleteSigning,
       }
     }
@@ -1882,8 +1698,8 @@ export function DocumentSigningPage({
     try {
       const baseName = documentName.replace(/\.[^.]+$/, '') || 'document'
       const boxes = [
-        ...placements.map((item) => ({ kind: 'signature' as const, item })),
-        ...assignments.map((item) => ({ kind: 'assignment' as const, item })),
+        ...placements.map((item) => ({ item, kind: 'signature' as const })),
+        ...assignments.map((item) => ({ item, kind: 'assignment' as const })),
       ]
 
       const loadImageElement = (src: string) =>
@@ -1963,14 +1779,17 @@ export function DocumentSigningPage({
 
           await page.render({ canvasContext: ctx, viewport }).promise
 
-          const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
+          const rect = pageRects.find(
+            (entry) => entry.pageNumber === pageNumber,
+          )
           if (rect) {
             const scaleX = canvas.width / rect.width
             const scaleY = canvas.height / rect.height
 
             for (const box of boxes) {
               const centerY = box.item.y + box.item.height / 2
-              if (centerY < rect.top || centerY > rect.top + rect.height) continue
+              if (centerY < rect.top || centerY > rect.top + rect.height)
+                continue
               await drawBox(ctx, box, rect.left, rect.top, scaleX, scaleY)
             }
           }
@@ -1979,9 +1798,9 @@ export function DocumentSigningPage({
             baseViewport.width > baseViewport.height ? 'landscape' : 'portrait'
           if (!doc) {
             doc = new JsPdf({
+              format: [baseViewport.width, baseViewport.height],
               orientation,
               unit: 'pt',
-              format: [baseViewport.width, baseViewport.height],
             })
           } else {
             doc.addPage([baseViewport.width, baseViewport.height], orientation)
@@ -2034,7 +1853,9 @@ export function DocumentSigningPage({
       }
     } catch (exception) {
       console.error(exception)
-      notifySigningError(t`Unable to download the signed file. Please try again.`)
+      notifySigningError(
+        t`Unable to download the signed file. Please try again.`,
+      )
     } finally {
       setDownloading(false)
     }
@@ -2059,10 +1880,10 @@ export function DocumentSigningPage({
     const first = payload.signers[0]
     if (first) {
       setSelectedAssignee({
+        description: first.email,
         id: first.email,
         name: first.name,
         value: first.email,
-        description: first.email,
       })
     }
     setReadyToMarkAssignment(true)
@@ -2189,15 +2010,13 @@ export function DocumentSigningPage({
     ? externalSurfaceRef?.current
     : documentSurfaceRef.current
   const livePageRects =
-    layerHost != null
-      ? getPageRects(surfaceRootForFields, layerHost, zoom)
-      : []
+    layerHost != null ? getPageRects(surfaceRootForFields, layerHost, zoom) : []
   const livePageSizes =
     pageSizesPt.length > 0
       ? pageSizesPt
       : livePageRects.map((rect) => ({
-          width: rect.width,
           height: rect.height,
+          width: rect.width,
         }))
 
   const myFilledFieldCount = signatureFields.filter(
@@ -2218,11 +2037,11 @@ export function DocumentSigningPage({
     )
     onStateChange?.({
       canSave,
-      isSaving: completing,
       hasPlacements:
         placements.length > 0 ||
         assignments.length > 0 ||
         (fieldSigning && myFilledFieldCount > 0),
+      isSaving: completing,
       workspaceMode,
     })
   }, [
@@ -2240,10 +2059,10 @@ export function DocumentSigningPage({
     <>
       {workspaceMode === 'assign' && readyToMarkAssignment && (
         <div
+          aria-label={t`Click to mark assignee signature place`}
           className='absolute inset-0 z-10 cursor-crosshair'
           style={{ pointerEvents: 'auto' }}
           onClick={handleDocumentClick}
-          aria-label={t`Click to mark assignee signature place`}
         />
       )}
 
@@ -2267,31 +2086,19 @@ export function DocumentSigningPage({
         const mine = isFieldForCurrentSigner(field, currentSignerEmail)
         const signed = isFieldSigned(field)
         const filledImage = fieldSignatures[key]
-        const boxClass = signed || filledImage
-          ? styles.fieldBoxSigned
-          : mine
-            ? styles.fieldBoxActive
-            : styles.fieldBoxMuted
+        const boxClass =
+          signed || filledImage
+            ? styles.fieldBoxSigned
+            : mine
+              ? styles.fieldBoxActive
+              : styles.fieldBoxMuted
 
         return (
           <div
-            key={key}
-            data-signature-placement
             className={`${boxClass} absolute z-20 flex items-center justify-center`}
-            style={{
-              left: screen.x,
-              top: screen.y,
-              width: screen.width,
-              height: screen.height,
-              pointerEvents:
-                !overlayOnly && mine && !signed ? 'auto' : 'none',
-            }}
-            onClick={(event) => {
-              event.stopPropagation()
-              if (overlayOnly || !mine || signed) return
-              applySignatureToField(field, index)
-            }}
+            key={key}
             role={!overlayOnly && mine && !signed ? 'button' : undefined}
+            data-signature-placement
             aria-label={
               mine
                 ? filledImage
@@ -2299,14 +2106,26 @@ export function DocumentSigningPage({
                   : `Sign here for ${field.signerName || 'you'}`
                 : `Reserved for ${field.signerName || field.signerEmail || 'another signer'}`
             }
+            style={{
+              height: screen.height,
+              left: screen.x,
+              pointerEvents: !overlayOnly && mine && !signed ? 'auto' : 'none',
+              top: screen.y,
+              width: screen.width,
+            }}
+            onClick={(event) => {
+              event.stopPropagation()
+              if (overlayOnly || !mine || signed) return
+              applySignatureToField(field, index)
+            }}
           >
             {filledImage || signed ? (
               filledImage ? (
                 <img
-                  src={filledImage}
                   alt='Signature'
                   className='pointer-events-none h-full w-full object-contain p-1'
                   draggable={false}
+                  src={filledImage}
                 />
               ) : (
                 <p className='text-[11px] font-semibold text-green-11'>{t`Signed`}</p>
@@ -2333,86 +2152,28 @@ export function DocumentSigningPage({
 
       {!fieldSigning &&
         placements.map((item) => (
-        <Rnd
-          key={item.id}
-          data-signature-placement
-          bounds='parent'
-          size={{ width: item.width, height: item.height }}
-          position={{ x: item.x, y: item.y }}
-          enableResizing={RESIZE_HANDLES}
-          resizeHandleClasses={RESIZE_HANDLE_CLASSES}
-          onDragStart={() => {
-            setSelectedBoxId(item.id)
-            setShowGuides(true)
-          }}
-          onResizeStart={() => {
-            setSelectedBoxId(item.id)
-            setShowGuides(true)
-          }}
-          onDragStop={(_e, data) => {
-            setShowGuides(false)
-            updateBox(item.id, { x: data.x, y: data.y })
-          }}
-          onResizeStop={(_e, _dir, ref, _delta, position) => {
-            setShowGuides(false)
-            updateBox(item.id, {
-              x: position.x,
-              y: position.y,
-              width: ref.offsetWidth,
-              height: ref.offsetHeight,
-            })
-          }}
-          className={`${styles.placementBox} z-20 ${
-            selectedBoxId === item.id ? 'opacity-100' : 'opacity-95'
-          }`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'auto',
-          }}
-          onClick={(event: MouseEvent) => {
-            event.stopPropagation()
-            setSelectedBoxId(item.id)
-          }}
-        >
-          <img
-            src={item.signature.imageDataUrl}
-            alt='Placed signature'
-            className='pointer-events-none h-full w-full select-none bg-transparent object-contain p-1'
-            draggable={false}
-          />
-          <button
-            type='button'
-            aria-label={t`Delete this signature`}
-            className='absolute -top-2.5 -right-2.5 z-30 inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-3 bg-surface-primary text-red-9 shadow-sm transition-all hover:bg-red-2'
-            onClick={(event) => {
-              event.stopPropagation()
-              deleteBox(item.id)
-            }}
-            onMouseDown={(event) => event.stopPropagation()}
-            onTouchStart={(event) => event.stopPropagation()}
-          >
-            <Trash2 className='h-3.5 w-3.5' />
-          </button>
-        </Rnd>
-      ))}
-
-      {!fieldSigning &&
-        assignments.map((item) => (
           <Rnd
-            key={item.id}
-            data-signature-placement
             bounds='parent'
-            size={{ width: item.width, height: item.height }}
-            position={{ x: item.x, y: item.y }}
             enableResizing={RESIZE_HANDLES}
+            key={item.id}
+            position={{ x: item.x, y: item.y }}
             resizeHandleClasses={RESIZE_HANDLE_CLASSES}
-            onDragStart={() => {
-              setSelectedBoxId(item.id)
-              setShowGuides(true)
+            size={{ height: item.height, width: item.width }}
+            data-signature-placement
+            className={`${styles.placementBox} z-20 ${
+              selectedBoxId === item.id ? 'opacity-100' : 'opacity-95'
+            }`}
+            style={{
+              alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'center',
+              pointerEvents: 'auto',
             }}
-            onResizeStart={() => {
+            onClick={(event: MouseEvent) => {
+              event.stopPropagation()
+              setSelectedBoxId(item.id)
+            }}
+            onDragStart={() => {
               setSelectedBoxId(item.id)
               setShowGuides(true)
             }}
@@ -2420,25 +2181,83 @@ export function DocumentSigningPage({
               setShowGuides(false)
               updateBox(item.id, { x: data.x, y: data.y })
             }}
+            onResizeStart={() => {
+              setSelectedBoxId(item.id)
+              setShowGuides(true)
+            }}
             onResizeStop={(_e, _dir, ref, _delta, position) => {
               setShowGuides(false)
               updateBox(item.id, {
+                height: ref.offsetHeight,
+                width: ref.offsetWidth,
                 x: position.x,
                 y: position.y,
-                width: ref.offsetWidth,
-                height: ref.offsetHeight,
               })
             }}
+          >
+            <img
+              alt='Placed signature'
+              className='pointer-events-none h-full w-full bg-transparent object-contain p-1 select-none'
+              draggable={false}
+              src={item.signature.imageDataUrl}
+            />
+            <button
+              aria-label={t`Delete this signature`}
+              className='absolute -top-2.5 -right-2.5 z-30 inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-3 bg-surface-primary text-red-9 shadow-sm transition-all hover:bg-red-2'
+              type='button'
+              onClick={(event) => {
+                event.stopPropagation()
+                deleteBox(item.id)
+              }}
+              onMouseDown={(event) => event.stopPropagation()}
+              onTouchStart={(event) => event.stopPropagation()}
+            >
+              <Trash2 className='h-3.5 w-3.5' />
+            </button>
+          </Rnd>
+        ))}
+
+      {!fieldSigning &&
+        assignments.map((item) => (
+          <Rnd
+            bounds='parent'
             className={`${styles.assignmentBox} z-20`}
+            enableResizing={RESIZE_HANDLES}
+            key={item.id}
+            position={{ x: item.x, y: item.y }}
+            resizeHandleClasses={RESIZE_HANDLE_CLASSES}
+            size={{ height: item.height, width: item.width }}
+            data-signature-placement
             style={{
-              display: 'flex',
               alignItems: 'center',
+              display: 'flex',
               justifyContent: 'center',
               pointerEvents: 'auto',
             }}
             onClick={(event: MouseEvent) => {
               event.stopPropagation()
               setSelectedBoxId(item.id)
+            }}
+            onDragStart={() => {
+              setSelectedBoxId(item.id)
+              setShowGuides(true)
+            }}
+            onDragStop={(_e, data) => {
+              setShowGuides(false)
+              updateBox(item.id, { x: data.x, y: data.y })
+            }}
+            onResizeStart={() => {
+              setSelectedBoxId(item.id)
+              setShowGuides(true)
+            }}
+            onResizeStop={(_e, _dir, ref, _delta, position) => {
+              setShowGuides(false)
+              updateBox(item.id, {
+                height: ref.offsetHeight,
+                width: ref.offsetWidth,
+                x: position.x,
+                y: position.y,
+              })
             }}
           >
             <div className='flex flex-col items-center justify-center gap-0.5 px-2 text-center'>
@@ -2449,9 +2268,9 @@ export function DocumentSigningPage({
               <p className='text-[10px] font-medium text-gray-10'>{t`Sign here`}</p>
             </div>
             <button
-              type='button'
               aria-label={`Remove assignment for ${item.assigneeName}`}
               className='absolute -top-2.5 -right-2.5 z-30 inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-3 bg-surface-primary text-red-9 shadow-sm transition-all hover:bg-red-2'
+              type='button'
               onClick={(event) => {
                 event.stopPropagation()
                 deleteBox(item.id)
@@ -2469,9 +2288,7 @@ export function DocumentSigningPage({
   if (isInline) {
     if (overlayOnly) {
       return (
-        <>
-          {layerHost ? createPortal(placementOverlayNodes, layerHost) : null}
-        </>
+        <>{layerHost ? createPortal(placementOverlayNodes, layerHost) : null}</>
       )
     }
 
@@ -2482,7 +2299,9 @@ export function DocumentSigningPage({
               <AnimatePresence>
                 {pickerPanelPos ? (
                   <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     ref={pickerPanelRef}
+                    transition={{ duration: 0.15 }}
                     animate={{
                       opacity: showPicker ? 1 : 0,
                       scale: showPicker ? 1 : 0.95,
@@ -2491,9 +2310,10 @@ export function DocumentSigningPage({
                     className={`fixed z-[200] flex max-h-[min(70vh,560px)] w-[380px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xl backdrop-blur-md ${
                       !showPicker ? 'pointer-events-none invisible' : ''
                     }`}
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    style={{ left: pickerPanelPos.left, top: pickerPanelPos.top }}
-                    transition={{ duration: 0.15 }}
+                    style={{
+                      left: pickerPanelPos.left,
+                      top: pickerPanelPos.top,
+                    }}
                   >
                     <div className='flex shrink-0 items-center justify-between border-b border-gray-2 px-4 py-3'>
                       <div className='flex items-center gap-2'>
@@ -2503,9 +2323,9 @@ export function DocumentSigningPage({
                         </span>
                       </div>
                       <button
-                        type='button'
-                        className='flex cursor-pointer items-center justify-center rounded-md p-1 text-gray-8 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
                         aria-label={t`Close`}
+                        className='flex cursor-pointer items-center justify-center rounded-md p-1 text-gray-8 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
+                        type='button'
                         onClick={handleCloseInlinePicker}
                       >
                         <X className='h-3.5 w-3.5' />
@@ -2513,19 +2333,19 @@ export function DocumentSigningPage({
                     </div>
 
                     <div
+                      aria-label={t`Signature methods`}
                       className='flex shrink-0 gap-3 border-b border-gray-3 px-4'
                       role='tablist'
-                      aria-label={t`Signature methods`}
                       onKeyDown={onTabKeyDown}
                     >
                       {tabs.map((tab) => {
                         const selected = activeTab === tab.id
                         return (
                           <button
-                            key={tab.id}
-                            type='button'
-                            role='tab'
                             aria-selected={selected}
+                            key={tab.id}
+                            role='tab'
+                            type='button'
                             className={`-mb-px border-b-2 px-0.5 py-2.5 text-[13px] font-semibold transition-colors ${
                               selected
                                 ? 'border-primary-9 text-gray-13'
@@ -2548,11 +2368,11 @@ export function DocumentSigningPage({
                             </span>
                             <input
                               className='h-9 w-full rounded-lg border border-gray-3 bg-surface-primary px-3 text-[13px] text-gray-13 outline-none placeholder:text-gray-8 focus:border-blue-8 focus:ring-2 focus:ring-blue-3'
+                              placeholder={t`Type your name`}
                               value={typedName}
                               onChange={(event) =>
                                 setTypedName(event.target.value)
                               }
-                              placeholder={t`Type your name`}
                             />
                           </label>
                           <div
@@ -2563,10 +2383,10 @@ export function DocumentSigningPage({
                           </div>
 
                           <div className='space-y-1.5'>
-                            <span className='block text-[12px] font-semibold text-gray-10 text-left'>
+                            <span className='block text-left text-[12px] font-semibold text-gray-10'>
                               Signature style
                             </span>
-                            <div className='flex flex-wrap gap-2 justify-start'>
+                            <div className='flex flex-wrap justify-start gap-2'>
                               {TYPED_STYLES.map((style) => (
                                 <Tooltip
                                   content={style.label}
@@ -2574,15 +2394,15 @@ export function DocumentSigningPage({
                                   position='top'
                                 >
                                   <button
-                                    type='button'
                                     aria-label={style.label}
                                     aria-pressed={typedStyleId === style.id}
+                                    style={{ fontFamily: style.fontFamily }}
+                                    type='button'
                                     className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-[17px] leading-none transition-all ${
                                       typedStyleId === style.id
                                         ? 'border-blue-8 bg-blue-2 text-blue-11'
                                         : 'border-gray-3 bg-surface-primary text-gray-12 hover:border-gray-5 hover:bg-gray-2'
                                     }`}
-                                    style={{ fontFamily: style.fontFamily }}
                                     onClick={() => setTypedStyleId(style.id)}
                                   >
                                     Aa
@@ -2592,11 +2412,11 @@ export function DocumentSigningPage({
                             </div>
                           </div>
 
-                          <div className='flex items-center justify-between gap-3 pt-2 border-t border-gray-2'>
+                          <div className='flex items-center justify-between gap-3 border-t border-gray-2 pt-2'>
                             <label className='flex shrink-0 items-center gap-2 text-[12px] text-gray-10'>
                               <input
-                                type='checkbox'
                                 checked={saveTyped}
+                                type='checkbox'
                                 onChange={(event) =>
                                   setSaveTyped(event.target.checked)
                                 }
@@ -2605,8 +2425,8 @@ export function DocumentSigningPage({
                             </label>
                             {typedName.trim() !== '' && (
                               <button
-                                type='button'
                                 className={primaryButtonClass}
+                                type='button'
                                 onClick={handlePlaceSignature}
                               >
                                 {t`Place Signature`}
@@ -2621,29 +2441,32 @@ export function DocumentSigningPage({
                           <Tooltip
                             content={t`Kindly draw the signature`}
                             disabled={hasDrawnStroke}
-                            position='top'
                             opened={!hasDrawnStroke ? true : false}
+                            position='top'
                           >
                             <div
                               className={`relative w-[348px] max-w-full overflow-hidden rounded-lg border border-gray-3 bg-white ${styles.penCursor}`}
                             >
                               {!hasDrawnStroke ? (
                                 <div className='pointer-events-none absolute inset-0 z-[1] flex flex-col items-center justify-center gap-2 px-4 text-center'>
-                                  <PenLine className='h-5 w-5 text-gray-8' strokeWidth={2} />
+                                  <PenLine
+                                    className='h-5 w-5 text-gray-8'
+                                    strokeWidth={2}
+                                  />
                                   <span className='text-[13px] font-medium text-gray-9'>
                                     {t`Kindly draw the signature`}
                                   </span>
                                 </div>
                               ) : null}
                               <SignatureCanvas
-                                ref={(ref) => {
-                                  signaturePadRef.current = ref
-                                }}
                                 penColor='#1a1a1a'
                                 canvasProps={{
                                   className: `h-36 w-full touch-none ${styles.penCursor}`,
-                                  width: 348,
                                   height: 144,
+                                  width: 348,
+                                }}
+                                ref={(ref) => {
+                                  signaturePadRef.current = ref
                                 }}
                                 onBegin={() => setHasDrawnStroke(true)}
                                 onEnd={syncDrawnSignature}
@@ -2653,8 +2476,8 @@ export function DocumentSigningPage({
                           <div className='flex items-center justify-between gap-3'>
                             <label className='flex items-center gap-2 text-[12px] text-gray-10'>
                               <input
-                                type='checkbox'
                                 checked={saveDrawn}
+                                type='checkbox'
                                 onChange={(event) =>
                                   setSaveDrawn(event.target.checked)
                                 }
@@ -2664,8 +2487,8 @@ export function DocumentSigningPage({
                             <div className='flex items-center gap-2'>
                               {hasDrawnStroke && (
                                 <button
-                                  type='button'
                                   className={primaryButtonClass}
+                                  type='button'
                                   onClick={handlePlaceSignature}
                                 >
                                   {t`Place Signature`}
@@ -2673,9 +2496,9 @@ export function DocumentSigningPage({
                               )}
                               <Tooltip content='Clear' position='top'>
                                 <button
-                                  type='button'
-                                  className={iconButtonClass}
                                   aria-label={t`Clear`}
+                                  className={iconButtonClass}
+                                  type='button'
                                   onClick={() => {
                                     signaturePadRef.current?.clear()
                                     setHasDrawnStroke(false)
@@ -2699,8 +2522,8 @@ export function DocumentSigningPage({
                                   Signature uploaded
                                 </span>
                                 <button
+                                  className='text-[12px] font-semibold text-[var(--accent-primary)] transition-colors hover:text-blue-11'
                                   type='button'
-                                  className='text-[12px] font-semibold text-[var(--accent-primary)] hover:text-blue-11 transition-colors'
                                   onClick={() => {
                                     setUploadedDataUrl(null)
                                     setUploadedFileName('')
@@ -2712,9 +2535,9 @@ export function DocumentSigningPage({
                               </div>
                               <div className='flex h-28 items-center justify-center rounded-xl border border-gray-3 bg-gray-1 p-3'>
                                 <img
-                                  src={uploadedDataUrl}
                                   alt='Uploaded signature'
                                   className='max-h-full max-w-full object-contain'
+                                  src={uploadedDataUrl}
                                 />
                               </div>
                             </div>
@@ -2722,8 +2545,8 @@ export function DocumentSigningPage({
                             <Tooltip
                               content='Kindly upload the signature'
                               disabled={Boolean(uploadedDataUrl)}
-                              position='top'
                               opened={!uploadedDataUrl ? true : false}
+                              position='top'
                             >
                               <div
                                 className={`flex min-h-28 w-[348px] max-w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 text-center transition-colors ${
@@ -2731,13 +2554,13 @@ export function DocumentSigningPage({
                                     ? 'border-blue-8 bg-blue-2'
                                     : 'border-gray-4 bg-gray-1'
                                 }`}
+                                onClick={() => fileInputRef.current?.click()}
+                                onDragLeave={() => setIsDragOver(false)}
                                 onDragOver={(event) => {
                                   event.preventDefault()
                                   setIsDragOver(true)
                                 }}
-                                onDragLeave={() => setIsDragOver(false)}
                                 onDrop={onDropUpload}
-                                onClick={() => fileInputRef.current?.click()}
                               >
                                 <Upload className='h-5 w-5 text-gray-9' />
                                 <p className='mt-2 text-[13px] font-semibold text-gray-13'>
@@ -2747,25 +2570,28 @@ export function DocumentSigningPage({
                                   PNG, JPG up to 5 MB
                                 </p>
                                 <input
-                                  ref={fileInputRef}
-                                  type='file'
                                   accept='image/png,image/jpeg,image/jpg'
                                   className='hidden'
+                                  ref={fileInputRef}
+                                  type='file'
                                   onChange={onFileInputChange}
                                 />
                               </div>
                             </Tooltip>
                           )}
                           {uploadError ? (
-                            <p className='text-[12px] font-medium text-red-10' role='alert'>
+                            <p
+                              className='text-[12px] font-medium text-red-10'
+                              role='alert'
+                            >
                               {uploadError}
                             </p>
                           ) : null}
                           <div className='flex items-center justify-between gap-3'>
                             <label className='flex items-center gap-2 text-[12px] text-gray-10'>
                               <input
-                                type='checkbox'
                                 checked={saveUploaded}
+                                type='checkbox'
                                 onChange={(event) =>
                                   setSaveUploaded(event.target.checked)
                                 }
@@ -2774,8 +2600,8 @@ export function DocumentSigningPage({
                             </label>
                             {uploadedDataUrl && (
                               <button
-                                type='button'
                                 className={primaryButtonClass}
+                                type='button'
                                 onClick={handlePlaceSignature}
                               >
                                 {t`Place Signature`}
@@ -2805,9 +2631,9 @@ export function DocumentSigningPage({
                                   onClick={() => void handleUseSaved(signature)}
                                 >
                                   <img
-                                    src={signature.imageUrl}
                                     alt={signature.name}
                                     className='h-10 w-24 object-contain'
+                                    src={signature.imageUrl}
                                   />
                                   <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-13'>
                                     {signature.name}
@@ -2817,8 +2643,8 @@ export function DocumentSigningPage({
                               {selectedSavedId && (
                                 <div className='flex justify-end pt-1'>
                                   <button
-                                    type='button'
                                     className={primaryButtonClass}
+                                    type='button'
                                     onClick={handlePlaceSignature}
                                   >
                                     {t`Place Signature`}
@@ -2855,69 +2681,72 @@ export function DocumentSigningPage({
                 ) : null}
 
                 <div className='flex items-center gap-1.5 rounded-xl border border-gray-3 bg-surface-primary px-2 py-1.5 shadow-lg'>
-                <Tooltip content='Choose signature' position='top'>
-                  <button
-                    type='button'
-                    className={iconButtonClass}
-                    aria-label={t`Choose signature`}
-                    onClick={() => setShowPicker(true)}
-                  >
-                    <PenLine className='h-4 w-4 text-blue-9' />
-                  </button>
-                </Tooltip>
-
-                <Tooltip content='Undo (Ctrl+Z)' position='top'>
-                  <button
-                    type='button'
-                    className={iconButtonClass}
-                    aria-label={t`Undo`}
-                    disabled={!canUndo}
-                    onClick={undoPlacement}
-                  >
-                    <Undo2 className='h-4 w-4' />
-                  </button>
-                </Tooltip>
-
-                <Tooltip content='Redo (Ctrl+Y / Ctrl+Shift+Z)' position='top'>
-                  <button
-                    type='button'
-                    className={iconButtonClass}
-                    aria-label={t`Redo`}
-                    disabled={!canRedo}
-                    onClick={redoPlacement}
-                  >
-                    <Redo2 className='h-4 w-4' />
-                  </button>
-                </Tooltip>
-
-                {savedOnce && workspaceMode === 'create' ? (
-                  <Tooltip content='Download' position='top'>
+                  <Tooltip content='Choose signature' position='top'>
                     <button
-                      type='button'
+                      aria-label={t`Choose signature`}
                       className={iconButtonClass}
-                      aria-label={t`Download`}
-                      disabled={downloading || placements.length === 0}
-                      onClick={() => void handleDownloadSigned()}
+                      type='button'
+                      onClick={() => setShowPicker(true)}
                     >
-                      {downloading ? (
-                        <Loader2 className='h-4 w-4 animate-spin' />
-                      ) : (
-                        <Download className='h-4 w-4' />
-                      )}
+                      <PenLine className='h-4 w-4 text-blue-9' />
                     </button>
                   </Tooltip>
-                ) : null}
 
-                <Tooltip content='Cancel signing' position='top'>
-                  <button
-                    type='button'
-                    className={iconButtonClass}
-                    aria-label={t`Cancel signing`}
-                    onClick={handleCancelSigning}
+                  <Tooltip content='Undo (Ctrl+Z)' position='top'>
+                    <button
+                      aria-label={t`Undo`}
+                      className={iconButtonClass}
+                      disabled={!canUndo}
+                      type='button'
+                      onClick={undoPlacement}
+                    >
+                      <Undo2 className='h-4 w-4' />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip
+                    content='Redo (Ctrl+Y / Ctrl+Shift+Z)'
+                    position='top'
                   >
-                    <X className='h-4 w-4' />
-                  </button>
-                </Tooltip>
+                    <button
+                      aria-label={t`Redo`}
+                      className={iconButtonClass}
+                      disabled={!canRedo}
+                      type='button'
+                      onClick={redoPlacement}
+                    >
+                      <Redo2 className='h-4 w-4' />
+                    </button>
+                  </Tooltip>
+
+                  {savedOnce && workspaceMode === 'create' ? (
+                    <Tooltip content='Download' position='top'>
+                      <button
+                        aria-label={t`Download`}
+                        className={iconButtonClass}
+                        disabled={downloading || placements.length === 0}
+                        type='button'
+                        onClick={() => void handleDownloadSigned()}
+                      >
+                        {downloading ? (
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                        ) : (
+                          <Download className='h-4 w-4' />
+                        )}
+                      </button>
+                    </Tooltip>
+                  ) : null}
+
+                  <Tooltip content='Cancel signing' position='top'>
+                    <button
+                      aria-label={t`Cancel signing`}
+                      className={iconButtonClass}
+                      type='button'
+                      onClick={handleCancelSigning}
+                    >
+                      <X className='h-4 w-4' />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>,
               document.body,
@@ -2933,10 +2762,10 @@ export function DocumentSigningPage({
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--surface-secondary)] text-[13px] text-[var(--text-primary)]'>
       <header className='flex h-[60px] shrink-0 items-center gap-2 border-b border-[var(--border-default)] bg-[var(--surface-primary)] px-4 sm:px-5'>
         <button
-          type='button'
-          className={controlButtonClass}
-          onClick={onBack}
           aria-label={t`Back`}
+          className={controlButtonClass}
+          type='button'
+          onClick={onBack}
         >
           <ArrowLeft className='h-4 w-4' />
           <span className='hidden sm:inline'>{t`Back`}</span>
@@ -2949,12 +2778,14 @@ export function DocumentSigningPage({
 
         <div className='hidden items-center gap-1 sm:flex'>
           <button
-            type='button'
-            className={controlButtonClass}
             aria-label={t`Zoom out`}
+            className={controlButtonClass}
             disabled={zoom <= 0.5}
+            type='button'
             onClick={() =>
-              setZoom((value) => clamp(Number((value - 0.1).toFixed(2)), 0.5, 2))
+              setZoom((value) =>
+                clamp(Number((value - 0.1).toFixed(2)), 0.5, 2),
+              )
             }
           >
             <Minus className='h-3.5 w-3.5' />
@@ -2963,20 +2794,22 @@ export function DocumentSigningPage({
             {zoomPercent}%
           </span>
           <button
-            type='button'
-            className={controlButtonClass}
             aria-label={t`Zoom in`}
+            className={controlButtonClass}
             disabled={zoom >= 2}
+            type='button'
             onClick={() =>
-              setZoom((value) => clamp(Number((value + 0.1).toFixed(2)), 0.5, 2))
+              setZoom((value) =>
+                clamp(Number((value + 0.1).toFixed(2)), 0.5, 2),
+              )
             }
           >
             <Plus className='h-3.5 w-3.5' />
           </button>
           <button
-            type='button'
-            className={controlButtonClass}
             aria-label={t`Reset zoom`}
+            className={controlButtonClass}
+            type='button'
             onClick={() => setZoom(1)}
           >
             <RotateCcw className='h-3.5 w-3.5' />
@@ -2985,20 +2818,20 @@ export function DocumentSigningPage({
           <span className='mx-1 h-5 w-px bg-[var(--border-default)]' />
 
           <button
-            type='button'
-            className={controlButtonClass}
             aria-label={t`Undo`}
+            className={controlButtonClass}
             disabled={!canUndo}
+            type='button'
             onClick={undoPlacement}
           >
             <Undo2 className='h-3.5 w-3.5' />
             <span className='hidden lg:inline'>{t`Undo`}</span>
           </button>
           <button
-            type='button'
-            className={controlButtonClass}
             aria-label={t`Redo`}
+            className={controlButtonClass}
             disabled={!canRedo}
+            type='button'
             onClick={redoPlacement}
           >
             <Redo2 className='h-3.5 w-3.5' />
@@ -3007,8 +2840,8 @@ export function DocumentSigningPage({
         </div>
 
         <button
-          type='button'
           className={primaryButtonClass}
+          type='button'
           disabled={
             (fieldSigning
               ? myFilledFieldCount === 0
@@ -3037,9 +2870,12 @@ export function DocumentSigningPage({
 
         {savedOnce ? (
           <button
-            type='button'
             className={controlButtonClass}
-            disabled={downloading || (placements.length === 0 && assignments.length === 0)}
+            type='button'
+            disabled={
+              downloading ||
+              (placements.length === 0 && assignments.length === 0)
+            }
             onClick={() => void handleDownloadSigned()}
           >
             {downloading ? (
@@ -3071,14 +2907,14 @@ export function DocumentSigningPage({
                 <div
                   className='h-full w-full origin-top-left'
                   style={{
+                    height: `${100 / zoom}%`,
                     transform: `scale(${zoom})`,
                     width: `${100 / zoom}%`,
-                    height: `${100 / zoom}%`,
                   }}
                 >
                   <div
-                    ref={documentSurfaceRef}
                     className='relative h-full w-full bg-[var(--surface-primary)]'
+                    ref={documentSurfaceRef}
                     role='presentation'
                   >
                     <DocumentPreviewViewer
@@ -3090,7 +2926,9 @@ export function DocumentSigningPage({
                       isPdf={isPdf}
                     />
 
-                    {layerHost ? createPortal(placementOverlayNodes, layerHost) : null}
+                    {layerHost
+                      ? createPortal(placementOverlayNodes, layerHost)
+                      : null}
                   </div>
                 </div>
               </div>
@@ -3100,21 +2938,21 @@ export function DocumentSigningPage({
 
         <aside className='ez-scrollbar flex min-h-0 flex-col overflow-y-auto bg-[var(--surface-primary)]'>
           <div
+            aria-label={t`Signature methods`}
             className='flex gap-5 border-b border-[var(--border-default)] px-5'
             role='tablist'
-            aria-label={t`Signature methods`}
             onKeyDown={onTabKeyDown}
           >
             {tabs.map((tab) => {
               const selected = activeTab === tab.id
               return (
                 <button
-                  key={tab.id}
-                  type='button'
-                  role='tab'
                   aria-selected={selected}
                   id={`signature-tab-${tab.id}`}
-                  className={`-mb-px border-b-2 px-0.5 py-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] ${
+                  key={tab.id}
+                  role='tab'
+                  type='button'
+                  className={`-mb-px border-b-2 px-0.5 py-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none ${
                     selected
                       ? 'border-[var(--accent-primary)] text-[var(--text-primary)]'
                       : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -3144,11 +2982,11 @@ export function DocumentSigningPage({
                     Full name
                   </span>
                   <input
+                    className='h-9 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-[13px] transition-colors outline-none focus:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]'
+                    placeholder={t`Enter your full name`}
                     type='text'
                     value={typedName}
                     onChange={(event) => setTypedName(event.target.value)}
-                    className='h-9 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-[13px] outline-none transition-colors focus:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]'
-                    placeholder={t`Enter your full name`}
                   />
                 </label>
 
@@ -3158,9 +2996,9 @@ export function DocumentSigningPage({
                   </p>
                   <div className='flex h-24 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 transition-all duration-200'>
                     <img
-                      src={typedPreviewUrl}
                       alt='Typed signature preview'
                       className='max-h-16 max-w-full object-contain'
+                      src={typedPreviewUrl}
                     />
                   </div>
                 </div>
@@ -3171,17 +3009,21 @@ export function DocumentSigningPage({
                   </p>
                   <div className='flex flex-wrap gap-2'>
                     {TYPED_STYLES.map((style) => (
-                      <Tooltip content={style.label} key={style.id} position='top'>
+                      <Tooltip
+                        content={style.label}
+                        key={style.id}
+                        position='top'
+                      >
                         <button
-                          type='button'
                           aria-label={style.label}
                           aria-pressed={typedStyleId === style.id}
-                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-[17px] leading-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] ${
+                          style={{ fontFamily: style.fontFamily }}
+                          type='button'
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-[17px] leading-none transition-all focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none ${
                             typedStyleId === style.id
                               ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)] text-[var(--accent-primary)]'
                               : 'border-[var(--border-default)] hover:bg-[var(--surface-hover)]'
                           }`}
-                          style={{ fontFamily: style.fontFamily }}
                           onClick={() => setTypedStyleId(style.id)}
                         >
                           Aa
@@ -3198,15 +3040,17 @@ export function DocumentSigningPage({
                   <div className='flex flex-wrap gap-2'>
                     {SIGNATURE_COLORS.map((color) => (
                       <button
+                        aria-label={color.label}
                         key={color.id}
                         type='button'
-                        aria-label={color.label}
-                        className={`h-8 w-8 rounded-full border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] ${
+                        className={`h-8 w-8 rounded-full border-2 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none ${
                           signatureColor === color.value
-                            ? 'border-[var(--accent-primary)] scale-105'
+                            ? 'scale-105 border-[var(--accent-primary)]'
                             : 'border-[var(--border-default)] hover:scale-105'
                         }`}
-                        style={{ backgroundColor: resolveCssColor(color.value) }}
+                        style={{
+                          backgroundColor: resolveCssColor(color.value),
+                        }}
                         onClick={() => setSignatureColor(color.value)}
                       />
                     ))}
@@ -3216,17 +3060,17 @@ export function DocumentSigningPage({
                 <div className='flex items-center justify-between gap-3'>
                   <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
                     <input
-                      type='checkbox'
                       checked={saveTyped}
-                      onChange={(event) => setSaveTyped(event.target.checked)}
                       className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                      type='checkbox'
+                      onChange={(event) => setSaveTyped(event.target.checked)}
                     />
                     Save this signature
                   </label>
                   {typedName.trim() !== '' && (
                     <button
-                      type='button'
                       className={primaryButtonClass}
+                      type='button'
                       onClick={handlePlaceSignature}
                     >
                       {t`Place Signature`}
@@ -3244,8 +3088,8 @@ export function DocumentSigningPage({
                       Draw signature
                     </p>
                     <button
-                      type='button'
                       className={controlButtonClass}
+                      type='button'
                       onClick={() => {
                         signaturePadRef.current?.clear()
                         setHasDrawnStroke(false)
@@ -3267,15 +3111,15 @@ export function DocumentSigningPage({
                       </div>
                     ) : null}
                     <SignatureCanvas
-                      ref={signaturePadRef}
-                      penColor={resolveCssColor(penColor)}
-                      minWidth={penWidth}
                       maxWidth={penWidth + 1.5}
+                      minWidth={penWidth}
+                      penColor={resolveCssColor(penColor)}
+                      ref={signaturePadRef}
                       canvasProps={{
                         className: `h-40 w-full touch-none ${styles.penCursor}`,
                         style: {
-                          width: '100%',
                           height: '160px',
+                          width: '100%',
                         },
                       }}
                       onBegin={() => setHasDrawnStroke(true)}
@@ -3292,15 +3136,17 @@ export function DocumentSigningPage({
                     <div className='flex gap-2'>
                       {SIGNATURE_COLORS.map((color) => (
                         <button
+                          aria-label={color.label}
                           key={color.id}
                           type='button'
-                          aria-label={color.label}
-                          className={`h-7 w-7 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] ${
+                          className={`h-7 w-7 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none ${
                             penColor === color.value
                               ? 'border-[var(--accent-primary)]'
                               : 'border-[var(--border-default)]'
                           }`}
-                          style={{ backgroundColor: resolveCssColor(color.value) }}
+                          style={{
+                            backgroundColor: resolveCssColor(color.value),
+                          }}
                           onClick={() => setPenColor(color.value)}
                         />
                       ))}
@@ -3312,14 +3158,16 @@ export function DocumentSigningPage({
                       Pen width
                     </span>
                     <input
-                      type='range'
-                      min={1}
-                      max={5}
-                      step={1}
-                      value={penWidth}
-                      onChange={(event) => setPenWidth(Number(event.target.value))}
-                      className='w-full accent-[var(--accent-primary)]'
                       aria-label={t`Pen width`}
+                      className='w-full accent-[var(--accent-primary)]'
+                      max={5}
+                      min={1}
+                      step={1}
+                      type='range'
+                      value={penWidth}
+                      onChange={(event) =>
+                        setPenWidth(Number(event.target.value))
+                      }
                     />
                   </label>
                 </div>
@@ -3327,17 +3175,17 @@ export function DocumentSigningPage({
                 <div className='flex items-center justify-between gap-3'>
                   <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
                     <input
-                      type='checkbox'
                       checked={saveDrawn}
-                      onChange={(event) => setSaveDrawn(event.target.checked)}
                       className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                      type='checkbox'
+                      onChange={(event) => setSaveDrawn(event.target.checked)}
                     />
                     Save this signature
                   </label>
                   {hasDrawnStroke && (
                     <button
-                      type='button'
                       className={primaryButtonClass}
+                      type='button'
                       onClick={handlePlaceSignature}
                     >
                       {t`Place Signature`}
@@ -3355,11 +3203,11 @@ export function DocumentSigningPage({
                       ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)]'
                       : 'border-[var(--border-strong)] bg-[var(--surface-muted)]'
                   }`}
+                  onDragLeave={() => setIsDragOver(false)}
                   onDragOver={(event) => {
                     event.preventDefault()
                     setIsDragOver(true)
                   }}
-                  onDragLeave={() => setIsDragOver(false)}
                   onDrop={onDropUpload}
                 >
                   <Upload className='mx-auto h-6 w-6 text-[var(--accent-primary)]' />
@@ -3372,23 +3220,26 @@ export function DocumentSigningPage({
                     PNG, JPG, JPEG · Max 5 MB
                   </p>
                   <button
-                    type='button'
                     className={`${controlButtonClass} mt-3`}
+                    type='button'
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Browse
                   </button>
                   <input
-                    ref={fileInputRef}
-                    type='file'
                     accept='.png,.jpg,.jpeg,image/png,image/jpeg'
                     className='hidden'
+                    ref={fileInputRef}
+                    type='file'
                     onChange={onFileInputChange}
                   />
                 </div>
 
                 {uploadError ? (
-                  <p className='text-[12px] text-[var(--error-main)]' role='alert'>
+                  <p
+                    className='text-[12px] text-[var(--error-main)]'
+                    role='alert'
+                  >
                     {uploadError}
                   </p>
                 ) : null}
@@ -3397,9 +3248,9 @@ export function DocumentSigningPage({
                   <div className='space-y-3'>
                     <div className='flex h-28 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-3'>
                       <img
-                        src={uploadedDataUrl}
                         alt={uploadedFileName || 'Uploaded signature preview'}
                         className='max-h-full max-w-full object-contain'
+                        src={uploadedDataUrl}
                       />
                     </div>
                     <p className='truncate text-[12px] text-[var(--text-secondary)]'>
@@ -3407,15 +3258,15 @@ export function DocumentSigningPage({
                     </p>
                     <div className='flex gap-2'>
                       <button
-                        type='button'
                         className={controlButtonClass}
+                        type='button'
                         onClick={() => fileInputRef.current?.click()}
                       >
                         Replace file
                       </button>
                       <button
-                        type='button'
                         className={controlButtonClass}
+                        type='button'
                         onClick={() => {
                           setUploadedDataUrl(null)
                           setUploadedFileName('')
@@ -3430,17 +3281,19 @@ export function DocumentSigningPage({
                 <div className='flex items-center justify-between gap-3'>
                   <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
                     <input
-                      type='checkbox'
                       checked={saveUploaded}
-                      onChange={(event) => setSaveUploaded(event.target.checked)}
                       className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                      type='checkbox'
+                      onChange={(event) =>
+                        setSaveUploaded(event.target.checked)
+                      }
                     />
                     Save this signature
                   </label>
                   {uploadedDataUrl && (
                     <button
-                      type='button'
                       className={primaryButtonClass}
+                      type='button'
                       onClick={handlePlaceSignature}
                     >
                       {t`Place Signature`}
@@ -3476,15 +3329,15 @@ export function DocumentSigningPage({
                           onClick={() => handleUseSaved(signature)}
                         >
                           <button
+                            className='w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none'
                             type='button'
-                            className='w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]'
                             onClick={() => setSelectedSavedId(signature.id)}
                           >
                             <div className='flex h-16 items-center justify-center rounded-lg bg-[var(--surface-muted)] px-3'>
                               <img
-                                src={signature.imageUrl}
                                 alt={`${signature.name} signature`}
                                 className='max-h-12 max-w-full object-contain'
+                                src={signature.imageUrl}
                               />
                             </div>
                             <div className='mt-2 flex items-center justify-between gap-2'>
@@ -3492,7 +3345,7 @@ export function DocumentSigningPage({
                                 <p className='truncate text-[13px] font-semibold'>
                                   {signature.name}
                                 </p>
-                                <p className='text-[11px] capitalize text-[var(--text-muted)]'>
+                                <p className='text-[11px] text-[var(--text-muted)] capitalize'>
                                   {signature.type}
                                 </p>
                               </div>
@@ -3501,10 +3354,10 @@ export function DocumentSigningPage({
                                   Selected
                                 </span>
                               ) : null}
-                               <button
-                                type='button'
-                                className={controlButtonClass}
+                              <button
                                 aria-label={`Delete ${signature.name}`}
+                                className={controlButtonClass}
+                                type='button'
                                 onClick={() => setDeleteConfirmId(signature.id)}
                               >
                                 <Trash2 className='h-3.5 w-3.5' />
@@ -3517,15 +3370,15 @@ export function DocumentSigningPage({
                               <p className='text-[12px] font-medium'>{t`Delete this signature?`}</p>
                               <div className='mt-2 flex gap-2'>
                                 <button
-                                  type='button'
                                   className={controlButtonClass}
+                                  type='button'
                                   onClick={() => setDeleteConfirmId(null)}
                                 >
                                   Cancel
                                 </button>
                                 <button
-                                  type='button'
                                   className={`${controlButtonClass} text-[var(--error-main)]`}
+                                  type='button'
                                   onClick={async () => {
                                     await onDeleteSavedSignature?.(signature.id)
                                     setDeleteConfirmId(null)
@@ -3539,23 +3392,27 @@ export function DocumentSigningPage({
                               </div>
                             </div>
                           ) : (
-                            false&& (<div className='mt-3 flex gap-2'>
-                              <button
-                                type='button'
-                                className={`${primaryButtonClass} h-8 flex-1 px-3 text-[12px]`}
-                                onClick={() => void handleUseSaved(signature)}
-                              >
-                                Use
-                              </button>
-                              <button
-                                type='button'
-                                className={controlButtonClass}
-                                aria-label={`Delete ${signature.name}`}
-                                onClick={() => setDeleteConfirmId(signature.id)}
-                              >
-                                <Trash2 className='h-3.5 w-3.5' />
-                              </button>
-                            </div>)
+                            false && (
+                              <div className='mt-3 flex gap-2'>
+                                <button
+                                  className={`${primaryButtonClass} h-8 flex-1 px-3 text-[12px]`}
+                                  type='button'
+                                  onClick={() => void handleUseSaved(signature)}
+                                >
+                                  Use
+                                </button>
+                                <button
+                                  aria-label={`Delete ${signature.name}`}
+                                  className={controlButtonClass}
+                                  type='button'
+                                  onClick={() =>
+                                    setDeleteConfirmId(signature.id)
+                                  }
+                                >
+                                  <Trash2 className='h-3.5 w-3.5' />
+                                </button>
+                              </div>
+                            )
                           )}
                         </div>
                       )
@@ -3563,8 +3420,8 @@ export function DocumentSigningPage({
                     {selectedSavedId && (
                       <div className='flex justify-end pt-1'>
                         <button
-                          type='button'
                           className={primaryButtonClass}
+                          type='button'
                           onClick={handlePlaceSignature}
                         >
                           {t`Place Signature`}
@@ -3580,6 +3437,224 @@ export function DocumentSigningPage({
       </div>
     </div>
   )
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function createTypedSignatureDataUrl(
+  name: string,
+  fontFamily: string,
+  color: string,
+) {
+  const safeName = name.trim() || 'Signature'
+  const width = Math.max(280, Math.min(640, safeName.length * 28))
+  const height = 96
+  const fill = resolveCssColor(color)
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <rect width="100%" height="100%" fill="transparent"/>
+  <text
+    x="50%"
+    y="58%"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    fill="${fill}"
+    font-family='${fontFamily.replace(/'/g, "\\'")}'
+    font-size="42"
+  >${safeName
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')}</text>
+</svg>`.trim()
+
+  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
+}
+
+function fieldKey(field: SignRequestFieldDto, index: number) {
+  return (
+    field.fieldId ||
+    `${field.signerEmail || 'signer'}-${field.pageNumber}-${field.x}-${field.y}-${index}`
+  )
+}
+
+function getPageRects(
+  surfaceRoot: HTMLElement | null | undefined,
+  layerHost: HTMLElement,
+  zoom: number,
+): PageRect[] {
+  const hostRect = layerHost.getBoundingClientRect()
+  const pageEls = Array.from(
+    surfaceRoot?.querySelectorAll('.rpv-core__inner-page') || [],
+  ) as HTMLElement[]
+  if (pageEls.length === 0) {
+    return [
+      {
+        height: layerHost.offsetHeight,
+        left: 0,
+        pageNumber: 1,
+        top: 0,
+        width: layerHost.offsetWidth,
+      },
+    ]
+  }
+  return pageEls.map((el, index) => {
+    const r = el.getBoundingClientRect()
+    return {
+      height: r.height / zoom,
+      left: (r.left - hostRect.left) / zoom,
+      pageNumber: readViewerPageNumber(el, index),
+      top: (r.top - hostRect.top) / zoom,
+      width: r.width / zoom,
+    }
+  })
+}
+
+function isFieldForCurrentSigner(
+  field: SignRequestFieldDto,
+  currentEmail: string,
+) {
+  if (!currentEmail) return true
+  const fieldEmail = String(field.signerEmail || '')
+    .trim()
+    .toLowerCase()
+  if (!fieldEmail) return true
+  return fieldEmail === currentEmail
+}
+
+function isFieldSigned(field: SignRequestFieldDto) {
+  const status = String(field.status || '').toUpperCase()
+  return status === 'SIGNED' || Boolean(field.signedAtUtc)
+}
+
+function mapBoxToPdfPoints(
+  box: PlacementState,
+  pageRects: PageRect[],
+  pageSizesPt: Array<{ height: number; width: number }>,
+) {
+  const centerY = box.y + box.height / 2
+  const rect =
+    pageRects.find(
+      (entry) => centerY >= entry.top && centerY <= entry.top + entry.height,
+    ) || pageRects[0]
+  if (!rect) {
+    return {
+      height: box.height,
+      pageNumber: 1,
+      width: box.width,
+      x: box.x,
+      y: box.y,
+    }
+  }
+  const size = sizeForPage(rect.pageNumber, pageSizesPt, pageRects, rect)
+  const scaleX = size.width / Math.max(1, rect.width)
+  const scaleY = size.height / Math.max(1, rect.height)
+  return {
+    height: Number((box.height * scaleY).toFixed(2)),
+    pageNumber: rect.pageNumber,
+    width: Number((box.width * scaleX).toFixed(2)),
+    x: Number(((box.x - rect.left) * scaleX).toFixed(2)),
+    y: Number(((box.y - rect.top) * scaleY).toFixed(2)),
+  }
+}
+
+function mapPdfFieldToScreen(
+  field: {
+    height: number
+    pageNumber: number
+    width: number
+    x: number
+    y: number
+  },
+  pageRects: PageRect[],
+  pageSizesPt: Array<{ height: number; width: number }>,
+): PlacementState | null {
+  const pageNumber = Number(field.pageNumber) || 1
+  const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
+  if (!rect) return null
+  const size = sizeForPage(pageNumber, pageSizesPt, pageRects, rect)
+  const scaleX = rect.width / Math.max(1, size.width)
+  const scaleY = rect.height / Math.max(1, size.height)
+  return {
+    height: Math.max(24, Number(field.height) * scaleY),
+    width: Math.max(48, Number(field.width) * scaleX),
+    x: rect.left + Number(field.x) * scaleX,
+    y: rect.top + Number(field.y) * scaleY,
+  }
+}
+
+function normalizeCoord(value: number, total: number) {
+  if (!total) return 0
+  return clamp(Number((value / total).toFixed(4)), 0, 1)
+}
+
+/** react-pdf-viewer only mounts visible pages. Page index lives on the layer. */
+function readViewerPageNumber(el: HTMLElement, fallbackIndex: number) {
+  const layer = el.querySelector('[data-testid^="core__page-layer-"]')
+  const testId = layer?.getAttribute('data-testid') || ''
+  const fromTestId = testId.match(/core__page-layer-(\d+)$/)
+  if (fromTestId) return Number(fromTestId[1]) + 1
+
+  const fromLabel = (el.getAttribute('aria-label') || '').match(/(\d+)\s*$/)
+  if (fromLabel) return Number(fromLabel[1])
+
+  return fallbackIndex + 1
+}
+
+function resolveCssColor(token: string) {
+  if (token === 'var(--text-primary)') return '#1a1a1a'
+  if (token === 'var(--accent-primary)') return '#1a1a1a'
+  if (token === 'var(--text-secondary)') return '#4b5563'
+  if (token === 'var(--text-muted)') return '#9ca3af'
+  if (token.startsWith('var(')) return '#1a1a1a'
+  return token || '#1a1a1a'
+}
+
+/**
+ * Full PDF size lists are indexed by page. A list built from the mounted
+ * pages is the same length as `pageRects` and is not page-indexed once the
+ * viewer has virtualized past page 1.
+ */
+function sizeForPage(
+  pageNumber: number,
+  pageSizesPt: Array<{ height: number; width: number }>,
+  pageRects: PageRect[],
+  rect: PageRect,
+) {
+  const size = pageSizesPt[pageNumber - 1]
+  const virtualFallback =
+    pageSizesPt.length === pageRects.length &&
+    pageRects.some((entry, index) => entry.pageNumber !== index + 1)
+  if (size && pageSizesPt.length >= pageNumber && !virtualFallback) {
+    return size
+  }
+  return { height: rect.height, width: rect.width }
+}
+
+async function toPngDataUrl(dataUrl: string): Promise<string> {
+  if (!dataUrl) return dataUrl
+  if (dataUrl.startsWith('data:image/png')) return dataUrl
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, img.naturalWidth || img.width || 1)
+      canvas.height = Math.max(1, img.naturalHeight || img.height || 1)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Canvas unavailable'))
+        return
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => reject(new Error('Unable to convert signature image'))
+    img.src = dataUrl
+  })
 }
 
 export default DocumentSigningPage

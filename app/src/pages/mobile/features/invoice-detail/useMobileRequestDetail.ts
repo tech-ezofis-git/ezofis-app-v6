@@ -64,9 +64,7 @@ const normalizeFieldName = (name: string) => {
   ) {
     return 'total due'
   }
-  if (
-    ['invoice number', 'invoice no', 'invoice no.'].includes(normalized)
-  ) {
+  if (['invoice number', 'invoice no', 'invoice no.'].includes(normalized)) {
     return 'invoice number'
   }
   return normalized
@@ -108,8 +106,13 @@ export function useMobileRequestDetail() {
     selectedItem?.id
   const transactionId = selectedItem?.transactionId
 
-  const { data: request, isLoading, isFetching, error, refetch } =
-    useRequestDetail(workflowId, processId, transactionId)
+  const {
+    data: request,
+    error,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useRequestDetail(workflowId, processId, transactionId)
 
   const agent = useMemo(() => {
     const list = request?._agentData || selectedItem?._agentData || []
@@ -130,8 +133,7 @@ export function useMobileRequestDetail() {
 
   const getFieldScore = (key: string) => {
     const cleanK = normalizeFieldName(key)
-    const matchingFields =
-      agent?.debug?.['Side-by-side Field Matching'] || []
+    const matchingFields = agent?.debug?.['Side-by-side Field Matching'] || []
     for (const field of matchingFields) {
       if (field?.Field && normalizeFieldName(String(field.Field)) === cleanK) {
         return confidenceLabel(field.Score)
@@ -201,9 +203,7 @@ export function useMobileRequestDetail() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       due.setHours(0, 0, 0, 0)
-      daysUntilDue = Math.floor(
-        (due.getTime() - today.getTime()) / 86400000,
-      )
+      daysUntilDue = Math.floor((due.getTime() - today.getTime()) / 86400000)
     }
   }
 
@@ -277,7 +277,9 @@ export function useMobileRequestDetail() {
         agent?.score ||
         header.confidence ||
         agent?.['Extracted Invoice JSON']?.confidence,
-    ) || getFieldScore('Invoice Amount') || '—'
+    ) ||
+    getFieldScore('Invoice Amount') ||
+    '—'
 
   const extractedRows = [
     {
@@ -378,8 +380,7 @@ export function useMobileRequestDetail() {
           'item_no',
           'itemNo',
         ]) || 'Line item',
-      quantity:
-        getLineRaw(item, ['Quantity', 'quantity', 'Qty', 'qty']) || '—',
+      quantity: getLineRaw(item, ['Quantity', 'quantity', 'Qty', 'qty']) || '—',
       score,
       unitPrice:
         formatMoney(
@@ -439,10 +440,10 @@ export function useMobileRequestDetail() {
     aiNote: agent?.ai_insight || agent?.aiInsight || agent?.reason || '',
     attachments: attachments.data,
     attachmentsLoading: attachments.isLoading,
-    commentSubmitting,
-    commentText,
     comments: comments.data,
     commentsLoading: comments.isLoading,
+    commentSubmitting,
+    commentText,
     confidence: confidence || '—',
     currency,
     decision,
@@ -471,11 +472,13 @@ export function useMobileRequestDetail() {
     poMatchingStatus: matched ? 'Matched' : 'Not Matched',
     poMatchingTone: (matched ? 'success' : 'warning') as StatusType,
     poNumber: poNumber || '—',
-    poSubtitle: poNumber ? `PO ${String(poNumber).replace(/^PO[-\s]?/i, '')}` : '—',
+    poSubtitle: poNumber
+      ? `PO ${String(poNumber).replace(/^PO[-\s]?/i, '')}`
+      : '—',
+    processId,
     refetch,
     request,
     selectedItem,
-    setCommentText,
     statusLabel,
     statusTone,
     submitComment,
@@ -487,6 +490,6 @@ export function useMobileRequestDetail() {
       ? 'Supplier verified'
       : pick(agent?.supplier_verification?.message, 'Not verified'),
     workflowId,
-    processId,
+    setCommentText,
   }
 }

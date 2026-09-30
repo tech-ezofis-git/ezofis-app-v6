@@ -2428,8 +2428,6 @@ function LoginDetails({
         </div>
       </AnimateFadeIn>
 
-
-
       {showPasswordField ? (
         <AnimateFadeIn delay={0.35}>
           <div className='space-y-3'>
@@ -2448,8 +2446,8 @@ function LoginDetails({
                   onChange={(checked) =>
                     onChange({
                       ...user,
-                      resetPassword: checked,
                       password: '',
+                      resetPassword: checked,
                     })
                   }
                 />
@@ -2480,8 +2478,6 @@ function LoginDetails({
           </div>
         </AnimateFadeIn>
       ) : null}
-
-
     </SettingsFormSection>
   )
 }

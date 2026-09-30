@@ -15,6 +15,7 @@ import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import FolderSharePopover from '@/pages/folders/components/FolderSharePopover'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import customerDocumentsHtml from './components/Customer Documents.html?raw'
 import DashboardApiBuilder, {
   type SavedHtmlHeaderActions,
 } from './components/DashboardApiBuilder'
@@ -25,7 +26,6 @@ import DocumentRepositorySetup from './workflows/document-repository/DocumentRep
 import useDmsSetupStore from './workflows/document-repository/stores/useDmsSetupStore'
 import { openApSetupPreview } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
-import customerDocumentsHtml from './components/Customer Documents.html?raw'
 type DashboardSourceKind = 'repository' | 'workflow'
 
 type DashboardSourceOption = {
@@ -106,10 +106,10 @@ const DashboardPage = () => {
             )
             const label = String(
               item?.name ||
-              item?.repositoryName ||
-              item?.title ||
-              item?.label ||
-              id,
+                item?.repositoryName ||
+                item?.title ||
+                item?.label ||
+                id,
             )
             const rawDesc = item?.description || item?.details || item?.subtitle
             const description = rawDesc
@@ -156,15 +156,16 @@ const DashboardPage = () => {
         if (existing) {
           setSelectedSourceId(existing.selectId)
         } else if (!repositoryId || repositoryId === 'ap') {
-          const apOpt = mapped.find(
-            (opt) =>
-              opt.kind === 'workflow' &&
-              /accounts payable/i.test(opt.label)
-          ) || mapped.find(
-            (opt) =>
-              opt.kind === 'repository' &&
-              (/accounts payable/i.test(opt.label) || opt.value === 'ap'),
-          )
+          const apOpt =
+            mapped.find(
+              (opt) =>
+                opt.kind === 'workflow' && /accounts payable/i.test(opt.label),
+            ) ||
+            mapped.find(
+              (opt) =>
+                opt.kind === 'repository' &&
+                (/accounts payable/i.test(opt.label) || opt.value === 'ap'),
+            )
           if (apOpt) {
             setSelectedSourceId(apOpt.selectId)
             if (apOpt.kind === 'repository') {
@@ -208,9 +209,7 @@ const DashboardPage = () => {
   const selectedSource =
     sourceOptions.find((opt) => opt.selectId === selectedSourceId) ||
     sourceOptions.find(
-      (opt) =>
-        opt.kind === 'workflow' &&
-        /accounts payable/i.test(opt.label),
+      (opt) => opt.kind === 'workflow' && /accounts payable/i.test(opt.label),
     ) ||
     sourceOptions.find(
       (opt) =>
@@ -263,8 +262,7 @@ const DashboardPage = () => {
 
   const isCustomerDocuments =
     !isWorkflowSource &&
-    (!activeRepositoryId ||
-      selectedName.toLowerCase() === 'customer documents')
+    (!activeRepositoryId || selectedName.toLowerCase() === 'customer documents')
   const displayTitle =
     selectedSource?.label || selectedName || t`Accounts Payable Automation`
 
@@ -303,7 +301,10 @@ const DashboardPage = () => {
     <div
       className={cn(
         'flex h-full flex-col bg-gray-1',
-        isDmsSetupStarted || isSetupStarted || savedHtmlHeader || isCustomerDocuments
+        isDmsSetupStarted ||
+          isSetupStarted ||
+          savedHtmlHeader ||
+          isCustomerDocuments
           ? 'overflow-hidden'
           : 'overflow-y-auto',
       )}
@@ -445,8 +446,11 @@ const DashboardPage = () => {
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'min-h-0 flex-1',
-                (isSetupStarted || isDmsSetupStarted || savedHtmlHeader || isCustomerDocuments) &&
-                'flex h-full flex-col',
+                (isSetupStarted ||
+                  isDmsSetupStarted ||
+                  savedHtmlHeader ||
+                  isCustomerDocuments) &&
+                  'flex h-full flex-col',
               )}
             >
               {isApDashboard ? (
@@ -460,9 +464,9 @@ const DashboardPage = () => {
                 </>
               ) : isCustomerDocuments ? (
                 <iframe
-                  className="flex-1 w-full border-0 bg-white rounded-xl shadow-xs"
+                  className='w-full flex-1 rounded-xl border-0 bg-white shadow-xs'
                   srcDoc={customerDocumentsHtml}
-                  title="Customer Documents Dashboard"
+                  title='Customer Documents Dashboard'
                 />
               ) : (
                 <DashboardApiBuilder

@@ -609,7 +609,9 @@ export function normalizeFolderDataType(value: string) {
   }
 
   const mapped = aliases[normalized] || normalized
-  return FOLDER_DATA_TYPES.includes(mapped as (typeof FOLDER_DATA_TYPES)[number])
+  return FOLDER_DATA_TYPES.includes(
+    mapped as (typeof FOLDER_DATA_TYPES)[number],
+  )
     ? mapped
     : 'SHORT_TEXT'
 }

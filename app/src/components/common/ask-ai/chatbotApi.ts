@@ -1,10 +1,7 @@
 import { getV6ApiBaseUrl } from '@/api/axios'
 import authUserStore from '@/stores/authUserStore'
-import {
-  getFromLocalStorage,
-  setToLocalStorage,
-} from '@/utils/local-storage'
 import { serializeFilterValues } from '@/utils/filterUtils'
+import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type {
   AskAiAnswer,
   AskAiBrowseFilterGroup,
@@ -17,8 +14,7 @@ import type {
 } from './types'
 
 export const CHATBOT_API_BASE = (
-  import.meta.env.VITE_CHATBOT_API_URL ||
-  getV6ApiBaseUrl()
+  import.meta.env.VITE_CHATBOT_API_URL || getV6ApiBaseUrl()
 )
   .trim()
   .replace(/\/+$/, '')
@@ -32,39 +28,6 @@ export type ChatbotRequestBody = {
   specificId: string | null
   tenantId: string
   token: string
-}
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const raw = token.startsWith('Bearer ') ? token.slice(7) : token
-    const parts = raw.split('.')
-    if (parts.length < 2) return null
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    const padded = base64.padEnd(
-      base64.length + ((4 - (base64.length % 4)) % 4),
-      '=',
-    )
-    const json =
-      typeof window === 'undefined'
-        ? Buffer.from(padded, 'base64').toString('utf8')
-        : decodeURIComponent(
-          Array.from(atob(padded))
-            .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
-            .join(''),
-        )
-    return JSON.parse(json) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
-
-function pickFirst(...candidates: unknown[]): string {
-  for (const value of candidates) {
-    if (value == null) continue
-    const text = String(value).trim()
-    if (text && text !== 'undefined' && text !== 'null') return text
-  }
-  return ''
 }
 
 /** Resolve tenant + bearer token from store / localStorage / JWT claims. */
@@ -112,22 +75,28 @@ export function resolveChatbotAuth(): {
   return { accessToken, tenantId }
 }
 
-function serializeUiFilterMap(
-  next: Record<string, string[]>,
-): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(next).map(([key, values]) => [
-      key,
-      serializeFilterValues(Array.from(new Set(values))),
-    ]),
-  )
-}
-
-/** cloud.ezofis.com sends filterBy as a flat map; demo uses filter groups. */
-function isFlatFilterBy(
-  filterBy: AskAiFilterBy,
-): filterBy is Record<string, string | number | boolean | null | undefined> {
-  return !Array.isArray(filterBy)
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const raw = token.startsWith('Bearer ') ? token.slice(7) : token
+    const parts = raw.split('.')
+    if (parts.length < 2) return null
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    )
+    const json =
+      typeof window === 'undefined'
+        ? Buffer.from(padded, 'base64').toString('utf8')
+        : decodeURIComponent(
+            Array.from(atob(padded))
+              .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
+              .join(''),
+          )
+    return JSON.parse(json) as Record<string, unknown>
+  } catch {
+    return null
+  }
 }
 
 function flatFilterByToGroups(
@@ -157,6 +126,33 @@ function flatFilterByToGroups(
     })
 }
 
+/** cloud.ezofis.com sends filterBy as a flat map; demo uses filter groups. */
+function isFlatFilterBy(
+  filterBy: AskAiFilterBy,
+): filterBy is Record<string, string | number | boolean | null | undefined> {
+  return !Array.isArray(filterBy)
+}
+
+function pickFirst(...candidates: unknown[]): string {
+  for (const value of candidates) {
+    if (value == null) continue
+    const text = String(value).trim()
+    if (text && text !== 'undefined' && text !== 'null') return text
+  }
+  return ''
+}
+
+function serializeUiFilterMap(
+  next: Record<string, string[]>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(next).map(([key, values]) => [
+      key,
+      serializeFilterValues(Array.from(new Set(values))),
+    ]),
+  )
+}
+
 /** Meta keys in cloud flat filterBy — not repository item field filters. */
 const CLOUD_META_FILTER_KEYS = new Set([
   'folder',
@@ -181,43 +177,16 @@ const CLOUD_FILTER_KEY_ALIASES: Record<string, string> = {
   supplier: 'Supplier',
 }
 
-function normalizeCloudFilterKey(key: string): string | null {
-  const trimmed = String(key || '').trim()
-  if (!trimmed) return null
-
-  const compact = trimmed.toLowerCase().replace(/[\s_-]+/g, '')
-  if (CLOUD_META_FILTER_KEYS.has(compact)) return null
-
-  const snakeKey = trimmed.toLowerCase().replace(/\s+/g, '_')
-  if (CLOUD_FILTER_KEY_ALIASES[snakeKey]) {
-    return CLOUD_FILTER_KEY_ALIASES[snakeKey]
-  }
-  if (CLOUD_FILTER_KEY_ALIASES[compact]) {
-    return CLOUD_FILTER_KEY_ALIASES[compact]
-  }
-
-  if (trimmed.includes('_')) {
-    return trimmed
-      .split('_')
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-      .join('')
-  }
-
-  return trimmed
-}
-
-function collectFilterValues(
-  value: string | number | boolean | null | undefined | string[],
-): string[] {
-  if (value == null || value === '') return []
-  if (Array.isArray(value)) return value.map(String).filter(Boolean)
-  return [String(value)].filter(Boolean)
-}
-
 export type BrowseUiFilterResult = {
   fileSearch: string
   filters: Record<string, string>
+}
+
+/** Convert chatbot browse_request.filterBy → UI Record<string, string> filters. */
+export function browseFilterByToUiFilters(
+  filterBy: AskAiFilterBy | undefined,
+): Record<string, string> {
+  return browseFilterByToUiFiltersAndSearch(filterBy).filters
 }
 
 /** Split cloud/demo browse_request.filterBy into UI filters + file search text. */
@@ -291,126 +260,29 @@ export function browseFilterByToUiFiltersAndSearch(
   }
 }
 
-/** Convert chatbot browse_request.filterBy → UI Record<string, string> filters. */
-export function browseFilterByToUiFilters(
-  filterBy: AskAiFilterBy | undefined,
-): Record<string, string> {
-  return browseFilterByToUiFiltersAndSearch(filterBy).filters
-}
+export function hasBrowsableAction(answer: AskAiAnswer | null | undefined) {
+  if (!answer?.actionTo) return false
+  const target = String(answer.actionTo).toLowerCase()
+  if (target !== 'repository' && target !== 'workflow') return false
 
-function normalizeCardItem(raw: unknown): AskAiCard {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { title: '' }
+  const browse = answer.action?.browse_request
+  const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
+    browse?.filterBy,
+    browse?.contentSearchValue,
+  )
+  const repositoryId = String(
+    answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
+  ).trim()
+  const workflowId = String(answer.actionContext?.workflowId ?? '').trim()
+
+  if (target === 'repository') {
+    return (
+      Boolean(repositoryId) ||
+      Object.keys(filters).length > 0 ||
+      Boolean(fileSearch)
+    )
   }
-
-  const item = raw as Record<string, unknown>
-  const title = String(item.title ?? item.entity_name ?? item.name ?? '').trim()
-  const subtitle =
-    item.subtitle != null && String(item.subtitle).trim()
-      ? String(item.subtitle)
-      : undefined
-  const description =
-    item.description != null && String(item.description).trim()
-      ? String(item.description)
-      : undefined
-
-  let fields: AskAiField[] | undefined
-  if (Array.isArray(item.fields) && item.fields.length > 0) {
-    fields = item.fields
-      .filter((f): f is AskAiField => Boolean(f && typeof f === 'object'))
-      .map((f) => ({
-        label: String((f as AskAiField).label ?? ''),
-        value: (f as AskAiField).value,
-      }))
-  }
-
-  return {
-    description,
-    fields,
-    id:
-      item.id && typeof item.id === 'object' && !Array.isArray(item.id)
-        ? (item.id as Record<string, unknown>)
-        : undefined,
-    matchSource: (item.matchSource ?? item.match_source ?? item.MatchSource ?? item.matchsource) != null
-      ? String(item.matchSource ?? item.match_source ?? item.MatchSource ?? item.matchsource)
-      : null,
-    subtitle,
-    title,
-    type: item.type != null ? String(item.type) : undefined,
-  }
-}
-
-function normalizeTextBlock(raw: unknown): AskAiTextBlock | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
-  const block = raw as Record<string, unknown>
-  const type = String(block.type || '').trim()
-
-  if (type === 'paragraph') {
-    return {
-      text: String(block.text ?? ''),
-      type: 'paragraph',
-    }
-  }
-
-  if (type === 'bullets') {
-    const items = Array.isArray(block.items)
-      ? block.items
-          .filter((item): item is AskAiField => Boolean(item && typeof item === 'object'))
-          .map((item) => ({
-            label: String((item as AskAiField).label ?? ''),
-            value: (item as AskAiField).value,
-          }))
-      : []
-    return {
-      items,
-      title: block.title != null ? String(block.title) : undefined,
-      type: 'bullets',
-      variant: block.variant != null ? String(block.variant) : undefined,
-    }
-  }
-
-  if (type === 'card') {
-    return {
-      ...normalizeCardItem(block),
-      type: 'card',
-    }
-  }
-
-  if (type === 'cards') {
-    const items = Array.isArray(block.items)
-      ? block.items.map(normalizeCardItem)
-      : []
-    return {
-      items,
-      title: block.title != null ? String(block.title) : undefined,
-      type: 'cards',
-    }
-  }
-
-  return null
-}
-
-function normalizeBrowseRequest(
-  browse: AskAiBrowseRequest | undefined,
-): AskAiBrowseRequest | undefined {
-  if (!browse || typeof browse !== 'object') return browse
-
-  const filterBy = browse.filterBy
-  if (!filterBy || Array.isArray(filterBy)) return browse
-
-  const flat = filterBy as Record<
-    string,
-    string | number | boolean | null | undefined
-  >
-  const searchValue =
-    String(browse.contentSearchValue || '').trim() ||
-    (flat.search != null ? String(flat.search).trim() : '')
-
-  return {
-    ...browse,
-    contentSearchValue: searchValue || browse.contentSearchValue,
-    filterBy: flatFilterByToGroups(flat),
-  }
+  return Boolean(workflowId) || Object.keys(filters).length > 0
 }
 
 /**
@@ -449,7 +321,9 @@ export function normalizeChatbotAnswer(raw: unknown): AskAiAnswer | null {
   if (!blocks.length) return null
 
   const actionRaw =
-    data.action && typeof data.action === 'object' && !Array.isArray(data.action)
+    data.action &&
+    typeof data.action === 'object' &&
+    !Array.isArray(data.action)
       ? (data.action as Record<string, unknown>)
       : undefined
 
@@ -470,8 +344,7 @@ export function normalizeChatbotAnswer(raw: unknown): AskAiAnswer | null {
       !Array.isArray(data.actionContext)
         ? (data.actionContext as AskAiAnswer['actionContext'])
         : undefined,
-    actionTo:
-      data.actionTo != null ? String(data.actionTo) : undefined,
+    actionTo: data.actionTo != null ? String(data.actionTo) : undefined,
     conversationId:
       data.conversationId != null
         ? String(data.conversationId)
@@ -480,31 +353,6 @@ export function normalizeChatbotAnswer(raw: unknown): AskAiAnswer | null {
           : undefined,
     text: { blocks },
   }
-}
-
-export function hasBrowsableAction(answer: AskAiAnswer | null | undefined) {
-  if (!answer?.actionTo) return false
-  const target = String(answer.actionTo).toLowerCase()
-  if (target !== 'repository' && target !== 'workflow') return false
-
-  const browse = answer.action?.browse_request
-  const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
-    browse?.filterBy,
-    browse?.contentSearchValue,
-  )
-  const repositoryId = String(
-    answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
-  ).trim()
-  const workflowId = String(answer.actionContext?.workflowId ?? '').trim()
-
-  if (target === 'repository') {
-    return (
-      Boolean(repositoryId) ||
-      Object.keys(filters).length > 0 ||
-      Boolean(fileSearch)
-    )
-  }
-  return Boolean(workflowId) || Object.keys(filters).length > 0
 }
 
 export function resolveAskAiPageContext(
@@ -565,6 +413,166 @@ export function resolveAskAiPageContext(
   }
 }
 
+function collectFilterValues(
+  value: string | number | boolean | null | undefined | string[],
+): string[] {
+  if (value == null || value === '') return []
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  return [String(value)].filter(Boolean)
+}
+
+function normalizeBrowseRequest(
+  browse: AskAiBrowseRequest | undefined,
+): AskAiBrowseRequest | undefined {
+  if (!browse || typeof browse !== 'object') return browse
+
+  const filterBy = browse.filterBy
+  if (!filterBy || Array.isArray(filterBy)) return browse
+
+  const flat = filterBy as Record<
+    string,
+    string | number | boolean | null | undefined
+  >
+  const searchValue =
+    String(browse.contentSearchValue || '').trim() ||
+    (flat.search != null ? String(flat.search).trim() : '')
+
+  return {
+    ...browse,
+    contentSearchValue: searchValue || browse.contentSearchValue,
+    filterBy: flatFilterByToGroups(flat),
+  }
+}
+
+function normalizeCardItem(raw: unknown): AskAiCard {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { title: '' }
+  }
+
+  const item = raw as Record<string, unknown>
+  const title = String(item.title ?? item.entity_name ?? item.name ?? '').trim()
+  const subtitle =
+    item.subtitle != null && String(item.subtitle).trim()
+      ? String(item.subtitle)
+      : undefined
+  const description =
+    item.description != null && String(item.description).trim()
+      ? String(item.description)
+      : undefined
+
+  let fields: AskAiField[] | undefined
+  if (Array.isArray(item.fields) && item.fields.length > 0) {
+    fields = item.fields
+      .filter((f): f is AskAiField => Boolean(f && typeof f === 'object'))
+      .map((f) => ({
+        label: String((f as AskAiField).label ?? ''),
+        value: (f as AskAiField).value,
+      }))
+  }
+
+  return {
+    description,
+    fields,
+    id:
+      item.id && typeof item.id === 'object' && !Array.isArray(item.id)
+        ? (item.id as Record<string, unknown>)
+        : undefined,
+    matchSource:
+      (item.matchSource ??
+        item.match_source ??
+        item.MatchSource ??
+        item.matchsource) != null
+        ? String(
+            item.matchSource ??
+              item.match_source ??
+              item.MatchSource ??
+              item.matchsource,
+          )
+        : null,
+    subtitle,
+    title,
+    type: item.type != null ? String(item.type) : undefined,
+  }
+}
+
+function normalizeCloudFilterKey(key: string): string | null {
+  const trimmed = String(key || '').trim()
+  if (!trimmed) return null
+
+  const compact = trimmed.toLowerCase().replace(/[\s_-]+/g, '')
+  if (CLOUD_META_FILTER_KEYS.has(compact)) return null
+
+  const snakeKey = trimmed.toLowerCase().replace(/\s+/g, '_')
+  if (CLOUD_FILTER_KEY_ALIASES[snakeKey]) {
+    return CLOUD_FILTER_KEY_ALIASES[snakeKey]
+  }
+  if (CLOUD_FILTER_KEY_ALIASES[compact]) {
+    return CLOUD_FILTER_KEY_ALIASES[compact]
+  }
+
+  if (trimmed.includes('_')) {
+    return trimmed
+      .split('_')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join('')
+  }
+
+  return trimmed
+}
+
+function normalizeTextBlock(raw: unknown): AskAiTextBlock | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const block = raw as Record<string, unknown>
+  const type = String(block.type || '').trim()
+
+  if (type === 'paragraph') {
+    return {
+      text: String(block.text ?? ''),
+      type: 'paragraph',
+    }
+  }
+
+  if (type === 'bullets') {
+    const items = Array.isArray(block.items)
+      ? block.items
+          .filter((item): item is AskAiField =>
+            Boolean(item && typeof item === 'object'),
+          )
+          .map((item) => ({
+            label: String((item as AskAiField).label ?? ''),
+            value: (item as AskAiField).value,
+          }))
+      : []
+    return {
+      items,
+      title: block.title != null ? String(block.title) : undefined,
+      type: 'bullets',
+      variant: block.variant != null ? String(block.variant) : undefined,
+    }
+  }
+
+  if (type === 'card') {
+    return {
+      ...normalizeCardItem(block),
+      type: 'card',
+    }
+  }
+
+  if (type === 'cards') {
+    const items = Array.isArray(block.items)
+      ? block.items.map(normalizeCardItem)
+      : []
+    return {
+      items,
+      title: block.title != null ? String(block.title) : undefined,
+      type: 'cards',
+    }
+  }
+
+  return null
+}
+
 export const DEFAULT_CHATBOT_FALLBACK_ANSWER: AskAiAnswer = {
   text: {
     blocks: [
@@ -588,17 +596,19 @@ export async function postChatbotMessage(
       try {
         const { getSession, getTenants } = await import('@/api/v6/auth')
         await getSession()
-          ; ({ accessToken, tenantId } = resolveChatbotAuth())
+        ;({ accessToken, tenantId } = resolveChatbotAuth())
 
         if (!tenantId) {
           const store = authUserStore.getState()
           const email = String(store.session?.email || '').trim()
           if (email) {
             const tenantsRes = await getTenants(email)
-            const tenants = Array.isArray(tenantsRes?.data) ? tenantsRes.data : []
+            const tenants = Array.isArray(tenantsRes?.data)
+              ? tenantsRes.data
+              : []
             const only =
               tenants.length === 1
-                ? tenants[0]?.id ?? tenants[0]?.tenantId
+                ? (tenants[0]?.id ?? tenants[0]?.tenantId)
                 : null
             if (only) {
               tenantId = String(only)
@@ -633,14 +643,14 @@ export async function postChatbotMessage(
     }
 
     const response = await fetch(CHATBOT_ENDPOINT, {
-      method: 'POST',
+      body: JSON.stringify(body),
       headers: {
-        Accept: 'application/json',
+        'Accept': 'application/json',
+        'Authorization': body.token,
         'Content-Type': 'application/json',
-        Authorization: body.token,
         'X-Tenant-Id': tenantId,
       },
-      body: JSON.stringify(body),
+      method: 'POST',
     })
 
     if (!response.ok || response.status !== 200) {

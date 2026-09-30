@@ -1,8 +1,9 @@
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
-import { Check, MoreHorizontal, UsersRound } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { Check, MoreHorizontal, UsersRound } from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createGroup as createGroupApi,
   deleteGroup as deleteGroupApi,
@@ -11,6 +12,7 @@ import {
   getUsers,
   updateGroup as updateGroupApi,
 } from '@/api/v6/user'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -21,9 +23,11 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
+import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -44,23 +48,10 @@ import {
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader from './SettingsPageHeader'
 import SettingsSelectedChips from './SettingsSelectedChips'
-import { AnimatePresence } from 'motion/react'
-import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import { formatDatetime } from '@/utils/dayjs'
-import { isDemoAppOrigin } from '@/utils/origin'
 
 const SESSION_KEY = 'ezofis_group_management_state'
-
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
 
 type GroupStep = {
   caption: string
@@ -70,6 +61,15 @@ type GroupStep = {
 }
 
 type GroupStepKey = 'details' | 'members' | 'review'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 const GROUP_STEP_MSGS = [
   {
@@ -107,9 +107,7 @@ const STATUS_OPTION_MSGS = [
 
 const groupColumnHelper = createColumnHelper<SettingsGroup>()
 
-export default function GroupManagement({
-  onBack,
-}: { onBack?: () => void }) {
+export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   const { i18n, t } = useLingui()
   const statusOptions = useMemo(
     () =>
@@ -122,17 +120,19 @@ export default function GroupManagement({
   const [groups, setGroups] = useState<SettingsGroup[]>([])
   const storedState = useMemo(() => getStoredState(), [])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
-    storedState?.activeFilters ?? {}
+    storedState?.activeFilters ?? {},
   )
   const [userOptions, setUserOptions] = useState<SettingsOption[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(true)
   const [isLoadingGroupDetails, setIsLoadingGroupDetails] = useState(false)
   const [isSavingGroup, setIsSavingGroup] = useState(false)
-  const [deletingGroupId, setDeletingGroupId] = useState<string | number | null>(
-    null,
-  )
+  const [deletingGroupId, setDeletingGroupId] = useState<
+    string | number | null
+  >(null)
   const [isDeletingGroup, setIsDeletingGroup] = useState(false)
-  const [isSetupOpen, setIsSetupOpen] = useState(storedState?.isSetupOpen ?? false)
+  const [isSetupOpen, setIsSetupOpen] = useState(
+    storedState?.isSetupOpen ?? false,
+  )
   const [editingGroupId, setEditingGroupId] = useState<string | number | null>(
     storedState?.editingGroupId ?? null,
   )
@@ -160,18 +160,25 @@ export default function GroupManagement({
       sessionStorage.setItem(
         SESSION_KEY,
         JSON.stringify({
-          isSetupOpen,
-          editingGroupId,
+          activeFilters,
           activeStep,
           draftGroup,
+          editingGroupId,
+          isSetupOpen,
           selectedMembers,
-          activeFilters,
         }),
       )
     } catch {
       // ignore
     }
-  }, [isSetupOpen, editingGroupId, activeStep, draftGroup, selectedMembers, activeFilters])
+  }, [
+    isSetupOpen,
+    editingGroupId,
+    activeStep,
+    draftGroup,
+    selectedMembers,
+    activeFilters,
+  ])
 
   const filteredGroups = useMemo(() => {
     return groups.filter((group) => {
@@ -337,7 +344,10 @@ export default function GroupManagement({
           return
         }
 
-        showToast({ message: t`Group updated successfully`, variant: 'success' })
+        showToast({
+          message: t`Group updated successfully`,
+          variant: 'success',
+        })
         setIsSetupOpen(false)
         await loadGroups()
       } finally {
@@ -387,26 +397,23 @@ export default function GroupManagement({
           </div>
         ),
       }),
-      groupColumnHelper.accessor(
-        (row) => `${row.name} ${row.description}`,
-        {
-          enableSorting: false,
-          header: t`Group`,
-          id: 'group',
-          meta: { ...settingsHeaderMeta.start, label: t`Group` },
-          minSize: 40,
-          size: 200,
-          cell: ({ row }) => (
-            <button
-              className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
-              type='button'
-              onClick={() => openEditGroup(row.original)}
-            >
-              {row.original.name}
-            </button>
-          ),
-        },
-      ),
+      groupColumnHelper.accessor((row) => `${row.name} ${row.description}`, {
+        enableSorting: false,
+        header: t`Group`,
+        id: 'group',
+        meta: { ...settingsHeaderMeta.start, label: t`Group` },
+        minSize: 40,
+        size: 200,
+        cell: ({ row }) => (
+          <button
+            className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+            type='button'
+            onClick={() => openEditGroup(row.original)}
+          >
+            {row.original.name}
+          </button>
+        ),
+      }),
       groupColumnHelper.accessor('description', {
         enableSorting: false,
         header: t`Description`,
@@ -414,9 +421,7 @@ export default function GroupManagement({
         meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 200,
-        cell: ({ getValue }) => (
-          <span>{String(getValue() || '—')}</span>
-        ),
+        cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
       groupColumnHelper.display({
         enableSorting: false,
@@ -558,9 +563,7 @@ export default function GroupManagement({
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftGroup}
         onMembersChange={setSelectedMembers}
-        onNext={() =>
-          setActiveStep((step: number) => Math.min(step + 1, 2))
-        }
+        onNext={() => setActiveStep((step: number) => Math.min(step + 1, 2))}
         onSave={saveGroup}
         onStepChange={setActiveStep}
       />
@@ -570,16 +573,16 @@ export default function GroupManagement({
   return (
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
+        confirmLabel={t`Delete`}
+        isConfirming={isDeletingGroup}
         opened={deletingGroupId != null}
         title={t`Delete Group`}
+        variant='danger'
         description={
           deletingGroup
             ? t`Are you sure you want to delete "${deletingGroup.name}"? This action cannot be undone.`
             : t`Are you sure you want to delete this group? This action cannot be undone.`
         }
-        confirmLabel={t`Delete`}
-        isConfirming={isDeletingGroup}
-        variant='danger'
         onCancel={cancelDeleteGroup}
         onConfirm={() => {
           void confirmDeleteGroup()
@@ -596,7 +599,6 @@ export default function GroupManagement({
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={groupTable as any} />}
-            trailingActions={<TableExport fileName='groups' table={groupTable as any} />}
             actionButtons={[
               {
                 color: 'gray',
@@ -630,6 +632,9 @@ export default function GroupManagement({
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
               !!tableSearchOptions.state.globalFilter?.value
+            }
+            trailingActions={
+              <TableExport fileName='groups' table={groupTable as any} />
             }
             onFilterChange={(id, val) =>
               setActiveFilters((prev) => ({ ...prev, [id]: val }))
@@ -798,35 +803,40 @@ function GroupSetup({
   const wizardSteps = useMemo(() => {
     const isEditMode = editingGroupId !== null || isDemoAppOrigin()
     return GROUP_STEP_MSGS.map((step, idx) => ({
+      clickable: isEditMode ? true : undefined,
+      description: i18n._(step.description),
+      disabled: isEditMode ? false : undefined,
+      icon:
+        step.key === 'details'
+          ? 'tabler:users'
+          : step.key === 'members'
+            ? 'tabler:user-plus'
+            : 'tabler:check',
       id: idx,
       label: i18n._(step.title),
-      description: i18n._(step.description),
-      icon: step.key === 'details' ? 'tabler:users' : step.key === 'members' ? 'tabler:user-plus' : 'tabler:check',
-      clickable: isEditMode ? true : undefined,
-      disabled: isEditMode ? false : undefined,
     }))
   }, [i18n, editingGroupId])
 
   return (
     <SettingsWizardLayout
       activeStep={activeStep}
+      headerDescription={GROUP_STEP_MSGS[activeStep]?.description}
+      headerTitle={GROUP_STEP_MSGS[activeStep]?.title}
+      isSaving={isSaving}
+      moduleTitle={msg`Group Management`}
+      saveLabel={editingGroupId ? t`Update Group` : t`Save Group`}
       steps={wizardSteps}
-      onStepChange={handleStepChange}
+      setupTitle={editingGroupId ? msg`Edit Group` : msg`Create Group`}
       onBack={handleBack}
+      onBackToSettings={onBack}
+      onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
-      onCancel={onCancel}
-      onBackToSettings={onBack}
-      isSaving={isSaving}
-      saveLabel={editingGroupId ? t`Update Group` : t`Save Group`}
-      moduleTitle={msg`Group Management`}
-      setupTitle={editingGroupId ? msg`Edit Group` : msg`Create Group`}
-      headerTitle={GROUP_STEP_MSGS[activeStep]?.title}
-      headerDescription={GROUP_STEP_MSGS[activeStep]?.description}
+      onStepChange={handleStepChange}
     >
-      <AnimatePresence mode='wait' initial={false}>
+      <AnimatePresence initial={false} mode='wait'>
         {activeStep === 0 && (
-          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-0'>
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <InputText
@@ -858,7 +868,7 @@ function GroupSetup({
         )}
 
         {activeStep === 1 && (
-          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-1'>
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <div className='flex flex-col gap-2'>
@@ -894,7 +904,7 @@ function GroupSetup({
         )}
 
         {activeStep === 2 && (
-          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-2'>
             <SettingsFormSection>
               <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                 <AnimateFadeIn delay={0.1}>
@@ -921,8 +931,8 @@ function GroupSetup({
                       value={
                         selectedMembers.length
                           ? selectedMembers
-                            .map((member) => member.name)
-                            .join(', ')
+                              .map((member) => member.name)
+                              .join(', ')
                           : '—'
                       }
                     />

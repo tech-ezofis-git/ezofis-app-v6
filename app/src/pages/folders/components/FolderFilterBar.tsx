@@ -8,12 +8,13 @@ import {
   useState,
 } from 'react'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { isDemoAppOrigin } from '@/utils/origin'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
   type FilterOption,
 } from '@/components/common/CustomFilter'
+import authUserStore from '@/stores/authUserStore'
+import { isDemoAppOrigin } from '@/utils/origin'
 import type {
   DynamicRepositoryColumn,
   RepositoryItemFilterField,
@@ -38,9 +39,8 @@ import {
   matchesFieldKey,
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
-import FolderSharePopover from './FolderSharePopover'
-import authUserStore from '@/stores/authUserStore'
 import { resolveShareContext } from '../utils/shareContextStorage'
+import FolderSharePopover from './FolderSharePopover'
 
 type AnyFileItem = Record<string, any>
 

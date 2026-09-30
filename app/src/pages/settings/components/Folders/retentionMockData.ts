@@ -21,8 +21,6 @@ export interface RetentionCondition {
 
 export type RetentionDurationUnit = 'days' | 'months' | 'years'
 
-export type RetentionMatchType = 'all' | 'any'
-
 export interface RetentionField {
   key: string
   label: string
@@ -31,6 +29,8 @@ export interface RetentionField {
 }
 
 export type RetentionFieldType = 'select' | 'text' | 'date'
+
+export type RetentionMatchType = 'all' | 'any'
 
 export interface RetentionPolicy {
   action: RetentionAction | ''
@@ -114,11 +114,27 @@ export const OPERATOR_OPTIONS = [
 
 const SUGGESTED_TRIGGER_BY_ACTION: Record<
   RetentionAction,
-  { durationUnit: RetentionDurationUnit; durationValue: number; triggerField: string }
+  {
+    durationUnit: RetentionDurationUnit
+    durationValue: number
+    triggerField: string
+  }
 > = {
-  archive: { durationUnit: 'days', durationValue: 180, triggerField: 'lastActivityDate' },
-  permanent_delete: { durationUnit: 'days', durationValue: 365, triggerField: 'expiryDate' },
-  soft_delete: { durationUnit: 'days', durationValue: 90, triggerField: 'expiryDate' },
+  archive: {
+    durationUnit: 'days',
+    durationValue: 180,
+    triggerField: 'lastActivityDate',
+  },
+  permanent_delete: {
+    durationUnit: 'days',
+    durationValue: 365,
+    triggerField: 'expiryDate',
+  },
+  soft_delete: {
+    durationUnit: 'days',
+    durationValue: 90,
+    triggerField: 'expiryDate',
+  },
 }
 
 export const suggestTriggerForAction = (action: RetentionAction) =>
@@ -251,7 +267,11 @@ export const matchesPolicy = (
   doc: MockDocument,
   policy: Pick<
     RetentionPolicy,
-    'conditions' | 'durationUnit' | 'durationValue' | 'matchType' | 'triggerField'
+    | 'conditions'
+    | 'durationUnit'
+    | 'durationValue'
+    | 'matchType'
+    | 'triggerField'
   >,
 ): boolean => {
   const raw = (doc as unknown as Record<string, string>)[policy.triggerField]

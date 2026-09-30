@@ -7,11 +7,11 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
-import cn from '@/utils/cn'
 import {
   openWorkflowOAuthAuthorize,
   parseOAuthConnectionSuccess,
 } from '@/pages/workflows/utils/oauthAuthorize'
+import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
@@ -105,10 +105,7 @@ export default function GoogleDriveSettingsPanel({
         updateNodeData('connection', String(found.id))
         updateNodeData('connectorId', String(found.id))
         updateNodeData('connectionLabel', label)
-        updateNodeData(
-          'externalAccountEmail',
-          found.externalAccountEmail || '',
-        )
+        updateNodeData('externalAccountEmail', found.externalAccountEmail || '')
         updateNodeData('account', found.externalAccountEmail || found.name)
         setPendingConnectionName(null)
         setIsConnecting(false)

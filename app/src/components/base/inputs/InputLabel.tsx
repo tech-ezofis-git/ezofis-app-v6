@@ -21,7 +21,9 @@ const InputLabel = ({
 }: Props) => {
   const rawLabel = String(label || '')
   const hasStarSuffix = /\s*\*$/.test(rawLabel)
-  const cleanLabel = hasStarSuffix ? rawLabel.replace(/\s*\*$/, '').trimEnd() : rawLabel
+  const cleanLabel = hasStarSuffix
+    ? rawLabel.replace(/\s*\*$/, '').trimEnd()
+    : rawLabel
   const showRequired = Boolean(required || hasStarSuffix)
 
   return (

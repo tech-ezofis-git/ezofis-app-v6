@@ -53,11 +53,11 @@ export default function TaskRequirements({
           {t`Task Requirements`}
         </span>
         <Icon
+          name='lucide:chevron-down'
           className={cn(
             'size-3.5 text-gray-9 transition-transform',
             isOpen && 'rotate-180',
           )}
-          name='lucide:chevron-down'
         />
       </button>
 
@@ -74,9 +74,7 @@ export default function TaskRequirements({
               />
               <span className='text-xs text-gray-12'>
                 {item.label}
-                {item.required && (
-                  <span className='ml-1 text-red-9'>*</span>
-                )}
+                {item.required && <span className='ml-1 text-red-9'>*</span>}
               </span>
             </label>
           ))}

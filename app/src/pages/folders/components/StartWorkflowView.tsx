@@ -1,18 +1,18 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import fileApi from '@/api/file/file'
 import type { V6WorkflowDetail } from '@/api/v6/workflows'
+import fileApi from '@/api/file/file'
 import workflowsApiV6 from '@/api/v6/workflows'
-import authUserStore from '@/stores/authUserStore'
-import Skeleton from '@/components/base/Skeleton'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
+import Skeleton from '@/components/base/Skeleton'
+import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
-import { importWorkflow } from '@/pages/workflows/utils/importWorkflow'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import { useWorkflowForm } from '@/pages/requests/components/workflow-request/hooks/useWorkflowForm'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
-import showToast from '@/components/base/toast/showToast'
+import { importWorkflow } from '@/pages/workflows/utils/importWorkflow'
+import authUserStore from '@/stores/authUserStore'
 import type { WorkflowData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
 import {
@@ -21,6 +21,31 @@ import {
 } from '../utils/documentDetailsUtils'
 import { DynamicIcon } from './icons'
 import { Card, PrimaryButton } from './Ui'
+
+export function DummyDocumentPreview({
+  fileName,
+  fileType,
+}: {
+  fileName: string
+  fileType: string
+}) {
+  const { t } = useLingui()
+  const iconName = getFileIcon(fileName)
+
+  return (
+    <div className='flex h-full min-h-[560px] items-center justify-center bg-blue-3/30'>
+      <div className='text-center'>
+        <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
+          <Icon className='h-8 w-8' name={iconName} />
+        </div>
+        <p className='mt-4 text-[14px] font-semibold text-gray-10'>
+          {fileName}
+        </p>
+        <p className='mt-2 text-[12px] text-gray-10'>{t`${fileType} Viewer`}</p>
+      </div>
+    </div>
+  )
+}
 
 export function StartWorkflowView({
   id,
@@ -51,10 +76,10 @@ export function StartWorkflowView({
   const iconName = getFileIcon(fileName)
 
   const formState = useWorkflowForm(workflowDetail, {
-    viewerRepositoryId: repositoryId,
-    viewerItemId: id,
-    isRaiseTicket: true,
     fileName: fileName,
+    isRaiseTicket: true,
+    viewerItemId: id,
+    viewerRepositoryId: repositoryId,
   })
 
   const workflowNodes = useMemo(() => {
@@ -71,20 +96,20 @@ export function StartWorkflowView({
     }
     if (parsedWorkflowJson?.blocks) {
       return importWorkflow(parsedWorkflowJson).nodes.map((n: any) => ({
-        id: n.id,
         data: { ...n.data, toolType: n.data.toolType || n.type },
+        id: n.id,
       }))
     }
 
     if (workflowDetail.steps && Array.isArray(workflowDetail.steps)) {
       return workflowDetail.steps.map((step: any) => ({
-        id: step.id,
         data: {
-          label: step.name || 'Step',
-          type: step.stepType === 0 ? 'trigger' : 'action',
-          toolType: step.name === 'Manual User' ? 'manual_user' : 'other',
           icon: step.stepType === 0 ? 'lucide:play' : 'lucide:settings',
+          label: step.name || 'Step',
+          toolType: step.name === 'Manual User' ? 'manual_user' : 'other',
+          type: step.stepType === 0 ? 'trigger' : 'action',
         },
+        id: step.id,
       }))
     }
     return []
@@ -519,8 +544,8 @@ export function StartWorkflowView({
                       ?.flatMap((card: any) => card.rows || [])
                       .map((row: any, idx: number) => (
                         <div
-                          key={idx}
                           className='flex items-center justify-between border-b border-gray-2 px-4 py-2.5 last:border-b-0'
+                          key={idx}
                         >
                           <span className='flex items-center gap-2 text-[12px] text-gray-9'>
                             <DynamicIcon
@@ -540,61 +565,6 @@ export function StartWorkflowView({
             </div>
           </ScrollArea>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function StepArrow() {
-  return <DynamicIcon className='h-3.5 w-3.5 text-gray-9' name='chevronRight' />
-}
-
-function WorkflowStep({
-  icon,
-  label,
-  tone,
-}: {
-  icon: string
-  label: string
-  tone: 'blue' | 'orange' | 'green'
-}) {
-  const toneClass =
-    tone === 'blue'
-      ? 'bg-blue-3 text-blue-11'
-      : tone === 'orange'
-        ? 'bg-orange-3 text-orange-11'
-        : 'bg-green-3 text-green-11'
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold ${toneClass}`}
-    >
-      <DynamicIcon className='h-3.5 w-3.5' name={icon} />
-      <span className='max-w-[130px] truncate'>{label}</span>
-    </span>
-  )
-}
-
-export function DummyDocumentPreview({
-  fileName,
-  fileType,
-}: {
-  fileName: string
-  fileType: string
-}) {
-  const { t } = useLingui()
-  const iconName = getFileIcon(fileName)
-
-  return (
-    <div className='flex h-full min-h-[560px] items-center justify-center bg-blue-3/30'>
-      <div className='text-center'>
-        <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-gray-3 bg-surface-primary shadow-sm'>
-          <Icon className='h-8 w-8' name={iconName} />
-        </div>
-        <p className='mt-4 text-[14px] font-semibold text-gray-10'>
-          {fileName}
-        </p>
-        <p className='mt-2 text-[12px] text-gray-10'>{t`${fileType} Viewer`}</p>
       </div>
     </div>
   )
@@ -679,8 +649,8 @@ function StartWorkflowSkeleton({ onBack }: { onBack?: () => void }) {
                 <div className='space-y-3 pt-1'>
                   {[1, 2, 3, 4].map((i) => (
                     <div
-                      key={i}
                       className='flex items-center justify-between py-1'
+                      key={i}
                     >
                       <Skeleton className='h-3.5 w-28 rounded' />
                       <Skeleton className='h-3.5 w-36 rounded' />
@@ -693,5 +663,35 @@ function StartWorkflowSkeleton({ onBack }: { onBack?: () => void }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function StepArrow() {
+  return <DynamicIcon className='h-3.5 w-3.5 text-gray-9' name='chevronRight' />
+}
+
+function WorkflowStep({
+  icon,
+  label,
+  tone,
+}: {
+  icon: string
+  label: string
+  tone: 'blue' | 'orange' | 'green'
+}) {
+  const toneClass =
+    tone === 'blue'
+      ? 'bg-blue-3 text-blue-11'
+      : tone === 'orange'
+        ? 'bg-orange-3 text-orange-11'
+        : 'bg-green-3 text-green-11'
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold ${toneClass}`}
+    >
+      <DynamicIcon className='h-3.5 w-3.5' name={icon} />
+      <span className='max-w-[130px] truncate'>{label}</span>
+    </span>
   )
 }

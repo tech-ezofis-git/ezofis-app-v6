@@ -1,5 +1,5 @@
-import { Select } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
+import { Select } from '@mantine/core'
 import { useEffect } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'

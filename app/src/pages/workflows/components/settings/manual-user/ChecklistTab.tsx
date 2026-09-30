@@ -34,7 +34,7 @@ export default function ChecklistTab({
   return (
     <div className='space-y-3 rounded-xl bg-[#F8FAFC] p-3'>
       <div className='flex items-center gap-2.5 px-1'>
-        <Icon className='text-primary-9 h-4 w-4' name='lucide:list-checks' />
+        <Icon className='h-4 w-4 text-primary-9' name='lucide:list-checks' />
         <div className='flex flex-col space-y-1'>
           <span className='text-13 font-medium text-gray-12'>
             Checklist Items

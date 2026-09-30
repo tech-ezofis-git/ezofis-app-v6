@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import cn from '@/utils/cn'
+import { useMemo, useState } from 'react'
 import { useFolderExplorer } from '@/pages/folders/hooks/useFolderExplorer'
+import cn from '@/utils/cn'
 import { AppBar, IconButton } from '../../components/layout/AppBar'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { TabBar, type TabBarItemId } from '../../components/layout/TabBar'
@@ -34,9 +34,9 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
     openFolder,
     refreshData,
     refreshing,
+    viewMode,
     setFileSearch,
     setFolderSearch,
-    viewMode,
   } = useFolderExplorer()
 
   const parentCrumbs = breadcrumbs.slice(0, -1)
@@ -68,19 +68,15 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
   return (
     <ScreenShell
       className='bg-surface-secondary'
-      footer={
-        <TabBar activeId='folder' onChange={handleTabChange} />
-      }
+      footer={<TabBar activeId='folder' onChange={handleTabChange} />}
       header={
         <div className='border-b border-border-default bg-surface-primary'>
           <AppBar
             className='border-b-0 [&_h1]:text-13'
-            onBack={
-              canGoBackInExplorer ? () => goBackInExplorer() : undefined
-            }
+            title={currentTitle || 'Folders'}
             subtitle={
               parentCrumbs.length > 0 ? (
-                <div className='no-scrollbar flex items-center gap-1 overflow-x-auto whitespace-nowrap text-[11px] text-text-muted'>
+                <div className='no-scrollbar flex items-center gap-1 overflow-x-auto text-[11px] whitespace-nowrap text-text-muted'>
                   <button
                     className='shrink-0 hover:text-text-secondary'
                     type='button'
@@ -92,7 +88,10 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                     Folders
                   </button>
                   {parentCrumbs.map((crumb) => (
-                    <span className='inline-flex shrink-0 items-center gap-1' key={crumb.id}>
+                    <span
+                      className='inline-flex shrink-0 items-center gap-1'
+                      key={crumb.id}
+                    >
                       <Icon className='size-2.5' name='ChevronRight' />
                       <button
                         className='max-w-[90px] truncate hover:text-text-secondary'
@@ -108,7 +107,6 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                 'Folders'
               )
             }
-            title={currentTitle || 'Folders'}
             trailing={
               <>
                 <IconButton
@@ -122,9 +120,7 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                 </IconButton>
                 <IconButton
                   aria-label={isListView ? 'Folder view' : 'List view'}
-                  onClick={() =>
-                    changeViewMode(isListView ? 'grid' : 'list')
-                  }
+                  onClick={() => changeViewMode(isListView ? 'grid' : 'list')}
                 >
                   <Icon
                     className='size-3.5'
@@ -133,6 +129,7 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                 </IconButton>
               </>
             }
+            onBack={canGoBackInExplorer ? () => goBackInExplorer() : undefined}
           />
 
           <div className='px-3 pb-2.5'>
@@ -140,12 +137,12 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
               <Icon className='size-3.5 text-text-muted' name='Search' />
               <input
                 className='min-w-0 flex-1 bg-transparent text-12 text-text-primary outline-none placeholder:text-text-muted'
+                value={search}
                 placeholder={
                   isListView
                     ? 'Search invoice, supplier, PO…'
                     : 'Search folders and files…'
                 }
-                value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
               {search ? (
@@ -168,7 +165,10 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                   type='button'
                 >
                   {label}
-                  <Icon className='size-2.5 text-text-muted' name='ChevronDown' />
+                  <Icon
+                    className='size-2.5 text-text-muted'
+                    name='ChevronDown'
+                  />
                 </button>
               ))}
               <button
@@ -207,7 +207,7 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
           <>
             {!isListView && folders.length > 0 ? (
               <section className='px-4 pt-3'>
-                <p className='pb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--gray-9)]'>
+                <p className='pb-2 text-[11px] font-semibold tracking-wide text-[var(--gray-9)] uppercase'>
                   Folders
                 </p>
                 <div className='flex flex-col gap-2'>
@@ -229,21 +229,21 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
                 type='button'
                 onClick={() => setFilesOpen((v) => !v)}
               >
-                <span className='inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-accent-primary'>
+                <span className='inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-accent-primary uppercase'>
                   <Icon className='size-3.5' name='FileText' />
                   Files in this folder — {files.length}
                 </span>
                 <Icon
+                  name='ChevronDown'
                   className={cn(
                     'size-3.5 text-accent-primary transition-transform',
                     filesOpen && 'rotate-180',
                   )}
-                  name='ChevronDown'
                 />
               </button>
             ) : (
               <div className='px-4 pt-3 pb-1.5'>
-                <p className='text-[11px] font-semibold uppercase tracking-wide text-text-muted'>
+                <p className='text-[11px] font-semibold tracking-wide text-text-muted uppercase'>
                   Files · {fileRange.total}
                 </p>
               </div>

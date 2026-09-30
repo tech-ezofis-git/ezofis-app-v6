@@ -1,25 +1,19 @@
 import type { LogicRule, Question } from '../store/formStore'
 
+export interface DeclarativeRule {
+  actions: RuleAction[]
+  conditions: RuleCondition[]
+  id: string
+  elseActions?: RuleAction[]
+  groupLogic?: 'ALL' | 'ANY'
+  isConditionalRule?: boolean
+  name?: string
+}
+
 export interface FieldComputedState {
   disabled: boolean
   required: boolean
   visible: boolean
-}
-
-export interface RuleCondition {
-  fieldId: string
-  operator:
-    | 'EQUALS'
-    | 'NOT_EQUALS'
-    | 'GREATER_THAN'
-    | 'LESS_THAN'
-    | 'CONTAINS'
-    | 'NOT_CONTAINS'
-    | 'IS_EMPTY'
-    | 'IS_NOT_EMPTY'
-    | 'IN'
-  id?: string
-  value?: any
 }
 
 export interface RuleAction {
@@ -36,14 +30,20 @@ export interface RuleAction {
   value?: boolean
 }
 
-export interface DeclarativeRule {
-  actions: RuleAction[]
-  conditions: RuleCondition[]
-  id: string
-  elseActions?: RuleAction[]
-  groupLogic?: 'ALL' | 'ANY'
-  isConditionalRule?: boolean
-  name?: string
+export interface RuleCondition {
+  fieldId: string
+  operator:
+    | 'EQUALS'
+    | 'NOT_EQUALS'
+    | 'GREATER_THAN'
+    | 'LESS_THAN'
+    | 'CONTAINS'
+    | 'NOT_CONTAINS'
+    | 'IS_EMPTY'
+    | 'IS_NOT_EMPTY'
+    | 'IN'
+  id?: string
+  value?: any
 }
 
 export const OPERATORS = {
@@ -83,66 +83,6 @@ export const OPERATORS = {
     !OPERATORS.CONTAINS(fieldVal, targetVal),
   NOT_EQUALS: (fieldVal: any, targetVal: any) =>
     !OPERATORS.EQUALS(fieldVal, targetVal),
-}
-
-export function evaluateCondition(
-  condition: RuleCondition | LogicRule,
-  formValues: Record<string, any>,
-): boolean {
-  if ('condition' in condition) {
-    // Legacy / Builder LogicRule
-    const rule = condition as LogicRule
-    const fieldValue = formValues[rule.fieldId]
-    switch (rule.condition) {
-      case 'IS':
-        return OPERATORS.EQUALS(fieldValue, rule.value)
-      case 'IS_NOT':
-        return OPERATORS.NOT_EQUALS(fieldValue, rule.value)
-      case 'CONTAINS':
-        return OPERATORS.CONTAINS(fieldValue, rule.value)
-      case 'NOT_CONTAINS':
-        return OPERATORS.NOT_CONTAINS(fieldValue, rule.value)
-      case 'GT':
-        return OPERATORS.GREATER_THAN(fieldValue, rule.value)
-      case 'LT':
-        return OPERATORS.LESS_THAN(fieldValue, rule.value)
-      case 'EMPTY':
-        return OPERATORS.IS_EMPTY(fieldValue)
-      case 'NOT_EMPTY':
-        return OPERATORS.IS_NOT_EMPTY(fieldValue)
-      default:
-        return true
-    }
-  }
-
-  // Declarative RuleCondition
-  const cond = condition as RuleCondition
-  const fieldValue = formValues[cond.fieldId]
-  const evaluator = OPERATORS[cond.operator]
-
-  if (!evaluator) {
-    console.warn(`Unsupported operator: ${cond.operator}`)
-    return false
-  }
-
-  return evaluator(fieldValue, cond.value)
-}
-
-export function evaluateDeclarativeRule(
-  rule: DeclarativeRule,
-  formValues: Record<string, any>,
-): boolean {
-  if (!rule.conditions || rule.conditions.length === 0) return true
-
-  const results = rule.conditions.map((cond) =>
-    evaluateCondition(cond, formValues),
-  )
-
-  if (rule.groupLogic === 'ANY') {
-    return results.some(Boolean)
-  }
-
-  return results.every(Boolean)
 }
 
 export class FormRuleEngine {
@@ -246,7 +186,9 @@ export class FormRuleEngine {
     action: RuleAction,
     fieldStates: Record<string, FieldComputedState>,
   ) {
-    const targetIds = action.targetFieldIds || (action.targetFieldId ? [action.targetFieldId] : [])
+    const targetIds =
+      action.targetFieldIds ||
+      (action.targetFieldId ? [action.targetFieldId] : [])
 
     for (const targetId of targetIds) {
       if (!fieldStates[targetId]) continue
@@ -274,6 +216,66 @@ export class FormRuleEngine {
       }
     }
   }
+}
+
+export function evaluateCondition(
+  condition: RuleCondition | LogicRule,
+  formValues: Record<string, any>,
+): boolean {
+  if ('condition' in condition) {
+    // Legacy / Builder LogicRule
+    const rule = condition as LogicRule
+    const fieldValue = formValues[rule.fieldId]
+    switch (rule.condition) {
+      case 'IS':
+        return OPERATORS.EQUALS(fieldValue, rule.value)
+      case 'IS_NOT':
+        return OPERATORS.NOT_EQUALS(fieldValue, rule.value)
+      case 'CONTAINS':
+        return OPERATORS.CONTAINS(fieldValue, rule.value)
+      case 'NOT_CONTAINS':
+        return OPERATORS.NOT_CONTAINS(fieldValue, rule.value)
+      case 'GT':
+        return OPERATORS.GREATER_THAN(fieldValue, rule.value)
+      case 'LT':
+        return OPERATORS.LESS_THAN(fieldValue, rule.value)
+      case 'EMPTY':
+        return OPERATORS.IS_EMPTY(fieldValue)
+      case 'NOT_EMPTY':
+        return OPERATORS.IS_NOT_EMPTY(fieldValue)
+      default:
+        return true
+    }
+  }
+
+  // Declarative RuleCondition
+  const cond = condition as RuleCondition
+  const fieldValue = formValues[cond.fieldId]
+  const evaluator = OPERATORS[cond.operator]
+
+  if (!evaluator) {
+    console.warn(`Unsupported operator: ${cond.operator}`)
+    return false
+  }
+
+  return evaluator(fieldValue, cond.value)
+}
+
+export function evaluateDeclarativeRule(
+  rule: DeclarativeRule,
+  formValues: Record<string, any>,
+): boolean {
+  if (!rule.conditions || rule.conditions.length === 0) return true
+
+  const results = rule.conditions.map((cond) =>
+    evaluateCondition(cond, formValues),
+  )
+
+  if (rule.groupLogic === 'ANY') {
+    return results.some(Boolean)
+  }
+
+  return results.every(Boolean)
 }
 
 /**

@@ -31,16 +31,21 @@ const DEFAULT_STEP_LABELS: Record<string, string> = {
 
 export type PortalStepStatus = 'completed' | 'current' | 'pending'
 
-export type PortalWaitingKind = 'agent' | 'default' | 'payment' | 'trigger' | 'user'
+export type PortalWaitingKind =
+  | 'agent'
+  | 'default'
+  | 'payment'
+  | 'trigger'
+  | 'user'
 
 export type PortalWorkflowStep = {
-  id: string
-  title: string
-  type: string
   assignedEmails?: string[]
   assignedUserIds?: string[]
+  id: string
   subLabel?: string
+  title: string
   toolType?: string
+  type: string
 }
 
 const textOf = (value: unknown) => {
@@ -62,7 +67,9 @@ export const submissionInstanceIds = (submission: PortalSubmission) => {
 }
 
 const pickScalar = (raw: Record<string, unknown>, keys: string[]) => {
-  const wanted = new Set(keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')))
+  const wanted = new Set(
+    keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')),
+  )
   for (const [key, value] of Object.entries(raw)) {
     const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '')
     if (!wanted.has(normalized)) continue
@@ -86,8 +93,7 @@ export const pickActivityId = (raw: Record<string, unknown>) => {
       'stepId',
       'blockId',
       'nodeId',
-    ]) ||
-    pickScalar(nested, ['activityId', 'activityid', 'blockId', 'stepId'])
+    ]) || pickScalar(nested, ['activityId', 'activityid', 'blockId', 'stepId'])
   )
 }
 
@@ -185,7 +191,9 @@ const visitAssignee = (
       record.email || record.mail || record.loginName || record.userName,
     )
     if (email.includes('@')) addUnique(emails, seenEmail, email)
-    const id = textOf(record.id ?? record.userId ?? record.userID ?? record.value)
+    const id = textOf(
+      record.id ?? record.userId ?? record.userID ?? record.value,
+    )
     if (id.includes('@')) addUnique(emails, seenEmail, id)
     else addUnique(ids, seenId, id)
     return
@@ -239,9 +247,7 @@ const toWorkflowStep = (block: Record<string, unknown>): PortalWorkflowStep => {
 }
 
 const recordEmail = (record: Record<string, unknown>) =>
-  textOf(
-    record.email || record.mail || record.loginName || record.userName,
-  )
+  textOf(record.email || record.mail || record.loginName || record.userName)
 
 export const resolveAssigneeEmails = (
   step: PortalWorkflowStep,
@@ -249,7 +255,9 @@ export const resolveAssigneeEmails = (
 ): string[] => {
   const emails: string[] = []
   const seen = new Set<string>()
-  ;(step.assignedEmails || []).forEach((email) => addUnique(emails, seen, email))
+  ;(step.assignedEmails || []).forEach((email) =>
+    addUnique(emails, seen, email),
+  )
 
   const directory = Array.isArray(users) ? users : []
   ;(step.assignedUserIds || []).forEach((id) => {
@@ -632,7 +640,11 @@ export const buildPortalNavSections = (
     .map(({ completed, id, title }) => ({ completed, id, title }))
 
   sections.push(
-    { completed: false, id: PORTAL_SECTION_ATTACHMENTS, title: labels.attachments },
+    {
+      completed: false,
+      id: PORTAL_SECTION_ATTACHMENTS,
+      title: labels.attachments,
+    },
     { completed: false, id: PORTAL_SECTION_HISTORY, title: labels.history },
   )
   return sections

@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -14,21 +14,19 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
-import AgentFlatTable, {
-  normalizeAgentTableRows,
-} from './AgentFlatTable'
+import type { AgentBlock } from './AgentSummaryBoxes'
 import {
   collectFormFields,
   collectFormTableFields,
 } from './AgentEditableTables'
-import type { AgentBlock } from './AgentSummaryBoxes'
+import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
 import {
   buildQualifierViewModel,
   getFieldHeading,
   getFieldId,
-  qualifyDecisionStyle,
   type QualifierScalarEntry,
   type QualifierTableEntry,
+  qualifyDecisionStyle,
 } from './qualifierResultUtils'
 
 export { getQualifierValue } from './qualifierResultUtils'
@@ -109,9 +107,9 @@ interface HoverEditProps {
   activeEditId: string | null
   canEdit: boolean
   children: ReactNode
-  className?: string
   editor: ReactNode
   fieldId: string
+  className?: string
   inline?: boolean
   label?: string
   onActivate: (id: string | null) => void
@@ -177,6 +175,7 @@ const HoverEditShell = ({
 
   return wrapLabel(
     <span
+      ref={rootRef}
       className={cn(
         'rounded px-0.5 transition-colors',
         isActive
@@ -186,7 +185,6 @@ const HoverEditShell = ({
           : 'group relative inline-flex max-w-full min-w-0 items-center',
         className,
       )}
-      ref={rootRef}
     >
       {isActive ? (
         editor
@@ -230,7 +228,7 @@ const InlineCaretInput = ({
 
   return (
     <input
-      className='m-0 max-w-full min-w-[1.5rem] border-0 bg-transparent p-0 text-left text-sm leading-5 font-normal text-gray-12 outline-none [field-sizing:content]'
+      className='m-0 [field-sizing:content] max-w-full min-w-[1.5rem] border-0 bg-transparent p-0 text-left text-sm leading-5 font-normal text-gray-12 outline-none'
       ref={inputRef}
       value={value}
       onChange={(event) => onChange(event.target.value)}
@@ -303,8 +301,8 @@ const ScalarEditor = ({
       <InputSelect
         className={inputClass}
         options={options}
-        searchable
         value={selected}
+        searchable
         onChange={(opt) => onChange(opt ? String(opt.id) : '')}
       />
     )
@@ -312,30 +310,30 @@ const ScalarEditor = ({
   if (type === 'LONG_TEXT') {
     return (
       <InputTextarea
-        autosize
         className={inputClass}
         maxRows={compact ? 4 : 8}
         minRows={compact ? 1 : 2}
         value={value != null ? String(value) : ''}
+        autosize
         onChange={(v) => onChange(v)}
       />
     )
   }
   return (
     <InputText
-      autoFocus
       className={inputClass}
       value={value != null ? String(value) : ''}
+      autoFocus
       onChange={(v) => onChange(v)}
     />
   )
 }
 
 interface Props {
+  result: Record<string, any>
   agentBlock?: AgentBlock | null
   formModel?: Record<string, any>
   readOnly?: boolean
-  result: Record<string, any>
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
 }
@@ -493,23 +491,21 @@ const QualifyAgentResultView = ({
 
   const renderScalarHover = (
     entry: QualifierScalarEntry,
-    options?: { compact?: boolean; inline?: boolean; className?: string },
+    options?: { className?: string; compact?: boolean; inline?: boolean },
   ) => {
     const { canEdit, display, raw } = resolveScalarEntry(entry)
-    const fieldId = entry.field
-      ? getFieldId(entry.field)
-      : entry.resultKey
+    const fieldId = entry.field ? getFieldId(entry.field) : entry.resultKey
 
     return (
       <HoverEditShell
         activeEditId={activeEditId}
         canEdit={canEdit}
         className={options?.className}
+        editor={renderScalarEditor(entry, raw, options?.compact)}
         fieldId={fieldId}
         inline={options?.inline}
         label={controlLabel(entry.field, entry.label)}
         onActivate={setActiveEditId}
-        editor={renderScalarEditor(entry, raw, options?.compact)}
       >
         {options?.compact ? (
           <span>{display}</span>
@@ -546,11 +542,11 @@ const QualifyAgentResultView = ({
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
           className='max-w-full justify-start text-left'
-          fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
-          inline
-          label={label}
-          onActivate={setActiveEditId}
           editor={renderScalarEditor(entry, resolved.raw, true)}
+          fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
+          label={label}
+          inline
+          onActivate={setActiveEditId}
         >
           <span>{resolved.display || 'NA'}</span>
         </HoverEditShell>
@@ -589,20 +585,20 @@ const QualifyAgentResultView = ({
       {viewModel.longTextEntries
         .filter((entry) => !isAiInsightEntry(entry))
         .map((entry) => (
-        <div
-          className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-4 text-primary-11'
-          key={entry.resultKey}
-        >
-          <Icon
-            className='mt-0.5 h-5 w-5 shrink-0 text-primary-9'
-            icon='tabler:sparkles'
-          />
-          <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
-            <span className='font-bold text-primary-12'>{entry.label}</span>
-            {renderScalarHover(entry)}
+          <div
+            className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-4 text-primary-11'
+            key={entry.resultKey}
+          >
+            <Icon
+              className='mt-0.5 h-5 w-5 shrink-0 text-primary-9'
+              icon='tabler:sparkles'
+            />
+            <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
+              <span className='font-bold text-primary-12'>{entry.label}</span>
+              {renderScalarHover(entry)}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
       {viewModel.flagEntries.map((entry) => {
         const flags = Array.isArray(entry.value)
@@ -615,19 +611,16 @@ const QualifyAgentResultView = ({
 
         return (
           <div className='flex flex-col gap-2' key={entry.resultKey}>
-            <h4 className='text-sm font-semibold text-gray-12'>{entry.label}</h4>
+            <h4 className='text-sm font-semibold text-gray-12'>
+              {entry.label}
+            </h4>
             <HoverEditShell
               activeEditId={activeEditId}
               canEdit={entry.field ? canEditField(entry.field) : false}
-              fieldId={
-                entry.field ? getFieldId(entry.field) : entry.resultKey
-              }
+              editor={renderScalarEditor(entry, flags.join(', '))}
+              fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
               label={controlLabel(entry.field, entry.label)}
               onActivate={setActiveEditId}
-              editor={renderScalarEditor(
-                entry,
-                flags.join(', '),
-              )}
             >
               <div className='flex flex-wrap gap-2'>
                 {flags.map((flag: string, i: number) => (
@@ -661,11 +654,11 @@ const QualifyAgentResultView = ({
             icon='tabler:table'
             key={table.resultKey}
             readOnly={!editable}
+            title={table.label}
             rows={normalizeAgentTableRows(
               rows,
               field.settings?.specific?.tableColumns || [],
             )}
-            title={table.label}
             onChange={(nextRows) => writeTable(field, nextRows)}
           />
         )

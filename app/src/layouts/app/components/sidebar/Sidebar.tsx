@@ -70,7 +70,11 @@ const Sidebar = () => {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) =>
-        isPermissionVisible(item.permissionKey, sessionPermissions, session?.role),
+        isPermissionVisible(
+          item.permissionKey,
+          sessionPermissions,
+          session?.role,
+        ),
       ),
     }))
     .filter((section) => section.items.length > 0)

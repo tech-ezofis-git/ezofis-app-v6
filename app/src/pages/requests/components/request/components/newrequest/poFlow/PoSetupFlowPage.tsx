@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
-import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import formApi from '@/api/form/form'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -26,6 +26,7 @@ import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
 import { DEFAULT_FIELD_TYPES } from './utils/mappingFieldDefaults'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
 
+export type ImportStrategy = 'replace' | 'append' | 'override' | null
 export type UploadState =
   | 'idle'
   | 'parsing'
@@ -35,13 +36,12 @@ export type UploadState =
   | 'lineItemMapping'
   | 'completed'
   | 'error'
+
+type MasterDataChoice = 'demo' | 'file' | null
 type Props = {
   onClose: () => void
 }
-
 type StepState = 'waiting' | 'active' | 'done'
-type MasterDataChoice = 'demo' | 'file' | null
-export type ImportStrategy = 'replace' | 'append' | 'override' | null
 
 export default function PoSetupFlowPage({ onClose }: Props) {
   const { t } = useLingui()
@@ -55,10 +55,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // which only works as a tagged template within a component — can be used
   // directly instead of being invoked as a function on a plain string.
   const STRATEGY_OPTIONS: {
-    value: Exclude<ImportStrategy, null>
+    description: string
     icon: string
     title: string
-    description: string
+    value: Exclude<ImportStrategy, null>
   }[] = [
     {
       description: t`Clear all current PO master records and load only what's in this file.`,
@@ -107,8 +107,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // ingestion timeline can start immediately after.
   const pendingParseRef = useRef<{
     headers: string[]
-    rowCount: number
     lineItemHeaders: string[]
+    rowCount: number
   } | null>(null)
   // Guards the demo-data auto-confirm effect below so it only fires once per
   // demo-data load, rather than re-triggering on every render where the
@@ -372,8 +372,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // Confirms the chosen import strategy and kicks off the ingestion timeline
   const proceedFromStrategy = () => {
     if (!pendingParseRef.current || !importStrategy) return
-    const { headers, rowCount: parsedRowCount, lineItemHeaders: liHeaders } =
-      pendingParseRef.current
+    const {
+      headers,
+      lineItemHeaders: liHeaders,
+      rowCount: parsedRowCount,
+    } = pendingParseRef.current
     setUploadState('processing')
     runTimelineSimulation(headers, parsedRowCount, liHeaders)
   }
@@ -638,7 +641,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         (col) => !col.required || !!lineItemMapping[col.key],
       )
 
-    if (groupingColumn && isHeaderMappingComplete && isLineItemMappingComplete) {
+    if (
+      groupingColumn &&
+      isHeaderMappingComplete &&
+      isLineItemMappingComplete
+    ) {
       autoConfirmedDemoRef.current = true
       handleManualConfirm()
     }
@@ -757,13 +764,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         />
                       ) : (
                         <Icon
+                          name='tabler:database-search'
                           className={cn(
                             'size-5',
                             masterDataChoice === 'demo'
                               ? 'text-green-11'
                               : 'text-primary-11',
                           )}
-                          name='tabler:database-search'
                         />
                       )}
                     </div>
@@ -784,7 +791,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     </div>
                     {masterDataChoice === 'demo' && !isLoadingDemoData && (
                       <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'>
-                        <Icon className='size-3 text-white' name='tabler:check' />
+                        <Icon
+                          className='size-3 text-white'
+                          name='tabler:check'
+                        />
                       </div>
                     )}
                   </button>
@@ -1065,13 +1075,18 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
             <div className='my-auto flex w-full max-w-[900px] flex-col gap-5 py-2'>
               <AnimateSlideUp className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3.5 py-2.5 text-13 font-medium text-blue-11'>
-                <Icon className='size-4 shrink-0 text-blue-9' name='tabler:database' />
+                <Icon
+                  className='size-4 shrink-0 text-blue-9'
+                  name='tabler:database'
+                />
                 <span>
                   <strong>
                     {existingMasterRecordCount} {t`existing PO records`}
                   </strong>{' '}
                   {t`found in your PO Master data. Choose how`}{' '}
-                  {masterDataChoice === 'demo' ? t`the demo data` : t`this file`}{' '}
+                  {masterDataChoice === 'demo'
+                    ? t`the demo data`
+                    : t`this file`}{' '}
                   {t`should be applied.`}
                 </span>
               </AnimateSlideUp>
@@ -1114,16 +1129,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                           )}
                         >
                           <Icon
+                            name={option.icon}
                             className={cn(
                               'size-5',
                               isSelected ? 'text-green-11' : 'text-primary-11',
                             )}
-                            name={option.icon}
                           />
                         </div>
                         {isSelected && (
                           <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'>
-                            <Icon className='size-3 text-white' name='tabler:check' />
+                            <Icon
+                              className='size-3 text-white'
+                              name='tabler:check'
+                            />
                           </div>
                         )}
                       </div>
@@ -1164,451 +1182,458 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       {(uploadState === 'processing' ||
         uploadState === 'ready' ||
         uploadState === 'lineItemMapping') && (
-          <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
-            {/* Header */}
-            <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
-              <button
-                className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
-                onClick={resetToStart}
-              >
-                <Icon className='size-4' name='tabler:arrow-left' />
-              </button>
-              <div className='flex items-center gap-2'>
-                <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                  <Icon className='size-4' name='tabler:activity' />
-                </div>
-                <h1 className='text-[16px] font-medium text-gray-12'>
-                  {t`Ingestion timeline`}
-                </h1>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
+          {/* Header */}
+          <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
+            <button
+              className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
+              onClick={resetToStart}
+            >
+              <Icon className='size-4' name='tabler:arrow-left' />
+            </button>
+            <div className='flex items-center gap-2'>
+              <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+                <Icon className='size-4' name='tabler:activity' />
               </div>
+              <h1 className='text-[16px] font-medium text-gray-12'>
+                {t`Ingestion timeline`}
+              </h1>
             </div>
+          </div>
 
-            {/* Timeline Layout */}
-            <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-              <AnimateSlideUp
-                className={cn(
-                  'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300',
+          {/* Timeline Layout */}
+          <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
+            <AnimateSlideUp
+              className={cn(
+                'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300',
+              )}
+            >
+              {/* STEP 1: FILE INGESTION & PARSING */}
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                {/* Line segment from Step 1 to Step 2 */}
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+                <div
+                  className={cn(
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
+                  )}
+                />
+                <div className='flex items-start gap-4'>
+                  <div
+                    className={cn(
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                      step1State === 'done'
+                        ? 'border border-green-9 bg-white text-green-9'
+                        : step1State === 'active'
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                    )}
+                  >
+                    {step1State === 'done' ? (
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
+                    ) : step1State === 'active' ? (
+                      <Icon
+                        className='size-4 animate-spin'
+                        name='tabler:loader-2'
+                      />
+                    ) : (
+                      <Icon className='size-3.5' name='tabler:clock' />
+                    )}
+                  </div>
+                  <div className='flex flex-1 items-center gap-2'>
+                    <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                      {t`File Ingestion & Parsing`}
+                    </h3>
+                    {step1State === 'done' && (
+                      <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                        {t`Completed in 0.4s`}
+                      </span>
+                    )}
+                    {step1State === 'active' && (
+                      <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
+                        {t`In progress`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                  {t`Ingesting raw file payload and validating structure.`}
+                </p>
+
+                {/* Step 1 Detail Card */}
+                {(step1State === 'active' || step1State === 'done') && (
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`File Size`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {uploadedFile
+                          ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                          : '32.4 KB'}
+                      </span>
+                    </div>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Format`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
+                          'XLSX'}
+                      </span>
+                    </div>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Rows Detected`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {rowCount || 48} {t`rows`}
+                      </span>
+                    </div>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Sheets Used`}</span>
+                      <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
+                    </div>
+                  </div>
                 )}
-              >
-                {/* STEP 1: FILE INGESTION & PARSING */}
-                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                  {/* Line segment from Step 1 to Step 2 */}
-                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+              </div>
+
+              {/* STEP 2: COLUMN & ROW EXTRACTION */}
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                {/* Line segment from Step 2 to Step 3 */}
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+                <div
+                  className={cn(
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
+                  )}
+                />
+                <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                      step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                      step2State === 'done'
+                        ? 'border border-green-9 bg-white text-green-9'
+                        : step2State === 'active'
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
-                  />
-                  <div className='flex items-start gap-4'>
-                    <div
-                      className={cn(
-                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                        step1State === 'done'
-                          ? 'border border-green-9 bg-white text-green-9'
-                          : step1State === 'active'
-                            ? 'border-2 border-primary-9 bg-white text-primary-9'
-                            : 'border-2 border-gray-3 bg-white text-gray-4',
-                      )}
-                    >
-                      {step1State === 'done' ? (
-                        <Icon
-                          className='size-4 stroke-[3px]'
-                          name='tabler:check'
-                        />
-                      ) : step1State === 'active' ? (
-                        <Icon
-                          className='size-4 animate-spin'
-                          name='tabler:loader-2'
-                        />
-                      ) : (
-                        <Icon className='size-3.5' name='tabler:clock' />
-                      )}
-                    </div>
-                    <div className='flex flex-1 items-center gap-2'>
-                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
-                        {t`File Ingestion & Parsing`}
-                      </h3>
-                      {step1State === 'done' && (
-                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
-                          {t`Completed in 0.4s`}
-                        </span>
-                      )}
-                      {step1State === 'active' && (
-                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
-                          {t`In progress`}
-                        </span>
-                      )}
-                    </div>
+                  >
+                    {step2State === 'done' ? (
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
+                    ) : step2State === 'active' ? (
+                      <Icon
+                        className='size-4 animate-spin'
+                        name='tabler:loader-2'
+                      />
+                    ) : (
+                      <Icon className='size-3.5' name='tabler:clock' />
+                    )}
                   </div>
-                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
-                    {t`Ingesting raw file payload and validating structure.`}
-                  </p>
-
-                  {/* Step 1 Detail Card */}
-                  {(step1State === 'active' || step1State === 'done') && (
-                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`File Size`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {uploadedFile
-                            ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
-                            : '32.4 KB'}
-                        </span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Format`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
-                            'XLSX'}
-                        </span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Rows Detected`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {rowCount || 48} {t`rows`}
-                        </span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Sheets Used`}</span>
-                        <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
-                      </div>
-                    </div>
-                  )}
+                  <div className='flex flex-1 items-center gap-2'>
+                    <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                      {t`Column & Row Extraction`}
+                    </h3>
+                    {step2State === 'done' && (
+                      <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                        {t`Completed in 0.9s`}
+                      </span>
+                    )}
+                    {step2State === 'active' && (
+                      <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
+                        {t`In progress`}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                  {t`Extracting grid fields and filtering metadata records.`}
+                </p>
 
-                {/* STEP 2: COLUMN & ROW EXTRACTION */}
-                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                  {/* Line segment from Step 2 to Step 3 */}
-                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
-                  <div
-                    className={cn(
-                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                      step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
-                    )}
-                  />
-                  <div className='flex items-start gap-4'>
-                    <div
-                      className={cn(
-                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                        step2State === 'done'
-                          ? 'border border-green-9 bg-white text-green-9'
-                          : step2State === 'active'
-                            ? 'border-2 border-primary-9 bg-white text-primary-9'
-                            : 'border-2 border-gray-3 bg-white text-gray-4',
-                      )}
-                    >
-                      {step2State === 'done' ? (
-                        <Icon
-                          className='size-4 stroke-[3px]'
-                          name='tabler:check'
-                        />
-                      ) : step2State === 'active' ? (
-                        <Icon
-                          className='size-4 animate-spin'
-                          name='tabler:loader-2'
-                        />
-                      ) : (
-                        <Icon className='size-3.5' name='tabler:clock' />
-                      )}
+                {/* Step 2 Detail Card */}
+                {(step2State === 'active' || step2State === 'done') && (
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Columns Found`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {uploadedColumns.length || 8} {t`columns`}
+                      </span>
                     </div>
-                    <div className='flex flex-1 items-center gap-2'>
-                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
-                        {t`Column & Row Extraction`}
-                      </h3>
-                      {step2State === 'done' && (
-                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
-                          {t`Completed in 0.9s`}
-                        </span>
-                      )}
-                      {step2State === 'active' && (
-                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
-                          {t`In progress`}
-                        </span>
-                      )}
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
+                      <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
+                    </div>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Header Row`}</span>
+                      <span className='font-bold text-gray-12'>{t`Row 1`}</span>
+                    </div>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Data Rows`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {rowCount ? rowCount - 1 : 47} {t`rows`}
+                      </span>
                     </div>
                   </div>
-                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
-                    {t`Extracting grid fields and filtering metadata records.`}
-                  </p>
+                )}
+              </div>
 
-                  {/* Step 2 Detail Card */}
-                  {(step2State === 'active' || step2State === 'done') && (
-                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Columns Found`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {uploadedColumns.length || 8} {t`columns`}
-                        </span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
-                        <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Header Row`}</span>
-                        <span className='font-bold text-gray-12'>{t`Row 1`}</span>
-                      </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Data Rows`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {rowCount ? rowCount - 1 : 47} {t`rows`}
-                        </span>
-                      </div>
-                    </div>
+              {/* STEP 3: SCHEMA AUTO-MAPPING */}
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                {/* Line segment from Step 3 to Step 4 */}
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+                <div
+                  className={cn(
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step3State === 'done' ? 'scale-y-100' : 'scale-y-0',
                   )}
+                />
+                <div className='flex items-start gap-4'>
+                  <div
+                    className={cn(
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                      step3State === 'done'
+                        ? 'border border-green-9 bg-white text-green-9'
+                        : step3State === 'active'
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                    )}
+                  >
+                    {step3State === 'done' ? (
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
+                    ) : step3State === 'active' ? (
+                      <Icon
+                        className='size-4 animate-spin'
+                        name='tabler:loader-2'
+                      />
+                    ) : (
+                      <Icon className='size-3.5' name='tabler:clock' />
+                    )}
+                  </div>
+                  <div className='flex flex-1 items-center gap-2'>
+                    <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                      {t`Schema Auto-Mapping`}
+                    </h3>
+                    {step3State === 'done' && (
+                      <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                        {t`Completed`}
+                      </span>
+                    )}
+                    {step3State === 'active' && (
+                      <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
+                        {t`In progress`}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                  {t`Aligning CSV/XLSX headers with database mapping schema.`}
+                </p>
 
-                {/* STEP 3: SCHEMA AUTO-MAPPING */}
-                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                  {/* Line segment from Step 3 to Step 4 */}
-                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
-                  <div
-                    className={cn(
-                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                      step3State === 'done' ? 'scale-y-100' : 'scale-y-0',
-                    )}
-                  />
-                  <div className='flex items-start gap-4'>
-                    <div
-                      className={cn(
-                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                        step3State === 'done'
-                          ? 'border border-green-9 bg-white text-green-9'
-                          : step3State === 'active'
-                            ? 'border-2 border-primary-9 bg-white text-primary-9'
-                            : 'border-2 border-gray-3 bg-white text-gray-4',
-                      )}
-                    >
-                      {step3State === 'done' ? (
-                        <Icon
-                          className='size-4 stroke-[3px]'
-                          name='tabler:check'
-                        />
-                      ) : step3State === 'active' ? (
-                        <Icon
-                          className='size-4 animate-spin'
-                          name='tabler:loader-2'
-                        />
-                      ) : (
-                        <Icon className='size-3.5' name='tabler:clock' />
-                      )}
+                {/* Step 3 Detail Card */}
+                {(step3State === 'active' || step3State === 'done') && (
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Fields Matched`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {step3State === 'done'
+                          ? t`6 / 6 fields`
+                          : t`2 / 6 fields`}
+                      </span>
                     </div>
-                    <div className='flex flex-1 items-center gap-2'>
-                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
-                        {t`Schema Auto-Mapping`}
-                      </h3>
-                      {step3State === 'done' && (
-                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
-                          {t`Completed`}
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>{t`Confidence Level`}</span>
+                      <span className='font-bold text-gray-12'>
+                        {t`91% average`}
+                      </span>
+                    </div>
+                    {hasExistingMasterData && (
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Strategy`}</span>
+                        <span className='font-bold text-gray-12 capitalize'>
+                          {importStrategy || '—'}
                         </span>
-                      )}
-                      {step3State === 'active' && (
-                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
-                          {t`In progress`}
-                        </span>
-                      )}
+                      </div>
+                    )}
+                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                      <span className='text-gray-11'>
+                        {t`Fields Needing Review`}
+                      </span>
+                      <span className='font-bold text-gray-12'>
+                        {step3State === 'done' ? t`0 fields` : t`4 fields`}
+                      </span>
                     </div>
                   </div>
-                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
-                    {t`Aligning CSV/XLSX headers with database mapping schema.`}
-                  </p>
+                )}
 
-                  {/* Step 3 Detail Card */}
-                  {(step3State === 'active' || step3State === 'done') && (
-                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Fields Matched`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {step3State === 'done'
-                            ? t`6 / 6 fields`
-                            : t`2 / 6 fields`}
+                {uploadState === 'ready' && (
+                  <div
+                    className='mt-2 flex flex-col gap-4'
+                    ref={columnMappingRef}
+                  >
+                    {!groupingColumn && (
+                      <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
+                        <Icon
+                          className='size-4 text-blue-9'
+                          name='tabler:info-circle'
+                        />
+                        <span className='font-medium'>
+                          {t`Line item info: PO Number column could not be matched.`}
                         </span>
                       </div>
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>{t`Confidence Level`}</span>
-                        <span className='font-bold text-gray-12'>
-                          {t`91% average`}
+                    )}
+
+                    {/* Tab Switcher */}
+                    <div className='mb-0 flex justify-start gap-4'>
+                      <button
+                        type='button'
+                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                          activeMappingTab === 'header'
+                            ? 'border-primary-9 text-primary-9'
+                            : 'border-transparent text-gray-11 hover:text-gray-13'
+                        }`}
+                        onClick={() => setActiveMappingTab('header')}
+                      >
+                        <span>{t`Header Fields`}</span>
+                        <span
+                          className={`py-0.2 rounded-full px-1.5 text-11 ${
+                            activeMappingTab === 'header'
+                              ? 'bg-primary-2 text-primary-9'
+                              : 'bg-gray-2 text-gray-9'
+                          }`}
+                        >
+                          {Object.keys(mapping).length}/{systemColumns.length}
                         </span>
-                      </div>
-                      {hasExistingMasterData && (
-                        <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                          <span className='text-gray-11'>{t`Strategy`}</span>
-                          <span className='font-bold text-gray-12 capitalize'>
-                            {importStrategy || '—'}
-                          </span>
-                        </div>
-                      )}
-                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                        <span className='text-gray-11'>
-                          {t`Fields Needing Review`}
+                      </button>
+                      <button
+                        type='button'
+                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                          activeMappingTab === 'lineItems'
+                            ? 'border-primary-9 text-primary-9'
+                            : 'border-transparent text-gray-11 hover:text-gray-13'
+                        }`}
+                        onClick={() => setActiveMappingTab('lineItems')}
+                      >
+                        <span>{t`Line Items`}</span>
+                        <span
+                          className={`py-0.2 rounded-full px-1.5 text-11 ${
+                            activeMappingTab === 'lineItems'
+                              ? 'bg-primary-2 text-primary-9'
+                              : 'bg-gray-2 text-gray-9'
+                          }`}
+                        >
+                          {Object.keys(lineItemMapping).length}/
+                          {LINE_ITEM_TEMPLATE_COLUMNS.length}
                         </span>
-                        <span className='font-bold text-gray-12'>
-                          {step3State === 'done' ? t`0 fields` : t`4 fields`}
-                        </span>
-                      </div>
+                      </button>
                     </div>
-                  )}
 
-                  {uploadState === 'ready' && (
-                    <div ref={columnMappingRef} className='mt-2 flex flex-col gap-4'>
-                      {!groupingColumn && (
-                        <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
-                          <Icon
-                            className='size-4 text-blue-9'
-                            name='tabler:info-circle'
+                    {/* Content mapping box */}
+                    <div>
+                      {activeMappingTab === 'header' && (
+                        <div className='animate-in fade-in duration-300'>
+                          <ApColumnMapping
+                            activeMappingTab='header'
+                            fieldDataTypes={fieldDataTypes}
+                            key='header-mapping'
+                            mapping={mapping}
+                            previewRows={previewRows}
+                            uploadedColumns={uploadedColumns}
+                            onUpdateMapping={(m, types) => {
+                              setMapping(m)
+                              setFieldDataTypes(types)
+                            }}
                           />
-                          <span className='font-medium'>
-                            {t`Line item info: PO Number column could not be matched.`}
-                          </span>
                         </div>
                       )}
-
-                      {/* Tab Switcher */}
-                      <div className='mb-0 flex justify-start gap-4'>
-                        <button
-                          type='button'
-                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${activeMappingTab === 'header'
-                              ? 'border-primary-9 text-primary-9'
-                              : 'border-transparent text-gray-11 hover:text-gray-13'
-                            }`}
-                          onClick={() => setActiveMappingTab('header')}
-                        >
-                          <span>{t`Header Fields`}</span>
-                          <span
-                            className={`py-0.2 rounded-full px-1.5 text-11 ${activeMappingTab === 'header'
-                                ? 'bg-primary-2 text-primary-9'
-                                : 'bg-gray-2 text-gray-9'
-                              }`}
-                          >
-                            {Object.keys(mapping).length}/{systemColumns.length}
-                          </span>
-                        </button>
-                        <button
-                          type='button'
-                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${activeMappingTab === 'lineItems'
-                              ? 'border-primary-9 text-primary-9'
-                              : 'border-transparent text-gray-11 hover:text-gray-13'
-                            }`}
-                          onClick={() => setActiveMappingTab('lineItems')}
-                        >
-                          <span>{t`Line Items`}</span>
-                          <span
-                            className={`py-0.2 rounded-full px-1.5 text-11 ${activeMappingTab === 'lineItems'
-                                ? 'bg-primary-2 text-primary-9'
-                                : 'bg-gray-2 text-gray-9'
-                              }`}
-                          >
-                            {Object.keys(lineItemMapping).length}/
-                            {LINE_ITEM_TEMPLATE_COLUMNS.length}
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Content mapping box */}
-                      <div>
-                        {activeMappingTab === 'header' && (
-                          <div className='animate-in fade-in duration-300'>
-                            <ApColumnMapping
-                              activeMappingTab='header'
-                              fieldDataTypes={fieldDataTypes}
-                              key='header-mapping'
-                              mapping={mapping}
-                              previewRows={previewRows}
-                              uploadedColumns={uploadedColumns}
-                              onUpdateMapping={(m, types) => {
-                                setMapping(m)
-                                setFieldDataTypes(types)
-                              }}
-                            />
-                          </div>
-                        )}
-                        {activeMappingTab === 'lineItems' && (
-                          <div className='animate-in fade-in duration-300'>
-                            <ApColumnMapping
-                              activeMappingTab='lineItems'
-                              fieldDataTypes={lineItemFieldDataTypes}
-                              key='line-item-mapping'
-                              mapping={lineItemMapping}
-                              previewRows={lineItemRows}
-                              uploadedColumns={lineItemHeaders}
-                              onUpdateMapping={(m, types) => {
-                                setLineItemMapping(m)
-                                setLineItemFieldDataTypes(types)
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className='flex justify-end gap-3 pt-2'>
-                        <Button variant='outline' onClick={resetToStart}>
-                          {t`Cancel`}
-                        </Button>
-                        <Button
-                          loading={isSubmitting}
-                          disabled={
-                            !groupingColumn ||
-                            systemColumns.some(
-                              (col) => col.required && !mapping[col.key],
-                            ) ||
-                            LINE_ITEM_TEMPLATE_COLUMNS.some(
-                              (col) => col.required && !lineItemMapping[col.key],
-                            )
-                          }
-                          onClick={handleManualConfirm}
-                        >
-                          {t`Confirm & Ingest`}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* STEP 4: INGESTION & CONFIRMATION */}
-                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                  <div className='flex items-start gap-4'>
-                    <div
-                      className={cn(
-                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                        step4State === 'done'
-                          ? 'border border-green-9 bg-white text-green-9'
-                          : step4State === 'active'
-                            ? 'border-2 border-primary-9 bg-white text-primary-9'
-                            : 'border-2 border-gray-3 bg-white text-gray-4',
-                      )}
-                    >
-                      {step4State === 'done' ? (
-                        <Icon
-                          className='size-4 stroke-[3px]'
-                          name='tabler:check'
-                        />
-                      ) : step4State === 'active' ? (
-                        <Icon
-                          className='size-4 animate-spin'
-                          name='tabler:loader-2'
-                        />
-                      ) : (
-                        <Icon className='size-3.5' name='tabler:clock' />
+                      {activeMappingTab === 'lineItems' && (
+                        <div className='animate-in fade-in duration-300'>
+                          <ApColumnMapping
+                            activeMappingTab='lineItems'
+                            fieldDataTypes={lineItemFieldDataTypes}
+                            key='line-item-mapping'
+                            mapping={lineItemMapping}
+                            previewRows={lineItemRows}
+                            uploadedColumns={lineItemHeaders}
+                            onUpdateMapping={(m, types) => {
+                              setLineItemMapping(m)
+                              setLineItemFieldDataTypes(types)
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
-                    <div className='flex-1'>
-                      <h3 className='text-[13px] font-bold text-gray-12'>
-                        {t`Ingestion & Confirmation`}
-                      </h3>
-                      <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
-                        {step4State === 'active'
-                          ? t`Finalizing record ingestion...`
-                          : step4State === 'done'
-                            ? t`Ingestion fully completed.`
-                            : t`Waiting for field verification`}
-                      </p>
+                    <div className='flex justify-end gap-3 pt-2'>
+                      <Button variant='outline' onClick={resetToStart}>
+                        {t`Cancel`}
+                      </Button>
+                      <Button
+                        loading={isSubmitting}
+                        disabled={
+                          !groupingColumn ||
+                          systemColumns.some(
+                            (col) => col.required && !mapping[col.key],
+                          ) ||
+                          LINE_ITEM_TEMPLATE_COLUMNS.some(
+                            (col) => col.required && !lineItemMapping[col.key],
+                          )
+                        }
+                        onClick={handleManualConfirm}
+                      >
+                        {t`Confirm & Ingest`}
+                      </Button>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* STEP 4: INGESTION & CONFIRMATION */}
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                <div className='flex items-start gap-4'>
+                  <div
+                    className={cn(
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                      step4State === 'done'
+                        ? 'border border-green-9 bg-white text-green-9'
+                        : step4State === 'active'
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                    )}
+                  >
+                    {step4State === 'done' ? (
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
+                    ) : step4State === 'active' ? (
+                      <Icon
+                        className='size-4 animate-spin'
+                        name='tabler:loader-2'
+                      />
+                    ) : (
+                      <Icon className='size-3.5' name='tabler:clock' />
+                    )}
+                  </div>
+                  <div className='flex-1'>
+                    <h3 className='text-[13px] font-bold text-gray-12'>
+                      {t`Ingestion & Confirmation`}
+                    </h3>
+                    <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
+                      {step4State === 'active'
+                        ? t`Finalizing record ingestion...`
+                        : step4State === 'done'
+                          ? t`Ingestion fully completed.`
+                          : t`Waiting for field verification`}
+                    </p>
+                  </div>
                 </div>
-              </AnimateSlideUp>
-            </main>
-          </AnimateFadeIn>
-        )}
+              </div>
+            </AnimateSlideUp>
+          </main>
+        </AnimateFadeIn>
+      )}
 
       {/* COMPLETED SUCCESS SCREEN */}
       {uploadState === 'completed' && (

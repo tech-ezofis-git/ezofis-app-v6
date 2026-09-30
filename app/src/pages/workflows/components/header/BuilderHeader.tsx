@@ -30,11 +30,11 @@ const BuilderHeader = () => {
     const state = useWorkflowStore.getState()
     const currentStatus = targetStatus || state.workflowStatus
     const validation = validateWorkflowSettings({
-      workflowName: state.workflowName,
-      initiateUsing: state.initiateUsing,
       folder: state.folder,
       form: state.form,
+      initiateUsing: state.initiateUsing,
       status: currentStatus,
+      workflowName: state.workflowName,
     })
 
     if (!validation.isValid) {
@@ -61,8 +61,11 @@ const BuilderHeader = () => {
       const exportedJson = exportWorkflow(getNodes(), getEdges())
 
       if (!exportedJson.settings) (exportedJson as any).settings = {}
-      if (!exportedJson.settings.publish) (exportedJson.settings as any).publish = {}
-      exportedJson.settings.publish.publishOption = isPublished ? 'PUBLISHED' : 'DRAFT'
+      if (!exportedJson.settings.publish)
+        (exportedJson.settings as any).publish = {}
+      exportedJson.settings.publish.publishOption = isPublished
+        ? 'PUBLISHED'
+        : 'DRAFT'
 
       const payload = {
         description: workflowDescription || '',
@@ -75,7 +78,10 @@ const BuilderHeader = () => {
         '📌 [Workflow Builder] Saving Workflow JSON Payload:',
         JSON.stringify(payload, null, 2),
       )
-      console.log('📌 [Workflow Builder] Raw Workflow JSON object:', exportedJson)
+      console.log(
+        '📌 [Workflow Builder] Raw Workflow JSON object:',
+        exportedJson,
+      )
 
       let response
       if (workflowId === 'new') {
@@ -95,12 +101,13 @@ const BuilderHeader = () => {
           variant: 'error',
         })
       } else {
-        useWorkflowStore.getState().setWorkflowStatus(isPublished ? 'published' : 'draft')
+        useWorkflowStore
+          .getState()
+          .setWorkflowStatus(isPublished ? 'published' : 'draft')
         showToast({
-          message:
-            isPublished
-              ? 'Workflow published successfully'
-              : 'Workflow saved successfully',
+          message: isPublished
+            ? 'Workflow published successfully'
+            : 'Workflow saved successfully',
           variant: 'success',
         })
         const newId = data?.id || (typeof data === 'string' ? data : null)
@@ -133,7 +140,8 @@ const BuilderHeader = () => {
           variant='ghost'
           onClick={() =>
             navigate({
-              to: getSettingsReturnPath('workflow-configuration') ?? '/workflows',
+              to:
+                getSettingsReturnPath('workflow-configuration') ?? '/workflows',
             })
           }
         />

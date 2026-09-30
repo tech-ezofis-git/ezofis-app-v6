@@ -19,7 +19,8 @@ const SidebarCTA = () => {
     <div
       className={cn(
         'mx-3 mb-3 rounded-xl bg-gradient-to-br from-primary-9 to-primary-11 p-4 shadow-md transition-all duration-300 hover:shadow-lg',
-        isDemoFormOpen && 'ring-2 ring-yellow-3 ring-offset-2 ring-offset-white',
+        isDemoFormOpen &&
+          'ring-2 ring-yellow-3 ring-offset-2 ring-offset-white',
       )}
     >
       {/* Header */}
@@ -41,13 +42,13 @@ const SidebarCTA = () => {
       {/* CTA Button */}
       <button
         aria-current={isDemoFormOpen ? 'page' : undefined}
+        type='button'
         className={cn(
           'flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold shadow-sm transition-all duration-200 active:scale-95',
           isDemoFormOpen
             ? 'bg-primary-1 text-primary-11 ring-2 ring-primary-8'
             : 'bg-white text-primary-11 hover:bg-primary-1',
         )}
-        type='button'
         onClick={handleRequestDemo}
       >
         <Icon className='size-3.5' name='lucide:calendar-check' />

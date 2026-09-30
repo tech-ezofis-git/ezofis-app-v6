@@ -1,6 +1,7 @@
 import { FileText, Loader2, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { uploadForOcr } from '@/api/v6/folder/folder'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import FieldRenderer from '@/pages/requests/components/workflow-request/components/FieldRenderer'
 import {
   buildFormFieldOcrHints,
@@ -13,28 +14,27 @@ import {
   mergeOcrFieldHints,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { type ParsedDoc, type ParsedField } from '@/services/ai/workflowChatAi'
-import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import cn from '@/utils/cn'
-
-export type PanelFormPayload = {
-  docs: ParsedDoc[]
-  fields: ParsedField[]
-  panelIndex: number
-  title: string
-  completed?: boolean
-}
 
 /** Same shape as request-page FILE_UPLOAD values before staging. */
 export type ChatAttachedFile = {
-  fileName: string
   fieldId?: string
   fieldName?: string
   fileId?: string
+  fileName: string
   ocrChecked?: boolean
   ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
   ocrJson?: string
   rawFile?: File
   repositoryId?: string
+}
+
+export type PanelFormPayload = {
+  completed?: boolean
+  docs: ParsedDoc[]
+  fields: ParsedField[]
+  panelIndex: number
+  title: string
 }
 
 type PanelFormCardProps = {
@@ -444,8 +444,8 @@ export default function PanelFormCard({
             const required = docIsRequired(doc, mandatoryFieldIds)
             return (
               <div
-                key={doc.id}
                 className='rounded-xl border border-dashed border-gray-6 bg-gray-1 p-3'
+                key={doc.id}
               >
                 <div className='mb-2 flex items-center justify-between gap-2'>
                   <span className='text-xs font-semibold text-gray-12'>
@@ -499,10 +499,10 @@ export default function PanelFormCard({
                 <input
                   accept={doc.accept || DOCUMENT_ACCEPT}
                   className='hidden'
+                  type='file'
                   ref={(node) => {
                     fileInputRefs.current[doc.id] = node
                   }}
-                  type='file'
                   onChange={(event) => {
                     const file = event.target.files?.[0]
                     if (!file || payload.completed) return
@@ -528,11 +528,11 @@ export default function PanelFormCard({
             Boolean(readOnlyFieldIds?.has(String(field.id)))
           return (
             <div
+              key={field.id}
               className={cn(
                 fieldColumnClass(field),
                 'max-w-full min-w-0 px-2 pb-3',
               )}
-              key={field.id}
             >
               <FieldRenderer
                 field={formField}
@@ -556,14 +556,14 @@ export default function PanelFormCard({
               : 'Fill all mandatory fields to continue.'}
           </p>
           <button
+            disabled={!canContinue || Boolean(ocrBusyDocId)}
+            type='button'
             className={cn(
               'inline-flex h-9 items-center justify-center rounded-lg px-4 text-xs font-bold transition',
               canContinue
                 ? 'bg-primary-9 text-white hover:bg-primary-10 active:scale-[0.98]'
                 : 'cursor-not-allowed bg-gray-4 text-gray-8',
             )}
-            disabled={!canContinue || Boolean(ocrBusyDocId)}
-            type='button'
             onClick={() => {
               // Prefer draft values; never let stale empty parent answers win.
               const merged: Record<string, any> = { ...answers }

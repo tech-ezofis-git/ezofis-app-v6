@@ -1,5 +1,5 @@
-import { useLocation } from '@tanstack/react-router'
 import { useLingui } from '@lingui/react/macro'
+import { useLocation } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'

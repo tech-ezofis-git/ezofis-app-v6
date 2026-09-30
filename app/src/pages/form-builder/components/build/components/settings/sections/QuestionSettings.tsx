@@ -13,12 +13,12 @@ import type {
   Question,
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
+import connectorApi from '@/api/connector'
+import formApi from '@/api/form/form'
 import {
   getRepositoryItemFilterFields,
   getRepositorys,
 } from '@/api/v6/folder/folder'
-import formApi from '@/api/form/form'
-import connectorApi from '@/api/connector'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -161,7 +161,8 @@ const QuestionSettings = ({
     },
   })
 
-  const currentMasterFormId = activeQuestion.settings.specific.masterFormId || ''
+  const currentMasterFormId =
+    activeQuestion.settings.specific.masterFormId || ''
 
   const { data: masterFormDetails } = useQuery({
     enabled: !!currentMasterFormId,
@@ -208,7 +209,6 @@ const QuestionSettings = ({
       return Array.isArray(res.payload) ? res.payload : []
     },
   })
-
 
   const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
@@ -973,7 +973,9 @@ const QuestionSettings = ({
                     value={
                       optionsTypeOptions.find(
                         (o) =>
-                          o.id === (activeQuestion.settings.specific.optionsType || activeQuestion.settings.specific.optionsSource),
+                          o.id ===
+                          (activeQuestion.settings.specific.optionsType ||
+                            activeQuestion.settings.specific.optionsSource),
                       ) || optionsTypeOptions[0]
                     }
                     onChange={(val) =>
@@ -990,7 +992,7 @@ const QuestionSettings = ({
                   activeQuestion.settings.specific.optionsType ===
                     'MASTER_TABLE') && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-4 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Master Table Configuration
                     </label>
 
@@ -999,8 +1001,8 @@ const QuestionSettings = ({
                         Target Master Form / Table
                       </label>
                       <InputSelect
-                        placeholder='Select Master Table'
                         options={masterForms}
+                        placeholder='Select Master Table'
                         value={
                           masterForms.find(
                             (f: any) =>
@@ -1024,8 +1026,8 @@ const QuestionSettings = ({
                         Master Column to Display
                       </label>
                       <InputSelect
-                        placeholder='Select Master Column'
                         options={masterColumns}
+                        placeholder='Select Master Column'
                         value={
                           masterColumns.find(
                             (col: any) =>
@@ -1123,7 +1125,9 @@ const QuestionSettings = ({
                               }}
                             />
                           </div>
-                          <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                          <span className='text-xs font-bold text-gray-5'>
+                            &rarr;
+                          </span>
                           <div className='flex-1'>
                             <InputSelect
                               placeholder='Master Column'
@@ -1210,12 +1214,14 @@ const QuestionSettings = ({
                             Display All Data When Parent Empty
                           </div>
                           <div className='text-[10px] text-gray-6'>
-                            Show all options without filtering if parent field is empty
+                            Show all options without filtering if parent field
+                            is empty
                           </div>
                         </div>
                         <InputSwitch
                           checked={
-                            activeQuestion.settings.specific.showAllData || false
+                            activeQuestion.settings.specific.showAllData ||
+                            false
                           }
                           onChange={(checked) =>
                             updateNested('specific', { showAllData: checked })
@@ -1229,7 +1235,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'REPOSITORY' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Repository Source Builder
                     </label>
                     <div className='space-y-3'>
@@ -1327,7 +1333,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'PREDEFINED' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3.5 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Predefined Entity Configuration
                     </label>
 
@@ -1435,7 +1441,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'EXISTING' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Existing Submitted Values
                     </label>
                     <div>
@@ -1454,7 +1460,8 @@ const QuestionSettings = ({
                             .find(
                               (q) =>
                                 q.id ===
-                                activeQuestion.settings.specific.existingFieldId,
+                                activeQuestion.settings.specific
+                                  .existingFieldId,
                             ) || null
                         }
                         onChange={(val) =>
@@ -1464,7 +1471,8 @@ const QuestionSettings = ({
                         }
                       />
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
-                        Options will be dynamically collected from unique values of submitted entries for this field.
+                        Options will be dynamically collected from unique values
+                        of submitted entries for this field.
                       </div>
                     </div>
                   </div>
@@ -1473,7 +1481,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'ASSIGN_PARENT_FIELD' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Assign Control Field
                     </label>
                     <div>
@@ -1502,7 +1510,8 @@ const QuestionSettings = ({
                         }
                       />
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
-                        Options will dynamically match the selected control field's choices.
+                        Options will dynamically match the selected control
+                        field's choices.
                       </div>
                     </div>
                   </div>
@@ -1510,8 +1519,9 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'USER_LIST' && (
-                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
-                    Options will be dynamically populated with system user emails.
+                  <div className='border-line-strong rounded-lg border bg-gray-2 p-3 text-13 text-gray-11'>
+                    Options will be dynamically populated with system user
+                    emails.
                   </div>
                 )}
 
@@ -3802,7 +3812,11 @@ const QuestionSettings = ({
                     connectors.length > 0
                       ? connectors.map((c: any) => ({
                           id: String(c.id),
-                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                          name:
+                            c.name ||
+                            c.connectorName ||
+                            c.providerCode ||
+                            `Connection ${c.id}`,
                         }))
                       : [
                           { id: '1', name: 'Main Production Connector' },
@@ -3813,7 +3827,11 @@ const QuestionSettings = ({
                     (connectors.length > 0
                       ? connectors.map((c: any) => ({
                           id: String(c.id),
-                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                          name:
+                            c.name ||
+                            c.connectorName ||
+                            c.providerCode ||
+                            `Connection ${c.id}`,
                         }))
                       : [
                           { id: '1', name: 'Main Production Connector' },
@@ -3853,7 +3871,8 @@ const QuestionSettings = ({
                   label='Primary Name Column (columnNameInAPI)'
                   placeholder='e.g. display_name'
                   value={
-                    activeQuestion.settings.lookupSettings?.columnNameInAPI || ''
+                    activeQuestion.settings.lookupSettings?.columnNameInAPI ||
+                    ''
                   }
                   onChange={(val: string) =>
                     updateNested('lookupSettings', { columnNameInAPI: val })
@@ -3892,7 +3911,8 @@ const QuestionSettings = ({
                     type='button'
                     onClick={() => {
                       const current =
-                        activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
+                        activeQuestion.settings.lookupSettings
+                          ?.syncFieldsForAPI || []
                       updateNested('lookupSettings', {
                         syncFieldsForAPI: [
                           ...current,
@@ -3937,7 +3957,9 @@ const QuestionSettings = ({
                         }}
                       />
                     </div>
-                    <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                    <span className='text-xs font-bold text-gray-5'>
+                      &rarr;
+                    </span>
                     <div className='flex-1'>
                       <InputText
                         placeholder='API Parameter'
@@ -4028,8 +4050,8 @@ const QuestionSettings = ({
                   </div>
                   <InputSwitch
                     checked={
-                      activeQuestion.settings.lookupSettings?.hasSameConnection ||
-                      false
+                      activeQuestion.settings.lookupSettings
+                        ?.hasSameConnection || false
                     }
                     onChange={(checked) =>
                       updateNested('lookupSettings', {
@@ -4341,7 +4363,7 @@ const QuestionSettings = ({
                             }
                           />
                         </div>
-                        <span className='text-[11px] text-gray-6 shrink-0'>
+                        <span className='shrink-0 text-[11px] text-gray-6'>
                           this field
                         </span>
                       </div>

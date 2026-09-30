@@ -85,8 +85,8 @@ type Store = {
   loadedNodes: Node[] | null
   prefixSegments: PrefixSegment[]
   previewValues: string[]
-  requestTitleField: string | null
   requestTabs: RequestTabConfig[]
+  requestTitleField: string | null
   selectedEdge: Edge | null
   selectedNode: Node | null
   settingsValidationErrors: WorkflowValidationErrors | null
@@ -113,11 +113,9 @@ type Store = {
   setKanbanSettings: (cards: KanbanCardSetting[]) => void
   setPrefixSegments: (segments: PrefixSegment[]) => void
   setPreviewValues: (values: string[]) => void
-  setRequestTitleField: (field: string | null) => void
   setRequestTabs: (tabs: RequestTabConfig[]) => void
-  setSettingsValidationErrors: (
-    errors: WorkflowValidationErrors | null,
-  ) => void
+  setRequestTitleField: (field: string | null) => void
+  setSettingsValidationErrors: (errors: WorkflowValidationErrors | null) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
@@ -147,11 +145,10 @@ const useWorkflowStore = create<Store>()((set) => ({
   loadedNodes: null,
   prefixSegments: defaultPrefixSegments,
   previewValues: [],
-  requestTitleField: null,
   requestTabs: [],
+  requestTitleField: null,
   selectedEdge: null,
   selectedNode: null,
-  settingsValidationErrors: null,
   workflowDescription: '',
   workflowId: null,
   workflowName: `Workflow - ${new Date()
@@ -243,15 +240,18 @@ const useWorkflowStore = create<Store>()((set) => ({
       legacyJson.settings?.general?.initiateUsing?.repositoryId ??
       apiData?.repositoryId
     const rawForm =
-      legacyJson.settings?.general?.initiateUsing?.formId ??
-      apiData?.formId
+      legacyJson.settings?.general?.initiateUsing?.formId ?? apiData?.formId
 
     set({
       folder: isFilledValue(rawFolder)
-        ? (typeof rawFolder === 'number' ? rawFolder : Number(rawFolder) || rawFolder)
+        ? typeof rawFolder === 'number'
+          ? rawFolder
+          : Number(rawFolder) || rawFolder
         : null,
       form: isFilledValue(rawForm)
-        ? (typeof rawForm === 'number' ? rawForm : Number(rawForm) || rawForm)
+        ? typeof rawForm === 'number'
+          ? rawForm
+          : Number(rawForm) || rawForm
         : null,
       initiateUsing:
         legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
@@ -262,8 +262,9 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: nodes,
       prefixSegments,
       previewValues,
-      requestTitleField: legacyJson.settings?.general?.requestTitleField || null,
       requestTabs,
+      requestTitleField:
+        legacyJson.settings?.general?.requestTitleField || null,
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
       workflowName,
@@ -291,11 +292,10 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: null,
       prefixSegments: defaultPrefixSegments,
       previewValues: [],
-      requestTitleField: null,
       requestTabs: [],
+      requestTitleField: null,
       selectedEdge: null,
       selectedNode: null,
-      settingsValidationErrors: null,
       workflowDescription: '',
       workflowId: null,
       workflowName: `Workflow - ${new Date()
@@ -310,6 +310,7 @@ const useWorkflowStore = create<Store>()((set) => ({
         .replace(',', '')
         .replace(/\//g, '-')}`,
       workflowStatus: 'draft',
+      settingsValidationErrors: null,
     }),
   selectEdge: (edge) =>
     set({
@@ -336,10 +337,11 @@ const useWorkflowStore = create<Store>()((set) => ({
   setKanbanSettings: (cards) => set({ kanbanSettings: cards }),
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
   setPreviewValues: (values) => set({ previewValues: values }),
-  setRequestTitleField: (field) => set({ requestTitleField: field }),
   setRequestTabs: (tabs) => set({ requestTabs: tabs }),
+  setRequestTitleField: (field) => set({ requestTitleField: field }),
   setSettingsValidationErrors: (errors) =>
     set({ settingsValidationErrors: errors }),
+  settingsValidationErrors: null,
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
   setWorkflowId: (workflowId) => set({ workflowId }),

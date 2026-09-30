@@ -226,7 +226,7 @@ export default function PortalHome({
         <PortalStatCardsSkeleton />
       ) : (
         <AnimateStagger
-          className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:min-w-0 [&>div]:w-full'
+          className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'
           staggerDelay={0.05}
         >
           {statCards.map((stat) => {
@@ -425,14 +425,14 @@ export default function PortalHome({
                   color='gray'
                   disabled={loadingSubmissions || isRefreshing}
                   icon='tabler:refresh'
+                  size='md'
+                  tooltip={t`Refresh`}
+                  variant='outline'
                   iconClass={
                     loadingSubmissions || isRefreshing
                       ? 'animate-spin'
                       : undefined
                   }
-                  size='md'
-                  tooltip={t`Refresh`}
-                  variant='outline'
                   onClick={() => void handleRefresh()}
                 />
               ) : null}

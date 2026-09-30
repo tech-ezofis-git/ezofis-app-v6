@@ -22,8 +22,8 @@ const GenericStagePill = ({
       className={cn(
         'inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors',
         isTerminal
-          ? 'border-green-3 bg-green-1 text-green-9 dark:border-green-9/30 dark:bg-green-950/40 dark:text-green-400'
-          : 'border-purple-3 bg-purple-1 text-purple-9 dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400',
+          ? 'dark:bg-green-950/40 dark:text-green-400 border-green-3 bg-green-1 text-green-9 dark:border-green-9/30'
+          : 'dark:bg-purple-950/40 dark:text-purple-400 border-purple-3 bg-purple-1 text-purple-9 dark:border-purple-9/30',
       )}
     >
       {currentLabel}

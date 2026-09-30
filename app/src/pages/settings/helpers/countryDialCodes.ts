@@ -72,8 +72,8 @@ export const countryDialCodes: CountryDialCode[] = [
 ]
 
 export const countryDialCodeOptions = countryDialCodes.map((country) => ({
-  id: country.code,
   iconKey: `circle-flags:${country.code.toLowerCase()}`,
+  id: country.code,
   name: country.dialCode,
   value: `${country.dialCode}|${country.code}`,
 }))

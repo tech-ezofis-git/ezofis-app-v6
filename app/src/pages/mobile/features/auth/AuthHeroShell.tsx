@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import logoMark from '@/assets/logo/mark.png'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { Icon } from '../../components/primitives/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 type AuthHeroShellProps = {
   children: ReactNode
@@ -27,11 +27,7 @@ export function AuthHeroShell({
 
         <div className='relative z-10 flex shrink-0 flex-col gap-4 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-8'>
           <div className='flex items-center gap-1.5'>
-            <img
-              alt=''
-              className='size-7 brightness-0 invert'
-              src={logoMark}
-            />
+            <img alt='' className='size-7 brightness-0 invert' src={logoMark} />
             <span className='text-[22px] font-semibold tracking-tight text-white'>
               EZOFIS
             </span>
@@ -41,7 +37,7 @@ export function AuthHeroShell({
             <span className='inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/20 text-white'>
               <AiBrandIcon className='size-4' variant='outline-purple' />
             </span>
-            <span className='pr-1 text-12 font-medium leading-snug text-white'>
+            <span className='pr-1 text-12 leading-snug font-medium text-white'>
               AI-enhanced document management
             </span>
           </div>
@@ -72,11 +68,7 @@ export function AuthUserAvatar() {
 
 export function GoogleMark({ className }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      className={cn('size-4', className)}
-      viewBox='0 0 24 24'
-    >
+    <svg className={cn('size-4', className)} viewBox='0 0 24 24' aria-hidden>
       <path
         d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'
         fill='#4285F4'
@@ -99,11 +91,7 @@ export function GoogleMark({ className }: { className?: string }) {
 
 export function MicrosoftMark({ className }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      className={cn('size-4', className)}
-      viewBox='0 0 23 23'
-    >
+    <svg className={cn('size-4', className)} viewBox='0 0 23 23' aria-hidden>
       <path d='M1 1h10v10H1z' fill='#F25022' />
       <path d='M12 1h10v10H12z' fill='#7FBA00' />
       <path d='M1 12h10v10H1z' fill='#00A4EF' />

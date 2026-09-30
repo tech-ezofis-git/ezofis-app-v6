@@ -33,7 +33,9 @@ export default function RequestTabsSettingsSection({
       }))
 
   const updateLabel = (id: string, label: string) => {
-    onChange(displayTabs.map((tab) => (tab.id === id ? { ...tab, label } : tab)))
+    onChange(
+      displayTabs.map((tab) => (tab.id === id ? { ...tab, label } : tab)),
+    )
   }
 
   const removeTab = (id: string) => {
@@ -50,10 +52,7 @@ export default function RequestTabsSettingsSection({
   }
 
   const addTab = () => {
-    onChange([
-      ...displayTabs,
-      { id: generateId(), label: t`New Tab` },
-    ])
+    onChange([...displayTabs, { id: generateId(), label: t`New Tab` }])
   }
 
   const resetToDefault = () => onChange([])
@@ -122,7 +121,12 @@ export default function RequestTabsSettingsSection({
         </button>
 
         {tabs.length ? (
-          <Button color='gray' size='xs' variant='outline' onClick={resetToDefault}>
+          <Button
+            color='gray'
+            size='xs'
+            variant='outline'
+            onClick={resetToDefault}
+          >
             {t`Reset to default`}
           </Button>
         ) : null}

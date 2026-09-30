@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -112,6 +112,27 @@ const buildDisplayRows = (fields: DmsSetupField[]): DisplayField[] => {
   })
 }
 
+function FieldTreeIcon({
+  iconKey,
+  variant,
+}: {
+  iconKey: string
+  variant: 'folder' | 'fileName' | 'metadata'
+}) {
+  return (
+    <span
+      className={cn(
+        'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded',
+        variant === 'folder' && 'bg-primary-3 text-primary-9',
+        variant === 'fileName' && 'bg-blue-3 text-blue-9',
+        variant === 'metadata' && 'bg-gray-3 text-gray-11',
+      )}
+    >
+      <DynamicIcon className='h-2.5 w-2.5' name={iconKey} />
+    </span>
+  )
+}
+
 function FieldTreeLines({
   depth,
   isLastAtDepth,
@@ -144,27 +165,6 @@ function FieldTreeLines({
   )
 }
 
-function FieldTreeIcon({
-  iconKey,
-  variant,
-}: {
-  iconKey: string
-  variant: 'folder' | 'fileName' | 'metadata'
-}) {
-  return (
-    <span
-      className={cn(
-        'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded',
-        variant === 'folder' && 'bg-primary-3 text-primary-9',
-        variant === 'fileName' && 'bg-blue-3 text-blue-9',
-        variant === 'metadata' && 'bg-gray-3 text-gray-11',
-      )}
-    >
-      <DynamicIcon className='h-2.5 w-2.5' name={iconKey} />
-    </span>
-  )
-}
-
 function SortableFieldRow({
   field,
   fieldTypeOptions,
@@ -178,7 +178,7 @@ function SortableFieldRow({
   onToggleFolder: (id: string, checked: boolean) => void
   onUpdate: (id: string, patch: Partial<DmsSetupField>) => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
+  const { attributes, listeners, transform, transition, setNodeRef } =
     useSortable({ id: field.id })
 
   const isFolder = field.includeInFolderStructure
@@ -191,20 +191,18 @@ function SortableFieldRow({
     ? 'document'
     : !isFolder
       ? 'tag'
-      : field.iconKey &&
-          field.iconKey !== 'document' &&
-          field.iconKey !== 'tag'
+      : field.iconKey && field.iconKey !== 'document' && field.iconKey !== 'tag'
         ? field.iconKey
         : 'folder'
 
   return (
     <div
+      ref={setNodeRef}
       className={cn(
         'grid items-center px-3 py-2.5',
         FIELD_TABLE_COLS,
         !isFolder && 'bg-gray-1/70',
       )}
-      ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -239,9 +237,9 @@ function SortableFieldRow({
       <InputSelect
         options={fieldTypeOptions}
         placeholder='Type'
-        searchable
         searchPlaceholder='Search type'
         width='target'
+        searchable
         value={
           fieldTypeOptions.find((option) => option.value === field.dataType) ||
           ({
@@ -456,9 +454,9 @@ const ConfigureFieldsStep = () => {
                 label='Type'
                 options={fieldTypeOptions}
                 placeholder='Field type'
-                searchable
                 searchPlaceholder='Search type'
                 width='target'
+                searchable
                 value={
                   fieldTypeOptions.find(
                     (option) => option.value === newFieldType,

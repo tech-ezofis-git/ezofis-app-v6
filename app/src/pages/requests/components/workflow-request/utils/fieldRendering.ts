@@ -131,9 +131,9 @@ export const isFieldRequired = (field: any): boolean =>
   field?.settings?.validation?.fieldRule === 'REQUIRED' ||
   Boolean(
     field?.isRequired ||
-      field?.required ||
-      field?.isMandatory ||
-      field?.settings?.validation?.required,
+    field?.required ||
+    field?.isMandatory ||
+    field?.settings?.validation?.required,
   )
 
 export const isFieldHidden = (field: any): boolean =>
@@ -200,7 +200,9 @@ export const getFieldOptions = (field: any): FieldOption[] => {
 export const getConfiguredFieldOptions = (field: any): FieldOption[] => {
   const specific = field?.settings?.specific
   const optionsType = String(specific?.optionsType || 'CUSTOM').toUpperCase()
-  const optionsSource = String(specific?.optionsSource || optionsType).toUpperCase()
+  const optionsSource = String(
+    specific?.optionsSource || optionsType,
+  ).toUpperCase()
 
   if (optionsType !== 'CUSTOM' || optionsSource !== 'CUSTOM') {
     if (optionsType === 'DYNAMIC') return getFieldOptions(field)
@@ -224,7 +226,9 @@ export const getMasterFormInfo = (
   const specific = field?.settings?.specific || {}
   const aiSettings = field?.settings?.aiSettings || {}
   const optionsType = String(specific.optionsType || '').toUpperCase()
-  const optionsSource = String(specific.optionsSource || optionsType).toUpperCase()
+  const optionsSource = String(
+    specific.optionsSource || optionsType,
+  ).toUpperCase()
 
   const isMaster =
     optionsType === 'MASTER' ||
@@ -617,11 +621,7 @@ const hintFieldName = (hint: string): string =>
 // Form labels and folder/OCR names must match case-insensitively. Strip
 // asterisks and extra whitespace so "Customer *" still matches "Customer".
 const normalizeName = (s: string) =>
-  s
-    .replace(/\*/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()
+  s.replace(/\*/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
 
 // FILE_UPLOAD "Auto-fill from Document" targets, same "Name,TYPE" shape as
 // repository OCR hints so uploadForOcr can extract both in one pass.
@@ -691,7 +691,9 @@ export const findFormFieldIdByName = (
   for (const panel of panels || []) {
     for (const field of panel.fields || []) {
       const candidates = [field.label, field.name, field.title]
-      if (!candidates.some((label) => label && normalizeName(label) === target)) {
+      if (
+        !candidates.some((label) => label && normalizeName(label) === target)
+      ) {
         continue
       }
       return field.id || field.jsonId

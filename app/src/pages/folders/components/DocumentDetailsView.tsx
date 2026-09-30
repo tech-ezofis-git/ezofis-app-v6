@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   ArrowLeft,
   CheckCircle2,
@@ -6,11 +7,15 @@ import {
   PenLine,
   ScanText,
 } from 'lucide-react'
-import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { axiosV6 } from '@/api/axios'
 import fileApi from '@/api/file/file'
-import IconButton from '@/components/base/button/IconButton'
-
+import {
+  getRepositoryById,
+  persistEditedDocumentToRepository,
+  type RepositoryFieldDto,
+  type UploadArchiveResponse,
+} from '@/api/v6/folder/folder'
 import {
   collectSignRequestFields,
   createSignRequest,
@@ -18,38 +23,38 @@ import {
   getSignRequestInviteFile,
   listItemSignRequests,
   listPendingSignRequestsForMe,
-  submitInviteSignRequest,
-  submitSignRequest,
   type SignRequestFieldDto,
   type SignRequestInvitePreview,
+  submitInviteSignRequest,
+  submitSignRequest,
 } from '@/api/v6/folder/signRequest'
+import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
+import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
-import showToast from '@/components/base/toast/showToast'
-import Icon from '@/components/base/icon/Icon'
+import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
-import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
-import {
-  getRepositoryById,
-  persistEditedDocumentToRepository,
-  type RepositoryFieldDto,
-  type UploadArchiveResponse,
-} from '@/api/v6/folder/folder'
-import { axiosV6 } from '@/api/axios'
 
 const getMilestoneIcon = (milestone?: string) => {
   switch (String(milestone || '').toLowerCase()) {
-    case 'start': return 'play'
-    case 'approved': return 'checkCircle'
-    case 'forwarded': return 'arrowRight'
-    case 'pending': return 'clock'
-    case 'completed': return 'check'
-    default: return 'circle'
+    case 'start':
+      return 'play'
+    case 'approved':
+      return 'checkCircle'
+    case 'forwarded':
+      return 'arrowRight'
+    case 'pending':
+      return 'clock'
+    case 'completed':
+      return 'check'
+    default:
+      return 'circle'
   }
 }
-import CollaboraEditor from './CollaboraEditor'
+import Buttons from '@/components/base/button/Button'
 import authUserStore from '@/stores/authUserStore'
 import {
   formatUtcToLocalDate,
@@ -58,31 +63,31 @@ import {
 } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import {
+  type DocumentPreviewKind,
   getFileExtension,
   resolveDocumentPreviewKind,
   resolvePreviewMimeType,
   sniffBlobMimeType,
-  type DocumentPreviewKind,
 } from '../utils/documentDetailsUtils'
-import { resolveShareContext } from '../utils/shareContextStorage'
 import {
   getFieldDisplayValue,
   getFieldSearchVariantStrings,
 } from '../utils/fieldPdfSearch'
+import { resolveShareContext } from '../utils/shareContextStorage'
 import {
   loadSignRequestFields,
   saveSignRequestFields,
 } from '../utils/signRequestFieldsStorage'
+import CollaboraEditor from './CollaboraEditor'
 import {
-  DocumentSigningPage,
   type DocumentSigningActionRef,
+  DocumentSigningPage,
   type DocumentSigningState,
   type SavedSignature,
 } from './DocumentSigningPage'
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton, StatusPill } from './Ui'
-import Buttons from '@/components/base/button/Button'
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
 type CommentItem = {
@@ -230,8 +235,8 @@ const formatTimeOnly = (value?: string) => {
   if (!d) return ''
   return d.toLocaleTimeString([], {
     hour: '2-digit',
-    minute: '2-digit',
     hour12: true,
+    minute: '2-digit',
   })
 }
 
@@ -309,10 +314,10 @@ const toUiErrorMessage = (value: unknown, fallback: string) => {
   if (value instanceof Error) return value.message || fallback
   if (typeof value === 'object') {
     const record = value as {
+      detail?: unknown
       error?: unknown
       message?: unknown
       title?: unknown
-      detail?: unknown
     }
     for (const key of ['error', 'message', 'title', 'detail'] as const) {
       const part = record[key]
@@ -323,38 +328,34 @@ const toUiErrorMessage = (value: unknown, fallback: string) => {
 }
 
 export function DocumentDetailsView({
+  autoOpenShare = false,
+  compactActions = false,
+  forceSigning = false,
   id,
+  invitePreview = null,
+  inviteToken = '',
+  permissions,
   repositoryId,
+  signatureFields: initialSignatureFieldsProp,
+  signRequestId: initialSignRequestId = '',
   // onEdit,
   onAiSummary,
   onBack,
+  onOpenRelatedDocument,
+  onShareOpened,
   onSigningComplete,
   onWorkflow,
-  forceSigning = false,
-  inviteToken = '',
-  invitePreview = null,
-  signRequestId: initialSignRequestId = '',
-  signatureFields: initialSignatureFieldsProp,
-  compactActions = false,
-  autoOpenShare = false,
-  onShareOpened,
-  onOpenRelatedDocument,
-  permissions,
 }: {
+  /** Open the Canva-style share popover on mount (list Share action). */
+  autoOpenShare?: boolean
+  /** Hide AI/Share/Workflow when opened from invite. */
+  compactActions?: boolean
+  /** Open directly in assigned-field signing mode (invite / pending). */
+  forceSigning?: boolean
   id: string
-  repositoryId: string
-  onAiSummary?: () => void
-  /** Leave the details view. Omit when there is nowhere to go back to. */
-  onBack?: () => void
-  /** Signature was actually submitted (not just the signing UI closed). */
-  onSigningComplete?: () => void
-  onEdit?: () => void
-  onWorkflow?: () => void
-  /** Open a related file in details (use that row's repositoryId + id). */
-  onOpenRelatedDocument?: (payload: {
-    id: string
-    repositoryId: string
-  }) => void
+  /** Invite preview metadata — used when workspace API is not available. */
+  invitePreview?: SignRequestInvitePreview | null
+  inviteToken?: string
   permissions?: {
     checkIn?: boolean
     checkOut?: boolean
@@ -367,18 +368,22 @@ export function DocumentDetailsView({
     upload?: boolean
     view?: boolean
   }
-  /** Open directly in assigned-field signing mode (invite / pending). */
-  forceSigning?: boolean
-  inviteToken?: string
-  /** Invite preview metadata — used when workspace API is not available. */
-  invitePreview?: SignRequestInvitePreview | null
-  signRequestId?: string
+  repositoryId: string
   signatureFields?: SignRequestFieldDto[]
-  /** Hide AI/Share/Workflow when opened from invite. */
-  compactActions?: boolean
-  /** Open the Canva-style share popover on mount (list Share action). */
-  autoOpenShare?: boolean
+  signRequestId?: string
+  onAiSummary?: () => void
+  /** Leave the details view. Omit when there is nowhere to go back to. */
+  onBack?: () => void
+  onEdit?: () => void
+  /** Open a related file in details (use that row's repositoryId + id). */
+  onOpenRelatedDocument?: (payload: {
+    id: string
+    repositoryId: string
+  }) => void
   onShareOpened?: () => void
+  /** Signature was actually submitted (not just the signing UI closed). */
+  onSigningComplete?: () => void
+  onWorkflow?: () => void
 }) {
   const { t } = useLingui()
   const initialSignatureFields =
@@ -467,8 +472,8 @@ export function DocumentDetailsView({
   const signingActionRef = useRef<DocumentSigningActionRef | null>(null)
   const [signingState, setSigningState] = useState<DocumentSigningState>({
     canSave: false,
-    isSaving: false,
     hasPlacements: false,
+    isSaving: false,
     workspaceMode: 'create',
   })
   const signingResolvedForRef = useRef('')
@@ -844,7 +849,12 @@ export function DocumentDetailsView({
                 }
               : undefined,
           ),
-          !useShareToken ? axiosV6({ url: `/repositories/${repositoryId}/items/${id}/ticket`, method: 'GET' }) : Promise.resolve(null)
+          !useShareToken
+            ? axiosV6({
+                method: 'GET',
+                url: `/repositories/${repositoryId}/items/${id}/ticket`,
+              })
+            : Promise.resolve(null),
         ])
 
         if (mounted) {
@@ -853,7 +863,10 @@ export function DocumentDetailsView({
           } else {
             throw response.reason
           }
-          if (ticketRes.status === 'fulfilled' && ticketRes.value?.data?.hasTicket) {
+          if (
+            ticketRes.status === 'fulfilled' &&
+            ticketRes.value?.data?.hasTicket
+          ) {
             setTicketData(ticketRes.value.data.ticket)
           }
         }
@@ -1392,7 +1405,7 @@ export function DocumentDetailsView({
 
     // Verification logging
     const head = new Uint8Array(await blob.slice(0, 8).arrayBuffer())
-    // eslint-disable-next-line no-console
+
     console.log(
       '[verify] header:',
       String.fromCharCode(...head),
@@ -1441,15 +1454,15 @@ export function DocumentDetailsView({
                 : t`${savedFileName} updated successfully.`}
             </span>
             <button
-              type='button'
               className='inline-flex w-fit cursor-pointer items-center gap-1 text-[12px] font-semibold text-primary-10 transition-colors hover:text-primary-11 hover:underline'
+              type='button'
               onClick={(e) => {
                 e.stopPropagation()
                 handleOpenFile(savedItemId, repositoryId)
               }}
             >
               <span>{t`Open file`}</span>
-              <ExternalLink size={12} className='shrink-0' />
+              <ExternalLink className='shrink-0' size={12} />
             </button>
           </div>
         ),
@@ -1636,55 +1649,36 @@ export function DocumentDetailsView({
           />
         </div>
       ) : null}
-      {previewUrl && (isPdfPreview || isImagePreview) && (isSigning || assignedFields.length > 0) ? (
+      {previewUrl &&
+      (isPdfPreview || isImagePreview) &&
+      (isSigning || assignedFields.length > 0) ? (
         <DocumentSigningPage
-          mode='inline'
-          overlayOnly={!isSigning && assignedFields.length > 0}
-          openPickerKey={signPickerKey}
-          pickerAnchorRef={signTriggerRef}
-          externalSurfaceRef={documentSurfaceRef}
           actionRef={signingActionRef}
-          onStateChange={setSigningState}
-          documentUrl={previewUrl}
           documentName={data.fileName}
+          documentUrl={previewUrl}
+          externalSurfaceRef={documentSurfaceRef}
           isImage={isImagePreview}
           isLoading={isPreviewLoading}
           isPdf={isPdfPreview}
           itemId={id}
+          mode='inline'
+          openPickerKey={signPickerKey}
+          overlayOnly={!isSigning && assignedFields.length > 0}
+          pickerAnchorRef={signTriggerRef}
           repositoryId={repositoryId}
+          savedSignatures={savedSignatures}
+          signatureFields={assignedFields}
+          signerEmail={currentUserEmail}
+          signerName={signerName}
+          signRequestId={activeSignRequestId}
           restrictToFields={
             (Boolean(forceSigning) || restrictToFields) &&
             assignedFields.length > 0
           }
-          signatureFields={assignedFields}
-          signRequestId={activeSignRequestId}
-          signerEmail={currentUserEmail}
-          signerName={signerName}
-          savedSignatures={savedSignatures}
           onBack={() => {
             // Closing the signing UI is never a completed signature, so the
             // invite flow must stay on the document instead of reporting done.
             setIsSigning(false)
-          }}
-          onSaveSignature={(signature) => {
-            const next: SavedSignature = {
-              ...signature,
-              id: `local-${Date.now()}`,
-            }
-            setSavedSignatures((prev) => [next, ...prev])
-            showToast({
-              message: t`Signature saved for reuse.`,
-              variant: 'success',
-            })
-          }}
-          onDeleteSavedSignature={(signatureId) => {
-            setSavedSignatures((prev) =>
-              prev.filter((item) => item.id !== signatureId),
-            )
-            showToast({
-              message: t`Saved signature removed.`,
-              variant: 'success',
-            })
           }}
           onCompleteSigning={async (placements) => {
             if (!placements.length) {
@@ -1735,7 +1729,6 @@ export function DocumentDetailsView({
                   }
                 } else {
                   const submitted = await submitSignRequest({
-                    signRequestId: activeSignRequestId,
                     signature: {
                       fieldId: placement.signatureId,
                       height: placement.height,
@@ -1746,6 +1739,7 @@ export function DocumentDetailsView({
                       x: placement.x,
                       y: placement.y,
                     },
+                    signRequestId: activeSignRequestId,
                   })
                   if (submitted.error) {
                     throw new Error(
@@ -1829,7 +1823,6 @@ export function DocumentDetailsView({
 
             for (const placement of placements) {
               const submitted = await submitSignRequest({
-                signRequestId: requestId,
                 signature: {
                   height: placement.height,
                   pageNumber: placement.pageNumber,
@@ -1839,6 +1832,7 @@ export function DocumentDetailsView({
                   x: placement.x,
                   y: placement.y,
                 },
+                signRequestId: requestId,
               })
               if (submitted.error) {
                 throw new Error(
@@ -1855,6 +1849,26 @@ export function DocumentDetailsView({
               variant: 'success',
             })
             finishSigningSuccess()
+          }}
+          onDeleteSavedSignature={(signatureId) => {
+            setSavedSignatures((prev) =>
+              prev.filter((item) => item.id !== signatureId),
+            )
+            showToast({
+              message: t`Saved signature removed.`,
+              variant: 'success',
+            })
+          }}
+          onSaveSignature={(signature) => {
+            const next: SavedSignature = {
+              ...signature,
+              id: `local-${Date.now()}`,
+            }
+            setSavedSignatures((prev) => [next, ...prev])
+            showToast({
+              message: t`Signature saved for reuse.`,
+              variant: 'success',
+            })
           }}
           onSignRequestCreated={(payload) => {
             if (payload?.signRequestId && payload.fields?.length) {
@@ -1875,6 +1889,7 @@ export function DocumentDetailsView({
             // Close the signing toolbar but keep field overlays on the PDF.
             setIsSigning(false)
           }}
+          onStateChange={setSigningState}
         />
       ) : null}
 
@@ -1892,13 +1907,18 @@ export function DocumentDetailsView({
           )}
 
           {data?.fileName && (
-            <Tooltip content={data.fileName} position='bottom' width={240} className='min-w-0 max-w-full'>
-              <div className='flex min-w-0 max-w-full items-center gap-2 select-none'>
+            <Tooltip
+              className='max-w-full min-w-0'
+              content={data.fileName}
+              position='bottom'
+              width={240}
+            >
+              <div className='flex max-w-full min-w-0 items-center gap-2 select-none'>
                 <Icon
                   className='size-5 shrink-0 text-gray-10'
                   name={getFileIcon(data.fileName)}
                 />
-                <span className='min-w-0 truncate text-[14px] font-semibold text-gray-12 max-w-[140px] xs:max-w-[200px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px]'>
+                <span className='xs:max-w-[200px] max-w-[140px] min-w-0 truncate text-[14px] font-semibold text-gray-12 sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px]'>
                   {data.fileName}
                 </span>
               </div>
@@ -1914,10 +1934,10 @@ export function DocumentDetailsView({
                   <button
                     aria-label={t`Edit file`}
                     className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                    type='button'
                     disabled={
                       !previewBlobRef.current || isPreviewLoading || isSigning
                     }
-                    type='button'
                     onClick={() => setIsEditingDoc(true)}
                   >
                     <DynamicIcon className='h-4 w-4' name='edit' />
@@ -1980,27 +2000,29 @@ export function DocumentDetailsView({
               {canSendForSignature ? (
                 <button
                   aria-label={t`Sign Document`}
+                  disabled={isPreviewLoading}
+                  type='button'
                   className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5 ${
                     isSigning
                       ? 'border-accent-primary bg-accent-soft text-accent-primary'
                       : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
                   }`}
-                  disabled={isPreviewLoading}
-                  type='button'
                   onClick={() => setIsSigning((prev) => !prev)}
                 >
                   <DynamicIcon
                     className='h-4 w-4 text-accent-primary'
                     name='pen-tool'
                   />
-                  <span className='hidden sm:inline'>{isSigning ? t`Exit Signing` : t`Sign Document`}</span>
+                  <span className='hidden sm:inline'>
+                    {isSigning ? t`Exit Signing` : t`Sign Document`}
+                  </span>
                 </button>
               ) : null}
               <div>
                 <FolderSharePopover
+                  allowSign={canSendForSignature}
                   className='shrink-0'
                   defaultOpen={autoOpenShare}
-                  allowSign={canSendForSignature}
                   sharedIds={sharedEmails}
                   sharedRoles={sharedRoles}
                   successMessage={t`Invite sent`}
@@ -2120,16 +2142,16 @@ export function DocumentDetailsView({
           ) : null}
           {canSign ? (
             <button
-              ref={signTriggerRef}
-              aria-label={t`My Sign`}
               aria-expanded={isSigning}
+              aria-label={t`My Sign`}
+              disabled={!previewUrl || isPreviewLoading}
+              ref={signTriggerRef}
+              type='button'
               className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                 isSigning
                   ? 'border-primary-6 bg-primary-1 text-primary-9'
                   : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
               }`}
-              disabled={!previewUrl || isPreviewLoading}
-              type='button'
               onClick={() => {
                 // Only lock to assigned places when *this* user has a pending field.
                 const hasMyAssignedPlace =
@@ -2155,9 +2177,9 @@ export function DocumentDetailsView({
           ) : null}
           {isSigning && (signingState.hasPlacements || signingState.canSave) ? (
             <button
-              type='button'
               aria-label={t`Save`}
               className='inline-flex h-8 items-center justify-center gap-2 rounded-lg bg-primary-9 px-3.5 text-[13px] font-semibold text-white transition-all hover:bg-primary-10 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+              type='button'
               disabled={
                 !signingState.canSave ||
                 signingState.isSaving ||
@@ -2233,16 +2255,13 @@ export function DocumentDetailsView({
               >
                 {hasValidFileUrl || isPreviewLoading ? (
                   <div
-                    ref={documentSurfaceRef}
                     className='relative h-full min-h-full w-full'
+                    ref={documentSurfaceRef}
                   >
                     <DocumentPreviewViewer
                       activeHighlightColor={activeHighlightColor}
                       activeHighlightTerm={activeHighlightTerm}
                       className='h-full min-h-full'
-                      enableHighlight={
-                        isPdfPreview && fieldHighlightTerms.length > 0
-                      }
                       fileBlob={previewBlobRef.current}
                       fileName={data.fileName}
                       fileUrl={previewUrl}
@@ -2252,27 +2271,36 @@ export function DocumentDetailsView({
                       isImage={isImagePreview}
                       isLoading={isPreviewLoading}
                       isPdf={isPdfPreview}
-                      onProbeComplete={handleFieldMatchProbe}
-                      probeTerms={fieldProbeTerms}
-                      permission={isEditingDoc ? 'edit' : 'readonly'}
                       isSigningMode={isSigning}
-                      permissions={
-                        permissions
-                          ? { ...permissions, sendForSignature: canSendForSignature }
-                          : { sendForSignature: canSendForSignature }
-                      }
-                      signRequestId={activeSignRequestId}
-                      signatureFields={(assignedFields || []).map((f, i) => ({
-                        id: f.fieldId || `field-${i}`,
-                        page: f.pageNumber || 1,
-                        x: f.x || 100,
-                        y: f.y || 150,
-                        width: f.width || 200,
-                        height: f.height || 70,
-                        signerName: f.signerName || f.signerEmail || signerName || 'Signer',
-                      }))}
+                      permission={isEditingDoc ? 'edit' : 'readonly'}
+                      probeTerms={fieldProbeTerms}
                       signerEmail={currentUserEmail}
                       signerName={signerName}
+                      signRequestId={activeSignRequestId}
+                      enableHighlight={
+                        isPdfPreview && fieldHighlightTerms.length > 0
+                      }
+                      permissions={
+                        permissions
+                          ? {
+                              ...permissions,
+                              sendForSignature: canSendForSignature,
+                            }
+                          : { sendForSignature: canSendForSignature }
+                      }
+                      signatureFields={(assignedFields || []).map((f, i) => ({
+                        height: f.height || 70,
+                        id: f.fieldId || `field-${i}`,
+                        page: f.pageNumber || 1,
+                        signerName:
+                          f.signerName ||
+                          f.signerEmail ||
+                          signerName ||
+                          'Signer',
+                        width: f.width || 200,
+                        x: f.x || 100,
+                        y: f.y || 150,
+                      }))}
                       onCompleteSigning={async (placements) => {
                         if (!repositoryId || !id) {
                           throw new Error('Document context is missing.')
@@ -2300,16 +2328,17 @@ export function DocumentDetailsView({
                         if (requestId) {
                           for (const placement of placements) {
                             await submitSignRequest({
-                              signRequestId: requestId,
                               signature: {
                                 height: placement.height,
                                 pageNumber: placement.page,
-                                signatureImageBase64: placement.signatureData || '',
+                                signatureImageBase64:
+                                  placement.signatureData || '',
                                 signedAtClientUtc: new Date().toISOString(),
                                 width: placement.width,
                                 x: placement.x,
                                 y: placement.y,
                               },
+                              signRequestId: requestId,
                             })
                           }
                         }
@@ -2321,6 +2350,7 @@ export function DocumentDetailsView({
                         setPreviewRefreshKey((v) => v + 1)
                         onSigningComplete?.()
                       }}
+                      onProbeComplete={handleFieldMatchProbe}
                     />
                   </div>
                 ) : (
@@ -2345,10 +2375,10 @@ export function DocumentDetailsView({
                       <tr className='text-left text-gray-10'>
                         {lineItemColumns.map((key, index) => (
                           <th
+                            key={key}
                             className={`sticky top-0 z-30 border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide whitespace-nowrap text-gray-10 ${lineItemStickyClass(index, 'th')} ${
                               index < 2 ? 'z-40' : ''
                             }`}
-                            key={key}
                           >
                             {formatLineItemHeader(key)}
                           </th>
@@ -2381,9 +2411,9 @@ export function DocumentDetailsView({
                 <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
                   {tabs.map((item) => (
                     <button
-                      type='button'
                       className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
                       key={item.key}
+                      type='button'
                       onClick={() => {
                         setTab(item.key)
                         if (item.key === 'comments') {
@@ -2685,11 +2715,11 @@ export function DocumentDetailsView({
                           />
 
                           <Buttons
+                            className='px-3 py-3'
                             color='primary'
                             icon='lucide:send'
                             size='sm'
                             variant='solid'
-                            className='px-3 py-3'
                             onClick={saveComment}
                           />
                         </div>
@@ -2700,13 +2730,13 @@ export function DocumentDetailsView({
                   {tab === 'relatedDocs' ? (
                     <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
                       <RelatedDocumentsFinder
-                        attachedIds={
-                          new Set(relatedDocs.map((d) => String(d.id)))
-                        }
                         documentId={id}
                         metadata={data}
                         repositoryId={repositoryId}
                         supplierName={data?.fileName}
+                        attachedIds={
+                          new Set(relatedDocs.map((d) => String(d.id)))
+                        }
                         onLinkDocument={async (hit) => {
                           const sourceRepositoryId = String(
                             repositoryId || '',
@@ -2801,12 +2831,12 @@ export function DocumentDetailsView({
 
                                 return (
                                   <div
-                                    key={`${item.repositoryId}:${item.id}`}
                                     className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
+                                    key={`${item.repositoryId}:${item.id}`}
                                   >
                                     <button
-                                      type='button'
                                       className='flex min-w-0 flex-1 items-center gap-3 text-left'
+                                      type='button'
                                       onClick={() => {
                                         onOpenRelatedDocument?.({
                                           id: item.id,
@@ -2849,9 +2879,9 @@ export function DocumentDetailsView({
                                         position='top'
                                       >
                                         <button
-                                          type='button'
                                           aria-label={t`Download`}
                                           className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                                          type='button'
                                           onClick={async (event) => {
                                             event.stopPropagation()
                                             try {
@@ -2910,13 +2940,13 @@ export function DocumentDetailsView({
                                       position='top'
                                     >
                                       <button
-                                        type='button'
                                         aria-label={t`Remove from related`}
+                                        className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
+                                        type='button'
                                         disabled={
                                           removingRelatedKey ===
                                           `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}`
                                         }
-                                        className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
                                         onClick={(event) => {
                                           event.stopPropagation()
                                           void removeRelatedDoc(item)
@@ -2961,14 +2991,21 @@ export function DocumentDetailsView({
               {ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
-                    <DynamicIcon className='h-4 w-4 text-blue-11' name='fileText' />
+                    <DynamicIcon
+                      className='h-4 w-4 text-blue-11'
+                      name='fileText'
+                    />
                     Ticket Information
                   </h3>
                   <div className='space-y-3 p-4'>
                     {ticketData.referenceNumber && (
                       <div className='flex items-center justify-between gap-4'>
-                        <span className='text-[13px] text-gray-10'>Reference No</span>
-                        <span className='text-[13px] font-semibold text-gray-13 truncate'>{ticketData.referenceNumber}</span>
+                        <span className='text-[13px] text-gray-10'>
+                          Reference No
+                        </span>
+                        <span className='truncate text-[13px] font-semibold text-gray-13'>
+                          {ticketData.referenceNumber}
+                        </span>
                       </div>
                     )}
                     {ticketData.ticketStatus && (
@@ -2979,44 +3016,58 @@ export function DocumentDetailsView({
                     )}
                     {ticketData.assigneeEmail && (
                       <div className='flex items-center justify-between gap-4'>
-                        <span className='text-[13px] text-gray-10'>Assignee</span>
-                        <span className='text-[13px] font-semibold text-gray-13 truncate' title={ticketData.assigneeEmail}>{ticketData.assigneeEmail}</span>
+                        <span className='text-[13px] text-gray-10'>
+                          Assignee
+                        </span>
+                        <span
+                          className='truncate text-[13px] font-semibold text-gray-13'
+                          title={ticketData.assigneeEmail}
+                        >
+                          {ticketData.assigneeEmail}
+                        </span>
                       </div>
                     )}
 
                     {ticketData.history?.length > 0 && (
                       <div className='mt-2 space-y-3 border-t border-gray-3 pt-3'>
-                        <h4 className='text-[12px] font-semibold text-gray-11'>Workflow History</h4>
+                        <h4 className='text-[12px] font-semibold text-gray-11'>
+                          Workflow History
+                        </h4>
                         <div className='flex flex-col gap-3'>
-                          {ticketData.history.map((hist: any, index: number) => (
-                            <div
-                              key={index}
-                              className={`relative z-10 flex gap-3 ${
-                                index < ticketData.history.length - 1
-                                  ? 'before:absolute before:-bottom-3 before:left-[11px] before:top-6 before:w-[2px] before:bg-gray-3'
-                                  : ''
-                              }`}
-                            >
-                              <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-surface-primary bg-gray-2 text-gray-10'>
-                                <DynamicIcon className='h-3 w-3 text-gray-11' name={getMilestoneIcon(hist.milestone)} />
-                              </div>
-                              <div className='flex-1 pb-1'>
-                                <p className='leading-tight text-[13px] font-medium text-gray-13'>
-                                  {hist.title}
-                                </p>
-                                {hist.description && (
-                                  <p className='mt-0.5 leading-tight text-[12px] text-gray-9'>
-                                    {hist.description}
+                          {ticketData.history.map(
+                            (hist: any, index: number) => (
+                              <div
+                                key={index}
+                                className={`relative z-10 flex gap-3 ${
+                                  index < ticketData.history.length - 1
+                                    ? 'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-[2px] before:bg-gray-3'
+                                    : ''
+                                }`}
+                              >
+                                <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-surface-primary bg-gray-2 text-gray-10'>
+                                  <DynamicIcon
+                                    className='h-3 w-3 text-gray-11'
+                                    name={getMilestoneIcon(hist.milestone)}
+                                  />
+                                </div>
+                                <div className='flex-1 pb-1'>
+                                  <p className='text-[13px] leading-tight font-medium text-gray-13'>
+                                    {hist.title}
                                   </p>
-                                )}
-                                {hist.occurredAtUtc && (
-                                  <p className='mt-1 text-[11px] text-gray-8'>
-                                    {formatDateTime(hist.occurredAtUtc)}
-                                  </p>
-                                )}
+                                  {hist.description && (
+                                    <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
+                                      {hist.description}
+                                    </p>
+                                  )}
+                                  {hist.occurredAtUtc && (
+                                    <p className='mt-1 text-[11px] text-gray-8'>
+                                      {formatDateTime(hist.occurredAtUtc)}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
@@ -3043,13 +3094,13 @@ export function DocumentDetailsView({
                       const displayVal = toDisplayValue(row.value)
                       return (
                         <button
+                          key={rowKey}
                           type='button'
                           className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
                             isActive
                               ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
                               : 'hover:bg-gray-1'
                           } ${hasPdfMatch ? '' : 'cursor-default'}`}
-                          key={rowKey}
                           onClick={() => {
                             if (!hasPdfMatch) return
                             setActiveFieldKey(rowKey)
@@ -3093,7 +3144,6 @@ export function DocumentDetailsView({
           ) : null}
         </div>
       </div>
-
     </div>
   )
 }

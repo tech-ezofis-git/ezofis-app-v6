@@ -1,7 +1,7 @@
 import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { useEffect, useState, type FormEvent } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
 import authApiV6 from '@/api/v6/auth'
 import showToast from '@/components/base/toast/showToast'
@@ -17,15 +17,15 @@ import {
   MicrosoftMark,
 } from './AuthHeroShell'
 
+type LoginScreenProps = {
+  onSignIn?: (payload: { password: string; username: string }) => void
+}
+
 type TenantOption = {
   email: string
   id: number | string
   label: string
   value: number | string
-}
-
-type LoginScreenProps = {
-  onSignIn?: (payload: { username: string; password: string }) => void
 }
 
 export function LoginScreen({ onSignIn }: LoginScreenProps) {
@@ -82,10 +82,11 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
     }
 
     const targetTenantId = tenantId || shareTenantId || undefined
-    const { data, error: apiError, status } = await apiRouter.socialLogin(
-      payload,
-      targetTenantId,
-    )
+    const {
+      data,
+      error: apiError,
+      status,
+    } = await apiRouter.socialLogin(payload, targetTenantId)
 
     if (apiError) {
       setError(apiError)
@@ -133,10 +134,11 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       }
 
       const targetTenantId = tenantId || shareTenantId || undefined
-      const { data, error: apiError, status } = await apiRouter.login(
-        payload,
-        targetTenantId,
-      )
+      const {
+        data,
+        error: apiError,
+        status,
+      } = await apiRouter.login(payload, targetTenantId)
 
       if (apiError) {
         setLoading(false)
@@ -147,10 +149,9 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         )
         if (match) {
           const rawType = match[1].trim()
-          const loginType =
-            /^[a-z]+$/.test(rawType)
-              ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
-              : rawType
+          const loginType = /^[a-z]+$/.test(rawType)
+            ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+            : rawType
           setError(`Please sign in with ${loginType} to continue.`)
         } else {
           setError(apiError)
@@ -322,15 +323,15 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
             const isBusy = loading && isSelected
             return (
               <button
+                disabled={loading}
+                key={String(tenant.id)}
+                type='button'
                 className={cn(
                   'flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left transition-all',
                   isBusy
                     ? 'border-accent-primary bg-accent-soft'
                     : 'border-border-default bg-surface-primary hover:bg-surface-hover',
                 )}
-                disabled={loading}
-                key={String(tenant.id)}
-                type='button'
                 onClick={() => void handleTenantClick(tenant.id)}
               >
                 <div className='flex min-w-0 items-center gap-2.5'>
@@ -347,7 +348,10 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
                     name='LoaderCircle'
                   />
                 ) : (
-                  <Icon className='size-4 text-text-muted' name='ChevronRight' />
+                  <Icon
+                    className='size-4 text-text-muted'
+                    name='ChevronRight'
+                  />
                 )}
               </button>
             )
@@ -425,9 +429,9 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
 
         <AppButton
           className='mt-4 min-h-12 text-14'
-          fullWidth
           loading={loading}
           type='submit'
+          fullWidth
         >
           Sign In
         </AppButton>

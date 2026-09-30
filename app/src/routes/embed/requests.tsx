@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import {
   AdaptiveScreen,
   InvoiceDetailScreen,
@@ -10,12 +10,12 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 
 export const Route = createFileRoute('/embed/requests')({
-  beforeLoad: () => {
-    requestStore.getState().closeRequest()
-  },
   component: RouteComponent,
   staticData: {
     pageTitle: 'Requests',
+  },
+  beforeLoad: () => {
+    requestStore.getState().closeRequest()
   },
   validateSearch: (search: Record<string, unknown>) => ({
     email: typeof search.email === 'string' ? search.email : undefined,
@@ -34,7 +34,7 @@ function MobileRequestsFlow() {
     <RequestsInboxScreen
       onTabBarChange={(id) => {
         if (id === 'folder') {
-          void navigate({ search: (prev: any) => prev, to: '/embed/folders' })
+          void navigate({ to: '/embed/folders', search: (prev: any) => prev })
         }
       }}
     />
@@ -67,9 +67,6 @@ function RouteComponent() {
   }, [search])
 
   return (
-    <AdaptiveScreen
-      mobile={<MobileRequestsFlow />}
-      web={<RequestsPage />}
-    />
+    <AdaptiveScreen mobile={<MobileRequestsFlow />} web={<RequestsPage />} />
   )
 }

@@ -23,7 +23,7 @@ const SectionHeader = ({
     <div className='group/header relative flex flex-col gap-0.5 rounded-t-xl bg-white px-4 pt-3.5 pb-2 transition-all'>
       {/* Header: Title + Expand Toggle + Count Badge */}
       <div className='flex w-full items-center justify-between gap-3'>
-        <div className='flex min-w-0 flex-1 items-center gap-1 -ml-1.5'>
+        <div className='-ml-1.5 flex min-w-0 flex-1 items-center gap-1'>
           <Tooltip
             label={isCollapsed ? 'Expand' : 'Collapse'}
             position='top'
@@ -38,10 +38,8 @@ const SectionHeader = ({
             >
               <Icon
                 height={16}
+                name={isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'}
                 width={16}
-                name={
-                  isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
-                }
               />
             </ActionIcon>
           </Tooltip>

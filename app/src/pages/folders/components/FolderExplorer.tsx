@@ -15,8 +15,8 @@ import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import {
-  RESET_FOLDER_VIEW_EVENT,
   markFolderExplorerAskAiQuery,
+  RESET_FOLDER_VIEW_EVENT,
 } from '../utils/folderExplorerSession'
 import {
   findRepositoryNodeId,
@@ -815,9 +815,7 @@ export function FolderExplorer() {
         }}
         onShareOpened={() => setPendingOpenShare(false)}
         onWorkflow={
-          hasDocumentApprovalWorkflow
-            ? () => setAppView('workflow')
-            : undefined
+          hasDocumentApprovalWorkflow ? () => setAppView('workflow') : undefined
         }
       />
     )

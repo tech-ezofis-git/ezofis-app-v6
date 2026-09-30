@@ -69,7 +69,9 @@ const VerifyEmailForm = ({ onBack }: Props) => {
 
       const otp = String(otpValue ?? '').trim()
       if (otp.length !== 6) {
-        setError('Please enter the 6-digit verification code sent to your email.')
+        setError(
+          'Please enter the 6-digit verification code sent to your email.',
+        )
         return
       }
 

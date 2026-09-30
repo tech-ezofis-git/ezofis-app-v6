@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
+import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 
 interface Props {
@@ -19,9 +19,7 @@ export const requirementsConfig = [
   },
 ]
 
-export const getRequirementsConfig = (
-  _: (descriptor: any) => string,
-) =>
+export const getRequirementsConfig = (_: (descriptor: any) => string) =>
   requirementsConfig.map((req) => ({
     ...req,
     label: _(req.label),

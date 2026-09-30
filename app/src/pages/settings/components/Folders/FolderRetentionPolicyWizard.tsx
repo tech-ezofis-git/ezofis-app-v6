@@ -14,8 +14,8 @@ import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Stepper from '@/components/base/Stepper'
-import Tooltip from '@/components/base/Tooltip'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   AnimateFadeIn,
@@ -38,17 +38,17 @@ import {
   OPERATOR_OPTIONS,
   reasonText,
   RETENTION_FIELDS,
-  suggestTriggerForAction,
   type RetentionAction,
   type RetentionCondition,
   type RetentionDurationUnit,
   type RetentionMatchType,
   type RetentionPolicy,
+  suggestTriggerForAction,
 } from './retentionMockData'
 
-type Step = 0 | 1 | 2
-
 type RuleStage = 'choose' | 'form'
+
+type Step = 0 | 1 | 2
 
 const STEPPER_ITEMS = [
   {
@@ -103,13 +103,13 @@ const useAiStatusWord = (active: boolean) => {
 
 const PulsingAiIcon = ({ className = 'size-4' }: { className?: string }) => (
   <motion.div
+    className='inline-flex shrink-0 text-primary-9'
+    transition={{ duration: 1.4, ease: 'easeInOut', repeat: Infinity }}
     animate={{
       opacity: [0.55, 1, 0.55],
       rotate: [0, 8, -8, 0],
       scale: [0.92, 1.1, 0.92],
     }}
-    className='inline-flex shrink-0 text-primary-9'
-    transition={{ duration: 1.4, ease: 'easeInOut', repeat: Infinity }}
   >
     <AiBrandIcon className={className} variant='outline-purple' />
   </motion.div>
@@ -352,9 +352,11 @@ export default function FolderRetentionPolicyWizard({
                   {t`Define Retention Rule`}
                 </h2>
                 <p className='mt-0.5 text-xs text-gray-11'>
-                  {ruleStage === 'choose' && !policy.action &&
+                  {ruleStage === 'choose' &&
+                    !policy.action &&
                     t`Choose what should happen to matching documents.`}
-                  {ruleStage === 'choose' && policy.action &&
+                  {ruleStage === 'choose' &&
+                    policy.action &&
                     t`Choose how to set up the trigger and conditions.`}
                   {ruleStage === 'form' &&
                     t`Set the trigger and any additional conditions.`}
@@ -363,7 +365,10 @@ export default function FolderRetentionPolicyWizard({
               {ruleStage === 'form' &&
                 (policy.aiGenerated ? (
                   <span className='inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11'>
-                    <AiBrandIcon className='size-3.5' variant='outline-purple' />
+                    <AiBrandIcon
+                      className='size-3.5'
+                      variant='outline-purple'
+                    />
                     {t`AI Suggested`}
                   </span>
                 ) : (
@@ -398,14 +403,17 @@ export default function FolderRetentionPolicyWizard({
                 {t`Destination action`}
               </div>
               <InputSelect
+                placeholder={t`Select an action...`}
                 options={ACTION_OPTIONS.map((a) => ({
                   id: a.id,
                   name: a.name,
                 }))}
-                placeholder={t`Select an action...`}
                 value={
                   policy.action
-                    ? { id: policy.action, name: actionMeta(policy.action).name }
+                    ? {
+                        id: policy.action,
+                        name: actionMeta(policy.action).name,
+                      }
                     : null
                 }
                 onChange={(opt) =>
@@ -462,215 +470,234 @@ export default function FolderRetentionPolicyWizard({
 
             {ruleStage === 'form' && (
               <>
-            <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
-              <div className='text-15 font-semibold text-gray-13'>
-                {t`Retention trigger`}
-              </div>
-              <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-                <InputSelect
-                  label={t`Trigger field`}
-                  options={TRIGGER_FIELD_OPTIONS.map((f) => ({
-                    id: f.key,
-                    name: f.label,
-                  }))}
-                  placeholder={t`Select a field...`}
-                  value={
-                    policy.triggerField
-                      ? {
-                        id: policy.triggerField,
-                        name: fieldLabel(policy.triggerField),
-                      }
-                      : null
-                  }
-                  onChange={(opt) =>
-                    opt && updatePolicy({ triggerField: String(opt.id) })
-                  }
-                />
-                <InputNumber
-                  label={t`More than`}
-                  min={1}
-                  value={policy.durationValue}
-                  onChange={(v) =>
-                    updatePolicy({ durationValue: Number(v) || 1 })
-                  }
-                />
-                <InputSelect
-                  label={t`Unit`}
-                  options={DURATION_UNIT_OPTIONS}
-                  value={
-                    DURATION_UNIT_OPTIONS.find(
-                      (o) => o.id === policy.durationUnit,
-                    ) || null
-                  }
-                  onChange={(opt) =>
-                    opt &&
-                    updatePolicy({
-                      durationUnit: opt.id as RetentionDurationUnit,
-                    })
-                  }
-                />
-              </div>
-              <div className='rounded-md bg-surface-muted px-3 py-2 text-xs leading-relaxed text-gray-11'>
-                {t`Preview: documents where`}{' '}
-                <b className='text-gray-13'>
-                  {policy.triggerField
-                    ? fieldLabel(policy.triggerField)
-                    : t`a trigger field`}
-                </b>{' '}
-                {t`is more than`}{' '}
-                <b className='text-gray-13'>
-                  {policy.durationValue} {policy.durationUnit}
-                </b>{' '}
-                {t`old will be evaluated for`}{' '}
-                {actionMeta(policy.action).name.toLowerCase()}.
-              </div>
-            </div>
-
-            <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
-              <div className='flex items-center justify-between'>
-                <div className='text-15 font-semibold text-gray-13'>
-                  {t`Additional conditions`}
-                </div>
-                <div className='flex items-center gap-1.5'>
-                  <span className='text-[10px] font-medium text-gray-10'>
-                    {t`Match:`}
-                  </span>
-                  <div className='flex items-center rounded-md bg-gray-3 p-0.5 text-[11px] font-medium'>
-                    <Tooltip content={t`Match ALL conditions (AND logic)`} position='top'>
-                      <button
-                        className={cn(
-                          'rounded px-2 py-0.5 text-[11px] font-semibold transition',
-                          policy.matchType === 'all'
-                            ? 'bg-primary-9 text-white'
-                            : 'text-gray-11 hover:text-gray-12',
-                        )}
-                        type='button'
-                        onClick={() => updatePolicy({ matchType: 'all' as RetentionMatchType })}
-                      >
-                        {t`All`}
-                      </button>
-                    </Tooltip>
-                    <Tooltip content={t`Match ANY condition (OR logic)`} position='top'>
-                      <button
-                        className={cn(
-                          'rounded px-2 py-0.5 text-[11px] font-semibold transition',
-                          policy.matchType === 'any'
-                            ? 'bg-primary-9 text-white'
-                            : 'text-gray-11 hover:text-gray-12',
-                        )}
-                        type='button'
-                        onClick={() => updatePolicy({ matchType: 'any' as RetentionMatchType })}
-                      >
-                        {t`Any`}
-                      </button>
-                    </Tooltip>
+                <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
+                  <div className='text-15 font-semibold text-gray-13'>
+                    {t`Retention trigger`}
                   </div>
-                </div>
-              </div>
-
-              <div className='space-y-2'>
-                {policy.conditions.map((cond, idx) => (
-                  <div className='flex flex-wrap items-center gap-2' key={idx}>
-                    <span className='w-12 shrink-0 text-[11px] font-bold tracking-wide text-gray-9 uppercase'>
-                      {idx === 0
-                        ? t`Where`
-                        : policy.matchType === 'any'
-                          ? t`Or`
-                          : t`And`}
-                    </span>
+                  <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
                     <InputSelect
-                      className='w-44'
-                      options={RETENTION_FIELDS.map((f) => ({
+                      label={t`Trigger field`}
+                      placeholder={t`Select a field...`}
+                      options={TRIGGER_FIELD_OPTIONS.map((f) => ({
                         id: f.key,
                         name: f.label,
                       }))}
                       value={
-                        cond.field
-                          ? { id: cond.field, name: fieldLabel(cond.field) }
+                        policy.triggerField
+                          ? {
+                              id: policy.triggerField,
+                              name: fieldLabel(policy.triggerField),
+                            }
                           : null
                       }
-                      onChange={(opt) => {
-                        if (!opt) return
-                        const fld = RETENTION_FIELDS.find(
-                          (f) => f.key === opt.id,
-                        )
-                        updateCondition(idx, {
-                          field: String(opt.id),
-                          op: 'equals',
-                          value:
-                            fld?.type === 'select'
-                              ? fld.options?.[0] || ''
-                              : '',
-                        })
-                      }}
+                      onChange={(opt) =>
+                        opt && updatePolicy({ triggerField: String(opt.id) })
+                      }
+                    />
+                    <InputNumber
+                      label={t`More than`}
+                      min={1}
+                      value={policy.durationValue}
+                      onChange={(v) =>
+                        updatePolicy({ durationValue: Number(v) || 1 })
+                      }
                     />
                     <InputSelect
-                      className='w-36'
-                      options={OPERATOR_OPTIONS}
+                      label={t`Unit`}
+                      options={DURATION_UNIT_OPTIONS}
                       value={
-                        OPERATOR_OPTIONS.find((o) => o.id === cond.op) ||
-                        OPERATOR_OPTIONS[0]
+                        DURATION_UNIT_OPTIONS.find(
+                          (o) => o.id === policy.durationUnit,
+                        ) || null
                       }
                       onChange={(opt) =>
-                        opt && updateCondition(idx, { op: String(opt.id) })
+                        opt &&
+                        updatePolicy({
+                          durationUnit: opt.id as RetentionDurationUnit,
+                        })
                       }
                     />
-                    {conditionValueInput(cond, idx)}
-                    <button
-                      aria-label={t`Remove condition`}
-                      className='flex size-7 shrink-0 items-center justify-center rounded-md border border-[var(--border-default)] text-gray-9 transition hover:border-red-6 hover:text-red-9'
-                      type='button'
-                      onClick={() => removeCondition(idx)}
-                    >
-                      <Icon className='size-3.5' name='lucide:x' />
-                    </button>
                   </div>
-                ))}
-                {policy.conditions.length === 0 && (
-                  <div className='rounded-md border border-dashed border-[var(--border-default)] py-4 text-center text-xs text-gray-10'>
-                    {t`No additional conditions — the trigger alone decides the match.`}
+                  <div className='rounded-md bg-surface-muted px-3 py-2 text-xs leading-relaxed text-gray-11'>
+                    {t`Preview: documents where`}{' '}
+                    <b className='text-gray-13'>
+                      {policy.triggerField
+                        ? fieldLabel(policy.triggerField)
+                        : t`a trigger field`}
+                    </b>{' '}
+                    {t`is more than`}{' '}
+                    <b className='text-gray-13'>
+                      {policy.durationValue} {policy.durationUnit}
+                    </b>{' '}
+                    {t`old will be evaluated for`}{' '}
+                    {actionMeta(policy.action).name.toLowerCase()}.
                   </div>
-                )}
-              </div>
+                </div>
 
-              <button
-                className='rounded-md border border-dashed border-primary-6 px-3 py-1.5 text-xs font-semibold text-primary-9 transition hover:bg-primary-2'
-                type='button'
-                onClick={addCondition}
-              >
-                {t`+ Add condition`}
-              </button>
-            </div>
+                <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
+                  <div className='flex items-center justify-between'>
+                    <div className='text-15 font-semibold text-gray-13'>
+                      {t`Additional conditions`}
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <span className='text-[10px] font-medium text-gray-10'>
+                        {t`Match:`}
+                      </span>
+                      <div className='flex items-center rounded-md bg-gray-3 p-0.5 text-[11px] font-medium'>
+                        <Tooltip
+                          content={t`Match ALL conditions (AND logic)`}
+                          position='top'
+                        >
+                          <button
+                            type='button'
+                            className={cn(
+                              'rounded px-2 py-0.5 text-[11px] font-semibold transition',
+                              policy.matchType === 'all'
+                                ? 'bg-primary-9 text-white'
+                                : 'text-gray-11 hover:text-gray-12',
+                            )}
+                            onClick={() =>
+                              updatePolicy({
+                                matchType: 'all' as RetentionMatchType,
+                              })
+                            }
+                          >
+                            {t`All`}
+                          </button>
+                        </Tooltip>
+                        <Tooltip
+                          content={t`Match ANY condition (OR logic)`}
+                          position='top'
+                        >
+                          <button
+                            type='button'
+                            className={cn(
+                              'rounded px-2 py-0.5 text-[11px] font-semibold transition',
+                              policy.matchType === 'any'
+                                ? 'bg-primary-9 text-white'
+                                : 'text-gray-11 hover:text-gray-12',
+                            )}
+                            onClick={() =>
+                              updatePolicy({
+                                matchType: 'any' as RetentionMatchType,
+                              })
+                            }
+                          >
+                            {t`Any`}
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </div>
 
-            <div className='flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-surface-muted px-4 py-3'>
-              <div>
-                <div className='text-13 font-semibold text-gray-13'>
-                  {t`Require manual confirmation before running`}
-                </div>
-                <div className='text-11.5 mt-0.5 text-gray-10'>
-                  {t`Lists every matched document for confirmation before the action runs.`}
-                </div>
-              </div>
-              <InputSwitch
-                checked={policy.requireConfirm}
-                onChange={(v) => updatePolicy({ requireConfirm: Boolean(v) })}
-              />
-            </div>
+                  <div className='space-y-2'>
+                    {policy.conditions.map((cond, idx) => (
+                      <div
+                        className='flex flex-wrap items-center gap-2'
+                        key={idx}
+                      >
+                        <span className='w-12 shrink-0 text-[11px] font-bold tracking-wide text-gray-9 uppercase'>
+                          {idx === 0
+                            ? t`Where`
+                            : policy.matchType === 'any'
+                              ? t`Or`
+                              : t`And`}
+                        </span>
+                        <InputSelect
+                          className='w-44'
+                          options={RETENTION_FIELDS.map((f) => ({
+                            id: f.key,
+                            name: f.label,
+                          }))}
+                          value={
+                            cond.field
+                              ? { id: cond.field, name: fieldLabel(cond.field) }
+                              : null
+                          }
+                          onChange={(opt) => {
+                            if (!opt) return
+                            const fld = RETENTION_FIELDS.find(
+                              (f) => f.key === opt.id,
+                            )
+                            updateCondition(idx, {
+                              field: String(opt.id),
+                              op: 'equals',
+                              value:
+                                fld?.type === 'select'
+                                  ? fld.options?.[0] || ''
+                                  : '',
+                            })
+                          }}
+                        />
+                        <InputSelect
+                          className='w-36'
+                          options={OPERATOR_OPTIONS}
+                          value={
+                            OPERATOR_OPTIONS.find((o) => o.id === cond.op) ||
+                            OPERATOR_OPTIONS[0]
+                          }
+                          onChange={(opt) =>
+                            opt && updateCondition(idx, { op: String(opt.id) })
+                          }
+                        />
+                        {conditionValueInput(cond, idx)}
+                        <button
+                          aria-label={t`Remove condition`}
+                          className='flex size-7 shrink-0 items-center justify-center rounded-md border border-[var(--border-default)] text-gray-9 transition hover:border-red-6 hover:text-red-9'
+                          type='button'
+                          onClick={() => removeCondition(idx)}
+                        >
+                          <Icon className='size-3.5' name='lucide:x' />
+                        </button>
+                      </div>
+                    ))}
+                    {policy.conditions.length === 0 && (
+                      <div className='rounded-md border border-dashed border-[var(--border-default)] py-4 text-center text-xs text-gray-10'>
+                        {t`No additional conditions — the trigger alone decides the match.`}
+                      </div>
+                    )}
+                  </div>
 
-            <div className='flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-surface-muted px-4 py-3'>
-              <div>
-                <div className='text-13 font-semibold text-gray-13'>
-                  {t`Notify document owner beforehand`}
+                  <button
+                    className='rounded-md border border-dashed border-primary-6 px-3 py-1.5 text-xs font-semibold text-primary-9 transition hover:bg-primary-2'
+                    type='button'
+                    onClick={addCondition}
+                  >
+                    {t`+ Add condition`}
+                  </button>
                 </div>
-                <div className='text-11.5 mt-0.5 text-gray-10'>
-                  {t`Sends a heads-up to the owner listed on each document's metadata.`}
+
+                <div className='flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-surface-muted px-4 py-3'>
+                  <div>
+                    <div className='text-13 font-semibold text-gray-13'>
+                      {t`Require manual confirmation before running`}
+                    </div>
+                    <div className='text-11.5 mt-0.5 text-gray-10'>
+                      {t`Lists every matched document for confirmation before the action runs.`}
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={policy.requireConfirm}
+                    onChange={(v) =>
+                      updatePolicy({ requireConfirm: Boolean(v) })
+                    }
+                  />
                 </div>
-              </div>
-              <InputSwitch
-                checked={policy.notifyOwner}
-                onChange={(v) => updatePolicy({ notifyOwner: Boolean(v) })}
-              />
-            </div>
+
+                <div className='flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-surface-muted px-4 py-3'>
+                  <div>
+                    <div className='text-13 font-semibold text-gray-13'>
+                      {t`Notify document owner beforehand`}
+                    </div>
+                    <div className='text-11.5 mt-0.5 text-gray-10'>
+                      {t`Sends a heads-up to the owner listed on each document's metadata.`}
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={policy.notifyOwner}
+                    onChange={(v) => updatePolicy({ notifyOwner: Boolean(v) })}
+                  />
+                </div>
               </>
             )}
           </div>
@@ -717,7 +744,10 @@ export default function FolderRetentionPolicyWizard({
                   {t`Trigger`}
                 </div>
                 <div className='mt-0.5 flex items-center gap-1.5 text-13 font-semibold text-gray-13'>
-                  <Icon className='size-3.5 text-primary-9' name='tabler:clock-hour-4' />
+                  <Icon
+                    className='size-3.5 text-primary-9'
+                    name='tabler:clock-hour-4'
+                  />
                   {fieldLabel(policy.triggerField)} &gt; {policy.durationValue}{' '}
                   {policy.durationUnit}
                 </div>
@@ -727,7 +757,10 @@ export default function FolderRetentionPolicyWizard({
             <div className='space-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs'>
               <div className='flex items-center justify-between border-b border-[var(--border-default)] pb-2.5'>
                 <div className='flex items-center gap-1.5 text-xs font-semibold text-gray-12'>
-                  <Icon className='size-3.5 text-primary-9' name='tabler:list-check' />
+                  <Icon
+                    className='size-3.5 text-primary-9'
+                    name='tabler:list-check'
+                  />
                   {t`How this policy behaves`}
                 </div>
                 {policy.aiGenerated && (
@@ -749,7 +782,8 @@ export default function FolderRetentionPolicyWizard({
               >
                 <p className='mb-2 text-xs text-gray-10'>
                   {t`These documents currently satisfy the rule and would move to`}{' '}
-                  {actionMeta(policy.action).name.toLowerCase()} {t`once activated.`}
+                  {actionMeta(policy.action).name.toLowerCase()}{' '}
+                  {t`once activated.`}
                 </p>
                 {matchedDocuments.length > 0 ? (
                   <div className='divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]'>

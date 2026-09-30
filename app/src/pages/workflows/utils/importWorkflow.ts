@@ -390,10 +390,15 @@ export const importWorkflow = (
         return { id, name: String(id) }
       }
 
-      const res = String(apAgent.resource || '').toUpperCase().trim()
+      const res = String(apAgent.resource || '')
+        .toUpperCase()
+        .trim()
       let poMasterSourceType: 'internal' | 'quickbooks' | 'sap' = 'internal'
 
-      if (res === 'SAP' || String(apAgent.connectorId || '').startsWith('sap_')) {
+      if (
+        res === 'SAP' ||
+        String(apAgent.connectorId || '').startsWith('sap_')
+      ) {
         poMasterSourceType = 'sap'
       } else if (
         res === 'QUICKBOOKS' ||
@@ -514,8 +519,8 @@ export const importWorkflow = (
         fromMailAddresses,
         generatePDF: Boolean(
           block.settings?.generatePDF ||
-            (Array.isArray(block.settings?.generatePDFFields) &&
-              block.settings.generatePDFFields.length > 0),
+          (Array.isArray(block.settings?.generatePDFFields) &&
+            block.settings.generatePDFFields.length > 0),
         ),
         pdfTemplate:
           block.settings?.pdfTemplate ??
@@ -524,28 +529,89 @@ export const importWorkflow = (
             : undefined),
         pdfTemplateJson: templateJsonString,
         ...(templateJsonString ? { templateJson: templateJsonString } : {}),
+        actedActivityBlockId: block.settings?.actedActivityBlockId ?? null,
+        // Manual User - Checklist
+        checklistItems: Array.isArray(block.settings?.checklistItems)
+          ? block.settings.checklistItems.map((i: any) => ({
+              id: i.id || generateId(),
+              label: i.label || '',
+              required: i.required !== false,
+            }))
+          : [],
+        documentRequired: block.settings?.documentRequired ?? false,
+        dynamicUserField: block.settings?.dynamicUserField ?? null,
+        footerText: block.settings?.footerText ?? '',
+        // Manual User - Security & Form Access
+        formEditAccess: block.settings?.formEditAccess ?? 'ALL',
+        formEditControls: Array.isArray(block.settings?.formEditControls)
+          ? block.settings.formEditControls.map((r: any) => ({
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              id: r.id || generateId(),
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        formSecureControls: Array.isArray(block.settings?.formSecureControls)
+          ? block.settings.formSecureControls.map((r: any) => ({
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              id: r.id || generateId(),
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        formVisibilityAccess: block.settings?.formVisibilityAccess ?? 'ALL',
+        forwardedUserAction: block.settings?.forwardedUserAction ?? '',
+        fullApprovalAction: block.settings?.fullApprovalAction ?? '',
+        generateCSV: block.settings?.generateCSV ?? false,
+        generateCSVFields: Array.isArray(block.settings?.generateCSVFields)
+          ? block.settings.generateCSVFields.map(String)
+          : [],
+        generatePDFFields: Array.isArray(block.settings?.generatePDFFields)
+          ? block.settings.generatePDFFields.map(String)
+          : [],
         hasAttachmentEnabled,
+        hasFooter: block.settings?.hasFooter ?? false,
         icon: defaults.icon,
         iconColor: defaults.iconColor,
         initiateBy: block.settings?.initiateBy,
         initiateMode: block.settings?.initiateMode,
+        internalForward: block.settings?.internalForward ?? false,
+
+        internalForwardGroup: Array.isArray(
+          block.settings?.internalForwardGroup,
+        )
+          ? block.settings.internalForwardGroup.map(String)
+          : [],
+        internalForwardUser: Array.isArray(block.settings?.internalForwardUser)
+          ? block.settings.internalForwardUser.map(String)
+          : [],
+        isActedActivityEnabled: block.settings?.isActedActivityEnabled ?? false,
+        isCoordinatorEnabled: block.settings?.isCoordinatorEnabled ?? false,
+        isDynamicUserEnabled: block.settings?.isDynamicUserEnabled ?? false,
         isGroupEnabled: Array.isArray(block.settings?.groups)
           ? block.settings.groups.length > 0
           : undefined,
+        // Manual User (INTERNAL_ACTOR) - General / Action-By
+        isManagerEnabled: block.settings?.isManagerEnabled ?? false,
+        isMasterUserEnabled: block.settings?.isMasterUserEnabled ?? false,
+        isToRequesterEnabled: block.settings?.isToRequesterEnabled ?? false,
         isUserEnabled: Array.isArray(block.settings?.users)
           ? block.settings.users.length > 0
           : undefined,
         label: nodeLabel,
+        mailContentEnabled,
+        mailContentToMonitor,
         mailInitiate:
           block.settings?.mailInitiate ||
           (nodeType === 'START' || isEmailStart || isManualStart
             ? { connectorId: connectorId || '', connectorType: '' }
             : undefined),
-        mailContentEnabled,
-        mailContentToMonitor,
         mailSubjectEnabled,
         mailSubjectToMonitor,
+        mandatoryFields: Array.isArray(block.settings?.mandatoryFields)
+          ? block.settings.mandatoryFields.map(String)
+          : [],
         masterConditions: block.settings?.masterConditions,
+        masterUserColumn: block.settings?.masterUserColumn ?? '',
+        partialApprove: block.settings?.partialApprove ?? 'ALL',
         selectedGroups: Array.isArray(block.settings?.groups)
           ? block.settings.groups
               .map((g: any) => {
@@ -592,82 +658,20 @@ export const importWorkflow = (
               })
               .filter(Boolean)
           : undefined,
+        showTableAsEditable: Boolean(
+          block.settings?.showTableAsEditable ??
+          block.settings?.show_table_as_editable ??
+          block.settings?.tableAsEditable ??
+          block.settings?.editableTable,
+        ),
+
         standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
         toolType: normalizeNodeToolType(toolType),
         type: nodeType,
-        warning: false,
-
-        // Manual User (INTERNAL_ACTOR) - General / Action-By
-        isManagerEnabled: block.settings?.isManagerEnabled ?? false,
-        isToRequesterEnabled: block.settings?.isToRequesterEnabled ?? false,
-        isDynamicUserEnabled: block.settings?.isDynamicUserEnabled ?? false,
-        dynamicUserField: block.settings?.dynamicUserField ?? null,
-        isMasterUserEnabled: block.settings?.isMasterUserEnabled ?? false,
-        masterUserColumn: block.settings?.masterUserColumn ?? '',
-        isActedActivityEnabled:
-          block.settings?.isActedActivityEnabled ?? false,
-        actedActivityBlockId: block.settings?.actedActivityBlockId ?? null,
-        isCoordinatorEnabled: block.settings?.isCoordinatorEnabled ?? false,
-        internalForward: block.settings?.internalForward ?? false,
-        forwardedUserAction: block.settings?.forwardedUserAction ?? '',
-        internalForwardUser: Array.isArray(block.settings?.internalForwardUser)
-          ? block.settings.internalForwardUser.map(String)
-          : [],
-        internalForwardGroup: Array.isArray(
-          block.settings?.internalForwardGroup,
-        )
-          ? block.settings.internalForwardGroup.map(String)
-          : [],
-        partialApprove: block.settings?.partialApprove ?? 'ALL',
-        fullApprovalAction: block.settings?.fullApprovalAction ?? '',
-        documentRequired: block.settings?.documentRequired ?? false,
         userSignature: block.settings?.userSignature ?? false,
-        generatePDFFields: Array.isArray(block.settings?.generatePDFFields)
-          ? block.settings.generatePDFFields.map(String)
-          : [],
-        hasFooter: block.settings?.hasFooter ?? false,
-        footerText: block.settings?.footerText ?? '',
-        generateCSV: block.settings?.generateCSV ?? false,
-        generateCSVFields: Array.isArray(block.settings?.generateCSVFields)
-          ? block.settings.generateCSVFields.map(String)
-          : [],
-        showTableAsEditable: Boolean(
-          block.settings?.showTableAsEditable ??
-            block.settings?.show_table_as_editable ??
-            block.settings?.tableAsEditable ??
-            block.settings?.editableTable,
-        ),
 
-        // Manual User - Security & Form Access
-        formEditAccess: block.settings?.formEditAccess ?? 'ALL',
-        formEditControls: Array.isArray(block.settings?.formEditControls)
-          ? block.settings.formEditControls.map((r: any) => ({
-              id: r.id || generateId(),
-              formFields: Array.isArray(r.formFields) ? r.formFields : [],
-              userId: String(r.userId ?? ''),
-            }))
-          : [],
-        formVisibilityAccess: block.settings?.formVisibilityAccess ?? 'ALL',
-        formSecureControls: Array.isArray(block.settings?.formSecureControls)
-          ? block.settings.formSecureControls.map((r: any) => ({
-              id: r.id || generateId(),
-              formFields: Array.isArray(r.formFields) ? r.formFields : [],
-              userId: String(r.userId ?? ''),
-            }))
-          : [],
-        mandatoryFields: Array.isArray(block.settings?.mandatoryFields)
-          ? block.settings.mandatoryFields.map(String)
-          : [],
-
-        // Manual User - Checklist
-        checklistItems: Array.isArray(block.settings?.checklistItems)
-          ? block.settings.checklistItems.map((i: any) => ({
-              id: i.id || generateId(),
-              label: i.label || '',
-              required: i.required !== false,
-            }))
-          : [],
+        warning: false,
         ...apAgentUi,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings

@@ -1,27 +1,27 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
-import cn from '@/utils/cn'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
+import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
+import cn from '@/utils/cn'
+import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
+import AgentSummaryBoxes, {
+  getAgentResponseTabs,
+} from '../request/components/generic-overview/AgentSummaryBoxes'
+import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
 import Header from '../request/components/newrequest/Header'
+import AttachmentsPanel from './components/AttachmentsPanel'
+import CommentsPanel from './components/CommentsPanel'
 import RepoFieldsPanel from './components/RepoFieldsPanel'
 import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
-import AttachmentsPanel from './components/AttachmentsPanel'
-import CommentsPanel from './components/CommentsPanel'
-import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
-import AgentSummaryBoxes, {
-  getAgentResponseTabs,
-} from '../request/components/generic-overview/AgentSummaryBoxes'
-import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
-import ScrollArea from '@/components/base/scroll-area/ScrollArea'
-import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
-import workflowsApiV6 from '@/api/v6/workflows'
-import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 
 interface Props {
   workflow: any
@@ -47,7 +47,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   )
   const [focusRequestId, setFocusRequestId] = useState(0)
 
-  const [createdInstanceId, setCreatedInstanceId] = useState<string | null>(null)
+  const [createdInstanceId, setCreatedInstanceId] = useState<string | null>(
+    null,
+  )
   const [isStartingAgentWorkflow, setIsStartingAgentWorkflow] = useState(false)
   const [agentUploadedFile, setAgentUploadedFile] = useState<File | null>(null)
 
@@ -85,9 +87,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
   const initialAgentId = agentBlocks[0]?.id ?? null
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(
-    initialAgentId,
-  )
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
+    string | null
+  >(initialAgentId)
   const [activeTab, setActiveTab] = useState(
     initialAgentId ? `agent:${initialAgentId}` : 'summary',
   )
@@ -252,25 +254,29 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
   const summaryHiddenFieldIds = useMemo(() => {
     const ids = new Set<string>()
-    panels.flatMap((p: any) => p.fields || []).forEach((field: any) => {
-      if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
-        ids.add(String(field.id))
-      }
-    })
+    panels
+      .flatMap((p: any) => p.fields || [])
+      .forEach((field: any) => {
+        if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
+          ids.add(String(field.id))
+        }
+      })
     return ids
   }, [panels])
 
   const lineItemsHiddenFieldIds = useMemo(() => {
     const ids = new Set<string>()
     let hasLineItems = false
-    panels.flatMap((p: any) => p.fields || []).forEach((field: any) => {
-      if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
-        hasLineItems = true
-      } else {
-        ids.add(String(field.id))
-      }
-    })
-    return { ids, hasLineItems }
+    panels
+      .flatMap((p: any) => p.fields || [])
+      .forEach((field: any) => {
+        if (field.type === 'DYNAMIC_TABLE' || field.type === 'TABLE') {
+          hasLineItems = true
+        } else {
+          ids.add(String(field.id))
+        }
+      })
+    return { hasLineItems, ids }
   }, [panels])
 
   const standardTabs = useMemo(
@@ -395,7 +401,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         isSubmitting={isSubmitting}
         title={t`New Request`}
         onClose={onClose}
-        onSubmit={createdInstanceId || agentBlocks.length > 0 ? undefined : handleSubmit}
+        onSubmit={
+          createdInstanceId || agentBlocks.length > 0 ? undefined : handleSubmit
+        }
       />
 
       {isLoadingForm ? (
@@ -417,10 +425,17 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         </AnimateFadeIn>
       ) : (
         <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
-          {isDocumentForm && uploadedFiles.length === 0 && !createdInstanceId && !isStartingAgentWorkflow ? (
+          {isDocumentForm &&
+          uploadedFiles.length === 0 &&
+          !createdInstanceId &&
+          !isStartingAgentWorkflow ? (
             <DocumentFormUpload
-              isUploading={isUploadingAttachment || isExtractingOcr || isStartingAgentWorkflow}
               workflow={workflow}
+              isUploading={
+                isUploadingAttachment ||
+                isExtractingOcr ||
+                isStartingAgentWorkflow
+              }
               onFilesSelected={(files) => {
                 if (agentBlocks.length > 0) {
                   startAgentWorkflow(files)
@@ -429,22 +444,36 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 }
               }}
             />
-          ) : isDocumentForm && (uploadedFiles.length > 0 || createdInstanceId || isStartingAgentWorkflow) ? (
+          ) : isDocumentForm &&
+            (uploadedFiles.length > 0 ||
+              createdInstanceId ||
+              isStartingAgentWorkflow) ? (
             <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-[var(--gray-1)]'>
               <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
-                  files={agentUploadedFile ? [{ key: 'agent-file', fileName: agentUploadedFile.name, rawFile: agentUploadedFile }] : uploadedFiles}
                   focusRequestId={focusRequestId}
+                  files={
+                    agentUploadedFile
+                      ? [
+                          {
+                            fileName: agentUploadedFile.name,
+                            key: 'agent-file',
+                            rawFile: agentUploadedFile,
+                          },
+                        ]
+                      : uploadedFiles
+                  }
                   onSelectKey={setActiveFileKey}
                 />
               </div>
               <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
                 {agentBlocks.length > 0 && (
-                  <div className='pb-5 mt-5 mr-5 ml-5'>
+                  <div className='mt-5 mr-5 ml-5 pb-5'>
                     <AgentSummaryBoxes
                       agentBlocks={agentBlocks}
+                      requestData={requestData || null}
                       selectedAgentBlockId={selectedAgentBlockId}
                       onAgentClick={(blockId) => {
                         if (!blockId) {
@@ -459,28 +488,27 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         setSelectedAgentBlockId(blockId)
                         setActiveTab(`agent:${blockId}`)
                       }}
-                      requestData={requestData || null}
                     />
                   </div>
                 )}
-                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-2 pt-2 mb-4 overflow-x-auto no-scrollbar scrollbar-none'>
+                <div className='no-scrollbar scrollbar-none sticky top-0 z-10 mb-4 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-surface px-2 pt-2'>
                   <div className='flex items-center justify-between gap-4'>
-                    <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
+                    <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
                       {tabs.map((tab) => (
                         <button
                           key={tab.id}
                           className={cn(
-                            '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                            '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
                             activeTab === tab.id
                               ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
                               : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
                           )}
                           onClick={() => selectTab(tab.id)}
                         >
-                          <Icon name={tab.icon} className='h-4 w-4 shrink-0' />
+                          <Icon className='h-4 w-4 shrink-0' name={tab.icon} />
                           <span>{tab.label}</span>
                           {'count' in tab && tab.count !== undefined && (
-                            <span className="flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12">
+                            <span className='flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12'>
                               {tab.count}
                             </span>
                           )}
@@ -496,6 +524,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         agentBlock={selectedAgentBlock}
                         formModel={formModel}
                         hideBack={hasAgentResponseTabs}
+                        rawWorkflowData={workflow}
+                        requestData={requestData || null}
                         onBack={() => {
                           setSelectedAgentBlockId(null)
                           setActiveTab(
@@ -505,8 +535,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           )
                         }}
                         onFieldChange={setFieldValue}
-                        rawWorkflowData={workflow}
-                        requestData={requestData || null}
                       />
                     </div>
                   ) : activeTab === 'summary' ? (
@@ -525,7 +553,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         onOcrFieldList={applyOcrFieldList}
                       />
                     </div>
-                  ) : activeTab === 'line_items' && lineItemsHiddenFieldIds.hasLineItems ? (
+                  ) : activeTab === 'line_items' &&
+                    lineItemsHiddenFieldIds.hasLineItems ? (
                     <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
                       <WorkflowFormRenderer
                         formModel={formModel}
@@ -541,7 +570,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'attachments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5 pt-4'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 pr-3.5'>
                       <AttachmentsPanel
                         attachments={attachments}
                         isUploading={isUploadingAttachment}
@@ -550,7 +579,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'comments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5 pt-4 pb-0'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 pr-3.5 pb-0'>
                       <CommentsPanel
                         comments={comments}
                         draft={commentDraft}
@@ -590,8 +619,18 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
-                  files={agentUploadedFile ? [{ key: 'agent-file', fileName: agentUploadedFile.name, rawFile: agentUploadedFile }] : uploadedFiles}
                   focusRequestId={focusRequestId}
+                  files={
+                    agentUploadedFile
+                      ? [
+                          {
+                            fileName: agentUploadedFile.name,
+                            key: 'agent-file',
+                            rawFile: agentUploadedFile,
+                          },
+                        ]
+                      : uploadedFiles
+                  }
                   onSelectKey={setActiveFileKey}
                 />
               </div>

@@ -10,12 +10,12 @@ const missingMsgids = JSON.parse(
 
 const translations = __TRANSLATIONS__
 
-function unescapePo(value) {
-  return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-}
-
 function escapePo(value) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+}
+
+function unescapePo(value) {
+  return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 }
 
 const missingSet = new Set(missingMsgids)

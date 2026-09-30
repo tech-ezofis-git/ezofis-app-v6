@@ -1,16 +1,16 @@
+import type { WorkflowOption } from '@/pages/requests/types'
 import {
   isFieldFilled,
   isFieldHidden,
   isFieldRequired,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import type { WorkflowOption } from '@/pages/requests/types'
 import {
   extractBlocks,
   extractWorkflowGraph,
 } from '@/pages/requests/utils/workflow.utils'
 import {
-  type KanbanCardSetting,
   hasKanbanCardSettings,
+  type KanbanCardSetting,
   parseKanbanSettings,
 } from '@/pages/workflows/utils/kanbanSettings'
 import {
@@ -26,20 +26,20 @@ const SKIP_BLOCK_TYPES = new Set([
   'NOTE',
 ])
 
-export type KanbanColumnRole = 'neutral' | 'review' | 'success'
-
-export type KanbanStageGroup = {
-  id: string
-  name: string
-  terminal: boolean
-}
-
 export type KanbanColumnDef = {
   color?: string
   id: string
   name: string
   role: KanbanColumnRole
   stages: KanbanStageGroup[]
+  terminal: boolean
+}
+
+export type KanbanColumnRole = 'neutral' | 'review' | 'success'
+
+export type KanbanStageGroup = {
+  id: string
+  name: string
   terminal: boolean
 }
 
@@ -125,7 +125,8 @@ const toColumn = (
 ): KanbanColumnDef => {
   const type = blockTypeOf(block)
   const id = String(block.id || kanbanBlockTitle(block))
-  const terminal = isEndType(type) || (!isStartType(type) && !outgoingIds.has(id))
+  const terminal =
+    isEndType(type) || (!isStartType(type) && !outgoingIds.has(id))
   const success = (isEndType(type) || terminal) && !isStartType(type)
   return {
     id,
@@ -178,7 +179,9 @@ export const buildKanbanColumns = (
 ): KanbanColumnDef[] => {
   const { blocks, rules } = extractWorkflowGraph(workflow)
   const outgoingIds = new Set(
-    rules.map((rule: { fromBlockId?: string }) => String(rule.fromBlockId || '')),
+    rules.map((rule: { fromBlockId?: string }) =>
+      String(rule.fromBlockId || ''),
+    ),
   )
   const childrenByFrom = new Map<string, string[]>()
   rules.forEach((rule: { fromBlockId?: string; toBlockId?: string }) => {
@@ -436,10 +439,12 @@ const parseItemFormModel = (item: Record<string, unknown>) => {
   const model: Record<string, unknown> = {}
   const assign = (source: unknown) => {
     if (!source || typeof source !== 'object' || Array.isArray(source)) return
-    Object.entries(source as Record<string, unknown>).forEach(([key, value]) => {
-      if (value === undefined) return
-      model[key] = value
-    })
+    Object.entries(source as Record<string, unknown>).forEach(
+      ([key, value]) => {
+        if (value === undefined) return
+        model[key] = value
+      },
+    )
   }
 
   const raw = item.formData
@@ -460,8 +465,17 @@ const parseItemFormModel = (item: Record<string, unknown>) => {
   return model
 }
 
-const fieldValue = (model: Record<string, unknown>, field: Record<string, any>) => {
-  const keys = [field.id, field.jsonId, field.name, field.label, field.columnName]
+const fieldValue = (
+  model: Record<string, unknown>,
+  field: Record<string, any>,
+) => {
+  const keys = [
+    field.id,
+    field.jsonId,
+    field.name,
+    field.label,
+    field.columnName,
+  ]
   for (const key of keys) {
     if (key == null || key === '') continue
     if (model[String(key)] !== undefined) return model[String(key)]
@@ -512,7 +526,9 @@ export const getKanbanMissingRequiredFields = (
   if (!skipFormRequired) {
     allFields.forEach((field: any) => {
       if (isFieldHidden(field) || !isFieldRequired(field)) return
-      if (required.some((entry: any) => String(entry.id) === String(field.id))) {
+      if (
+        required.some((entry: any) => String(entry.id) === String(field.id))
+      ) {
         return
       }
       required.push(field)
@@ -530,14 +546,17 @@ export const getKanbanMissingRequiredFields = (
     seen.add(id)
     missing.push({
       id,
-      label: String(field.label || field.name || field.settings?.general?.label || id),
+      label: String(
+        field.label || field.name || field.settings?.general?.label || id,
+      ),
     })
   })
 
   extraIds.forEach((id) => {
     if (seen.has(id) || byId.has(id)) return
     const value = model[id]
-    if (value !== undefined && value !== null && String(value).trim() !== '') return
+    if (value !== undefined && value !== null && String(value).trim() !== '')
+      return
     seen.add(id)
     missing.push({ id, label: id })
   })

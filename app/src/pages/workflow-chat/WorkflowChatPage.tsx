@@ -41,9 +41,9 @@ import {
   PrimaryButton,
   StatusPill,
 } from '@/pages/folders/components/Ui'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import LineItemTable from '@/pages/requests/components/request/components/sections/overview/LineItemTable'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
-import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import {
   buildRepoMetadata,
   extractOcrText,
@@ -149,7 +149,7 @@ const controlMatchesIds = (
 }
 
 const applyStageMandatoryFlags = <
-  T extends { id: string; required: boolean; rawControl?: any },
+  T extends { id: string; rawControl?: any; required: boolean },
 >(
   items: T[],
   mandatoryFieldIds: Set<string>,
@@ -177,8 +177,8 @@ export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
 
 export interface WorkflowChatPageProps {
   embedded?: boolean
-  initialState?: WorkflowHistoryData
   initialAction?: string
+  initialState?: WorkflowHistoryData
   isExpanded?: boolean
   onSaveHistory?: (state: WorkflowHistoryData) => void
 }
@@ -188,16 +188,16 @@ export interface WorkflowHistoryData {
   answers: Record<string, any>
   awaitingDoc: ParsedDoc | null
   awaitingField: ParsedField | null
-  awaitingPanelForm?: PanelFormPayload | null
-  completedPanelIndexes?: number[]
   docsMap: Record<string, string>
   documents: ParsedDoc[]
   fields: ParsedField[]
   messages: Message[]
   mode: WorkflowChatMode
-  repositoryId?: string | null
   ticketId: string | null
+  awaitingPanelForm?: PanelFormPayload | null
+  completedPanelIndexes?: number[]
   panels?: any[]
+  repositoryId?: string | null
 }
 
 // Types for chat messages
@@ -383,8 +383,8 @@ const TableInputWidget = ({
 
 export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   embedded = false,
-  initialState,
   initialAction,
+  initialState,
   isExpanded = false,
   onSaveHistory,
 }) => {
@@ -1910,7 +1910,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     setIsTyping(true)
 
-    let updatedAnswers = { ...answers }
+    const updatedAnswers = { ...answers }
 
     const isPayable =
       activeWorkflow?.name?.toLowerCase().includes('payable') ||
@@ -2155,12 +2155,12 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       // Phase 2 (request page): stage each attached file via uploadWithOcr
       // so start/json receives real stagedFiles entries.
       const stagedAttachmentFiles: Array<{
-        fileId: string
-        fileName?: string
-        repositoryId: string
         fieldId?: string
         fieldName?: string
+        fileId: string
+        fileName?: string
         jsonId?: string
+        repositoryId: string
       }> = []
 
       for (const [docId, attachment] of Object.entries(attachedFiles)) {

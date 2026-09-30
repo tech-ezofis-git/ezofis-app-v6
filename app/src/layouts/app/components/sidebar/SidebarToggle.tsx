@@ -1,5 +1,5 @@
-import { useLingui } from '@lingui/react/macro'
 import type { TooltipProps } from '@mantine/core'
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
 import useSidebarStore from '@/layouts/app/stores/useSidebarStore'
@@ -31,4 +31,3 @@ const SidebarToggle = ({ tooltipPosition = 'bottom-start' }: Props) => {
 
 SidebarToggle.displayName = 'SidebarToggle'
 export default SidebarToggle
-

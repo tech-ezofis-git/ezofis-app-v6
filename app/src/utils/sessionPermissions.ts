@@ -3,20 +3,20 @@ import type { SessionPermission } from '@/stores/authUserStore'
 const PERMISSION_KEY_ALIASES: Record<string, string> = {
   'folder-configuration': 'folder-create',
   'folder-creation': 'folder-create',
-  folders: 'folder',
-  forms: 'form',
-  portals: 'portal',
-  report: 'report',
+  'folders': 'folder',
+  'forms': 'form',
+  'portals': 'portal',
+  'report': 'report',
   'report-builder': 'report-builder',
   'report-builder-settings': 'report-builder',
-  reportbuilder: 'report-builder',
-  reports: 'report',
-  requests: 'workflow-inbox',
-  request: 'workflow-inbox',
+  'reportbuilder': 'report-builder',
+  'reports': 'report',
+  'request': 'workflow-inbox',
+  'requests': 'workflow-inbox',
+  'workflow': 'workflow',
   'workflow-inbox': 'workflow-inbox',
-  workflowinbox: 'workflow-inbox',
-  workflows: 'workflow',
-  workflow: 'workflow',
+  'workflowinbox': 'workflow-inbox',
+  'workflows': 'workflow',
 }
 
 export const normalizePermissionKey = (key: string) => {
@@ -64,7 +64,9 @@ export const isPermissionVisible = (
 ): boolean => {
   if (!permissionKey) return true
 
-  const normalizedRole = String(role || '').trim().toLowerCase()
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase()
   const isAdmin =
     normalizedRole === 'admin' ||
     normalizedRole === 'administrator' ||
@@ -85,9 +87,7 @@ export const isPermissionVisible = (
   }
 
   return matchingPermissions.some((item) =>
-    isPermissionFlagVisible(
-      typeof item === 'string' ? true : item.visible,
-    ),
+    isPermissionFlagVisible(typeof item === 'string' ? true : item.visible),
   )
 }
 

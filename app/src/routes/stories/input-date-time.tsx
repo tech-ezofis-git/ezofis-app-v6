@@ -16,8 +16,8 @@ function RouteComponent() {
     <div className='max-w-4xl p-6'>
       <StoryTitle>Input Date Time</StoryTitle>
       <p className='mb-10 text-15 text-gray-11'>
-        Combines a date picker and a time picker into a single field. Value is
-        a single string in <code>YYYY-MM-DD HH:mm</code> format, or{' '}
+        Combines a date picker and a time picker into a single field. Value is a
+        single string in <code>YYYY-MM-DD HH:mm</code> format, or{' '}
         <code>null</code>. The time side is disabled until a date is chosen.
       </p>
 
@@ -77,8 +77,8 @@ function RouteComponent() {
               </StoryCode>
               <div className='ml-1'>
                 <InputDateTime
-                  disabled
                   value='2025-01-01 09:00'
+                  disabled
                   onChange={() => {}}
                 />
               </div>

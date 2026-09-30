@@ -1,5 +1,5 @@
-import Button from './Button'
 import cn from '@/utils/cn'
+import Button from './Button'
 
 interface Props {
   className?: string
@@ -14,7 +14,7 @@ const MicrosoftButton = ({
 }: Props) => {
   return (
     <Button
-      className={cn('min-w-0 w-full justify-center gap-2', className)}
+      className={cn('w-full min-w-0 justify-center gap-2', className)}
       color='gray'
       icon='logos:microsoft-icon'
       label={label}

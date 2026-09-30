@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import { useNavigate } from '@tanstack/react-router'
 
 type SuccessCelebrationProps = {
   buttonIcon?: string
   buttonLabel?: string
   description?: string
   loadingLabel?: string
-  onCreateRequest?: () => void
   title?: string
+  onCreateRequest?: () => void
 }
 
 export default function SuccessCelebration({
@@ -19,8 +19,8 @@ export default function SuccessCelebration({
   buttonLabel = 'Create Request',
   description = 'Your Accounts Payable workspace is ready.\nStart by creating your first request.',
   loadingLabel = 'Loading request workspace...',
-  onCreateRequest,
   title = "You're All Set!",
+  onCreateRequest,
 }: SuccessCelebrationProps = {}) {
   const primaryButtonRef = useRef<HTMLButtonElement>(null)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
@@ -81,21 +81,18 @@ export default function SuccessCelebration({
       transition={{ duration: prefersReducedMotion ? 0.2 : 0.3 }}
     >
       <motion.div
+        className='relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-md dark:bg-surface-secondary/90'
         animate={
           prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }
         }
-        className='relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-md dark:bg-surface-secondary/90'
         initial={
-          prefersReducedMotion
-            ? { opacity: 0 }
-            : { opacity: 0, scale: 0.95 }
+          prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }
         }
         transition={{
           duration: prefersReducedMotion ? 0.2 : 0.3,
           ease: 'easeOut',
         }}
       >
-
         <div className='relative z-[2] flex w-full flex-col items-center'>
           <style>{`
             @keyframes drawCircle { to { stroke-dashoffset: 0; } }
@@ -206,10 +203,10 @@ export default function SuccessCelebration({
             }}
           >
             <button
+              className='inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-9 px-6 py-2.5 text-14 font-semibold text-white shadow-sm transition-all hover:bg-primary-10 focus-visible:ring-2 focus-visible:ring-primary-9 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98]'
               ref={primaryButtonRef}
-              className='inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-9 px-6 py-2.5 text-14 font-semibold text-white shadow-sm transition-all hover:bg-primary-10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-9 focus-visible:ring-offset-2'
-              onClick={handleCreateRequest}
               type='button'
+              onClick={handleCreateRequest}
             >
               {buttonIcon && <Icon className='size-4' name={buttonIcon} />}
               <span>{buttonLabel}</span>

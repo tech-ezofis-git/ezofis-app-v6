@@ -20,7 +20,7 @@ import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 import cn from '@/utils/cn'
 
 const PageTitle = () => {
-  const { t, i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const matches = useMatches()
   const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
     requestStore((state) => state)
@@ -206,33 +206,33 @@ const PageTitle = () => {
       <div className='flex items-center gap-4'>
         <Title level={3} title={localizedPageTitle} />
         {showSetupSwitcher && (
-            <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
-              <button
-                className={cn(
-                  'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
-                  activeSetupPreview === 'ap'
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
-                )}
-                type='button'
-                onClick={openApSetupPreview}
-              >
-                AP Setup
-              </button>
-              <button
-                className={cn(
-                  'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
-                  activeSetupPreview === 'dms'
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
-                )}
-                type='button'
-                onClick={openDmsSetupPreview}
-              >
-                DMS Folder
-              </button>
-            </div>
-          )}
+          <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
+            <button
+              type='button'
+              className={cn(
+                'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
+                activeSetupPreview === 'ap'
+                  ? 'bg-primary-9 text-white shadow-sm'
+                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
+              )}
+              onClick={openApSetupPreview}
+            >
+              AP Setup
+            </button>
+            <button
+              type='button'
+              className={cn(
+                'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
+                activeSetupPreview === 'dms'
+                  ? 'bg-primary-9 text-white shadow-sm'
+                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
+              )}
+              onClick={openDmsSetupPreview}
+            >
+              DMS Folder
+            </button>
+          </div>
+        )}
       </div>
     )
   }

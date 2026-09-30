@@ -1,16 +1,16 @@
 import { ChevronRight, Loader2, Search } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
+import type { FilterOption } from '@/utils/filterUtils'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
-import type { FilterOption } from '@/utils/filterUtils'
 import cn from '@/utils/cn'
 
 interface FilterMenuProps {
   options: FilterOption[]
   selectedValues: string[]
-  label?: string
   /** When true, keeps Apply in loading until the parent fetch finishes */
   isLoading?: boolean
+  label?: string
   /** Dynamic lists only — hide for fixed date/amount preset lists */
   showCount?: boolean
   showSearch?: boolean
@@ -48,10 +48,10 @@ const parseCustomDateRange = (value: string) => {
 }
 
 export function CategoryFilterMenu({
+  isLoading = false,
   label: _label,
   options,
   selectedValues,
-  isLoading = false,
   showCount = true,
   showSearch = true,
   onChange,
@@ -150,7 +150,10 @@ export function CategoryFilterMenu({
       ...draftValues.filter((value) => value !== allOption.value),
       opt.value,
     ]
-    if (itemValues.length > 0 && itemValues.every((value) => next.includes(value))) {
+    if (
+      itemValues.length > 0 &&
+      itemValues.every((value) => next.includes(value))
+    ) {
       setDraftValues([allOption.value, ...itemValues])
       return
     }
@@ -164,11 +167,11 @@ export function CategoryFilterMenu({
           <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted' />
           <input
             className='w-full min-w-0 bg-transparent py-2.5 pr-3 pl-9 text-12 text-text-primary outline-none placeholder:text-text-muted'
+            disabled={isApplying}
             placeholder='Search...'
             type='text'
             value={search}
             autoFocus
-            disabled={isApplying}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
@@ -194,7 +197,7 @@ export function CategoryFilterMenu({
               >
                 <input
                   checked={isSelected}
-                  className='accent-primary-9 mt-0.5 shrink-0'
+                  className='mt-0.5 shrink-0 accent-primary-9'
                   disabled={isApplying}
                   type='checkbox'
                   onChange={() => toggleValue(opt)}
@@ -216,6 +219,7 @@ export function CategoryFilterMenu({
           )}
         >
           <button
+            type='button'
             className={cn(
               FILTER_MENU_ACTION,
               draftValues.length > 0 || selectedValues.length > 0
@@ -226,7 +230,6 @@ export function CategoryFilterMenu({
               isApplying ||
               (draftValues.length === 0 && selectedValues.length === 0)
             }
-            type='button'
             onClick={() => {
               setDraftValues([])
               onClear()
@@ -322,19 +325,19 @@ export function CustomRangeMenu({
         ) : (
           <>
             <InputDate
-              clearable
               label='Start Date'
               placeholder='dd-mmm-yyyy'
               popoverProps={{ zIndex: 50005 }}
               value={startStr || null}
+              clearable
               onChange={(v) => setStart(v ?? '')}
             />
             <InputDate
-              clearable
               label='End Date'
               placeholder='dd-mmm-yyyy'
               popoverProps={{ zIndex: 50005 }}
               value={endStr || null}
+              clearable
               onChange={(v) => setEnd(v ?? '')}
             />
           </>
@@ -465,14 +468,14 @@ export function DateFilterMenu({
 
       <div className='flex items-center border-t border-border-default px-2.5 py-2'>
         <button
+          disabled={selectedValues.length === 0}
+          type='button'
           className={cn(
             FILTER_MENU_ACTION,
             selectedValues.length > 0
               ? FILTER_MENU_ACTION_ENABLED
               : FILTER_MENU_ACTION_DISABLED,
           )}
-          disabled={selectedValues.length === 0}
-          type='button'
           onClick={onClear}
         >
           Clear selection
@@ -483,9 +486,9 @@ export function DateFilterMenu({
 }
 
 export function NumberFilterMenu({
+  isLoading = false,
   options,
   selectedValues,
-  isLoading = false,
   onChange,
   onClear,
 }: FilterMenuProps) {
@@ -570,9 +573,9 @@ export function NumberFilterMenu({
 
           return (
             <button
+              disabled={isApplying}
               key={opt.value}
               type='button'
-              disabled={isApplying}
               className={cn(
                 FILTER_OPTION_ROW,
                 isSelected && FILTER_OPTION_ROW_SELECTED,
@@ -603,8 +606,8 @@ export function NumberFilterMenu({
                 <input
                   checked={isSelected}
                   className='accent-primary-9'
-                  readOnly
                   type='checkbox'
+                  readOnly
                 />
               )}
               <span className={FILTER_OPTION_LABEL}>{optionLabel}</span>
@@ -618,6 +621,7 @@ export function NumberFilterMenu({
 
       <div className='flex w-full flex-col gap-2 border-t border-border-default px-2.5 py-2'>
         <button
+          type='button'
           className={cn(
             FILTER_MENU_ACTION,
             'self-start',
@@ -629,7 +633,6 @@ export function NumberFilterMenu({
             isApplying ||
             (draftValues.length === 0 && selectedValues.length === 0)
           }
-          type='button'
           onClick={() => {
             setDraftValues([])
             onClear()

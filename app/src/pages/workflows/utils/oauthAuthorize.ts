@@ -1,22 +1,22 @@
 import connectorApi, { type OAuthProviderCode } from '@/api/connector'
 
 const PROVIDER_CODE_BY_VALUE: Record<string, OAuthProviderCode> = {
-  GCP: 'GCP',
-  GMAIL: 'GMAIL',
-  GOOGLE_DRIVE: 'GOOGLE_DRIVE',
-  ONEDRIVE: 'ONEDRIVE',
-  ONE_DRIVE: 'ONEDRIVE',
-  OUTLOOK: 'OUTLOOK',
-  QUICKBOOKS: 'QUICKBOOKS',
-  SAP: 'SAP_XSUAA',
+  'GCP': 'GCP',
+  'GMAIL': 'GMAIL',
+  'gmail': 'GMAIL',
+  'google': 'GOOGLE_DRIVE',
+  'GOOGLE_DRIVE': 'GOOGLE_DRIVE',
+  'ONE_DRIVE': 'ONEDRIVE',
+  'ONEDRIVE': 'ONEDRIVE',
+  'OUTLOOK': 'OUTLOOK',
+  'outlook': 'OUTLOOK',
+  'QUICKBOOKS': 'QUICKBOOKS',
+  'SAP': 'SAP_XSUAA',
+  'sap': 'SAP_XSUAA',
   'SAP-XSUAA': 'SAP_XSUAA',
-  SAP_XSUAA: 'SAP_XSUAA',
-  gmail: 'GMAIL',
-  google: 'GOOGLE_DRIVE',
-  onedrive: 'ONEDRIVE',
-  outlook: 'OUTLOOK',
-  sap: 'SAP_XSUAA',
-  sap_xsuaa: 'SAP_XSUAA',
+  'SAP_XSUAA': 'SAP_XSUAA',
+  'sap_xsuaa': 'SAP_XSUAA',
+  'onedrive': 'ONEDRIVE',
 }
 
 export const getWorkflowOAuthProviderCode = (
@@ -33,7 +33,8 @@ export const openWorkflowOAuthAuthorize = async (
   }
 
   // Pre-open blank popup to prevent browser popup blocker from blocking authorizationUrl
-  const popup = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
+  const popup =
+    typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
 
   const response = await connectorApi.authorizeOAuth({
     name,

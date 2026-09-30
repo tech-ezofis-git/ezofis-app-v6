@@ -16,9 +16,9 @@ import {
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
 import Skeleton from '@/components/base/Skeleton'
-import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
 import {
   BuilderTimelineStep,
@@ -29,24 +29,24 @@ import { generateRepositoryDescription } from '@/services/ai/dashboardAi'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
-interface Props {
-  onSavedHtmlHeaderChange?: (actions: SavedHtmlHeaderActions | null) => void
-  repositoryId: string
-  repositoryName: string
-  workflowId?: string
-}
-
 export type SavedHtmlHeaderActions = {
   isRefreshing: boolean
   onEdit: () => void
   onRefresh: () => void
 }
 
+interface Props {
+  repositoryId: string
+  repositoryName: string
+  workflowId?: string
+  onSavedHtmlHeaderChange?: (actions: SavedHtmlHeaderActions | null) => void
+}
+
 export default function DashboardApiBuilder({
-  onSavedHtmlHeaderChange,
   repositoryId,
   repositoryName,
   workflowId = '',
+  onSavedHtmlHeaderChange,
 }: Props) {
   const { t } = useLingui()
 
@@ -161,8 +161,7 @@ export default function DashboardApiBuilder({
         repositoryId,
         sessionId: session,
         tenantId,
-        workflowId:
-          targetSchema.workflow_id || activeWorkflowId || undefined,
+        workflowId: targetSchema.workflow_id || activeWorkflowId || undefined,
       })
       if (res.html.trim()) {
         setHtml(res.html)
@@ -308,8 +307,7 @@ export default function DashboardApiBuilder({
     if (!schema) return false
     const currentTenantId =
       authUserStore.getState().session?.tenantId || tenantId
-    const schemaWorkflowId =
-      schema.workflow_id || activeWorkflowId || undefined
+    const schemaWorkflowId = schema.workflow_id || activeWorkflowId || undefined
     setIsSaving(true)
     try {
       const saveRes = await saveDashboardSchema({
@@ -422,12 +420,7 @@ export default function DashboardApiBuilder({
         void reloadSavedHtmlRef.current()
       },
     })
-  }, [
-    html,
-    isFullDashboardView,
-    isGeneratingHtml,
-    onSavedHtmlHeaderChange,
-  ])
+  }, [html, isFullDashboardView, isGeneratingHtml, onSavedHtmlHeaderChange])
 
   useEffect(() => {
     return () => onSavedHtmlHeaderChange?.(null)
@@ -604,7 +597,7 @@ export default function DashboardApiBuilder({
             <div className='mb-3 flex items-center justify-between gap-3'>
               <div className='flex min-w-0 items-center gap-2'>
                 <AiBrandIcon className='size-4 shrink-0' />
-                <h2 className='text-15 truncate font-semibold text-text-primary'>
+                <h2 className='truncate text-15 font-semibold text-text-primary'>
                   {repositoryName}
                 </h2>
               </div>

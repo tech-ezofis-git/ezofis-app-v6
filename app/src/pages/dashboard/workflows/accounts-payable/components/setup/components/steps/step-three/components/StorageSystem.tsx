@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useEffect, useState } from 'react'
 // import AmazonLogo from '@/assets/brands/amazon.svg'
 // import DropboxLogo from '@/assets/brands/dropbox.svg'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
@@ -27,10 +27,10 @@ const includedStorageItem = {
 
 const cloudStorageProviders: Array<{
   description: string
-  name: string
-  value: string
   icon?: string
   logo?: string
+  name: string
+  value: string
 }> = [
   {
     description: 'Store invoice documents in Google Drive.',
@@ -112,9 +112,9 @@ const StorageSystem = () => {
   return (
     <div className='space-y-6'>
       <SwitchIntegrationConfirm
-        opened={Boolean(pendingSwitch)}
         currentName={getStorageLabel(storageSettings.system)}
         nextName={pendingSwitch?.name}
+        opened={Boolean(pendingSwitch)}
         onCancel={() => setPendingSwitch(null)}
         onConfirm={() => {
           pendingSwitch?.apply()
@@ -133,14 +133,14 @@ const StorageSystem = () => {
         <AnimateSlideUp delay={0.15}>
           <BrandCard
             checked={storageSettings.system === includedStorageItem.value}
-            connected={
-              storageSettings.system === includedStorageItem.value &&
-              storageSettings.isConnected
-            }
             description={includedStorageItem.description}
             logo={includedStorageItem.logo}
             name={includedStorageItem.name}
             value={includedStorageItem.value}
+            connected={
+              storageSettings.system === includedStorageItem.value &&
+              storageSettings.isConnected
+            }
             onClick={() =>
               requestSwitch(
                 includedStorageItem.value,

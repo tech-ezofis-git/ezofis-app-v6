@@ -1,8 +1,8 @@
+import { useLingui } from '@lingui/react/macro'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 // @/pages/requests/components/request/components/sections/comments/Comments.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -215,7 +215,11 @@ export default function Comments({
             c?.createdByEmail === currentUserEmail ||
             (c?.createdBy && c.createdBy === session?.id)
           const rawName = String(
-            c?.createdByName || c?.createdByEmail || c?.userName || c?.author || '',
+            c?.createdByName ||
+              c?.createdByEmail ||
+              c?.userName ||
+              c?.author ||
+              '',
           ).trim()
           const isAi =
             !rawName ||
@@ -238,10 +242,7 @@ export default function Comments({
               : getInitials(rawName)
 
           return (
-            <div
-              className='flex items-start gap-3'
-              key={`${c?.id ?? idx}`}
-            >
+            <div className='flex items-start gap-3' key={`${c?.id ?? idx}`}>
               {isAi ? (
                 <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-purple-4/50 bg-purple-1 text-purple-9 shadow-2xs'>
                   <AiBrandIcon className='size-4 shrink-0' />
@@ -259,7 +260,7 @@ export default function Comments({
 
               <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
                 <div className='flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5'>
-                  <span className='font-bold text-[13px] text-gray-13'>
+                  <span className='text-[13px] font-bold text-gray-13'>
                     {name}
                   </span>
                   {timeDisplay && (
@@ -310,7 +311,7 @@ export default function Comments({
           {!!fileOptions.length && (
             <div className='relative w-full'>
               <select
-                className='w-full cursor-pointer appearance-none rounded-xl border border-gray-3 bg-surface py-1.5 pr-4 pl-6 text-[11px] font-semibold text-gray-11 outline-none transition-colors hover:bg-gray-2'
+                className='w-full cursor-pointer appearance-none rounded-xl border border-gray-3 bg-surface py-1.5 pr-4 pl-6 text-[11px] font-semibold text-gray-11 transition-colors outline-none hover:bg-gray-2'
                 value={String(attachFileId)}
                 onChange={(e) => setAttachFileId(e.target.value)}
               >

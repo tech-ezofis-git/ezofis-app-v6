@@ -9,17 +9,17 @@ export interface FileCategorySegmentedControlProps {
   allCount: number
   archivedCount: number
   stagedCount: number
-  onChange: (category: FileCategory) => void
   className?: string
+  onChange: (category: FileCategory) => void
 }
 
 export function FileCategorySegmentedControl({
   activeCategory,
   allCount,
   archivedCount,
+  className,
   stagedCount,
   onChange,
-  className,
 }: FileCategorySegmentedControlProps) {
   const { t } = useLingui()
 
@@ -40,15 +40,15 @@ export function FileCategorySegmentedControl({
           'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
           activeCategory === 'all'
             ? 'bg-[var(--primary-9)] text-white shadow-xs'
-            : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+            : 'text-gray-10 hover:bg-[var(--primary-2)] hover:text-[var(--primary-9)]',
         )}
         onClick={() => onChange('all')}
       >
-        <Icon name='lucide:files' className='size-3.5' />
+        <Icon className='size-3.5' name='lucide:files' />
         <span>{t`All Files`}</span>
         <span
           className={cn(
-            'rounded-full px-1.5 py-0.2 text-[10px]',
+            'py-0.2 rounded-full px-1.5 text-[10px]',
             activeCategory === 'all'
               ? 'bg-white/20 text-white'
               : 'bg-gray-4 text-gray-11',
@@ -64,16 +64,16 @@ export function FileCategorySegmentedControl({
           className={cn(
             'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
             activeCategory === 'staged'
-              ? 'bg-[var(--primary-9)] text-white shadow-xs'
-              : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+              ? 'bg-[var(--orange-7)] text-white shadow-xs'
+              : 'text-gray-10 hover:bg-[var(--orange-2)] hover:text-[var(--orange-7)]',
           )}
           onClick={() => onChange('staged')}
         >
-          <Icon name='tabler:scan' className='size-3.5' />
+          <Icon className='size-3.5' name='tabler:scan' />
           <span>{t`Staged`}</span>
           <span
             className={cn(
-              'rounded-full px-1.5 py-0.2 text-[10px]',
+              'py-0.2 rounded-full px-1.5 text-[10px]',
               activeCategory === 'staged'
                 ? 'bg-white/20 text-white'
                 : 'bg-gray-4 text-gray-11',
@@ -89,16 +89,16 @@ export function FileCategorySegmentedControl({
         className={cn(
           'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
           activeCategory === 'archived'
-            ? 'bg-[var(--primary-9)] text-white shadow-xs'
-            : 'text-gray-10 hover:bg-gray-3 hover:text-gray-13',
+            ? 'bg-[#10B981] text-white shadow-xs'
+            : 'text-gray-10 hover:bg-green-2 hover:text-green-7',
         )}
         onClick={() => onChange('archived')}
       >
-        <Icon name='lucide:archive' className='size-3.5' />
+        <Icon className='size-3.5' name='lucide:archive' />
         <span>{t`Archived`}</span>
         <span
           className={cn(
-            'rounded-full px-1.5 py-0.2 text-[10px]',
+            'py-0.2 rounded-full px-1.5 text-[10px]',
             activeCategory === 'archived'
               ? 'bg-white/20 text-white'
               : 'bg-gray-4 text-gray-11',

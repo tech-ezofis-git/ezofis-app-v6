@@ -180,7 +180,7 @@ const Form = () => {
             }}
           >
             {activeQuestion ? (
-              <div className='pointer-events-none z-[1000] scale-[1.02] cursor-grabbing rounded-xl shadow-2xl ring-2 ring-primary-9/30 opacity-95'>
+              <div className='pointer-events-none z-[1000] scale-[1.02] cursor-grabbing rounded-xl opacity-95 shadow-2xl ring-2 ring-primary-9/30'>
                 <QuestionCard
                   isActive={true}
                   question={activeQuestion}

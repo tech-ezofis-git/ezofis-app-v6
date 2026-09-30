@@ -39,6 +39,18 @@ const resolveIconName = (
   return legacyMap[icon] || `lucide:${icon}`
 }
 
+export function FilterToolbar({ actions }: FilterToolbarProps) {
+  if (!actions || actions.length === 0) return null
+
+  return (
+    <div className='ml-auto flex items-center gap-1.5'>
+      {actions.map((action) => (
+        <ToolbarActionButton action={action} key={action.id} />
+      ))}
+    </div>
+  )
+}
+
 function ToolbarActionButton({ action }: { action: ToolbarAction }) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const isRefreshAction =
@@ -106,17 +118,5 @@ function ToolbarActionButton({ action }: { action: ToolbarAction }) {
       ) : null}
       <span>{action.label}</span>
     </Button>
-  )
-}
-
-export function FilterToolbar({ actions }: FilterToolbarProps) {
-  if (!actions || actions.length === 0) return null
-
-  return (
-    <div className='ml-auto flex items-center gap-1.5'>
-      {actions.map((action) => (
-        <ToolbarActionButton action={action} key={action.id} />
-      ))}
-    </div>
   )
 }

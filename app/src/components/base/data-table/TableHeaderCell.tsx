@@ -22,10 +22,10 @@ interface Props<TData> extends ComponentProps<'th'> {
 }
 
 const TableHeaderCell = <TData,>({
+  className,
   header,
   style,
   table,
-  className,
 }: Props<TData>) => {
   const [opened, setOpened] = useState(false)
 
@@ -102,13 +102,13 @@ const TableHeaderCell = <TData,>({
 
   return (
     <Th
+      key={header.id}
       className={cn(
         'group/dtcell min-h-10 max-w-0 overflow-visible bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]',
         column.columnDef.meta?.headerClassName,
         column.columnDef.meta?.className,
         className,
       )}
-      key={header.id}
       style={{
         ...getColumnPinnedStyles(column, table),
         ...style,

@@ -10,20 +10,28 @@ export default function useProfileImage() {
 
   const [imageUrl, setImageUrl] = useState(() => {
     if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('custom-profile-image') || localStorage.getItem('custom-profile-image') || defaultUrl
+      return (
+        sessionStorage.getItem('custom-profile-image') ||
+        localStorage.getItem('custom-profile-image') ||
+        defaultUrl
+      )
     }
     return defaultUrl
   })
 
   useEffect(() => {
     // Keep standard fallback updated if session changes
-    const customImage = sessionStorage.getItem('custom-profile-image') || localStorage.getItem('custom-profile-image')
+    const customImage =
+      sessionStorage.getItem('custom-profile-image') ||
+      localStorage.getItem('custom-profile-image')
     setImageUrl(customImage || defaultUrl)
   }, [defaultUrl])
 
   useEffect(() => {
     const handleUpdate = () => {
-      const customImage = sessionStorage.getItem('custom-profile-image') || localStorage.getItem('custom-profile-image')
+      const customImage =
+        sessionStorage.getItem('custom-profile-image') ||
+        localStorage.getItem('custom-profile-image')
       setImageUrl(customImage || defaultUrl)
     }
 

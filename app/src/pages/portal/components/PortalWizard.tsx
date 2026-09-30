@@ -6,13 +6,12 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
-import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
 import {
   applyFilenamePreFillToFormModel,
@@ -29,6 +28,7 @@ import {
   isFieldRequired,
   mergeOcrFieldHints,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import cn from '@/utils/cn'
 import {
   formPanelSectionId,
@@ -1032,18 +1032,18 @@ const PortalWizard = ({
 
         {formPanels.length > 0 ? (
           <WorkflowFormRenderer
-            disableOwnScroll
             formModel={portalFormModel}
             hasAttemptedSubmit={attemptedSubmit}
             hiddenFieldIds={hiddenFileFieldIds}
             missingMandatoryFieldIds={missingMandatoryFieldIds}
             panels={formPanels}
-            preparePhase={
-              processing ? 'extracting' : staging ? 'uploading' : null
-            }
             preparingFieldId={preparingFieldId}
             repoFieldHints={repoFieldHints}
             repositoryId={source.repositoryId}
+            disableOwnScroll
+            preparePhase={
+              processing ? 'extracting' : staging ? 'uploading' : null
+            }
             getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
             onFieldChange={handleFieldChange}
             onOcrFieldList={applyOcrToAnswers}

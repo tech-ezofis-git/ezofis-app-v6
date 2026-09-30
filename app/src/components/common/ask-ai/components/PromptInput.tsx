@@ -37,7 +37,7 @@ const PromptInput = () => {
         className={`rounded border bg-surface-muted transition-colors focus-within:border-primary-9 ${isLoading ? 'pointer-events-none border-gray-3 opacity-50' : 'border-gray-4'}`}
       >
         {isLoading ? (
-          <div className='p-2 text-xs font-medium text-primary-9 animate-pulse'>
+          <div className='animate-pulse p-2 text-xs font-medium text-primary-9'>
             Generating form...
           </div>
         ) : null}

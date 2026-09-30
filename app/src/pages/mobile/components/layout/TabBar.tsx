@@ -1,23 +1,29 @@
 import type { ReactNode } from 'react'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 import { Icon } from '../primitives/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 export type TabBarItemId = 'home' | 'inbox' | 'folder' | 'ai' | 'menu'
 
 type TabBarItem = {
+  icon: 'House' | 'Inbox' | 'Folder' | 'Sparkles' | 'Menu'
   id: TabBarItemId
   label: string
-  icon: 'House' | 'Inbox' | 'Folder' | 'Sparkles' | 'Menu'
 }
 
 const TABS: TabBarItem[] = [
-  { id: 'home', label: 'Home', icon: 'House' },
-  { id: 'inbox', label: 'Inbox', icon: 'Inbox' },
-  { id: 'folder', label: 'Folder', icon: 'Folder' },
-  { id: 'ai', label: 'AI', icon: 'Sparkles' },
-  { id: 'menu', label: 'Menu', icon: 'Menu' },
+  { icon: 'House', id: 'home', label: 'Home' },
+  { icon: 'Inbox', id: 'inbox', label: 'Inbox' },
+  { icon: 'Folder', id: 'folder', label: 'Folder' },
+  { icon: 'Sparkles', id: 'ai', label: 'AI' },
+  { icon: 'Menu', id: 'menu', label: 'Menu' },
 ]
+
+type StackProps = {
+  children: ReactNode
+  className?: string
+  gap?: 'sm' | 'md' | 'lg'
+}
 
 type TabBarProps = {
   activeId: TabBarItemId
@@ -37,24 +43,24 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
             <li className='min-w-0 flex-1' key={tab.id}>
               <button
                 aria-current={active ? 'page' : undefined}
+                type='button'
                 className={cn(
                   'flex w-full flex-col items-center gap-0.5 px-0.5 py-1.5 text-11 font-medium transition-all active:scale-95',
                   active
                     ? 'text-[var(--gray-9)]'
                     : 'text-[var(--gray-9)] hover:text-[var(--gray-11)]',
                 )}
-                type='button'
                 onClick={() => onChange(tab.id)}
               >
                 {tab.id === 'ai' ? (
                   <AiBrandIcon className='size-4' variant='outline-purple' />
                 ) : (
                   <Icon
+                    name={tab.icon}
                     className={cn(
                       'size-4',
                       active ? 'text-[var(--primary-9)]' : undefined,
                     )}
-                    name={tab.icon}
                   />
                 )}
                 <span
@@ -72,12 +78,6 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
       </ul>
     </nav>
   )
-}
-
-type StackProps = {
-  children: ReactNode
-  className?: string
-  gap?: 'sm' | 'md' | 'lg'
 }
 
 const gapClass = {

@@ -8,8 +8,7 @@ const columnHelper = createColumnHelper<Row>()
 const renderCell = (column: Column, info: CellContext<Row, unknown>) => {
   const value = info.getValue()
   const isGroupRow =
-    info.row.original.rowType === 'group' ||
-    info.row.original.type === 'group'
+    info.row.original.rowType === 'group' || info.row.original.type === 'group'
 
   if (isGroupRow) return ''
 
@@ -115,10 +114,9 @@ export default function transformColumns(
       const isGroup =
         row.original.rowType === 'group' || row.original.type === 'group'
 
-      const checked =
-        isGroup
-          ? row.getIsSomeSelected() || row.getIsAllSubRowsSelected()
-          : row.getIsSelected()
+      const checked = isGroup
+        ? row.getIsSomeSelected() || row.getIsAllSubRowsSelected()
+        : row.getIsSelected()
       const indeterminate = isGroup ? row.getIsSomeSelected() : false
 
       return (

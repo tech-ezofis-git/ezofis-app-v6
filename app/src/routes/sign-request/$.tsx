@@ -7,6 +7,10 @@ type SignRequestSearch = {
 }
 
 export const Route = createFileRoute('/sign-request/$')({
+  component: RouteComponent,
+  staticData: {
+    pageTitle: 'Sign Request',
+  },
   validateSearch: (search: Record<string, unknown>): SignRequestSearch => ({
     email: typeof search.email === 'string' ? search.email : undefined,
     isnew:
@@ -14,10 +18,6 @@ export const Route = createFileRoute('/sign-request/$')({
         ? search.isnew
         : undefined,
   }),
-  component: RouteComponent,
-  staticData: {
-    pageTitle: 'Sign Request',
-  },
 })
 
 function RouteComponent() {
@@ -25,8 +25,7 @@ function RouteComponent() {
   const search = Route.useSearch()
   const email = String(search.email || '')
   const isNew =
-    search.isnew === true ||
-    String(search.isnew || '').toLowerCase() === 'true'
+    search.isnew === true || String(search.isnew || '').toLowerCase() === 'true'
 
   return (
     <SignRequestInvitePage

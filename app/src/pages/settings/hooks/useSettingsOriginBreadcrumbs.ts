@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import {
   clearOpenedFromSettings,
   createSettingsListBreadcrumbs,

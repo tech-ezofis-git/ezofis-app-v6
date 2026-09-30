@@ -59,24 +59,24 @@ export const isFilledValue = (val: unknown): boolean => {
 }
 
 export interface WorkflowValidationErrors {
-  name?: string
   folder?: string
   form?: string
+  name?: string
 }
 
 export interface WorkflowValidationResult {
-  isValid: boolean
-  firstError?: string
   errors: WorkflowValidationErrors
+  isValid: boolean
   failedSection?: 'general' | 'configuration'
+  firstError?: string
 }
 
 export const validateWorkflowSettings = (settings: {
-  workflowName?: string | null
-  initiateUsing?: string | null
   folder?: string | number | null
   form?: string | number | null
+  initiateUsing?: string | null
   status?: string | null
+  workflowName?: string | null
 }): WorkflowValidationResult => {
   const isDraft = String(settings.status || '').toLowerCase() === 'draft'
   if (isDraft) {

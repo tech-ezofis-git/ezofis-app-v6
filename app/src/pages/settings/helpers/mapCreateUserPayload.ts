@@ -1,6 +1,6 @@
 import type { CreateV6UserPayload, UpdateV6UserPayload } from '@/api/v6/user'
-import { getDialCodeFromCountryValue } from './countryDialCodes'
 import type { SettingsUser } from './userGroupMappers'
+import { getDialCodeFromCountryValue } from './countryDialCodes'
 
 export type DraftSettingsUser = SettingsUser & {
   password: string

@@ -1,6 +1,6 @@
 import Avatar from '@/components/base/Avatar'
-import authUserStore from '@/stores/authUserStore'
 import useProfileImage from '@/hooks/useProfileImage'
+import authUserStore from '@/stores/authUserStore'
 
 const User = () => {
   const session = authUserStore((state) => state.session)

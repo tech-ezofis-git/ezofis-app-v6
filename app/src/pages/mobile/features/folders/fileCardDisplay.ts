@@ -34,12 +34,14 @@ export const getMobileFileName = (file: FileItem) => {
     return String(direct)
   }
 
-  return pickFirst(file, [
-    'fileName',
-    'InvoiceNumber',
-    'Invoice No',
-    'DocumentName',
-  ]) || 'Untitled'
+  return (
+    pickFirst(file, [
+      'fileName',
+      'InvoiceNumber',
+      'Invoice No',
+      'DocumentName',
+    ]) || 'Untitled'
+  )
 }
 
 export const getMobileFileStatus = (file: FileItem) =>
@@ -62,14 +64,7 @@ export const getMobileFileDocType = (
 ) =>
   pickFirst(
     file,
-    [
-      'DocumentType',
-      'documentType',
-      'DocType',
-      'Type',
-      'type',
-      'Category',
-    ],
+    ['DocumentType', 'documentType', 'DocType', 'Type', 'type', 'Category'],
     context,
   ) || 'Document'
 
@@ -137,7 +132,11 @@ export const getMobileStatusTone = (
   if (s.includes('overdue') || s.includes('pending') || s.includes('action')) {
     return 'warning'
   }
-  if (s.includes('verifier') || s.includes('review') || s.includes('progress')) {
+  if (
+    s.includes('verifier') ||
+    s.includes('review') ||
+    s.includes('progress')
+  ) {
     return 'info'
   }
   return 'info'

@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
-import { useHistory, type HistoryRow } from '@/pages/requests/hooks/useHistory'
+import { type HistoryRow, useHistory } from '@/pages/requests/hooks/useHistory'
 import { formatDatetime } from '@/utils/dayjs'
 
 type PortalActivityProps = {
@@ -86,8 +86,8 @@ const PortalActivity = ({
     <ul className='relative flex flex-col gap-4'>
       {flows.length > 1 ? (
         <span
-          aria-hidden
           className='pointer-events-none absolute top-2 bottom-2 left-[3px] z-0 w-px bg-primary-6'
+          aria-hidden
         />
       ) : null}
       {flows.map((row, index) => {
@@ -98,12 +98,12 @@ const PortalActivity = ({
 
         return (
           <li
-            className='relative z-10 flex animate-in items-start gap-3 fade-in slide-in-from-left-4 duration-300'
+            className='animate-in fade-in slide-in-from-left-4 relative z-10 flex items-start gap-3 duration-300'
             key={`${row.activityId ?? index}-${index}`}
           >
             <span
-              aria-hidden
               className='mt-1.5 size-2 shrink-0 rounded-full bg-primary-9 ring-2 ring-surface'
+              aria-hidden
             />
             <div className='min-w-0 flex-1'>
               <div className='text-13 font-semibold text-gray-13'>

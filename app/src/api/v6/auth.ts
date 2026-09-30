@@ -244,7 +244,9 @@ export const getSession = async (options?: { force?: boolean }) => {
   // Hard redirect after login sets this so the next page load skips a duplicate fetch.
   if (!force) {
     try {
-      if (globalThis.sessionStorage?.getItem(USER_SESSION_REDIRECT_FLAG) === '1') {
+      if (
+        globalThis.sessionStorage?.getItem(USER_SESSION_REDIRECT_FLAG) === '1'
+      ) {
         globalThis.sessionStorage.removeItem(USER_SESSION_REDIRECT_FLAG)
         hasFetchedUserSession = true
         return {
@@ -307,7 +309,6 @@ export const getSession = async (options?: { force?: boolean }) => {
 
 /** Always re-fetch /userSession (e.g. after role permission changes). */
 export const refreshUserSession = () => getSession({ force: true })
-
 
 export const socialLogin = async (
   payload: {
@@ -493,18 +494,18 @@ export const emailValidate = async (
 export const authApiV6 = {
   emailValidate,
   login,
+  markUserSessionFetchedForRedirect,
+  refreshUserSession,
+  resetUserSessionFetchGate,
   sendMailOTP,
   shareSocialLogin,
   signUp,
   socialLogin,
   verifyMailOTP,
   getSession,
-  refreshUserSession,
   getSharePreview,
   getTenants,
   setSharePassword,
-  resetUserSessionFetchGate,
-  markUserSessionFetchedForRedirect,
 }
 
 export default authApiV6

@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -14,24 +14,19 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
-import AgentFlatTable, {
-  normalizeAgentTableRows,
-} from './AgentFlatTable'
+import type { AgentBlock } from './AgentSummaryBoxes'
 import {
   collectFormFields,
   collectFormTableFields,
 } from './AgentEditableTables'
+import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
+import { getFieldHeading, getFieldId } from './qualifierResultUtils'
 import QuoteLineItemsTable, {
   buildQuoteTotals,
   normalizeLineItemRows,
   type QuoteTotals,
   toMoney,
 } from './QuoteLineItemsTable'
-import type { AgentBlock } from './AgentSummaryBoxes'
-import {
-  getFieldHeading,
-  getFieldId,
-} from './qualifierResultUtils'
 import {
   buildQuoteViewModel,
   getQuoteTaxRate,
@@ -90,9 +85,9 @@ interface HoverEditProps {
   activeEditId: string | null
   canEdit: boolean
   children: ReactNode
-  className?: string
   editor: ReactNode
   fieldId: string
+  className?: string
   inline?: boolean
   label?: string
   onActivate: (id: string | null) => void
@@ -158,6 +153,7 @@ const HoverEditShell = ({
 
   return wrapLabel(
     <span
+      ref={rootRef}
       className={cn(
         'rounded px-0.5 transition-colors',
         isActive
@@ -167,7 +163,6 @@ const HoverEditShell = ({
           : 'group inline-flex max-w-full min-w-0 items-center gap-1',
         className,
       )}
-      ref={rootRef}
     >
       {isActive ? (
         editor
@@ -211,7 +206,7 @@ const InlineCaretInput = ({
 
   return (
     <input
-      className='m-0 max-w-full min-w-[1.5rem] border-0 bg-transparent p-0 text-left text-sm leading-5 font-normal text-gray-12 outline-none [field-sizing:content]'
+      className='m-0 [field-sizing:content] max-w-full min-w-[1.5rem] border-0 bg-transparent p-0 text-left text-sm leading-5 font-normal text-gray-12 outline-none'
       ref={inputRef}
       value={value}
       onChange={(event) => onChange(event.target.value)}
@@ -284,8 +279,8 @@ const ScalarEditor = ({
       <InputSelect
         className={inputClass}
         options={options}
-        searchable
         value={selected}
+        searchable
         onChange={(opt) => onChange(opt ? String(opt.id) : '')}
       />
     )
@@ -293,30 +288,30 @@ const ScalarEditor = ({
   if (type === 'LONG_TEXT') {
     return (
       <InputTextarea
-        autosize
         className={inputClass}
         maxRows={compact ? 4 : 8}
         minRows={compact ? 1 : 2}
         value={value != null ? String(value) : ''}
+        autosize
         onChange={(v) => onChange(v)}
       />
     )
   }
   return (
     <InputText
-      autoFocus
       className={inputClass}
       value={value != null ? String(value) : ''}
+      autoFocus
       onChange={(v) => onChange(v)}
     />
   )
 }
 
 interface Props {
+  result: Record<string, any>
   agentBlock?: AgentBlock | null
   formModel?: Record<string, any>
   readOnly?: boolean
-  result: Record<string, any>
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
 }
@@ -338,10 +333,7 @@ const resolveTableValue = (
   return agentRows
 }
 
-const resolveStoredProduct = (
-  row: Record<string, any>,
-  columns: any[],
-) => {
+const resolveStoredProduct = (row: Record<string, any>, columns: any[]) => {
   const productCol = (columns || []).find((col) => {
     const name = String(col?.name || col?.label || '')
       .trim()
@@ -429,7 +421,9 @@ const QuoteAgentResultView = ({
           )
           const rawFormDescription = String(
             row.Description ??
-              (descriptionColumn?.id != null ? row[descriptionColumn.id] : '') ??
+              (descriptionColumn?.id != null
+                ? row[descriptionColumn.id]
+                : '') ??
               '',
           ).trim()
           const agentDescription = String(
@@ -473,20 +467,20 @@ const QuoteAgentResultView = ({
             String(agentQty).trim() !== '' &&
             formQtyUnusable
               ? agentQty
-              : formQty ?? agentQty
+              : (formQty ?? agentQty)
 
           return {
             ...row,
-            Note: note,
-            Description: description,
-            Qty: qty,
+            '_approved': row._approved ?? agent._approved,
+            '_hideNote': row._hideNote ?? agent._hideNote,
+            'Category': row.Category || agent.Category || '',
+            'Description': description,
             'Needs Engineering Review':
               row['Needs Engineering Review'] ??
               agent['Needs Engineering Review'] ??
               false,
-            Category: row.Category || agent.Category || '',
-            _approved: row._approved ?? agent._approved,
-            _hideNote: row._hideNote ?? agent._hideNote,
+            'Note': note,
+            'Qty': qty,
           }
         })
         return normalizeLineItemRows(merged, columns)
@@ -592,7 +586,11 @@ const QuoteAgentResultView = ({
       if (entry.kind === 'tax') value = totals.hst
       if (entry.kind === 'total') value = totals.total
       if (value == null) return
-      const current = resolveDisplayValue(entry.field, entry.value, entry.resultKey)
+      const current = resolveDisplayValue(
+        entry.field,
+        entry.value,
+        entry.resultKey,
+      )
       if (Number(current) === value) return
       writeField(entry.field, value, entry.resultKey)
     })
@@ -653,23 +651,21 @@ const QuoteAgentResultView = ({
 
   const renderScalarHover = (
     entry: QuoteScalarEntry,
-    options?: { compact?: boolean; inline?: boolean; className?: string },
+    options?: { className?: string; compact?: boolean; inline?: boolean },
   ) => {
     const { canEdit, display, raw } = resolveScalarEntry(entry)
-    const fieldId = entry.field
-      ? getFieldId(entry.field)
-      : entry.resultKey
+    const fieldId = entry.field ? getFieldId(entry.field) : entry.resultKey
 
     return (
       <HoverEditShell
         activeEditId={activeEditId}
         canEdit={canEdit}
         className={options?.className}
+        editor={renderScalarEditor(entry, raw, options?.compact)}
         fieldId={fieldId}
         inline={options?.inline}
         label={controlLabel(entry.field, entry.label)}
         onActivate={setActiveEditId}
-        editor={renderScalarEditor(entry, raw, options?.compact)}
       >
         {options?.compact ? (
           <span>{display}</span>
@@ -722,11 +718,11 @@ const QuoteAgentResultView = ({
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
           className='max-w-full justify-start text-left'
-          fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
-          inline
-          label={label}
-          onActivate={setActiveEditId}
           editor={renderScalarEditor(entry, resolved.raw, true)}
+          fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
+          label={label}
+          inline
+          onActivate={setActiveEditId}
         >
           <span>{resolved.display || 'NA'}</span>
         </HoverEditShell>
@@ -742,34 +738,33 @@ const QuoteAgentResultView = ({
         </div>
 
         <div className='shrink-0 text-left text-sm leading-5 font-normal text-gray-12'>
-          <span className='font-bold'>{grandTotalLabel}: </span>
-          ${toMoney(computedTotals.total)}
+          <span className='font-bold'>{grandTotalLabel}: </span>$
+          {toMoney(computedTotals.total)}
         </div>
       </div>
 
-      {viewModel.lineItemTable &&
-        (lineItems.length > 0 || !readOnly) && (
-          <QuoteLineItemsTable
-            freight={freight}
-            items={lineItems}
-            readOnly={readOnly}
-            taxRate={taxRate}
-            title={viewModel.lineItemTable.label}
-            workflow={workflow}
-            onFieldChange={onFieldChange}
-            onTotalsChange={(totals) => {
-              setComputedTotals((prev) =>
-                prev.subtotal === totals.subtotal &&
-                prev.freight === totals.freight &&
-                prev.hst === totals.hst &&
-                prev.total === totals.total
-                  ? prev
-                  : totals,
-              )
-              persistTotals(totals)
-            }}
-          />
-        )}
+      {viewModel.lineItemTable && (lineItems.length > 0 || !readOnly) && (
+        <QuoteLineItemsTable
+          freight={freight}
+          items={lineItems}
+          readOnly={readOnly}
+          taxRate={taxRate}
+          title={viewModel.lineItemTable.label}
+          workflow={workflow}
+          onFieldChange={onFieldChange}
+          onTotalsChange={(totals) => {
+            setComputedTotals((prev) =>
+              prev.subtotal === totals.subtotal &&
+              prev.freight === totals.freight &&
+              prev.hst === totals.hst &&
+              prev.total === totals.total
+                ? prev
+                : totals,
+            )
+            persistTotals(totals)
+          }}
+        />
+      )}
 
       {breakdownTotals.length > 0 && (
         <div className='flex justify-end border-t border-gray-3 pt-4'>
@@ -814,7 +809,10 @@ const QuoteAgentResultView = ({
         if (!items.length) return null
 
         return (
-          <div className='flex flex-col gap-2 border-t border-gray-3 pt-2' key={entry.resultKey}>
+          <div
+            className='flex flex-col gap-2 border-t border-gray-3 pt-2'
+            key={entry.resultKey}
+          >
             <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
               <Icon className='h-4 w-4 text-orange-9' icon='tabler:bulb' />
               {entry.label}
@@ -846,11 +844,11 @@ const QuoteAgentResultView = ({
             icon='tabler:table'
             key={table.resultKey}
             readOnly={!editable}
+            title={table.label}
             rows={normalizeAgentTableRows(
               rows,
               field.settings?.specific?.tableColumns || [],
             )}
-            title={table.label}
             onChange={(nextRows) => writeTable(field, nextRows)}
           />
         )

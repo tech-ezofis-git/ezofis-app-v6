@@ -929,7 +929,7 @@ export default function DashboardAiBuilder({
             <div className='mb-3 flex items-center justify-between gap-3'>
               <div className='flex min-w-0 items-center gap-2'>
                 <AiBrandIcon className='size-4 shrink-0' />
-                <h2 className='text-15 truncate font-semibold text-text-primary'>
+                <h2 className='truncate text-15 font-semibold text-text-primary'>
                   {repositoryName}
                 </h2>
               </div>
@@ -1096,10 +1096,10 @@ export default function DashboardAiBuilder({
               onClick={() => setActiveStep(1)}
             />
             <Button
+              disabled={!schemaResult || isGeneratingSchema || isGeneratingHtml}
               label={t`Generate Dashboard Design`}
               size='md'
               suffixIcon='lucide:arrow-right'
-              disabled={!schemaResult || isGeneratingSchema || isGeneratingHtml}
               onClick={() => setActiveStep(3)}
             />
           </div>
@@ -1160,7 +1160,10 @@ export default function DashboardAiBuilder({
               </h4>
             </div>
           ) : dashboardHtml ? (
-            <DashboardHtmlPreview html={dashboardHtml} title={t`Dashboard preview`} />
+            <DashboardHtmlPreview
+              html={dashboardHtml}
+              title={t`Dashboard preview`}
+            />
           ) : (
             <>
               {/* Edit Mode Contextual Banner */}

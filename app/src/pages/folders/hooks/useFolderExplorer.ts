@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import authUserStore from '@/stores/authUserStore'
 import { listStagedFiles } from '@/api/v6/uploadAndIndex'
+import useEmbedMode from '@/hooks/useEmbedMode'
+import authUserStore from '@/stores/authUserStore'
 import type { BreadcrumbItem } from '../components/Breadcrumbs'
 import type {
   AppView,
@@ -20,28 +21,7 @@ import {
   getFolderContextFilters,
   type RepositoryItemFilterField,
 } from '../api/folderApi'
-import {
-  DEFAULT_FOLDER_PAGE_SIZE,
-  DEFAULT_PAGE_SIZE,
-  buildFilterOptionsCacheFromData,
-  findNodeById,
-  findPathToNode,
-  FOLDER_SEARCH_DEBOUNCE_MS,
-  mergeFolderFilterOptionsCache,
-  type FolderPageMeta,
-  getChildIds,
-  getFileId,
-  getFolderPageMeta,
-  getRepositoryIdFromFolder,
-  getRepositoryRootNodeId,
-  mergeFilesById,
-  mergeFoldersById,
-  syncTreeChildren,
-  updateTreeNode,
-} from '../utils/folderExplorerUtils'
 import { matchesSearchText } from '../components/FolderFilterBar'
-import useEmbedMode from '@/hooks/useEmbedMode'
-import { resolveShareContext } from '../utils/shareContextStorage'
 import { setFolderExplorerSearchSnapshot } from '../stores/folderExplorerSearchCache'
 import {
   clearAskAiFolderExplorerQuery,
@@ -52,6 +32,26 @@ import {
   readFolderExplorerStoredState,
   writeFolderExplorerStoredState,
 } from '../utils/folderExplorerSession'
+import {
+  buildFilterOptionsCacheFromData,
+  DEFAULT_FOLDER_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  findNodeById,
+  findPathToNode,
+  FOLDER_SEARCH_DEBOUNCE_MS,
+  type FolderPageMeta,
+  getChildIds,
+  getFileId,
+  getFolderPageMeta,
+  getRepositoryIdFromFolder,
+  getRepositoryRootNodeId,
+  mergeFilesById,
+  mergeFolderFilterOptionsCache,
+  mergeFoldersById,
+  syncTreeChildren,
+  updateTreeNode,
+} from '../utils/folderExplorerUtils'
+import { resolveShareContext } from '../utils/shareContextStorage'
 
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
@@ -79,9 +79,11 @@ export function useFolderExplorer() {
 
     return stored
   }, [])
-  
+
   const [tree, setTree] = useState<TreeNode[]>([])
-  const [activeFolder, setActiveFolder] = useState(storedState?.activeFolder ?? '')
+  const [activeFolder, setActiveFolder] = useState(
+    storedState?.activeFolder ?? '',
+  )
   const [selectedRepository, setSelectedRepository] =
     useState<RepositoryDetail | null>(null)
   const [viewMode, setViewModeState] = useState<ExplorerView>(
@@ -106,23 +108,35 @@ export function useFolderExplorer() {
   >([])
   const [filePage, setFilePage] = useState<RepositoryFilePage | undefined>()
   const [folderPage, setFolderPage] = useState<FolderPageMeta | undefined>()
-  const [selectedFile, setSelectedFile] = useState(storedState?.selectedFile ?? '')
-  const [expandedIds, setExpandedIds] = useState<string[]>(storedState?.expandedIds ?? [])
+  const [selectedFile, setSelectedFile] = useState(
+    storedState?.selectedFile ?? '',
+  )
+  const [expandedIds, setExpandedIds] = useState<string[]>(
+    storedState?.expandedIds ?? [],
+  )
   const [loading, setLoading] = useState(false)
   const [loadingPage, setLoadingPage] = useState(false)
   const [loadingFolders, setLoadingFolders] = useState(false)
   const [treeLoadingId, setTreeLoadingId] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(
+    storedState?.pageSize ?? DEFAULT_PAGE_SIZE,
+  )
   const [folderSearch, setFolderSearchState] = useState(
     storedState?.folderSearch ?? '',
   )
-  const [fileSearch, setFileSearchState] = useState(storedState?.fileSearch ?? '')
+  const [fileSearch, setFileSearchState] = useState(
+    storedState?.fileSearch ?? '',
+  )
   const [fileFilters, setFileFiltersState] = useState<Record<string, string>>(
-    (embedMode.isEmbed ? embedMode.filters : undefined) || storedState?.fileFilters || {},
+    (embedMode.isEmbed ? embedMode.filters : undefined) ||
+      storedState?.fileFilters ||
+      {},
   )
 
-  const [folderFilters, setFolderFiltersState] = useState<Record<string, string>>(storedState?.folderFilters || {})
+  const [folderFilters, setFolderFiltersState] = useState<
+    Record<string, string>
+  >(storedState?.folderFilters || {})
   const [folderFilterOptionSource, setFolderFilterOptionSource] = useState<
     FolderItem[]
   >([])
@@ -145,15 +159,13 @@ export function useFolderExplorer() {
   const folderSearchRef = useRef(folderSearch)
   const fileSearchRef = useRef(fileSearch)
   const skipFilterReloadRef = useRef(false)
-  const lastExecutedSearchRef = useRef({ folderSearch: '', fileSearch: '' })
+  const lastExecutedSearchRef = useRef({ fileSearch: '', folderSearch: '' })
   const deferFilterApiRef = useRef(false)
   const deferFilterSnapshotRef = useRef('')
   const treeRef = useRef(tree)
   const lastDeepFolderRef = useRef<string | null>(null)
   /** Ask AI filters should not survive leaving /folders via the side menu. */
-  const filtersEphemeralRef = useRef(
-    storedState?.filterSource === 'ask-ai',
-  )
+  const filtersEphemeralRef = useRef(storedState?.filterSource === 'ask-ai')
   const filterSourceRef = useRef<'ask-ai' | 'manual' | null>(
     storedState?.filterSource === 'ask-ai'
       ? 'ask-ai'
@@ -266,9 +278,7 @@ export function useFolderExplorer() {
     if (hasActiveFolderBrowseQuery(nextFolderFilters, nextFolderSearch)) return
 
     setFolderFilterOptionSource((previous) =>
-      append
-        ? mergeFoldersById(previous, incomingFolders)
-        : incomingFolders,
+      append ? mergeFoldersById(previous, incomingFolders) : incomingFolders,
     )
   }
 
@@ -279,15 +289,15 @@ export function useFolderExplorer() {
         JSON.stringify({
           activeFolder,
           appView: appView === 'details' ? 'details' : 'explorer',
+          expandedIds,
+          fileFilters,
+          fileSearch,
+          filterSource: filterSourceRef.current,
+          folderFilters,
+          folderSearch,
+          pageSize,
           selectedFile,
           viewMode,
-          expandedIds,
-          folderSearch,
-          fileSearch,
-          folderFilters,
-          fileFilters,
-          filterSource: filterSourceRef.current,
-          pageSize,
         }),
       )
     } catch {
@@ -405,35 +415,35 @@ export function useFolderExplorer() {
   const loadFolderContent = async ({
     appendFolders = false,
     cursor = null,
+    fileFilters,
+    fileSearch,
+    folderFilters,
     folderId,
     folderPageOnly = false,
-    folderFilters,
-    fileFilters,
+    folderSearch,
     includeFiles,
+    isPoll = false,
     listAllFiles,
     page = 1,
     pageOnly = false,
     pageSizeValue = pageSize,
-    folderSearch,
-    fileSearch,
     syncTree = true,
-    isPoll = false,
   }: {
     appendFolders?: boolean
     cursor?: string | null
+    fileFilters?: Record<string, string>
+    fileSearch?: string
+    folderFilters?: Record<string, string>
     folderId: string
     folderPageOnly?: boolean
-    folderFilters?: Record<string, string>
-    fileFilters?: Record<string, string>
+    folderSearch?: string
     includeFiles?: boolean
+    isPoll?: boolean
     listAllFiles?: boolean
     page?: number
     pageOnly?: boolean
     pageSizeValue?: number
-    folderSearch?: string
-    fileSearch?: string
     syncTree?: boolean
-    isPoll?: boolean
   }) => {
     const requestId = ++requestSeqRef.current
 
@@ -442,10 +452,7 @@ export function useFolderExplorer() {
         ? folderSearch
         : folderSearchRef.current
       ).trim() ||
-        (fileSearch !== undefined
-          ? fileSearch
-          : fileSearchRef.current
-        ).trim(),
+      (fileSearch !== undefined ? fileSearch : fileSearchRef.current).trim(),
     )
 
     if (isPoll) {
@@ -464,20 +471,20 @@ export function useFolderExplorer() {
       const [response, stagedRes] = await Promise.all([
         folderApi.getFolderContent(folderId, {
           cursor,
-          folderFilters: folderFilters ?? folderFiltersRef.current,
           fileFilters: fileFilters ?? fileFiltersRef.current,
-          includeFiles,
-          listAllFiles: listAllFiles ?? viewMode === 'list',
-          page,
-          pageSize: pageSizeValue,
-          folderSearch:
-            folderSearch !== undefined
-              ? folderSearch
-              : folderSearchRef.current.trim() || undefined,
           fileSearch:
             fileSearch !== undefined
               ? fileSearch
               : fileSearchRef.current.trim() || undefined,
+          folderFilters: folderFilters ?? folderFiltersRef.current,
+          folderSearch:
+            folderSearch !== undefined
+              ? folderSearch
+              : folderSearchRef.current.trim() || undefined,
+          includeFiles,
+          listAllFiles: listAllFiles ?? viewMode === 'list',
+          page,
+          pageSize: pageSizeValue,
         }),
         resolvedRepoId && !folderPageOnly && page === 1
           ? listStagedFiles({
@@ -491,77 +498,86 @@ export function useFolderExplorer() {
 
       if (requestId !== requestSeqRef.current) return response
 
-      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map((summary: any) => {
-        let fieldsObj: Record<string, any> = {}
-        let rawFields = summary.fields ?? summary.Fields ?? summary.metadata ?? summary.Metadata
-        if (typeof rawFields === 'string') {
-          try {
-            rawFields = JSON.parse(rawFields)
-          } catch {}
-        }
+      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map(
+        (summary: any) => {
+          let fieldsObj: Record<string, any> = {}
+          let rawFields =
+            summary.fields ??
+            summary.Fields ??
+            summary.metadata ??
+            summary.Metadata
+          if (typeof rawFields === 'string') {
+            try {
+              rawFields = JSON.parse(rawFields)
+            } catch {}
+          }
 
-        if (Array.isArray(rawFields)) {
-          rawFields.forEach((item: any) => {
-            if (!item || typeof item !== 'object') return
-            const key =
-              item.key ??
-              item.Key ??
-              item.name ??
-              item.Name ??
-              item.fieldId ??
-              item.FieldId ??
-              item.label ??
-              item.Label ??
-              item.fieldName ??
-              item.FieldName ??
-              item.sqlColumnName
-            const val =
-              item.value ??
-              item.Value ??
-              item.fieldValue ??
-              item.FieldValue ??
-              item.val
-            if (key !== undefined && key !== null) {
-              fieldsObj[String(key)] = val
-            }
-          })
-        } else if (rawFields && typeof rawFields === 'object') {
-          fieldsObj = { ...rawFields }
-        }
+          if (Array.isArray(rawFields)) {
+            rawFields.forEach((item: any) => {
+              if (!item || typeof item !== 'object') return
+              const key =
+                item.key ??
+                item.Key ??
+                item.name ??
+                item.Name ??
+                item.fieldId ??
+                item.FieldId ??
+                item.label ??
+                item.Label ??
+                item.fieldName ??
+                item.FieldName ??
+                item.sqlColumnName
+              const val =
+                item.value ??
+                item.Value ??
+                item.fieldValue ??
+                item.FieldValue ??
+                item.val
+              if (key !== undefined && key !== null) {
+                fieldsObj[String(key)] = val
+              }
+            })
+          } else if (rawFields && typeof rawFields === 'object') {
+            fieldsObj = { ...rawFields }
+          }
 
-        const rawStatus = String(summary.status || '')
-        const isArchived = rawStatus === 'ARCHIVED'
+          const rawStatus = String(summary.status || '')
+          const isArchived = rawStatus === 'ARCHIVED'
 
-        return {
-          ...summary,
-          rawStatus,
-          fields: summary.fields ?? fieldsObj,
-          metadata: summary.metadata ?? fieldsObj,
-          ...fieldsObj,
-          id: `staged-${summary.id}`,
-          repositoryId: summary.repositoryId || String(resolvedRepoId || ''),
-          stageFileId: summary.id,
-          isStaged: true,
-          isArchived,
-          name:
-            summary.name ||
-            fieldsObj.name ||
-            fieldsObj.fileName ||
-            summary.fileName ||
-            summary.fileNameOnly ||
-            'Untitled',
-          status: isArchived
-            ? 'Archived'
-            : rawStatus.toUpperCase() === 'OCR'
-              ? 'Indexed'
-              : summary.status,
-          type: (summary.name || summary.fileName || fieldsObj.fileName || '').split('.').pop() || 'file',
-          size: summary.size,
-          date: summary.createdAt || summary.createdDate,
-          createdAt: summary.createdAt || summary.createdDate,
-          modified: summary.createdAt || summary.createdDate,
-        }
-      })
+          return {
+            ...summary,
+            fields: summary.fields ?? fieldsObj,
+            metadata: summary.metadata ?? fieldsObj,
+            rawStatus,
+            ...fieldsObj,
+            createdAt: summary.createdAt || summary.createdDate,
+            date: summary.createdAt || summary.createdDate,
+            id: `staged-${summary.id}`,
+            isArchived,
+            isStaged: true,
+            modified: summary.createdAt || summary.createdDate,
+            name:
+              summary.name ||
+              fieldsObj.name ||
+              fieldsObj.fileName ||
+              summary.fileName ||
+              summary.fileNameOnly ||
+              'Untitled',
+            repositoryId: summary.repositoryId || String(resolvedRepoId || ''),
+            size: summary.size,
+            stageFileId: summary.id,
+            status: isArchived
+              ? 'Archived'
+              : rawStatus.toUpperCase() === 'OCR'
+                ? 'Indexed'
+                : summary.status,
+            type:
+              (summary.name || summary.fileName || fieldsObj.fileName || '')
+                .split('.')
+                .pop() || 'file',
+          }
+        },
+      )
 
       if (stagedPollTimerRef.current) {
         clearTimeout(stagedPollTimerRef.current)
@@ -618,9 +634,7 @@ export function useFolderExplorer() {
         append: appendFolders,
         folderFilters: folderFilters ?? folderFiltersRef.current,
         folderSearch:
-          folderSearch !== undefined
-            ? folderSearch
-            : folderSearchRef.current,
+          folderSearch !== undefined ? folderSearch : folderSearchRef.current,
       })
       syncFilterOptionsCache({
         columns: response.fileColumns || [],
@@ -862,7 +876,7 @@ export function useFolderExplorer() {
 
   useEffect(() => {
     if (!activeFolder) return
-    
+
     const isInitialMount = isInitialMountRef.current
     if (isInitialMount) {
       isInitialMountRef.current = false
@@ -922,26 +936,26 @@ export function useFolderExplorer() {
     cursorByFolderRef.current[activeFolder] = { 1: null }
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
-    
+
     if (filtersStateUpdated) {
       skipFilterReloadRef.current = true
     }
-    
+
     lastExecutedSearchRef.current = {
-      folderSearch: nextFolderSearch,
       fileSearch: nextFileSearch,
+      folderSearch: nextFolderSearch,
     }
 
     loadSelectedRepository(activeFolder)
     loadFolderContent({
-      folderId: activeFolder,
-      folderFilters: nextFolderFilters,
       fileFilters: nextFileFilters,
+      fileSearch: nextFileSearch,
+      folderFilters: nextFolderFilters,
+      folderId: activeFolder,
+      folderSearch: nextFolderSearch,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: nextFolderSearch,
-      fileSearch: nextFileSearch,
       syncTree: viewMode === 'grid',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -966,20 +980,20 @@ export function useFolderExplorer() {
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
       lastExecutedSearchRef.current = {
-        folderSearch: trimmedFolder,
         fileSearch: trimmedFile,
+        folderSearch: trimmedFolder,
       }
 
       try {
         await loadFolderContent({
-          folderId: activeFolder,
-          folderFilters: folderFiltersRef.current,
           fileFilters: fileFiltersRef.current,
+          fileSearch: trimmedFile,
+          folderFilters: folderFiltersRef.current,
+          folderId: activeFolder,
+          folderSearch: trimmedFolder,
           listAllFiles: viewMode === 'list',
           page: 1,
           pageSizeValue: pageSizeRef.current,
-          folderSearch: trimmedFolder,
-          fileSearch: trimmedFile,
           syncTree: viewMode === 'grid',
         })
       } catch {
@@ -1007,14 +1021,14 @@ export function useFolderExplorer() {
     lastRequestedFolderPageRef.current[activeFolder] = 1
 
     loadFolderContent({
-      folderId: activeFolder,
-      folderFilters,
       fileFilters,
+      fileSearch: fileSearchRef.current.trim(),
+      folderFilters,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim(),
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: folderSearchRef.current.trim(),
-      fileSearch: fileSearchRef.current.trim(),
       syncTree: viewMode === 'grid',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1042,14 +1056,14 @@ export function useFolderExplorer() {
       lastRequestedFolderPageRef.current[activeFolder] = 1
 
       loadFolderContent({
-        folderId: activeFolder,
-        folderFilters: folderFiltersRef.current,
         fileFilters: fileFiltersRef.current,
+        fileSearch: fileSearchRef.current.trim(),
+        folderFilters: folderFiltersRef.current,
+        folderId: activeFolder,
+        folderSearch: folderSearchRef.current.trim(),
         listAllFiles: viewMode === 'list',
         page: 1,
         pageSizeValue: pageSizeRef.current,
-        folderSearch: folderSearchRef.current.trim(),
-        fileSearch: fileSearchRef.current.trim(),
         syncTree: viewMode === 'grid',
       }).catch(() => undefined)
     })
@@ -1148,9 +1162,9 @@ export function useFolderExplorer() {
     try {
       const response = await folderApi.getFolderChildren(activeFolder, {
         folderFilters: folderFiltersRef.current,
+        folderSearch: folderSearch.trim(),
         page: nextPage,
         pageSize: effectivePageSize,
-        folderSearch: folderSearch.trim(),
       })
 
       const incomingFolders = response?.folders || []
@@ -1201,15 +1215,15 @@ export function useFolderExplorer() {
 
     await loadFolderContent({
       cursor: cursor ?? cachedCursor ?? null,
-      folderId: activeFolder,
-      folderFilters: folderFiltersRef.current,
       fileFilters: fileFiltersRef.current,
+      fileSearch: fileSearchRef.current.trim() || undefined,
+      folderFilters: folderFiltersRef.current,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim() || undefined,
       listAllFiles: viewMode === 'list',
       page: safePage,
       pageOnly: true,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: folderSearchRef.current.trim() || undefined,
-      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -1223,15 +1237,15 @@ export function useFolderExplorer() {
 
     void loadFolderContent({
       cursor: null,
-      folderId: activeFolder,
-      folderFilters: folderFiltersRef.current,
       fileFilters: fileFiltersRef.current,
+      fileSearch: fileSearchRef.current.trim() || undefined,
+      folderFilters: folderFiltersRef.current,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim() || undefined,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageOnly: true,
       pageSizeValue: nextPageSize,
-      folderSearch: folderSearchRef.current.trim() || undefined,
-      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -1247,7 +1261,10 @@ export function useFolderExplorer() {
       }
     } else if (nextView === 'grid') {
       if (lastDeepFolderRef.current) {
-        const rootNodeId = getRepositoryRootNodeId(lastDeepFolderRef.current, tree)
+        const rootNodeId = getRepositoryRootNodeId(
+          lastDeepFolderRef.current,
+          tree,
+        )
         if (rootNodeId === activeFolder) {
           cursorByFolderRef.current[lastDeepFolderRef.current] = { 1: null }
           selectFolder(lastDeepFolderRef.current)
@@ -1359,16 +1376,16 @@ export function useFolderExplorer() {
       await loadFolderContent({
         appendFolders: false,
         cursor: null,
+        fileFilters: fileFiltersRef.current,
+        fileSearch: fileSearchRef.current.trim() || undefined,
+        folderFilters: folderFiltersRef.current,
         folderId: activeFolder,
         folderPageOnly: false,
-        folderFilters: folderFiltersRef.current,
-        fileFilters: fileFiltersRef.current,
+        folderSearch: folderSearchRef.current.trim() || undefined,
         listAllFiles: viewMode === 'list',
         page: filePage?.page || 1,
         pageOnly: false,
         pageSizeValue: pageSizeRef.current,
-        folderSearch: folderSearchRef.current.trim() || undefined,
-        fileSearch: fileSearchRef.current.trim() || undefined,
         syncTree: viewMode === 'grid',
       })
     } catch {
@@ -1376,17 +1393,12 @@ export function useFolderExplorer() {
     } finally {
       setRefreshing(false)
     }
-  }, [
-    activeFolder,
-    refreshing,
-    filePage?.page,
-    viewMode,
-  ])
+  }, [activeFolder, refreshing, filePage?.page, viewMode])
   return {
     activeFolder,
     appView,
-    breadcrumbs,
     beginFilterDefer,
+    breadcrumbs,
     canGoBackInExplorer,
     changePageSize,
     changeServerPage,
@@ -1401,10 +1413,10 @@ export function useFolderExplorer() {
     filePage,
     files,
     fileSearch,
-    folderContextFilters,
-    folderFilters,
-    folderFilterOptionSource,
     filterOptionsCache,
+    folderContextFilters,
+    folderFilterOptionSource,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,
@@ -1421,11 +1433,11 @@ export function useFolderExplorer() {
     openFolder,
     pageSize,
     refreshData,
-    selectFolder,
     refreshing,
     repositoryNodes,
     selectedFile,
     selectedRepository,
+    selectFolder,
     toggleFolder,
     tree,
     treeLoadingId,

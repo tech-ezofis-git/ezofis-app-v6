@@ -1,17 +1,17 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
-import {
-  applyFilenamePreFill,
-  getMissingIndexingFields,
-  type RepositoryFieldSchema,
-} from '@/pages/requests/utils/repoFolderMetadata'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import folderApi from '@/pages/folders/api/folderApi'
 import { getFileExtension } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import {
+  applyFilenamePreFill,
+  getMissingIndexingFields,
+  type RepositoryFieldSchema,
+} from '@/pages/requests/utils/repoFolderMetadata'
 import type { DetailCard } from './DocumentFieldCards'
 import DocumentFieldCards from './DocumentFieldCards'
 import IndexingFieldsForm from './IndexingFieldsForm'
@@ -212,7 +212,9 @@ const AttachmentSplitView = ({
         </div>
 
         <aside className='flex w-[400px] shrink-0 flex-col overflow-hidden'>
-          <div className='min-h-0 flex-1 overflow-y-auto pr-0.5'>{infoPane}</div>
+          <div className='min-h-0 flex-1 overflow-y-auto pr-0.5'>
+            {infoPane}
+          </div>
 
           {isPendingUpload && (
             <div className='mt-3 flex shrink-0 items-center justify-end gap-2 border-t border-gray-3 pt-3'>

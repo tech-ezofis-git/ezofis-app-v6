@@ -1,7 +1,6 @@
-import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
-import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
+import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
 import apiRouter from '@/api/apiRouter'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -15,6 +14,7 @@ import ThemeSwitcher from '@/layouts/auth/components/ThemeSwitcher'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import SignInForm from '@/pages/sign-in/components/SignInForm'
 import cn from '@/utils/cn'
+import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 import { entryFieldValue, searchPortalEntries } from '../helpers/portalEntries'
 import { userIdFromIdentity } from '../helpers/portalWorkflowAccess'
 import PortalBrandMark from './PortalBrandMark'
@@ -75,7 +75,8 @@ export default function PortalLogin({
 
   const brandName = portal.branding?.brandName?.trim() || 'EZOFIS'
   const welcome =
-    portal.displayValues?.trim() || t`Welcome to ${portal.name || 'EZOFIS Portal'}`
+    portal.displayValues?.trim() ||
+    t`Welcome to ${portal.name || 'EZOFIS Portal'}`
 
   const identifierLabel = isMaster ? t`Username` : t`Email`
   const identifierPlaceholder = isMaster
@@ -95,7 +96,10 @@ export default function PortalLogin({
     return (
       <div className='relative min-h-svh bg-surface p-6'>
         <header className='flex items-center justify-between'>
-          <PortalBrandMark branding={portal.branding} fallbackName={brandName} />
+          <PortalBrandMark
+            branding={portal.branding}
+            fallbackName={brandName}
+          />
           <ThemeSwitcher />
         </header>
 
@@ -144,7 +148,9 @@ export default function PortalLogin({
     const formId = String(auth.formId || '')
     const usernameField = auth.usernameField[0]
     if (!formId || formId === '0' || !usernameField) {
-      throw new Error(t`This portal is missing a master form or username field.`)
+      throw new Error(
+        t`This portal is missing a master form or username field.`,
+      )
     }
 
     const result = await searchPortalEntries({
@@ -293,15 +299,15 @@ export default function PortalLogin({
 
           <Title
             className='text-center'
+            descriptionClassName='text-center'
+            level={1}
+            title={step === 'otp' ? t`Verify OTP` : welcome}
+            titleClassName='text-center'
             description={
               step === 'otp'
                 ? t`Code sent to ${identifier}`
                 : t`Log in to submit and track your requests`
             }
-            descriptionClassName='text-center'
-            level={1}
-            title={step === 'otp' ? t`Verify OTP` : welcome}
-            titleClassName='text-center'
           />
 
           {error ? (
@@ -319,11 +325,11 @@ export default function PortalLogin({
                 <div className='mt-4 space-y-4'>
                   <InputText
                     autoComplete='username'
-                    autoFocus
                     label={identifierLabel}
                     placeholder={identifierPlaceholder}
                     type='text'
                     value={identifier}
+                    autoFocus
                     leftSection={
                       <Icon className='text-gray-8' name='tabler:mail' />
                     }
@@ -339,8 +345,8 @@ export default function PortalLogin({
                     <InputPassword
                       autoComplete='current-password'
                       label={t`Password`}
-                      showPlaceholder
                       value={password}
+                      showPlaceholder
                       leftSection={
                         <Icon className='text-gray-8' name='tabler:lock' />
                       }
@@ -402,14 +408,14 @@ export default function PortalLogin({
                 {t`Use a different ${identifierLabel.toLowerCase()}`}
               </button>
               <button
+                disabled={elapsed > 0}
+                type='button'
                 className={cn(
                   'mx-auto block text-13',
                   elapsed > 0
                     ? 'cursor-not-allowed text-gray-8'
                     : 'text-primary-11 underline hover:text-primary-12',
                 )}
-                disabled={elapsed > 0}
-                type='button'
                 onClick={() => void handleResend()}
               >
                 {resendLabel}

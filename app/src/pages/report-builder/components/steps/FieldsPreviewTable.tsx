@@ -82,7 +82,10 @@ const FieldsPreviewTable = ({
               </tr>
             ) : (
               liveRows.map((row, index) => (
-                <tr className='border-b border-gray-2 last:border-0' key={index}>
+                <tr
+                  className='border-b border-gray-2 last:border-0'
+                  key={index}
+                >
                   {columns.map((column) => (
                     <td
                       className='px-3 py-2 whitespace-nowrap text-gray-12'

@@ -3,19 +3,23 @@ import cn from '@/utils/cn'
 import { Icon } from '../primitives/Icon'
 
 type AppBarProps = {
-  title: string
-  subtitle?: ReactNode
-  onBack?: () => void
-  trailing?: ReactNode
   className?: string
+  subtitle?: ReactNode
+  title: string
+  trailing?: ReactNode
+  onBack?: () => void
+}
+
+type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  children: ReactNode
 }
 
 export function AppBar({
-  title,
-  subtitle,
-  onBack,
-  trailing,
   className,
+  subtitle,
+  title,
+  trailing,
+  onBack,
 }: AppBarProps) {
   return (
     <header
@@ -26,11 +30,7 @@ export function AppBar({
     >
       <div className='flex min-h-9 items-center gap-1.5'>
         {onBack ? (
-          <IconButton
-            aria-label='Go back'
-            className='-ml-1'
-            onClick={onBack}
-          >
+          <IconButton aria-label='Go back' className='-ml-1' onClick={onBack}>
             <Icon className='size-4' name='ChevronLeft' />
           </IconButton>
         ) : null}
@@ -52,10 +52,6 @@ export function AppBar({
   )
 }
 
-type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  children: ReactNode
-}
-
 export function IconButton({
   children,
   className,
@@ -64,11 +60,11 @@ export function IconButton({
 }: IconButtonProps) {
   return (
     <button
+      type={type}
       className={cn(
         'inline-flex size-9 items-center justify-center rounded-full text-text-secondary transition-all hover:bg-surface-hover active:scale-95',
         className,
       )}
-      type={type}
       {...rest}
     >
       {children}

@@ -75,10 +75,10 @@ const NotificationCard = ({
       <div className='min-w-0 flex-1'>
         <div className='flex items-start justify-between gap-2'>
           <p
-            className={`truncate text-13 font-semibold transition-all group-hover:whitespace-normal group-hover:overflow-visible group-hover:truncate-none ${
+            title={notification.title}
+            className={`group-hover:truncate-none truncate text-13 font-semibold transition-all group-hover:overflow-visible group-hover:whitespace-normal ${
               !notification.isRead ? 'text-gray-12' : 'text-gray-11'
             }`}
-            title={notification.title}
           >
             {notification.title}
           </p>

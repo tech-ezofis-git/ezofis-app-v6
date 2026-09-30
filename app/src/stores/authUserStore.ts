@@ -207,11 +207,14 @@ const authUserStore = create<Store>()((set) => {
 
     setSession: (session) => {
       const permissionKeys = session
-        ? Array.isArray(session.permissionKeys) && session.permissionKeys.length > 0
+        ? Array.isArray(session.permissionKeys) &&
+          session.permissionKeys.length > 0
           ? session.permissionKeys
-          : Array.isArray((session as any).permissions) && (session as any).permissions.length > 0
+          : Array.isArray((session as any).permissions) &&
+              (session as any).permissions.length > 0
             ? (session as any).permissions
-            : Array.isArray((session as any).menus) && (session as any).menus.length > 0
+            : Array.isArray((session as any).menus) &&
+                (session as any).menus.length > 0
               ? (session as any).menus
               : session?.permissionKeys || null
         : null
@@ -319,4 +322,3 @@ if (globalThis.window !== undefined) {
 }
 
 export default authUserStore
-

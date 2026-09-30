@@ -1,6 +1,8 @@
 import { Icon as Base } from '@iconify/react'
 import { forwardRef, type SVGProps } from 'react'
-import AiBrandIcon, { type AiBrandIconVariant } from '@/components/common/AiBrandIcon'
+import AiBrandIcon, {
+  type AiBrandIconVariant,
+} from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 
 interface Props extends SVGProps<SVGSVGElement> {

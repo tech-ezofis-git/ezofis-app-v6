@@ -29,9 +29,11 @@ export const getRequiredFieldErrorMessage = (labels: string[]) => {
     const label = labels[0]
     const lower = label.trim().toLowerCase()
     if (lower === 'role name') return staticT`Please enter a role name.`
-    if (lower === 'select users') return staticT`Please select at least one user.`
+    if (lower === 'select users')
+      return staticT`Please select at least one user.`
     if (lower === 'group name') return staticT`Please enter a group name.`
-    if (lower === 'group members') return staticT`Please select at least one group member.`
+    if (lower === 'group members')
+      return staticT`Please select at least one group member.`
     return staticT`Please enter ${label}.`
   }
 
@@ -52,7 +54,8 @@ export const getFieldRequiredError = (
   if (lower === 'role name') return staticT`Please enter a role name.`
   if (lower === 'select users') return staticT`Please select at least one user.`
   if (lower === 'group name') return staticT`Please enter a group name.`
-  if (lower === 'group members') return staticT`Please select at least one group member.`
+  if (lower === 'group members')
+    return staticT`Please select at least one group member.`
 
   return staticT`Please enter ${label}.`
 }

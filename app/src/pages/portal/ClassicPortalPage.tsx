@@ -120,7 +120,10 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
       .then((result) => {
         if (cancelled) return
         if (result.error || !result.data) {
-          setError(result.error || t`This portal link is invalid or has not been published yet.`)
+          setError(
+            result.error ||
+              t`This portal link is invalid or has not been published yet.`,
+          )
           return
         }
         setPortalName(result.data.name)
@@ -158,13 +161,13 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
       <ClassicPortalLogin
         auth={auth}
         logoUrl={logoUrl}
+        portalId={portalId}
+        portalName={portalName}
+        tenantId={tenantId}
         onAuthenticated={() => {
           setClassicRuntimeCookie()
           setActivePortalKey(portalKey)
         }}
-        portalId={portalId}
-        portalName={portalName}
-        tenantId={tenantId}
       />
     )
   }

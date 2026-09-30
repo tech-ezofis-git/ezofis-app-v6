@@ -21,10 +21,7 @@ export const parseUtcDate = (value: unknown): Date | null => {
   }
 
   // Bare ISO datetime from DB (UTC) without Z/offset.
-  if (
-    /^\d{4}-\d{2}-\d{2}T/.test(raw) &&
-    !/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)
-  ) {
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw) && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)) {
     raw = `${raw}Z`
   }
 

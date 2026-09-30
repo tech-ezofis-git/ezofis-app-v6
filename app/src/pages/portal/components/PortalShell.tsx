@@ -100,15 +100,12 @@ export default function PortalShell({
               )}
             >
               <div className='flex min-w-0 flex-1 items-center gap-3'>
-                <PortalBackButton
-                  label={t`Back`}
-                  onClick={wizard.onCancel}
-                />
+                <PortalBackButton label={t`Back`} onClick={wizard.onCancel} />
                 <h1 className='min-w-0 truncate text-15 font-semibold text-gray-13'>
                   {wizard.title}
                 </h1>
                 {wizard.stageLabel ? (
-                  <span className='inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-9 dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400'>
+                  <span className='dark:bg-purple-950/40 dark:text-purple-400 inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-9 dark:border-purple-9/30'>
                     <span className='size-1.5 rounded-full bg-purple-6' />
                     {wizard.stageLabel}
                   </span>

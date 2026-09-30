@@ -9,101 +9,6 @@ const missingMsgids = JSON.parse(
 )
 
 const translations = {
-  "{0} fields": {
-    "ar": "{0} حقول",
-    "fr": "{0} champs",
-    "ms": "{0} medan"
-  },
-  "{0} fields configured": {
-    "ar": "تم تكوين {0} حقول",
-    "fr": "{0} champs configurés",
-    "ms": "{0} medan dikonfigurasi"
-  },
-  "{0} fields ready": {
-    "ar": "{0} حقول جاهزة",
-    "fr": "{0} champs prêts",
-    "ms": "{0} medan sedia"
-  },
-  "{0} invites sent": {
-    "ar": "تم إرسال {0} دعوات",
-    "fr": "{0} invitations envoyées",
-    "ms": "{0} jemputan dihantar"
-  },
-  "{0} people": {
-    "ar": "{0} أشخاص",
-    "fr": "{0} personnes",
-    "ms": "{0} orang"
-  },
-  "{0} preview": {
-    "ar": "معاينة {0}",
-    "fr": "Aperçu {0}",
-    "ms": "Pratonton {0}"
-  },
-  "{0} selected. Click Connect {1} to link your account.": {
-    "ar": "تم تحديد {0}. انقر على اتصال {1} لربط حسابك.",
-    "fr": "{0} sélectionné. Cliquez sur Connecter {1} pour lier votre compte.",
-    "ms": "{0} dipilih. Klik Sambung {1} untuk pautkan akaun anda."
-  },
-  "{0} selected. How should documents be organized? Choose Recommend fields to generate a starter set.": {
-    "ar": "تم تحديد {0}. كيف يجب تنظيم المستندات؟ اختر «الحقول الموصى بها» لإنشاء مجموعة أولية.",
-    "fr": "{0} sélectionné. Comment organiser les documents ? Choisissez Recommander des champs pour générer un jeu de départ.",
-    "ms": "{0} dipilih. Bagaimana dokumen patut disusun? Pilih Syor medan untuk jana set permulaan."
-  },
-  "{0}, {1} and {2} others": {
-    "ar": "{0} و{1} و{2} آخرين",
-    "fr": "{0}, {1} et {2} autres",
-    "ms": "{0}, {1} dan {2} lagi"
-  },
-  "{enabledCount} of {0} permissions enabled": {
-    "ar": "{enabledCount} من {0} أذونات مفعّلة",
-    "fr": "{enabledCount} sur {0} autorisations activées",
-    "ms": "{enabledCount} daripada {0} kebenaran didayakan"
-  },
-  "{fieldName} is mandatory.": {
-    "ar": "{fieldName} إلزامي.",
-    "fr": "{fieldName} est obligatoire.",
-    "ms": "{fieldName} adalah wajib."
-  },
-  "{fileType} Viewer": {
-    "ar": "عارض {fileType}",
-    "fr": "Visionneuse {fileType}",
-    "ms": "Pemapar {fileType}"
-  },
-  "{mappedCount}/{0} fields mapped": {
-    "ar": "{mappedCount}/{0} حقول مرتبطة",
-    "fr": "{mappedCount}/{0} champs mappés",
-    "ms": "{mappedCount}/{0} medan dipetakan"
-  },
-  "{mappedRequiredCount} of {0} required fields mapped": {
-    "ar": "{mappedRequiredCount} من {0} حقول مطلوبة مرتبطة",
-    "fr": "{mappedRequiredCount} sur {0} champs obligatoires mappés",
-    "ms": "{mappedRequiredCount} daripada {0} medan wajib dipetakan"
-  },
-  "{requiredMapped} / {requiredTotal} Required Mapped": {
-    "ar": "{requiredMapped} / {requiredTotal} مطلوب مرتبط",
-    "fr": "{requiredMapped} / {requiredTotal} obligatoires mappés",
-    "ms": "{requiredMapped} / {requiredTotal} Wajib Dipetakan"
-  },
-  "{targetUsersText} will be granted {0} security permission on the folder {folderName}.": {
-    "ar": "سيُمنح {targetUsersText} {0} إذن أمني على المجلد {folderName}.",
-    "fr": "{targetUsersText} se verra accorder {0} autorisation de sécurité sur le dossier {folderName}.",
-    "ms": "{targetUsersText} akan diberikan {0} kebenaran keselamatan pada folder {folderName}."
-  },
-  "{targetUsersText} will be granted {0} security permissions on the folder {folderName}.": {
-    "ar": "سيُمنح {targetUsersText} {0} أذونات أمنية على المجلد {folderName}.",
-    "fr": "{targetUsersText} se verra accorder {0} autorisations de sécurité sur le dossier {folderName}.",
-    "ms": "{targetUsersText} akan diberikan {0} kebenaran keselamatan pada folder {folderName}."
-  },
-  "* Map all required fields to save.": {
-    "ar": "* اربط جميع الحقول المطلوبة للحفظ.",
-    "fr": "* Mappez tous les champs obligatoires pour enregistrer.",
-    "ms": "* Petakan semua medan wajib untuk simpan."
-  },
-  "+{remainingPrincipalsCount} more": {
-    "ar": "+{remainingPrincipalsCount} المزيد",
-    "fr": "+{remainingPrincipalsCount} de plus",
-    "ms": "+{remainingPrincipalsCount} lagi"
-  },
   "0 fields": {
     "ar": "0 حقول",
     "fr": "0 champs",
@@ -118,11 +23,6 @@ const translations = {
     "ar": "ورقة واحدة",
     "fr": "1 feuille",
     "ms": "1 helaian"
-  },
-  "100% Accuracy": {
-    "ar": "دقة 100%",
-    "fr": "Précision à 100 %",
-    "ms": "Ketepatan 100%"
   },
   "2 / 6 fields": {
     "ar": "2 / 6 حقول",
@@ -144,10 +44,20 @@ const translations = {
     "fr": "Moyenne de 91 %",
     "ms": "Purata 91%"
   },
-  "A maximum of 5 files can be processed at once. Only the first 5 will be processed.": {
-    "ar": "يمكن معالجة 5 ملفات كحد أقصى دفعة واحدة. سيتم معالجة أول 5 فقط.",
-    "fr": "Un maximum de 5 fichiers peut être traité à la fois. Seuls les 5 premiers seront traités.",
-    "ms": "Maksimum 5 fail boleh diproses serentak. Hanya 5 pertama akan diproses."
+  "100% Accuracy": {
+    "ar": "دقة 100%",
+    "fr": "Précision à 100 %",
+    "ms": "Ketepatan 100%"
+  },
+  "* Map all required fields to save.": {
+    "ar": "* اربط جميع الحقول المطلوبة للحفظ.",
+    "fr": "* Mappez tous les champs obligatoires pour enregistrer.",
+    "ms": "* Petakan semua medan wajib untuk simpan."
+  },
+  "+{remainingPrincipalsCount} more": {
+    "ar": "+{remainingPrincipalsCount} المزيد",
+    "fr": "+{remainingPrincipalsCount} de plus",
+    "ms": "+{remainingPrincipalsCount} lagi"
   },
   "Accepted formats: CSV, XLSX": {
     "ar": "الصيغ المقبولة: CSV، XLSX",
@@ -194,6 +104,11 @@ const translations = {
     "fr": "Ajouter une règle",
     "ms": "Tambah Peraturan"
   },
+  "AI-powered extraction in seconds": {
+    "ar": "استخراج مدعوم بالذكاء الاصطناعي في ثوانٍ",
+    "fr": "Extraction alimentée par l'IA en quelques secondes",
+    "ms": "Pengesanan dikuasakan AI dalam beberapa saat"
+  },
   "AI Extract": {
     "ar": "استخراج بالذكاء الاصطناعي",
     "fr": "Extraction IA",
@@ -229,35 +144,35 @@ const translations = {
     "fr": "Recommandations IA",
     "ms": "Cadangan AI"
   },
-  "AI-powered extraction in seconds": {
-    "ar": "استخراج مدعوم بالذكاء الاصطناعي في ثوانٍ",
-    "fr": "Extraction alimentée par l'IA en quelques secondes",
-    "ms": "Pengesanan dikuasakan AI dalam beberapa saat"
-  },
   "Align data fields": {
     "ar": "محاذاة حقول البيانات",
     "fr": "Aligner les champs de données",
     "ms": "Jajarkan medan data"
-  },
-  "Align your file columns with Master Fields to ensure accurate data processing.": {
-    "ar": "قم بمحاذاة أعمدة ملفك مع الحقول الرئيسية لضمان معالجة دقيقة للبيانات.",
-    "fr": "Alignez les colonnes de votre fichier avec les champs principaux pour garantir un traitement précis des données.",
-    "ms": "Jajarkan lajur fail anda dengan Medan Induk untuk memastikan pemprosesan data yang tepat."
   },
   "Aligning CSV/XLSX headers with database mapping schema.": {
     "ar": "محاذاة رؤوس CSV/XLSX مع مخطط ربط قاعدة البيانات.",
     "fr": "Alignement des en-têtes CSV/XLSX avec le schéma de mappage de la base de données.",
     "ms": "Menjajarkan pengepala CSV/XLSX dengan skema pemetaan pangkalan data."
   },
-  "All search results for “{searchLabel}”": {
-    "ar": "جميع نتائج البحث عن «{searchLabel}»",
-    "fr": "Tous les résultats de recherche pour « {searchLabel} »",
-    "ms": "Semua hasil carian untuk “{searchLabel}”"
+  "Align your file columns with Master Fields to ensure accurate data processing.": {
+    "ar": "قم بمحاذاة أعمدة ملفك مع الحقول الرئيسية لضمان معالجة دقيقة للبيانات.",
+    "fr": "Alignez les colonnes de votre fichier avec les champs principaux pour garantir un traitement précis des données.",
+    "ms": "Jajarkan lajur fail anda dengan Medan Induk untuk memastikan pemprosesan data yang tepat."
   },
   "Allow Access": {
     "ar": "السماح بالوصول",
     "fr": "Autoriser l'accès",
     "ms": "Benarkan Akses"
+  },
+  "All search results for “{searchLabel}”": {
+    "ar": "جميع نتائج البحث عن «{searchLabel}»",
+    "fr": "Tous les résultats de recherche pour « {searchLabel} »",
+    "ms": "Semua hasil carian untuk “{searchLabel}”"
+  },
+  "A maximum of 5 files can be processed at once. Only the first 5 will be processed.": {
+    "ar": "يمكن معالجة 5 ملفات كحد أقصى دفعة واحدة. سيتم معالجة أول 5 فقط.",
+    "fr": "Un maximum de 5 fichiers peut être traité à la fois. Seuls les 5 premiers seront traités.",
+    "ms": "Maksimum 5 fail boleh diproses serentak. Hanya 5 pertama akan diproses."
   },
   "Analysis": {
     "ar": "التحليل",
@@ -329,6 +244,11 @@ const translations = {
     "fr": "Lie automatiquement les colonnes du fichier",
     "ms": "Memautkan lajur fail secara automatik"
   },
+  "Backorder": {
+    "ar": "طلب متأخر",
+    "fr": "Commande en attente",
+    "ms": "Pesanan Tertunda"
+  },
   "Back to PO Setup": {
     "ar": "العودة إلى إعداد أمر الشراء",
     "fr": "Retour à la configuration PO",
@@ -338,11 +258,6 @@ const translations = {
     "ar": "العودة إلى المراجعة",
     "fr": "Retour à la révision",
     "ms": "Kembali ke semakan"
-  },
-  "Backorder": {
-    "ar": "طلب متأخر",
-    "fr": "Commande en attente",
-    "ms": "Pesanan Tertunda"
   },
   "Basic": {
     "ar": "أساسي",
@@ -394,15 +309,15 @@ const translations = {
     "fr": "Peut modifier",
     "ms": "Boleh Edit"
   },
-  "Can View": {
-    "ar": "يمكنه العرض",
-    "fr": "Peut consulter",
-    "ms": "Boleh Lihat"
-  },
   "Cannot revoke this share": {
     "ar": "لا يمكن إلغاء هذه المشاركة",
     "fr": "Impossible de révoquer ce partage",
     "ms": "Tidak boleh membatalkan perkongsian ini"
+  },
+  "Can View": {
+    "ar": "يمكنه العرض",
+    "fr": "Peut consulter",
+    "ms": "Boleh Lihat"
   },
   "Capture": {
     "ar": "التقاط",
@@ -484,21 +399,6 @@ const translations = {
     "fr": "Terminer",
     "ms": "Lengkap"
   },
-  "Complete document match.": {
-    "ar": "تطابق كامل للمستند.",
-    "fr": "Correspondance complète du document.",
-    "ms": "Padanan dokumen lengkap."
-  },
-  "Complete each stage, then continue": {
-    "ar": "أكمل كل مرحلة، ثم تابع",
-    "fr": "Terminez chaque étape, puis continuez",
-    "ms": "Lengkapkan setiap peringkat, kemudian teruskan"
-  },
-  "Complete editing session": {
-    "ar": "إنهاء جلسة التعديل",
-    "fr": "Terminer la session d'édition",
-    "ms": "Lengkapkan sesi suntingan"
-  },
   "Completed": {
     "ar": "مكتمل",
     "fr": "Terminé",
@@ -513,6 +413,21 @@ const translations = {
     "ar": "اكتمل في 0.9 ث",
     "fr": "Terminé en 0,9 s",
     "ms": "Selesai dalam 0.9s"
+  },
+  "Complete document match.": {
+    "ar": "تطابق كامل للمستند.",
+    "fr": "Correspondance complète du document.",
+    "ms": "Padanan dokumen lengkap."
+  },
+  "Complete each stage, then continue": {
+    "ar": "أكمل كل مرحلة، ثم تابع",
+    "fr": "Terminez chaque étape, puis continuez",
+    "ms": "Lengkapkan setiap peringkat, kemudian teruskan"
+  },
+  "Complete editing session": {
+    "ar": "إنهاء جلسة التعديل",
+    "fr": "Terminer la session d'édition",
+    "ms": "Lengkapkan sesi suntingan"
   },
   "Compliance & Risk Assessment": {
     "ar": "تقييم الامتثال والمخاطر",
@@ -554,16 +469,6 @@ const translations = {
     "fr": "Confirmer et ingérer",
     "ms": "Sahkan & Masukkan"
   },
-  "Connect {0}": {
-    "ar": "اتصال {0}",
-    "fr": "Connecter {0}",
-    "ms": "Sambung {0}"
-  },
-  "Connect {providerLabel}": {
-    "ar": "اتصال {providerLabel}",
-    "fr": "Connecter {providerLabel}",
-    "ms": "Sambung {providerLabel}"
-  },
   "Connect your accounting software": {
     "ar": "اربط برنامج المحاسبة الخاص بك",
     "fr": "Connectez votre logiciel comptable",
@@ -578,6 +483,16 @@ const translations = {
     "ar": "اربط حساب QuickBooks لمزامنة بيانات أوامر الشراء والفواتير تلقائياً.",
     "fr": "Connectez votre compte QuickBooks pour synchroniser automatiquement les données PO et factures.",
     "ms": "Sambungkan akaun QuickBooks anda untuk segerakkan data PO dan invois secara automatik."
+  },
+  "Connect {0}": {
+    "ar": "اتصال {0}",
+    "fr": "Connecter {0}",
+    "ms": "Sambung {0}"
+  },
+  "Connect {providerLabel}": {
+    "ar": "اتصال {providerLabel}",
+    "fr": "Connecter {providerLabel}",
+    "ms": "Sambung {providerLabel}"
   },
   "Contains": {
     "ar": "يحتوي على",
@@ -784,6 +699,11 @@ const translations = {
     "fr": "Télécharger les documents",
     "ms": "Muat turun dokumen"
   },
+  "Downloading...": {
+    "ar": "جاري التنزيل...",
+    "fr": "Téléchargement...",
+    "ms": "Memuat turun..."
+  },
   "Download PO Master Demo Data": {
     "ar": "تنزيل بيانات تجريبية رئيسية لأمر الشراء",
     "fr": "Télécharger les données de démonstration PO Master",
@@ -803,11 +723,6 @@ const translations = {
     "ar": "قم بتنزيل ملف قالب بيانات PO Master المحدد مسبقاً لعرض السجلات المرجعية. استخدم هذا الملف لفهم هيكل المخطط الافتراضي وقيم العينات المستخدمة للمطابقة.",
     "fr": "Téléchargez le fichier modèle PO Master Data prédéfini pour consulter les enregistrements de référence. Utilisez ce fichier pour comprendre la structure du schéma par défaut et les valeurs d'exemple utilisées pour la correspondance.",
     "ms": "Muat turun fail templat Data Induk PO yang telah ditetapkan untuk melihat rekod rujukan. Gunakan fail ini untuk memahami struktur skema lalai dan nilai sampel yang digunakan untuk padanan."
-  },
-  "Downloading...": {
-    "ar": "جاري التنزيل...",
-    "fr": "Téléchargement...",
-    "ms": "Memuat turun..."
   },
   "Drag and drop your spreadsheet here, or": {
     "ar": "اسحب وأفلت جدول البيانات هنا، أو",
@@ -854,15 +769,15 @@ const translations = {
     "fr": "Se termine par",
     "ms": "Berakhir Dengan"
   },
-  "Enter {label}": {
-    "ar": "أدخل {label}",
-    "fr": "Saisir {label}",
-    "ms": "Masukkan {label}"
-  },
   "Enter a valid email address": {
     "ar": "أدخل عنوان بريد إلكتروني صالح",
     "fr": "Saisissez une adresse e-mail valide",
     "ms": "Masukkan alamat e-mel yang sah"
+  },
+  "Enter {label}": {
+    "ar": "أدخل {label}",
+    "fr": "Saisir {label}",
+    "ms": "Masukkan {label}"
   },
   "Enter folder name…": {
     "ar": "أدخل اسم المجلد…",
@@ -904,30 +819,35 @@ const translations = {
     "fr": "Exception lors du téléversement du fichier : {detail}",
     "ms": "Pengecualian memuat naik fail: {detail}"
   },
-  "Export PDF": {
-    "ar": "تصدير PDF",
-    "fr": "Exporter en PDF",
-    "ms": "Eksport PDF"
-  },
   "Exporting...": {
     "ar": "جاري التصدير...",
     "fr": "Exportation...",
     "ms": "Mengeksport..."
+  },
+  "Export PDF": {
+    "ar": "تصدير PDF",
+    "fr": "Exporter en PDF",
+    "ms": "Eksport PDF"
   },
   "Extracted Data": {
     "ar": "البيانات المستخرجة",
     "fr": "Données extraites",
     "ms": "Data Diekstrak"
   },
-  "Extracting fields from document...": {
-    "ar": "جاري استخراج الحقول من المستند...",
-    "fr": "Extraction des champs du document...",
-    "ms": "Mengekstrak medan daripada dokumen..."
+  "Extracting...": {
+    "ar": "جاري الاستخراج...",
+    "fr": "Extraction...",
+    "ms": "Mengekstrak..."
   },
   "Extracting fields...": {
     "ar": "جاري استخراج الحقول...",
     "fr": "Extraction des champs...",
     "ms": "Mengekstrak medan..."
+  },
+  "Extracting fields from document...": {
+    "ar": "جاري استخراج الحقول من المستند...",
+    "fr": "Extraction des champs du document...",
+    "ms": "Mengekstrak medan daripada dokumen..."
   },
   "Extracting grid fields and filtering metadata records.": {
     "ar": "جاري استخراج حقول الشبكة وتصفية سجلات البيانات الوصفية.",
@@ -938,11 +858,6 @@ const translations = {
     "ar": "جاري استخراج البيانات الوصفية والتحقق من التكرارات والتحقق من الامتثال",
     "fr": "Extraction des métadonnées, vérification des doublons, validation de la conformité",
     "ms": "Mengekstrak metadata, menyemak pendua, mengesahkan pematuhan"
-  },
-  "Extracting...": {
-    "ar": "جاري الاستخراج...",
-    "fr": "Extraction...",
-    "ms": "Mengekstrak..."
   },
   "EZOFIS Drive": {
     "ar": "EZOFIS Drive",
@@ -1124,15 +1039,15 @@ const translations = {
     "fr": "Génération de la description…",
     "ms": "Menjana penerangan…"
   },
-  "Generating recommended fields for this folder…": {
-    "ar": "جاري إنشاء الحقول الموصى بها لهذا المجلد…",
-    "fr": "Génération des champs recommandés pour ce dossier…",
-    "ms": "Menjana medan disyorkan untuk folder ini…"
-  },
   "Generating recommended fields…": {
     "ar": "جاري إنشاء الحقول الموصى بها…",
     "fr": "Génération des champs recommandés…",
     "ms": "Menjana medan disyorkan…"
+  },
+  "Generating recommended fields for this folder…": {
+    "ar": "جاري إنشاء الحقول الموصى بها لهذا المجلد…",
+    "fr": "Génération des champs recommandés pour ce dossier…",
+    "ms": "Menjana medan disyorkan untuk folder ini…"
   },
   "Gmail selected. Click Connect Gmail to link your account.": {
     "ar": "تم تحديد Gmail. انقر على اتصال Gmail لربط حسابك.",
@@ -1149,15 +1064,15 @@ const translations = {
     "fr": "Accorder l'accès / Afficher les documents",
     "ms": "Berikan Akses / Tunjuk Dokumen"
   },
-  "Grant users or groups permission to perform actions inside this folder.": {
-    "ar": "امنح المستخدمين أو المجموعات إذناً لتنفيذ إجراءات داخل هذا المجلد.",
-    "fr": "Accordez aux utilisateurs ou groupes l'autorisation d'effectuer des actions dans ce dossier.",
-    "ms": "Berikan kebenaran kepada pengguna atau kumpulan untuk melakukan tindakan dalam folder ini."
-  },
   "Granted Permissions ({0})": {
     "ar": "الأذونات الممنوحة ({0})",
     "fr": "Autorisations accordées ({0})",
     "ms": "Kebenaran Diberikan ({0})"
+  },
+  "Grant users or groups permission to perform actions inside this folder.": {
+    "ar": "امنح المستخدمين أو المجموعات إذناً لتنفيذ إجراءات داخل هذا المجلد.",
+    "fr": "Accordez aux utilisateurs ou groupes l'autorisation d'effectuer des actions dans ce dossier.",
+    "ms": "Berikan kebenaran kepada pengguna atau kumpulan untuk melakukan tindakan dalam folder ini."
   },
   "Greater Than": {
     "ar": "أكبر من",
@@ -1249,11 +1164,6 @@ const translations = {
     "fr": "Importez vos enregistrements via CSV ou Excel.",
     "ms": "Import rekod anda melalui CSV atau Excel."
   },
-  "In progress": {
-    "ar": "قيد التقدم",
-    "fr": "En cours",
-    "ms": "Sedang dijalankan"
-  },
   "Incremental Version": {
     "ar": "إصدار تدريجي",
     "fr": "Version incrémentielle",
@@ -1313,6 +1223,11 @@ const translations = {
     "ar": "جاري البدء...",
     "fr": "Initialisation...",
     "ms": "Memulakan..."
+  },
+  "In progress": {
+    "ar": "قيد التقدم",
+    "fr": "En cours",
+    "ms": "Sedang dijalankan"
   },
   "Insights into your liabilities.": {
     "ar": "رؤى حول التزاماتك.",
@@ -1389,15 +1304,15 @@ const translations = {
     "fr": "Lignes de facture",
     "ms": "Item Baris Invois"
   },
-  "Invoice value reduced.": {
-    "ar": "تم تقليل قيمة الفاتورة.",
-    "fr": "Valeur de la facture réduite.",
-    "ms": "Nilai invois dikurangkan."
-  },
   "Invoices are automatically matched with purchase orders and goods receipt notes for accuracy.": {
     "ar": "تُطابق الفواتير تلقائياً مع أوامر الشراء وإشعارات استلام البضائع لضمان الدقة.",
     "fr": "Les factures sont automatiquement rapprochées des bons de commande et des bons de réception pour garantir la précision.",
     "ms": "Invois dipadankan secara automatik dengan pesanan pembelian dan nota penerimaan barang untuk ketepatan."
+  },
+  "Invoice value reduced.": {
+    "ar": "تم تقليل قيمة الفاتورة.",
+    "fr": "Valeur de la facture réduite.",
+    "ms": "Nilai invois dikurangkan."
   },
   "Is Empty": {
     "ar": "فارغ",
@@ -1419,25 +1334,25 @@ const translations = {
     "fr": "Faits clés extraits",
     "ms": "Fakta Utama Diekstrak"
   },
-  "L1 Approver *": {
-    "ar": "الموافق L1 *",
-    "fr": "Approbateur L1 *",
-    "ms": "Pelulus L1 *"
-  },
   "L1: {0}": {
     "ar": "L1: {0}",
     "fr": "L1 : {0}",
     "ms": "L1: {0}"
   },
-  "L2 Approver": {
-    "ar": "الموافق L2",
-    "fr": "Approbateur L2",
-    "ms": "Pelulus L2"
+  "L1 Approver *": {
+    "ar": "الموافق L1 *",
+    "fr": "Approbateur L1 *",
+    "ms": "Pelulus L1 *"
   },
   "L2: {0}": {
     "ar": "L2: {0}",
     "fr": "L2 : {0}",
     "ms": "L2: {0}"
+  },
+  "L2 Approver": {
+    "ar": "الموافق L2",
+    "fr": "Approbateur L2",
+    "ms": "Pelulus L2"
   },
   "latest": {
     "ar": "الأحدث",
@@ -1579,11 +1494,6 @@ const translations = {
     "fr": "Mappez les colonnes pour prévisualiser les données",
     "ms": "Petakan lajur untuk pratonton data"
   },
-  "Map the columns from your uploaded file to the platform schema.": {
-    "ar": "اربط الأعمدة من ملفك المرفوع بمخطط المنصة.",
-    "fr": "Mappez les colonnes de votre fichier téléversé au schéma de la plateforme.",
-    "ms": "Petakan lajur daripada fail yang dimuat naik ke skema platform."
-  },
   "Mapped Source": {
     "ar": "المصدر المرتبط",
     "fr": "Source mappée",
@@ -1608,6 +1518,11 @@ const translations = {
     "ar": "ملخص الربط",
     "fr": "Résumé du mappage",
     "ms": "Ringkasan Pemetaan"
+  },
+  "Map the columns from your uploaded file to the platform schema.": {
+    "ar": "اربط الأعمدة من ملفك المرفوع بمخطط المنصة.",
+    "fr": "Mappez les colonnes de votre fichier téléversé au schéma de la plateforme.",
+    "ms": "Petakan lajur daripada fail yang dimuat naik ke skema platform."
   },
   "Mark as mandatory": {
     "ar": "تعليم كإلزامي",
@@ -1769,21 +1684,6 @@ const translations = {
     "fr": "Aucun résultat pour « {debouncedQuery} ».",
     "ms": "Tiada hasil untuk “{debouncedQuery}”."
   },
-  "No timeline found": {
-    "ar": "لم يتم العثور على جدول زمني",
-    "fr": "Aucune chronologie trouvée",
-    "ms": "Tiada garis masa ditemui"
-  },
-  "No users selected": {
-    "ar": "لم يتم تحديد مستخدمين",
-    "fr": "Aucun utilisateur sélectionné",
-    "ms": "Tiada pengguna dipilih"
-  },
-  "No valid files selected.": {
-    "ar": "لم يتم تحديد ملفات صالحة.",
-    "fr": "Aucun fichier valide sélectionné.",
-    "ms": "Tiada fail sah dipilih."
-  },
   "Normal field — click for folder": {
     "ar": "حقل عادي — انقر للمجلد",
     "fr": "Champ normal — cliquez pour dossier",
@@ -1798,6 +1698,16 @@ const translations = {
     "ar": "لا يساوي",
     "fr": "Différent de",
     "ms": "Tidak Sama dengan"
+  },
+  "Note to Approver": {
+    "ar": "ملاحظة للموافق",
+    "fr": "Note à l'approbateur",
+    "ms": "Nota kepada Pelulus"
+  },
+  "No timeline found": {
+    "ar": "لم يتم العثور على جدول زمني",
+    "fr": "Aucune chronologie trouvée",
+    "ms": "Tiada garis masa ditemui"
   },
   "Not mapped": {
     "ar": "غير مرتبط",
@@ -1814,10 +1724,15 @@ const translations = {
     "fr": "Non sélectionné",
     "ms": "Tidak dipilih"
   },
-  "Note to Approver": {
-    "ar": "ملاحظة للموافق",
-    "fr": "Note à l'approbateur",
-    "ms": "Nota kepada Pelulus"
+  "No users selected": {
+    "ar": "لم يتم تحديد مستخدمين",
+    "fr": "Aucun utilisateur sélectionné",
+    "ms": "Tiada pengguna dipilih"
+  },
+  "No valid files selected.": {
+    "ar": "لم يتم تحديد ملفات صالحة.",
+    "fr": "Aucun fichier valide sélectionné.",
+    "ms": "Tiada fail sah dipilih."
   },
   "OCR extraction failed: {detail}": {
     "ar": "فشل استخراج OCR: {detail}",
@@ -1854,6 +1769,16 @@ const translations = {
     "fr": "Connectez éventuellement l'ERP ou d'autres systèmes pour synchroniser les données avec ce dossier.",
     "ms": "Pilihan sambung ERP atau sistem lain supaya data boleh disegerakkan dengan folder ini."
   },
+  "Oracle ERP": {
+    "ar": "Oracle ERP",
+    "fr": "Oracle ERP",
+    "ms": "Oracle ERP"
+  },
+  "Or type an integration…": {
+    "ar": "أو اكتب تكاملاً…",
+    "fr": "Ou saisissez une intégration…",
+    "ms": "Atau taip integrasi…"
+  },
   "Or type a storage provider…": {
     "ar": "أو اكتب مزود تخزين…",
     "fr": "Ou saisissez un fournisseur de stockage…",
@@ -1863,16 +1788,6 @@ const translations = {
     "ar": "أو اكتب استراتيجية إصدارات…",
     "fr": "Ou saisissez une stratégie de versionnement…",
     "ms": "Atau taip strategi versi…"
-  },
-  "Or type an integration…": {
-    "ar": "أو اكتب تكاملاً…",
-    "fr": "Ou saisissez une intégration…",
-    "ms": "Atau taip integrasi…"
-  },
-  "Oracle ERP": {
-    "ar": "Oracle ERP",
-    "fr": "Oracle ERP",
-    "ms": "Oracle ERP"
   },
   "Outlook selected. Click Connect Outlook to link your account.": {
     "ar": "تم تحديد Outlook. انقر على اتصال Outlook لربط حسابك.",
@@ -1984,11 +1899,6 @@ const translations = {
     "fr": "Configuration PO",
     "ms": "Persediaan PO"
   },
-  "PO Verified": {
-    "ar": "تم التحقق من PO",
-    "fr": "PO vérifié",
-    "ms": "PO Disahkan"
-  },
   "Post": {
     "ar": "نشر",
     "fr": "Publier",
@@ -1998,6 +1908,11 @@ const translations = {
     "ar": "جاري النشر...",
     "fr": "Publication...",
     "ms": "Menghantar..."
+  },
+  "PO Verified": {
+    "ar": "تم التحقق من PO",
+    "fr": "PO vérifié",
+    "ms": "PO Disahkan"
   },
   "Predefined Master Data": {
     "ar": "بيانات رئيسية محددة مسبقاً",
@@ -2099,11 +2014,6 @@ const translations = {
     "fr": "Reçu",
     "ms": "Diterima"
   },
-  "Recommend fields": {
-    "ar": "الحقول الموصى بها",
-    "fr": "Recommander des champs",
-    "ms": "Syor medan"
-  },
   "Recommended": {
     "ar": "موصى به",
     "fr": "Recommandé",
@@ -2113,6 +2023,11 @@ const translations = {
     "ar": "تم التوصية بـ {0} حقول لـ «{1}». عدّلها أدناه، ثم تابع.",
     "fr": "{0} champs recommandés pour « {1} ». Ajustez-les ci-dessous, puis continuez.",
     "ms": "Disyorkan {0} medan untuk “{1}”. Laraskan di bawah, kemudian teruskan."
+  },
+  "Recommend fields": {
+    "ar": "الحقول الموصى بها",
+    "fr": "Recommander des champs",
+    "ms": "Syor medan"
   },
   "records": {
     "ar": "سجلات",
@@ -2134,15 +2049,15 @@ const translations = {
     "fr": "Documents associés introuvables",
     "ms": "Dokumen berkaitan tidak ditemui"
   },
-  "Remove {0}": {
-    "ar": "إزالة {0}",
-    "fr": "Supprimer {0}",
-    "ms": "Buang {0}"
-  },
   "Remove file": {
     "ar": "إزالة الملف",
     "fr": "Supprimer le fichier",
     "ms": "Buang fail"
+  },
+  "Remove {0}": {
+    "ar": "إزالة {0}",
+    "fr": "Supprimer {0}",
+    "ms": "Buang {0}"
   },
   "Replace Existing": {
     "ar": "استبدال الموجود",
@@ -2294,6 +2209,16 @@ const translations = {
     "fr": "Recherchez des documents, dossiers, requêtes et plus dans votre espace de travail.",
     "ms": "Cari dokumen, folder, permintaan, dan banyak lagi merentasi ruang kerja anda."
   },
+  "Searching…": {
+    "ar": "جاري البحث…",
+    "fr": "Recherche…",
+    "ms": "Mencari…"
+  },
+  "Searching AI": {
+    "ar": "جاري البحث بالذكاء الاصطناعي",
+    "fr": "Recherche IA",
+    "ms": "Mencari AI"
+  },
   "Search permissions...": {
     "ar": "بحث في الأذونات...",
     "fr": "Rechercher des autorisations...",
@@ -2303,16 +2228,6 @@ const translations = {
     "ar": "ابحث عن مستخدمين أو اكتب بريداً…",
     "fr": "Rechercher des utilisateurs ou saisir un e-mail…",
     "ms": "Cari pengguna atau taip e-mel…"
-  },
-  "Searching AI": {
-    "ar": "جاري البحث بالذكاء الاصطناعي",
-    "fr": "Recherche IA",
-    "ms": "Mencari AI"
-  },
-  "Searching…": {
-    "ar": "جاري البحث…",
-    "fr": "Recherche…",
-    "ms": "Mencari…"
   },
   "Security Action": {
     "ar": "إجراء الأمان",
@@ -2343,6 +2258,16 @@ const translations = {
     "ar": "حدد تكاملاً",
     "fr": "Sélectionner une intégration",
     "ms": "Pilih integrasi"
+  },
+  "Selected Document": {
+    "ar": "المستند المحدد",
+    "fr": "Document sélectionné",
+    "ms": "Dokumen Dipilih"
+  },
+  "selected users": {
+    "ar": "مستخدمون محددون",
+    "fr": "utilisateurs sélectionnés",
+    "ms": "pengguna dipilih"
   },
   "Select field...": {
     "ar": "حدد حقلاً...",
@@ -2399,16 +2324,6 @@ const translations = {
     "fr": "Sélectionner le modèle de flux",
     "ms": "Pilih Templat Aliran Kerja"
   },
-  "Selected Document": {
-    "ar": "المستند المحدد",
-    "fr": "Document sélectionné",
-    "ms": "Dokumen Dipilih"
-  },
-  "selected users": {
-    "ar": "مستخدمون محددون",
-    "fr": "utilisateurs sélectionnés",
-    "ms": "pengguna dipilih"
-  },
   "Send": {
     "ar": "إرسال",
     "fr": "Envoyer",
@@ -2424,15 +2339,15 @@ const translations = {
     "fr": "Définissez le nom du dossier et laissez l'IA rédiger une description métier claire pour ce dépôt.",
     "ms": "Tetapkan nama folder dan biarkan AI draf penerangan perniagaan yang jelas untuk repositori ini."
   },
-  "Share revoked": {
-    "ar": "تم إلغاء المشاركة",
-    "fr": "Partage révoqué",
-    "ms": "Perkongsian dibatalkan"
-  },
   "Shareable Link": {
     "ar": "رابط قابل للمشاركة",
     "fr": "Lien partageable",
     "ms": "Pautan Boleh Dikongsi"
+  },
+  "Share revoked": {
+    "ar": "تم إلغاء المشاركة",
+    "fr": "Partage révoqué",
+    "ms": "Perkongsian dibatalkan"
   },
   "Sheets Used": {
     "ar": "الأوراق المستخدمة",
@@ -2444,11 +2359,6 @@ const translations = {
     "fr": "Afficher les documents correspondants aux utilisateurs cibles.",
     "ms": "Tunjukkan dokumen sepadan kepada pengguna sasaran."
   },
-  "Skip to Import": {
-    "ar": "تخطي إلى الاستيراد",
-    "fr": "Passer à l'import",
-    "ms": "Langkau ke Import"
-  },
   "skipped": {
     "ar": "تم تخطيه",
     "fr": "ignoré",
@@ -2458,6 +2368,11 @@ const translations = {
     "ar": "تم التخطي (لن يتم استيراده)",
     "fr": "Ignoré (ne sera pas importé)",
     "ms": "Dilangkau (Tidak akan diimport)"
+  },
+  "Skip to Import": {
+    "ar": "تخطي إلى الاستيراد",
+    "fr": "Passer à l'import",
+    "ms": "Langkau ke Import"
   },
   "Smart PO Matching": {
     "ar": "مطابقة PO ذكية",
@@ -2484,15 +2399,15 @@ const translations = {
     "fr": "Démarrer",
     "ms": "Mula"
   },
-  "Start typing to search": {
-    "ar": "ابدأ الكتابة للبحث",
-    "fr": "Commencez à taper pour rechercher",
-    "ms": "Mula taip untuk cari"
-  },
   "Starts With": {
     "ar": "يبدأ بـ",
     "fr": "Commence par",
     "ms": "Bermula Dengan"
+  },
+  "Start typing to search": {
+    "ar": "ابدأ الكتابة للبحث",
+    "fr": "Commencez à taper pour rechercher",
+    "ms": "Mula taip untuk cari"
   },
   "Storage selected. Documents will be saved here once you begin processing.": {
     "ar": "تم تحديد التخزين. ستُحفظ المستندات هنا عند بدء المعالجة.",
@@ -2644,6 +2559,11 @@ const translations = {
     "fr": "Dossier sans titre",
     "ms": "Folder tanpa tajuk"
   },
+  "Updates records in master database": {
+    "ar": "يحدّث السجلات في قاعدة البيانات الرئيسية",
+    "fr": "Met à jour les enregistrements dans la base de données master",
+    "ms": "Mengemas kini rekod dalam pangkalan data induk"
+  },
   "Update the integration preference for this folder.": {
     "ar": "حدّث تفضيل التكامل لهذا المجلد.",
     "fr": "Mettez à jour la préférence d'intégration pour ce dossier.",
@@ -2659,11 +2579,6 @@ const translations = {
     "fr": "Mettez à jour la stratégie de versionnement pour ce dossier.",
     "ms": "Kemas kini strategi versi untuk folder ini."
   },
-  "Updates records in master database": {
-    "ar": "يحدّث السجلات في قاعدة البيانات الرئيسية",
-    "fr": "Met à jour les enregistrements dans la base de données master",
-    "ms": "Mengemas kini rekod dalam pangkalan data induk"
-  },
   "Upload a PO file; we'll extract headers for mapping.": {
     "ar": "ارفع ملف PO؛ سنستخرج الرؤوس للربط.",
     "fr": "Téléversez un fichier PO ; nous extrairons les en-têtes pour le mappage.",
@@ -2678,6 +2593,16 @@ const translations = {
     "ar": "رفع الملفات",
     "fr": "Téléverser des fichiers",
     "ms": "Muat Naik Fail"
+  },
+  "Uploading & Processing ({0}/{1})...": {
+    "ar": "جاري الرفع والمعالجة ({0}/{1})...",
+    "fr": "Téléversement et traitement ({0}/{1})...",
+    "ms": "Memuat naik & Memproses ({0}/{1})..."
+  },
+  "Uploading & Processing...": {
+    "ar": "جاري الرفع والمعالجة...",
+    "fr": "Téléversement et traitement...",
+    "ms": "Memuat naik & Memproses..."
   },
   "Upload invoice": {
     "ar": "رفع فاتورة",
@@ -2709,25 +2634,10 @@ const translations = {
     "fr": "Téléverser un bon de commande",
     "ms": "Muat Naik Pesanan Pembelian"
   },
-  "Uploading & Processing ({0}/{1})...": {
-    "ar": "جاري الرفع والمعالجة ({0}/{1})...",
-    "fr": "Téléversement et traitement ({0}/{1})...",
-    "ms": "Memuat naik & Memproses ({0}/{1})..."
-  },
-  "Uploading & Processing...": {
-    "ar": "جاري الرفع والمعالجة...",
-    "fr": "Téléversement et traitement...",
-    "ms": "Memuat naik & Memproses..."
-  },
   "Use demo data": {
     "ar": "استخدام بيانات تجريبية",
     "fr": "Utiliser des données de démo",
     "ms": "Guna data demo"
-  },
-  "Use this setup": {
-    "ar": "استخدام هذا الإعداد",
-    "fr": "Utiliser cette configuration",
-    "ms": "Guna persediaan ini"
   },
   "Users & Groups": {
     "ar": "المستخدمون والمجموعات",
@@ -2738,6 +2648,11 @@ const translations = {
     "ar": "يمكن للمستخدمين في {targetUsersText} عرض والوصول إلى المستندات المطابقة لأي مجموعة قواعد مُكوَّنة.",
     "fr": "Les utilisateurs de {targetUsersText} peuvent consulter et accéder aux documents correspondant à tout groupe de règles configuré.",
     "ms": "Pengguna dalam {targetUsersText} boleh lihat dan akses dokumen yang sepadan dengan mana-mana kumpulan peraturan yang dikonfigurasi."
+  },
+  "Use this setup": {
+    "ar": "استخدام هذا الإعداد",
+    "fr": "Utiliser cette configuration",
+    "ms": "Guna persediaan ini"
   },
   "Validate & submit": {
     "ar": "التحقق وإرسال",
@@ -2814,15 +2729,15 @@ const translations = {
     "fr": "ID du flux manquant. Impossible de démarrer le flux.",
     "ms": "ID Aliran Kerja hilang. Tidak boleh mulakan aliran kerja."
   },
-  "Workflow started but did not return a valid instanceId or apAgentJobId.": {
-    "ar": "بدأ سير العمل لكنه لم يُرجع instanceId أو apAgentJobId صالحاً.",
-    "fr": "Le flux a démarré mais n'a pas renvoyé un instanceId ou apAgentJobId valide.",
-    "ms": "Aliran kerja dimulakan tetapi tidak mengembalikan instanceId atau apAgentJobId yang sah."
-  },
   "Workflow started but did not return any data.": {
     "ar": "بدأ سير العمل لكنه لم يُرجع أي بيانات.",
     "fr": "Le flux a démarré mais n'a renvoyé aucune donnée.",
     "ms": "Aliran kerja dimulakan tetapi tidak mengembalikan sebarang data."
+  },
+  "Workflow started but did not return a valid instanceId or apAgentJobId.": {
+    "ar": "بدأ سير العمل لكنه لم يُرجع instanceId أو apAgentJobId صالحاً.",
+    "fr": "Le flux a démarré mais n'a pas renvoyé un instanceId ou apAgentJobId valide.",
+    "ms": "Aliran kerja dimulakan tetapi tidak mengembalikan instanceId atau apAgentJobId yang sah."
   },
   "Working…": {
     "ar": "جاري العمل…",
@@ -2833,11 +2748,6 @@ const translations = {
     "ar": "أنت",
     "fr": "Vous",
     "ms": "Anda"
-  },
-  "Your {0} account is connected. Invoice documents will be saved here during processing.": {
-    "ar": "حساب {0} متصل. ستُحفظ مستندات الفواتير هنا أثناء المعالجة.",
-    "fr": "Votre compte {0} est connecté. Les documents de facturation seront enregistrés ici pendant le traitement.",
-    "ms": "Akaun {0} anda disambungkan. Dokumen invois akan disimpan di sini semasa pemprosesan."
   },
   "Your AI agent will start monitoring your email and processing incoming invoices automatically.": {
     "ar": "سيبدأ وكيل الذكاء الاصطناعي بمراقبة بريدك ومعالجة الفواتير الواردة تلقائياً.",
@@ -2863,15 +2773,105 @@ const translations = {
     "ar": "حساب QuickBooks متصل. ستُستخدم بيانات PO والمورد لمطابقة والتحقق من الفواتير.",
     "fr": "Votre compte QuickBooks est connecté. Les données PO et fournisseur seront utilisées pour rapprocher et valider les factures.",
     "ms": "Akaun QuickBooks anda disambungkan. Data PO dan pembekal akan digunakan untuk padankan dan sahkan invois."
+  },
+  "Your {0} account is connected. Invoice documents will be saved here during processing.": {
+    "ar": "حساب {0} متصل. ستُحفظ مستندات الفواتير هنا أثناء المعالجة.",
+    "fr": "Votre compte {0} est connecté. Les documents de facturation seront enregistrés ici pendant le traitement.",
+    "ms": "Akaun {0} anda disambungkan. Dokumen invois akan disimpan di sini semasa pemprosesan."
+  },
+  "{0}, {1} and {2} others": {
+    "ar": "{0} و{1} و{2} آخرين",
+    "fr": "{0}, {1} et {2} autres",
+    "ms": "{0}, {1} dan {2} lagi"
+  },
+  "{0} fields": {
+    "ar": "{0} حقول",
+    "fr": "{0} champs",
+    "ms": "{0} medan"
+  },
+  "{0} fields configured": {
+    "ar": "تم تكوين {0} حقول",
+    "fr": "{0} champs configurés",
+    "ms": "{0} medan dikonfigurasi"
+  },
+  "{0} fields ready": {
+    "ar": "{0} حقول جاهزة",
+    "fr": "{0} champs prêts",
+    "ms": "{0} medan sedia"
+  },
+  "{0} invites sent": {
+    "ar": "تم إرسال {0} دعوات",
+    "fr": "{0} invitations envoyées",
+    "ms": "{0} jemputan dihantar"
+  },
+  "{0} people": {
+    "ar": "{0} أشخاص",
+    "fr": "{0} personnes",
+    "ms": "{0} orang"
+  },
+  "{0} preview": {
+    "ar": "معاينة {0}",
+    "fr": "Aperçu {0}",
+    "ms": "Pratonton {0}"
+  },
+  "{0} selected. Click Connect {1} to link your account.": {
+    "ar": "تم تحديد {0}. انقر على اتصال {1} لربط حسابك.",
+    "fr": "{0} sélectionné. Cliquez sur Connecter {1} pour lier votre compte.",
+    "ms": "{0} dipilih. Klik Sambung {1} untuk pautkan akaun anda."
+  },
+  "{0} selected. How should documents be organized? Choose Recommend fields to generate a starter set.": {
+    "ar": "تم تحديد {0}. كيف يجب تنظيم المستندات؟ اختر «الحقول الموصى بها» لإنشاء مجموعة أولية.",
+    "fr": "{0} sélectionné. Comment organiser les documents ? Choisissez Recommander des champs pour générer un jeu de départ.",
+    "ms": "{0} dipilih. Bagaimana dokumen patut disusun? Pilih Syor medan untuk jana set permulaan."
+  },
+  "{enabledCount} of {0} permissions enabled": {
+    "ar": "{enabledCount} من {0} أذونات مفعّلة",
+    "fr": "{enabledCount} sur {0} autorisations activées",
+    "ms": "{enabledCount} daripada {0} kebenaran didayakan"
+  },
+  "{fieldName} is mandatory.": {
+    "ar": "{fieldName} إلزامي.",
+    "fr": "{fieldName} est obligatoire.",
+    "ms": "{fieldName} adalah wajib."
+  },
+  "{fileType} Viewer": {
+    "ar": "عارض {fileType}",
+    "fr": "Visionneuse {fileType}",
+    "ms": "Pemapar {fileType}"
+  },
+  "{mappedCount}/{0} fields mapped": {
+    "ar": "{mappedCount}/{0} حقول مرتبطة",
+    "fr": "{mappedCount}/{0} champs mappés",
+    "ms": "{mappedCount}/{0} medan dipetakan"
+  },
+  "{mappedRequiredCount} of {0} required fields mapped": {
+    "ar": "{mappedRequiredCount} من {0} حقول مطلوبة مرتبطة",
+    "fr": "{mappedRequiredCount} sur {0} champs obligatoires mappés",
+    "ms": "{mappedRequiredCount} daripada {0} medan wajib dipetakan"
+  },
+  "{requiredMapped} / {requiredTotal} Required Mapped": {
+    "ar": "{requiredMapped} / {requiredTotal} مطلوب مرتبط",
+    "fr": "{requiredMapped} / {requiredTotal} obligatoires mappés",
+    "ms": "{requiredMapped} / {requiredTotal} Wajib Dipetakan"
+  },
+  "{targetUsersText} will be granted {0} security permission on the folder {folderName}.": {
+    "ar": "سيُمنح {targetUsersText} {0} إذن أمني على المجلد {folderName}.",
+    "fr": "{targetUsersText} se verra accorder {0} autorisation de sécurité sur le dossier {folderName}.",
+    "ms": "{targetUsersText} akan diberikan {0} kebenaran keselamatan pada folder {folderName}."
+  },
+  "{targetUsersText} will be granted {0} security permissions on the folder {folderName}.": {
+    "ar": "سيُمنح {targetUsersText} {0} أذونات أمنية على المجلد {folderName}.",
+    "fr": "{targetUsersText} se verra accorder {0} autorisations de sécurité sur le dossier {folderName}.",
+    "ms": "{targetUsersText} akan diberikan {0} kebenaran keselamatan pada folder {folderName}."
   }
-}
-
-function unescapePo(value) {
-  return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 }
 
 function escapePo(value) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+}
+
+function unescapePo(value) {
+  return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 }
 
 const missingSet = new Set(missingMsgids)

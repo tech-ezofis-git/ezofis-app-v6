@@ -55,7 +55,9 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
     ) : undefined
 
     const readValue = (target: EventTarget | null) =>
-      target && 'value' in target ? String((target as HTMLInputElement).value) : ''
+      target && 'value' in target
+        ? String((target as HTMLInputElement).value)
+        : ''
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
       onChange(e.currentTarget.value || e.target.value)

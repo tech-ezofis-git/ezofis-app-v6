@@ -44,6 +44,10 @@ const mergeRecentFiles = (
   return merged.slice(merged.length - MAX_RECENT_FILES)
 }
 
+export function getFolderExplorerSearchSnapshot(): FolderExplorerSearchSnapshot {
+  return snapshot
+}
+
 export function setFolderExplorerSearchSnapshot(
   next: Omit<FolderExplorerSearchSnapshot, 'recentFiles'> & {
     recentFiles?: FileItem[]
@@ -56,8 +60,4 @@ export function setFolderExplorerSearchSnapshot(
       next.files || next.recentFiles || [],
     ),
   }
-}
-
-export function getFolderExplorerSearchSnapshot(): FolderExplorerSearchSnapshot {
-  return snapshot
 }

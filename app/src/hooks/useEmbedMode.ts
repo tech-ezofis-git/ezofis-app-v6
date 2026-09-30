@@ -8,20 +8,20 @@ export interface EmbedModeOptions {
 }
 
 export interface EmbedModeState {
-  isEmbed: boolean
-  sessionToken?: string
-  email?: string
-  hasTopbar: boolean
   hasActions: boolean
   hasLogo: boolean
-  viewMode?: 'list' | 'grid'
+  hasTopbar: boolean
+  isEmbed: boolean
+  email?: string
   filters?: Record<string, string>
+  sessionToken?: string
+  viewMode?: 'list' | 'grid'
 }
 
 /**
-  * Hook/utility to detect embed mode and provide future session hook points.
-  * Checks if current pathname starts with `/embed` or if `embed=true` is present in URL search params.
-  */
+ * Hook/utility to detect embed mode and provide future session hook points.
+ * Checks if current pathname starts with `/embed` or if `embed=true` is present in URL search params.
+ */
 export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   const location = useLocation()
 
@@ -50,15 +50,19 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
     viewParam === 'grid' || viewParam === 'list'
       ? viewParam
       : isEmbed
-      ? 'list'
-      : 'grid'
+        ? 'list'
+        : 'grid'
 
   let filters: Record<string, string> | undefined = undefined
   const filtersRaw = searchParams.get('filters')
   if (filtersRaw) {
     try {
       const parsed = JSON.parse(filtersRaw)
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
         filters = parsed as Record<string, string>
       }
     } catch (e) {
@@ -67,16 +71,15 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   }
 
   return {
-    isEmbed,
-    sessionToken,
     email,
-    hasTopbar,
+    filters,
     hasActions,
     hasLogo,
+    hasTopbar,
+    isEmbed,
+    sessionToken,
     viewMode,
-    filters,
   }
 }
 
 export default useEmbedMode
-

@@ -51,9 +51,9 @@ export type CreditsUsageTransaction = {
   agent: string
   createdAt: string
   credit: number
+  fileName?: string | null
   id: number
   identifyId?: number | string | null
-  fileName?: string | null
   inputTokens?: number | null
   outputTokens?: number | null
   remarks?: string | null
@@ -139,14 +139,14 @@ const mapTransactions = (value: unknown): CreditsUsageTransaction[] => {
       agent: String(record.agent || record.activityType || '—'),
       createdAt: String(record.createdAt || ''),
       credit: toNumber(record.credit ?? record.creditsUsed),
-      id: toNumber(record.id, index + 1),
-      identifyId: record.identifyId == null ? null : String(record.identifyId),
       fileName:
         record.fileName == null
           ? record.identifyTable == null
             ? null
             : String(record.identifyTable)
           : String(record.fileName),
+      id: toNumber(record.id, index + 1),
+      identifyId: record.identifyId == null ? null : String(record.identifyId),
       inputTokens:
         record.inputTokens == null ? null : toNumber(record.inputTokens),
       outputTokens:
@@ -231,22 +231,22 @@ export type CreditsMasterRequest = {
 }
 
 export type CreditsMasterResponse = {
-  id: number
-  tenantId: string
   allocationMonth: number
   allocationYear: number
-  creditType: string
-  initialCredit: number
   balanceCredit: number
+  carryForwardCredit?: number | null
+  creditType: string
+  extraConsumedCredit?: number | null
+  id: number
+  initialCredit: number
+  monthlyBalance: number
+  overallConsumedCredit: number
   remarks?: string | null
   status: string
-  overallConsumedCredit: number
+  tenantId: string
+  topUpBalanceCredit?: number | null
   validFromDate: string
   validToDate?: string | null
-  carryForwardCredit?: number | null
-  topUpBalanceCredit?: number | null
-  extraConsumedCredit?: number | null
-  monthlyBalance: number
 }
 
 export const getCreditsMaster = async (payload: CreditsMasterRequest = {}) => {
@@ -263,14 +263,16 @@ export const getCreditsMaster = async (payload: CreditsMasterRequest = {}) => {
     const tenantId = store.session?.tenantId || ''
 
     const params: Record<string, any> = {}
-    if (payload.allocationMonth !== undefined) params.allocationMonth = payload.allocationMonth
-    if (payload.allocationYear !== undefined) params.allocationYear = payload.allocationYear
+    if (payload.allocationMonth !== undefined)
+      params.allocationMonth = payload.allocationMonth
+    if (payload.allocationYear !== undefined)
+      params.allocationYear = payload.allocationYear
     if (payload.creditType !== undefined) params.creditType = payload.creditType
 
     const { data, status } = await axiosV6({
-      params,
       headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
       method: 'GET',
+      params,
       url: '/billing/credits/master',
     })
 
@@ -291,6 +293,6 @@ export const getCreditsMaster = async (payload: CreditsMasterRequest = {}) => {
 }
 
 export default {
-  getCreditsUsage,
   getCreditsMaster,
+  getCreditsUsage,
 }

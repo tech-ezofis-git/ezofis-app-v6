@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { AdaptiveScreen, FoldersScreen } from '@/pages/mobile'
+import { useEffect } from 'react'
 import FoldersPage from '@/pages/folders/FoldersPage'
+import { AdaptiveScreen, FoldersScreen } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
 
 export const Route = createFileRoute('/embed/folders')({
@@ -13,7 +13,8 @@ export const Route = createFileRoute('/embed/folders')({
     email: typeof search.email === 'string' ? search.email : undefined,
     folderId: typeof search.folderId === 'string' ? search.folderId : undefined,
     itemId: typeof search.itemId === 'string' ? search.itemId : undefined,
-    repositoryId: typeof search.repositoryId === 'string' ? search.repositoryId : undefined,
+    repositoryId:
+      typeof search.repositoryId === 'string' ? search.repositoryId : undefined,
     view: typeof search.view === 'string' ? search.view : undefined,
   }),
 })
@@ -43,10 +44,5 @@ function RouteComponent() {
     }
   }, [search])
 
-  return (
-    <AdaptiveScreen
-      mobile={<FoldersScreen />}
-      web={<FoldersPage />}
-    />
-  )
+  return <AdaptiveScreen mobile={<FoldersScreen />} web={<FoldersPage />} />
 }

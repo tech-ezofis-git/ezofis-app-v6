@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import { useMemo } from 'react'
+import InputSelect from '@/components/base/inputs/InputSelect'
 
 type SelectOptionLike = {
   description?: string

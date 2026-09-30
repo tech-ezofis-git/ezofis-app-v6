@@ -6,217 +6,10 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** @type {Record<string, {ar: string, fr: string, ms: string}>} */
 const translations = {
-  'Extracting data': {
-    ar: 'جاري استخراج البيانات',
-    fr: 'Extraction des données',
-    ms: 'Mengekstrak data',
-  },
-  'Matching PO details': {
-    ar: 'جاري مطابقة تفاصيل أمر الشراء',
-    fr: 'Rapprochement des détails BC',
-    ms: 'Memadankan butiran PO',
-  },
-  'Policy Compliance': {
-    ar: 'الامتثال للسياسات',
-    fr: 'Conformité aux politiques',
-    ms: 'Pematuhan Polisi',
-  },
-  'AP Agent Decision': {
-    ar: 'قرار وكيل الحسابات الدائنة',
-    fr: "Décision de l'agent AP",
-    ms: 'Keputusan Ejen AP',
-  },
-  'File uploaded successfully': {
-    ar: 'تم رفع الملف بنجاح',
-    fr: 'Fichier téléversé avec succès',
-    ms: 'Fail berjaya dimuat naik',
-  },
-  'Records matched successfully': {
-    ar: 'تمت مطابقة السجلات بنجاح',
-    fr: 'Enregistrements rapprochés avec succès',
-    ms: 'Rekod berjaya dipadankan',
-  },
-  'Guidelines validated': {
-    ar: 'تم التحقق من الإرشادات',
-    fr: 'Directives validées',
-    ms: 'Garis panduan disahkan',
-  },
-  'Final decision determined': {
-    ar: 'تم تحديد القرار النهائي',
-    fr: 'Décision finale déterminée',
-    ms: 'Keputusan akhir ditentukan',
-  },
-  'Initializing upload...': {
-    ar: 'جاري تهيئة الرفع...',
-    fr: "Initialisation de l'envoi...",
-    ms: 'Memulakan muat naik...',
-  },
-  'Uploading file...': {
-    ar: 'جاري رفع الملف...',
-    fr: 'Téléversement du fichier...',
-    ms: 'Memuat naik fail...',
-  },
-  'Upload failed': {
-    ar: 'فشل الرفع',
-    fr: "Échec de l'envoi",
-    ms: 'Muat naik gagal',
-  },
-  'Quick Hint': {
-    ar: 'تلميح سريع',
-    fr: 'Astuce rapide',
-    ms: 'Petua Pantas',
-  },
-  'Refresh Preview': {
-    ar: 'تحديث المعاينة',
-    fr: "Actualiser l'aperçu",
-    ms: 'Muat Semula Pratonton',
-  },
-  'This is taking a bit longer. You can safely navigate away; we\'ll notify you in the inbox once ready.':
-    {
-      ar: 'يستغرق الأمر وقتاً أطول قليلاً. يمكنك المغادرة بأمان؛ سنُعلمك في الوارد عند الجاهزية.',
-      fr: 'Cela prend un peu plus de temps. Vous pouvez quitter en toute sécurité ; nous vous notifierons dans la boîte de réception une fois prêt.',
-      ms: 'Ini mengambil sedikit masa lebih lama. Anda boleh keluar dengan selamat; kami akan maklumkan di peti masuk apabila sedia.',
-    },
-  'Analyzing context & keywords': {
-    ar: 'جاري تحليل السياق والكلمات المفتاحية',
-    fr: 'Analyse du contexte et des mots-clés',
-    ms: 'Menganalisis konteks & kata kunci',
-  },
-  'Analyzing spatial layout': {
-    ar: 'جاري تحليل التخطيط المكاني',
-    fr: 'Analyse de la mise en page spatiale',
-    ms: 'Menganalisis susun atur ruang',
-  },
-  'Extracting textual metadata': {
-    ar: 'جاري استخراج البيانات الوصفية النصية',
-    fr: 'Extraction des métadonnées textuelles',
-    ms: 'Mengekstrak metadata teks',
-  },
-  'Recognizing table structures': {
-    ar: 'جاري التعرف على هياكل الجداول',
-    fr: 'Reconnaissance des structures de tableaux',
-    ms: 'Mengenal pasti struktur jadual',
-  },
-  'Mapping semantic entities': {
-    ar: 'جاري ربط الكيانات الدلالية',
-    fr: 'Correspondance des entités sémantiques',
-    ms: 'Memetakan entiti semantik',
-  },
-  'Cross-referencing records': {
-    ar: 'جاري الإسناد الترافقي للسجلات',
-    fr: 'Recoupement des enregistrements',
-    ms: 'Merujuk silang rekod',
-  },
-  'Validating data consistency': {
-    ar: 'جاري التحقق من اتساق البيانات',
-    fr: 'Validation de la cohérence des données',
-    ms: 'Mengesahkan konsistensi data',
-  },
-  'Validating guidelines': {
-    ar: 'جاري التحقق من الإرشادات',
-    fr: 'Validation des directives',
-    ms: 'Mengesahkan garis panduan',
-  },
-  'Data extraction complete': {
-    ar: 'اكتمل استخراج البيانات',
-    fr: 'Extraction des données terminée',
-    ms: 'Pengekstrakan data selesai',
-  },
-  'Processing Timeline': {
-    ar: 'الجدول الزمني للمعالجة',
-    fr: 'Chronologie du traitement',
-    ms: 'Garis Masa Pemprosesan',
-  },
-  'Invoice Summary': {
-    ar: 'ملخص الفاتورة',
-    fr: 'Résumé de la facture',
-    ms: 'Ringkasan Invois',
-  },
-  'Invoice Decision Details': {
-    ar: 'تفاصيل قرار الفاتورة',
-    fr: 'Détails de la décision de facture',
-    ms: 'Butiran Keputusan Invois',
-  },
-  'Net 30 Days': {
-    ar: 'صافي 30 يوماً',
-    fr: 'Net 30 jours',
-    ms: 'Net 30 Hari',
-  },
-  EXTRACTED: {
-    ar: 'مستخرج',
-    fr: 'EXTRAIT',
-    ms: 'DIEKSTRAK',
-  },
-  'PO VALUE': {
-    ar: 'قيمة أمر الشراء',
-    fr: 'VALEUR BC',
-    ms: 'NILAI PO',
-  },
-  'ITEM DESCRIPTION': {
-    ar: 'وصف البند',
-    fr: 'DESCRIPTION ARTICLE',
-    ms: 'PENERANGAN ITEM',
-  },
-  STATUS: {
-    ar: 'الحالة',
-    fr: 'STATUT',
-    ms: 'STATUS',
-  },
-  'PO Line Items': {
-    ar: 'بنود أمر الشراء',
-    fr: 'Lignes du BC',
-    ms: 'Item Baris PO',
-  },
-  'Duplicate Payment Check': {
-    ar: 'فحص الدفع المكرر',
-    fr: 'Contrôle des paiements en double',
-    ms: 'Semakan Pembayaran Pendua',
-  },
-  'Supplier Verification Registry': {
-    ar: 'سجل التحقق من المورد',
-    fr: 'Registre de vérification fournisseur',
-    ms: 'Daftar Pengesahan Pembekal',
-  },
-  'GL Account Matching Report': {
-    ar: 'تقرير مطابقة حساب دفتر الأستاذ',
-    fr: 'Rapport de rapprochement compte GL',
-    ms: 'Laporan Pemadanan Akaun GL',
-  },
-  'Payment Terms Analysis': {
-    ar: 'تحليل شروط الدفع',
-    fr: 'Analyse des conditions de paiement',
-    ms: 'Analisis Syarat Pembayaran',
-  },
-  'Legal Matter Association Check': {
-    ar: 'فحص ارتباط المسألة القانونية',
-    fr: "Vérification d'association juridique",
-    ms: 'Semakan Perkaitan Matter Undang-undang',
-  },
-  "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.":
-    {
-      ar: "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال.",
-      fr: "Veuillez cliquer sur « Vérifier » pour contrôler la légitimité de ce fournisseur et prévenir la fraude.",
-      ms: "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mencegah penipuan.",
-    },
-  'Supplier verification completed: {0}': {
-    ar: 'اكتمل التحقق من المورد: {0}',
-    fr: 'Vérification du fournisseur terminée : {0}',
-    ms: 'Pengesahan pembekal selesai: {0}',
-  },
-  'Verification failed. 1 credit has been refunded.': {
-    ar: 'فشل التحقق. تم استرداد رصيد واحد.',
-    fr: 'Échec de la vérification. 1 crédit a été remboursé.',
-    ms: 'Pengesahan gagal. 1 kredit telah dikembalikan.',
-  },
-  'Request shared successfully': {
-    ar: 'تمت مشاركة الطلب بنجاح',
-    fr: 'Demande partagée avec succès',
-    ms: 'Permintaan berjaya dikongsi',
-  },
-  'Share Request': {
-    ar: 'مشاركة الطلب',
-    fr: 'Partager la demande',
-    ms: 'Kongsi Permintaan',
+  'Add message (optional)': {
+    ar: 'أضف رسالة (اختياري)',
+    fr: 'Ajouter un message (facultatif)',
+    ms: 'Tambah mesej (pilihan)',
   },
   'Add more people...': {
     ar: 'أضف المزيد من الأشخاص...',
@@ -228,60 +21,105 @@ const translations = {
     fr: 'Ajouter des noms ou e-mails',
     ms: 'Tambah nama atau e-mel',
   },
-  'Send notification': {
-    ar: 'إرسال إشعار',
-    fr: 'Envoyer une notification',
-    ms: 'Hantar pemberitahuan',
+  Amount: {
+    ar: 'المبلغ',
+    fr: 'Montant',
+    ms: 'Jumlah',
   },
-  'Add message (optional)': {
-    ar: 'أضف رسالة (اختياري)',
-    fr: 'Ajouter un message (facultatif)',
-    ms: 'Tambah mesej (pilihan)',
+  'Analyzing context & keywords': {
+    ar: 'جاري تحليل السياق والكلمات المفتاحية',
+    fr: 'Analyse du contexte et des mots-clés',
+    ms: 'Menganalisis konteks & kata kunci',
   },
-  'Sharing...': {
-    ar: 'جاري المشاركة...',
-    fr: 'Partage...',
-    ms: 'Berkongsi...',
+  'Analyzing spatial layout': {
+    ar: 'جاري تحليل التخطيط المكاني',
+    fr: 'Analyse de la mise en page spatiale',
+    ms: 'Menganalisis susun atur ruang',
   },
-  'Notify me when accessed': {
-    ar: 'أعلمني عند الوصول',
-    fr: "M'avertir lors de l'accès",
-    ms: 'Beritahu saya apabila diakses',
+  'AP Agent Decision': {
+    ar: 'قرار وكيل الحسابات الدائنة',
+    fr: "Décision de l'agent AP",
+    ms: 'Keputusan Ejen AP',
   },
-  New: {
-    ar: 'جديد',
-    fr: 'Nouveau',
-    ms: 'Baharu',
+  'Cross-referencing records': {
+    ar: 'جاري الإسناد الترافقي للسجلات',
+    fr: 'Recoupement des enregistrements',
+    ms: 'Merujuk silang rekod',
   },
-  Owner: {
-    ar: 'المالك',
-    fr: 'Propriétaire',
-    ms: 'Pemilik',
+  'Data extraction complete': {
+    ar: 'اكتمل استخراج البيانات',
+    fr: 'Extraction des données terminée',
+    ms: 'Pengekstrakan data selesai',
+  },
+  'Duplicate Payment Check': {
+    ar: 'فحص الدفع المكرر',
+    fr: 'Contrôle des paiements en double',
+    ms: 'Semakan Pembayaran Pendua',
+  },
+  EXTRACTED: {
+    ar: 'مستخرج',
+    fr: 'EXTRAIT',
+    ms: 'DIEKSTRAK',
+  },
+  'Extracting data': {
+    ar: 'جاري استخراج البيانات',
+    fr: 'Extraction des données',
+    ms: 'Mengekstrak data',
+  },
+  'Extracting textual metadata': {
+    ar: 'جاري استخراج البيانات الوصفية النصية',
+    fr: 'Extraction des métadonnées textuelles',
+    ms: 'Mengekstrak metadata teks',
+  },
+  'File uploaded successfully': {
+    ar: 'تم رفع الملف بنجاح',
+    fr: 'Fichier téléversé avec succès',
+    ms: 'Fail berjaya dimuat naik',
+  },
+  'Final decision determined': {
+    ar: 'تم تحديد القرار النهائي',
+    fr: 'Décision finale déterminée',
+    ms: 'Keputusan akhir ditentukan',
+  },
+  'GL Account Matching Report': {
+    ar: 'تقرير مطابقة حساب دفتر الأستاذ',
+    fr: 'Rapport de rapprochement compte GL',
+    ms: 'Laporan Pemadanan Akaun GL',
+  },
+  'Guidelines validated': {
+    ar: 'تم التحقق من الإرشادات',
+    fr: 'Directives validées',
+    ms: 'Garis panduan disahkan',
+  },
+  'Initializing upload...': {
+    ar: 'جاري تهيئة الرفع...',
+    fr: "Initialisation de l'envoi...",
+    ms: 'Memulakan muat naik...',
   },
   Invited: {
     ar: 'مدعو',
     fr: 'Invité',
     ms: 'Dijemput',
   },
-  'Request Owner': {
-    ar: 'مالك الطلب',
-    fr: 'Propriétaire de la demande',
-    ms: 'Pemilik Permintaan',
+  'Invoice Decision Details': {
+    ar: 'تفاصيل قرار الفاتورة',
+    fr: 'Détails de la décision de facture',
+    ms: 'Butiran Keputusan Invois',
   },
-  Vendor: {
-    ar: 'البائع',
-    fr: 'Fournisseur',
-    ms: 'Vendor',
+  'Invoice Summary': {
+    ar: 'ملخص الفاتورة',
+    fr: 'Résumé de la facture',
+    ms: 'Ringkasan Invois',
   },
-  Amount: {
-    ar: 'المبلغ',
-    fr: 'Montant',
-    ms: 'Jumlah',
+  'ITEM DESCRIPTION': {
+    ar: 'وصف البند',
+    fr: 'DESCRIPTION ARTICLE',
+    ms: 'PENERANGAN ITEM',
   },
-  '{0} of {1} matched': {
-    ar: '{0} من {1} مطابق',
-    fr: '{0} sur {1} correspondants',
-    ms: '{0} daripada {1} sepadan',
+  'Legal Matter Association Check': {
+    ar: 'فحص ارتباط المسألة القانونية',
+    fr: "Vérification d'association juridique",
+    ms: 'Semakan Perkaitan Matter Undang-undang',
   },
   'Loading Attachments...': {
     ar: 'جاري تحميل المرفقات...',
@@ -298,10 +136,96 @@ const translations = {
     fr: "Chargement de l'historique...",
     ms: 'Memuatkan sejarah...',
   },
-  'View Document': {
-    ar: 'عرض المستند',
-    fr: 'Voir le document',
-    ms: 'Lihat Dokumen',
+  'Mapping semantic entities': {
+    ar: 'جاري ربط الكيانات الدلالية',
+    fr: 'Correspondance des entités sémantiques',
+    ms: 'Memetakan entiti semantik',
+  },
+  'Matching PO details': {
+    ar: 'جاري مطابقة تفاصيل أمر الشراء',
+    fr: 'Rapprochement des détails BC',
+    ms: 'Memadankan butiran PO',
+  },
+  'Net 30 Days': {
+    ar: 'صافي 30 يوماً',
+    fr: 'Net 30 jours',
+    ms: 'Net 30 Hari',
+  },
+  New: {
+    ar: 'جديد',
+    fr: 'Nouveau',
+    ms: 'Baharu',
+  },
+  'Notify me when accessed': {
+    ar: 'أعلمني عند الوصول',
+    fr: "M'avertir lors de l'accès",
+    ms: 'Beritahu saya apabila diakses',
+  },
+  Owner: {
+    ar: 'المالك',
+    fr: 'Propriétaire',
+    ms: 'Pemilik',
+  },
+  'Payment Terms Analysis': {
+    ar: 'تحليل شروط الدفع',
+    fr: 'Analyse des conditions de paiement',
+    ms: 'Analisis Syarat Pembayaran',
+  },
+  "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.":
+    {
+      ar: "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال.",
+      fr: "Veuillez cliquer sur « Vérifier » pour contrôler la légitimité de ce fournisseur et prévenir la fraude.",
+      ms: "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mencegah penipuan.",
+    },
+  'Policy Compliance': {
+    ar: 'الامتثال للسياسات',
+    fr: 'Conformité aux politiques',
+    ms: 'Pematuhan Polisi',
+  },
+  'PO Line Items': {
+    ar: 'بنود أمر الشراء',
+    fr: 'Lignes du BC',
+    ms: 'Item Baris PO',
+  },
+  'PO VALUE': {
+    ar: 'قيمة أمر الشراء',
+    fr: 'VALEUR BC',
+    ms: 'NILAI PO',
+  },
+  'Processing Timeline': {
+    ar: 'الجدول الزمني للمعالجة',
+    fr: 'Chronologie du traitement',
+    ms: 'Garis Masa Pemprosesan',
+  },
+  'Quick Hint': {
+    ar: 'تلميح سريع',
+    fr: 'Astuce rapide',
+    ms: 'Petua Pantas',
+  },
+  'Recognizing table structures': {
+    ar: 'جاري التعرف على هياكل الجداول',
+    fr: 'Reconnaissance des structures de tableaux',
+    ms: 'Mengenal pasti struktur jadual',
+  },
+  'Records matched successfully': {
+    ar: 'تمت مطابقة السجلات بنجاح',
+    fr: 'Enregistrements rapprochés avec succès',
+    ms: 'Rekod berjaya dipadankan',
+  },
+  'Refresh Preview': {
+    ar: 'تحديث المعاينة',
+    fr: "Actualiser l'aperçu",
+    ms: 'Muat Semula Pratonton',
+  },
+  'Request Owner': {
+    ar: 'مالك الطلب',
+    fr: 'Propriétaire de la demande',
+    ms: 'Pemilik Permintaan',
+  },
+  'Request shared successfully': {
+    ar: 'تمت مشاركة الطلب بنجاح',
+    fr: 'Demande partagée avec succès',
+    ms: 'Permintaan berjaya dikongsi',
   },
   'Save Folder': {
     ar: 'حفظ المجلد',
@@ -312,6 +236,82 @@ const translations = {
     ar: 'جارٍ الحفظ...',
     fr: 'Enregistrement…',
     ms: 'Menyimpan…',
+  },
+  'Send notification': {
+    ar: 'إرسال إشعار',
+    fr: 'Envoyer une notification',
+    ms: 'Hantar pemberitahuan',
+  },
+  'Share Request': {
+    ar: 'مشاركة الطلب',
+    fr: 'Partager la demande',
+    ms: 'Kongsi Permintaan',
+  },
+  'Sharing...': {
+    ar: 'جاري المشاركة...',
+    fr: 'Partage...',
+    ms: 'Berkongsi...',
+  },
+  STATUS: {
+    ar: 'الحالة',
+    fr: 'STATUT',
+    ms: 'STATUS',
+  },
+  'Supplier verification completed: {0}': {
+    ar: 'اكتمل التحقق من المورد: {0}',
+    fr: 'Vérification du fournisseur terminée : {0}',
+    ms: 'Pengesahan pembekal selesai: {0}',
+  },
+  'Supplier Verification Registry': {
+    ar: 'سجل التحقق من المورد',
+    fr: 'Registre de vérification fournisseur',
+    ms: 'Daftar Pengesahan Pembekal',
+  },
+  'This is taking a bit longer. You can safely navigate away; we\'ll notify you in the inbox once ready.':
+    {
+      ar: 'يستغرق الأمر وقتاً أطول قليلاً. يمكنك المغادرة بأمان؛ سنُعلمك في الوارد عند الجاهزية.',
+      fr: 'Cela prend un peu plus de temps. Vous pouvez quitter en toute sécurité ; nous vous notifierons dans la boîte de réception une fois prêt.',
+      ms: 'Ini mengambil sedikit masa lebih lama. Anda boleh keluar dengan selamat; kami akan maklumkan di peti masuk apabila sedia.',
+    },
+  'Upload failed': {
+    ar: 'فشل الرفع',
+    fr: "Échec de l'envoi",
+    ms: 'Muat naik gagal',
+  },
+  'Uploading file...': {
+    ar: 'جاري رفع الملف...',
+    fr: 'Téléversement du fichier...',
+    ms: 'Memuat naik fail...',
+  },
+  'Validating data consistency': {
+    ar: 'جاري التحقق من اتساق البيانات',
+    fr: 'Validation de la cohérence des données',
+    ms: 'Mengesahkan konsistensi data',
+  },
+  'Validating guidelines': {
+    ar: 'جاري التحقق من الإرشادات',
+    fr: 'Validation des directives',
+    ms: 'Mengesahkan garis panduan',
+  },
+  Vendor: {
+    ar: 'البائع',
+    fr: 'Fournisseur',
+    ms: 'Vendor',
+  },
+  'Verification failed. 1 credit has been refunded.': {
+    ar: 'فشل التحقق. تم استرداد رصيد واحد.',
+    fr: 'Échec de la vérification. 1 crédit a été remboursé.',
+    ms: 'Pengesahan gagal. 1 kredit telah dikembalikan.',
+  },
+  'View Document': {
+    ar: 'عرض المستند',
+    fr: 'Voir le document',
+    ms: 'Lihat Dokumen',
+  },
+  '{0} of {1} matched': {
+    ar: '{0} من {1} مطابق',
+    fr: '{0} sur {1} correspondants',
+    ms: '{0} daripada {1} sepadan',
   },
 }
 

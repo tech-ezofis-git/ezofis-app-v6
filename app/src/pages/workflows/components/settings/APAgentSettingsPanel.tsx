@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { nanoid } from 'nanoid'
 import { useEffect, useMemo, useState } from 'react'
-import { getMasterFormsQueryOptions } from '@/api/form/queries'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
+import { getMasterFormsQueryOptions } from '@/api/form/queries'
 import { requestApi } from '@/api/requests/requests'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -22,16 +22,19 @@ import SettingsSection from './common/SettingsSection'
 const toWeightRows = (raw: any[] | undefined) =>
   Array.isArray(raw)
     ? raw.map((w) => ({
-      fieldId: w.fieldId ?? w.id ?? null,
-      label: w.label ?? w.name ?? '',
-      rowId: w.rowId || w.id || nanoid(),
-      value: Number(w.value) || 0,
-    }))
+        fieldId: w.fieldId ?? w.id ?? null,
+        label: w.label ?? w.name ?? '',
+        rowId: w.rowId || w.id || nanoid(),
+        value: Number(w.value) || 0,
+      }))
     : []
 
 const extractFormFieldOptions = (formJson: any) => {
   const allOptions: { id: string; name: string }[] = []
-  const panels = [...(formJson?.panels || []), ...(formJson?.secondaryPanels || [])]
+  const panels = [
+    ...(formJson?.panels || []),
+    ...(formJson?.secondaryPanels || []),
+  ]
 
   panels.forEach((panel: any) => {
     if (!panel.fields?.length) return
@@ -164,20 +167,19 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const [openValidation, setOpenValidation] = useState(false)
   const [openScoring, setOpenScoring] = useState(false)
 
-const isUuid = (str: any) =>
-  typeof str === 'string' &&
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-    str.trim(),
-  )
+  const isUuid = (str: any) =>
+    typeof str === 'string' &&
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      str.trim(),
+    )
 
   // Resolve saved master ids/objects against loaded master form options (by name)
   const getMasterOption = (val: any) => {
-    if (val === null || val === undefined || val === '' || val === 0) return null
+    if (val === null || val === undefined || val === '' || val === 0)
+      return null
 
     const rawId =
-      typeof val === 'object'
-        ? (val.id ?? val.formId ?? val.uid)
-        : val
+      typeof val === 'object' ? (val.id ?? val.formId ?? val.uid) : val
     if (rawId === null || rawId === undefined || rawId === '') return null
 
     const strRawId = String(rawId).trim()
@@ -187,7 +189,8 @@ const isUuid = (str: any) =>
         String(m.id ?? '').trim() === strRawId ||
         String(m.uid ?? '').trim() === strRawId ||
         String(m.formId ?? '').trim() === strRawId ||
-        (m.name && String(m.name).trim().toLowerCase() === strRawId.toLowerCase()),
+        (m.name &&
+          String(m.name).trim().toLowerCase() === strRawId.toLowerCase()),
     )
     if (matched) return matched
 
@@ -195,9 +198,7 @@ const isUuid = (str: any) =>
     if (typeof val === 'object') {
       const nameStr = String(val.name || '').trim()
       const hasRealName =
-        nameStr !== '' &&
-        nameStr !== strRawId &&
-        !isUuid(nameStr)
+        nameStr !== '' && nameStr !== strRawId && !isUuid(nameStr)
       return hasRealName ? val : { id: rawId, name: strRawId }
     }
 
@@ -206,11 +207,11 @@ const isUuid = (str: any) =>
 
   const [invoiceType, setInvoiceType] = useState(
     invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-    invoiceTypeOptions[0],
+      invoiceTypeOptions[0],
   )
   const [poMatching, setPoMatching] = useState(
     poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-    poMatchingOptions[0],
+      poMatchingOptions[0],
   )
 
   const [poMasterSourceType, setPoMasterSourceType] = useState<
@@ -237,7 +238,11 @@ const isUuid = (str: any) =>
     if (!Array.isArray(apiQbConnections)) return []
     return apiQbConnections.map((item: any) => ({
       id: String(item.id),
-      name: item.name || item.externalAccountEmail || item.email || `QuickBooks (${item.id})`,
+      name:
+        item.name ||
+        item.externalAccountEmail ||
+        item.email ||
+        `QuickBooks (${item.id})`,
     }))
   }, [apiQbConnections])
 
@@ -257,7 +262,11 @@ const isUuid = (str: any) =>
     if (!Array.isArray(apiSapConnections)) return []
     return apiSapConnections.map((item: any) => ({
       id: String(item.id),
-      name: item.name || item.externalAccountEmail || item.email || `SAP (${item.id})`,
+      name:
+        item.name ||
+        item.externalAccountEmail ||
+        item.email ||
+        `SAP (${item.id})`,
     }))
   }, [apiSapConnections])
 
@@ -288,8 +297,12 @@ const isUuid = (str: any) =>
         const { connector, connectorId, label } =
           parseOAuthConnectionSuccess(data)
         const accountName =
-          label || connector || newQbAccountName.trim() || newSapHost.trim() || 'Connected Account'
-        
+          label ||
+          connector ||
+          newQbAccountName.trim() ||
+          newSapHost.trim() ||
+          'Connected Account'
+
         if (isConnectingQb) {
           const newAcc = {
             id: connectorId || 'qb_' + Date.now(),
@@ -345,7 +358,13 @@ const isUuid = (str: any) =>
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isConnectingQb, isConnectingSap, newQbAccountName, newSapHost, queryClient])
+  }, [
+    isConnectingQb,
+    isConnectingSap,
+    newQbAccountName,
+    newSapHost,
+    queryClient,
+  ])
 
   const handleConnectQb = async () => {
     const name = newQbAccountName.trim() || 'QuickBooks Online'
@@ -616,10 +635,10 @@ const isUuid = (str: any) =>
     const newWeights = weights.map((w: any) =>
       w.rowId === rowId
         ? {
-          ...w,
-          fieldId: option.id,
-          label: option.name,
-        }
+            ...w,
+            fieldId: option.id,
+            label: option.name,
+          }
         : w,
     )
     setWeights(newWeights)
@@ -630,8 +649,7 @@ const isUuid = (str: any) =>
     const nextAvailable = scoreFieldOptions.find(
       (f) =>
         !weights.find(
-          (w: any) =>
-            String(w.fieldId) === String(f.id) || w.label === f.name,
+          (w: any) => String(w.fieldId) === String(f.id) || w.label === f.name,
         ),
     )
     const newWeights = [
@@ -668,13 +686,13 @@ const isUuid = (str: any) =>
     if (nodeData.invoiceType && nodeData.invoiceType !== invoiceType.name) {
       setInvoiceType(
         invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-        invoiceTypeOptions[0],
+          invoiceTypeOptions[0],
       )
     }
     if (nodeData.poMatching && nodeData.poMatching !== poMatching.name) {
       setPoMatching(
         poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-        poMatchingOptions[0],
+          poMatchingOptions[0],
       )
     }
     if (
@@ -738,13 +756,15 @@ const isUuid = (str: any) =>
     const invSource = nodeData.invoiceMaster || invoiceMaster
     if (invSource) {
       const resolved = getMasterOption(invSource)
-      if (resolved && resolved.name !== invoiceMaster?.name) setInvoiceMaster(resolved)
+      if (resolved && resolved.name !== invoiceMaster?.name)
+        setInvoiceMaster(resolved)
     }
 
     const vSource = nodeData.vendorSource || vendorSource
     if (vSource) {
       const resolved = getMasterOption(vSource)
-      if (resolved && resolved.name !== vendorSource?.name) setVendorSource(resolved)
+      if (resolved && resolved.name !== vendorSource?.name)
+        setVendorSource(resolved)
     }
 
     const glSrc = nodeData.glSource || glSource
@@ -756,7 +776,8 @@ const isUuid = (str: any) =>
     const matSrc = nodeData.matterSource || matterSource
     if (matSrc) {
       const resolved = getMasterOption(matSrc)
-      if (resolved && resolved.name !== matterSource?.name) setMatterSource(resolved)
+      if (resolved && resolved.name !== matterSource?.name)
+        setMatterSource(resolved)
     }
   }, [
     masterForms,
@@ -968,26 +989,35 @@ const isUuid = (str: any) =>
                       </label>
                       <div className='relative'>
                         <button
+                          type='button'
                           className={cn(
                             'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                             isQbConnectionOpen
                               ? 'border-primary-9 ring-2 ring-primary-4'
                               : 'border-gray-3 hover:border-primary-5',
                           )}
-                          type='button'
-                          onClick={() => setIsQbConnectionOpen(!isQbConnectionOpen)}
+                          onClick={() =>
+                            setIsQbConnectionOpen(!isQbConnectionOpen)
+                          }
                         >
                           <span
                             className={
                               !qbAccount
                                 ? 'text-gray-9'
-                                : 'font-normal text-gray-13 flex items-center gap-2'
+                                : 'flex items-center gap-2 font-normal text-gray-13'
                             }
                           >
                             {qbAccount ? (
                               <>
-                                <Icon className='size-4 shrink-0' name='brand:quickbooks' />
-                                <span>{qbAccount.name || qbAccount.label || 'QuickBooks Connection'}</span>
+                                <Icon
+                                  className='size-4 shrink-0'
+                                  name='brand:quickbooks'
+                                />
+                                <span>
+                                  {qbAccount.name ||
+                                    qbAccount.label ||
+                                    'QuickBooks Connection'}
+                                </span>
                               </>
                             ) : (
                               'Select a connection'
@@ -1015,16 +1045,20 @@ const isUuid = (str: any) =>
                                   {qbAccountOptions.map((option) => (
                                     <button
                                       key={option.id}
+                                      type='button'
                                       className={cn(
                                         'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
-                                        String(qbAccount?.id) === String(option.id)
+                                        String(qbAccount?.id) ===
+                                          String(option.id)
                                           ? 'bg-primary-1 font-normal text-primary-9'
                                           : 'text-gray-12 hover:bg-gray-2',
                                       )}
-                                      type='button'
                                       onClick={() => {
                                         setQbAccount(option)
-                                        updateNodeData('poMasterQbAccount', option)
+                                        updateNodeData(
+                                          'poMasterQbAccount',
+                                          option,
+                                        )
                                         updateNodeData('poMaster', {
                                           id: option.id,
                                           name: option.name,
@@ -1033,8 +1067,13 @@ const isUuid = (str: any) =>
                                         setIsQbConnectionOpen(false)
                                       }}
                                     >
-                                      <Icon className='size-4 shrink-0' name='brand:quickbooks' />
-                                      <span className='truncate text-13 font-normal'>{option.name}</span>
+                                      <Icon
+                                        className='size-4 shrink-0'
+                                        name='brand:quickbooks'
+                                      />
+                                      <span className='truncate text-13 font-normal'>
+                                        {option.name}
+                                      </span>
                                     </button>
                                   ))}
 
@@ -1045,9 +1084,14 @@ const isUuid = (str: any) =>
                                   <button
                                     className='flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal text-primary-9 transition-colors hover:bg-primary-1'
                                     type='button'
-                                    onClick={() => setIsCreatingQbConnection(true)}
+                                    onClick={() =>
+                                      setIsCreatingQbConnection(true)
+                                    }
                                   >
-                                    <Icon className='size-4 shrink-0' name='lucide:plus' />
+                                    <Icon
+                                      className='size-4 shrink-0'
+                                      name='lucide:plus'
+                                    />
                                     <span>Create Connection</span>
                                   </button>
                                 </>
@@ -1058,12 +1102,14 @@ const isUuid = (str: any) =>
                                       Connection Name
                                     </label>
                                     <input
-                                      autoFocus
                                       className='w-full rounded-md border border-gray-3 px-2 py-1.5 text-sm focus:border-primary-9 focus:ring-2 focus:ring-primary-4 focus:outline-none'
                                       placeholder='e.g. My QuickBooks Connection'
                                       type='text'
                                       value={newQbAccountName}
-                                      onChange={(e) => setNewQbAccountName(e.target.value)}
+                                      autoFocus
+                                      onChange={(e) =>
+                                        setNewQbAccountName(e.target.value)
+                                      }
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleConnectQb()
                                       }}
@@ -1074,15 +1120,20 @@ const isUuid = (str: any) =>
                                       className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
                                       size='md'
                                       variant='ghost'
-                                      onClick={() => setIsCreatingQbConnection(false)}
+                                      onClick={() =>
+                                        setIsCreatingQbConnection(false)
+                                      }
                                     >
                                       Cancel
                                     </Button>
                                     <Button
                                       className='flex items-center justify-center gap-2'
                                       color='primary'
-                                      disabled={!newQbAccountName.trim() || isConnectingQb}
                                       size='md'
+                                      disabled={
+                                        !newQbAccountName.trim() ||
+                                        isConnectingQb
+                                      }
                                       onClick={handleConnectQb}
                                     >
                                       {isConnectingQb && (
@@ -1091,7 +1142,9 @@ const isUuid = (str: any) =>
                                           name='lucide:loader-2'
                                         />
                                       )}
-                                      {isConnectingQb ? 'Connecting...' : 'Connect'}
+                                      {isConnectingQb
+                                        ? 'Connecting...'
+                                        : 'Connect'}
                                     </Button>
                                   </div>
                                 </div>
@@ -1113,26 +1166,35 @@ const isUuid = (str: any) =>
                       </label>
                       <div className='relative'>
                         <button
+                          type='button'
                           className={cn(
                             'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                             isSapConnectionOpen
                               ? 'border-primary-9 ring-2 ring-primary-4'
                               : 'border-gray-3 hover:border-primary-5',
                           )}
-                          type='button'
-                          onClick={() => setIsSapConnectionOpen(!isSapConnectionOpen)}
+                          onClick={() =>
+                            setIsSapConnectionOpen(!isSapConnectionOpen)
+                          }
                         >
                           <span
                             className={
                               !sapAccount
                                 ? 'text-gray-9'
-                                : 'font-normal text-gray-13 flex items-center gap-2'
+                                : 'flex items-center gap-2 font-normal text-gray-13'
                             }
                           >
                             {sapAccount ? (
                               <>
-                                <Icon className='size-4 shrink-0' name='brand:sap' />
-                                <span>{sapAccount.name || sapAccount.label || 'SAP Connection'}</span>
+                                <Icon
+                                  className='size-4 shrink-0'
+                                  name='brand:sap'
+                                />
+                                <span>
+                                  {sapAccount.name ||
+                                    sapAccount.label ||
+                                    'SAP Connection'}
+                                </span>
                               </>
                             ) : (
                               'Select a connection'
@@ -1160,16 +1222,20 @@ const isUuid = (str: any) =>
                                   {sapAccountOptions.map((option) => (
                                     <button
                                       key={option.id}
+                                      type='button'
                                       className={cn(
                                         'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
-                                        String(sapAccount?.id) === String(option.id)
+                                        String(sapAccount?.id) ===
+                                          String(option.id)
                                           ? 'bg-primary-1 font-normal text-primary-9'
                                           : 'text-gray-12 hover:bg-gray-2',
                                       )}
-                                      type='button'
                                       onClick={() => {
                                         setSapAccount(option)
-                                        updateNodeData('poMasterSapAccount', option)
+                                        updateNodeData(
+                                          'poMasterSapAccount',
+                                          option,
+                                        )
                                         updateNodeData('poMaster', {
                                           id: option.id,
                                           name: option.name,
@@ -1178,8 +1244,13 @@ const isUuid = (str: any) =>
                                         setIsSapConnectionOpen(false)
                                       }}
                                     >
-                                      <Icon className='size-4 shrink-0' name='brand:sap' />
-                                      <span className='truncate text-13 font-normal'>{option.name}</span>
+                                      <Icon
+                                        className='size-4 shrink-0'
+                                        name='brand:sap'
+                                      />
+                                      <span className='truncate text-13 font-normal'>
+                                        {option.name}
+                                      </span>
                                     </button>
                                   ))}
 
@@ -1190,9 +1261,14 @@ const isUuid = (str: any) =>
                                   <button
                                     className='flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal text-primary-9 transition-colors hover:bg-primary-1'
                                     type='button'
-                                    onClick={() => setIsCreatingSapConnection(true)}
+                                    onClick={() =>
+                                      setIsCreatingSapConnection(true)
+                                    }
                                   >
-                                    <Icon className='size-4 shrink-0' name='lucide:plus' />
+                                    <Icon
+                                      className='size-4 shrink-0'
+                                      name='lucide:plus'
+                                    />
                                     <span>Create Connection</span>
                                   </button>
                                 </>
@@ -1203,12 +1279,14 @@ const isUuid = (str: any) =>
                                       Connection Name
                                     </label>
                                     <input
-                                      autoFocus
                                       className='w-full rounded-md border border-gray-3 px-2 py-1.5 text-sm focus:border-primary-9 focus:ring-2 focus:ring-primary-4 focus:outline-none'
                                       placeholder='e.g. My SAP Connection'
                                       type='text'
                                       value={newSapHost}
-                                      onChange={(e) => setNewSapHost(e.target.value)}
+                                      autoFocus
+                                      onChange={(e) =>
+                                        setNewSapHost(e.target.value)
+                                      }
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                           handleConnectSap()
@@ -1221,15 +1299,19 @@ const isUuid = (str: any) =>
                                       className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
                                       size='md'
                                       variant='ghost'
-                                      onClick={() => setIsCreatingSapConnection(false)}
+                                      onClick={() =>
+                                        setIsCreatingSapConnection(false)
+                                      }
                                     >
                                       Cancel
                                     </Button>
                                     <Button
                                       className='flex items-center justify-center gap-2'
                                       color='primary'
-                                      disabled={!newSapHost.trim() || isConnectingSap}
                                       size='md'
+                                      disabled={
+                                        !newSapHost.trim() || isConnectingSap
+                                      }
                                       onClick={handleConnectSap}
                                     >
                                       {isConnectingSap && (
@@ -1238,7 +1320,9 @@ const isUuid = (str: any) =>
                                           name='lucide:loader-2'
                                         />
                                       )}
-                                      {isConnectingSap ? 'Connecting...' : 'Connect'}
+                                      {isConnectingSap
+                                        ? 'Connecting...'
+                                        : 'Connect'}
                                     </Button>
                                   </div>
                                 </div>
@@ -1679,11 +1763,11 @@ const isUuid = (str: any) =>
                   />
                   {/* Filled score line */}
                   <div
+                    style={{ width: `${thresholds.approved}%` }}
                     className={cn(
                       'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
                       isThresholdInvalid ? 'bg-red-9' : 'bg-[#16a34a]',
                     )}
-                    style={{ width: `${thresholds.approved}%` }}
                   />
                   <div
                     className={cn(
@@ -1747,11 +1831,11 @@ const isUuid = (str: any) =>
                   />
                   {/* Filled score line */}
                   <div
+                    style={{ width: `${thresholds.partial}%` }}
                     className={cn(
                       'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
                       isThresholdInvalid ? 'bg-red-9' : 'bg-[#d97706]',
                     )}
-                    style={{ width: `${thresholds.partial}%` }}
                   />
                   <div
                     className={cn(

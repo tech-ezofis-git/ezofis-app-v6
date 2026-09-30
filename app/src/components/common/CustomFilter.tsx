@@ -85,10 +85,10 @@ export interface ActionButtonDef {
   iconNode?: React.ReactNode
   isIconButton?: boolean
   label?: string
+  node?: React.ReactNode
   tooltip?: string
   variant?: ButtonVariant
   onClick?: () => void
-  node?: React.ReactNode
 }
 
 export interface CustomFilterProps {
@@ -510,18 +510,18 @@ export default function CustomFilter({
                 <div className='relative flex items-center'>
                   <Search className='pointer-events-none absolute left-2 h-3.5 w-3.5 text-text-muted' />
                   <input
+                    className='w-full rounded-md border border-border-default bg-surface py-1 pr-6 pl-7 text-12 text-text-primary placeholder:text-text-muted focus:border-primary-9 focus:outline-none'
+                    placeholder={t`Search fields...`}
                     type='text'
                     value={moreFilterFieldSearch}
-                    onChange={(e) => setMoreFilterFieldSearch(e.target.value)}
-                    placeholder={t`Search fields...`}
-                    className='w-full rounded-md border border-border-default bg-surface py-1 pr-6 pl-7 text-12 text-text-primary placeholder:text-text-muted focus:border-primary-9 focus:outline-none'
                     autoFocus
+                    onChange={(e) => setMoreFilterFieldSearch(e.target.value)}
                   />
                   {moreFilterFieldSearch ? (
                     <button
+                      className='absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-gray-4 hover:text-text-primary'
                       type='button'
                       onClick={() => setMoreFilterFieldSearch('')}
-                      className='absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-gray-4 hover:text-text-primary'
                     >
                       <X className='h-3 w-3' />
                     </button>
@@ -974,7 +974,7 @@ export default function CustomFilter({
 
         {showReset && (
           <button
-            className='inline-flex h-8 shrink-0 items-center justify-center cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
+            className='inline-flex h-8 shrink-0 cursor-pointer items-center justify-center px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
             type='button'
             onClick={() => {
               onReset()
@@ -988,7 +988,7 @@ export default function CustomFilter({
       </div>
 
       {/* Actions stay aligned and wrap cleanly when space is constrained */}
-      <div className='flex min-w-0 flex-wrap items-center justify-end gap-1.5 ml-auto'>
+      <div className='ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5'>
         {customSearchComponent ? (
           customSearchComponent
         ) : hideSearch || !onSearchChange ? null : (
@@ -996,7 +996,7 @@ export default function CustomFilter({
             className={cn(
               'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
               isSearchExpanded || searchQuery
-                ? 'w-44 sm:w-60 md:w-72 max-w-full justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3'
+                ? 'w-44 max-w-full justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3 sm:w-60 md:w-72'
                 : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
             onClick={() => {
@@ -1074,7 +1074,7 @@ export default function CustomFilter({
         ) : null}
 
         {viewMode && onViewModeChange && (
-          <div className='flex h-8 shrink-0 box-border items-center gap-[2px] rounded-md border border-[var(--border-default)] bg-[var(--gray-1)] p-[2px]'>
+          <div className='box-border flex h-8 shrink-0 items-center gap-[2px] rounded-md border border-[var(--border-default)] bg-[var(--gray-1)] p-[2px]'>
             <Tooltip content={t`Grid View`} openDelay={500}>
               <button
                 type='button'
@@ -1120,7 +1120,7 @@ export default function CustomFilter({
               const btnEl = btn.isIconButton ? (
                 <IconButton
                   aria-label={btn.tooltip || btn.label || btn.id}
-                  className='h-8 w-8 shrink-0 box-border rounded-md border border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95'
+                  className='box-border h-8 w-8 shrink-0 rounded-md border border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95'
                   color={(btn.color as any) || 'gray'}
                   disabled={btn.disabled}
                   icon={btn.icon!}

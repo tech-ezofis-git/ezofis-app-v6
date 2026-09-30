@@ -157,10 +157,7 @@ const getMyInboxList = async (payload: any, workflowId?: number | string) => {
     const url = workflowId
       ? `/workflow/myInboxList/${workflowId}`
       : `/workflow/myInboxList`
-    const { data, status } = await axiosV6.post(
-      url,
-      JSON.stringify(payload),
-    )
+    const { data, status } = await axiosV6.post(url, JSON.stringify(payload))
     if (status === 200) return data
     throw new Error('Error fetching my inbox list')
   } catch (e) {
@@ -440,9 +437,7 @@ const getMailTransactions = async (
 
 const resendMail = async (mailId: number | string) => {
   try {
-    const { status } = await axiosV6.post(
-      `/MailSettings/reSendMail/${mailId}`,
-    )
+    const { status } = await axiosV6.post(`/MailSettings/reSendMail/${mailId}`)
     if (status === 200) return true
     throw new Error('Error resending mail')
   } catch (e) {
@@ -507,10 +502,7 @@ const reopenRequest = async (
     const url = processId
       ? `/transaction/reOpenTicket/${workflowId}/${processId}`
       : `/transaction/reOpenTicket/${workflowId}`
-    const { data, status } = await axiosV6.post(
-      url,
-      JSON.stringify(payload),
-    )
+    const { data, status } = await axiosV6.post(url, JSON.stringify(payload))
     if (status === 200) return data
     throw new Error('Error reopening request')
   } catch (e) {
@@ -826,10 +818,7 @@ const updateVerifyStatus = async (payload: any) => {
 
 const getOcrTemplate = async (payload: any) => {
   try {
-    const { data, status } = await axiosV6.post(
-      `/OCR/getOCRTemplate`,
-      payload,
-    )
+    const { data, status } = await axiosV6.post(`/OCR/getOCRTemplate`, payload)
     if (status === 200) return data
     throw new Error('Error fetching OCR template')
   } catch (e) {
