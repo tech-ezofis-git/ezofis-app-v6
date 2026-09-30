@@ -38,6 +38,7 @@ import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import {
   extractScalarStrings,
@@ -64,12 +65,14 @@ const FormEntriesChoiceInput = ({
   isMultiple,
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
   isMultiple?: boolean
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -245,12 +248,14 @@ const FormEntriesSelectInput = ({
   fieldDistinctOptions = [],
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
   fieldDistinctOptions?: Option[]
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -457,6 +462,68 @@ const FormEntriesSelectInput = ({
         onChange(opt ? String(opt.id ?? opt.value ?? opt.name) : '')
       }
     />
+  )
+}
+
+const FormEntriesSearchableInput = ({
+  field,
+  val,
+  formId,
+  editValues,
+  onUpdateModel,
+  children,
+}: {
+  field: Question
+  val: any
+  formId?: string
+  editValues: Record<string, any>
+  onUpdateModel: (patch: Record<string, any>) => void
+  children: React.ReactNode
+}) => {
+  const [isSearching, setIsSearching] = useState(false)
+  const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
+
+  if (!isSearchField) return <>{children}</>
+
+  const handleSearch = () => {
+    executeSearchFieldSync({
+      field,
+      searchValue: val,
+      currentFormId: formId,
+      formModel: editValues,
+      onUpdateModel,
+      onSearchingStateChange: setIsSearching,
+    })
+  }
+
+  return (
+    <div className='relative flex items-center w-full gap-2'>
+      <div
+        className='flex-1 min-w-0'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch()
+          }
+        }}
+      >
+        {children}
+      </div>
+      <Tooltip label='Search & Auto-Sync Fields' withArrow>
+        <button
+          type='button'
+          disabled={isSearching}
+          className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+          onClick={handleSearch}
+        >
+          {isSearching ? (
+            <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          ) : (
+            <Icon className='size-4' name='lucide:search' />
+          )}
+        </button>
+      </Tooltip>
+    </div>
   )
 }
 
@@ -2142,13 +2209,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                            <InputNumber
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(num) =>
-                                handleFieldChange(field.id, num)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputNumber
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(num) =>
+                                  handleFieldChange(field.id, num)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'CURRENCY_AMOUNT' ? (
                             <div className='max-w-xs'>
                               <InputNumber
@@ -2212,26 +2292,37 @@ const FormEntriesPage = () => {
                               formModel={editValues}
                               isMultiple
                               val={val}
-                              isMultiple
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
                               }
                             />
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
-                            <FormEntriesSelectInput
-                              allFields={renderableFields}
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
                               field={field}
+                              formId={formId}
                               val={val}
-                              fieldDistinctOptions={
-                                fieldDistinctOptions[field.id] || []
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                              formModel={editValues}
-                              val={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
-                            />
+                            >
+                              <FormEntriesSelectInput
+                                allFields={renderableFields}
+                                field={field}
+                                fieldDistinctOptions={
+                                  fieldDistinctOptions[field.id] || []
+                                }
+                                formModel={editValues}
+                                val={val}
+                                onChange={(next) =>
+                                  handleFieldChange(field.id, next)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'FILE_UPLOAD' ||
                             type === 'IMAGE_UPLOAD' ? (
                             <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
@@ -2286,13 +2377,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : (
-                            <InputText
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(text) =>
-                                handleFieldChange(field.id, text)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputText
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(text) =>
+                                  handleFieldChange(field.id, text)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           )}
                         </div>
                       )

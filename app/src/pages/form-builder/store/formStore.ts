@@ -227,12 +227,22 @@ export interface Question {
       listUsersByGroup?: string
       lookupMaster?: string
       masterFormColumn?: string
+      formSyncField?: string[]
+      hasSameForm?: 'YES' | 'NO' | boolean
+      isSearchField?: 'YES' | 'NO'
       masterFormConditionColumn?: Array<{
         formField: string
         masterColumn: string
       }>
       masterFormId?: number | string
       masterFormParentColumn?: string
+      masterFormSyncSettings?: Array<{
+        formField: string
+        id?: string
+        masterField: string
+      }>
+      masterSyncField?: string
+      searchFormId?: string | number
       matrixColumnLabels?: string[]
       matrixColumns?: string[]
       matrixRowLabels?: string[]

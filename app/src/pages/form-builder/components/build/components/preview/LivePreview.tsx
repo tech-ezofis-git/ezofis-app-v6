@@ -24,6 +24,7 @@ import InputTime from '@/components/base/inputs/InputTime'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   type Question,
   useFormStore,
@@ -358,6 +359,13 @@ const LivePreview = () => {
                             (file) => handleOcrFileSelect(file, field),
                             extractingFieldId === field.id,
                             selectedRepoId,
+                            (patch) =>
+                              setPreviewModel((prev) =>
+                                applyCalculatedFields(panels, {
+                                  ...prev,
+                                  ...patch,
+                                }),
+                              ),
                           )}
                         </div>
                       )
@@ -388,12 +396,14 @@ const getFieldOptions = (field: Question): string[] => {
 
 const LivePreviewDropdown = ({
   fallbackRepositoryId,
+  field,
   model,
   multiple,
   value,
   onChange,
 }: {
   fallbackRepositoryId?: string
+  field: Question
   model?: Record<string, any>
   multiple?: boolean
   value: any
@@ -827,6 +837,79 @@ const LivePreviewChoiceGroup = ({
   )
 }
 
+const LivePreviewSearchableInput = ({
+  field,
+  model,
+  onChange,
+  onUpdateModel,
+  fallbackRepositoryId,
+  children,
+}: {
+  field: Question
+  model: Record<string, any>
+  onChange: (fieldId: string, value: any) => void
+  onUpdateModel?: (patch: Record<string, any>) => void
+  fallbackRepositoryId?: string
+  children: React.ReactNode
+}) => {
+  const [isSearching, setIsSearching] = useState(false)
+  const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+  const fieldValue = model[field.id] ?? ''
+  const { panels } = useFormStore()
+
+  if (!isSearchField) return <>{children}</>
+
+  const handleSearch = (overrideVal?: any) => {
+    const valToSearch = overrideVal !== undefined ? overrideVal : fieldValue
+    executeSearchFieldSync({
+      currentFormId: fallbackRepositoryId,
+      field,
+      formModel: model,
+      panels,
+      searchValue: valToSearch,
+      onSearchingStateChange: setIsSearching,
+      onUpdateModel: (patch) => {
+        if (onUpdateModel) {
+          onUpdateModel(patch)
+        } else {
+          Object.entries(patch).forEach(([fId, val]) => {
+            onChange(fId, val)
+          })
+        }
+      },
+    })
+  }
+
+  return (
+    <div className='flex items-end gap-1.5 w-full'>
+      <div
+        className='flex-1 min-w-0'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch()
+          }
+        }}
+      >
+        {children}
+      </div>
+      <button
+        className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+        disabled={isSearching}
+        title='Search & Auto-Sync'
+        type='button'
+        onClick={() => handleSearch()}
+      >
+        {isSearching ? (
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+        ) : (
+          <Icon className='size-4' name='lucide:search' />
+        )}
+      </button>
+    </div>
+  )
+}
+
 const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
@@ -834,6 +917,7 @@ const renderPreviewInput = (
   onOcrProcessFile?: (file: File) => void,
   isExtracting?: boolean,
   fallbackRepositoryId?: string,
+  onUpdateModel?: (patch: Record<string, any>) => void,
 ) => {
   const fieldValue = model[field.id] ?? ''
 
@@ -1042,25 +1126,57 @@ const renderPreviewInput = (
     case 'SHORT_TEXT':
     case 'EMAIL':
     case 'PHONE_NUMBER':
-    case 'NUMBER':
-    case 'COUNTER':
-    case 'CURRENCY_AMOUNT':
     case 'ADDRESS':
     case 'FULL_NAME':
       return (
-        <TextInput
-          size='sm'
-          value={String(fieldValue)}
-          variant='default'
-          classNames={{
-            input:
-              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-          }}
-          placeholder={
-            field.settings.general.placeholder || 'Type your answer here...'
-          }
-          onChange={(e) => onChange(field.id, e.target.value)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            placeholder={
+              field.settings.general.placeholder || 'Type your answer here...'
+            }
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
+      )
+    case 'NUMBER':
+    case 'COUNTER':
+    case 'CURRENCY_AMOUNT':
+      return (
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            type='number'
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            placeholder={
+              field.settings.general.placeholder || 'Type your answer here...'
+            }
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'CALCULATED':
       return <CalculatedFieldInput value={fieldValue} hideLabel />
@@ -1102,13 +1218,21 @@ const renderPreviewInput = (
       )
     case 'SINGLE_SELECT':
       return (
-        <LivePreviewDropdown
+        <LivePreviewSearchableInput
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
           model={model}
-          value={fieldValue}
-          onChange={(val) => onChange(field.id, val)}
-        />
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <LivePreviewDropdown
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'MULTI_SELECT':
       return (
@@ -1118,7 +1242,6 @@ const renderPreviewInput = (
           model={model}
           multiple
           value={fieldValue}
-          multiple
           onChange={(val) => onChange(field.id, val)}
         />
       )
