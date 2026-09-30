@@ -158,8 +158,9 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
 
             string? apAgentJobId = null;
             object? pythonInput = null;
-            // Empty/omitted → null (agents full plan). Non-empty → subset for /chat.
-            var skills = ApAgentStartPayloadJson.NormalizeSkills(request.Skills);
+            // Empty/omitted → keep Enricher-stamped skills (po_lookup_sap/QB); else caller subset.
+            var skills = ApAgentStartPayloadJson.NormalizeSkills(request.Skills)
+                ?? ApAgentStartPayloadJson.ExtractSkillsFromPayloadDict(bootstrap.StartPayload);
             var formDataJson = ApAgentStartPayloadJson.MergeSkillsIntoPayloadJson(
                 bootstrap.FormDataJson,
                 skills);
