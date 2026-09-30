@@ -1629,12 +1629,10 @@ const InboxList: React.FC<InboxListProps> = ({
           i.apAgentJobId != null
 
         let isProcessing = i.isProcessing || false
-
+        
         const isAgentStage =
-          i.stageType === 'INTERNAL_ACTOR' ||
-          i.stageType === 'AGENT' ||
-          String(i.stageType).includes('AGENT') ||
-          String(i.stage).toLowerCase().includes('agent')
+          String(i.stageType || '').toUpperCase().includes('AGENT') ||
+          String(i.stage || '').toLowerCase().includes('agent')
 
         // Mark loading on Inbox / Sent / Completed when an agent stage
         // still has no agent response payload.

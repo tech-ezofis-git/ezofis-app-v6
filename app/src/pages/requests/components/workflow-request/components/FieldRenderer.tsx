@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -539,17 +539,51 @@ const FieldRenderer = ({
     },
   })
 
+  const allFields = useMemo(
+    () => (panels || []).flatMap((p: any) => p.fields || []),
+    [panels],
+  )
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
       'masterFormColumnOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 

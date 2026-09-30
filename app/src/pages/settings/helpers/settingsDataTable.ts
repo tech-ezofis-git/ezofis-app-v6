@@ -79,7 +79,13 @@ export function useSettingsTablePagination(initialPageSize = 10) {
     () => ({
       page: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
-      pagination,
+      pagination: {
+        pageIndex: pagination.pageIndex,
+        pageSize:
+          pagination.pageSize === 0
+            ? Number.MAX_SAFE_INTEGER
+            : pagination.pageSize,
+      },
       paginationModel: {
         getPaginationRowModel: getPaginationRowModel(),
       },
@@ -90,7 +96,15 @@ export function useSettingsTablePagination(initialPageSize = 10) {
         })),
       onPageSizeChange: (pageSize: number) =>
         setPagination({ pageIndex: 0, pageSize }),
-      onPaginationChange: setPagination,
+      onPaginationChange: (updater: any) => {
+        setPagination((prev) => {
+          const next = typeof updater === 'function' ? updater(prev) : updater
+          if (next.pageSize === Number.MAX_SAFE_INTEGER) {
+            return { ...next, pageSize: 0 }
+          }
+          return next
+        })
+      },
     }),
     [pagination],
   )

@@ -521,7 +521,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
   }
 
   return (
-    <main className='flex h-full flex-col bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <ConfirmDialog
         confirmLabel={t`Delete`}
         isConfirming={isDeletingMenu}
@@ -538,7 +538,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
           void confirmDeleteMenu()
         }}
       />
-      <section className='flex min-h-0 flex-1 flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <SettingsPageHeader
           description={t`Manage navigation menus, routes, and display order across the platform.`}
           title={t`Menu & Profile Management`}

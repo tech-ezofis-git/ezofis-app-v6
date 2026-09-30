@@ -168,9 +168,9 @@ export const getEventLogs = async (
       // queryParams.Page = params.page
     }
     if (params.pageSize !== undefined) {
-      queryParams.pageSize = params.pageSize
-      // queryParams.PageSize = params.pageSize
-      queryParams.itemsPerPage = params.pageSize
+      const resolvedPageSize = params.pageSize === 0 ? 10000 : params.pageSize
+      queryParams.pageSize = resolvedPageSize
+      queryParams.itemsPerPage = resolvedPageSize
     }
     if (params.category) queryParams.category = params.category
     if (params.severity) queryParams.severity = params.severity

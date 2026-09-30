@@ -60,18 +60,44 @@ import GenericFormImportModal from './components/GenericFormImportModal'
 const FormEntriesChoiceInput = ({
   field,
   isMultiple,
-  val,
+  allFields = [],
+  formModel = {},
   onChange,
 }: {
   field: Question
   isMultiple?: boolean
-  val: any
+  allFields?: Question[]
+  formModel?: Record<string, any>
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
     field.settings?.specific?.optionsType || 'CUSTOM',
   ).toUpperCase()
   const masterInfo = getMasterFormInfo(field)
+
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
     enabled: optionsType === 'USER_LIST',
@@ -88,11 +114,17 @@ const FormEntriesChoiceInput = ({
       'formEntriesChoiceMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -189,12 +221,14 @@ const FormEntriesChoiceInput = ({
 const FormEntriesSelectInput = ({
   field,
   fieldDistinctOptions = [],
-  val,
+  allFields = [],
+  formModel = {},
   onChange,
 }: {
   field: Question
   fieldDistinctOptions?: Option[]
-  val: any
+  allFields?: Question[]
+  formModel?: Record<string, any>
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -202,6 +236,30 @@ const FormEntriesSelectInput = ({
   ).toUpperCase()
   const facetSource = getDropdownFacetSource(field)
   const masterInfo = getMasterFormInfo(field)
+
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? formModel?.[parentField.id]
+    : masterInfo.masterFormParentColumn && formModel
+    ? formModel[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     enabled: facetSource.enabled,
@@ -237,11 +295,17 @@ const FormEntriesSelectInput = ({
       'formEntriesMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -968,11 +1032,33 @@ const FormEntriesPage = () => {
 
   // Helper to match createdBy user ID to user name or logged in user name
   const resolveUserName = (userId: string) => {
+    const store = authUserStore.getState()
+    const loggedInSession = store.session
+    const loggedInUser = store.user
+    const currentUserName =
+      loggedInSession?.name ||
+      (loggedInSession?.firstName
+        ? `${loggedInSession.firstName} ${loggedInSession.lastName || ''}`.trim()
+        : '') ||
+      loggedInSession?.email ||
+      loggedInUser?.name ||
+      loggedInUser?.email ||
+      ''
+
+    if (
+      !userId ||
+      userId === 'unknown@ezofis.com' ||
+      userId.toLowerCase() === 'unknown'
+    ) {
+      return currentUserName || 'System'
+    }
+
     if (usersData && Array.isArray(usersData)) {
       const user = usersData.find(
         (u: any) =>
           String(u.id) === String(userId) ||
-          String(u.userId) === String(userId),
+          String(u.userId) === String(userId) ||
+          String(u.email || '').toLowerCase() === String(userId).toLowerCase(),
       )
       if (user) {
         const fullName =
@@ -987,14 +1073,13 @@ const FormEntriesPage = () => {
       }
     }
 
-    const store = authUserStore.getState()
-    const loggedInUser = store.session
-    if (loggedInUser && String(loggedInUser.id) === String(userId)) {
-      const fullName =
-        loggedInUser.name ||
-        `${loggedInUser.firstName} ${loggedInUser.lastName || ''}`.trim() ||
-        loggedInUser.email
-      if (fullName) return fullName
+    if (
+      loggedInSession &&
+      (String(loggedInSession.id) === String(userId) ||
+        String(loggedInSession.email || '').toLowerCase() ===
+          String(userId).toLowerCase())
+    ) {
+      if (currentUserName) return currentUserName
     }
 
     return userId
@@ -1174,9 +1259,31 @@ const FormEntriesPage = () => {
           })
         }
 
+        const store = authUserStore.getState()
+        const loggedInUserEmail =
+          store.session?.email ||
+          store.user?.email ||
+          store.session?.name ||
+          store.user?.name ||
+          ''
+
+        const rawCreatedBy =
+          e.createdBy ??
+          e.CreatedBy ??
+          e.created_by ??
+          e.createdUser ??
+          e.user ??
+          e.userId ??
+          e.createdById
+
+        const createdBy =
+          rawCreatedBy && rawCreatedBy !== 'unknown@ezofis.com'
+            ? rawCreatedBy
+            : loggedInUserEmail || 'unknown@ezofis.com'
+
         return {
-          createdAt: e.createdAt || new Date().toISOString(),
-          createdBy: e.createdBy || 'unknown@ezofis.com',
+          createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
+          createdBy,
           entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           id: e.itemId
             ? `Entry #${e.itemId}`
@@ -1397,6 +1504,7 @@ const FormEntriesPage = () => {
 
   // Paginated list
   const paginatedEntries = useMemo(() => {
+    if (pageSize === 0) return sortedAndFilteredEntries
     const start = (page - 1) * pageSize
     const end = start + pageSize
     return sortedAndFilteredEntries.slice(start, end)
@@ -2000,7 +2108,9 @@ const FormEntriesPage = () => {
                             </div>
                           ) : type === 'SINGLE_CHOICE' ? (
                             <FormEntriesChoiceInput
+                              allFields={renderableFields}
                               field={field}
+                              formModel={editValues}
                               val={val}
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
@@ -2008,7 +2118,10 @@ const FormEntriesPage = () => {
                             />
                           ) : type === 'MULTIPLE_CHOICE' ? (
                             <FormEntriesChoiceInput
+                              allFields={renderableFields}
                               field={field}
+                              formModel={editValues}
+                              isMultiple
                               val={val}
                               isMultiple
                               onChange={(next) =>
@@ -2018,11 +2131,14 @@ const FormEntriesPage = () => {
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
                             <FormEntriesSelectInput
+                              allFields={renderableFields}
                               field={field}
                               val={val}
                               fieldDistinctOptions={
                                 fieldDistinctOptions[field.id] || []
                               }
+                              formModel={editValues}
+                              val={val}
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
                               }

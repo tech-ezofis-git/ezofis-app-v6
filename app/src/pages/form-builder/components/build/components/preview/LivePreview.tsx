@@ -381,20 +381,49 @@ const getFieldOptions = (field: Question): string[] => {
 
 const LivePreviewDropdown = ({
   fallbackRepositoryId,
-  field,
+  model,
   multiple,
   value,
   onChange,
 }: {
   fallbackRepositoryId?: string
-  field: Question
+  model?: Record<string, any>
   multiple?: boolean
   value: any
   onChange: (val: any) => void
 }) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
+  const { panels } = useFormStore()
   const masterInfo = getMasterFormInfo(field)
+
+  const allFields = useMemo(
+    () => panels.flatMap((p: any) => p.fields || []),
+    [panels],
+  )
+  const parentField = useMemo(() => {
+    if (!masterInfo.masterFormParentColumn) return null
+    const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === masterInfo.masterFormParentColumn ||
+        f.settings?.specific?.masterFormColumn ===
+          masterInfo.masterFormParentColumn ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, masterInfo.masterFormParentColumn])
+
+  const parentValue = parentField
+    ? model?.[parentField.id]
+    : masterInfo.masterFormParentColumn && model
+    ? model[masterInfo.masterFormParentColumn]
+    : undefined
+
+  const parentMasterColumn = parentField
+    ? getMasterFormInfo(parentField).masterFormColumn ||
+      parentField.label ||
+      parentField.id
+    : masterInfo.masterFormParentColumn
 
   const { data: uniqueFieldOptions = [] } = useQuery({
     enabled: facetSource.enabled,
@@ -430,11 +459,17 @@ const LivePreviewDropdown = ({
       'livePreviewMasterOptions',
       masterInfo.masterFormId,
       masterInfo.masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      masterInfo.showAllData,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
+        parentValue,
+        parentMasterColumn,
+        masterInfo.showAllData,
       ),
   })
 
@@ -993,6 +1028,7 @@ const renderPreviewInput = (
         <LivePreviewDropdown
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
+          model={model}
           value={fieldValue}
           onChange={(val) => onChange(field.id, val)}
         />
@@ -1002,6 +1038,8 @@ const renderPreviewInput = (
         <LivePreviewDropdown
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
+          model={model}
+          multiple
           value={fieldValue}
           multiple
           onChange={(val) => onChange(field.id, val)}
