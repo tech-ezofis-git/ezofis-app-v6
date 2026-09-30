@@ -1505,6 +1505,7 @@ const FormEntriesPage = () => {
 
   // Paginated list
   const paginatedEntries = useMemo(() => {
+    if (pageSize === 0) return sortedAndFilteredEntries
     const start = (page - 1) * pageSize
     const end = start + pageSize
     return sortedAndFilteredEntries.slice(start, end)

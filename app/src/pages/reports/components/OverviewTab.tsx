@@ -253,6 +253,7 @@ const OverviewTab = ({ report }: Props) => {
   ])
 
   const paginatedRows = useMemo(() => {
+    if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
     return filteredRows.slice(start, start + pageSize)
   }, [filteredRows, page, pageSize])

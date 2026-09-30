@@ -89,6 +89,7 @@ const ReportsListView = ({
   }, [reports, domainFilter, ownershipFilter, search])
 
   const paginatedReports = useMemo(() => {
+    if (pageSize === 0) return filteredReports
     const start = (page - 1) * pageSize
     return filteredReports.slice(start, start + pageSize)
   }, [filteredReports, page, pageSize])

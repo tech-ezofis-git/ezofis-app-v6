@@ -98,7 +98,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           ? activeFilters.dateTo.replace('custom:', '').split('_')[1]
           : activeFilters.dateTo || undefined,
         page,
-        pageSize,
+        pageSize: pageSize === 0 ? 10000 : pageSize,
         search: searchQuery || undefined,
         severity: parseFilterValues(activeFilters.severity)[0] || undefined,
         userEmail: parseFilterValues(activeFilters.userEmail)[0] || undefined,

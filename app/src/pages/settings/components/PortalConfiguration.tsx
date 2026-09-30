@@ -635,7 +635,7 @@ export default function PortalConfiguration({
   }
 
   return (
-    <main className='flex h-full flex-col bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <ConfirmDialog
         confirmLabel={t`Delete`}
         opened={deletingPortalId != null}
@@ -649,13 +649,13 @@ export default function PortalConfiguration({
         onCancel={() => setDeletingPortalId(null)}
         onConfirm={() => void confirmDeletePortal()}
       />
-      <section className='flex min-h-0 flex-1 flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <SettingsPageHeader
           description={t`Create branded portals with login methods and connected workflows.`}
           title={t`Portal Configuration`}
           onBack={onBack}
         />
-        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={portalTable as never} />}
