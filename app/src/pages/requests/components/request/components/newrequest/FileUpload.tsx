@@ -378,7 +378,7 @@ const SampleTagBadge = ({
   return (
     <>
       <span
-        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-tight font-semibold ring-1 ring-inset transition-transform duration-200 hover:scale-105 ${colors.badge}`}
+        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-tight font-semibold ring-1 transition-transform duration-200 ring-inset hover:scale-105 ${colors.badge}`}
         ref={badgeRef}
         onMouseEnter={show}
         onMouseLeave={() => setOpen(false)}
@@ -388,7 +388,7 @@ const SampleTagBadge = ({
       {open &&
         createPortal(
           <div
-            className='pointer-events-none w-[280px] animate-in fade-in zoom-in-95 duration-200'
+            className='animate-in fade-in zoom-in-95 pointer-events-none w-[280px] duration-200'
             style={{
               left: pos.left,
               position: 'fixed',
@@ -419,9 +419,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Perfect PO validation.`,
         fileName: 'INV-2026-6001',
-        meaning: t`The invoice matches its purchase order. Supplier, amounts, and line items all agree, so this sample is a clean pass.`,
         icon: 'tabler:file-invoice',
         label: 'invoice1',
+        meaning: t`The invoice matches its purchase order. Supplier, amounts, and line items all agree, so this sample is a clean pass.`,
         tag: t`PO Verified`,
         tagColor: 'green',
         thumbnail: sample1Img,
@@ -430,9 +430,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Complete document match.`,
         fileName: 'INV-2026-3101',
-        meaning: t`Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently.`,
         icon: 'tabler:file-invoice',
         label: 'invoice2',
+        meaning: t`Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently.`,
         tag: t`Fully Matched`,
         tagColor: 'green',
         thumbnail: sample2Img,
@@ -441,9 +441,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Supplier details differ.`,
         fileName: 'INV-2026-3005',
-        meaning: t`The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve.`,
         icon: 'tabler:file-invoice',
         label: 'invoice3',
+        meaning: t`The supplier on the invoice is not the supplier on the purchase order. Check the vendor name, tax ID, or address before you approve.`,
         tag: t`Supplier Conflict`,
         tagColor: 'orange',
         thumbnail: sample3Img,
@@ -452,9 +452,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Scanned handwritten bill.`,
         fileName: t`Handwritten Invoice`,
-        meaning: t`This bill was written by hand and then scanned. The sample shows how the agent still reads the amounts and lines from the image.`,
         icon: 'tabler:file-invoice',
         label: 'invoice4',
+        meaning: t`This bill was written by hand and then scanned. The sample shows how the agent still reads the amounts and lines from the image.`,
         tag: t`Handwritten`,
         tagColor: 'blue',
         thumbnail: sample4Img,
@@ -463,9 +463,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Pending delivery items.`,
         fileName: 'INV-2026-1001',
-        meaning: t`Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment.`,
         icon: 'tabler:file-invoice',
         label: 'invoice5',
+        meaning: t`Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment.`,
         tag: t`Backorder`,
         tagColor: 'orange',
         thumbnail: sample5Img,
@@ -474,9 +474,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Vendor identity mismatch.`,
         fileName: 'INV-2026-3001',
-        meaning: t`The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match.`,
         icon: 'tabler:file-invoice',
         label: 'invoice6',
+        meaning: t`The vendor on the invoice cannot be confirmed against the known supplier record. The name or identity does not match.`,
         tag: t`Vendor Check`,
         tagColor: 'orange',
         thumbnail: sample6Img,
@@ -485,9 +485,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Invoice value reduced.`,
         fileName: 'INV-2026-5001',
-        meaning: t`The invoice total is lower than the purchase order. A price or quantity was billed for less than was agreed.`,
         icon: 'tabler:file-invoice',
         label: 'invoice7',
+        meaning: t`The invoice total is lower than the purchase order. A price or quantity was billed for less than was agreed.`,
         tag: t`Undercharged`,
         tagColor: 'red',
         thumbnail: sample7Img,
@@ -496,9 +496,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Multiple pricing differences.`,
         fileName: 'INV-2026-5004',
-        meaning: t`More than one line price differs from the purchase order. Compare each line before you approve.`,
         icon: 'tabler:file-invoice',
         label: 'invoice8',
+        meaning: t`More than one line price differs from the purchase order. Compare each line before you approve.`,
         tag: t`Price Variance`,
         tagColor: 'red',
         thumbnail: sample8Img,
@@ -507,9 +507,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Quantity line discrepancy.`,
         fileName: 'INV-2026-1004',
-        meaning: t`A quantity on the invoice does not match the purchase order or the receipt. One or more lines are short or over.`,
         icon: 'tabler:file-invoice',
         label: 'invoice9',
+        meaning: t`A quantity on the invoice does not match the purchase order or the receipt. One or more lines are short or over.`,
         tag: t`Line Variance`,
         tagColor: 'orange',
         thumbnail: sample9Img,
@@ -518,9 +518,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       {
         description: t`Invoice exceeds PO value.`,
         fileName: 'INV-2026-5003',
-        meaning: t`The invoice total is higher than the purchase order. The billed amount is above the agreed value.`,
         icon: 'tabler:file-invoice',
         label: 'invoice10',
+        meaning: t`The invoice total is higher than the purchase order. The billed amount is above the agreed value.`,
         tag: t`Overcharged`,
         tagColor: 'red',
         thumbnail: sample10Img,
@@ -643,7 +643,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       )
     }
 
-    console.group(`⚡ [Accounts Payable] Request Created Successfully (${file.name})`)
+    console.group(
+      `⚡ [Accounts Payable] Request Created Successfully (${file.name})`,
+    )
     console.log('🔑 Instance ID:', processId)
     console.log('🤖 AP Agent Job ID:', apAgentJobId)
     console.log('💳 Transaction ID:', transactionId)

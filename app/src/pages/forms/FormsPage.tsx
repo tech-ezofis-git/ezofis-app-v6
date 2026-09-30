@@ -1,7 +1,7 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
 import formApi from '@/api/form/form'
@@ -16,9 +16,12 @@ import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import CustomFilter from '@/components/common/CustomFilter'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
+import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
 import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
 import {
@@ -26,9 +29,6 @@ import {
   matchesDateRangeValue,
   parseFilterValues,
 } from '@/utils/filterUtils'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
-import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
 import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
 
@@ -82,7 +82,9 @@ const FormsPage = () => {
   const storedState = useMemo(() => getStoredState(), [])
   const [page, setPage] = useState(storedState?.page ?? 1)
   const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 10)
-  const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
+  const [showAiBuilder, setShowAiBuilder] = useState(
+    storedState?.showAiBuilder ?? false,
+  )
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -421,10 +423,12 @@ const FormsPage = () => {
 
   const nameOptions = useMemo(() => {
     const unique = new Set<string>()
-    forms.flatMap((g) => g.items).forEach((w: any) => {
-      const name = String(w.name || '').trim()
-      if (name) unique.add(name)
-    })
+    forms
+      .flatMap((g) => g.items)
+      .forEach((w: any) => {
+        const name = String(w.name || '').trim()
+        if (name) unique.add(name)
+      })
     return Array.from(unique)
       .sort((a, b) => a.localeCompare(b))
       .map((name) => ({ label: name, value: name }))
@@ -474,8 +478,6 @@ const FormsPage = () => {
   if (showAiBuilder) {
     return (
       <AiFormBuilder
-        onBack={() => setShowAiBuilder(false)}
-        onManualCreate={openFormBuilder}
         onApply={(payload) => {
           if (payload) {
             useFormStore.getState().loadForm(payload)
@@ -484,6 +486,8 @@ const FormsPage = () => {
           }
           void navigate({ to: '/form-builder' })
         }}
+        onBack={() => setShowAiBuilder(false)}
+        onManualCreate={openFormBuilder}
       />
     )
   }
@@ -568,17 +572,6 @@ const FormsPage = () => {
           customSearchComponent={<TableSearch table={table as any} />}
           searchPlaceholder={t`Search forms...`}
           searchQuery=''
-          trailingActions={
-            <div className='flex items-center gap-2'>
-              <TableExport table={table as any} />
-              <Button
-                color='primary'
-                icon='lucide:plus'
-                label={t`New Form`}
-                onClick={() => setShowAiBuilder(true)}
-              />
-            </div>
-          }
           actionButtons={[
             {
               color: 'gray',
@@ -633,6 +626,17 @@ const FormsPage = () => {
           showReset={
             Object.keys(activeFilters).some((k) => activeFilters[k]) ||
             !!searchState?.value
+          }
+          trailingActions={
+            <div className='flex items-center gap-2'>
+              <TableExport table={table as any} />
+              <Button
+                color='primary'
+                icon='lucide:plus'
+                label={t`New Form`}
+                onClick={() => setShowAiBuilder(true)}
+              />
+            </div>
           }
           onFilterChange={(id, value) => {
             setActiveFilters((prev) => ({ ...prev, [id]: value }))

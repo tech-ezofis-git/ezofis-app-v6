@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import React, { useState } from 'react'
 import type { ActivityCredit } from '../sampleCreditData'
 import { topSubActivityCredits, totalCredit } from '../sampleCreditData'
 import DataChart from './DataChart'

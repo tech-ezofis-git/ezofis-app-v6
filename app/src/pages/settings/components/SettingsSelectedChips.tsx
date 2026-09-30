@@ -13,7 +13,8 @@ const getInitials = (name: string) => {
   if (!name) return '?'
   const clean = name.replace(/^(User:|Group:)\s*/i, '').trim()
   const parts = clean.split(/\s+/)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+  if (parts.length >= 2)
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
   return clean.slice(0, 2).toUpperCase()
 }
 

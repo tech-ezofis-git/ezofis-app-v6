@@ -208,22 +208,6 @@ export function generateNumericBuckets(
 /** Multi-select values stored in CustomFilter string API */
 export const FILTER_MULTI_SEP = '|'
 
-export function parseFilterValues(
-  value: string | string[] | null | undefined,
-): string[] {
-  if (value == null || value === '') return []
-  if (Array.isArray(value)) return value.map(String).filter(Boolean)
-  const raw = String(value)
-  if (raw.includes(FILTER_MULTI_SEP)) {
-    return raw.split(FILTER_MULTI_SEP).map((v) => v.trim()).filter(Boolean)
-  }
-  return [raw]
-}
-
-export function serializeFilterValues(values: string[]): string {
-  return values.filter(Boolean).join(FILTER_MULTI_SEP)
-}
-
 export function isDateColumnType(dataType?: string) {
   const normalized = String(dataType || '')
     .trim()
@@ -254,6 +238,25 @@ export function isNumberColumnType(dataType?: string) {
   )
 }
 
+export function parseFilterValues(
+  value: string | string[] | null | undefined,
+): string[] {
+  if (value == null || value === '') return []
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  const raw = String(value)
+  if (raw.includes(FILTER_MULTI_SEP)) {
+    return raw
+      .split(FILTER_MULTI_SEP)
+      .map((v) => v.trim())
+      .filter(Boolean)
+  }
+  return [raw]
+}
+
+export function serializeFilterValues(values: string[]): string {
+  return values.filter(Boolean).join(FILTER_MULTI_SEP)
+}
+
 const parseDay = (dateStr: string): Date | null => {
   if (!dateStr || dateStr === '-') return null
   if (dateStr.includes('T')) {
@@ -275,6 +278,25 @@ const parseDay = (dateStr: string): Date | null => {
   )
 }
 
+/** Match a row value against one or more selected category values. */
+export function matchesCategoryFilterValue(
+  rowValue: unknown,
+  filterValue: string | string[],
+  mode: 'equals' | 'contains' = 'equals',
+): boolean {
+  const selected = parseFilterValues(filterValue).filter(
+    (sel) => sel !== '__all__' && sel.toLowerCase() !== 'all',
+  )
+  if (selected.length === 0) return true
+  const row = String(rowValue ?? '')
+  const rowLower = row.toLowerCase()
+  return selected.some((sel) => {
+    const selLower = sel.toLowerCase()
+    if (mode === 'contains') return rowLower.includes(selLower)
+    return rowLower === selLower
+  })
+}
+
 /** Match a row date against a date-range preset or custom:start_end value. */
 export function matchesDateRangeValue(
   rowDateStr: string | null | undefined,
@@ -282,9 +304,7 @@ export function matchesDateRangeValue(
 ): boolean {
   if (!val) return true
   const hasNoDueDate =
-    !rowDateStr ||
-    rowDateStr === '-' ||
-    String(rowDateStr).trim() === ''
+    !rowDateStr || rowDateStr === '-' || String(rowDateStr).trim() === ''
   if (val === 'no_due_date') return hasNoDueDate
 
   const rowDay = parseDay(String(rowDateStr || '').split('T')[0])
@@ -348,11 +368,19 @@ export function matchesDateRangeValue(
     )
   }
   if (val === 'last_3_months') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 3, today.getDate())
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 3,
+      today.getDate(),
+    )
     return t >= start.getTime() && t <= today.getTime()
   }
   if (val === 'last_6_months') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 6, today.getDate())
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 6,
+      today.getDate(),
+    )
     return t >= start.getTime() && t <= today.getTime()
   }
   if (val === 'this_year') return rowDay.getFullYear() === now.getFullYear()
@@ -363,23 +391,4 @@ export function matchesDateRangeValue(
   if (exact) return t === exact.getTime()
 
   return String(rowDateStr) === val
-}
-
-/** Match a row value against one or more selected category values. */
-export function matchesCategoryFilterValue(
-  rowValue: unknown,
-  filterValue: string | string[],
-  mode: 'equals' | 'contains' = 'equals',
-): boolean {
-  const selected = parseFilterValues(filterValue).filter(
-    (sel) => sel !== '__all__' && sel.toLowerCase() !== 'all',
-  )
-  if (selected.length === 0) return true
-  const row = String(rowValue ?? '')
-  const rowLower = row.toLowerCase()
-  return selected.some((sel) => {
-    const selLower = sel.toLowerCase()
-    if (mode === 'contains') return rowLower.includes(selLower)
-    return rowLower === selLower
-  })
 }

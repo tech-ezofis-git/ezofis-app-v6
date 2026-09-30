@@ -50,10 +50,6 @@ export interface SelectProps extends InputProps {
   options: Option[]
   autoOpen?: boolean
   creatable?: boolean
-  /** Label for the creatable option. Receives current search text. */
-  createOptionLabel?: (search: string) => string
-  /** When set, creatable row only shows if this returns true for current search. */
-  isCreatableSearch?: (search: string) => boolean
   dropdownFooter?: ReactNode
   iconOnly?: boolean
   leftSection?: ReactNode
@@ -63,6 +59,10 @@ export interface SelectProps extends InputProps {
   searchable?: boolean
   searchPlaceholder?: string
   width?: ComboboxProps['width']
+  /** Label for the creatable option. Receives current search text. */
+  createOptionLabel?: (search: string) => string
+  /** When set, creatable row only shows if this returns true for current search. */
+  isCreatableSearch?: (search: string) => boolean
   onDropdownClose?: () => void
   onDropdownOpen?: () => void
 }

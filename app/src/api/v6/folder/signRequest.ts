@@ -3,7 +3,7 @@ import authUserStore from '../../../stores/authUserStore'
 import { axiosV6 } from '../../axios'
 
 const isRequestCanceled = (error: unknown) => {
-  const err = error as { code?: string; name?: string; message?: string }
+  const err = error as { code?: string; message?: string; name?: string }
   return (
     axios.isCancel(error) ||
     err?.name === 'CanceledError' ||
@@ -26,77 +26,73 @@ const getTenantHeaders = (tenantId?: string) => {
 const toErrorMessage = (error: unknown, fallback: string) => {
   const err = error as {
     message?: string
-    response?: { data?: { error?: string; message?: string; title?: string } | string }
+    response?: {
+      data?: { error?: string; message?: string; title?: string } | string
+    }
   }
   const data = err?.response?.data
   if (typeof data === 'string' && data.trim()) return data
   if (data && typeof data === 'object') {
-    return (
-      data.error ||
-      data.message ||
-      data.title ||
-      err?.message ||
-      fallback
-    )
+    return data.error || data.message || data.title || err?.message || fallback
   }
   return err?.message || fallback
 }
 
-export type SignRequestSigningMode = 'single' | 'multiple' | 'sequential'
-
-export type SignRequestFieldInput = {
-  pageNumber: number
-  x: number
-  y: number
-  width: number
-  height: number
-  signerEmail?: string
-  signerOrder?: number
+export type CreateSignRequestPayload = {
+  expiresInDays?: number
+  /** Signature places on the PDF (points, origin top-left). */
+  fields?: SignRequestFieldInput[]
+  itemId: string
+  message?: string
+  repositoryId: string
+  signers: CreateSignRequestSigner[]
+  signingMode: SignRequestSigningMode
+  tenantId?: string
 }
 
 export type CreateSignRequestSigner = {
   email: string
+  fields?: SignRequestFieldInput[]
   name: string
   order: number
-  fields?: SignRequestFieldInput[]
-}
-
-export type CreateSignRequestPayload = {
-  repositoryId: string
-  itemId: string
-  signingMode: SignRequestSigningMode
-  signers: CreateSignRequestSigner[]
-  /** Signature places on the PDF (points, origin top-left). */
-  fields?: SignRequestFieldInput[]
-  message?: string
-  expiresInDays?: number
-  tenantId?: string
-}
-
-export type SubmitSignaturePayload = {
-  pageNumber: number
-  x: number
-  y: number
-  width: number
-  height: number
-  signatureImageBase64: string
-  signedAtClientUtc?: string
-  tenantId?: string
-  fieldId?: string
 }
 
 export type SignRequestFieldDto = {
   fieldId?: string
-  pageNumber: number
-  x: number
-  y: number
-  width: number
   height: number
+  pageNumber: number
+  signedAtUtc?: string | null
   signerEmail?: string
   signerName?: string
   signerOrder?: number
   status?: string
-  signedAtUtc?: string | null
+  width: number
+  x: number
+  y: number
+}
+
+export type SignRequestFieldInput = {
+  height: number
+  pageNumber: number
+  signerEmail?: string
+  signerOrder?: number
+  width: number
+  x: number
+  y: number
+}
+
+export type SignRequestSigningMode = 'single' | 'multiple' | 'sequential'
+
+export type SubmitSignaturePayload = {
+  fieldId?: string
+  height: number
+  pageNumber: number
+  signatureImageBase64: string
+  signedAtClientUtc?: string
+  tenantId?: string
+  width: number
+  x: number
+  y: number
 }
 
 /** Hidden block stored in create `message` so places survive when API drops `fields`. */
@@ -116,9 +112,7 @@ const toCompactField = (field: SignRequestFieldDto) => ({
 })
 
 /** Remove hidden field payload from a user-visible message. */
-export const stripSignFieldsFromMessage = (
-  message?: string | null,
-): string => {
+export const stripSignFieldsFromMessage = (message?: string | null): string => {
   const raw = String(message || '')
   if (!raw.includes(MESSAGE_START)) return raw.trim()
   const pattern = new RegExp(
@@ -172,7 +166,9 @@ export const extractSignFieldsFromMessage = (
         const y = Number(item?.y)
         const width = Number(item?.width)
         const height = Number(item?.height)
-        if (![pageNumber, x, y, width, height].every((n) => Number.isFinite(n))) {
+        if (
+          ![pageNumber, x, y, width, height].every((n) => Number.isFinite(n))
+        ) {
           return null
         }
         return {
@@ -194,57 +190,64 @@ export const extractSignFieldsFromMessage = (
   }
 }
 
-export type SignRequestSignerDto = {
-  signerId?: string
-  email: string
-  name: string
-  order: number
-  status?: string
-  inviteUrl?: string | null
-  invitedAtUtc?: string | null
-  signedAtUtc?: string | null
-  fields?: SignRequestFieldDto[]
-}
-
 export type SignRequestDto = {
-  signRequestId: string
-  repositoryId: string
-  itemId: string
+  completedAtUtc?: string | null
+  createdAtUtc?: string | null
+  expiresAtUtc?: string | null
+  fields?: SignRequestFieldDto[]
   fileName?: string
-  signingMode?: string
-  status?: string
-  message?: string | null
-  initiatedByUserId?: string
   initiatedByEmail?: string
   initiatedByName?: string
-  expiresAtUtc?: string | null
-  createdAtUtc?: string | null
-  completedAtUtc?: string | null
-  signers?: SignRequestSignerDto[]
-  fields?: SignRequestFieldDto[]
+  initiatedByUserId?: string
   inviteToken?: string | null
+  itemId: string
+  message?: string | null
+  repositoryId: string
+  signers?: SignRequestSignerDto[]
+  signingMode?: string
+  signRequestId: string
+  status?: string
 }
 
-const normalizeField = (raw: any, fallbackEmail?: string, fallbackOrder?: number): SignRequestFieldDto | null => {
+export type SignRequestSignerDto = {
+  email: string
+  fields?: SignRequestFieldDto[]
+  invitedAtUtc?: string | null
+  inviteUrl?: string | null
+  name: string
+  order: number
+  signedAtUtc?: string | null
+  signerId?: string
+  status?: string
+}
+
+const normalizeField = (
+  raw: any,
+  fallbackEmail?: string,
+  fallbackOrder?: number,
+): SignRequestFieldDto | null => {
   if (!raw || typeof raw !== 'object') return null
   const pageNumber = Number(raw.pageNumber ?? raw.page ?? raw.PageNumber)
   const x = Number(raw.x ?? raw.X)
   const y = Number(raw.y ?? raw.Y)
   const width = Number(raw.width ?? raw.w ?? raw.Width)
   const height = Number(raw.height ?? raw.h ?? raw.Height)
-  if (![pageNumber, x, y, width, height].every((value) => Number.isFinite(value))) {
+  if (
+    ![pageNumber, x, y, width, height].every((value) => Number.isFinite(value))
+  ) {
     return null
   }
   return {
     fieldId: raw.fieldId || raw.id || raw.signatureFieldId || undefined,
     height,
     pageNumber: pageNumber || 1,
-    signerEmail: String(
-      raw.signerEmail || raw.email || fallbackEmail || '',
-    ).trim() || undefined,
-    signerName: raw.signerName || raw.name || undefined,
-    signerOrder: Number(raw.signerOrder ?? raw.order ?? fallbackOrder) || undefined,
     signedAtUtc: raw.signedAtUtc ?? null,
+    signerEmail:
+      String(raw.signerEmail || raw.email || fallbackEmail || '').trim() ||
+      undefined,
+    signerName: raw.signerName || raw.name || undefined,
+    signerOrder:
+      Number(raw.signerOrder ?? raw.order ?? fallbackOrder) || undefined,
     status: raw.status || undefined,
     width,
     x,
@@ -254,13 +257,21 @@ const normalizeField = (raw: any, fallbackEmail?: string, fallbackOrder?: number
 
 /** Collect signature places from create/get/preview payloads. */
 export const collectSignRequestFields = (
-  payload: {
-    fields?: any[]
-    signatureFields?: any[]
-    placements?: any[]
-    message?: string | null
-    signers?: Array<{ email?: string; name?: string; order?: number; fields?: any[] }>
-  } | null | undefined,
+  payload:
+    | {
+        fields?: any[]
+        message?: string | null
+        placements?: any[]
+        signatureFields?: any[]
+        signers?: Array<{
+          email?: string
+          fields?: any[]
+          name?: string
+          order?: number
+        }>
+      }
+    | null
+    | undefined,
 ): SignRequestFieldDto[] => {
   if (!payload) return []
   const collected: SignRequestFieldDto[] = []
@@ -280,11 +291,7 @@ export const collectSignRequestFields = (
     collected.push(field)
   }
 
-  const lists = [
-    payload.fields,
-    payload.signatureFields,
-    payload.placements,
-  ]
+  const lists = [payload.fields, payload.signatureFields, payload.placements]
   for (const list of lists) {
     if (!Array.isArray(list)) continue
     for (const field of list) {
@@ -297,11 +304,7 @@ export const collectSignRequestFields = (
     for (const signer of payload.signers) {
       const signerFields = Array.isArray(signer?.fields) ? signer.fields : []
       for (const field of signerFields) {
-        const normalized = normalizeField(
-          field,
-          signer.email,
-          signer.order,
-        )
+        const normalized = normalizeField(field, signer.email, signer.order)
         if (!normalized) continue
         if (!normalized.signerName && signer.name) {
           normalized.signerName = signer.name
@@ -365,10 +368,11 @@ export const createSignRequest = async (payload: CreateSignRequestPayload) => {
       fields: topLevelFields.length ? topLevelFields : undefined,
       // Persist places inside message so get/preview return them even if
       // the API drops the dedicated `fields` property.
-      message: embedSignFieldsInMessage(
-        payload.message?.trim() || undefined,
-        fieldsForMessage,
-      ) || undefined,
+      message:
+        embedSignFieldsInMessage(
+          payload.message?.trim() || undefined,
+          fieldsForMessage,
+        ) || undefined,
       signers: payload.signers.map((signer, index) => {
         const order = Number(signer.order) || index + 1
         const signerFields = (
@@ -416,8 +420,8 @@ export const createSignRequest = async (payload: CreateSignRequestPayload) => {
 }
 
 export const listItemSignRequests = async (payload: {
-  repositoryId: string
   itemId: string
+  repositoryId: string
   tenantId?: string
 }) => {
   const response: { data: SignRequestDto[]; error: string } = {
@@ -544,7 +548,10 @@ export const listPendingSignRequestsForMe = async (tenantId?: string) => {
   } catch (error: unknown) {
     if (isRequestCanceled(error)) return response
     console.error(error)
-    response.error = toErrorMessage(error, 'Unable to load pending sign requests')
+    response.error = toErrorMessage(
+      error,
+      'Unable to load pending sign requests',
+    )
   }
 
   return response
@@ -555,8 +562,7 @@ const buildSubmitBody = (payload: SubmitSignaturePayload) => ({
   height: Number(payload.height),
   pageNumber: Number(payload.pageNumber) || 1,
   signatureImageBase64: payload.signatureImageBase64,
-  signedAtClientUtc:
-    payload.signedAtClientUtc || new Date().toISOString(),
+  signedAtClientUtc: payload.signedAtClientUtc || new Date().toISOString(),
   width: Number(payload.width),
   x: Number(payload.x),
   y: Number(payload.y),
@@ -564,8 +570,8 @@ const buildSubmitBody = (payload: SubmitSignaturePayload) => ({
 
 /** Path B — logged-in user submits signature */
 export const submitSignRequest = async (payload: {
-  signRequestId: string
   signature: SubmitSignaturePayload
+  signRequestId: string
   tenantId?: string
 }) => {
   const response: { data: SignRequestDto | null; error: string } = {
@@ -602,28 +608,28 @@ export const submitSignRequest = async (payload: {
 }
 
 export type SignRequestInvitePreview = {
-  inviteToken: string
-  signRequestId: string
-  tenantId: string
-  repositoryId: string
-  itemId: string
-  fileName?: string
-  sourceOrganizationName?: string
-  senderName?: string
-  senderEmail?: string
-  recipientEmail?: string
-  signingMode?: string
-  signerOrder?: number
-  signerCount?: number
-  signerStatus?: string
-  signRequestStatus?: string
   expiresAtUtc?: string | null
+  fields?: SignRequestFieldDto[]
+  fileName?: string
+  inviteToken: string
+  itemId: string
+  message?: string | null
+  recipientEmail?: string
+  repositoryId: string
+  requiredSocialProvider?: string | null
   requiresLogin?: boolean
   requiresPasswordSetup?: boolean
-  requiredSocialProvider?: string | null
-  message?: string | null
-  fields?: SignRequestFieldDto[]
+  senderEmail?: string
+  senderName?: string
+  signerCount?: number
+  signerOrder?: number
   signers?: SignRequestSignerDto[]
+  signerStatus?: string
+  signingMode?: string
+  signRequestId: string
+  signRequestStatus?: string
+  sourceOrganizationName?: string
+  tenantId: string
 }
 
 export const getSignRequestInvitePreview = async (inviteToken: string) => {
@@ -656,10 +662,10 @@ export const getSignRequestInvitePreview = async (inviteToken: string) => {
 }
 
 export const getSignRequestInviteFile = async (payload: {
-  inviteToken: string
   accessToken?: string
-  tenantId?: string
   disposition?: 'inline' | 'attachment'
+  inviteToken: string
+  tenantId?: string
 }) => {
   const response: { data: Blob | null; error: string } = {
     data: null,
@@ -695,24 +701,27 @@ export const getSignRequestInviteFile = async (payload: {
   } catch (error: unknown) {
     if (isRequestCanceled(error)) return response
     console.error(error)
-    response.error = toErrorMessage(error, 'Unable to load document for signing')
+    response.error = toErrorMessage(
+      error,
+      'Unable to load document for signing',
+    )
   }
 
   return response
 }
 
 export const setSignRequestPassword = async (payload: {
-  inviteToken: string
   email: string
+  inviteToken: string
   password: string
   tenantId?: string
 }) => {
   const response: {
     data: {
-      userId?: string
       accessToken?: string
-      tokenType?: string
       expiresIn?: number
+      tokenType?: string
+      userId?: string
     } | null
     error: string
   } = {
@@ -743,17 +752,17 @@ export const setSignRequestPassword = async (payload: {
 }
 
 export const signRequestSocialLogin = async (payload: {
-  inviteToken: string
   email: string
+  inviteToken: string
   provider: string
   tenantId?: string
 }) => {
   const response: {
     data: {
-      userId?: string
       accessToken?: string
-      tokenType?: string
       expiresIn?: number
+      tokenType?: string
+      userId?: string
     } | null
     error: string
   } = {
@@ -785,9 +794,9 @@ export const signRequestSocialLogin = async (payload: {
 
 /** Path A — invite-token submit signature */
 export const submitInviteSignRequest = async (payload: {
+  accessToken?: string
   inviteToken: string
   signature: SubmitSignaturePayload
-  accessToken?: string
 }) => {
   const response: { data: SignRequestDto | null; error: string } = {
     data: null,

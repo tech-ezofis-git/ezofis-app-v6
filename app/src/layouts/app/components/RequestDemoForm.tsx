@@ -148,8 +148,10 @@ const RequestDemoForm = () => {
     const newErrors: FormErrors = {}
     if (!form.category) newErrors.category = 'Please complete this field.'
     if (!form.priority) newErrors.priority = 'Please complete this field.'
-    if (!form.contactMethod) newErrors.contactMethod = 'Please complete this field.'
-    if (!form.description.trim()) newErrors.description = 'Please complete this field.'
+    if (!form.contactMethod)
+      newErrors.contactMethod = 'Please complete this field.'
+    if (!form.description.trim())
+      newErrors.description = 'Please complete this field.'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)

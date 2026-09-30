@@ -2,25 +2,25 @@ import { useLingui } from '@lingui/react/macro'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { useEffect, useRef, useState } from 'react'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import showToast from '@/components/base/toast/showToast'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import type { AiSummaryData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
 import { DynamicIcon } from './icons'
 import { Button, Card } from './Ui'
 
 type AiSummaryViewProps = {
+  currentFileName?: string
   itemId: string
   repositoryId: string
   onBack: () => void
-  currentFileName?: string
 }
 
 export function AiSummaryView({
+  currentFileName,
   itemId,
   repositoryId,
   onBack,
-  currentFileName,
 }: AiSummaryViewProps) {
   const { i18n, t } = useLingui()
   const [data, setData] = useState<AiSummaryData | null>(null)
@@ -133,7 +133,7 @@ export function AiSummaryView({
       setExporting(true)
 
       // Force capture to start from the top-left regardless of the user's scroll position.
-      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      scrollContainer.scrollTo({ behavior: 'auto', left: 0, top: 0 })
 
       // Allow the browser one frame to apply the scroll position before capture.
       await new Promise<void>((resolve) =>
@@ -142,15 +142,15 @@ export function AiSummaryView({
 
       const canvas = await html2canvas(element, {
         backgroundColor: '#ffffff',
-        scale: 1.35,
-        useCORS: true,
+        height: element.scrollHeight,
         logging: false,
+        scale: 1.35,
         scrollX: 0,
         scrollY: 0,
+        useCORS: true,
         width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        windowWidth: element.scrollWidth,
         onclone: (clonedDocument) => {
           // Disable animation/transition effects in the exported copy.
           const style = clonedDocument.createElement('style')
@@ -167,10 +167,10 @@ export function AiSummaryView({
       // JPEG keeps the exported PDF substantially smaller than PNG.
       const imgData = canvas.toDataURL('image/jpeg', 0.72)
       const pdf = new jsPDF({
+        compress: true,
+        format: 'a4',
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
-        compress: true,
       })
 
       const pageWidth = pdf.internal.pageSize.getWidth()
@@ -180,7 +180,16 @@ export function AiSummaryView({
       let heightLeft = imgHeight
       let position = 0
 
-      pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight, undefined, 'FAST')
+      pdf.addImage(
+        imgData,
+        'JPEG',
+        0,
+        position,
+        pageWidth,
+        imgHeight,
+        undefined,
+        'FAST',
+      )
       heightLeft -= pageHeight
 
       while (heightLeft > 0) {
@@ -211,16 +220,16 @@ export function AiSummaryView({
     } finally {
       // Restore the user's original scroll position after exporting.
       scrollContainer.scrollTo({
-        top: previousScrollTop,
-        left: previousScrollLeft,
         behavior: 'auto',
+        left: previousScrollLeft,
+        top: previousScrollTop,
       })
       setExporting(false)
     }
   }
 
   const showLoading = loading || regenerating || (!data && !error)
-  const ShowCards = false;
+  const ShowCards = false
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[14px] text-gray-11'>
       <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
@@ -271,8 +280,8 @@ export function AiSummaryView({
                 <div>
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
                     {data.engineTitle === 'EZOFIS AI Summary' ||
-                      data.engineTitle === 'AI Summary' ||
-                      !data.engineTitle
+                    data.engineTitle === 'AI Summary' ||
+                    !data.engineTitle
                       ? t`AI Summary`
                       : data.engineTitle}
                   </h2>
@@ -340,89 +349,93 @@ export function AiSummaryView({
               )}
             </Card>
 
-            {data && ShowCards && (<><Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
-              <div className='mb-4 flex items-center justify-between'>
-                <h3 className='flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                  <DynamicIcon
-                    className='h-5 w-5 text-green-11'
-                    name='shield'
-                  />
-                  {t`Compliance & Risk Assessment`}
-                </h3>
-              </div>
-              {data.checks.length > 0 ? (
-                <div className='grid grid-cols-4 gap-3'>
-                  {data.checks.map((check) => (
-                    <div
-                      className='flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-green-5 bg-green-3 p-4 text-center text-green-11 transition-all hover:bg-green-4 active:scale-[0.99]'
-                      key={`${check.label}-${check.status}`}
-                    >
+            {data && ShowCards && (
+              <>
+                <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
+                  <div className='mb-4 flex items-center justify-between'>
+                    <h3 className='flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
                       <DynamicIcon
-                        className='mb-2 h-6 w-6'
-                        name={check.iconKey}
+                        className='h-5 w-5 text-green-11'
+                        name='shield'
                       />
-                      <b className='text-[13px] leading-5'>{check.label}</b>
-                      <span className='mt-2 inline-flex w-fit items-center rounded-full bg-green-9 px-2 py-1 text-[11px] leading-none font-bold whitespace-nowrap text-white'>
-                        {/^reviewed$/i.test(check.status)
-                          ? t`Reviewed`
-                          : check.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : data.complianceText ? (
-                <RichHtml
-                  className='text-[14px] leading-6 text-gray-13'
-                  html={data.complianceText}
-                />
-              ) : (
-                <p className='text-[14px] text-gray-10'>
-                  {t`No compliance assessment available.`}
-                </p>
-              )}
-            </Card>
-
-              <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
-                <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                  <AiBrandIcon className='size-5 text-orange-9' />
-                  {t`AI Recommendations`}
-                </h3>
-                {data.recommendations.length > 0 ? (
-                  <div className='space-y-3'>
-                    {data.recommendations.map((recommendation) => (
-                      <div
-                        className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
-                        key={recommendation}
-                      >
-                        ›{' '}
-                        <RichHtml
-                          as='span'
-                          className='inline'
-                          html={recommendation}
-                        />
-                      </div>
-                    ))}
+                      {t`Compliance & Risk Assessment`}
+                    </h3>
                   </div>
-                ) : (
-                  <p className='text-[14px] text-gray-10'>
-                    {t`No recommendations available.`}
-                  </p>
-                )}
-              </Card>
+                  {data.checks.length > 0 ? (
+                    <div className='grid grid-cols-4 gap-3'>
+                      {data.checks.map((check) => (
+                        <div
+                          className='flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-green-5 bg-green-3 p-4 text-center text-green-11 transition-all hover:bg-green-4 active:scale-[0.99]'
+                          key={`${check.label}-${check.status}`}
+                        >
+                          <DynamicIcon
+                            className='mb-2 h-6 w-6'
+                            name={check.iconKey}
+                          />
+                          <b className='text-[13px] leading-5'>{check.label}</b>
+                          <span className='mt-2 inline-flex w-fit items-center rounded-full bg-green-9 px-2 py-1 text-[11px] leading-none font-bold whitespace-nowrap text-white'>
+                            {/^reviewed$/i.test(check.status)
+                              ? t`Reviewed`
+                              : check.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : data.complianceText ? (
+                    <RichHtml
+                      className='text-[14px] leading-6 text-gray-13'
+                      html={data.complianceText}
+                    />
+                  ) : (
+                    <p className='text-[14px] text-gray-10'>
+                      {t`No compliance assessment available.`}
+                    </p>
+                  )}
+                </Card>
 
-              <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
-                <b>{t`Supplier Trend Insight`}</b>
-                {data.insight ? (
-                  <RichHtml
-                    className='mt-1 text-gray-10'
-                    html={data.insight}
-                  />
-                ) : (
-                  <p className='mt-1 text-gray-10'>
-                    {t`No supplier trend insight available.`}
-                  </p>
-                )}
-              </div></>)}
+                <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
+                  <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
+                    <AiBrandIcon className='size-5 text-orange-9' />
+                    {t`AI Recommendations`}
+                  </h3>
+                  {data.recommendations.length > 0 ? (
+                    <div className='space-y-3'>
+                      {data.recommendations.map((recommendation) => (
+                        <div
+                          className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
+                          key={recommendation}
+                        >
+                          ›{' '}
+                          <RichHtml
+                            as='span'
+                            className='inline'
+                            html={recommendation}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className='text-[14px] text-gray-10'>
+                      {t`No recommendations available.`}
+                    </p>
+                  )}
+                </Card>
+
+                <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
+                  <b>{t`Supplier Trend Insight`}</b>
+                  {data.insight ? (
+                    <RichHtml
+                      className='mt-1 text-gray-10'
+                      html={data.insight}
+                    />
+                  ) : (
+                    <p className='mt-1 text-gray-10'>
+                      {t`No supplier trend insight available.`}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}
@@ -512,14 +525,6 @@ function containsHtml(text: string) {
   return /<\/?[a-z][\s\S]*>/i.test(text)
 }
 
-/** Allowlist simple formatting tags from AI output; strip everything else. */
-function sanitizeAiHtml(html: string) {
-  return html
-    .replace(/<(?!\/?(?:b|u|i|em|strong|br|p)\b)[^>]*>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript:/gi, '')
-}
-
 function RichHtml({
   as = 'p',
   className,
@@ -539,6 +544,14 @@ function RichHtml({
       dangerouslySetInnerHTML={{ __html: sanitizeAiHtml(html) }}
     />
   )
+}
+
+/** Allowlist simple formatting tags from AI output; strip everything else. */
+function sanitizeAiHtml(html: string) {
+  return html
+    .replace(/<(?!\/?(?:b|u|i|em|strong|br|p)\b)[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript:/gi, '')
 }
 
 function TypewriterText({ text }: { text: string }) {

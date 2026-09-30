@@ -521,7 +521,7 @@ const AddNodeMenu = () => {
                       }
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
+                  <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -554,7 +554,7 @@ const AddNodeMenu = () => {
                       style={{ color: item.iconColor }}
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
+                  <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -581,7 +581,7 @@ const AddNodeMenu = () => {
                     }
                   />
                 </div>
-                <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
+                <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                   {item.label}
                 </span>
               </button>

@@ -2,13 +2,13 @@ import { create } from 'zustand'
 import type { AskAiPageContext, AskAiPendingAction } from '../types'
 
 type AskAiActionStore = {
+  pageContext: AskAiPageContext | null
+  pending: AskAiPendingAction | null
   clearContext: () => void
   clearPending: () => void
   consumePending: (
     target?: AskAiPendingAction['target'],
   ) => AskAiPendingAction | null
-  pageContext: AskAiPageContext | null
-  pending: AskAiPendingAction | null
   setPageContext: (context: AskAiPageContext | null) => void
   setPending: (action: AskAiPendingAction | null) => void
 }

@@ -3,18 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
-
-import {
-  getGroups,
-  getUsers,
-} from '@/api/v6/user'
+import { getGroups, getUsers } from '@/api/v6/user'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { extractGenericRequestNumber, getFieldKeyByLabel } from '@/pages/requests/components/columns/useDynamicColumns'
+import {
+  extractGenericRequestNumber,
+  getFieldKeyByLabel,
+} from '@/pages/requests/components/columns/useDynamicColumns'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -518,15 +517,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -881,8 +880,7 @@ const Request = ({
     selectedItem?.formId ||
     null
 
-  const hasWorkflowFormPanels =
-    getFormPanels(rawWorkflowData).length > 0
+  const hasWorkflowFormPanels = getFormPanels(rawWorkflowData).length > 0
 
   // Fetched once here (rather than separately inside the header badge and
   // the overview's own Attachments panel) so the header's attachment count,
@@ -1046,8 +1044,8 @@ const Request = ({
     if (!formJson || getFormPanels({ formJson }).length === 0) return
     requestStore.getState().setRawWorkflowData({
       ...rawWorkflowData,
-      formJson,
       formId: request?.formId || rawWorkflowData.formId,
+      formJson,
     })
   }, [
     request?._formDefinition,
@@ -1096,14 +1094,15 @@ const Request = ({
   }, [request, selectedItem])
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
-  const qualifyResponse = request?.qualifyAgentResponse || selectedItem?.qualifyAgentResponse
-  const hasAgentData = agentDataList.length > 0 || !!qualifyResponse?.qualifier_result
+  const qualifyResponse =
+    request?.qualifyAgentResponse || selectedItem?.qualifyAgentResponse
+  const hasAgentData =
+    agentDataList.length > 0 || !!qualifyResponse?.qualifier_result
 
   const currentAgentData = useMemo(() => {
     // For Generic Workflows where AI Insights comes from Qualify Agent Response
     if (qualifyResponse?.qualifier_result) {
       return {
-        score: qualifyResponse.qualifier_result.Confidence,
         reason:
           qualifyResponse.qualifier_result['Ai Insight'] ||
           qualifyResponse.qualifier_result['AI Insight'] ||
@@ -1111,6 +1110,7 @@ const Request = ({
           qualifyResponse.qualifier_result['Detailed Reasoning'] ||
           qualifyResponse.qualifier_result.Reasoning ||
           qualifyResponse.qualifier_result.Decision,
+        score: qualifyResponse.qualifier_result.Confidence,
         ...qualifyResponse.qualifier_result,
       }
     }
@@ -1157,12 +1157,12 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc ||
-      request.qualifyAgentResponse?.qualifier_result ||
-      request.agentResponse
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc ||
+        request.qualifyAgentResponse?.qualifier_result ||
+        request.agentResponse
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1231,9 +1231,9 @@ const Request = ({
       currentBlockSettings?.internalForward
     ) {
       derivedActions.push({
+        color: 'gray',
         label: 'Forward',
         value: 'Forward',
-        color: 'gray',
         variant: 'outline',
       })
     }
@@ -1278,14 +1278,14 @@ const Request = ({
   )
 
   const { data: usersResponse } = useQuery({
-    queryKey: ['v6-users'],
     queryFn: getUsers,
+    queryKey: ['v6-users'],
   })
   const allUsersForAssignee = (usersResponse as any)?.data
 
   const { data: groupsResponse } = useQuery({
-    queryKey: ['v6-groups'],
     queryFn: getGroups,
+    queryKey: ['v6-groups'],
   })
   const allGroupsForAssignee = (groupsResponse as any)?.data
 
@@ -1362,7 +1362,9 @@ const Request = ({
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
-    const titleField = rawWorkflowData?.settings?.general?.requestTitleField || rawWorkflowData?.workflowJson?.settings?.general?.requestTitleField
+    const titleField =
+      rawWorkflowData?.settings?.general?.requestTitleField ||
+      rawWorkflowData?.workflowJson?.settings?.general?.requestTitleField
     const isDocumentApproval = selectedWorkflow?.name === 'Document Approval'
 
     let configuredTitle = null
@@ -1372,15 +1374,22 @@ const Request = ({
       }
 
       if (!configuredTitle) {
-        const actualFieldKey = getFieldKeyByLabel(rawWorkflowData || selectedWorkflow, titleField) || titleField
-        configuredTitle = isGenericWorkflow ? genericFormModel?.[actualFieldKey] : formModel?.[actualFieldKey]
+        const actualFieldKey =
+          getFieldKeyByLabel(rawWorkflowData || selectedWorkflow, titleField) ||
+          titleField
+        configuredTitle = isGenericWorkflow
+          ? genericFormModel?.[actualFieldKey]
+          : formModel?.[actualFieldKey]
         if (!configuredTitle) {
           let parsedData = selectedItem?.formData
           if (typeof parsedData === 'string') {
-            try { parsedData = JSON.parse(parsedData) } catch { }
+            try {
+              parsedData = JSON.parse(parsedData)
+            } catch {}
           }
           const formDataFields = parsedData?.fields || parsedData
-          configuredTitle = formDataFields?.[actualFieldKey] || formDataFields?.[titleField]
+          configuredTitle =
+            formDataFields?.[actualFieldKey] || formDataFields?.[titleField]
         }
       }
     }
@@ -1389,7 +1398,9 @@ const Request = ({
       raw = configuredTitle
     } else if (isGenericWorkflow) {
       if (isDocumentApproval) {
-        raw = selectedItem?.repositoryItem?.fileName || extractGenericRequestNumber(selectedItem)
+        raw =
+          selectedItem?.repositoryItem?.fileName ||
+          extractGenericRequestNumber(selectedItem)
       } else {
         const genericNo = extractGenericRequestNumber(selectedItem)
         raw = genericNo === '-' ? 'REQ - ...' : genericNo
@@ -1401,19 +1412,19 @@ const Request = ({
         formModel?.['invoice_number'] ||
         formModel?.['invoice_no'] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'Invoice No'
+          'Invoice No'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_no'
+          'invoice_no'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'Invoice Number'
+          'Invoice Number'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_number'
+          'invoice_number'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_num'
+          'invoice_num'
         ] ||
         currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
         selectedItem?.reqNo ||
@@ -1479,8 +1490,8 @@ const Request = ({
       getWorkflowRepositoryId(
         rawWorkflowData,
         rawWorkflowData?.repositoryId ||
-        selectedItem?.repositoryId ||
-        request?.repositoryId,
+          selectedItem?.repositoryId ||
+          request?.repositoryId,
       ),
     )
     if (!stored) return
@@ -1690,7 +1701,11 @@ const Request = ({
 
       const formDataStr = JSON.stringify(fields)
 
-      let targetUserId = selectedItem?.userId || request?.userId || authUserStore.getState().session?.id || null
+      let targetUserId =
+        selectedItem?.userId ||
+        request?.userId ||
+        authUserStore.getState().session?.id ||
+        null
       if (action === 'Forward' && (window as any)._selectedForwardUserId) {
         targetUserId = (window as any)._selectedForwardUserId
       }
@@ -1703,9 +1718,12 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
-        comments: action === 'Forward' && (window as any)._forwardComments ? (window as any)._forwardComments : '',
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
+        comments:
+          action === 'Forward' && (window as any)._forwardComments
+            ? (window as any)._forwardComments
+            : '',
         formData: formDataStr,
         formEntryId: Number(
           selectedItem?.formEntryId || request?.formEntryId || 0,
@@ -1745,8 +1763,8 @@ const Request = ({
 
       if (action === 'Forward') {
         Object.assign(payload, {
+          assignToUserId: (window as any)._selectedForwardUserId,
           internalForwardUserId: [(window as any)._selectedForwardUserId],
-          assignToUserId: (window as any)._selectedForwardUserId
         })
       }
 
@@ -1818,10 +1836,10 @@ const Request = ({
             ? genericFormModel
             : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1979,9 +1997,7 @@ const Request = ({
           const context: ApiPlaygroundContext = {
             actionName: action?.label || 'Paid',
             document: docInfo,
-            endpoint:
-              action?.endpoint ||
-              'https://v6playground.onrender.com/',
+            endpoint: action?.endpoint || 'https://v6playground.onrender.com/',
             requestPayload: docInfo,
           }
           setPlaygroundContext(context)
@@ -2122,38 +2138,11 @@ const Request = ({
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
-          actions={headerActions.map((a: any) => {
-            console.log('Header action being mapped:', a.value, a.label)
-            if (String(a.value).toLowerCase() === 'forward' || String(a.label).toLowerCase() === 'forward') {
-              console.log('Found Forward action!',)
-              return {
-                ...a,
-                onClick: (e: any) => {
-                  e?.preventDefault?.()
-                },
-                renderWrapper: (btn: React.ReactNode) => (
-                  <ForwardPopover
-                    target={btn}
-                    users={allUsersForAssignee || []}
-                    onConfirm={(userId, comments) => {
-                      (window as any)._selectedForwardUserId = userId
-                      if (comments) (window as any)._forwardComments = comments
-                      handleVerifier(a.value)
-                    }}
-                  />
-                )
-              }
-            }
-            return {
-              ...a,
-              onClick: a.onClick || (() => handleVerifier(a.value))
-            }
-          })}
           agentData={currentAgentData}
-          enableAIInsights={hasAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
           currency={currency}
+          enableAIInsights={hasAgentData}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
@@ -2167,6 +2156,36 @@ const Request = ({
           simple={isGenericWorkflow}
           status={statusBadge}
           totalAmount={totalAmount}
+          actions={headerActions.map((a: any) => {
+            console.log('Header action being mapped:', a.value, a.label)
+            if (
+              String(a.value).toLowerCase() === 'forward' ||
+              String(a.label).toLowerCase() === 'forward'
+            ) {
+              console.log('Found Forward action!')
+              return {
+                ...a,
+                renderWrapper: (btn: React.ReactNode) => (
+                  <ForwardPopover
+                    target={btn}
+                    users={allUsersForAssignee || []}
+                    onConfirm={(userId, comments) => {
+                      ;(window as any)._selectedForwardUserId = userId
+                      if (comments) (window as any)._forwardComments = comments
+                      handleVerifier(a.value)
+                    }}
+                  />
+                ),
+                onClick: (e: any) => {
+                  e?.preventDefault?.()
+                },
+              }
+            }
+            return {
+              ...a,
+              onClick: a.onClick || (() => handleVerifier(a.value)),
+            }
+          })}
           attachmentCount={
             isGenericWorkflow
               ? genericAttachments.length
@@ -2251,9 +2270,7 @@ const Request = ({
       {/* Tab Content */}
       <div className='flex min-h-0 w-full flex-1 overflow-hidden'>
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-          <AnimateFadeIn
-            className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
-          >
+          <AnimateFadeIn className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'>
             {isGenericWorkflow ? (
               <GenericRequestOverview
                 attachments={genericAttachments}
@@ -2283,31 +2300,6 @@ const Request = ({
               />
             ) : (
               <Overview
-                actions={headerActions.map((a: any) => {
-                  if (String(a.value).toLowerCase() === 'forward' || String(a.label).toLowerCase() === 'forward') {
-                    return {
-                      ...a,
-                      onClick: (e: any) => {
-                        e?.preventDefault?.()
-                      },
-                      renderWrapper: (btn: React.ReactNode) => (
-                        <ForwardPopover
-                          target={btn}
-                          users={allUsersForAssignee || []}
-                          onConfirm={(userId, comments) => {
-                            (window as any)._selectedForwardUserId = userId
-                            if (comments) (window as any)._forwardComments = comments
-                            handleVerifier(a.value)
-                          }}
-                        />
-                      )
-                    }
-                  }
-                  return {
-                    ...a,
-                    onClick: a.onClick || (() => handleVerifier(a.value))
-                  }
-                })}
                 agentData={currentAgentData}
                 allowedLabels={allowedLabels}
                 formDefinition={request?._formDefinition}
@@ -2322,6 +2314,35 @@ const Request = ({
                 selectedWorkflow={selectedWorkflow}
                 transactionId={selectedItem?.transactionId as any}
                 workflowId={resolvedWorkflowId}
+                actions={headerActions.map((a: any) => {
+                  if (
+                    String(a.value).toLowerCase() === 'forward' ||
+                    String(a.label).toLowerCase() === 'forward'
+                  ) {
+                    return {
+                      ...a,
+                      renderWrapper: (btn: React.ReactNode) => (
+                        <ForwardPopover
+                          target={btn}
+                          users={allUsersForAssignee || []}
+                          onConfirm={(userId, comments) => {
+                            ;(window as any)._selectedForwardUserId = userId
+                            if (comments)
+                              (window as any)._forwardComments = comments
+                            handleVerifier(a.value)
+                          }}
+                        />
+                      ),
+                      onClick: (e: any) => {
+                        e?.preventDefault?.()
+                      },
+                    }
+                  }
+                  return {
+                    ...a,
+                    onClick: a.onClick || (() => handleVerifier(a.value)),
+                  }
+                })}
                 setFormModel={setFormModel}
                 setRightView={setRightView}
               />

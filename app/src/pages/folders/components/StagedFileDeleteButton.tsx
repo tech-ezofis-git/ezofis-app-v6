@@ -6,26 +6,38 @@ import Tooltip from '@/components/base/Tooltip'
 import { getRepositoryFieldRawValue } from '../utils/repositoryFieldUtils'
 import { DynamicIcon } from './icons'
 
-export const isUnarchivedStageFile = (file: {
-  isArchived?: boolean
-  isStaged?: boolean
-  rawStatus?: string
-  stageFileId?: string
-  status?: string
-} | null | undefined) => {
+export const isUnarchivedStageFile = (
+  file:
+    | {
+        isArchived?: boolean
+        isStaged?: boolean
+        rawStatus?: string
+        stageFileId?: string
+        status?: string
+      }
+    | null
+    | undefined,
+) => {
   if (!file?.isStaged && !file?.stageFileId) return false
   if (file.isArchived) return false
-  const status = String(file.status || (file as any)?.rawStatus || '').toUpperCase()
+  const status = String(
+    file.status || (file as any)?.rawStatus || '',
+  ).toUpperCase()
   return status !== 'ARCHIVED'
 }
 
-export const isArchivedFile = (file: {
-  isArchived?: boolean
-  isStaged?: boolean
-  rawStatus?: string
-  stageFileId?: string
-  status?: string
-} | null | undefined) => {
+export const isArchivedFile = (
+  file:
+    | {
+        isArchived?: boolean
+        isStaged?: boolean
+        rawStatus?: string
+        stageFileId?: string
+        status?: string
+      }
+    | null
+    | undefined,
+) => {
   if (!file) return false
   return !isUnarchivedStageFile(file)
 }
@@ -33,10 +45,10 @@ export const isArchivedFile = (file: {
 export const hasAllMandatoryFieldsFilled = (
   file: any,
   columns?: Array<{
-    key: string
-    label?: string
     fieldId?: string
     isMandatory?: boolean
+    key: string
+    label?: string
   }>,
   contextFilters: Record<string, string> = {},
 ): boolean => {
@@ -64,64 +76,6 @@ export const hasAllMandatoryFieldsFilled = (
     }
     return String(val).trim() !== ''
   })
-}
-
-export function StagedFileExportButton({
-  disabled = false,
-  fileName,
-  onExport,
-}: {
-  disabled?: boolean
-  fileName: string
-  onExport: () => Promise<void>
-}) {
-  const { t } = useLingui()
-  const [opened, setOpened] = useState(false)
-  const [isConfirming, setIsConfirming] = useState(false)
-
-  return (
-    <>
-      <Tooltip content={t`Export staged file`} position='top'>
-        <button
-          aria-label={t`Export`}
-          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary-10 transition-all hover:bg-primary-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
-          disabled={disabled || isConfirming}
-          type='button'
-          onClick={(event) => {
-            event.stopPropagation()
-            setOpened(true)
-          }}
-        >
-          <Icon className='size-4' name='tabler:file-export' />
-        </button>
-      </Tooltip>
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Export`}
-        description={t`Export ${fileName} to the repository?`}
-        isConfirming={isConfirming}
-        opened={opened}
-        title={t`Export staged file`}
-        variant='default'
-        onCancel={() => {
-          if (!isConfirming) setOpened(false)
-        }}
-        onConfirm={() => {
-          void (async () => {
-            setIsConfirming(true)
-            try {
-              await onExport()
-              setOpened(false)
-            } catch {
-              // The caller reports the error. Keep the dialog open.
-            } finally {
-              setIsConfirming(false)
-            }
-          })()
-        }}
-      />
-    </>
-  )
 }
 
 export function StagedFileDeleteButton({
@@ -169,6 +123,64 @@ export function StagedFileDeleteButton({
             setIsConfirming(true)
             try {
               await onDelete()
+              setOpened(false)
+            } catch {
+              // The caller reports the error. Keep the dialog open.
+            } finally {
+              setIsConfirming(false)
+            }
+          })()
+        }}
+      />
+    </>
+  )
+}
+
+export function StagedFileExportButton({
+  disabled = false,
+  fileName,
+  onExport,
+}: {
+  disabled?: boolean
+  fileName: string
+  onExport: () => Promise<void>
+}) {
+  const { t } = useLingui()
+  const [opened, setOpened] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+
+  return (
+    <>
+      <Tooltip content={t`Export staged file`} position='top'>
+        <button
+          aria-label={t`Export`}
+          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary-10 transition-all hover:bg-primary-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+          disabled={disabled || isConfirming}
+          type='button'
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpened(true)
+          }}
+        >
+          <Icon className='size-4' name='tabler:file-export' />
+        </button>
+      </Tooltip>
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Export`}
+        description={t`Export ${fileName} to the repository?`}
+        isConfirming={isConfirming}
+        opened={opened}
+        title={t`Export staged file`}
+        variant='default'
+        onCancel={() => {
+          if (!isConfirming) setOpened(false)
+        }}
+        onConfirm={() => {
+          void (async () => {
+            setIsConfirming(true)
+            try {
+              await onExport()
               setOpened(false)
             } catch {
               // The caller reports the error. Keep the dialog open.

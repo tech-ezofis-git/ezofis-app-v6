@@ -11,9 +11,9 @@ import InputRadioIndicator from '../InputRadioIndicator'
 interface Props extends Option {
   icon?: string
   iconKey?: string
+  isSelected?: boolean
   /** Shown on the trailing edge of the option row (e.g. folder / workflow). */
   rightIconKey?: string
-  isSelected?: boolean
   variant?: SelectVariant
 }
 
@@ -33,12 +33,20 @@ const ComboboxOption = ({
     disabled && 'cursor-not-allowed',
   )
 
-  const renderIcon = (key?: string, className = 'size-4 shrink-0 text-gray-11') => {
+  const renderIcon = (
+    key?: string,
+    className = 'size-4 shrink-0 text-gray-11',
+  ) => {
     if (!key) return null
     if (key.includes(':')) {
       return <Icon className={className} name={key} />
     }
-    return <DynamicIcon className={cn('h-4 w-4 shrink-0 text-gray-11', className)} name={key} />
+    return (
+      <DynamicIcon
+        className={cn('h-4 w-4 shrink-0 text-gray-11', className)}
+        name={key}
+      />
+    )
   }
 
   return (
@@ -58,20 +66,22 @@ const ComboboxOption = ({
 
       <div className='min-w-0 flex-1'>
         <MantineTooltip
-          classNames={{
-            tooltip:
-              'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
-          }}
           disabled={!name || name.length < 24}
           label={name}
-          multiline
           openDelay={250}
           position='top'
           w={240}
-          withArrow
           zIndex={20050}
+          multiline
+          withArrow
+          classNames={{
+            tooltip:
+              'rounded-md bg-gray-13 px-2.5 py-1.5 font-sans text-xs leading-relaxed font-normal break-words whitespace-normal text-white shadow-lg',
+          }}
         >
-          <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
+          <div className='truncate text-13 font-normal text-gray-12'>
+            {name}
+          </div>
         </MantineTooltip>
         {description && (
           <div className='mt-0.5 line-clamp-2 text-xs text-gray-10'>

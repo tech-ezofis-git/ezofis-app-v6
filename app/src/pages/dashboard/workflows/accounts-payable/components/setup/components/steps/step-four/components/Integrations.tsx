@@ -87,9 +87,7 @@ const Integrations = () => {
       account:
         emailSettings.provider === 'DIRECT_UPLOAD'
           ? t`N/A`
-          : emailSettings.account ||
-            emailSettings.email ||
-            t`Not configured`,
+          : emailSettings.account || emailSettings.email || t`Not configured`,
       icon: getEmailIcon(),
       iconBgColor: getEmailIconBg(),
       iconColor: getEmailIconColor(),

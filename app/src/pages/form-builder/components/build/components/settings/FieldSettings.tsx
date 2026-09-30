@@ -144,7 +144,7 @@ const SettingsHeader = ({
       : icon
 
   return (
-    <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3 bg-white'>
+    <div className='flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
       <div className='flex min-w-0 flex-1 items-center gap-2.5'>
         <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
           <Icon height={16} name={headerIcon} width={16} />
@@ -171,7 +171,7 @@ const SettingsHeader = ({
                   {activeQuestion.label || 'Untitled Field'}
                 </h2>
                 <Badge
-                  className='h-auto self-start bg-gray-2 px-1.5 py-0.5 text-[9px] font-semibold text-gray-10 tracking-wider uppercase'
+                  className='h-auto self-start bg-gray-2 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-gray-10 uppercase'
                   radius='sm'
                   size='xs'
                   variant='filled'

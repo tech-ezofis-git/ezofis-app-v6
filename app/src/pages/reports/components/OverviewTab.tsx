@@ -83,11 +83,11 @@ const OverviewTab = ({ report }: Props) => {
       previewColumns.map((col) => {
         const setting = report.fieldSettings[col.id]
         return {
-          accessorFn: (row: Row) => row[col.id],
           id: col.id,
           label: col.label,
           meta: { label: col.label },
           size: 180,
+          accessorFn: (row: Row) => row[col.id],
           renderCell: (row: Row) => {
             if (setting?.colType === 'status') {
               const status = resolveFieldStatus(
@@ -298,11 +298,14 @@ const OverviewTab = ({ report }: Props) => {
         filters={filterDefinitions}
         showReset={Boolean(
           search ||
-            selectedColumnId ||
-            Object.values(activeFilters).some(Boolean),
+          selectedColumnId ||
+          Object.values(activeFilters).some(Boolean),
         )}
         trailingActions={
-          <TableExport fileName={report.name || 'report'} table={renderTable as any} />
+          <TableExport
+            fileName={report.name || 'report'}
+            table={renderTable as any}
+          />
         }
         onFilterChange={(id, value) => {
           setActiveFilters((prev) => ({ ...prev, [id]: value }))

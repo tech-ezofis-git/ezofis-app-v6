@@ -6,48 +6,6 @@ import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import SettingsSection from '../common/SettingsSection'
 
-interface RowProps {
-  children?: React.ReactNode
-  checked: boolean
-  description: string
-  icon: string
-  iconClassName: string
-  title: string
-  onChange: (checked: boolean) => void
-}
-
-function AssigneeRow({
-  checked,
-  children,
-  description,
-  icon,
-  iconClassName,
-  title,
-  onChange,
-}: RowProps) {
-  return (
-    <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2.5'>
-          <Icon className={iconClassName} name={icon} />
-          <div className='flex flex-col space-y-1'>
-            <span className='text-13 font-medium text-gray-12'>{title}</span>
-            <span className='text-11 leading-tight text-gray-9'>
-              {description}
-            </span>
-          </div>
-        </div>
-        <InputSwitch checked={checked} onChange={onChange} />
-      </div>
-      {checked && children && (
-        <div className='animate-in fade-in slide-in-from-top-1 duration-200'>
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
 interface GeneralTabProps {
   actorNodeOptions: Option[]
   fieldOptions: Option[]
@@ -59,14 +17,24 @@ interface GeneralTabProps {
   onToggleSection: (key: string) => void
 }
 
+interface RowProps {
+  checked: boolean
+  description: string
+  icon: string
+  iconClassName: string
+  title: string
+  children?: React.ReactNode
+  onChange: (checked: boolean) => void
+}
+
 export default function GeneralTab({
   actorNodeOptions,
   fieldOptions,
   groupOptions,
   nodeData,
   openSections,
-  userOptions,
   updateNodeData,
+  userOptions,
   onToggleSection,
 }: GeneralTabProps) {
   const selectedUsers: Option[] = Array.isArray(nodeData.selectedUsers)
@@ -90,14 +58,19 @@ export default function GeneralTab({
       )
     : []
   const generatePDFFields: Option[] = Array.isArray(nodeData.generatePDFFields)
-    ? fieldOptions.filter((o) => nodeData.generatePDFFields.includes(String(o.id)))
+    ? fieldOptions.filter((o) =>
+        nodeData.generatePDFFields.includes(String(o.id)),
+      )
     : []
   const generateCSVFields: Option[] = Array.isArray(nodeData.generateCSVFields)
-    ? fieldOptions.filter((o) => nodeData.generateCSVFields.includes(String(o.id)))
+    ? fieldOptions.filter((o) =>
+        nodeData.generateCSVFields.includes(String(o.id)),
+      )
     : []
   const dynamicUserField: Option | null = nodeData.dynamicUserField
-    ? fieldOptions.find((o) => String(o.id) === String(nodeData.dynamicUserField)) ||
-      null
+    ? fieldOptions.find(
+        (o) => String(o.id) === String(nodeData.dynamicUserField),
+      ) || null
     : null
 
   const forwardActionOptions: Option[] = [
@@ -195,8 +168,8 @@ export default function GeneralTab({
               className='bg-white'
               options={fieldOptions}
               placeholder='Select form field...'
-              searchable
               value={dynamicUserField}
+              searchable
               onChange={(val) =>
                 updateNodeData('dynamicUserField', val ? String(val.id) : null)
               }
@@ -471,6 +444,38 @@ export default function GeneralTab({
           </AssigneeRow>
         </div>
       </SettingsSection>
+    </div>
+  )
+}
+
+function AssigneeRow({
+  checked,
+  children,
+  description,
+  icon,
+  iconClassName,
+  title,
+  onChange,
+}: RowProps) {
+  return (
+    <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2.5'>
+          <Icon className={iconClassName} name={icon} />
+          <div className='flex flex-col space-y-1'>
+            <span className='text-13 font-medium text-gray-12'>{title}</span>
+            <span className='text-11 leading-tight text-gray-9'>
+              {description}
+            </span>
+          </div>
+        </div>
+        <InputSwitch checked={checked} onChange={onChange} />
+      </div>
+      {checked && children && (
+        <div className='animate-in fade-in slide-in-from-top-1 duration-200'>
+          {children}
+        </div>
+      )}
     </div>
   )
 }

@@ -2,30 +2,30 @@ import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
 import { ArrowLeft } from 'lucide-react'
 import React, { useMemo } from 'react'
-import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
-import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   getFirstReceivedAttachment,
   getLatestAttachment,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
+import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import {
+  type AgentBlock,
+  documentGenerateIsComplete,
+} from './AgentSummaryBoxes'
 import QualifyAgentResultView from './QualifyAgentResultView'
 import QuoteAgentResultView from './QuoteAgentResultView'
-import {
-  documentGenerateIsComplete,
-  type AgentBlock,
-} from './AgentSummaryBoxes'
 
 interface AgentDetailPlaceholderProps {
   agentBlock: AgentBlock
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  requestData: any
   attachments?: AttachmentItem[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formModel?: Record<string, any>
   hideBack?: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawWorkflowData?: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  requestData: any
   repositoryId?: string | number
   viewOnly?: boolean
   onBack: () => void
@@ -40,12 +40,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   attachments = [],
   formModel,
   hideBack = false,
-  onBack,
-  onFieldChange,
   rawWorkflowData,
   repositoryId,
   requestData,
   viewOnly,
+  onBack,
+  onFieldChange,
 }) => {
   const { t } = useLingui()
   const label = agentBlock.settings?.label || 'Agent Details'
@@ -87,17 +87,16 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
 
     if (requestItemId && firstId && requestItemId !== firstId) {
       return {
+        _localFileUrl: requestData?._localFileUrl,
+        fileExtension:
+          requestData?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+        fileName: requestData?.repositoryItem?.fileName || requestData?.name,
         itemId: requestData.itemId,
+        name: requestData?.repositoryItem?.fileName || requestData?.name,
         repositoryId:
           requestData.repositoryId ||
           repositoryId ||
           firstReceived?.repositoryId,
-        fileName:
-          requestData?.repositoryItem?.fileName || requestData?.name,
-        name: requestData?.repositoryItem?.fileName || requestData?.name,
-        fileExtension:
-          requestData?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-        _localFileUrl: requestData?._localFileUrl,
       }
     }
 
@@ -109,11 +108,14 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     docPreviewAttachment?.repositoryId ||
     repositoryId ||
     requestData?.repositoryId
-  const { isLoading: docLoading, mimeType, previewUrl } =
-    useAttachmentPreviewUrl(
-      isDocGen ? (docPreviewAttachment as any) : null,
-      docRepoId,
-    )
+  const {
+    isLoading: docLoading,
+    mimeType,
+    previewUrl,
+  } = useAttachmentPreviewUrl(
+    isDocGen ? (docPreviewAttachment as any) : null,
+    docRepoId,
+  )
 
   let hasAgentResponse = false
   if (isQualify) {
@@ -138,15 +140,17 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       (requestData?._agentData && requestData._agentData.length > 0)
   }
 
-  const status = String(requestData?.status || '').toLowerCase().trim()
+  const status = String(requestData?.status || '')
+    .toLowerCase()
+    .trim()
   const isDone = Boolean(
     requestData?.completedAtUtc ||
-      requestData?.completedAt ||
-      status === 'completed' ||
-      status === 'complete' ||
-      status === 'closed' ||
-      status.includes('success') ||
-      (isDocGen && documentGenerateIsComplete(requestData, agentBlock)),
+    requestData?.completedAt ||
+    status === 'completed' ||
+    status === 'complete' ||
+    status === 'closed' ||
+    status.includes('success') ||
+    (isDocGen && documentGenerateIsComplete(requestData, agentBlock)),
   )
   const isProcessing = !hasAgentResponse && !isDone
 
@@ -195,10 +199,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
           </div>
         ) : isDocGen ? (
           <div className='flex flex-col items-center justify-center gap-3 py-12 text-center'>
-            <Icon
-              className='h-10 w-10 text-gray-7'
-              icon='tabler:file-off'
-            />
+            <Icon className='h-10 w-10 text-gray-7' icon='tabler:file-off' />
             <h3 className='text-base font-medium text-gray-12'>
               {t`No generated document yet`}
             </h3>

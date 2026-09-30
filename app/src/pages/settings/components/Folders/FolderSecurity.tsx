@@ -41,7 +41,7 @@ import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 import FolderRetention from './FolderRetention'
 import FolderRetentionPolicyWizard from './FolderRetentionPolicyWizard'
 import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
-import { seedPolicies, type RetentionPolicy } from './retentionMockData'
+import { type RetentionPolicy, seedPolicies } from './retentionMockData'
 
 export type FolderSecurityProps = {
   folderName: string
@@ -65,7 +65,6 @@ const getInitials = (name: string) => {
   if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
   return clean.slice(0, 2).toUpperCase()
 }
-
 
 export default function FolderSecurity({
   folderName,

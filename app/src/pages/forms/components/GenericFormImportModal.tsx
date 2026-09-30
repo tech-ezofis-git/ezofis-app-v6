@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from '@/api/form/form'
 import logoMark from '@/assets/logo/mark.png'
 import Button from '@/components/base/button/Button'
@@ -13,9 +14,10 @@ import {
   AnimateFadeIn,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import type { Question } from '@/pages/form-builder/store/formStore'
-import cn from '@/utils/cn'
 import { findBestHeaderMatch } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import cn from '@/utils/cn'
+
+export type GenericImportStrategy = 'replace' | 'append'
 
 export type GenericUploadState =
   | 'idle'
@@ -25,10 +27,6 @@ export type GenericUploadState =
   | 'processing'
   | 'completed'
   | 'error'
-
-export type GenericImportStrategy = 'replace' | 'append'
-type TimelineStepState = 'waiting' | 'active' | 'done'
-
 type Props = {
   fields: Question[]
   formId: string
@@ -36,6 +34,8 @@ type Props = {
   onClose: () => void
   onComplete: () => void
 }
+
+type TimelineStepState = 'waiting' | 'active' | 'done'
 
 export default function GenericFormImportModal({
   fields,
@@ -55,12 +55,29 @@ export default function GenericFormImportModal({
         const label = (f.label || '').toLowerCase().trim()
 
         const isMetadataKey =
-          ['id', 'entryid', 'entry #', 'entry_id', 'itemid', 'createdat', 'createdby', 'modifiedat', 'modifiedby', 'isdeleted'].includes(fieldId) ||
-          ['entry #', 'entry id', 'id', 'created by', 'created date', 'modified by', 'modified date'].includes(label)
+          [
+            'id',
+            'entryid',
+            'entry #',
+            'entry_id',
+            'itemid',
+            'createdat',
+            'createdby',
+            'modifiedat',
+            'modifiedby',
+            'isdeleted',
+          ].includes(fieldId) ||
+          [
+            'entry #',
+            'entry id',
+            'id',
+            'created by',
+            'created date',
+            'modified by',
+            'modified date',
+          ].includes(label)
 
-        return (
-          !['HEADING', 'DIVIDER', 'LABEL'].includes(type) && !isMetadataKey
-        )
+        return !['HEADING', 'DIVIDER', 'LABEL'].includes(type) && !isMetadataKey
       }),
     [fields],
   )
@@ -122,10 +139,17 @@ export default function GenericFormImportModal({
       const sampleRow = validFields.map((f) => {
         const type = (f.type || 'SHORT_TEXT').toUpperCase()
         const label = (f.label || '').toLowerCase()
-        if (type === 'EMAIL' || label.includes('email')) return 'john@example.com'
-        if (type === 'PHONE_NUMBER' || label.includes('phone')) return '+1 555-0199'
+        if (type === 'EMAIL' || label.includes('email'))
+          return 'john@example.com'
+        if (type === 'PHONE_NUMBER' || label.includes('phone'))
+          return '+1 555-0199'
         if (type === 'NUMBER' || type === 'COUNTER') return '100'
-        if (type === 'CURRENCY_AMOUNT' || label.includes('amount') || label.includes('price')) return '250.00'
+        if (
+          type === 'CURRENCY_AMOUNT' ||
+          label.includes('amount') ||
+          label.includes('price')
+        )
+          return '250.00'
         if (type === 'DATE' || label.includes('date')) return '2026-08-18'
         if (type === 'YES_NO_TOGGLE' || type === 'CONSENT') return 'Yes'
         return `Sample ${f.label || 'Value'}`
@@ -229,7 +253,10 @@ export default function GenericFormImportModal({
           const initialMapping: Record<string, string> = {}
           headers.forEach((col) => {
             const matchedField = validFields.find((f) => {
-              const matchedHeader = findBestHeaderMatch(f.label || f.id, headers)
+              const matchedHeader = findBestHeaderMatch(
+                f.label || f.id,
+                headers,
+              )
               return matchedHeader === col
             })
             if (matchedField) {
@@ -248,7 +275,10 @@ export default function GenericFormImportModal({
     const initialMapping: Record<string, string> = {}
     displayUploadedColumns.forEach((col) => {
       const matchedField = validFields.find((f) => {
-        const matchedHeader = findBestHeaderMatch(f.label || f.id, displayUploadedColumns)
+        const matchedHeader = findBestHeaderMatch(
+          f.label || f.id,
+          displayUploadedColumns,
+        )
         return matchedHeader === col
       })
       if (matchedField) {
@@ -344,7 +374,10 @@ export default function GenericFormImportModal({
           </button>
           <div className='flex items-center gap-2'>
             <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-              <Icon className='size-4 text-primary-9' name='tabler:file-import' />
+              <Icon
+                className='size-4 text-primary-9'
+                name='tabler:file-import'
+              />
             </div>
             <h1 className='text-[16px] font-medium text-gray-12'>
               {t`Bulk Import Entries`}
@@ -396,7 +429,10 @@ export default function GenericFormImportModal({
                     }}
                   >
                     <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
-                      <Icon className='size-6 text-primary-9' name='tabler:cloud-upload' />
+                      <Icon
+                        className='size-6 text-primary-9'
+                        name='tabler:cloud-upload'
+                      />
                     </div>
                     <div className='text-center'>
                       <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
@@ -446,7 +482,10 @@ export default function GenericFormImportModal({
                 <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
                   <div className='flex items-center gap-3'>
                     <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
-                      <Icon className='size-5 text-green-11' name='tabler:file-text' />
+                      <Icon
+                        className='size-5 text-green-11'
+                        name='tabler:file-text'
+                      />
                     </div>
                     <div className='min-w-0 flex-1'>
                       <h4 className='truncate text-[13px] font-medium text-gray-12'>
@@ -495,10 +534,7 @@ export default function GenericFormImportModal({
                     title: t`Master Data Update`,
                   },
                 ].map((item, idx) => (
-                  <AnimateEntrancePop
-                    delay={0.2 + idx * 0.1}
-                    key={item.title}
-                  >
+                  <AnimateEntrancePop delay={0.2 + idx * 0.1} key={item.title}>
                     <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
                       <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                         {item.label}
@@ -555,7 +591,10 @@ export default function GenericFormImportModal({
                   {step1State === 'done' ? (
                     <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                   ) : step1State === 'active' ? (
-                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                    <Icon
+                      className='size-4 animate-spin'
+                      name='tabler:loader-2'
+                    />
                   ) : (
                     <Icon className='size-3.5' name='tabler:clock' />
                   )}
@@ -593,7 +632,8 @@ export default function GenericFormImportModal({
                   <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
                     <span className='text-gray-11'>{t`Format`}</span>
                     <span className='font-bold text-gray-12'>
-                      {uploadedFile?.name.split('.').pop()?.toUpperCase() || 'XLSX'}
+                      {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
+                        'XLSX'}
                     </span>
                   </div>
                   <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
@@ -633,7 +673,10 @@ export default function GenericFormImportModal({
                   {step2State === 'done' ? (
                     <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                   ) : step2State === 'active' ? (
-                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                    <Icon
+                      className='size-4 animate-spin'
+                      name='tabler:loader-2'
+                    />
                   ) : (
                     <Icon className='size-3.5' name='tabler:clock' />
                   )}
@@ -700,7 +743,10 @@ export default function GenericFormImportModal({
                   {step3State === 'done' ? (
                     <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                   ) : step3State === 'active' ? (
-                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                    <Icon
+                      className='size-4 animate-spin'
+                      name='tabler:loader-2'
+                    />
                   ) : (
                     <Icon className='size-3.5' name='tabler:clock' />
                   )}
@@ -754,14 +800,17 @@ export default function GenericFormImportModal({
               {/* INLINE COLUMN MAPPING TABLE (Exact Image 1 Design) */}
               {uploadState === 'ready' && (
                 <div
-                  ref={columnMappingRef}
                   className='animate-in fade-in slide-in-from-top-2 mt-4 space-y-3 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'
+                  ref={columnMappingRef}
                 >
                   <div className='flex items-center justify-between border-b border-border-default pb-3'>
                     <p className='text-[11px] text-gray-11'>
                       {t`Map Excel file headers (source) to EZOFIS database fields (destination).`}
                     </p>
-                    <Tooltip content={t`Reset to default suggestions`} position='top'>
+                    <Tooltip
+                      content={t`Reset to default suggestions`}
+                      position='top'
+                    >
                       <button
                         className='flex items-center gap-1 text-[11px] text-primary-9 hover:underline'
                         type='button'
@@ -776,7 +825,10 @@ export default function GenericFormImportModal({
                   {/* Table Column Headers */}
                   <div className='grid grid-cols-[1.2fr_1.2fr_1.6fr] gap-4 border-b border-border-default pb-2 text-[12px] font-semibold text-gray-10 select-none'>
                     <div className='flex items-center gap-1.5'>
-                      <Icon className='size-3.5' name='vscode-icons:file-type-excel' />
+                      <Icon
+                        className='size-3.5'
+                        name='vscode-icons:file-type-excel'
+                      />
                       <span>{t`Excel Fields`}</span>
                     </div>
                     <div className='flex items-center gap-1.5 pl-2'>
@@ -818,16 +870,22 @@ export default function GenericFormImportModal({
 
                       return (
                         <div
-                          key={excelCol}
                           className='grid grid-cols-[1.2fr_1.2fr_1.6fr] items-center gap-4 py-2.5 first:pt-1'
+                          key={excelCol}
                         >
                           <div className='flex min-w-0 items-center'>
-                            <span className='truncate font-semibold text-gray-12' title={excelCol}>
+                            <span
+                              className='truncate font-semibold text-gray-12'
+                              title={excelCol}
+                            >
                               {excelCol}
                             </span>
                           </div>
 
-                          <div className='truncate pl-2 text-[11px] text-gray-8' title={previewVal}>
+                          <div
+                            className='truncate pl-2 text-[11px] text-gray-8'
+                            title={previewVal}
+                          >
                             {previewVal ? (
                               <span>{previewVal}</span>
                             ) : (

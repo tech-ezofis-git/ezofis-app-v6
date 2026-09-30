@@ -1,6 +1,6 @@
+import { useLingui } from '@lingui/react/macro'
 import { Plus, Trash2 } from 'lucide-react'
 import { type CSSProperties } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import cn from '@/utils/cn'
 
 // --- Helpers passed or redefined ---
@@ -101,7 +101,14 @@ interface ColumnConfig {
   id: string
   isAmount: boolean
   isNumeric: boolean
-  type: 'dynamic' | 'description' | 'qty' | 'rate' | 'amount' | 'score' | 'action'
+  type:
+    | 'dynamic'
+    | 'description'
+    | 'qty'
+    | 'rate'
+    | 'amount'
+    | 'score'
+    | 'action'
   dynamicIndex?: number
   key?: string
 }
@@ -149,9 +156,9 @@ export default function LineItemTable({
     allColumns.push(
       {
         id: 'description',
-        type: 'description',
-        isNumeric: false,
         isAmount: false,
+        isNumeric: false,
+        type: 'description',
       },
       { id: 'qty', isAmount: false, isNumeric: true, type: 'qty' },
       { id: 'rate', isAmount: false, isNumeric: true, type: 'rate' },
@@ -162,17 +169,17 @@ export default function LineItemTable({
   if (hasAnyScore) {
     allColumns.push({
       id: 'score',
-      type: 'score',
-      isNumeric: true,
       isAmount: false,
+      isNumeric: true,
+      type: 'score',
     })
   }
   if (handleAddItem || handleRemoveItem) {
     allColumns.push({
       id: 'action',
-      type: 'action',
-      isNumeric: false,
       isAmount: false,
+      isNumeric: false,
+      type: 'action',
     })
   }
 
@@ -556,7 +563,7 @@ export default function LineItemTable({
             }
 
             return (
-              <th key={col.id} className={className} style={style}>
+              <th className={className} key={col.id} style={style}>
                 {headerContent}
               </th>
             )
@@ -596,7 +603,7 @@ export default function LineItemTable({
                   }
 
                   return (
-                    <td key={col.id} className={cellClassName} style={style}>
+                    <td className={cellClassName} key={col.id} style={style}>
                       {cellContent}
                     </td>
                   )
@@ -739,11 +746,7 @@ export default function LineItemTable({
                     }
 
                     return (
-                      <td
-                        className={className}
-                        key={col.id}
-                        style={style}
-                      >
+                      <td className={className} key={col.id} style={style}>
                         {cellContent}
                       </td>
                     )

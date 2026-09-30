@@ -143,8 +143,7 @@ const TableColumnSettingsPanel = ({
               onChange={(id) =>
                 onUpdate({
                   lookupSettings: {
-                    optionsSource:
-                      id === OPTIONS_SOURCE.API ? 'API' : 'LOOKUP',
+                    optionsSource: id === OPTIONS_SOURCE.API ? 'API' : 'LOOKUP',
                     ...(id === OPTIONS_SOURCE.API
                       ? { repositoryField: '', repositoryId: '' }
                       : {}),

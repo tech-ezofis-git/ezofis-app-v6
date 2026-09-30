@@ -1,11 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
 import { ArrowLeft } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Option } from '@/types/option'
 import { getUsers } from '@/api/v6/user'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import showToast from '@/components/base/toast/showToast'
-import type { Option } from '@/types/option'
 import type { ShareData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
 import { DynamicIcon } from './icons'
@@ -30,75 +30,16 @@ const MONTH_ABBR = [
   'dec',
 ] as const
 
-function formatShareDate(value?: string | Date | null) {
-  if (!value) return ''
-  if (typeof value === 'string' && /^\d{1,2}-[a-z]{3}-\d{4}$/i.test(value)) {
-    return value.toLowerCase()
-  }
-  const parsed = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(parsed.getTime())) return typeof value === 'string' ? value : ''
-  return `${parsed.getDate()}-${MONTH_ABBR[parsed.getMonth()]}-${parsed.getFullYear()}`
-}
-
-function isEditPermission(permission?: string) {
-  return /edit/i.test(String(permission || ''))
-}
-
-function buildShareUrlFromInvite(result: {
-  recipientEmail?: string
-  shareToken?: string
-  shareUrl?: string
-}) {
-  const direct = String(result.shareUrl || '').trim()
-  if (direct) return direct
-  const token = String(result.shareToken || '').trim()
-  if (!token) return undefined
-  const email = encodeURIComponent(String(result.recipientEmail || '').trim())
-  return `${globalThis.location?.origin || ''}/sign-in?shareToken=${encodeURIComponent(token)}${email ? `&email=${email}` : ''}&isNew=true`
-}
-
-function personFromInvite(
-  email: string,
-  permission: string,
-  shareId?: string,
-  shareUrl?: string,
-): SharePerson {
-  const name = email.split('@')[0] || email
-  const initials =
-    name
-      .split(/[\s._-]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() || '')
-      .join('') || '?'
-
-  return {
-    date: formatShareDate(new Date()),
-    email,
-    initials,
-    name,
-    permission,
-    shareId,
-    shareUrl,
-  }
-}
-
-function optionEmail(option: Option) {
-  return String(option.value || option.name || '')
-    .trim()
-    .toLowerCase()
-}
-
 export function ShareView({
   fileName,
   itemId,
-  onBack,
   repositoryId,
+  onBack,
 }: {
   fileName?: string
   itemId: string
-  onBack: () => void
   repositoryId: string
+  onBack: () => void
 }) {
   const { t } = useLingui()
   const permissionOptions = useMemo<Option[]>(
@@ -192,7 +133,10 @@ export function ShareView({
       return
     }
     if (!repositoryId || !itemId) {
-      showToast({ message: t`Missing file context for share`, variant: 'error' })
+      showToast({
+        message: t`Missing file context for share`,
+        variant: 'error',
+      })
       return
     }
 
@@ -310,11 +254,7 @@ export function ShareView({
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[13px] text-gray-11 duration-300'>
       <div className='flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
-        <Button
-          className='h-8 px-3 text-[13px]'
-          type='button'
-          onClick={onBack}
-        >
+        <Button className='h-8 px-3 text-[13px]' type='button' onClick={onBack}>
           <ArrowLeft size={12} /> {t`Back`}
         </Button>
         <span className='min-w-0 truncate text-[14px] font-semibold text-gray-13'>
@@ -334,15 +274,15 @@ export function ShareView({
 
             <div className='grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_180px_108px] sm:items-start'>
               <InputSelectMultiple
-                clearable
-                creatable
                 createOptionLabel={() => t`Press Enter to add this email`}
                 isCreatableSearch={(search) => EMAIL_PATTERN.test(search)}
                 options={emailOptions}
                 placeholder={t`Select or type email…`}
                 searchPlaceholder={t`Search users or type email…`}
-                searchable
                 value={selectedEmails}
+                clearable
+                creatable
+                searchable
                 onChange={(next) => {
                   const seen = new Set<string>()
                   const deduped: Option[] = []
@@ -474,4 +414,64 @@ export function ShareView({
       </div>
     </div>
   )
+}
+
+function buildShareUrlFromInvite(result: {
+  recipientEmail?: string
+  shareToken?: string
+  shareUrl?: string
+}) {
+  const direct = String(result.shareUrl || '').trim()
+  if (direct) return direct
+  const token = String(result.shareToken || '').trim()
+  if (!token) return undefined
+  const email = encodeURIComponent(String(result.recipientEmail || '').trim())
+  return `${globalThis.location?.origin || ''}/sign-in?shareToken=${encodeURIComponent(token)}${email ? `&email=${email}` : ''}&isNew=true`
+}
+
+function formatShareDate(value?: string | Date | null) {
+  if (!value) return ''
+  if (typeof value === 'string' && /^\d{1,2}-[a-z]{3}-\d{4}$/i.test(value)) {
+    return value.toLowerCase()
+  }
+  const parsed = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(parsed.getTime()))
+    return typeof value === 'string' ? value : ''
+  return `${parsed.getDate()}-${MONTH_ABBR[parsed.getMonth()]}-${parsed.getFullYear()}`
+}
+
+function isEditPermission(permission?: string) {
+  return /edit/i.test(String(permission || ''))
+}
+
+function optionEmail(option: Option) {
+  return String(option.value || option.name || '')
+    .trim()
+    .toLowerCase()
+}
+
+function personFromInvite(
+  email: string,
+  permission: string,
+  shareId?: string,
+  shareUrl?: string,
+): SharePerson {
+  const name = email.split('@')[0] || email
+  const initials =
+    name
+      .split(/[\s._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || '')
+      .join('') || '?'
+
+  return {
+    date: formatShareDate(new Date()),
+    email,
+    initials,
+    name,
+    permission,
+    shareId,
+    shareUrl,
+  }
 }

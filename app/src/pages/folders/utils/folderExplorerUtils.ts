@@ -14,6 +14,10 @@ export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 /** Matches FolderTable visibility: files hide when there are 10+ folders. */
 export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
 
+export type FolderFilterOption = { label: string; value: string }
+
+export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
+
 /** Display folder modified timestamps as local DD-MM-YYYY (e.g. 23-07-2026). */
 export function formatFolderModifiedDate(value?: string | null) {
   const raw = String(value || '').trim()
@@ -24,19 +28,6 @@ export function formatFolderModifiedDate(value?: string | null) {
   if (!parsed.isValid()) return raw
 
   return parsed.format('DD-MMM-YYYY')
-}
-
-/** True for repository DATE / DATE_TIME (and loose "date" keys). */
-export function isRepositoryDateDataType(dataType?: string | null) {
-  const normalized = String(dataType || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '')
-  return (
-    normalized === 'date' ||
-    normalized === 'datetime' ||
-    normalized === 'timestamp'
-  )
 }
 
 /**
@@ -57,9 +48,18 @@ export function formatRepositoryDateDisplay(value?: unknown) {
 
   return raw
 }
-
-export type FolderFilterOption = { label: string; value: string }
-export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
+/** True for repository DATE / DATE_TIME (and loose "date" keys). */
+export function isRepositoryDateDataType(dataType?: string | null) {
+  const normalized = String(dataType || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+  return (
+    normalized === 'date' ||
+    normalized === 'datetime' ||
+    normalized === 'timestamp'
+  )
+}
 
 const normalizeFilterOptionKey = (value: string) =>
   String(value || '')
@@ -149,14 +149,14 @@ export const extractFolderTableFilterOptionsFromFolders = (
     },
     {
       id: '__folderItems',
-      getValue: (folder: FolderItem) => String(folder.itemsText || '').trim(),
       isValid: (value: string) => Boolean(value) && value !== '-',
+      getValue: (folder: FolderItem) => String(folder.itemsText || '').trim(),
     },
     {
       id: '__folderModified',
+      isValid: (value: string) => Boolean(value) && value !== '-',
       getValue: (folder: FolderItem) =>
         formatFolderModifiedDate(folder.modifiedText),
-      isValid: (value: string) => Boolean(value) && value !== '-',
     },
   ] as const
 
@@ -259,18 +259,18 @@ export const extractFileFilterOptionsFromFiles = (
 export type ExplorerFilterMode = 'folders' | 'files' | 'both' | 'none'
 
 export const getExplorerSectionVisibility = ({
+  filesLength,
   folderSearch = '',
   foldersLength,
-  filesLength,
   hasActiveFileFilters = false,
   hasActiveFolderFilters = false,
   loading = false,
   loadingFolders = false,
   loadingPage = false,
 }: {
+  filesLength: number
   folderSearch?: string
   foldersLength: number
-  filesLength: number
   hasActiveFileFilters?: boolean
   hasActiveFolderFilters?: boolean
   loading?: boolean
@@ -288,14 +288,14 @@ export const getExplorerSectionVisibility = ({
       foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS) ||
     (hasActiveFileFilters && foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS)
 
-  return { showFoldersSection, showFilesSection }
+  return { showFilesSection, showFoldersSection }
 }
 
 export const getExplorerFilterMode = (visibility: {
-  showFoldersSection: boolean
   showFilesSection: boolean
+  showFoldersSection: boolean
 }): ExplorerFilterMode => {
-  const { showFoldersSection, showFilesSection } = visibility
+  const { showFilesSection, showFoldersSection } = visibility
   if (showFoldersSection && showFilesSection) return 'both'
   if (showFilesSection) return 'files'
   if (showFoldersSection) return 'folders'
@@ -373,7 +373,9 @@ export const findRepositoryNodeId = (
   tree: TreeNode[],
   repositoryId: string,
 ): string => {
-  const target = String(repositoryId || '').trim().toLowerCase()
+  const target = String(repositoryId || '')
+    .trim()
+    .toLowerCase()
   if (!target) return ''
 
   const walk = (nodes: TreeNode[]): string => {

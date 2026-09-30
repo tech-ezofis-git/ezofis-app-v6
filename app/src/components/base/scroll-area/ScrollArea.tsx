@@ -41,7 +41,7 @@ const ScrollArea = ({
       classNames={{
         content: 'min-h-full',
         scrollbar: 'w-2 p-0.5',
-        thumb: 'bg-gray-8 hover:bg-gray-9 transition-colors rounded-full',
+        thumb: 'rounded-full bg-gray-8 transition-colors hover:bg-gray-9',
       }}
     >
       {children}

@@ -18,26 +18,23 @@ export type AttachmentItem = {
   fileSize?: number
   id?: number | string
   initiate?: boolean
+  isAiMatch?: boolean
   itemId?: number | string
   name?: string
   repositoryId?: number | string
   stageName?: string
   uploadedBy?: string
-  isAiMatch?: boolean
 }
 
-const normalizeList = (list: any[]) => list.map((x: any) => ({
-  ...x,
-  createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
-  id: x.id ?? x.itemId ?? x.fileId ?? '',
-  name: x.name ?? x.fileName ?? '-',
-  uploadedBy:
-    x.uploadedBy ??
-    x.createdByName ??
-    x.createdByEmail ??
-    x.createdBy ??
-    '',
-}))
+const normalizeList = (list: any[]) =>
+  list.map((x: any) => ({
+    ...x,
+    createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
+    id: x.id ?? x.itemId ?? x.fileId ?? '',
+    name: x.name ?? x.fileName ?? '-',
+    uploadedBy:
+      x.uploadedBy ?? x.createdByName ?? x.createdByEmail ?? x.createdBy ?? '',
+  }))
 
 export function useAttachments(
   workflowId?: number | string,
@@ -45,8 +42,8 @@ export function useAttachments(
   enabled?: boolean,
   initialData?: any[],
 ) {
-  const [data, setData] = useState<AttachmentItem[]>(() => 
-    initialData ? normalizeList(initialData) : []
+  const [data, setData] = useState<AttachmentItem[]>(() =>
+    initialData ? normalizeList(initialData) : [],
   )
   const [isLoading, setIsLoading] = useState(() => {
     return enabled !== false && !!workflowId && !!instanceId
@@ -56,10 +53,13 @@ export function useAttachments(
   useEffect(() => {
     if (initialData) {
       setData((prev) => {
-        if (prev.length !== initialData.length) return normalizeList(initialData)
+        if (prev.length !== initialData.length)
+          return normalizeList(initialData)
         // simple ID check
         const prevIds = prev.map((x) => x.id).join(',')
-        const newIds = initialData.map((x: any) => x.id ?? x.itemId ?? x.fileId ?? '').join(',')
+        const newIds = initialData
+          .map((x: any) => x.id ?? x.itemId ?? x.fileId ?? '')
+          .join(',')
         if (prevIds !== newIds) return normalizeList(initialData)
         return prev
       })

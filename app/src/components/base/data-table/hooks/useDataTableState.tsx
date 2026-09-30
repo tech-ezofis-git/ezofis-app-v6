@@ -62,45 +62,66 @@ export default function useDataTableState({
   }
 
   const [expandState, setExpandState] = useState<ExpandedState>(
-    storageKey ? getStoredState(`${storageKey}_expand`, {}) : {}
+    storageKey ? getStoredState(`${storageKey}_expand`, {}) : {},
   )
   const [filtersState, setFiltersState] = useState<filtersState>(
-    storageKey ? getStoredState(`${storageKey}_filters`, []) : []
+    storageKey ? getStoredState(`${storageKey}_filters`, []) : [],
   )
   const [groupState, setGroupState] = useState<GroupState>(
-    storageKey ? getStoredState(`${storageKey}_group`, []) : []
+    storageKey ? getStoredState(`${storageKey}_group`, []) : [],
   )
   const [orderState, setOrderState] = useState<OrderState>(
-    storageKey ? getStoredState(`${storageKey}_order`, []) : []
+    storageKey ? getStoredState(`${storageKey}_order`, []) : [],
   )
   const [pinState, setPinState] = useState<PinState>(
-    storageKey ? getStoredState(`${storageKey}_pin`, newInitialPinState) : newInitialPinState
+    storageKey
+      ? getStoredState(`${storageKey}_pin`, newInitialPinState)
+      : newInitialPinState,
   )
   const [searchState, setSearchState] = useState<SearchState>(
-    storageKey ? getStoredState(`${storageKey}_search`, { id: '', value: '' }) : { id: '', value: '' }
+    storageKey
+      ? getStoredState(`${storageKey}_search`, { id: '', value: '' })
+      : { id: '', value: '' },
   )
   const [selectState, setSelectState] = useState<SelectState>(
-    storageKey ? getStoredState(`${storageKey}_select`, {}) : {}
+    storageKey ? getStoredState(`${storageKey}_select`, {}) : {},
   )
   const [sortState, setSortState] = useState<SortState>(
-    storageKey ? getStoredState(`${storageKey}_sort`, []) : []
+    storageKey ? getStoredState(`${storageKey}_sort`, []) : [],
   )
   const [visibilityState, setVisibilityState] = useState<VisibilityState>(
-    storageKey ? getStoredState(`${storageKey}_visibility`, newInitialVisibilityState) : newInitialVisibilityState
+    storageKey
+      ? getStoredState(`${storageKey}_visibility`, newInitialVisibilityState)
+      : newInitialVisibilityState,
   )
 
   useEffect(() => {
     if (!storageKey) return
     try {
-      sessionStorage.setItem(`${storageKey}_expand`, JSON.stringify(expandState))
-      sessionStorage.setItem(`${storageKey}_filters`, JSON.stringify(filtersState))
+      sessionStorage.setItem(
+        `${storageKey}_expand`,
+        JSON.stringify(expandState),
+      )
+      sessionStorage.setItem(
+        `${storageKey}_filters`,
+        JSON.stringify(filtersState),
+      )
       sessionStorage.setItem(`${storageKey}_group`, JSON.stringify(groupState))
       sessionStorage.setItem(`${storageKey}_order`, JSON.stringify(orderState))
       sessionStorage.setItem(`${storageKey}_pin`, JSON.stringify(pinState))
-      sessionStorage.setItem(`${storageKey}_search`, JSON.stringify(searchState))
-      sessionStorage.setItem(`${storageKey}_select`, JSON.stringify(selectState))
+      sessionStorage.setItem(
+        `${storageKey}_search`,
+        JSON.stringify(searchState),
+      )
+      sessionStorage.setItem(
+        `${storageKey}_select`,
+        JSON.stringify(selectState),
+      )
       sessionStorage.setItem(`${storageKey}_sort`, JSON.stringify(sortState))
-      sessionStorage.setItem(`${storageKey}_visibility`, JSON.stringify(visibilityState))
+      sessionStorage.setItem(
+        `${storageKey}_visibility`,
+        JSON.stringify(visibilityState),
+      )
     } catch {
       // ignore
     }

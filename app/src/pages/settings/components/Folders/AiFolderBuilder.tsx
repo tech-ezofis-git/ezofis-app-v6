@@ -569,12 +569,26 @@ function FieldsEditor({
             id={field.id}
             trailing={
               <div className='flex items-center gap-1'>
-                {['TABLE', 'SINGLE_SELECT', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'SINGLE_CHOICE', 'LINK', 'URL', 'OMR', 'BARCODE'].includes(field.dataType) && (
+                {[
+                  'TABLE',
+                  'SINGLE_SELECT',
+                  'MULTI_SELECT',
+                  'MULTIPLE_CHOICE',
+                  'SINGLE_CHOICE',
+                  'LINK',
+                  'URL',
+                  'OMR',
+                  'BARCODE',
+                ].includes(field.dataType) && (
                   <button
-                    type='button'
                     aria-label={t`Settings for ${field.fieldName}`}
                     className='flex size-8 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
-                    onClick={() => setSettingsFieldId(settingsFieldId === field.id ? null : field.id)}
+                    type='button'
+                    onClick={() =>
+                      setSettingsFieldId(
+                        settingsFieldId === field.id ? null : field.id,
+                      )
+                    }
                   >
                     <Icon className='size-4' name='lucide:settings-2' />
                   </button>
@@ -694,8 +708,8 @@ function FieldsEditor({
             <div className='w-full'>
               <FolderFieldSettingsPanel
                 field={field}
-                onUpdate={(patch) => updateField(field.id, patch)}
                 onClose={() => setSettingsFieldId(null)}
+                onUpdate={(patch) => updateField(field.id, patch)}
               />
             </div>
           )}
@@ -1335,8 +1349,7 @@ export default function AiFolderBuilder({
   ) => {
     setIsSending(true)
     try {
-      const prompt =
-        promptText || `Create a folder named "${folderName}".`
+      const prompt = promptText || `Create a folder named "${folderName}".`
       const suggestion = await generateFolderConfig(
         `${prompt} Generate a concise database description for this folder and propose starter fields.`,
         messages.slice(-6).map((message) => ({
@@ -1419,7 +1432,7 @@ export default function AiFolderBuilder({
 
       pushAssistant(
         suggestion.reply ||
-        t`Recommended ${fields.length} fields for “${answers.folderName}”. Adjust them below, then continue.`,
+          t`Recommended ${fields.length} fields for “${answers.folderName}”. Adjust them below, then continue.`,
         undefined,
         'fields_ready',
         2,
@@ -1459,7 +1472,7 @@ export default function AiFolderBuilder({
       setAiFieldsGenerated(suggestion.fields.length > 0)
       pushAssistant(
         suggestion.reply ||
-        t`Configuration for “${suggestion.folderName}” is ready. Review each step and continue through the remaining options.`,
+          t`Configuration for “${suggestion.folderName}” is ready. Review each step and continue through the remaining options.`,
         undefined,
         'details_ready',
         1,
@@ -2018,7 +2031,7 @@ export default function AiFolderBuilder({
               label={
                 lastGeneratedFolderDetails.current.folderName !==
                   draft.folderName.trim() ||
-                  lastGeneratedFolderDetails.current.promptDescription !==
+                lastGeneratedFolderDetails.current.promptDescription !==
                   draft.promptDescription.trim()
                   ? t`Save & Regenerate Fields`
                   : editingFromReview
@@ -2127,11 +2140,11 @@ export default function AiFolderBuilder({
         ) : null}
 
         {editingFromReview &&
-          (phase === 'storage' ||
-            phase === 'versioning' ||
-            phase === 'integrations' ||
-            phase === 'fields') &&
-          !isSending ? (
+        (phase === 'storage' ||
+          phase === 'versioning' ||
+          phase === 'integrations' ||
+          phase === 'fields') &&
+        !isSending ? (
           <div className={cn('flex justify-end', iconGutter)}>
             <Button
               color='gray'
@@ -2220,13 +2233,13 @@ export default function AiFolderBuilder({
             <div className='mt-1.5 flex flex-wrap gap-1.5'>
               {editableFields.slice(0, 8).map((field) => (
                 <span
+                  key={field.id}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium',
                     field.includeInFolderStructure
                       ? 'border border-primary-4 bg-primary-1 font-semibold text-primary-10'
                       : 'border border-[var(--gray-3)] bg-surface text-[var(--gray-12)]',
                   )}
-                  key={field.id}
                 >
                   {field.includeInFolderStructure ? (
                     <Icon
@@ -2503,7 +2516,7 @@ export default function AiFolderBuilder({
                     isMinimized
                       ? compactSummaries[item.id]
                       : status === 'completed' ||
-                        (phase === 'ready' && item.id === 6)
+                          (phase === 'ready' && item.id === 6)
                         ? stepSummaries[item.id]
                         : undefined
                   }
@@ -2517,7 +2530,7 @@ export default function AiFolderBuilder({
                 >
                   {item.id === 6 && phase === 'ready'
                     ? renderReviewStepBody()
-                    : (status === 'active' || isEditingThis)
+                    : status === 'active' || isEditingThis
                       ? renderActiveStepBody(item.id)
                       : null}
                 </BuilderTimelineStep>

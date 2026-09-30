@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type {
+  InboxItem,
+  IRequestMeta,
+  WorkflowOption,
+} from '@/pages/requests/types'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import workflowsApiV6, {
@@ -6,7 +11,6 @@ import workflowsApiV6, {
 } from '@/api/v6/workflows'
 import { useInboxData } from '@/pages/requests/hooks/useInboxData'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import type { InboxItem, IRequestMeta, WorkflowOption } from '@/pages/requests/types'
 import {
   countQuickFilterMatches,
   filterRowsByQuickFilters,
@@ -28,9 +32,9 @@ export function useMobileRequestsInbox() {
     activeQuickFilters,
     clearQuickFilters,
     openRequest,
+    toggleQuickFilter,
     setRawWorkflowData,
     setRequestListTab,
-    toggleQuickFilter,
   } = requestStore()
 
   const [activeTab, setActiveTab] = useState<MobileInboxTab>('Inbox')
@@ -216,9 +220,7 @@ export function useMobileRequestsInbox() {
     [accumulatedRows],
   )
 
-  const totalItems = Number(
-    inboxResult?.totalItems ?? accumulatedRows.length,
-  )
+  const totalItems = Number(inboxResult?.totalItems ?? accumulatedRows.length)
 
   const hasMore = accumulatedRows.length < totalItems && totalItems > 0
 
@@ -316,11 +318,12 @@ export function useMobileRequestsInbox() {
     refetch: refresh,
     selectedWorkflow,
     selectedWorkflowId: selectedWorkflow?.id ?? workflow?.id ?? null,
-    setActiveTab,
     showTopLoader,
     tabCounts,
     totalItems: totalItems || accumulatedRows.length,
     workflowLoadStatus,
-    workflowName: selectedWorkflow?.name || workflow?.name || 'Accounts Payable',
+    workflowName:
+      selectedWorkflow?.name || workflow?.name || 'Accounts Payable',
+    setActiveTab,
   }
 }

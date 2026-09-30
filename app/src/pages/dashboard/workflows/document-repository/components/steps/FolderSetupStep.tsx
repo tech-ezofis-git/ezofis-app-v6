@@ -189,15 +189,17 @@ const FolderSetupStep = () => {
             />
             <div className='absolute right-2 bottom-2'>
               <button
-                aria-label={isGenerating ? 'Generating setup' : 'Generate setup'}
+                disabled={!canGenerate}
+                type='button'
+                aria-label={
+                  isGenerating ? 'Generating setup' : 'Generate setup'
+                }
                 className={cn(
                   'flex size-8 items-center justify-center rounded-full text-white transition',
                   canGenerate
                     ? 'bg-primary-9 hover:bg-primary-10'
                     : 'bg-gray-6 opacity-50',
                 )}
-                disabled={!canGenerate}
-                type='button'
                 onClick={() => {
                   void handleGenerate()
                 }}

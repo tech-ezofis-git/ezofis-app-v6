@@ -1,8 +1,8 @@
+import type { PortalBrandingSnapshot } from '@/pages/settings/helpers/portalConfigStorage'
 import {
   applyBrandingFromSession,
   persistBrandingJsonToSession,
 } from '@/lib/branding/session'
-import type { PortalBrandingSnapshot } from '@/pages/settings/helpers/portalConfigStorage'
 
 export const applyPortalBranding = (branding?: PortalBrandingSnapshot) => {
   if (

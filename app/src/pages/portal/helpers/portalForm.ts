@@ -484,7 +484,8 @@ export const applyOcrFieldListToAnswers = (
         normalizeMatchKey(question.label) === normalizeMatchKey(item.name)
       )
     })
-    if (ocrMatch?.value != null) assignQuestionValue(next, question, ocrMatch.value)
+    if (ocrMatch?.value != null)
+      assignQuestionValue(next, question, ocrMatch.value)
   })
   return next
 }

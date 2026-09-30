@@ -1,18 +1,18 @@
 import type { HTMLAttributes } from 'react'
 import cn from '@/utils/cn'
 
-type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'error'
-
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   tone?: BadgeTone
 }
 
+type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'error'
+
 const toneClass: Record<BadgeTone, string> = {
-  neutral: 'bg-surface-muted text-text-secondary border-border-default',
   accent: 'bg-accent-soft text-accent-primary border-transparent',
+  error: 'bg-red-3 text-error-main border-transparent',
+  neutral: 'bg-surface-muted text-text-secondary border-border-default',
   success: 'bg-success-subtle text-success-main border-transparent',
   warning: 'bg-orange-3 text-warning-main border-transparent',
-  error: 'bg-red-3 text-error-main border-transparent',
 }
 
 export function Badge({

@@ -19,9 +19,9 @@ import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
-import Tooltip from '@/components/base/Tooltip'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import type {
   DynamicRepositoryColumn,
@@ -45,14 +45,17 @@ import {
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
 import { type BreadcrumbItem } from './Breadcrumbs'
+import DynamicTableColumnCell, {
+  isTableColumnType,
+} from './DynamicTableColumnCell'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
+import {
+  type FileCategory,
+  FileCategorySegmentedControl,
+} from './FileCategorySegmentedControl'
 import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
 import { FolderDataTableSection } from './FolderTable'
 import { DynamicIcon } from './icons'
-import {
-  FileCategorySegmentedControl,
-  type FileCategory,
-} from './FileCategorySegmentedControl'
 import {
   hasAllMandatoryFieldsFilled,
   isArchivedFile,
@@ -60,9 +63,6 @@ import {
   StagedFileDeleteButton,
   StagedFileExportButton,
 } from './StagedFileDeleteButton'
-import DynamicTableColumnCell, {
-  isTableColumnType,
-} from './DynamicTableColumnCell'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
 type ActionMenuPosition = {
@@ -107,16 +107,16 @@ type DocumentsListViewProps = {
   view: ExplorerView
   onAiSummary: (id: string) => void
   onBreadcrumbSelect: (id: string) => void
+  onDeleteFile?: (fileId: string) => Promise<void>
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
+  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onEdit?: (id: string) => void
+  onExportStagedFile?: (file: FileItem) => Promise<void>
+  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onFilterMenuOpenChange?: (id: string | null) => void
   onFiltersChange?: (filters: Record<string, string>) => void
   onIntelligentUpload?: () => void
   onOpenFile: (id: string) => void
-  onDeleteFile?: (fileId: string) => Promise<void>
-  onDeleteStagedFile?: (file: FileItem) => Promise<void>
-  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
-  onExportStagedFile?: (file: FileItem) => Promise<void>
-  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onRefresh?: () => void
@@ -149,11 +149,7 @@ const ACTION_MENU_HEIGHT = 274
 
 const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 
-const PRIMARY_NAME_KEYS = new Set([
-  'filename',
-  'file name',
-  'name',
-])
+const PRIMARY_NAME_KEYS = new Set(['filename', 'file name', 'name'])
 
 const normalizeKey = normalizeFieldKey
 
@@ -404,16 +400,16 @@ export function DocumentsListView({
   setView,
   onAiSummary,
   onBreadcrumbSelect,
+  onDeleteFile,
+  onDeleteStagedFile,
+  onDeleteStagedFiles,
   onEdit,
+  onExportStagedFile,
+  onExportStagedFiles,
   onFilterMenuOpenChange,
   onFiltersChange,
   onIntelligentUpload,
   onOpenFile,
-  onDeleteFile,
-  onDeleteStagedFile,
-  onDeleteStagedFiles,
-  onExportStagedFile,
-  onExportStagedFiles,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -431,7 +427,9 @@ export function DocumentsListView({
     useState<ActionMenuPosition | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(searchQueryProp)
-  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(null)
+  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(
+    null,
+  )
   const [isDeletingFile, setIsDeletingFile] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
@@ -611,17 +609,16 @@ export function DocumentsListView({
   )
 
   const isStagedCategory = fileCategory === 'staged'
-  const totalCount =
-    isStagedCategory
-      ? visibleFiles.length
-      : apiTotalCount > 0
-        ? apiTotalCount
-        : filePage?.hasMore
-          ? Math.max(currentPage * pageSize + 1, visibleFiles.length)
-          : Math.max(
-              (currentPage - 1) * pageSize + visibleFiles.length,
-              visibleFiles.length,
-            )
+  const totalCount = isStagedCategory
+    ? visibleFiles.length
+    : apiTotalCount > 0
+      ? apiTotalCount
+      : filePage?.hasMore
+        ? Math.max(currentPage * pageSize + 1, visibleFiles.length)
+        : Math.max(
+            (currentPage - 1) * pageSize + visibleFiles.length,
+            visibleFiles.length,
+          )
 
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
@@ -722,9 +719,9 @@ export function DocumentsListView({
       maxSize: 48,
       meta: {
         className: '!px-0 !pl-0 !pr-0 text-center',
-        headerClassName: '!px-0 !pl-0 !pr-0 text-center',
-        headerAlign: 'center',
         disableEllipsis: true,
+        headerAlign: 'center',
+        headerClassName: '!px-0 !pl-0 !pr-0 text-center',
       },
       minSize: 48,
       size: 48,
@@ -750,8 +747,7 @@ export function DocumentsListView({
         const isAllSelected =
           visibleFiles.length > 0 &&
           selectedVisibleCount === visibleFiles.length
-        const isIndeterminate =
-          selectedVisibleCount > 0 && !isAllSelected
+        const isIndeterminate = selectedVisibleCount > 0 && !isAllSelected
 
         return (
           <div
@@ -1093,7 +1089,9 @@ export function DocumentsListView({
             />
           ) : null}
 
-          {activeRepositoryId && stagedCount > 0 && (files.length > 0 || loading || loadingPage) ? (
+          {activeRepositoryId &&
+          stagedCount > 0 &&
+          (files.length > 0 || loading || loadingPage) ? (
             <div className='relative my-2 flex shrink-0 items-center justify-center select-none'>
               <div className='pointer-events-none absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-gray-4' />
               <div className='relative z-10'>
@@ -1184,7 +1182,10 @@ export function DocumentsListView({
                     </div>
                     <div className='flex items-center gap-2'>
                       {canBulkExport && onExportStagedFiles ? (
-                        <Tooltip content={t`Export selected staged files`} position='top'>
+                        <Tooltip
+                          content={t`Export selected staged files`}
+                          position='top'
+                        >
                           <BaseButton
                             color='primary'
                             disabled={isBulkExporting || isBulkDeleting}
@@ -1192,13 +1193,19 @@ export function DocumentsListView({
                             size='xs'
                             onClick={() => setIsBulkExportConfirmOpen(true)}
                           >
-                            <Icon className='size-3.5' name='tabler:file-export' />
+                            <Icon
+                              className='size-3.5'
+                              name='tabler:file-export'
+                            />
                             {t`Export Selected (${selectedStagedCount})`}
                           </BaseButton>
                         </Tooltip>
                       ) : null}
                       {onDeleteStagedFiles ? (
-                        <Tooltip content={t`Delete selected staged files`} position='top'>
+                        <Tooltip
+                          content={t`Delete selected staged files`}
+                          position='top'
+                        >
                           <BaseButton
                             color='red'
                             disabled={isBulkDeleting || isBulkExporting}
@@ -1360,15 +1367,15 @@ export function DocumentsListView({
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Delete`}
+        isConfirming={isBulkDeleting}
+        opened={isBulkConfirmOpen}
+        title={t`Delete staged files`}
+        variant='danger'
         description={
           selectedStagedCount === 1
             ? t`Are you sure you want to delete 1 selected staged file?`
             : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
         }
-        isConfirming={isBulkDeleting}
-        opened={isBulkConfirmOpen}
-        title={t`Delete staged files`}
-        variant='danger'
         onCancel={() => {
           if (!isBulkDeleting) setIsBulkConfirmOpen(false)
         }}
@@ -1391,15 +1398,15 @@ export function DocumentsListView({
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Export`}
+        isConfirming={isBulkExporting}
+        opened={isBulkExportConfirmOpen}
+        title={t`Export staged files`}
+        variant='default'
         description={
           selectedStagedCount === 1
             ? t`Are you sure you want to export 1 selected staged file?`
             : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
         }
-        isConfirming={isBulkExporting}
-        opened={isBulkExportConfirmOpen}
-        title={t`Export staged files`}
-        variant='default'
         onCancel={() => {
           if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
         }}

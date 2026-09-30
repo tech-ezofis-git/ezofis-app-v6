@@ -1,17 +1,17 @@
 import connectorApi, { type OAuthProviderCode } from '@/api/connector'
 
 const PROVIDER_CODE_BY_VALUE: Record<string, OAuthProviderCode> = {
-  gmail: 'GMAIL',
-  outlook: 'OUTLOOK',
-  QuickBooks: 'QUICKBOOKS',
+  'GCP': 'GCP',
+  'gmail': 'GMAIL',
   'Google Drive': 'GOOGLE_DRIVE',
-  GCP: 'GCP',
-  OneDrive: 'ONEDRIVE',
-  SAP: 'SAP_XSUAA',
+  'OneDrive': 'ONEDRIVE',
+  'outlook': 'OUTLOOK',
+  'QuickBooks': 'QUICKBOOKS',
+  'SAP': 'SAP_XSUAA',
+  'sap': 'SAP_XSUAA',
   'SAP-XSUAA': 'SAP_XSUAA',
-  SAP_XSUAA: 'SAP_XSUAA',
-  sap: 'SAP_XSUAA',
-  sap_xsuaa: 'SAP_XSUAA',
+  'SAP_XSUAA': 'SAP_XSUAA',
+  'sap_xsuaa': 'SAP_XSUAA',
 }
 
 export const getApOAuthProviderCode = (
@@ -25,7 +25,8 @@ export const openApOAuthAuthorize = async (providerValue: string) => {
   }
 
   // Pre-open blank popup to prevent browser popup blocker from blocking authorizationUrl
-  const popup = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
+  const popup =
+    typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
 
   const response = await connectorApi.authorizeOAuth({
     name: `AP ${providerCode}`,

@@ -156,7 +156,10 @@ const WorkflowPreview = () => {
       {/* Header */}
       <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-2)]/60 px-5 py-3.5'>
         <div className='flex items-center gap-2'>
-          <Icon className='size-4 text-[var(--primary-9)]' name='tabler:git-fork' />
+          <Icon
+            className='size-4 text-[var(--primary-9)]'
+            name='tabler:git-fork'
+          />
           <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
             Automated Invoice Pipeline
           </span>
@@ -196,13 +199,13 @@ const WorkflowPreview = () => {
               <motion.path
                 className='fill-none stroke-[var(--primary-7)] stroke-[2]'
                 d={flowPath}
-                initial={{ pathLength: 0, opacity: 0 }}
+                initial={{ opacity: 0, pathLength: 0 }}
+                style={{ strokeDasharray: '8 6' }}
                 animate={{
                   opacity: 1,
                   pathLength: 1,
                   strokeDashoffset: [0, -24],
                 }}
-                style={{ strokeDasharray: '8 6' }}
                 transition={{
                   opacity: { delay: 0.3, duration: 0.4 },
                   pathLength: { delay: 0.3, duration: 1.2, ease: 'easeInOut' },
@@ -283,11 +286,11 @@ const WorkflowPreview = () => {
                 <NodeCard
                   detail={startNode.detail}
                   icon={startNode.icon}
-                  showFullText
                   subtitle={startNode.subtitle}
                   title={startNode.title}
                   widthClass='w-[190px]'
                   isTrigger
+                  showFullText
                 />
               </AnimateFadeIn>
             </div>
@@ -420,10 +423,10 @@ const NodeCard = ({
               AI Agent
             </span>
           </div>
-          <h4 className='mt-2 whitespace-nowrap text-[10px] leading-tight font-bold text-white'>
+          <h4 className='mt-2 text-[10px] leading-tight font-bold whitespace-nowrap text-white'>
             {title}
           </h4>
-          <p className='mt-1 whitespace-nowrap text-[10px] leading-snug font-medium text-purple-2'>
+          <p className='mt-1 text-[10px] leading-snug font-medium whitespace-nowrap text-purple-2'>
             {subtitle}
           </p>
           {detail && (
@@ -451,7 +454,7 @@ const NodeCard = ({
             <Icon className='size-4' name={icon} />
           </motion.div>
           <div className='min-w-0 flex-1 overflow-hidden'>
-            <h4 className='truncate whitespace-nowrap text-[11px] leading-tight font-bold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]'>
+            <h4 className='truncate text-[11px] leading-tight font-bold whitespace-nowrap text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]'>
               {title}
             </h4>
             <p
@@ -471,7 +474,7 @@ const NodeCard = ({
                 className={cn(
                   'mt-0.5 text-[9px] leading-tight text-[var(--gray-9)]',
                   showFullText
-                    ? 'wrap-anywhere break-words whitespace-normal'
+                    ? 'break-words wrap-anywhere whitespace-normal'
                     : 'truncate whitespace-nowrap',
                 )}
               >

@@ -1,5 +1,5 @@
-import React, { memo, useMemo } from 'react'
 import { ActionIcon, Card, Menu, Rating, Tooltip } from '@mantine/core'
+import React, { memo, useMemo } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 // import Menu from '@/components/base/menu/Menu'
@@ -33,10 +33,7 @@ const QuestionCard = ({
   onUpdate,
 }: Props) => {
   const panels = useFormStore((state) => state.panels)
-  const allQuestions = useMemo(
-    () => panels.flatMap((p) => p.fields),
-    [panels],
-  )
+  const allQuestions = useMemo(() => panels.flatMap((p) => p.fields), [panels])
 
   // Logic Evaluation
   const checkLogic = () => {
@@ -109,15 +106,15 @@ const QuestionCard = ({
                             : question.type === 'FILE_UPLOAD'
                               ? 'lucide:upload-cloud'
                               : question.type === 'SINGLE_SELECT' ||
-                                question.type === 'MULTI_SELECT'
+                                  question.type === 'MULTI_SELECT'
                                 ? 'lucide:list-todo'
                                 : question.type === 'MULTIPLE_CHOICE'
                                   ? 'lucide:check-square'
                                   : question.type === 'SINGLE_CHOICE'
                                     ? 'lucide:radio'
                                     : question.type === 'DATE' ||
-                                      question.type === 'TIME' ||
-                                      question.type === 'DATE_TIME'
+                                        question.type === 'TIME' ||
+                                        question.type === 'DATE_TIME'
                                       ? 'lucide:calendar'
                                       : 'mdi:form-textbox'
                 }
@@ -212,12 +209,12 @@ const QuestionCard = ({
 
                 {/* 3-Dot Actions Menu */}
                 <Menu
-                  closeOnClickOutside
-                  closeOnItemClick
                   position='bottom-end'
                   shadow='md'
-                  withinPortal
                   zIndex={300}
+                  closeOnClickOutside
+                  closeOnItemClick
+                  withinPortal
                 >
                   <Tooltip label='Field options' position='top' withArrow>
                     <Menu.Target>
@@ -230,7 +227,11 @@ const QuestionCard = ({
                           e.stopPropagation()
                         }}
                       >
-                        <Icon height={15} name='lucide:ellipsis-vertical' width={15} />
+                        <Icon
+                          height={15}
+                          name='lucide:ellipsis-vertical'
+                          width={15}
+                        />
                       </ActionIcon>
                     </Menu.Target>
                   </Tooltip>
@@ -286,7 +287,7 @@ const QuestionCard = ({
                   withArrow
                 >
                   <div
-                    className='flex size-7 cursor-grab touch-none select-none items-center justify-center rounded-lg border border-gray-3 bg-gray-1 text-gray-10 shadow-2xs transition-colors hover:border-primary-4 hover:bg-primary-3/30 hover:text-primary-9 active:cursor-grabbing'
+                    className='flex size-7 cursor-grab touch-none items-center justify-center rounded-lg border border-gray-3 bg-gray-1 text-gray-10 shadow-2xs transition-colors select-none hover:border-primary-4 hover:bg-primary-3/30 hover:text-primary-9 active:cursor-grabbing'
                     {...dragListeners}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -460,20 +461,19 @@ const QuestionCard = ({
                 </div>
               </div>
             </div>
-          ) : question.type === 'TABLE' ||
-            question.type === 'DYNAMIC_TABLE' ? (
+          ) : question.type === 'TABLE' || question.type === 'DYNAMIC_TABLE' ? (
             (() => {
               const tableColumns =
                 question.settings?.specific?.tableColumns || []
               const gridTemplate =
                 tableColumns.length > 0
                   ? `32px ${tableColumns
-                    .map((col) => {
-                      if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
-                      if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
-                      return 'minmax(130px, 2fr)'
-                    })
-                    .join(' ')}`
+                      .map((col) => {
+                        if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
+                        if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
+                        return 'minmax(130px, 2fr)'
+                      })
+                      .join(' ')}`
                   : '1fr'
 
               return (
@@ -519,7 +519,8 @@ const QuestionCard = ({
                   {/* Grid Content */}
                   {tableColumns.length === 0 ? (
                     <div className='p-6 text-center text-xs text-gray-8 italic'>
-                      No table columns configured. Add columns in the settings panel.
+                      No table columns configured. Add columns in the settings
+                      panel.
                     </div>
                   ) : (
                     <div className='overflow-x-auto'>
@@ -533,8 +534,8 @@ const QuestionCard = ({
                         </div>
                         {tableColumns.map((col) => (
                           <div
-                            key={col.id}
                             className='flex items-center gap-1.5 overflow-hidden px-2'
+                            key={col.id}
                           >
                             <span className='truncate font-bold text-gray-8'>
                               {col.name || 'Column'}
@@ -552,8 +553,8 @@ const QuestionCard = ({
                           <div className='h-3 w-3 rounded border border-gray-2' />
                         </div>
                         {tableColumns.map((col) => (
-                          <div key={col.id} className='px-2'>
-                            <div className='flex h-7 w-full items-center rounded border border-dashed border-gray-2 bg-gray-50/40 px-2 text-[11px] text-gray-4 italic'>
+                          <div className='px-2' key={col.id}>
+                            <div className='bg-gray-50/40 flex h-7 w-full items-center rounded border border-dashed border-gray-2 px-2 text-[11px] text-gray-4 italic'>
                               {col.name}...
                             </div>
                           </div>
@@ -788,14 +789,18 @@ const QuestionCard = ({
             question.type === 'MULTIPLE_CHOICE' ? (
             (() => {
               const specific = question.settings?.specific || {}
-              const raw = specific.customOptions || 'Option 1, Option 2, Option 3'
-              const sep = specific.separateOptionsUsing === 'NEWLINE' ? '\n' : ','
+              const raw =
+                specific.customOptions || 'Option 1, Option 2, Option 3'
+              const sep =
+                specific.separateOptionsUsing === 'NEWLINE' ? '\n' : ','
               const options = raw
                 .split(sep)
                 .map((s: string) => s.trim())
                 .filter(Boolean)
               const displayOptions =
-                options.length > 0 ? options : ['Option 1', 'Option 2', 'Option 3']
+                options.length > 0
+                  ? options
+                  : ['Option 1', 'Option 2', 'Option 3']
               const optionsPerLine = specific.optionsPerLine ?? 3
               const showWrapper = Boolean(specific.showOptionsWrapper)
 
@@ -806,21 +811,19 @@ const QuestionCard = ({
                   className={cn(
                     'w-full transition-all',
                     showWrapper &&
-                    'rounded-xl border border-gray-2 bg-gray-50/50 p-2.5 shadow-2xs',
+                      'bg-gray-50/50 rounded-xl border border-gray-2 p-2.5 shadow-2xs',
                   )}
                 >
                   <div
                     className={cn(
                       'gap-2',
-                      isAutoFlex
-                        ? 'flex flex-wrap items-center'
-                        : 'grid',
+                      isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
                     )}
                     style={
                       !isAutoFlex
                         ? {
-                          gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-                        }
+                            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                          }
                         : undefined
                     }
                   >
@@ -1057,11 +1060,21 @@ const QuestionCard = ({
               <div className='flex items-center gap-1.5 overflow-hidden'>
                 <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
                   Option 1
-                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                  <Icon
+                    className='text-gray-7'
+                    height={12}
+                    name='lucide:x'
+                    width={12}
+                  />
                 </span>
                 <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
                   Option 2
-                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                  <Icon
+                    className='text-gray-7'
+                    height={12}
+                    name='lucide:x'
+                    width={12}
+                  />
                 </span>
               </div>
               <div className='flex items-center gap-1.5 text-gray-5'>

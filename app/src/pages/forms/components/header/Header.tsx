@@ -8,11 +8,11 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 interface HeaderProps {
   tabValue: string
-  onTabChange: (value: string) => void
   onOpenAiBuilder?: () => void
+  onTabChange: (value: string) => void
 }
 
-const Header = ({ tabValue, onTabChange, onOpenAiBuilder }: HeaderProps) => {
+const Header = ({ tabValue, onOpenAiBuilder, onTabChange }: HeaderProps) => {
   const navigate = useNavigate()
 
   const openFormBuilder = () => {

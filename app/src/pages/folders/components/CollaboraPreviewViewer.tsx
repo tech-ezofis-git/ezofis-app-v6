@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { AlertCircle, Check, FileSignature, Loader2, Plus, Trash2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Check,
+  FileSignature,
+  Loader2,
+  Plus,
+  Trash2,
+} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Rnd } from 'react-rnd'
+import type { FolderPermissionFlags } from '@/api/v6/folder/security'
 import {
   buildViewerUrl,
   buildWopiSrc,
@@ -9,34 +17,33 @@ import {
   uploadDocumentToCollabora,
 } from '@/api/collabora/collabora'
 import showToast from '@/components/base/toast/showToast'
-import type { FolderPermissionFlags } from '@/api/v6/folder/security'
-
-export interface PlacedSignatureField {
-  id: string
-  page: number
-  x: number
-  y: number
-  width: number
-  height: number
-  signatureData?: string
-  signerName?: string
-}
 
 export interface CollaboraPreviewViewerProps {
   className?: string
   fileBlob?: Blob | null
   fileName?: string
   fileUrl?: string | null
-  permission?: 'edit' | 'readonly'
   // Signature props
   isSigningMode?: boolean
-  signRequestId?: string
+  permission?: 'edit' | 'readonly'
   permissions?: FolderPermissionFlags
   restrictToFields?: boolean
   signatureFields?: PlacedSignatureField[]
-  signerName?: string
   signerEmail?: string
+  signerName?: string
+  signRequestId?: string
   onCompleteSigning?: (placements: PlacedSignatureField[]) => Promise<void>
+}
+
+export interface PlacedSignatureField {
+  height: number
+  id: string
+  page: number
+  width: number
+  x: number
+  y: number
+  signatureData?: string
+  signerName?: string
 }
 
 export default function CollaboraPreviewViewer({
@@ -44,8 +51,8 @@ export default function CollaboraPreviewViewer({
   fileBlob,
   fileName,
   fileUrl,
-  permission = 'readonly',
   isSigningMode = false,
+  permission = 'readonly',
   permissions,
   signatureFields: initialSignatureFields = [],
   signerName,
@@ -202,13 +209,13 @@ export default function CollaboraPreviewViewer({
 
   const handleAddSignatureField = () => {
     const newField: PlacedSignatureField = {
+      height: 70,
       id: `sign-field-${Date.now()}`,
       page: currentPage,
+      signerName: signerName || 'Signer',
+      width: 200,
       x: 100,
       y: 150,
-      width: 200,
-      height: 70,
-      signerName: signerName || 'Signer',
     }
     setPlacedFields((prev) => [...prev, newField])
     setSelectedFieldId(newField.id)
@@ -268,8 +275,8 @@ export default function CollaboraPreviewViewer({
 
   return (
     <div
-      ref={containerRef}
       className={`relative h-full min-h-[320px] w-full overflow-hidden bg-[var(--gray-1)] ${className}`}
+      ref={containerRef}
     >
       {isLoading && (
         <div className='absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[var(--gray-1)]/90 backdrop-blur-xs'>
@@ -291,36 +298,39 @@ export default function CollaboraPreviewViewer({
       {viewerUrl && !loadError && (
         <iframe
           allow='clipboard-read; clipboard-write'
-          className={`h-full w-full border-0 transition-opacity duration-200 ${
-            isLoading ? 'opacity-0' : 'opacity-100'
-          }`}
           ref={iframeRef}
           src={viewerUrl}
           title={fileName || t`Document Preview`}
+          className={`h-full w-full border-0 transition-opacity duration-200 ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          }`}
           onLoad={handleIframeLoad}
         />
       )}
 
       {/* Floating Quick Action Button when Sign Mode is inactive */}
-      {!activeSigningMode && canSendForSignature && !isLoading && !loadError && (
-        <div className='pointer-events-auto absolute top-4 right-4 z-30 animate-in fade-in zoom-in-95 duration-300'>
-          <button
-            type='button'
-            onClick={() => setInternalSigning(true)}
-            className='flex items-center gap-2 rounded-xl border border-gray-3/80 bg-surface-primary/95 px-3.5 py-2 text-xs font-semibold text-gray-12 shadow-xl backdrop-blur-md transition-all hover:bg-surface-secondary hover:scale-105 active:scale-95'
-          >
-            <FileSignature className='size-4 text-accent-primary' />
-            <span>{t`Sign Document`}</span>
-          </button>
-        </div>
-      )}
+      {!activeSigningMode &&
+        canSendForSignature &&
+        !isLoading &&
+        !loadError && (
+          <div className='animate-in fade-in zoom-in-95 pointer-events-auto absolute top-4 right-4 z-30 duration-300'>
+            <button
+              className='flex items-center gap-2 rounded-xl border border-gray-3/80 bg-surface-primary/95 px-3.5 py-2 text-xs font-semibold text-gray-12 shadow-xl backdrop-blur-md transition-all hover:scale-105 hover:bg-surface-secondary active:scale-95'
+              type='button'
+              onClick={() => setInternalSigning(true)}
+            >
+              <FileSignature className='size-4 text-accent-primary' />
+              <span>{t`Sign Document`}</span>
+            </button>
+          </div>
+        )}
 
       {/* Signature Placement Overlay */}
       {showSigningOverlay && !isLoading && !loadError && (
         <div className='pointer-events-none absolute inset-0 z-30'>
           {/* Floating Action Toolbar */}
           <div className='pointer-events-auto absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-surface-secondary/80 bg-surface-primary/95 px-4 py-2 shadow-2xl backdrop-blur-md transition-all'>
-            <div className='flex items-center gap-2 pr-2 border-r border-gray-4 text-xs font-semibold text-gray-12'>
+            <div className='flex items-center gap-2 border-r border-gray-4 pr-2 text-xs font-semibold text-gray-12'>
               <FileSignature className='size-4 text-accent-primary' />
               <span>{t`Sign Mode`}</span>
               <span className='rounded bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent-primary'>
@@ -329,9 +339,9 @@ export default function CollaboraPreviewViewer({
             </div>
 
             <button
+              className='flex items-center gap-1.5 rounded-lg bg-surface-secondary px-3 py-1.5 text-xs font-medium text-gray-12 transition-all hover:bg-surface-secondary/80 active:scale-95'
               type='button'
               onClick={handleAddSignatureField}
-              className='flex items-center gap-1.5 rounded-lg bg-surface-secondary px-3 py-1.5 text-xs font-medium text-gray-12 hover:bg-surface-secondary/80 active:scale-95 transition-all'
             >
               <Plus className='size-3.5 text-accent-primary' />
               <span>{t`Add Signature Box`}</span>
@@ -339,9 +349,9 @@ export default function CollaboraPreviewViewer({
 
             {placedFields.length > 0 && (
               <button
+                className='bg-error-subtle/40 hover:bg-error-subtle flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-error-main transition-all active:scale-95'
                 type='button'
                 onClick={() => setPlacedFields([])}
-                className='flex items-center gap-1.5 rounded-lg bg-error-subtle/40 px-2.5 py-1.5 text-xs font-medium text-error-main hover:bg-error-subtle active:scale-95 transition-all'
               >
                 <Trash2 className='size-3.5' />
                 <span>{t`Clear All`}</span>
@@ -349,10 +359,10 @@ export default function CollaboraPreviewViewer({
             )}
 
             <button
-              type='button'
+              className='hover:bg-opacity-90 flex items-center gap-1.5 rounded-lg bg-accent-primary px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 disabled:opacity-50'
               disabled={isSubmitting || placedFields.length === 0}
+              type='button'
               onClick={handleFinishSigning}
-              className='flex items-center gap-1.5 rounded-lg bg-accent-primary px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-opacity-90 active:scale-95 disabled:opacity-50 transition-all'
             >
               {isSubmitting ? (
                 <Loader2 className='size-3.5 animate-spin' />
@@ -368,15 +378,15 @@ export default function CollaboraPreviewViewer({
             const isSelected = selectedFieldId === field.id
             return (
               <Rnd
-                key={field.id}
                 bounds='parent'
+                key={field.id}
+                position={{ x: field.x, y: field.y }}
+                size={{ height: field.height, width: field.width }}
                 className={`pointer-events-auto flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-accent-soft/30 p-2 shadow-md transition-shadow ${
                   isSelected
                     ? 'border-accent-primary ring-2 ring-accent-primary/40'
                     : 'border-accent-primary/60 hover:border-accent-primary'
                 }`}
-                position={{ x: field.x, y: field.y }}
-                size={{ width: field.width, height: field.height }}
                 onDragStart={() => setSelectedFieldId(field.id)}
                 onDragStop={(_e, d) => {
                   setPlacedFields((prev) =>
@@ -391,8 +401,8 @@ export default function CollaboraPreviewViewer({
                       f.id === field.id
                         ? {
                             ...f,
-                            width: ref.offsetWidth,
                             height: ref.offsetHeight,
+                            width: ref.offsetWidth,
                             x: pos.x,
                             y: pos.y,
                           }
@@ -411,13 +421,13 @@ export default function CollaboraPreviewViewer({
                   </span>
 
                   <button
-                    type='button'
                     aria-label={t`Delete signature box`}
+                    className='absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-error-main text-white shadow transition-all hover:scale-110'
+                    type='button'
                     onClick={(e) => {
                       e.stopPropagation()
                       handleRemoveField(field.id)
                     }}
-                    className='absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-error-main text-white shadow hover:scale-110 transition-all'
                   >
                     <Trash2 className='size-3' />
                   </button>
@@ -430,4 +440,3 @@ export default function CollaboraPreviewViewer({
     </div>
   )
 }
-

@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useMemo } from 'react'
 import Badge from '@/components/base/Badge'
 import Title from '@/components/base/Title'
 import cn from '@/utils/cn'

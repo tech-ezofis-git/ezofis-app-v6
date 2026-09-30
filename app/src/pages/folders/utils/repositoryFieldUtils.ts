@@ -43,7 +43,11 @@ const findValueInSource = (source: any, fieldKey: string) => {
         item.sqlColumnName ??
         item.SqlColumnName ??
         item.columnName
-      return itemKey !== undefined && itemKey !== null && matchesFieldKey(String(itemKey), fieldKey)
+      return (
+        itemKey !== undefined &&
+        itemKey !== null &&
+        matchesFieldKey(String(itemKey), fieldKey)
+      )
     })
 
     if (!matchedItem) return undefined
@@ -136,7 +140,11 @@ export const getRepositoryFieldRawValue = (
   if (!contextKey) return undefined
 
   const contextValue = contextFilters[contextKey]
-  if (contextValue === undefined || contextValue === null || contextValue === '') {
+  if (
+    contextValue === undefined ||
+    contextValue === null ||
+    contextValue === ''
+  ) {
     return undefined
   }
 
@@ -159,4 +167,3 @@ export const getRepositoryFieldStringValue = (
   }
   return String(value).trim()
 }
-

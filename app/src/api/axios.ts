@@ -32,9 +32,7 @@ export const getV6ApiBaseUrl = (): string => {
   ) {
     return 'https://cloud.ezofis.com/api'
   }
-  return (
-    import.meta.env?.VITE_V6_BASE_URL || 'https://cloud.ezofis.com/api'
-  )
+  return import.meta.env?.VITE_V6_BASE_URL || 'https://cloud.ezofis.com/api'
 }
 
 const API_URL = getApiBaseUrl()

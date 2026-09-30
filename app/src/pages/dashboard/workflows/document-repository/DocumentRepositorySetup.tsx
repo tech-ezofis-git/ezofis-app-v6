@@ -1,5 +1,5 @@
-import useDmsSetupStore from './stores/useDmsSetupStore'
 import DocumentRepositorySteps from './components/Steps'
+import useDmsSetupStore from './stores/useDmsSetupStore'
 
 const DocumentRepositorySetup = () => {
   const isSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)

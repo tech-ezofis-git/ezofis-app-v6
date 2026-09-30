@@ -8,7 +8,8 @@ export function parseInsightText(text: React.ReactNode): React.ReactNode {
   if (typeof text !== 'string') return text
   if (!text.includes('<')) return text
 
-  const regex = /<mark>(.*?)<\/mark>|<b>(.*?)<\/b>|<strong>(.*?)<\/strong>|<i>(.*?)<\/i>|<em>(.*?)<\/em>|<code>(.*?)<\/code>/gi
+  const regex =
+    /<mark>(.*?)<\/mark>|<b>(.*?)<\/b>|<strong>(.*?)<\/strong>|<i>(.*?)<\/i>|<em>(.*?)<\/em>|<code>(.*?)<\/code>/gi
   const parts: React.ReactNode[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
@@ -21,8 +22,8 @@ export function parseInsightText(text: React.ReactNode): React.ReactNode {
     if (match[1] !== undefined) {
       parts.push(
         <mark
+          className='bg-amber-500/15 text-amber-950 dark:bg-amber-950/50 dark:text-amber-200 rounded px-1 py-0.5 font-medium'
           key={match.index}
-          className='rounded bg-amber-500/15 px-1 py-0.5 font-medium text-amber-950 dark:bg-amber-950/50 dark:text-amber-200'
         >
           {match[1]}
         </mark>,
@@ -30,22 +31,22 @@ export function parseInsightText(text: React.ReactNode): React.ReactNode {
     } else if (match[2] !== undefined || match[3] !== undefined) {
       const boldText = match[2] ?? match[3]
       parts.push(
-        <strong key={match.index} className='font-semibold text-text-primary'>
+        <strong className='font-semibold text-text-primary' key={match.index}>
           {boldText}
         </strong>,
       )
     } else if (match[4] !== undefined || match[5] !== undefined) {
       const italicText = match[4] ?? match[5]
       parts.push(
-        <em key={match.index} className='italic'>
+        <em className='italic' key={match.index}>
           {italicText}
         </em>,
       )
     } else if (match[6] !== undefined) {
       parts.push(
         <code
-          key={match.index}
           className='rounded bg-surface-secondary px-1 py-0.5 font-mono text-xs'
+          key={match.index}
         >
           {match[6]}
         </code>,

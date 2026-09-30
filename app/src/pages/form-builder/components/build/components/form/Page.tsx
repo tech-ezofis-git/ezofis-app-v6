@@ -76,7 +76,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-200 hover:shadow-lg focus-within:z-30'
+      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-200 focus-within:z-30 hover:shadow-lg'
       id={panel.id}
       ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
@@ -174,7 +174,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
           <Tooltip label='Delete Section' position='top' withArrow>
             <ActionIcon
-              className='text-red-11 hover:bg-red-3 h-7 w-7 rounded-md transition-all active:scale-95'
+              className='h-7 w-7 rounded-md text-red-11 transition-all hover:bg-red-3 active:scale-95'
               color='red'
               disabled={isLocked}
               size='sm'
@@ -256,7 +256,7 @@ const Page = ({ panel, panelIndex }: Props) => {
           )}
 
           {isLocked && (
-            <div className='bg-gray-2/60 mt-3 flex items-center justify-center rounded-lg border border-dashed border-gray-3 py-3'>
+            <div className='mt-3 flex items-center justify-center rounded-lg border border-dashed border-gray-3 bg-gray-2/60 py-3'>
               <div className='flex items-center gap-2 text-xs font-medium text-gray-10'>
                 <Icon height={14} name='lucide:lock' width={14} />
                 <span>Section is locked</span>
@@ -288,24 +288,24 @@ const SortableQuestionItem = memo(
       setNodeRef,
     } = useSortable({ id: question.id })
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : undefined,
-  }
+    const style = {
+      transform: CSS.Translate.toString(transform),
+      transition,
+      zIndex: isDragging ? 50 : undefined,
+    }
 
     return (
       <div
+        ref={setNodeRef}
+        style={style}
         className={cn(
           'relative w-full',
           isDragging &&
             'rounded-xl border-2 border-dashed border-primary-5 bg-primary-3/20 opacity-40',
         )}
-        ref={setNodeRef}
-        style={style}
         {...attributes}
       >
-        <div className={cn(isDragging && 'invisible pointer-events-none')}>
+        <div className={cn(isDragging && 'pointer-events-none invisible')}>
           <QuestionCard
             dragListeners={isLocked ? undefined : listeners}
             isActive={activeQuestionId === question.id}

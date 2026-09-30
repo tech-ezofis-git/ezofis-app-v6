@@ -1,13 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
 import { getFileExtension } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import cn from '@/utils/cn'
 
 type PortalDocumentUploadProps = {

@@ -1,14 +1,12 @@
 import { buildSyntheticTableField } from './AgentEditableTables'
 
 export const normalizeQualifierKey = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+  value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ')
 
 const singularizeKey = (value: string) =>
-  normalizeQualifierKey(value).replace(/\s+s\b/g, '').trim()
+  normalizeQualifierKey(value)
+    .replace(/\s+s\b/g, '')
+    .trim()
 
 export const getFieldHeading = (field: any) =>
   String(
@@ -156,16 +154,14 @@ export const buildQualifierViewModel = (
     [qualifyKey, confidenceKey].filter(Boolean) as string[],
   )
 
-  const scalarFormFields = formFields.filter((field) => !isTableFieldType(field))
+  const scalarFormFields = formFields.filter(
+    (field) => !isTableFieldType(field),
+  )
   const usedKeys = new Set<string>(reservedKeys)
   const scalars: QualifierScalarEntry[] = []
   const tables: QualifierTableEntry[] = []
 
-  const pushScalar = (
-    resultKey: string,
-    value: unknown,
-    field: any | null,
-  ) => {
+  const pushScalar = (resultKey: string, value: unknown, field: any | null) => {
     if (value === null || value === undefined) return
     if (typeof value === 'string' && !value.trim()) return
     scalars.push({
@@ -188,9 +184,7 @@ export const buildQualifierViewModel = (
   for (const field of tableFields) {
     const resultKey = findResultKeyForFormField(result, field)
     const rows =
-      resultKey && isObjectRowArray(result[resultKey])
-        ? result[resultKey]
-        : []
+      resultKey && isObjectRowArray(result[resultKey]) ? result[resultKey] : []
     if (resultKey) usedKeys.add(resultKey)
     if (rows.length > 0 || resultKey) {
       tables.push({

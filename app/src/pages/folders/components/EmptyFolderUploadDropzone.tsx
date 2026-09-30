@@ -124,9 +124,9 @@ export function EmptyFolderUploadDropzone({
           accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
           className='hidden'
           disabled={disabled}
-          multiple
           ref={inputRef}
           type='file'
+          multiple
           onChange={(event) => acceptFiles(event.target.files)}
         />
       </div>

@@ -14,8 +14,8 @@ import TanstackQueryProvider from '@/lib/tanstack-query/Provider.tsx'
 import TanstackRouterProvider from '@/lib/tanstack-router/Provider.tsx'
 import { ThemeSync } from '@/lib/theme'
 import cssVariablesResolver from '@/lib/theme/cssVariablesResolver'
-import LingUiProvider from './lib/lingui/LingUiProvider'
 import ForceLtrDirection from './lib/lingui/ForceLtrDirection'
+import LingUiProvider from './lib/lingui/LingUiProvider'
 
 const googleClientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID as string
 const microsoftClientId = import.meta.env?.VITE_MSAL_CLIENT_ID_DEFAULT as string

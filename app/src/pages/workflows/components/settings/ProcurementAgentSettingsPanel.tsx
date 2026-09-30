@@ -53,9 +53,8 @@ export default function ProcurementAgentSettingsPanel({
   const [syncVendorMaster, setSyncVendorMaster] = useState<boolean>(
     nodeData.syncVendorMaster ?? true,
   )
-  const [autoApproveWithinBudget, setAutoApproveWithinBudget] = useState<boolean>(
-    nodeData.autoApproveWithinBudget ?? false,
-  )
+  const [autoApproveWithinBudget, setAutoApproveWithinBudget] =
+    useState<boolean>(nodeData.autoApproveWithinBudget ?? false)
 
   const [openBasic, setOpenBasic] = useState(true)
   const [openMatching, setOpenMatching] = useState(false)
@@ -79,15 +78,15 @@ export default function ProcurementAgentSettingsPanel({
   }
 
   return (
-    <div className='flex h-full flex-col overflow-y-auto p-4 space-y-3.5 font-sans'>
+    <div className='flex h-full flex-col space-y-3.5 overflow-y-auto p-4 font-sans'>
       {/* Header Banner */}
-      <div className='flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/70 p-3.5 text-teal-900 shadow-xs'>
-        <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white shadow-xs'>
+      <div className='border-teal-200 bg-teal-50/70 text-teal-900 flex items-center gap-3 rounded-xl border p-3.5 shadow-xs'>
+        <div className='bg-teal-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white shadow-xs'>
           <Icon className='h-5 w-5' name='lucide:shopping-bag' />
         </div>
         <div>
-          <h3 className='text-sm font-bold text-teal-950'>Procurement Agent</h3>
-          <p className='text-xs text-teal-700 font-medium leading-relaxed'>
+          <h3 className='text-teal-950 text-sm font-bold'>Procurement Agent</h3>
+          <p className='text-teal-700 text-xs leading-relaxed font-medium'>
             Automate requisitions, PO creation, vendor audit & matching.
           </p>
         </div>
@@ -160,7 +159,7 @@ export default function ProcurementAgentSettingsPanel({
                 updateNodeData('toleranceThreshold', val)
               }}
             />
-            <p className='mt-1 text-[11px] text-gray-500'>
+            <p className='text-gray-500 mt-1 text-[11px]'>
               Maximum allowed variance between PO amount and vendor invoice.
             </p>
           </div>

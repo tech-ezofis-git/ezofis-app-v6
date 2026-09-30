@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLingui } from '@lingui/react/macro'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
 import Button from '@/components/base/button/Button'
@@ -118,7 +118,13 @@ export default function FolderStorageConnectorPanel({
       message: t`${option.title} connected successfully.`,
       variant: 'success',
     })
-  }, [apiConnections, onConnectorChange, option.title, pendingConnectionName, t])
+  }, [
+    apiConnections,
+    onConnectorChange,
+    option.title,
+    pendingConnectionName,
+    t,
+  ])
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -188,15 +194,11 @@ export default function FolderStorageConnectorPanel({
           <span
             className={cn(
               'truncate',
-              selectedLabel
-                ? 'text-gray-12'
-                : 'font-normal text-gray-8',
+              selectedLabel ? 'text-gray-12' : 'font-normal text-gray-8',
             )}
           >
             {selectedLabel ||
-              (isLoading
-                ? t`Loading...`
-                : t`Select ${option.title} connector`)}
+              (isLoading ? t`Loading...` : t`Select ${option.title} connector`)}
           </span>
           <Icon
             className='size-4 shrink-0 text-gray-8'
@@ -239,8 +241,8 @@ export default function FolderStorageConnectorPanel({
                   ) : null}
 
                   <button
-                    type='button'
                     className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary-9 transition-colors hover:bg-primary-1'
+                    type='button'
                     onClick={() => {
                       setIsCreatingConnection(true)
                       setNewConnectionName(

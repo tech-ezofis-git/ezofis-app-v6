@@ -4,8 +4,6 @@ import Icon from './icon/Icon'
 
 const MotionStep = motion.create(Base.Step)
 
-export type StepStatus = 'active' | 'upcoming' | 'completed'
-
 export interface Step {
   id: number
   label: string
@@ -16,6 +14,8 @@ export interface Step {
   loading?: boolean
   status?: StepStatus
 }
+
+export type StepStatus = 'active' | 'upcoming' | 'completed'
 
 interface Props {
   active: number

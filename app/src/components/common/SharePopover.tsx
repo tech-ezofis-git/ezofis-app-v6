@@ -9,14 +9,16 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
 
-export type ShareRoleOption = { id: string; name: string }
-
 export type ShareInvitePayload = { action: number; email: string }
+
+export type ShareRoleOption = { id: string; name: string }
 
 type SharePopoverProps = {
   className?: string
   /** When true, open the popover on mount. */
   defaultOpen?: boolean
+  /** Hide the Share label — icon only. */
+  iconOnly?: boolean
   ownerUserId?: string
   roleOptions?: ShareRoleOption[]
   /** Pre-mark users already shared with (ids/emails). */
@@ -24,14 +26,9 @@ type SharePopoverProps = {
   successMessage?: string
   title?: string
   triggerClassName?: string
-  /** Hide the Share label — icon only. */
-  iconOnly?: boolean
   triggerLabel?: string
   onOpenChange?: (open: boolean) => void
-  onShare: (
-    shares: ShareInvitePayload[],
-    message: string,
-  ) => Promise<boolean>
+  onShare: (shares: ShareInvitePayload[], message: string) => Promise<boolean>
 }
 
 const getAvatarColor = (_str?: string) => {
@@ -80,13 +77,13 @@ const userKey = (user: any): string =>
 export default function SharePopover({
   className,
   defaultOpen = false,
+  iconOnly = false,
   ownerUserId,
   roleOptions,
   sharedIds,
   successMessage,
   title,
   triggerClassName,
-  iconOnly = false,
   triggerLabel,
   onOpenChange,
   onShare,
@@ -120,9 +117,10 @@ export default function SharePopover({
   >({})
   const shareRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(
-    null,
-  )
+  const [panelPos, setPanelPos] = useState<{
+    left: number
+    top: number
+  } | null>(null)
 
   const { data: rawUsers = [], isLoading: usersLoading } = useQuery(
     getUserListQueryOptions(),
@@ -285,8 +283,8 @@ export default function SharePopover({
   return (
     <div className={cn('relative', className)} ref={shareRef}>
       <button
-        type='button'
         aria-label={triggerLabel || t`Share`}
+        type='button'
         className={cn(
           'flex cursor-pointer items-center justify-center gap-2 rounded-lg border font-semibold transition-all hover:shadow-sm active:scale-95',
           iconOnly ? 'h-8 w-8 px-0' : 'h-8 px-3.5 text-[13px]',
@@ -314,11 +312,11 @@ export default function SharePopover({
             <AnimatePresence>
               {showShare && panelPos ? (
                 <motion.div
-                  ref={panelRef}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   className='fixed z-[200] w-[340px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  ref={panelRef}
                   style={{ left: panelPos.left, top: panelPos.top }}
                   transition={{ duration: 0.15 }}
                 >
@@ -333,8 +331,8 @@ export default function SharePopover({
                       </span>
                     </div>
                     <button
-                      type='button'
                       className='flex cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                      type='button'
                       onClick={closeShare}
                     >
                       <Icon className='size-3.5' name='lucide:x' />
@@ -386,8 +384,8 @@ export default function SharePopover({
                       <div className='h-4 w-px shrink-0 bg-[var(--gray-3)]' />
                       <div className='relative shrink-0'>
                         <button
-                          type='button'
                           className='flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[13px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
+                          type='button'
                           onClick={() => setShowRoleDropdown(!showRoleDropdown)}
                         >
                           {globalShareRole.name}
@@ -400,9 +398,9 @@ export default function SharePopover({
                           <div className='absolute top-full right-0 z-[110] mt-1 min-w-[120px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
                             {shareRoleOptions.map((opt) => (
                               <button
-                                type='button'
                                 className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]'
                                 key={opt.id}
+                                type='button'
                                 onClick={() => {
                                   setGlobalShareRole(opt)
                                   setShowRoleDropdown(false)
@@ -571,8 +569,8 @@ export default function SharePopover({
                                 ) : isSelectedToShare ? (
                                   <div className='relative shrink-0'>
                                     <button
-                                      type='button'
                                       className='flex cursor-pointer items-center gap-1 rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
+                                      type='button'
                                       onClick={() =>
                                         setOpenUserDropdown(
                                           openUserDropdown === id ? null : id,
@@ -583,8 +581,7 @@ export default function SharePopover({
                                         (opt) =>
                                           opt.id ===
                                           (selectedUsersToShare[id]
-                                            ?.permission ||
-                                            globalShareRole.id),
+                                            ?.permission || globalShareRole.id),
                                       )?.name ||
                                         selectedUsersToShare[id]?.permission ||
                                         globalShareRole.id}
@@ -597,9 +594,9 @@ export default function SharePopover({
                                       <div className='absolute top-full right-0 z-[110] mt-1 min-w-[100px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
                                         {shareRoleOptions.map((opt) => (
                                           <button
-                                            type='button'
                                             className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[11px] font-medium transition-colors hover:bg-[var(--gray-2)]'
                                             key={opt.id}
+                                            type='button'
                                             onClick={() => {
                                               setSelectedUsersToShare(
                                                 (prev) => ({
@@ -656,9 +653,7 @@ export default function SharePopover({
                       <div className='flex flex-col gap-3 border-t border-[var(--gray-2)] bg-surface p-4'>
                         <div
                           className='flex w-fit cursor-pointer items-center gap-2'
-                          onClick={() =>
-                            setSendNotification(!sendNotification)
-                          }
+                          onClick={() => setSendNotification(!sendNotification)}
                         >
                           <InputCheckbox
                             checked={sendNotification}

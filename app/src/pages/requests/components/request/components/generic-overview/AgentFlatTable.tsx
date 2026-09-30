@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import Tooltip from '@/components/base/Tooltip'
 import {
   ApiCatalogSelect,
@@ -22,11 +22,7 @@ const generateRowId = () => {
 }
 
 const normalizeKey = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+  value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ')
 
 export const columnLabel = (col: AgentFlatTableColumn) =>
   String(col.name || col.id || '')
@@ -84,22 +80,22 @@ export interface AgentFlatTableColumn {
 
 interface Props {
   columns: AgentFlatTableColumn[]
+  rows: Record<string, any>[]
+  title: string
   icon?: string
   readOnly?: boolean
-  rows: Record<string, any>[]
   showRowApprove?: boolean
-  title: string
   onChange: (rows: Record<string, any>[]) => void
 }
 
 const AgentFlatTable = ({
   columns: columnsProp,
   icon = 'tabler:table',
-  onChange,
   readOnly = false,
   rows: rowsProp,
   showRowApprove = false,
   title,
+  onChange,
 }: Props) => {
   const { t } = useLingui()
   const [rows, setRows] = useState<Record<string, any>[]>(() => rowsProp || [])
@@ -177,11 +173,11 @@ const AgentFlatTable = ({
             <tr>
               {columns.map((col) => (
                 <th
+                  key={col.id}
                   className={cn(
-                    'border border-gray-3 whitespace-nowrap p-3 font-semibold',
+                    'border border-gray-3 p-3 font-semibold whitespace-nowrap',
                     isNumericColumn(col) && 'text-right',
                   )}
-                  key={col.id}
                 >
                   {columnLabel(col)}
                 </th>
@@ -199,18 +195,16 @@ const AgentFlatTable = ({
               <tr className='group' key={row._rowId || index}>
                 {columns.map((col) => (
                   <td
+                    key={col.id}
                     className={cn(
                       'min-w-[8rem] border border-gray-3 p-3 align-top text-gray-11',
-                      isNumericColumn(col) && 'text-right font-medium text-gray-12',
+                      isNumericColumn(col) &&
+                        'text-right font-medium text-gray-12',
                       columnType(col) === 'LONG_TEXT' && 'min-w-[12rem]',
                     )}
-                    key={col.id}
                   >
-                    {renderCell(
-                      col,
-                      row[col.id],
-                      canEdit,
-                      (value) => updateCell(index, col.id, value),
+                    {renderCell(col, row[col.id], canEdit, (value) =>
+                      updateCell(index, col.id, value),
                     )}
                   </td>
                 ))}
@@ -295,11 +289,12 @@ function renderCell(
     isApiColumn(col)
   ) {
     return withLabel(
-      <div className='min-w-0 max-w-[220px]'>
+      <div className='max-w-[220px] min-w-0'>
         <ApiCatalogSelect
           compact
           col={{ ...col, name: col.name || col.id } as any}
           value={value}
+          compact
           onSelectProduct={(code) => onChange(code)}
         />
       </div>,
@@ -320,12 +315,12 @@ function renderCell(
   if (isNumericColumn(col)) {
     return withLabel(
       <input
+        type='number'
+        value={value ?? ''}
         className={cn(
           cellInputClass,
           type === 'CURRENCY_AMOUNT' ? 'text-right' : 'text-center',
         )}
-        type='number'
-        value={value ?? ''}
         onChange={(event) => onChange(event.target.value)}
       />,
     )

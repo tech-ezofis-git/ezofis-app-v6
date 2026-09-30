@@ -16,7 +16,7 @@ export function TreeSidebar({
   onToggle: (id: string) => void
 }) {
   return (
-    <aside className='ez-scrollbar w-[240px] xl:w-[270px] 2xl:w-[304px] shrink-0 overflow-y-auto border-r border-gray-3 bg-surface px-3 py-4'>
+    <aside className='ez-scrollbar w-[240px] shrink-0 overflow-y-auto border-r border-gray-3 bg-surface px-3 py-4 xl:w-[270px] 2xl:w-[304px]'>
       <div className='space-y-1'>
         {tree.map((node) => (
           <TreeItem
@@ -70,7 +70,7 @@ function TreeItem({
     <div>
       <div
         style={{ paddingLeft: `${8 + level * 20}px` }}
-        className={`group flex min-h-9 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-tight transition-all ${
+        className={`group flex min-h-9 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] leading-tight font-medium transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
@@ -79,9 +79,9 @@ function TreeItem({
         <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
           {canExpand ? (
             <button
+              className='flex h-5 w-5 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
               title={isExpanded ? t`Collapse` : t`Expand`}
               type='button'
-              className='flex h-5 w-5 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
               onClick={handleChevronClick}
             >
               <DynamicIcon
@@ -90,7 +90,7 @@ function TreeItem({
               />
             </button>
           ) : (
-            <span aria-hidden className='h-5 w-5' />
+            <span className='h-5 w-5' aria-hidden />
           )}
         </div>
 
@@ -99,7 +99,7 @@ function TreeItem({
           name={node.iconKey || node.title || 'folder'}
         />
 
-        <span className='min-w-0 flex-1 leading-tight break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
+        <span className='line-clamp-1 min-w-0 flex-1 leading-tight [overflow-wrap:anywhere] break-words transition-all group-hover:line-clamp-none'>
           {node.title}
         </span>
 

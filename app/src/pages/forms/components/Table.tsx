@@ -1,5 +1,5 @@
-import { type Table as TanstackTable } from '@tanstack/react-table'
 import { useLingui } from '@lingui/react/macro'
+import { type Table as TanstackTable } from '@tanstack/react-table'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 

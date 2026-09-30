@@ -202,9 +202,9 @@ export default function AgentKnowledgeSkillPanel({
             label='Instruction'
             minRows={10}
             placeholder={config.instructionPlaceholder}
-            required
             rows={10}
             value={instructions}
+            required
             onChange={(val) => {
               setInstructions(val)
               updateNodeData({ instructions: val })

@@ -66,11 +66,7 @@ const AskAiStep = ({ onChangeSource }: Props) => {
 
   // Fetch real fields for selected source
   const { fields: sourceFields, isLoading: isFieldsLoading } =
-    useReportSourceFields(
-      draft.sourceFormId,
-      draft.sourceType,
-      draft.sourceId,
-    )
+    useReportSourceFields(draft.sourceFormId, draft.sourceType, draft.sourceId)
 
   const runPrompt = (value: string) => {
     const text = value.trim()
@@ -126,9 +122,11 @@ const AskAiStep = ({ onChangeSource }: Props) => {
         <div className='flex items-center gap-2 text-13'>
           <Icon className='size-4 text-primary-10' name='lucide:database' />
           <span className='font-medium text-gray-12'>{t`Active Source:`}</span>
-          <span className='font-bold text-gray-13'>{draft.domain || t`Not selected`}</span>
+          <span className='font-bold text-gray-13'>
+            {draft.domain || t`Not selected`}
+          </span>
           {draft.sourceType && (
-            <span className='rounded-md bg-surface border border-gray-3 px-2 py-0.5 text-11 text-gray-10'>
+            <span className='rounded-md border border-gray-3 bg-surface px-2 py-0.5 text-11 text-gray-10'>
               {draft.sourceType}
             </span>
           )}
@@ -158,10 +156,10 @@ const AskAiStep = ({ onChangeSource }: Props) => {
 
       <div className='overflow-hidden rounded-xl border border-gray-3 bg-surface'>
         <textarea
-          autoFocus
           className='min-h-[92px] w-full resize-none bg-transparent px-4 py-3 text-13 text-gray-13 outline-none placeholder:text-gray-8'
           placeholder={t`e.g. Show me open requests and their current stage`}
           value={prompt}
+          autoFocus
           onChange={(e) => setPrompt(e.target.value)}
         />
         <div className='flex items-center justify-between border-t border-gray-3 bg-gray-1/50 px-3 py-2'>
@@ -173,12 +171,12 @@ const AskAiStep = ({ onChangeSource }: Props) => {
           <Button
             color='primary'
             disabled={!prompt.trim() || isThinking || isFieldsLoading}
-            leftSection={
-              <AiBrandIcon className='size-4' variant='outline-white' />
-            }
             label={isThinking ? t`Thinking...` : t`Generate plan`}
             loading={isThinking}
             size='sm'
+            leftSection={
+              <AiBrandIcon className='size-4' variant='outline-white' />
+            }
             onClick={() => runPrompt(prompt)}
           />
         </div>
@@ -204,9 +202,7 @@ const AskAiStep = ({ onChangeSource }: Props) => {
               <h4 className='text-14 font-semibold text-gray-12'>
                 {example.title}
               </h4>
-              <p className='mt-1 text-13 text-gray-10'>
-                {example.description}
-              </p>
+              <p className='mt-1 text-13 text-gray-10'>{example.description}</p>
             </div>
           </button>
         ))}

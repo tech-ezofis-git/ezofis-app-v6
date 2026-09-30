@@ -1,7 +1,10 @@
-import React from 'react'
 import { Icon } from '@iconify/react'
+import React from 'react'
 import cn from '@/utils/cn'
-import { summarizeQualifierResult, qualifyDecisionStyle } from './qualifierResultUtils'
+import {
+  qualifyDecisionStyle,
+  summarizeQualifierResult,
+} from './qualifierResultUtils'
 import { summarizeQuoteResult } from './quoteResultUtils'
 
 export interface AgentBlock {
@@ -10,8 +13,8 @@ export interface AgentBlock {
   color?: string
   icon?: string
   settings?: {
-    label?: string
     [key: string]: any
+    label?: string
   }
 }
 
@@ -29,10 +32,17 @@ const isDocGenBlock = (block: AgentBlock | null | undefined) => {
 }
 
 const isDocGenStageName = (value: string, label: string) => {
-  const stage = String(value || '').toLowerCase().trim()
-  const want = String(label || '').toLowerCase().trim()
+  const stage = String(value || '')
+    .toLowerCase()
+    .trim()
+  const want = String(label || '')
+    .toLowerCase()
+    .trim()
   if (!stage) return false
-  if (want && (stage === want || stage.includes(want) || want.includes(stage))) {
+  if (
+    want &&
+    (stage === want || stage.includes(want) || want.includes(stage))
+  ) {
     return true
   }
   return (
@@ -49,7 +59,9 @@ const docGenVisitedInHistory = (requestData: any, label: string) => {
     : []
   return history.some((row: any) => {
     const stage = String(row?.stage || row?.stageName || '')
-    const stageType = String(row?.stageType || row?.agentType || '').toLowerCase()
+    const stageType = String(
+      row?.stageType || row?.agentType || '',
+    ).toLowerCase()
     return (
       isDocGenStageName(stage, label) ||
       stageType.includes('document_generate') ||
@@ -120,12 +132,12 @@ export const agentHasResponse = (
   ) {
     return Boolean(
       requestData?.agentResponse ||
-        (requestData?._agentData && requestData._agentData.length > 0),
+      (requestData?._agentData && requestData._agentData.length > 0),
     )
   }
   return Boolean(
     requestData?.agentResponse ||
-      (requestData?._agentData && requestData._agentData.length > 0),
+    (requestData?._agentData && requestData._agentData.length > 0),
   )
 }
 
@@ -178,20 +190,22 @@ export const getAgentResponseTabs = (
 
 interface AgentSummaryBoxesProps {
   agentBlocks: AgentBlock[]
+  requestData: any
   selectedAgentBlockId: string | null
   onAgentClick: (blockId: string | null) => void
-  requestData: any
 }
 
 const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
   agentBlocks,
+  requestData,
   selectedAgentBlockId,
   onAgentClick,
-  requestData,
 }) => {
   if (!agentBlocks || agentBlocks.length === 0) return null
 
-  const historyList = Array.isArray(requestData?._history) ? requestData._history : []
+  const historyList = Array.isArray(requestData?._history)
+    ? requestData._history
+    : []
   const historyStages = new Set(historyList.map((h: any) => h.stage))
   const currentStage = requestData?.stage
 
@@ -239,7 +253,8 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
         let value = '-'
 
         if (block.type === 'QUALIFY_AGENT') {
-          const qualifyResult = requestData?.qualifyAgentResponse?.qualifier_result
+          const qualifyResult =
+            requestData?.qualifyAgentResponse?.qualifier_result
           if (qualifyResult) {
             const summary = summarizeQualifierResult(qualifyResult)
             const decision = qualifyDecisionStyle(summary.qualify)
@@ -248,7 +263,10 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
               statusColor = decision.className
             }
             value = summary.title
-          } else if (requestData?.stage === label && !requestData?.qualifyAgentResponse) {
+          } else if (
+            requestData?.stage === label &&
+            !requestData?.qualifyAgentResponse
+          ) {
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
             value = 'Analyzing...'
@@ -259,7 +277,8 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
           value = '-'
           if (requestData?.quoteAgentResponse?.quote_result) {
             status = 'Processed'
-            statusColor = 'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
+            statusColor =
+              'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
             const summary = summarizeQuoteResult(
               requestData.quoteAgentResponse.quote_result,
             )
@@ -279,7 +298,10 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
             statusColor =
               'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
             value = 'Document ready'
-          } else if (requestData?.stage === label || agentIsRunning(block, requestData)) {
+          } else if (
+            requestData?.stage === label ||
+            agentIsRunning(block, requestData)
+          ) {
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
             value = 'Generating...'
@@ -288,30 +310,34 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
 
         return (
           <button
+            disabled={!isClickable}
             key={block.id}
             type='button'
-            disabled={!isClickable}
             className={cn(
               'relative flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-300 ease-in-out',
-              isClickable ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-95' : 'cursor-not-allowed opacity-50 grayscale',
+              isClickable
+                ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-95'
+                : 'cursor-not-allowed opacity-50 grayscale',
               isSelected
                 ? 'border-[var(--primary-9)] bg-[var(--primary-2)]/30 shadow-sm ring-1 ring-[var(--primary-9)]/20'
                 : 'border-gray-3 bg-surface',
-              isClickable && !isSelected ? 'hover:bg-[var(--gray-1)]' : ''
+              isClickable && !isSelected ? 'hover:bg-[var(--gray-1)]' : '',
             )}
             onClick={() => {
               if (isClickable) onAgentClick(isSelected ? null : block.id)
             }}
           >
-            <div className='flex w-full items-center justify-between gap-1 flex-wrap'>
+            <div className='flex w-full flex-wrap items-center justify-between gap-1'>
               <div
-                className='shrink-0 rounded p-1.5 transition-colors flex items-center justify-center'
+                className='flex shrink-0 items-center justify-center rounded p-1.5 transition-colors'
                 style={{
-                  backgroundColor: block.color ? `${block.color}15` : 'var(--gray-2)',
+                  backgroundColor: block.color
+                    ? `${block.color}15`
+                    : 'var(--gray-2)',
                   color: block.color || 'var(--gray-11)',
                 }}
               >
-                <Icon icon={iconName} className='h-4 w-4' />
+                <Icon className='h-4 w-4' icon={iconName} />
               </div>
               <div
                 className={cn(

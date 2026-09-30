@@ -104,12 +104,6 @@ export type V6MenuItem = {
   visible?: boolean
 }
 
-export type V6RolePermissionKey = {
-  key?: string
-  name?: string
-  visible?: boolean | string | number
-}
-
 export type V6RoleItem = {
   createdAt?: string
   createdAtUtc?: string
@@ -123,6 +117,12 @@ export type V6RoleItem = {
   roleName?: string
   userCount?: number
   users?: Array<string | { id?: string; userId?: string; value?: string }>
+}
+
+export type V6RolePermissionKey = {
+  key?: string
+  name?: string
+  visible?: boolean | string | number
 }
 
 export type V6UserListItem = {
@@ -263,10 +263,18 @@ const extractUserItems = (data: unknown): V6UserListItem[] => {
   }
 
   return list.filter((user) => {
-    const email = String(user.email || '').toLowerCase().trim()
-    const displayName = String(user.displayName || '').toLowerCase().trim()
-    const firstName = String(user.firstName || '').toLowerCase().trim()
-    const lastName = String(user.lastName || '').toLowerCase().trim()
+    const email = String(user.email || '')
+      .toLowerCase()
+      .trim()
+    const displayName = String(user.displayName || '')
+      .toLowerCase()
+      .trim()
+    const firstName = String(user.firstName || '')
+      .toLowerCase()
+      .trim()
+    const lastName = String(user.lastName || '')
+      .toLowerCase()
+      .trim()
     const fullName = `${firstName} ${lastName}`.trim()
 
     if (email === 'pilot@ezofis.com') return false

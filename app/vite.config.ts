@@ -66,6 +66,21 @@ export default defineConfig({
         secure: false,
         target: 'https://app.ezofis.com',
       },
+      '/DocsEditor': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/DocsMerge': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/docsviewer': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
       '/fonts': {
         changeOrigin: true,
         secure: false,
@@ -81,25 +96,6 @@ export default defineConfig({
         secure: false,
         target: 'https://app.ezofis.com',
       },
-      // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
-      '/qwen-proxy': {
-        changeOrigin: true,
-        secure: true,
-        target: 'https://gpu-box.tail115a9a.ts.net',
-        rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
-      },
-      '/v5-api': {
-        changeOrigin: true,
-        secure: false,
-        target: 'https://eztapi.ezofis.com',
-        rewrite: (path) => path.replace(/^\/v5-api/, ''),
-      },
-      '/v5': {
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v5/, '') || '/',
-        secure: false,
-        target: 'https://trial.ezofis.com',
-      },
       '/PDFViewer': {
         changeOrigin: true,
         secure: false,
@@ -110,20 +106,24 @@ export default defineConfig({
         secure: false,
         target: 'https://trial.ezofis.com',
       },
-      '/docsviewer': {
+      // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
+      '/qwen-proxy': {
         changeOrigin: true,
-        secure: false,
-        target: 'https://trial.ezofis.com',
+        secure: true,
+        target: 'https://gpu-box.tail115a9a.ts.net',
+        rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
       },
-      '/DocsEditor': {
+      '/v5': {
         changeOrigin: true,
         secure: false,
         target: 'https://trial.ezofis.com',
+        rewrite: (path) => path.replace(/^\/v5/, '') || '/',
       },
-      '/DocsMerge': {
+      '/v5-api': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://eztapi.ezofis.com',
+        rewrite: (path) => path.replace(/^\/v5-api/, ''),
       },
       '/v5viewer': {
         changeOrigin: true,

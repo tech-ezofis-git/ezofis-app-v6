@@ -1,14 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import { Card } from '@/pages/folders/components/Ui'
-import FieldRenderer from '@/pages/requests/components/workflow-request/components/FieldRenderer'
 import TableFieldInput from '@/pages/folders/components/Upload/TableFieldInput'
+import FieldRenderer from '@/pages/requests/components/workflow-request/components/FieldRenderer'
 import { SUPPORTED_TYPES } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import {
   isIndexingFieldRequired,
   parseFieldOptionValues,
-  sortIndexingFields,
   type RepositoryFieldSchema,
+  sortIndexingFields,
 } from '@/pages/requests/utils/repoFolderMetadata'
 
 const toIndexingValue = (value: unknown): string => {
@@ -26,13 +26,16 @@ const toIndexingField = (
   const options = parseFieldOptionValues(repoField)
   let type = dataType
   if (dataType === 'BOOLEAN') type = 'YES_NO_TOGGLE'
-  else if (dataType === 'SINGLE_CHOICE' || dataType === 'SINGLE_SELECT') type = 'SINGLE_SELECT'
-  else if (dataType === 'MULTIPLE_CHOICE' || dataType === 'MULTI_SELECT') type = 'MULTI_SELECT'
+  else if (dataType === 'SINGLE_CHOICE' || dataType === 'SINGLE_SELECT')
+    type = 'SINGLE_SELECT'
+  else if (dataType === 'MULTIPLE_CHOICE' || dataType === 'MULTI_SELECT')
+    type = 'MULTI_SELECT'
   else if (!SUPPORTED_TYPES.has(dataType)) type = 'SHORT_TEXT'
 
   return {
     id: repoField.sqlColumnName,
     label: repoField.name,
+    type,
     settings: {
       general: {},
       specific: {
@@ -44,7 +47,6 @@ const toIndexingField = (
         fieldRule: required ? 'REQUIRED' : 'OPTIONAL',
       },
     },
-    type,
   }
 }
 
@@ -74,7 +76,10 @@ const IndexingFieldsForm = ({
     <Card className='overflow-hidden p-0'>
       <div className='flex items-center justify-between gap-3 border-b border-gray-3 px-4 py-3'>
         <h3 className='flex min-w-0 items-center gap-2 text-[15px] font-semibold text-gray-13'>
-          <DynamicIcon className='h-4 w-4 shrink-0 text-blue-11' name='fileText' />
+          <DynamicIcon
+            className='h-4 w-4 shrink-0 text-blue-11'
+            name='fileText'
+          />
           {t`Document Info`}
         </h3>
         {totalCount > 0 && (
@@ -99,11 +104,15 @@ const IndexingFieldsForm = ({
             const missing = attemptedSubmit && required && !String(value).trim()
             const dataType = String(repoField.dataType || '').toUpperCase()
 
-            if (dataType === 'TABLE' || dataType === 'DYNAMIC_TABLE' || dataType.includes('TABLE')) {
+            if (
+              dataType === 'TABLE' ||
+              dataType === 'DYNAMIC_TABLE' ||
+              dataType.includes('TABLE')
+            ) {
               return (
                 <TableFieldInput
-                  key={repoField.id || repoField.sqlColumnName}
                   field={repoField}
+                  key={repoField.id || repoField.sqlColumnName}
                   label={repoField.name}
                   required={required}
                   value={value}

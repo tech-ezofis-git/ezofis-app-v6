@@ -54,7 +54,14 @@ const isSupportedDocument = (file: File): boolean => {
     'xml',
     'eml',
   ]
-  return allowedExts.includes(ext) || isPdf(file) || isImage(file) || isCsv(file) || isXlsx(file) || Boolean(file.type)
+  return (
+    allowedExts.includes(ext) ||
+    isPdf(file) ||
+    isImage(file) ||
+    isCsv(file) ||
+    isXlsx(file) ||
+    Boolean(file.type)
+  )
 }
 
 const isCsv = (file: File) =>

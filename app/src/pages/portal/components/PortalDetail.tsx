@@ -2,9 +2,10 @@ import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
-import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
+import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   buildDetailFormModel,
   formPanelSectionId,
@@ -13,7 +14,6 @@ import {
   resolveStepStatuses,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
-import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   loadPortalWizard,
   type PortalWizardSource,
@@ -117,7 +117,9 @@ export default function PortalDetail({
     if (!panels.length) return
     setOpenIds((current) => {
       if (current.size > 0) return current
-      return new Set(panels.map((panel, index) => formPanelSectionId(panel, index)))
+      return new Set(
+        panels.map((panel, index) => formPanelSectionId(panel, index)),
+      )
     })
   }, [panels])
 
@@ -166,7 +168,8 @@ export default function PortalDetail({
       ? workflowData.workflowJson.blocks
       : []
     const block = blocks.find(
-      (item: { id?: string }) => String(item.id || '') === String(currentActivityId || ''),
+      (item: { id?: string }) =>
+        String(item.id || '') === String(currentActivityId || ''),
     )
     return (block?.settings || {}) as Record<string, unknown>
   }, [currentActivityId, workflowData])
@@ -182,7 +185,9 @@ export default function PortalDetail({
           userId?: string
         }[])
       : []
-    const rule = rules.find((item) => String(item.userId) === String(userId || ''))
+    const rule = rules.find(
+      (item) => String(item.userId) === String(userId || ''),
+    )
     const editable = new Set((rule?.formFields || []).map(String))
     return new Set(allFieldIds.filter((id) => !editable.has(id)))
   }, [allFieldIds, currentBlockSettings, isInbox, userId])
@@ -220,7 +225,10 @@ export default function PortalDetail({
         transactionId: submission.raw.transactionId || null,
         workflowId: submission.workflowId,
       }
-      const response = await workflowsApiV6.moveNext(String(instanceId), payload)
+      const response = await workflowsApiV6.moveNext(
+        String(instanceId),
+        payload,
+      )
       if (response?.error) {
         showToast({
           message: `${t`Failed to proceed request:`} ${response.error}`,
@@ -283,9 +291,7 @@ export default function PortalDetail({
           folderFields={[]}
           repositoryId={resolvedRepositoryId}
           title={
-            openedAttachment.name ||
-            openedAttachment.fileName ||
-            t`Attachment`
+            openedAttachment.name || openedAttachment.fileName || t`Attachment`
           }
           onClose={() => setOpenedAttachment(null)}
         />
@@ -304,15 +310,13 @@ export default function PortalDetail({
         {panels.length > 0 ? (
           isInbox ? (
             <WorkflowFormRenderer
-              disableOwnScroll
               formModel={formModel}
               instanceId={instanceId}
               panels={panels}
               readOnlyFieldIds={readOnlyFieldIds}
               repositoryId={resolvedRepositoryId}
-              getPanelValue={(panel, index) =>
-                formPanelSectionId(panel, index)
-              }
+              disableOwnScroll
+              getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
               onFieldChange={(fieldId, value) =>
                 setFormModel((prev) => ({ ...prev, [fieldId]: value }))
               }
@@ -337,13 +341,13 @@ export default function PortalDetail({
             {t`Attachments`}
           </div>
           <Attachments
+            canUpload={isInbox}
             formModel={formModel}
             instanceId={instanceId}
             repositoryId={resolvedRepositoryId}
             selectedItem={submission.raw}
             showRelatedFinder={false}
             workflowId={submission.workflowId}
-            canUpload={isInbox}
             enabled
             onSelect={(file) => setOpenedAttachment(file)}
           />

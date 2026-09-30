@@ -17,10 +17,10 @@ const itemKey = (repositoryId: string, itemId: string) =>
   `${STORAGE_PREFIX}item.${String(repositoryId || '').trim()}.${String(itemId || '').trim()}`
 
 export const saveSignRequestFields = (payload: {
-  repositoryId: string
-  itemId: string
-  signRequestId: string
   fields: SignRequestFieldDto[]
+  itemId: string
+  repositoryId: string
+  signRequestId: string
 }) => {
   if (typeof globalThis.window === 'undefined') return
   const signRequestId = String(payload.signRequestId || '').trim()
@@ -49,9 +49,9 @@ export const saveSignRequestFields = (payload: {
 }
 
 export const loadSignRequestFields = (payload: {
-  signRequestId?: string
-  repositoryId?: string
   itemId?: string
+  repositoryId?: string
+  signRequestId?: string
 }): SignRequestFieldDto[] => {
   if (typeof globalThis.window === 'undefined') return []
 

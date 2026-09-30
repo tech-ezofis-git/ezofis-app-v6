@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useRef, useState } from 'react'
+import { axiosV6 } from '@/api/axios'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
@@ -15,7 +16,6 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import { axiosV6 } from '@/api/axios'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import {
   compareHeaderSimilarity,
@@ -450,9 +450,9 @@ const ErpSystem = () => {
   return (
     <div className='space-y-6'>
       <SwitchIntegrationConfirm
-        opened={Boolean(pendingSwitch)}
         currentName={getErpLabel(erpSettings.system)}
         nextName={pendingSwitch?.name}
+        opened={Boolean(pendingSwitch)}
         onCancel={() => setPendingSwitch(null)}
         onConfirm={() => {
           pendingSwitch?.apply()
@@ -474,13 +474,13 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.15}>
             <BrandCard
               checked={erpSettings.system === 'PREDEFINED'}
-              connected={
-                erpSettings.system === 'PREDEFINED' && erpSettings.isConnected
-              }
               description={t`Try the platform with sample invoices and records.`}
               icon='tabler:database-search'
               name={t`Use demo data`}
               value='PREDEFINED'
+              connected={
+                erpSettings.system === 'PREDEFINED' && erpSettings.isConnected
+              }
               onClick={() => {
                 requestSwitch('PREDEFINED', t`Use demo data`, () => {
                   const current = setupStore.getState().erpSettings
@@ -502,14 +502,14 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.2}>
             <BrandCard
               checked={erpSettings.system === 'FILE_BASED_IMPORT'}
-              connected={
-                erpSettings.system === 'FILE_BASED_IMPORT' &&
-                erpSettings.templateUploaded
-              }
               description={t`Import your records via CSV or Excel.`}
               icon='tabler:table-import'
               name={t`Upload PO master file`}
               value='FILE_BASED_IMPORT'
+              connected={
+                erpSettings.system === 'FILE_BASED_IMPORT' &&
+                erpSettings.templateUploaded
+              }
               onClick={() => {
                 requestSwitch(
                   'FILE_BASED_IMPORT',
@@ -950,15 +950,6 @@ const ErpSystem = () => {
             return (
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
-                  description={
-                    erpSettings.system === item.value &&
-                    erpSettings.isConnected &&
-                    erpSettings.account
-                      ? erpSettings.account
-                      : item.value === 'QuickBooks'
-                        ? t`Connect your QuickBooks account to sync PO and invoice data automatically.`
-                        : item.description
-                  }
                   logo={item.logo}
                   name={item.name}
                   value={item.value}
@@ -970,6 +961,15 @@ const ErpSystem = () => {
                     erpSettings.system === item.value &&
                     !isFileBasedImportSelected &&
                     erpSettings.isConnected
+                  }
+                  description={
+                    erpSettings.system === item.value &&
+                    erpSettings.isConnected &&
+                    erpSettings.account
+                      ? erpSettings.account
+                      : item.value === 'QuickBooks'
+                        ? t`Connect your QuickBooks account to sync PO and invoice data automatically.`
+                        : item.description
                   }
                   onClick={() =>
                     requestSwitch(item.value, item.name, () => {

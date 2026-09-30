@@ -61,6 +61,12 @@ const initialState = {
 const useDmsSetupStore = create<Store>()((set) => ({
   ...initialState,
   resetSetup: () => set({ ...initialState }),
+  startSetup: () =>
+    set({
+      ...initialState,
+      isSetupStarted: true,
+      step: 0,
+    }),
   setDescription: (description) => set({ description }),
   setFields: (fields) => set({ fields }),
   setFolderName: (folderName) => set({ folderName }),
@@ -84,12 +90,6 @@ const useDmsSetupStore = create<Store>()((set) => ({
       storageConnectorLabel: null,
       storageId,
       storageProviderCode,
-    }),
-  startSetup: () =>
-    set({
-      ...initialState,
-      isSetupStarted: true,
-      step: 0,
     }),
 }))
 

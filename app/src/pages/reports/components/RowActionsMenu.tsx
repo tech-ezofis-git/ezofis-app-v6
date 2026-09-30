@@ -13,12 +13,7 @@ interface Props {
   onSchedule: (report: Report) => void
 }
 
-const RowActionsMenu = ({
-  report,
-  onDelete,
-  onEdit,
-  onSchedule,
-}: Props) => {
+const RowActionsMenu = ({ report, onDelete, onEdit, onSchedule }: Props) => {
   const { t } = useLingui()
 
   return (

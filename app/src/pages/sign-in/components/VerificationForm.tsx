@@ -1,5 +1,5 @@
-import { useNavigate } from '@tanstack/react-router'
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'

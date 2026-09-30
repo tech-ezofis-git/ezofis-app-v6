@@ -106,11 +106,11 @@ const PortalSubmissionDetails = ({
               key={section.id}
             >
               <button
+                type='button'
                 className={cn(
                   'flex w-full items-center gap-2 px-5 py-4 text-left transition-colors duration-200 hover:bg-gray-1 active:scale-[0.99]',
                   open && 'bg-gray-1',
                 )}
-                type='button'
                 onClick={() => onToggle(section.id)}
               >
                 <Icon

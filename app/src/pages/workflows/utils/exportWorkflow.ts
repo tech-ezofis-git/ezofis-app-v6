@@ -111,7 +111,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     // Normalize Manual User (INTERNAL_ACTOR) option-array fields to plain IDs
     const toIdArray = (val: any): string[] =>
       Array.isArray(val)
-        ? val.map((v: any) => (typeof v === 'object' ? String(v.id ?? v.value ?? v) : String(v)))
+        ? val.map((v: any) =>
+            typeof v === 'object' ? String(v.id ?? v.value ?? v) : String(v),
+          )
         : []
 
     if (Array.isArray(data.internalForwardUser)) {
@@ -152,11 +154,19 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
     // Ensure mailInitiate object exists for START block
     if (isStartNode) {
-      const existingMailInitiate = settings.mailInitiate || data.mailInitiate || {}
-      const connId = data.connectorId || data.connection || existingMailInitiate.connectorId || ''
-      
+      const existingMailInitiate =
+        settings.mailInitiate || data.mailInitiate || {}
+      const connId =
+        data.connectorId ||
+        data.connection ||
+        existingMailInitiate.connectorId ||
+        ''
+
       let connType = existingMailInitiate.connectorType || ''
-      if (toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK) {
+      if (
+        toolType === NODE_TOOL_TYPE.GMAIL ||
+        toolType === NODE_TOOL_TYPE.OUTLOOK
+      ) {
         connType = toolType.toUpperCase()
       } else if (connType === 'GMAIL' || connType === 'OUTLOOK') {
         connType = ''
@@ -174,7 +184,11 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       toolType === NODE_TOOL_TYPE.GMAIL ||
       toolType === NODE_TOOL_TYPE.OUTLOOK
     ) {
-      const connId = data.connectorId || data.connection || data.mailInitiate?.connectorId || ''
+      const connId =
+        data.connectorId ||
+        data.connection ||
+        data.mailInitiate?.connectorId ||
+        ''
       settings.mailInitiate = {
         ...settings.mailInitiate,
         conditions: {
@@ -300,7 +314,8 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
             existingApAgent.formId ??
             ''
           formId =
-            String(rawForm).startsWith('sap_') || String(rawForm).startsWith('qb_')
+            String(rawForm).startsWith('sap_') ||
+            String(rawForm).startsWith('qb_')
               ? ''
               : String(rawForm)
           connectorId = ''
@@ -412,13 +427,21 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
   const rawRules = edges.map((edge) => {
     const edgeData = (edge.data || {}) as any
-    const sourceNode = nodes.find(n => n.id === edge.source)
-    const sourceToolType = sourceNode ? normalizeNodeToolType((sourceNode.data || {}).toolType) : ''
-    
-    let actionName = String(edgeData.action || edgeData.proceedAction || 'Submit')
+    const sourceNode = nodes.find((n) => n.id === edge.source)
+    const sourceToolType = sourceNode
+      ? normalizeNodeToolType((sourceNode.data || {}).toolType)
+      : ''
 
-    if (sourceToolType === NODE_TOOL_TYPE.QUALIFY_AGENT || sourceToolType?.includes('qualify')) {
-      actionName = actionName.toUpperCase() === 'DISQUALIFY' ? 'DISQUALIFY' : 'QUALIFY'
+    let actionName = String(
+      edgeData.action || edgeData.proceedAction || 'Submit',
+    )
+
+    if (
+      sourceToolType === NODE_TOOL_TYPE.QUALIFY_AGENT ||
+      sourceToolType?.includes('qualify')
+    ) {
+      actionName =
+        actionName.toUpperCase() === 'DISQUALIFY' ? 'DISQUALIFY' : 'QUALIFY'
     } else if (sourceToolType === NODE_TOOL_TYPE.CONDITION) {
       const norm = actionName.toUpperCase().replace(/_/g, ' ')
       actionName = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'
@@ -435,7 +458,8 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       }
     } else if (sourceToolType === NODE_TOOL_TYPE.FTP_AGENT) {
       const norm = actionName.toUpperCase()
-      actionName = norm.includes('FAIL') || norm.includes('ERROR') ? 'FAILED' : 'SUCCESS'
+      actionName =
+        norm.includes('FAIL') || norm.includes('ERROR') ? 'FAILED' : 'SUCCESS'
     }
 
     return {
@@ -484,9 +508,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           required: false,
         },
         previewValues: storeState.previewValues,
-        requestTitleField: storeState.requestTitleField,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
         requestTabs: storeState.requestTabs || [],
+        requestTitleField: storeState.requestTitleField,
         scheduleReport: {},
         slaRules: [],
         slaSettings: {

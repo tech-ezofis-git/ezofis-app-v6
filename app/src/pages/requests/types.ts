@@ -58,6 +58,8 @@ export interface IRequestMeta {
   sentCount: string
 }
 
+export type RequestViewMode = 'grid' | 'kanban' | 'table'
+
 export interface TableGroup {
   groupCount: number
   groupId: string
@@ -65,8 +67,6 @@ export interface TableGroup {
   groupKey?: string
   groupValue?: string
 }
-
-export type RequestViewMode = 'grid' | 'kanban' | 'table'
 
 export interface WorkflowOption {
   flowJson: string // The JSON string defining rules/actions
@@ -79,6 +79,6 @@ export interface WorkflowOption {
   // block-shape checks like isAccountsPayableWorkflow() need this to work
   // off real data, not just the (often-empty) flowJson string.
   workflowJson?: any
-  settings?: any
   wSettings?: any
+  settings?: any
 }

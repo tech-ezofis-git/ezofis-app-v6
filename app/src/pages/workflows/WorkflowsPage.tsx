@@ -19,23 +19,13 @@ const WorkflowsPage = () => {
   if (showAiBuilder) {
     return (
       <AiWorkflowBuilder
-        onBack={() => setShowAiBuilder(false)}
-        onManualCreate={() => {
-          useWorkflowStore.getState().resetWorkflow()
-          void navigate({
-            params: { workflowId: 'new' },
-            to: '/workflow-builder/$workflowId',
-          })
-        }}
         onApply={(payload, promptName) => {
           if (payload) {
             const store = useWorkflowStore.getState()
             store.loadLegacyWorkflow(payload)
             store.setWorkflowStatus('draft')
             const name =
-              promptName ||
-              payload.name ||
-              payload.settings?.general?.name
+              promptName || payload.name || payload.settings?.general?.name
             const description =
               payload.description ||
               payload.settings?.general?.description ||
@@ -45,6 +35,14 @@ const WorkflowsPage = () => {
           } else {
             useWorkflowStore.getState().resetWorkflow()
           }
+          void navigate({
+            params: { workflowId: 'new' },
+            to: '/workflow-builder/$workflowId',
+          })
+        }}
+        onBack={() => setShowAiBuilder(false)}
+        onManualCreate={() => {
+          useWorkflowStore.getState().resetWorkflow()
           void navigate({
             params: { workflowId: 'new' },
             to: '/workflow-builder/$workflowId',

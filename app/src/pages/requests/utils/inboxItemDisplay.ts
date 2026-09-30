@@ -4,20 +4,20 @@ import {
 } from '@/pages/requests/utils/inboxList.utils'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
 
-export type InboxCardTone = 'error' | 'success' | 'warning' | 'accent'
-
 export type InboxCardData = {
-  id: string
-  vendor: string
-  reference: string
-  po?: string
+  aiNote?: string
   amount: string
+  id: string
+  meta: string
+  po?: string
+  raw?: any
+  reference: string
   status: string
   statusTone: InboxCardTone
-  meta: string
-  aiNote?: string
-  raw?: any
+  vendor: string
 }
+
+export type InboxCardTone = 'error' | 'success' | 'warning' | 'accent'
 
 const isNonEmptyString = (val: unknown) =>
   typeof val === 'string' && val.trim() !== '' && val.trim() !== '-'
@@ -68,8 +68,18 @@ export const findSupplierName = (row: any): string | null => {
       'Supplier',
       'Vendor',
     ]) ||
-    searchByKeys(header, ['Supplier Name', 'Vendor Name', 'Supplier', 'Vendor']) ||
-    searchByKeys(agent, ['Supplier Name', 'Vendor Name', 'supplier', 'vendor']) ||
+    searchByKeys(header, [
+      'Supplier Name',
+      'Vendor Name',
+      'Supplier',
+      'Vendor',
+    ]) ||
+    searchByKeys(agent, [
+      'Supplier Name',
+      'Vendor Name',
+      'supplier',
+      'vendor',
+    ]) ||
     null
   )
 }
@@ -87,7 +97,11 @@ export const findInvoiceNumber = (row: any): string | null => {
       'invoice_number',
       'Invoice No',
     ]) ||
-    searchByKeys(header, ['Invoice Number', 'InvoiceNumber', 'invoice_number']) ||
+    searchByKeys(header, [
+      'Invoice Number',
+      'InvoiceNumber',
+      'invoice_number',
+    ]) ||
     (row.documentNumber ? String(row.documentNumber) : null) ||
     (row.requestNo ? String(row.requestNo) : null) ||
     null
@@ -108,7 +122,12 @@ export const findInvoiceAmount = (row: any): string | null => {
       'Amount',
       'Total',
     ]) ||
-    searchByKeys(header, ['Invoice Amount', 'Invoice Value', 'Amount', 'Total']) ||
+    searchByKeys(header, [
+      'Invoice Amount',
+      'Invoice Value',
+      'Amount',
+      'Total',
+    ]) ||
     searchByKeys(agent?.po_matching, ['Invoice Value', 'Amount']) ||
     null
   )
@@ -237,7 +256,6 @@ export const extractDueDate = (row: any): string => {
   return String(val)
 }
 
-
 export const isOverdue = (row: any) => {
   const dueDateStr = extractDueDate(row)
   if (!dueDateStr || dueDateStr === '-') return false
@@ -313,7 +331,8 @@ export const filterRowsByQuickFilters = (
     (f) => f === 'highValue' || f.startsWith('amount:'),
   )
   const activeDueDate = activeQuickFilters.filter(
-    (f) => f === 'overdue' || f.startsWith('due_date:') || f.startsWith('overdue:'),
+    (f) =>
+      f === 'overdue' || f.startsWith('due_date:') || f.startsWith('overdue:'),
   )
   const dynamicHighValue = getHighValueThreshold(rows)
 
@@ -395,10 +414,7 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
   const vendor =
     findSupplierName(row) || row.vendor || row.raisedBy || 'Unknown Supplier'
   const invoice =
-    findInvoiceNumber(row) ||
-    row.documentNumber ||
-    row.requestNo ||
-    `INV-${id}`
+    findInvoiceNumber(row) || row.documentNumber || row.requestNo || `INV-${id}`
   const poRaw = extractPONumber(row)
   const po = poRaw && poRaw !== 'N/A' ? poRaw : ''
   const amount = formatAmount(findInvoiceAmount(row))
@@ -438,8 +454,8 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
         : '—'
 
   return {
-    amount,
     aiNote: agent?.ai_insight || agent?.aiInsight || undefined,
+    amount,
     id,
     meta,
     po,

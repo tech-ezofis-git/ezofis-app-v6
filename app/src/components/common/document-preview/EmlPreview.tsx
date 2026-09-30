@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { ChevronDown, FileText } from 'lucide-react'
 import PostalMime from 'postal-mime'
-import { FileText, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
 
 interface EmlPreviewProps {
-  fileName?: string
   fileUrl: string
+  fileName?: string
 }
 
 const getInitials = (name?: string, email?: string) => {
@@ -35,7 +35,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
         const response = await fetch(fileUrl)
         if (!response.ok) throw new Error('Failed to load email file')
         const arrayBuffer = await response.arrayBuffer()
-        
+
         const parser = new PostalMime()
         const parsedEmail = await parser.parse(arrayBuffer)
 
@@ -52,17 +52,21 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
     }
 
     loadEml()
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [fileUrl])
 
   if (loading) return <SkeletonDocumentPreview />
 
   if (error) {
     return (
-      <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-white px-6 text-center">
-        <FileText className="text-[var(--primary-9)]" size={40} />
-        <p className="text-sm font-semibold text-[var(--gray-13)]">Unable to preview email</p>
-        <p className="max-w-sm text-xs text-[var(--gray-10)]">{error}</p>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-white px-6 text-center'>
+        <FileText className='text-[var(--primary-9)]' size={40} />
+        <p className='text-sm font-semibold text-[var(--gray-13)]'>
+          Unable to preview email
+        </p>
+        <p className='max-w-sm text-xs text-[var(--gray-10)]'>{error}</p>
       </div>
     )
   }
@@ -82,14 +86,14 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
           isInlineReplaced = true
         }
       }
-      
+
       if (!isInlineReplaced) {
         displayAttachments.push(att)
       }
     })
   }
 
-  const { from, to, text } = emailData
+  const { from, text, to } = emailData
   const toList = Array.isArray(to) ? to : to ? [to] : []
   const initials = getInitials(from?.name, from?.address)
 
@@ -103,7 +107,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
     : null
 
   return (
-    <div className='flex h-full w-full flex-col overflow-hidden bg-surface text-[13px] font-sans'>
+    <div className='flex h-full w-full flex-col overflow-hidden bg-surface font-sans text-[13px]'>
       <div className='flex-shrink-0 px-4 pt-4 pb-3 sm:px-5 sm:pt-5'>
         <div className='flex items-start gap-3'>
           <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#d7caed] text-sm font-semibold text-[#4f4270]'>
@@ -135,13 +139,13 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
                 : ''
               return (
                 <a
-                  key={idx}
                   className='group flex w-64 cursor-pointer items-center justify-between rounded-md border border-[var(--gray-3)] bg-[var(--gray-1)] p-2.5 transition-colors hover:bg-[var(--gray-2)]'
                   download={att.filename || `attachment-${idx}`}
                   href={url}
+                  key={idx}
                 >
                   <div className='flex items-center gap-3 overflow-hidden'>
-                    <FileText className='shrink-0 text-red-500' size={20} />
+                    <FileText className='text-red-500 shrink-0' size={20} />
                     <div className='flex min-w-0 flex-col'>
                       <span className='mb-0.5 truncate text-[13px] leading-tight text-[var(--gray-12)]'>
                         {att.filename || `attachment-${idx}`}
@@ -171,7 +175,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
             title='Email Content'
           />
         ) : (
-          <pre className='whitespace-pre-wrap px-4 pb-5 font-sans text-[13px] text-[var(--gray-12)] sm:px-5'>
+          <pre className='px-4 pb-5 font-sans text-[13px] whitespace-pre-wrap text-[var(--gray-12)] sm:px-5'>
             {text}
           </pre>
         )}

@@ -1,15 +1,28 @@
 import { useLingui } from '@lingui/react/macro'
-import { useSearch, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState, useRef, useMemo } from 'react'
-import { fetchGlobalSearch, type GlobalSearchHit, getSearchHitTitle, getSearchHitIcon, getSearchHitDate } from '@/layouts/app/components/topbar/components/globalSearchApi'
-import { mergeSearchHits, searchLocalAppData, searchAllLocalData } from '@/layouts/app/components/topbar/components/localAppSearch'
-import { resolveAskAiPageContext } from '@/components/common/ask-ai/chatbotApi'
-import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import cn from '@/utils/cn'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { hl, foundLine } from '@/layouts/app/components/topbar/components/mockSearch'
+import { resolveAskAiPageContext } from '@/components/common/ask-ai/chatbotApi'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
+import {
+  fetchGlobalSearch,
+  getSearchHitDate,
+  getSearchHitIcon,
+  getSearchHitTitle,
+  type GlobalSearchHit,
+} from '@/layouts/app/components/topbar/components/globalSearchApi'
+import {
+  mergeSearchHits,
+  searchAllLocalData,
+  searchLocalAppData,
+} from '@/layouts/app/components/topbar/components/localAppSearch'
+import {
+  foundLine,
+  hl,
+} from '@/layouts/app/components/topbar/components/mockSearch'
+import cn from '@/utils/cn'
 
 const CACHE_EMPTY_API_DEBOUNCE_MS = 450
 const ENABLE_LOCAL_CACHE = false
@@ -26,7 +39,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<GlobalSearchHit[]>([])
   const [resultsSource, setResultsSource] = useState<'cache' | 'api'>('cache')
-  const [activeTab, setActiveTab] = useState<'all' | 'documents' | 'forms' | 'workflows' | 'folders' | 'requests'>('all')
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'documents' | 'forms' | 'workflows' | 'folders' | 'requests'
+  >('all')
 
   const inputRef = useRef<HTMLInputElement>(null)
   const requestIdRef = useRef(0)
@@ -68,9 +83,9 @@ export default function SearchPage() {
       })
       if (requestId !== requestIdRef.current) return
       setResults(
-        ENABLE_LOCAL_CACHE 
+        ENABLE_LOCAL_CACHE
           ? mergeSearchHits(hits, searchLocalAppData(trimmed))
-          : hits
+          : hits,
       )
       setResultsSource('api')
       lastApiQueryRef.current = trimmed
@@ -88,7 +103,9 @@ export default function SearchPage() {
   useEffect(() => {
     if (searchParams.q) {
       setQuery(searchParams.q)
-      if (lastApiQueryRef.current.toLowerCase() !== searchParams.q.toLowerCase()) {
+      if (
+        lastApiQueryRef.current.toLowerCase() !== searchParams.q.toLowerCase()
+      ) {
         void runApiSearch(searchParams.q)
       }
     } else {
@@ -155,20 +172,45 @@ export default function SearchPage() {
   }, [])
 
   const openHit = (hit: GlobalSearchHit) => {
-    const rawRepoId = typeof hit.id === 'object' && hit.id !== null ? hit.id.repositoryId : undefined
-    const rawItemId = typeof hit.id === 'object' && hit.id !== null ? hit.id.itemId : undefined
-    const formId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.formId || hit.id.masterFormId || '').trim() : ''
-    const formEntryId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.formEntryId || '').trim() : ''
-    const workflowId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.workflowId || '').trim() : ''
-    const instanceId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.instanceId || '').trim() : ''
+    const rawRepoId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? hit.id.repositoryId
+        : undefined
+    const rawItemId =
+      typeof hit.id === 'object' && hit.id !== null ? hit.id.itemId : undefined
+    const formId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? String(hit.id.formId || hit.id.masterFormId || '').trim()
+        : ''
+    const formEntryId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? String(hit.id.formEntryId || '').trim()
+        : ''
+    const workflowId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? String(hit.id.workflowId || '').trim()
+        : ''
+    const instanceId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? String(hit.id.instanceId || '').trim()
+        : ''
     const repositoryId = String(rawRepoId || '').trim()
     const itemId = String(rawItemId || '').trim()
     const title = getSearchHitTitle(hit)
     const type = String(hit.type || hit.entity_type || '').toLowerCase()
 
-    if (type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))) {
+    if (
+      type.includes('request') ||
+      (instanceId &&
+        workflowId &&
+        !type.includes('document') &&
+        !type.includes('file'))
+    ) {
       if (workflowId && instanceId) {
-        void navigate({ search: { processId: instanceId, workflowId }, to: '/requests' })
+        void navigate({
+          search: { processId: instanceId, workflowId },
+          to: '/requests',
+        })
       } else {
         void navigate({ to: '/requests' })
       }
@@ -177,7 +219,11 @@ export default function SearchPage() {
 
     if (type.includes('form') || type.includes('master') || formId) {
       if (formId) {
-        void navigate({ params: { formId }, search: formEntryId ? { entryId: formEntryId } : {}, to: '/forms/$formId/entries' })
+        void navigate({
+          params: { formId },
+          search: formEntryId ? { entryId: formEntryId } : {},
+          to: '/forms/$formId/entries',
+        })
       } else {
         void navigate({ to: '/forms' })
       }
@@ -186,7 +232,10 @@ export default function SearchPage() {
 
     if (type.includes('workflow') || type.includes('process')) {
       if (workflowId) {
-        void navigate({ params: { workflowId }, to: '/workflow-builder/$workflowId' })
+        void navigate({
+          params: { workflowId },
+          to: '/workflow-builder/$workflowId',
+        })
       } else {
         void navigate({ to: '/workflows' })
       }
@@ -194,42 +243,96 @@ export default function SearchPage() {
     }
 
     const isFolder = type.includes('folder') || type.includes('repository')
-    const repositoryLabel = hit.folder || hit.id?.repositoryName || (isFolder ? title : '') || hit.name || 'Repository'
+    const repositoryLabel =
+      hit.folder ||
+      hit.id?.repositoryName ||
+      (isFolder ? title : '') ||
+      hit.name ||
+      'Repository'
 
     setPending({
-      fileSearch: isFolder ? undefined : title,
+      fileSearch: undefined,
       filters: {},
+      itemName: itemId ? title : undefined,
       openItemId: itemId || undefined,
       repositoryId: repositoryId || undefined,
       repositoryLabel,
       target: 'Repository',
     })
     void navigate({
-      search: { ...(repositoryId ? { repositoryId } : {}), ...(itemId ? { itemId } : {}) },
+      search: {
+        ...(repositoryId ? { repositoryId } : {}),
+        ...(itemId ? { itemId } : {}),
+        ...(itemId && title ? { itemName: title } : {}),
+      },
       to: '/folders',
     })
   }
 
   const tabs = useMemo(() => {
-    const counts = { all: results.length, documents: 0, forms: 0, workflows: 0, folders: 0, requests: 0 }
+    const counts = {
+      all: results.length,
+      documents: 0,
+      folders: 0,
+      forms: 0,
+      requests: 0,
+      workflows: 0,
+    }
     results.forEach((hit) => {
       const type = String(hit.type || hit.entity_type || '').toLowerCase()
-      const workflowId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.workflowId || '').trim() : ''
-      const instanceId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.instanceId || '').trim() : ''
-      
-      if (type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))) counts.requests++
-      else if (type.includes('document') || type.includes('file')) counts.documents++
+      const workflowId =
+        typeof hit.id === 'object' && hit.id !== null
+          ? String(hit.id.workflowId || '').trim()
+          : ''
+      const instanceId =
+        typeof hit.id === 'object' && hit.id !== null
+          ? String(hit.id.instanceId || '').trim()
+          : ''
+
+      if (
+        type.includes('request') ||
+        (instanceId &&
+          workflowId &&
+          !type.includes('document') &&
+          !type.includes('file'))
+      )
+        counts.requests++
+      else if (type.includes('document') || type.includes('file'))
+        counts.documents++
       else if (type.includes('form') || type.includes('master')) counts.forms++
-      else if (type.includes('workflow') || type.includes('process')) counts.workflows++
-      else if (type.includes('folder') || type.includes('repository')) counts.folders++
+      else if (type.includes('workflow') || type.includes('process'))
+        counts.workflows++
+      else if (type.includes('folder') || type.includes('repository'))
+        counts.folders++
     })
 
-    const availableTabs = [{ id: 'all', label: t`All`, count: counts.all }]
-    if (counts.documents > 0) availableTabs.push({ id: 'documents', label: t`Documents`, count: counts.documents })
-    if (counts.forms > 0) availableTabs.push({ id: 'forms', label: t`Forms`, count: counts.forms })
-    if (counts.workflows > 0) availableTabs.push({ id: 'workflows', label: t`Workflows`, count: counts.workflows })
-    if (counts.folders > 0) availableTabs.push({ id: 'folders', label: t`Folders`, count: counts.folders })
-    if (counts.requests > 0) availableTabs.push({ id: 'requests', label: t`Requests`, count: counts.requests })
+    const availableTabs = [{ count: counts.all, id: 'all', label: t`All` }]
+    if (counts.documents > 0)
+      availableTabs.push({
+        count: counts.documents,
+        id: 'documents',
+        label: t`Documents`,
+      })
+    if (counts.forms > 0)
+      availableTabs.push({ count: counts.forms, id: 'forms', label: t`Forms` })
+    if (counts.workflows > 0)
+      availableTabs.push({
+        count: counts.workflows,
+        id: 'workflows',
+        label: t`Workflows`,
+      })
+    if (counts.folders > 0)
+      availableTabs.push({
+        count: counts.folders,
+        id: 'folders',
+        label: t`Folders`,
+      })
+    if (counts.requests > 0)
+      availableTabs.push({
+        count: counts.requests,
+        id: 'requests',
+        label: t`Requests`,
+      })
 
     return availableTabs
   }, [results, t])
@@ -238,15 +341,32 @@ export default function SearchPage() {
     if (activeTab === 'all') return results
     return results.filter((hit) => {
       const type = String(hit.type || hit.entity_type || '').toLowerCase()
-      const workflowId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.workflowId || '').trim() : ''
-      const instanceId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.instanceId || '').trim() : ''
-      
-      if (activeTab === 'requests') return type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))
-      if (activeTab === 'documents') return type.includes('document') || type.includes('file')
-      if (activeTab === 'forms') return type.includes('form') || type.includes('master')
-      if (activeTab === 'workflows') return type.includes('workflow') || type.includes('process')
-      if (activeTab === 'folders') return type.includes('folder') || type.includes('repository')
-      
+      const workflowId =
+        typeof hit.id === 'object' && hit.id !== null
+          ? String(hit.id.workflowId || '').trim()
+          : ''
+      const instanceId =
+        typeof hit.id === 'object' && hit.id !== null
+          ? String(hit.id.instanceId || '').trim()
+          : ''
+
+      if (activeTab === 'requests')
+        return (
+          type.includes('request') ||
+          (instanceId &&
+            workflowId &&
+            !type.includes('document') &&
+            !type.includes('file'))
+        )
+      if (activeTab === 'documents')
+        return type.includes('document') || type.includes('file')
+      if (activeTab === 'forms')
+        return type.includes('form') || type.includes('master')
+      if (activeTab === 'workflows')
+        return type.includes('workflow') || type.includes('process')
+      if (activeTab === 'folders')
+        return type.includes('folder') || type.includes('repository')
+
       return true
     })
   }, [results, activeTab])
@@ -271,36 +391,44 @@ export default function SearchPage() {
         <div className='mx-auto flex max-w-4xl flex-col items-start'>
           <div className='w-full'>
             <InputText
-              ref={inputRef}
-              classNames={{
-                input: 'rounded-xl border border-gray-4 bg-surface py-6 pl-12 pr-12 text-lg text-gray-12 shadow-sm focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20 transition-all',
-              }}
-              leftSection={<Icon name='lucide:search' className='size-5 text-gray-9' />}
               leftSectionWidth={48}
               placeholder='Search for documents, workflows, folders...'
+              ref={inputRef}
+              rightSectionWidth={loading && query.length > 0 ? 80 : 48}
+              value={query}
+              classNames={{
+                input:
+                  'rounded-xl border border-gray-4 bg-surface py-6 pr-12 pl-12 text-lg text-gray-12 shadow-sm transition-all focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20',
+              }}
+              leftSection={
+                <Icon className='size-5 text-gray-9' name='lucide:search' />
+              }
               rightSection={
                 <div className='flex items-center gap-2 pr-2'>
-                  {loading && <Icon name='lucide:loader-2' className='size-5 animate-spin text-primary-9' />}
+                  {loading && (
+                    <Icon
+                      className='size-5 animate-spin text-primary-9'
+                      name='lucide:loader-2'
+                    />
+                  )}
                   {query.length > 0 && !loading && (
                     <button
+                      className='flex size-6 items-center justify-center rounded-full text-gray-9 transition-colors hover:bg-gray-3 hover:text-gray-12'
                       onClick={() => {
                         setQuery('')
                         inputRef.current?.focus()
                       }}
-                      className='flex size-6 items-center justify-center rounded-full text-gray-9 hover:bg-gray-3 hover:text-gray-12 transition-colors'
                     >
-                      <Icon name='lucide:x' className='size-4' />
+                      <Icon className='size-4' name='lucide:x' />
                     </button>
                   )}
                 </div>
               }
-              rightSectionWidth={loading && query.length > 0 ? 80 : 48}
-              value={query}
               onChange={setQuery}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  void navigate({ to: '/search', search: { q: query } })
+                  void navigate({ search: { q: query }, to: '/search' })
                   void runApiSearch(query)
                 }
               }}
@@ -312,19 +440,21 @@ export default function SearchPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
                   className={cn(
                     'flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
                     activeTab === tab.id
                       ? 'bg-primary-2 text-primary-9'
-                      : 'border border-gray-4 bg-white text-gray-11 hover:bg-gray-2'
+                      : 'border border-gray-4 bg-white text-gray-11 hover:bg-gray-2',
                   )}
+                  onClick={() => setActiveTab(tab.id as any)}
                 >
                   {tab.label}
                   <span
                     className={cn(
                       'text-[11px]',
-                      activeTab === tab.id ? 'text-primary-9/70' : 'text-gray-9'
+                      activeTab === tab.id
+                        ? 'text-primary-9/70'
+                        : 'text-gray-9',
                     )}
                   >
                     {tab.count}
@@ -336,15 +466,18 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-6 pb-6 pt-0'>
+      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-6 pt-0 pb-6'>
         {!query.trim() && !loading && (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-6 flex items-center justify-center'>
               <AiBrandIcon className='size-10 shrink-0' />
             </div>
-            <h3 className='mb-3 text-[22px] font-medium text-[#1B326D]'>Start typing to search</h3>
+            <h3 className='mb-3 text-[22px] font-medium text-[#1B326D]'>
+              Start typing to search
+            </h3>
             <p className='max-w-sm text-[16px] leading-relaxed text-gray-11'>
-              Type to search the data. To find the Request,Document,Workflows,Folders,
+              Type to search the data. To find the
+              Request,Document,Workflows,Folders,
             </p>
           </div>
         )}
@@ -352,11 +485,14 @@ export default function SearchPage() {
         {query.trim() && results.length === 0 && !loading && (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-6 flex size-[72px] items-center justify-center rounded-full bg-gray-2 text-gray-9'>
-              <Icon name='lucide:search' className='size-8' />
+              <Icon className='size-8' name='lucide:search' />
             </div>
-            <h3 className='mb-4 text-[22px] font-medium text-[#1B326D]'>No matching results found</h3>
+            <h3 className='mb-4 text-[22px] font-medium text-[#1B326D]'>
+              No matching results found
+            </h3>
             <p className='max-w-md text-[16px] leading-relaxed text-gray-11'>
-              We couldn't find any records matching "{query}".<br />
+              We couldn't find any records matching "{query}".
+              <br />
               Try searching with different keywords or check spelling.
             </p>
           </div>
@@ -365,25 +501,40 @@ export default function SearchPage() {
         {results.length > 0 && query.trim() && (
           <div className='flex flex-col gap-4'>
             <div className='mb-2 text-[13px] text-gray-11'>
-              {filteredResults.length} {filteredResults.length === 1 ? 'result' : 'results'} for "{query}"
+              {filteredResults.length}{' '}
+              {filteredResults.length === 1 ? 'result' : 'results'} for "{query}
+              "
             </div>
 
             <div className='flex flex-col gap-3'>
               {filteredResults.map((hit, index) => {
                 const title = getSearchHitTitle(hit)
-                const titleHtml = hit.needles && hit.needles.length > 0 ? hl(title, hit.needles) : title
+                const titleHtml =
+                  hit.needles && hit.needles.length > 0
+                    ? hl(title, hit.needles)
+                    : title
                 const iconName = getSearchHitIcon(hit.type)
                 const hitType = (hit.type || '').toLowerCase()
-                const isDocumentHit = hitType.includes('document') || hitType.includes('file')
-                const badges = (hit.badges || []).filter((b) => b.label.toLowerCase() !== 'document')
+                const isDocumentHit =
+                  hitType.includes('document') || hitType.includes('file')
+                const badges = (hit.badges || []).filter(
+                  (b) => b.label.toLowerCase() !== 'document',
+                )
 
                 return (
                   <div
-                    key={hit.id?.itemId || hit.id?.formEntryId || hit.id?.instanceId || hit.entity_id || hit.id?.repositoryId || `${title}-${index}`}
-                    className='group flex w-full cursor-pointer items-start gap-4 rounded-xl border border-gray-4 bg-white p-4 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-7 active:scale-[0.995]'
+                    className='group flex w-full cursor-pointer items-start gap-4 rounded-xl border border-gray-4 bg-white p-4 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:outline-none active:scale-[0.995]'
+                    key={
+                      hit.id?.itemId ||
+                      hit.id?.formEntryId ||
+                      hit.id?.instanceId ||
+                      hit.entity_id ||
+                      hit.id?.repositoryId ||
+                      `${title}-${index}`
+                    }
                     onClick={() => openHit(hit)}
                   >
-                    <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-2 text-primary-9 transition-all border border-gray-5'>
+                    <div className='flex size-10 shrink-0 items-center justify-center rounded-xl border border-gray-5 bg-primary-2 text-primary-9 transition-all'>
                       <Icon className='size-5' name={iconName} />
                     </div>
 
@@ -394,7 +545,9 @@ export default function SearchPage() {
                           dangerouslySetInnerHTML={{ __html: titleHtml }}
                         />
                         {hit.subtitle && (
-                          <span className='text-[13.5px] text-gray-11'>{hit.subtitle}</span>
+                          <span className='text-[13.5px] text-gray-11'>
+                            {hit.subtitle}
+                          </span>
                         )}
                         {hit.folder && (
                           <span className='shrink-0 rounded-full border border-gray-4 bg-gray-3 px-2.5 py-0.5 text-[11px] font-medium text-gray-11'>
@@ -414,7 +567,10 @@ export default function SearchPage() {
                           return (
                             <span
                               key={i}
-                              className={cn('shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', colorCls)}
+                              className={cn(
+                                'shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-medium',
+                                colorCls,
+                              )}
                             >
                               {b.label}
                             </span>
@@ -423,13 +579,15 @@ export default function SearchPage() {
                       </div>
 
                       {hit?.matchSource && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className="size-[5px] shrink-0 rounded-full bg-[#00bcd4]" />
+                        <div className='mt-2 flex items-center gap-2'>
+                          <div className='size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
 
-                          <div className="line-clamp-1 text-[12.5px] text-slate-500 hover:line-clamp-none">
-                            <span className="font-medium text-gray-11">{query}</span>
-                            {" "}Matched in{" "}
-                            <span className="font-semibold text-primary-9">
+                          <div className='text-slate-500 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                            <span className='font-medium text-gray-11'>
+                              {query}
+                            </span>{' '}
+                            Matched in{' '}
+                            <span className='font-semibold text-primary-9'>
                               {hit.matchSource}
                             </span>
                           </div>
@@ -442,12 +600,15 @@ export default function SearchPage() {
                             <div className='size-[4px] shrink-0 rounded-full bg-primary-9' />
                             <div
                               className='line-clamp-1 text-[13px] leading-relaxed text-gray-11 transition-all group-hover:line-clamp-none'
-                              dangerouslySetInnerHTML={{ __html: foundLine(hit.found[0], hit.needles) }}
+                              dangerouslySetInnerHTML={{
+                                __html: foundLine(hit.found[0], hit.needles),
+                              }}
                             />
                           </div>
                           {hit.found.length > 1 && (
                             <div className='mt-1 cursor-pointer text-[12px] font-medium text-primary-9 hover:underline'>
-                              + {hit.found.length - 1} more place{hit.found.length - 1 === 1 ? '' : 's'} it matched
+                              + {hit.found.length - 1} more place
+                              {hit.found.length - 1 === 1 ? '' : 's'} it matched
                             </div>
                           )}
                         </div>

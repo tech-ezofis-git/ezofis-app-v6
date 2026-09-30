@@ -19,8 +19,8 @@ import {
   extractPONumber,
   findSupplierName,
   getFormPanels,
-  resolveFormJson,
   resolveConfiguredTitle,
+  resolveFormJson,
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
 
@@ -100,11 +100,17 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
   }, [row])
 
   const isDocumentApproval = workflow?.name === 'Document Approval'
-  const configuredTitle = resolveConfiguredTitle(row, workflow, isDocumentApproval)
+  const configuredTitle = resolveConfiguredTitle(
+    row,
+    workflow,
+    isDocumentApproval,
+  )
 
-  const requestNo = configuredTitle || (isDocumentApproval 
-    ? (row?.repositoryItem?.fileName || extractGenericRequestNumber(row))
-    : extractGenericRequestNumber(row))
+  const requestNo =
+    configuredTitle ||
+    (isDocumentApproval
+      ? row?.repositoryItem?.fileName || extractGenericRequestNumber(row)
+      : extractGenericRequestNumber(row))
   const raisedBy =
     row?.createdByName ||
     row?.createdByEmail ||
@@ -150,21 +156,35 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div
         className={cn(
           'flex size-9 shrink-0 items-center justify-center rounded-full',
-          isAgentStage ? 'bg-orange-2' : isTerminal ? 'bg-green-2' : 'bg-orange-2',
+          isAgentStage
+            ? 'bg-orange-2'
+            : isTerminal
+              ? 'bg-green-2'
+              : 'bg-orange-2',
         )}
       >
         <Icon
-          name={isAgentStage ? 'tabler:loader-2' : isTerminal ? 'tabler:check' : 'tabler:clock'}
           className={cn(
             'size-4',
-            isAgentStage ? 'text-orange-9 animate-spin' : isTerminal ? 'text-green-9' : 'text-orange-9',
+            isAgentStage
+              ? 'animate-spin text-orange-9'
+              : isTerminal
+                ? 'text-green-9'
+                : 'text-orange-9',
           )}
+          name={
+            isAgentStage
+              ? 'tabler:loader-2'
+              : isTerminal
+                ? 'tabler:check'
+                : 'tabler:clock'
+          }
         />
       </div>
 
       <div className='min-w-0 flex-1 overflow-hidden'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
-        <div className='flex flex-wrap items-center gap-2 min-w-0 max-w-full'>
+        <div className='flex max-w-full min-w-0 flex-wrap items-center gap-2'>
           <span className='shrink-0 text-13 font-bold text-gray-13'>
             {requestNo}
           </span>

@@ -4,11 +4,11 @@ import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
 import cn from '@/utils/cn'
 import ExtractedFieldCell from './components/ExtractedFieldCell'
 import FieldRenderer from './components/FieldRenderer'
-import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import {
   getColumnSizeClass,
   getDependentChildFieldIds,
@@ -58,10 +58,10 @@ interface Props {
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
   openValue?: string | null
-  // AP-style dense label/value grid (click-to-edit) instead of Input cards.
-  presentation?: 'default' | 'extracted'
   preparePhase?: 'extracting' | 'uploading' | null
   preparingFieldId?: string | null
+  // AP-style dense label/value grid (click-to-edit) instead of Input cards.
+  presentation?: 'default' | 'extracted'
   // Field ids the current acting user can see but not edit, from the same
   // Security & Form Access settings (formEditAccess / formEditControls).
   readOnlyFieldIds?: Set<string>
@@ -98,9 +98,9 @@ const WorkflowFormRenderer = ({
   missingMandatoryFieldIds,
   openValue,
   panels,
-  presentation = 'default',
   preparePhase,
   preparingFieldId,
+  presentation = 'default',
   readOnlyFieldIds,
   repoFieldHints,
   repositoryId,
@@ -181,7 +181,8 @@ const WorkflowFormRenderer = ({
   const renderVisibleFields = (visibleFields: any[]) => {
     if (presentation === 'extracted') {
       const scalarFields = visibleFields.filter(
-        (field) => !EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
+        (field) =>
+          !EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
       )
       const complexFields = visibleFields.filter((field) =>
         EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
@@ -209,6 +210,7 @@ const WorkflowFormRenderer = ({
                   field={field}
                   key={field.id}
                   readOnly={isReadOnly}
+                  value={formModel[field.id]}
                   source={
                     formModel[field.id] != null && formModel[field.id] !== ''
                       ? 'ocr'
@@ -256,8 +258,7 @@ const WorkflowFormRenderer = ({
                     preparingFieldId === String(field.id)
                   }
                   viewOnly={
-                    viewOnly ||
-                    Boolean(readOnlyFieldIds?.has(String(field.id)))
+                    viewOnly || Boolean(readOnlyFieldIds?.has(String(field.id)))
                   }
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                   onOcrFieldList={onOcrFieldList}
@@ -289,17 +290,19 @@ const WorkflowFormRenderer = ({
           )
           const state = evaluatedFieldStates[field.id]
           const isReadOnlyByRule = Boolean(state?.disabled)
-          const isRequiredByRule = state ? state.required : isFieldRequired(field)
+          const isRequiredByRule = state
+            ? state.required
+            : isFieldRequired(field)
 
           return (
             <div
+              data-field-id={field.id}
+              key={field.id}
               className={cn(
                 sizeClass,
                 'max-w-full min-w-0 px-2',
                 isTableField ? 'pb-6' : 'pb-4',
               )}
-              data-field-id={field.id}
-              key={field.id}
             >
               <FieldRenderer
                 fallbackAttachments={attachmentsByField[field.id]}
@@ -312,16 +315,15 @@ const WorkflowFormRenderer = ({
                 value={formModel[field.id]}
                 error={
                   hasAttemptedSubmit &&
-                    ((isRequiredByRule && !formModel[field.id]) ||
-                      missingMandatoryFieldIds?.has(String(field.id)) ||
-                      (field.jsonId &&
-                        missingMandatoryFieldIds?.has(String(field.jsonId))))
+                  ((isRequiredByRule && !formModel[field.id]) ||
+                    missingMandatoryFieldIds?.has(String(field.id)) ||
+                    (field.jsonId &&
+                      missingMandatoryFieldIds?.has(String(field.jsonId))))
                     ? t`This field is required.`
                     : undefined
                 }
                 isPreparing={
-                  Boolean(preparePhase) &&
-                  preparingFieldId === String(field.id)
+                  Boolean(preparePhase) && preparingFieldId === String(field.id)
                 }
                 viewOnly={
                   viewOnly ||
@@ -333,9 +335,9 @@ const WorkflowFormRenderer = ({
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={
                   onRequestUpload &&
-                    !viewOnly &&
-                    !readOnlyFieldIds?.has(String(field.id)) &&
-                    !isReadOnlyByRule
+                  !viewOnly &&
+                  !readOnlyFieldIds?.has(String(field.id)) &&
+                  !isReadOnlyByRule
                     ? (file) => onRequestUpload(field.id, file)
                     : undefined
                 }
@@ -353,11 +355,11 @@ const WorkflowFormRenderer = ({
         className={
           disableOwnScroll
             ? cn(
-                'w-full min-w-0 max-w-full',
+                'w-full max-w-full min-w-0',
                 presentation === 'extracted' && 'p-2',
               )
             : cn(
-                'w-full min-w-0 max-w-full overflow-x-hidden',
+                'w-full max-w-full min-w-0 overflow-x-hidden',
                 presentation === 'extracted' ? 'px-4 py-4' : 'px-6 py-6',
               )
         }
@@ -365,19 +367,23 @@ const WorkflowFormRenderer = ({
         <AnimateFadeIn delay={0.1}>
           <div className='flex flex-col gap-6'>
             {panels.map((panel: any, panelIndex: number) => {
-              const visibleFields = (panel.fields || []).filter((field: any) => {
-                const state = evaluatedFieldStates[field.id]
-                const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
-                return (
-                  !isHiddenByRule &&
-                  !hiddenFieldIds?.has(field.id) &&
-                  field.type !== 'DIVIDER'
-                )
-              })
+              const visibleFields = (panel.fields || []).filter(
+                (field: any) => {
+                  const state = evaluatedFieldStates[field.id]
+                  const isHiddenByRule = state
+                    ? !state.visible
+                    : isFieldHidden(field)
+                  return (
+                    !isHiddenByRule &&
+                    !hiddenFieldIds?.has(field.id) &&
+                    field.type !== 'DIVIDER'
+                  )
+                },
+              )
               if (visibleFields.length === 0) return null
 
               return (
-                <div key={panel.id || panelIndex} className='min-w-0'>
+                <div className='min-w-0' key={panel.id || panelIndex}>
                   {renderVisibleFields(visibleFields)}
                 </div>
               )
@@ -392,8 +398,8 @@ const WorkflowFormRenderer = ({
     <div
       className={
         disableOwnScroll
-          ? 'w-full min-w-0 max-w-full'
-          : 'w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'
+          ? 'w-full max-w-full min-w-0'
+          : 'w-full max-w-full min-w-0 overflow-x-hidden px-6 py-6'
       }
     >
       <AnimateFadeIn delay={0.1}>
@@ -423,7 +429,9 @@ const WorkflowFormRenderer = ({
           {panels.map((panel: any, panelIndex: number) => {
             const visibleFields = (panel.fields || []).filter((field: any) => {
               const state = evaluatedFieldStates[field.id]
-              const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
+              const isHiddenByRule = state
+                ? !state.visible
+                : isFieldHidden(field)
               return !isHiddenByRule && !hiddenFieldIds?.has(field.id)
             })
             if (visibleFields.length === 0) return null
@@ -473,7 +481,7 @@ const WorkflowFormRenderer = ({
                       </div>
                     </div>
                     {!viewOnly && requiredFields.length > 0 && (
-                      <span className='mr-3 shrink-0 text-11 font-medium whitespace-nowrap text-gray-9 self-center flex items-center gap-1'>
+                      <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-medium whitespace-nowrap text-gray-9'>
                         <span
                           className={
                             completedCount === requiredFields.length

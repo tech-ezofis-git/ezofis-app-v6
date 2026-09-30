@@ -12,22 +12,16 @@ import Tooltip from '@/components/base/Tooltip'
 import { formatDatetime } from '@/utils/dayjs'
 
 type ColumnScope = 'visible' | 'all'
-type RowScope = 'selected' | 'all'
 type FileFormat = 'csv' | 'excel'
-
 interface Props<TData> {
   table: TanstackTable<TData>
   fileName?: string
   iconOnly?: boolean
 }
 
-const SKIP_COLUMN_IDS = new Set([
-  'actions',
-  'avatar',
-  'drag',
-  'icon',
-  'select',
-])
+type RowScope = 'selected' | 'all'
+
+const SKIP_COLUMN_IDS = new Set(['actions', 'avatar', 'drag', 'icon', 'select'])
 
 const isExportableColumn = <TData,>(
   column: ReturnType<TanstackTable<TData>['getAllLeafColumns']>[number],
@@ -223,7 +217,9 @@ const TableExport = <TData,>({
       <MenuLabel>Columns to export</MenuLabel>
       <MenuItem
         label='Visible columns'
-        leftSection={<InputRadioIndicator checked={columnScope === 'visible'} />}
+        leftSection={
+          <InputRadioIndicator checked={columnScope === 'visible'} />
+        }
         onClick={() => setColumnScope('visible')}
       />
       <MenuItem
@@ -237,9 +233,7 @@ const TableExport = <TData,>({
       <MenuItem
         disabled={!hasSelectedRows}
         label='Selected rows'
-        leftSection={
-          <InputRadioIndicator checked={rowScope === 'selected'} />
-        }
+        leftSection={<InputRadioIndicator checked={rowScope === 'selected'} />}
         onClick={() => {
           if (hasSelectedRows) setRowScope('selected')
         }}

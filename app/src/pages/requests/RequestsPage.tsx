@@ -963,10 +963,10 @@ const RequestsPage = () => {
           )}
           {selectedItem && (
             <Request
-              key={selectedItem.processId || selectedItem.id}
               isFourthItem={selectedIndex === 3}
               isThirdItem={selectedIndex === 2}
               item={selectedItem}
+              key={selectedItem.processId || selectedItem.id}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
               onNext={hasNext ? onNext : undefined}

@@ -29,7 +29,7 @@ type EmptyContent = {
 }
 
 export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
-  forms: {
+  'forms': {
     filtered: {
       description:
         'No forms match your current search or filters. Try different keywords or clear filters.',
@@ -50,7 +50,7 @@ export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
       title: 'Forms unavailable',
     },
   },
-  requests: {
+  'requests': {
     filtered: {
       description:
         'No requests match your current search or filters. Try different keywords or clear filters.',
@@ -115,7 +115,7 @@ export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
       title: 'Processed requests unavailable',
     },
   },
-  workflows: {
+  'workflows': {
     filtered: {
       description:
         'No workflows match your current search or filters. Try different keywords or clear filters.',

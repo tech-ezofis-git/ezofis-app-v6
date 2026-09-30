@@ -8,6 +8,8 @@ import type { Question } from '@/pages/form-builder/store/formStore'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import userApi from '@/api/user'
+import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -37,16 +39,6 @@ import CalculatedFieldInput from '@/pages/form-builder/components/common/Calcula
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
-import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
-import authUserStore from '@/stores/authUserStore'
-import cn from '@/utils/cn'
-import {
-  matchesCategoryFilterValue,
-  matchesDateRangeValue,
-} from '@/utils/filterUtils'
-import GenericFormImportModal from './components/GenericFormImportModal'
-import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
-import { getUsers } from '@/api/v6/user'
 import {
   extractScalarStrings,
   facetsToFieldOptions,
@@ -58,17 +50,23 @@ import {
   getMasterFormInfo,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
+import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+} from '@/utils/filterUtils'
+import GenericFormImportModal from './components/GenericFormImportModal'
 
 const FormEntriesChoiceInput = ({
   field,
-  val,
   isMultiple,
   allFields = [],
   formModel = {},
   onChange,
 }: {
   field: Question
-  val: any
   isMultiple?: boolean
   allFields?: Question[]
   formModel?: Record<string, any>
@@ -199,7 +197,10 @@ const FormEntriesChoiceInput = ({
             >
               <div className='flex size-4 shrink-0 items-center justify-center rounded border border-gray-3'>
                 {isSelected && (
-                  <Icon className='size-3 text-accent-primary' name='lucide:check' />
+                  <Icon
+                    className='size-3 text-accent-primary'
+                    name='lucide:check'
+                  />
                 )}
               </div>
               <span className='text-xs'>{opt}</span>
@@ -241,14 +242,12 @@ const FormEntriesChoiceInput = ({
 
 const FormEntriesSelectInput = ({
   field,
-  val,
   fieldDistinctOptions = [],
   allFields = [],
   formModel = {},
   onChange,
 }: {
   field: Question
-  val: any
   fieldDistinctOptions?: Option[]
   allFields?: Question[]
   formModel?: Record<string, any>
@@ -428,15 +427,15 @@ const FormEntriesSelectInput = ({
 
     return (
       <InputSelectMultiple
-        creatable
         options={withExtraFieldOptions(selectOptions, selectedOpts)}
-        placeholder={field.settings?.general?.placeholder || 'Select options...'}
-        searchable
         value={selectedOpts}
+        creatable
+        searchable
+        placeholder={
+          field.settings?.general?.placeholder || 'Select options...'
+        }
         onChange={(vals: Option[]) =>
-          onChange(
-            vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','),
-          )
+          onChange(vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','))
         }
       />
     )
@@ -446,14 +445,14 @@ const FormEntriesSelectInput = ({
 
   return (
     <InputSelect
+      placeholder={field.settings?.general?.placeholder || 'Select an option'}
+      value={selectedOpt}
       creatable
+      searchable
       options={withExtraFieldOptions(
         selectOptions,
         selectedOpt ? [selectedOpt] : [],
       )}
-      placeholder={field.settings?.general?.placeholder || 'Select an option'}
-      searchable
-      value={selectedOpt}
       onChange={(opt) =>
         onChange(opt ? String(opt.id ?? opt.value ?? opt.name) : '')
       }
@@ -2024,54 +2023,56 @@ const FormEntriesPage = () => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
               const panelDescription = panel.settings?.description || ''
               const renderableFields = (panel.fields || []).filter((f: any) => {
-                if (['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase()))
+                if (
+                  ['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase())
+                )
                   return false
                 const state = evaluatedFieldStates[f.id]
                 if (state && !state.visible) return false
                 return true
               })
 
-                if (renderableFields.length === 0) return null
+              if (renderableFields.length === 0) return null
 
-                return (
-                  <div
-                    className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
-                    key={panel.id || `panel_${pIdx}`}
-                  >
-                    {/* Block Card Header */}
-                    <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                      <div className='flex items-center gap-3'>
-                        <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                          <Icon className='size-4' name='lucide:layers' />
-                        </div>
-                        <div>
-                          <h4 className='text-sm font-bold text-gray-12'>
-                            {panelTitle}
-                          </h4>
-                          {panelDescription && (
-                            <p className='text-[11px] text-gray-7'>
-                              {panelDescription}
-                            </p>
-                          )}
-                        </div>
+              return (
+                <div
+                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                  key={panel.id || `panel_${pIdx}`}
+                >
+                  {/* Block Card Header */}
+                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+                        <Icon className='size-4' name='lucide:layers' />
+                      </div>
+                      <div>
+                        <h4 className='text-sm font-bold text-gray-12'>
+                          {panelTitle}
+                        </h4>
+                        {panelDescription && (
+                          <p className='text-[11px] text-gray-7'>
+                            {panelDescription}
+                          </p>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Block Fields Layout using 12-column grid */}
-                    <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                      {renderableFields.map((field: Question) => {
-                        const type = (field.type || 'SHORT_TEXT').toUpperCase()
-                        const val = editValues[field.id] ?? ''
-                        const state = evaluatedFieldStates[field.id]
-                        const isFieldRequired = state
-                          ? state.required
-                          : field.settings?.validation?.fieldRule === 'REQUIRED'
-                        const isReadOnly = state
-                          ? state.disabled
-                          : Boolean((field.settings?.specific as any)?.isReadOnly)
-                        const colSpan = getColumnSpan(
-                          field.settings?.general?.size,
-                        )
+                  {/* Block Fields Layout using 12-column grid */}
+                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
+                    {renderableFields.map((field: Question) => {
+                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                      const val = editValues[field.id] ?? ''
+                      const state = evaluatedFieldStates[field.id]
+                      const isFieldRequired = state
+                        ? state.required
+                        : field.settings?.validation?.fieldRule === 'REQUIRED'
+                      const isReadOnly = state
+                        ? state.disabled
+                        : Boolean((field.settings?.specific as any)?.isReadOnly)
+                      const colSpan = getColumnSpan(
+                        field.settings?.general?.size,
+                      )
 
                       const isTableType =
                         type === 'LINE_ITEM' ||
@@ -2211,6 +2212,7 @@ const FormEntriesPage = () => {
                               formModel={editValues}
                               isMultiple
                               val={val}
+                              isMultiple
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
                               }
@@ -2220,6 +2222,7 @@ const FormEntriesPage = () => {
                             <FormEntriesSelectInput
                               allFields={renderableFields}
                               field={field}
+                              val={val}
                               fieldDistinctOptions={
                                 fieldDistinctOptions[field.id] || []
                               }
@@ -2263,7 +2266,7 @@ const FormEntriesPage = () => {
                               />
                             </div>
                           ) : type === 'CALCULATED' ? (
-                            <CalculatedFieldInput hideLabel value={val} />
+                            <CalculatedFieldInput value={val} hideLabel />
                           ) : type === 'LONG_TEXT' ? (
                             <InputTextarea
                               placeholder={field.settings?.general?.placeholder}

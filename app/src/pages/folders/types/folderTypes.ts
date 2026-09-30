@@ -67,10 +67,10 @@ export interface FolderItem {
   id: string
   itemsText: string
   title: string
+  createdByName?: string
   hasChildren?: boolean
   modifiedText?: string
   sizeText?: string
-  createdByName?: string
 }
 
 export interface MetadataSection {
@@ -106,14 +106,14 @@ export interface RepositoryDetail {
 export interface RepositoryFieldDetail {
   [key: string]: any
   dataType: string
-  iconKey?: string
   id: string
   includeInFolderStructure: boolean
   isMandatory: boolean
   level: number
   name: string
-  orderId?: number
   sqlColumnName: string
+  iconKey?: string
+  orderId?: number
 }
 
 export interface RepositoryFilePage {

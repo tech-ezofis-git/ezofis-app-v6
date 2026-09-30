@@ -16,12 +16,12 @@ import {
   type BrowseStructureDto,
   deleteRepositoryItem,
   deleteRepositoryItemRelatedSaved,
-  getRepositoryItemComments,
   getRepositoryItemAiSummary,
+  getRepositoryItemComments,
   getRepositoryItemFacets,
   getRepositoryItemFilterFields,
-  getRepositoryItems,
   getRepositoryItemRelatedSaved,
+  getRepositoryItems,
   getRepositoryItemShares,
   getRepositoryItemTimeline,
   getRepositoryItemWorkspace,
@@ -35,25 +35,30 @@ import {
   type RepositoryItemFacet,
   type RepositoryItemFilterField,
   type RepositoryShareResult,
-  type SharedWithMeItem,
   revokeRepositoryShare,
   saveRepositoryItemRelated,
+  type SharedWithMeItem,
   shareFilter,
   shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
+import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
 import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
 import { splitFilterValues } from '../utils/multiFilterValues'
-import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
 
 const getErrorMessage = (error: any): string => {
   if (!error) return 'Unknown error'
   if (typeof error === 'string') return error
   if (typeof error === 'object') {
-    return error.error || error.message || error.title || error.detail || JSON.stringify(error)
+    return (
+      error.error ||
+      error.message ||
+      error.title ||
+      error.detail ||
+      JSON.stringify(error)
+    )
   }
   return String(error)
 }
-
 
 export type { RepositoryItemFacet, RepositoryItemFilterField }
 
@@ -70,6 +75,10 @@ export interface DynamicRepositoryColumn {
 export interface FolderContentRequest {
   append?: boolean
   cursor?: string | null
+  /** UI filters for repository items Filters only */
+  fileFilters?: Record<string, string>
+  /** Search for repository items */
+  fileSearch?: string
   /**
    * @deprecated Prefer folderFilters / fileFilters.
    * Kept as a fallback merged into both when specific props are omitted.
@@ -77,8 +86,8 @@ export interface FolderContentRequest {
   filters?: Record<string, string>
   /** UI filters for browse/children ParentFilters only */
   folderFilters?: Record<string, string>
-  /** UI filters for repository items Filters only */
-  fileFilters?: Record<string, string>
+  /** Search for browse/children */
+  folderSearch?: string
   /** Grid tree sync: skip file fetch when only loading folder children */
   includeFiles?: boolean
   /** List view: load all repository files without folder filters */
@@ -87,10 +96,6 @@ export interface FolderContentRequest {
   pageSize?: number
   /** @deprecated Prefer folderSearch / fileSearch */
   search?: string
-  /** Search for browse/children */
-  folderSearch?: string
-  /** Search for repository items */
-  fileSearch?: string
   sortBy?: string
   sortOrder?: 'asc' | 'desc' | string
 }
@@ -172,7 +177,9 @@ const mergeFilters = (
   groups.forEach((group) => {
     Object.entries(group || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        const parts = value.map((part) => String(part ?? '').trim()).filter(Boolean)
+        const parts = value
+          .map((part) => String(part ?? '').trim())
+          .filter(Boolean)
         if (parts.length) merged[key] = parts.length === 1 ? parts[0] : parts
         return
       }
@@ -197,7 +204,8 @@ export const getFileRelevantFolderFilters = (
   Object.fromEntries(
     Object.entries(folderFilters).filter(
       ([key, value]) =>
-        !FOLDER_TABLE_FILTER_IDS.has(key) && Boolean(String(value ?? '').trim()),
+        !FOLDER_TABLE_FILTER_IDS.has(key) &&
+        Boolean(String(value ?? '').trim()),
     ),
   )
 
@@ -219,9 +227,7 @@ const buildFileUiFilters = (
   )
   const explicitFileFilters = request.fileFilters ?? {}
   const legacyFilters =
-    !request.folderFilters &&
-      !request.fileFilters &&
-      request.filters
+    !request.folderFilters && !request.fileFilters && request.filters
       ? request.filters
       : {}
 
@@ -298,8 +304,8 @@ const defaultItemPageSize = 50
 const throwIfCanceled = (result: { canceled?: boolean }) => {
   if (!result.canceled) return
   const cancelError = new Error('canceled')
-    ; (cancelError as any).code = 'ERR_CANCELED'
-    ; (cancelError as any).name = 'CanceledError'
+  ;(cancelError as any).code = 'ERR_CANCELED'
+  ;(cancelError as any).name = 'CanceledError'
   throw cancelError
 }
 
@@ -347,12 +353,12 @@ export const getFolderContextFilters = (
 export const resolveCurrentFolderGroupField = (
   structure:
     | {
-      folderFields?: Array<{
-        level: number
-        name: string
-        sqlColumnName: string
-      }>
-    }
+        folderFields?: Array<{
+          level: number
+          name: string
+          sqlColumnName: string
+        }>
+      }
     | null
     | undefined,
   parentFilters: Record<string, string | string[]> = {},
@@ -363,7 +369,9 @@ export const resolveCurrentFolderGroupField = (
   const folderFields = structure?.folderFields ?? []
   if (!folderFields.length) return ''
 
-  const sorted = [...folderFields].sort((left, right) => left.level - right.level)
+  const sorted = [...folderFields].sort(
+    (left, right) => left.level - right.level,
+  )
   const depth = Object.keys(parentFilters).length
   const field = sorted[depth]
 
@@ -471,17 +479,20 @@ const toWorkspaceDetail = (workspace: any): any => {
   }
 }
 
-export const toFileItem = (row: Record<string, any>, index: number): FileItem => {
+export const toFileItem = (
+  row: Record<string, any>,
+  index: number,
+): FileItem => {
   const id = String(
     row.id ??
-    row.Id ??
-    row.itemId ??
-    row.ItemId ??
-    row.documentId ??
-    row.DocumentId ??
-    row.fileId ??
-    row.FileId ??
-    `file-${index}`,
+      row.Id ??
+      row.itemId ??
+      row.ItemId ??
+      row.documentId ??
+      row.DocumentId ??
+      row.fileId ??
+      row.FileId ??
+      `file-${index}`,
   )
 
   return {
@@ -856,6 +867,92 @@ export const folderApi = {
     return result.data
   },
 
+  async deleteRepositoryItem(params: {
+    itemId: string
+    repositoryId: string
+  }): Promise<{ data: boolean; error: string }> {
+    return deleteRepositoryItem(params.repositoryId, params.itemId)
+  },
+
+  invalidateRepositoryCache(repositoryId?: string) {
+    invalidateRepositoryByIdCache(repositoryId)
+  },
+
+  async inviteToShare(payload: {
+    email: string
+    itemId: string
+    message?: string
+    permission: string
+    repositoryId: string
+  }): Promise<RepositoryShareResult> {
+    const action = payload.permission === 'Can Edit' ? 1 : 0
+    const result = await shareRepositoryItem({
+      action,
+      email: payload.email.trim(),
+      itemId: payload.itemId,
+      message: payload.message,
+      repositoryId: payload.repositoryId,
+    })
+    if (result.error) throw new Error(getErrorMessage(result.error))
+    return result.data || {}
+  },
+
+  async removeRelatedDocument(
+    repositoryId: string,
+    itemId: string,
+    related: { relatedItemId: string; relatedRepositoryId: string },
+  ): Promise<void> {
+    const result = await deleteRepositoryItemRelatedSaved({
+      itemId,
+      relatedItemId: related.relatedItemId,
+      relatedRepositoryId: related.relatedRepositoryId,
+      repositoryId,
+    })
+    if (result.error) throw new Error(getErrorMessage(result.error))
+  },
+
+  async revokeShare(shareId: string): Promise<void> {
+    const result = await revokeRepositoryShare({ shareId })
+    if (result.error) throw new Error(getErrorMessage(result.error))
+  },
+
+  async saveRelatedDocuments(
+    repositoryId: string,
+    itemId: string,
+    items: RelatedSavedLinkItem[],
+  ): Promise<RelatedDocumentsResponse> {
+    const result = await saveRepositoryItemRelated({
+      itemId,
+      items,
+      repositoryId,
+    })
+    if (result.error) throw new Error(getErrorMessage(result.error))
+    return (
+      result.data || {
+        data: [],
+        match: {},
+        matchFields: [],
+        page: 1,
+        pageSize: items.length || 50,
+        totalCount: 0,
+      }
+    )
+  },
+
+  async shareFilter(params: {
+    action?: number
+    email: string
+    filters: Record<string, string>
+    message?: string
+    repositoryId: string
+  }): Promise<{ data?: RepositoryShareResult | null; error?: any }> {
+    const response = await shareFilter({
+      ...params,
+      action: params.action as any,
+    })
+    return response
+  },
+
   async getAiSummary(
     repositoryId: string,
     itemId: string,
@@ -877,7 +974,9 @@ export const folderApi = {
     }
 
     if (result.error || !result.data) {
-      throw new Error(getErrorMessage(result.error) || 'Failed to load AI summary.')
+      throw new Error(
+        getErrorMessage(result.error) || 'Failed to load AI summary.',
+      )
     }
 
     return mapAiSummaryResponse({
@@ -909,7 +1008,6 @@ export const folderApi = {
     )
   },
 
-
   async getDocumentDetail(
     repositoryId: string,
     itemId: string,
@@ -928,12 +1026,12 @@ export const folderApi = {
           ? err
           : err && typeof err === 'object'
             ? String(
-              (err as { error?: string; message?: string; title?: string })
-                .error ||
-              (err as { message?: string }).message ||
-              (err as { title?: string }).title ||
-              'Unable to load document details',
-            )
+                (err as { error?: string; message?: string; title?: string })
+                  .error ||
+                  (err as { message?: string }).message ||
+                  (err as { title?: string }).title ||
+                  'Unable to load document details',
+              )
             : 'Unable to load document details'
       throw new Error(message)
     }
@@ -949,76 +1047,15 @@ export const folderApi = {
     return result.data || { events: [], totalCount: 0 }
   },
 
-  async getRelatedDocuments(
-    repositoryId: string,
-    itemId: string,
-    request: { page?: number; pageSize?: number } = {},
-  ): Promise<RelatedDocumentsResponse> {
-    const result = await getRepositoryItemRelatedSaved({
-      itemId,
-      page: request.page ?? 1,
-      pageSize: request.pageSize ?? 50,
-      repositoryId,
-    })
-    if (result.error) throw new Error(getErrorMessage(result.error))
-    return (
-      result.data || {
-        data: [],
-        match: {},
-        matchFields: [],
-        page: request.page ?? 1,
-        pageSize: request.pageSize ?? 50,
-        totalCount: 0,
-      }
-    )
-  },
-
-  async saveRelatedDocuments(
-    repositoryId: string,
-    itemId: string,
-    items: RelatedSavedLinkItem[],
-  ): Promise<RelatedDocumentsResponse> {
-    const result = await saveRepositoryItemRelated({
-      itemId,
-      items,
-      repositoryId,
-    })
-    if (result.error) throw new Error(getErrorMessage(result.error))
-    return (
-      result.data || {
-        data: [],
-        match: {},
-        matchFields: [],
-        page: 1,
-        pageSize: items.length || 50,
-        totalCount: 0,
-      }
-    )
-  },
-
-  async removeRelatedDocument(
-    repositoryId: string,
-    itemId: string,
-    related: { relatedItemId: string; relatedRepositoryId: string },
-  ): Promise<void> {
-    const result = await deleteRepositoryItemRelatedSaved({
-      itemId,
-      relatedItemId: related.relatedItemId,
-      relatedRepositoryId: related.relatedRepositoryId,
-      repositoryId,
-    })
-    if (result.error) throw new Error(getErrorMessage(result.error))
-  },
-
   async getFolderChildren(
     folderId: string,
     request: {
       filters?: Record<string, string>
       folderFilters?: Record<string, string>
+      folderSearch?: string
       page?: number
       pageSize?: number
       search?: string
-      folderSearch?: string
     } = {},
   ): Promise<{
     folderPage: RepositoryFilePage
@@ -1081,18 +1118,18 @@ export const folderApi = {
       pageSize: request.pageSize ?? defaultGroupPageSize,
       parentFilters,
       pathId,
-      search:
-        (request.folderSearch ?? request.search)?.trim() || undefined,
+      search: (request.folderSearch ?? request.search)?.trim() || undefined,
     } as any)
 
     if ((childrenResult as any).canceled) {
       const cancelError = new Error('canceled')
-        ; (cancelError as any).code = 'ERR_CANCELED'
-        ; (cancelError as any).name = 'CanceledError'
+      ;(cancelError as any).code = 'ERR_CANCELED'
+      ;(cancelError as any).name = 'CanceledError'
       throw cancelError
     }
 
-    if (childrenResult.error) throw new Error(getErrorMessage(childrenResult.error))
+    if (childrenResult.error)
+      throw new Error(getErrorMessage(childrenResult.error))
 
     const folders = normalizeChildren(
       childrenResult.data,
@@ -1156,13 +1193,13 @@ export const folderApi = {
     const fieldIconMap = buildFieldIconMap(fields)
     const structure =
       decoded.kind === 'repository' ||
-        decoded.kind === 'browsePath' ||
-        decoded.kind === 'browse'
+      decoded.kind === 'browsePath' ||
+      decoded.kind === 'browse'
         ? await getRepositoryBrowseStructure(
-          decoded.kind === 'repository'
-            ? decoded.repositoryId
-            : decoded.repositoryId,
-        )
+            decoded.kind === 'repository'
+              ? decoded.repositoryId
+              : decoded.repositoryId,
+          )
         : null
     const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
     const fieldKeys = fields
@@ -1171,8 +1208,8 @@ export const folderApi = {
 
     const folderUiFilters = buildApiFilters(
       request.folderFilters ??
-      (request.fileFilters ? {} : request.filters) ??
-      {},
+        (request.fileFilters ? {} : request.filters) ??
+        {},
       fieldKeys,
       fields,
     )
@@ -1273,12 +1310,13 @@ export const folderApi = {
 
       if ((childrenResult as any).canceled) {
         const cancelError = new Error('canceled')
-          ; (cancelError as any).code = 'ERR_CANCELED'
-          ; (cancelError as any).name = 'CanceledError'
+        ;(cancelError as any).code = 'ERR_CANCELED'
+        ;(cancelError as any).name = 'CanceledError'
         throw cancelError
       }
 
-      if (childrenResult.error) throw new Error(getErrorMessage(childrenResult.error))
+      if (childrenResult.error)
+        throw new Error(getErrorMessage(childrenResult.error))
       currentFolderGroupField = resolveCurrentFolderGroupField(
         structure,
         folderParentFilters,
@@ -1307,7 +1345,7 @@ export const folderApi = {
         decoded.kind === 'browse' &&
         !folders.length &&
         Object.keys(folderParentFilters).length >=
-        getBrowseFolderFieldCount(structure)
+          getBrowseFolderFieldCount(structure)
       ) {
         const fileResult = await fetchRepositoryFiles(
           fileItemFilters,
@@ -1329,25 +1367,6 @@ export const folderApi = {
     }
   },
 
-  async getMetadataSections(): Promise<MetadataSection[]> {
-    return []
-  },
-
-  async getRepositoryFullData(
-    repositoryId: string,
-    options?: { force?: boolean },
-  ): Promise<RepositoryDto> {
-    return fetchRepositoryById(repositoryId, options)
-  },
-
-  async getItemFilterFields(
-    repositoryId: string,
-  ): Promise<RepositoryItemFilterField[]> {
-    const result = await getRepositoryItemFilterFields(repositoryId)
-    if (result.error) throw new Error(getErrorMessage(result.error))
-    return result.data?.fields || []
-  },
-
   async getItemFacets(
     repositoryId: string,
     fieldName: string,
@@ -1365,10 +1384,49 @@ export const folderApi = {
     if (result.error) throw new Error(getErrorMessage(result.error))
     return result.data || []
   },
-
-  invalidateRepositoryCache(repositoryId?: string) {
-    invalidateRepositoryByIdCache(repositoryId)
+  async getItemFilterFields(
+    repositoryId: string,
+  ): Promise<RepositoryItemFilterField[]> {
+    const result = await getRepositoryItemFilterFields(repositoryId)
+    if (result.error) throw new Error(getErrorMessage(result.error))
+    return result.data?.fields || []
   },
+
+  async getMetadataSections(): Promise<MetadataSection[]> {
+    return []
+  },
+
+  async getRelatedDocuments(
+    repositoryId: string,
+    itemId: string,
+    request: { page?: number; pageSize?: number } = {},
+  ): Promise<RelatedDocumentsResponse> {
+    const result = await getRepositoryItemRelatedSaved({
+      itemId,
+      page: request.page ?? 1,
+      pageSize: request.pageSize ?? 50,
+      repositoryId,
+    })
+    if (result.error) throw new Error(getErrorMessage(result.error))
+    return (
+      result.data || {
+        data: [],
+        match: {},
+        matchFields: [],
+        page: request.page ?? 1,
+        pageSize: request.pageSize ?? 50,
+        totalCount: 0,
+      }
+    )
+  },
+
+  async getRepositoryFullData(
+    repositoryId: string,
+    options?: { force?: boolean },
+  ): Promise<RepositoryDto> {
+    return fetchRepositoryById(repositoryId, options)
+  },
+
   async getShareData(options?: {
     itemId?: string
     localShares?: ShareData['sharedWith']
@@ -1378,11 +1436,11 @@ export const folderApi = {
     const repositoryId = String(options?.repositoryId || '').trim()
     const localShares = options?.localShares || []
 
-    const mapShare = (share: SharedWithMeItem): ShareData['sharedWith'][number] => {
+    const mapShare = (
+      share: SharedWithMeItem,
+    ): ShareData['sharedWith'][number] => {
       const email = String(
-        share.recipientEmail ||
-        (share as { email?: string }).email ||
-        '',
+        share.recipientEmail || (share as { email?: string }).email || '',
       ).trim()
       const name = email.split('@')[0] || email || 'Guest'
       const initials =
@@ -1395,24 +1453,24 @@ export const folderApi = {
       const dateRaw = share.sharedAtUtc || share.expiresAtUtc
       const date = dateRaw
         ? (() => {
-          const parsed = new Date(dateRaw)
-          if (Number.isNaN(parsed.getTime())) return ''
-          const months = [
-            'jan',
-            'feb',
-            'mar',
-            'apr',
-            'may',
-            'jun',
-            'jul',
-            'aug',
-            'sep',
-            'oct',
-            'nov',
-            'dec',
-          ] as const
-          return `${parsed.getDate()}-${months[parsed.getMonth()]}-${parsed.getFullYear()}`
-        })()
+            const parsed = new Date(dateRaw)
+            if (Number.isNaN(parsed.getTime())) return ''
+            const months = [
+              'jan',
+              'feb',
+              'mar',
+              'apr',
+              'may',
+              'jun',
+              'jul',
+              'aug',
+              'sep',
+              'oct',
+              'nov',
+              'dec',
+            ] as const
+            return `${parsed.getDate()}-${months[parsed.getMonth()]}-${parsed.getFullYear()}`
+          })()
         : ''
       let shareUrl = String(share.shareUrl || '').trim()
       if (!shareUrl && share.shareToken) {
@@ -1446,19 +1504,19 @@ export const folderApi = {
     }
 
     const byKey = new Map<string, ShareData['sharedWith'][number]>()
-      ;[...remoteShares, ...localShares].forEach((person) => {
-        const key = person.shareId || person.email.toLowerCase()
-        const existing = byKey.get(key)
-        if (!existing) {
-          byKey.set(key, person)
-          return
-        }
-        byKey.set(key, {
-          ...existing,
-          ...person,
-          shareUrl: person.shareUrl || existing.shareUrl,
-        })
+    ;[...remoteShares, ...localShares].forEach((person) => {
+      const key = person.shareId || person.email.toLowerCase()
+      const existing = byKey.get(key)
+      if (!existing) {
+        byKey.set(key, person)
+        return
+      }
+      byKey.set(key, {
+        ...existing,
+        ...person,
+        shareUrl: person.shareUrl || existing.shareUrl,
       })
+    })
 
     return {
       documentId: itemId,
@@ -1468,31 +1526,6 @@ export const folderApi = {
       sharedWith: Array.from(byKey.values()),
     }
   },
-
-  async inviteToShare(payload: {
-    email: string
-    itemId: string
-    message?: string
-    permission: string
-    repositoryId: string
-  }): Promise<RepositoryShareResult> {
-    const action = payload.permission === 'Can Edit' ? 1 : 0
-    const result = await shareRepositoryItem({
-      action,
-      email: payload.email.trim(),
-      itemId: payload.itemId,
-      message: payload.message,
-      repositoryId: payload.repositoryId,
-    })
-    if (result.error) throw new Error(getErrorMessage(result.error))
-    return result.data || {}
-  },
-
-  async revokeShare(shareId: string): Promise<void> {
-    const result = await revokeRepositoryShare({ shareId })
-    if (result.error) throw new Error(getErrorMessage(result.error))
-  },
-
   async getSharedWithMeItems(): Promise<SharedWithMeItem[]> {
     const result = await getSharedWithMe()
     if (result.error) throw new Error(getErrorMessage(result.error))
@@ -1512,6 +1545,7 @@ export const folderApi = {
       createdBy: repository.createdBy,
       createdByName: repository.createdByName,
       description: repository.description,
+      fileCount: repository.fileCount,
       hasChildren: true,
       iconKey: 'folder',
       id: encodeRepositoryNodeId({
@@ -1525,7 +1559,6 @@ export const folderApi = {
       modifiedByName: repository.modifiedByName,
       storageProviderId: repository.storageProviderId,
       title: repository.name,
-      fileCount: repository.fileCount,
     }))
 
     return [
@@ -1555,26 +1588,6 @@ export const folderApi = {
       //   title: 'Favorites',
       // },
     ]
-  },
-  async shareFilter(params: {
-    action?: number
-    email: string
-    filters: Record<string, string>
-    message?: string
-    repositoryId: string
-  }): Promise<{ data?: RepositoryShareResult | null; error?: any }> {
-    const response = await shareFilter({
-      ...params,
-      action: params.action as any,
-    })
-    return response
-  },
-
-  async deleteRepositoryItem(params: {
-    itemId: string
-    repositoryId: string
-  }): Promise<{ data: boolean; error: string }> {
-    return deleteRepositoryItem(params.repositoryId, params.itemId)
   },
 
   async getWorkflowData(): Promise<WorkflowData> {

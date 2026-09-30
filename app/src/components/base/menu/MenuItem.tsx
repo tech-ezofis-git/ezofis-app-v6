@@ -36,10 +36,10 @@ const MenuItem = ({
         leftSection ??
         (icon && (
           <Icon
-            height={16}
-            width={16}
             className={cn('size-4 shrink-0 transition-colors', iconClass)}
+            height={16}
             name={icon}
+            width={16}
           />
         ))
       }
@@ -47,10 +47,10 @@ const MenuItem = ({
         rightSection ??
         (suffixIcon && (
           <Icon
-            height={16}
-            width={16}
             className={cn('size-4 shrink-0 transition-colors', suffixIconClass)}
+            height={16}
             name={suffixIcon}
+            width={16}
           />
         ))
       }

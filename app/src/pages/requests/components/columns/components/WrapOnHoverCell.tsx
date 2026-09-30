@@ -28,7 +28,7 @@ export default function WrapOnHoverCell({
       className={cn(
         CELL_TEXT,
         'inline-block max-w-full min-w-0 truncate [overflow-wrap:anywhere]',
-        'hover:whitespace-normal hover:break-words',
+        'hover:break-words hover:whitespace-normal',
         className,
       )}
     >

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import React, { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -262,7 +262,11 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             </button>
           }
         >
-          <MenuSub icon='tabler:circle-dot' label={t`Request Status`} width={200}>
+          <MenuSub
+            icon='tabler:circle-dot'
+            label={t`Request Status`}
+            width={200}
+          >
             {/* Search Box */}
             <div
               className='border-b border-[var(--gray-3)] px-2 py-1.5'
@@ -306,7 +310,11 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               ))
             )}
           </MenuSub>
-          <MenuSub icon='tabler:currency-dollar' label={t`PO Amount`} width={200}>
+          <MenuSub
+            icon='tabler:currency-dollar'
+            label={t`PO Amount`}
+            width={200}
+          >
             {/* Search Box */}
             <div
               className='border-b border-[var(--gray-3)] px-2 py-1.5'

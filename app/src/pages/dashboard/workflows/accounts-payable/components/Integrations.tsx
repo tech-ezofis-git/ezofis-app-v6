@@ -1,7 +1,7 @@
+import { useLingui } from '@lingui/react/macro'
 import { useViewportSize } from '@mantine/hooks'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import {

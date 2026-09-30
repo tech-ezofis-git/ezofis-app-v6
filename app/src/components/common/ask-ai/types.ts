@@ -1,4 +1,23 @@
+export type AskAiActionContext = {
+  [key: string]: unknown
+  repositoryId?: number | string
+  workflowId?: number | string
+  workspaceId?: number | string
+}
+
 export type AskAiActionTo = 'Repository' | 'Workflow' | string
+
+export type AskAiAnswer = {
+  action?: {
+    [key: string]: unknown
+    browse_request?: AskAiBrowseRequest
+  }
+  actionContext?: AskAiActionContext
+  actionTo?: AskAiActionTo
+  conversation_id?: string
+  conversationId?: string
+  text: { blocks: AskAiTextBlock[] }
+}
 
 export type AskAiBrowseFilter = {
   arrayValue?: string[]
@@ -15,11 +34,6 @@ export type AskAiBrowseFilterGroup = {
   groupCondition?: string
   id?: string
 }
-
-/** demo.ezofis.com filter groups, or cloud.ezofis.com flat key→value map */
-export type AskAiFilterBy =
-  | AskAiBrowseFilterGroup[]
-  | Record<string, string | number | boolean | null | undefined>
 
 export type AskAiBrowseRequest = {
   contentSearchValue?: string
@@ -39,18 +53,6 @@ export type AskAiBrowseRequest = {
   }
 }
 
-export type AskAiActionContext = {
-  repositoryId?: number | string
-  workflowId?: number | string
-  workspaceId?: number | string
-  [key: string]: unknown
-}
-
-export type AskAiField = {
-  label: string
-  value: string | number
-}
-
 export type AskAiCard = {
   description?: string
   fields?: AskAiField[]
@@ -59,6 +61,36 @@ export type AskAiCard = {
   subtitle?: string
   title?: string
   type?: string
+}
+
+export type AskAiCtaMode = 'navigate' | 'apply'
+
+export type AskAiField = {
+  label: string
+  value: string | number
+}
+
+/** demo.ezofis.com filter groups, or cloud.ezofis.com flat key→value map */
+export type AskAiFilterBy =
+  | AskAiBrowseFilterGroup[]
+  | Record<string, string | number | boolean | null | undefined>
+
+export type AskAiPageContext = {
+  actionFrom: string
+  specificId: string
+}
+
+export type AskAiPendingAction = {
+  /** When true, clear filters/search on leaving the target page (Ask AI only). */
+  ephemeral?: boolean
+  fileSearch?: string
+  filters: Record<string, string>
+  itemName?: string
+  openItemId?: string
+  repositoryId?: string
+  repositoryLabel?: string
+  target: 'Repository' | 'Workflow'
+  workflowId?: string
 }
 
 export type AskAiTextBlock =
@@ -81,38 +113,7 @@ export type AskAiTextBlock =
       type: 'cards'
     }
   | {
-      items?: { repositoryId: string; name: string }[]
+      items?: { name: string; repositoryId: string }[]
       title?: string
       type: 'repo_picker'
     }
-
-export type AskAiAnswer = {
-  action?: {
-    browse_request?: AskAiBrowseRequest
-    [key: string]: unknown
-  }
-  actionContext?: AskAiActionContext
-  actionTo?: AskAiActionTo
-  conversationId?: string
-  conversation_id?: string
-  text: { blocks: AskAiTextBlock[] }
-}
-
-export type AskAiCtaMode = 'navigate' | 'apply'
-
-export type AskAiPendingAction = {
-  /** When true, clear filters/search on leaving the target page (Ask AI only). */
-  ephemeral?: boolean
-  fileSearch?: string
-  filters: Record<string, string>
-  openItemId?: string
-  repositoryId?: string
-  repositoryLabel?: string
-  target: 'Repository' | 'Workflow'
-  workflowId?: string
-}
-
-export type AskAiPageContext = {
-  actionFrom: string
-  specificId: string
-}

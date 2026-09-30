@@ -21,86 +21,6 @@ const ACRONYMS = new Set([
   'API',
 ])
 
-export function shortenWorkflowName(input: string): string {
-  if (!input) return 'Custom Workflow'
-  let cleaned = input
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i, '')
-    .replace(/^(a|an|the)\s+/i, '')
-    .replace(/\s+(workflow|form|process|layout|system)\s+for\s+/i, ' ')
-    .replace(/\s+for\s+/i, ' ')
-    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
-    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!cleaned) cleaned = input.trim().split('.')[0]
-
-  const words = cleaned.split(/\s+/).filter(Boolean)
-  if (
-    words.length > 1 &&
-    ['workflow', 'process'].includes(words[words.length - 1].toLowerCase())
-  ) {
-    words.pop()
-  }
-
-  let shortWords = words.slice(0, 3)
-  if (shortWords.length > 0 && ['&', '-', '/'].includes(shortWords[shortWords.length - 1])) {
-    shortWords.pop()
-  }
-
-  let result = shortWords.join(' ')
-
-  if (result.length > 25) {
-    result = result.slice(0, 25).trim()
-  }
-
-  if (!result) return 'Custom Workflow'
-
-  return result
-    .split(' ')
-    .map((w) => {
-      const upper = w.toUpperCase()
-      if (ACRONYMS.has(upper)) return upper
-      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-    })
-    .join(' ')
-}
-
-export function shortenDescription(input: string, maxChars = 75): string {
-  if (!input) return ''
-
-  let cleaned = input
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^(this\s+(is\s+a\s+)?(workflow|process|form)\s+(designed|built|created)\s+to\s+)/i, 'Workflow for ')
-    .replace(/^an?\s+(automated|end-to-end)\s+/i, '')
-    .replace(/^this\s+workflow\s+(allows|manages|handles|tracks)\s+/i, 'Workflow to $1 ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (cleaned.includes('.')) {
-    const firstSentence = cleaned.split('.')[0].trim()
-    if (firstSentence.length >= 12) {
-      cleaned = firstSentence + '.'
-    }
-  }
-
-  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
-    cleaned += '.'
-  }
-
-  if (cleaned.length > maxChars) {
-    const trimmed = cleaned.slice(0, maxChars)
-    const lastSpace = trimmed.lastIndexOf(' ')
-    cleaned = (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
-  }
-
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
-}
-
-import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
-
 export interface GenerateWorkflowConfigOptions {
   description: string
   name: string
@@ -110,7 +30,9 @@ export interface GenerateWorkflowConfigOptions {
 export function buildLocalWorkflowConfig(promptText: string): any {
   const lower = (promptText || '').toLowerCase()
   const meta = generateSimpleWorkflowMeta(promptText)
-  const basePayload = JSON.parse(JSON.stringify(apSetupPayloads.workflowPayload))
+  const basePayload = JSON.parse(
+    JSON.stringify(apSetupPayloads.workflowPayload),
+  )
 
   basePayload.name = meta.name
   basePayload.description = meta.description
@@ -130,10 +52,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-receipt',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Customer Invoiced' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Customer Invoiced' },
       },
       {
         color: '#3B82F6',
@@ -141,10 +63,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-credit-card-check',
         id: 'credit_review',
         left: 280,
-        settings: { label: 'Credit & Payment Review' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Credit & Payment Review' },
       },
       {
         color: '#8B5CF6',
@@ -152,10 +74,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-cash-register',
         id: 'collection',
         left: 510,
-        settings: { label: 'Payment Collection' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Payment Collection' },
       },
       {
         color: '#10B981',
@@ -163,10 +85,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-check-decagram',
         id: 'end_1',
         left: 740,
-        settings: { label: 'Revenue Posted' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'Revenue Posted' },
       },
     ]
 
@@ -179,7 +101,11 @@ export function buildLocalWorkflowConfig(promptText: string): any {
     return { ...basePayload, blocks, rules }
   }
 
-  if (lower.includes('order to pay') || lower.includes('order to cash') || lower.includes('order')) {
+  if (
+    lower.includes('order to pay') ||
+    lower.includes('order to cash') ||
+    lower.includes('order')
+  ) {
     const blocks = [
       {
         color: '#2BCCBA',
@@ -187,10 +113,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-cart-arrow-down',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Order Intake' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Order Intake' },
       },
       {
         color: '#3B82F6',
@@ -198,10 +124,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-shield-check',
         id: 'credit_val',
         left: 280,
-        settings: { label: 'Credit Validation' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Credit Validation' },
       },
       {
         color: '#8B5CF6',
@@ -209,10 +135,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-truck-delivery',
         id: 'fulfillment',
         left: 510,
-        settings: { label: 'Order Fulfillment' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Order Fulfillment' },
       },
       {
         color: '#F59E0B',
@@ -220,10 +146,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-cash-multiple',
         id: 'billing',
         left: 740,
-        settings: { label: 'Billing & Payment' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Billing & Payment' },
       },
       {
         color: '#10B981',
@@ -231,10 +157,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-check-all',
         id: 'end_1',
         left: 970,
-        settings: { label: 'Order Completed' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'Order Completed' },
       },
     ]
 
@@ -256,10 +182,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-flag',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Start Onboarding' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Start Onboarding' },
       },
       {
         color: '#3B82F6',
@@ -267,10 +193,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-account-check',
         id: 'hr_review',
         left: 280,
-        settings: { label: 'HR Verification' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'HR Verification' },
       },
       {
         color: '#8B5CF6',
@@ -278,10 +204,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-laptop',
         id: 'it_provisioning',
         left: 510,
-        settings: { label: 'IT Equipment Setup' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'IT Equipment Setup' },
       },
       {
         color: '#F59E0B',
@@ -289,10 +215,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-account-supervisor',
         id: 'mgr_approval',
         left: 740,
-        settings: { label: 'Manager Sign-off' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Manager Sign-off' },
       },
       {
         color: '#10B981',
@@ -300,24 +226,33 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-check-circle',
         id: 'end_1',
         left: 970,
-        settings: { label: 'Onboarding Complete' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'Onboarding Complete' },
       },
     ]
 
     const rules = [
       { from: 'start_1', id: 'rule_1', ruleName: '', to: 'hr_review' },
       { from: 'hr_review', id: 'rule_2', ruleName: '', to: 'it_provisioning' },
-      { from: 'it_provisioning', id: 'rule_3', ruleName: '', to: 'mgr_approval' },
+      {
+        from: 'it_provisioning',
+        id: 'rule_3',
+        ruleName: '',
+        to: 'mgr_approval',
+      },
       { from: 'mgr_approval', id: 'rule_4', ruleName: '', to: 'end_1' },
     ]
 
     return { ...basePayload, blocks, rules }
   }
 
-  if (lower.includes('leave') || lower.includes('vacation') || lower.includes('time off')) {
+  if (
+    lower.includes('leave') ||
+    lower.includes('vacation') ||
+    lower.includes('time off')
+  ) {
     const blocks = [
       {
         color: '#2BCCBA',
@@ -325,10 +260,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-calendar-plus',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Submit Leave Request' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Submit Leave Request' },
       },
       {
         color: '#F59E0B',
@@ -336,10 +271,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-account-tie',
         id: 'mgr_approval',
         left: 280,
-        settings: { label: 'Manager Approval' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Manager Approval' },
       },
       {
         color: '#8B5CF6',
@@ -347,10 +282,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-calculator',
         id: 'hr_balance',
         left: 510,
-        settings: { label: 'HR Balance Check' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'HR Balance Check' },
       },
       {
         color: '#10B981',
@@ -358,10 +293,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-check-all',
         id: 'end_1',
         left: 740,
-        settings: { label: 'Leave Approved' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'Leave Approved' },
       },
     ]
 
@@ -374,7 +309,11 @@ export function buildLocalWorkflowConfig(promptText: string): any {
     return { ...basePayload, blocks, rules }
   }
 
-  if (lower.includes('purchase') || lower.includes('requisition') || lower.includes('po')) {
+  if (
+    lower.includes('purchase') ||
+    lower.includes('requisition') ||
+    lower.includes('po')
+  ) {
     const blocks = [
       {
         color: '#2BCCBA',
@@ -382,10 +321,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-cart',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Requisition Created' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Requisition Created' },
       },
       {
         color: '#3B82F6',
@@ -393,10 +332,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-account-tie',
         id: 'dept_approval',
         left: 280,
-        settings: { label: 'Dept Head Review' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Dept Head Review' },
       },
       {
         color: '#F59E0B',
@@ -404,10 +343,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-finance',
         id: 'budget_check',
         left: 510,
-        settings: { label: 'Finance Budget Check' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Finance Budget Check' },
       },
       {
         color: '#8B5CF6',
@@ -415,10 +354,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-file-document-edit',
         id: 'po_generation',
         left: 740,
-        settings: { label: 'PO Generation' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'PO Generation' },
       },
       {
         color: '#10B981',
@@ -426,10 +365,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-check-circle',
         id: 'end_1',
         left: 970,
-        settings: { label: 'PO Released' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'PO Released' },
       },
     ]
 
@@ -443,7 +382,11 @@ export function buildLocalWorkflowConfig(promptText: string): any {
     return { ...basePayload, blocks, rules }
   }
 
-  if (lower.includes('contract') || lower.includes('signing') || lower.includes('legal')) {
+  if (
+    lower.includes('contract') ||
+    lower.includes('signing') ||
+    lower.includes('legal')
+  ) {
     const blocks = [
       {
         color: '#2BCCBA',
@@ -451,10 +394,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-file-document-outline',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Contract Submitted' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Contract Submitted' },
       },
       {
         color: '#3B82F6',
@@ -462,10 +405,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-gavel',
         id: 'legal_review',
         left: 280,
-        settings: { label: 'Legal Review' },
         top: 30,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Legal Review' },
       },
       {
         color: '#8B5CF6',
@@ -473,10 +416,10 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-pen',
         id: 'exec_signature',
         left: 510,
-        settings: { label: 'Executive Sign-off' },
         top: 110,
         type: 'INTERNAL_ACTOR',
         width: 175,
+        settings: { label: 'Executive Sign-off' },
       },
       {
         color: '#10B981',
@@ -484,16 +427,21 @@ export function buildLocalWorkflowConfig(promptText: string): any {
         icon: 'mdi-archive',
         id: 'end_1',
         left: 740,
-        settings: { label: 'Archived & Executed' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'Archived & Executed' },
       },
     ]
 
     const rules = [
       { from: 'start_1', id: 'rule_1', ruleName: '', to: 'legal_review' },
-      { from: 'legal_review', id: 'rule_2', ruleName: '', to: 'exec_signature' },
+      {
+        from: 'legal_review',
+        id: 'rule_2',
+        ruleName: '',
+        to: 'exec_signature',
+      },
       { from: 'exec_signature', id: 'rule_3', ruleName: '', to: 'end_1' },
     ]
 
@@ -503,64 +451,15 @@ export function buildLocalWorkflowConfig(promptText: string): any {
   return basePayload
 }
 
-export function generateSimpleWorkflowMeta(promptText: string): { description: string; name: string } {
-  const lower = (promptText || '').toLowerCase().trim()
-
-  if (lower.includes('receivable') || lower.includes('ar')) {
-    return {
-      description: 'Customer invoicing, credit checks, payment collection, and revenue posting workflow.',
-      name: 'Accounts Receivable Workflow',
-    }
-  }
-  if (lower.includes('order to pay') || lower.includes('order to cash') || lower.includes('o2p')) {
-    return {
-      description: 'End-to-end process workflow for sales order intake, fulfillment, billing, and payment processing.',
-      name: 'Order to Pay',
-    }
-  }
-  if (lower.includes('onboarding') || lower.includes('employee')) {
-    return {
-      description: 'Automated multi-stage approval workflow for HR verification, IT setup, and manager sign-off.',
-      name: 'Employee Onboarding',
-    }
-  }
-  if (lower.includes('leave') || lower.includes('vacation') || lower.includes('time off')) {
-    return {
-      description: 'Automated workflow for manager review and HR balance verification.',
-      name: 'Leave Request',
-    }
-  }
-  if (lower.includes('purchase') || lower.includes('requisition') || lower.includes('po')) {
-    return {
-      description: 'Approval and verification workflow for purchasing requisitions and PO generation.',
-      name: 'Purchase Requisition',
-    }
-  }
-  if (lower.includes('contract') || lower.includes('signing') || lower.includes('legal')) {
-    return {
-      description: 'Multi-stage workflow for legal assessment, executive sign-off, and contract archiving.',
-      name: 'Contract Review',
-    }
-  }
-  if (lower.includes('invoice') || lower.includes('accounts payable') || lower.includes('ap')) {
-    return {
-      description: 'End-to-end invoice processing workflow with OCR extraction, matching, and ERP export.',
-      name: 'Accounts Payable',
-    }
-  }
-
-  const name = shortenWorkflowName(promptText)
-  return {
-    description: `Automated process workflow configured for ${name.toLowerCase()}.`,
-    name,
-  }
-}
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
 export function ensureStartAndEndNodes(
   rawBlocks: any[],
   rawRules: any[],
 ): { blocks: any[]; rules: any[] } {
-  let blocks = Array.isArray(rawBlocks) ? rawBlocks.map((b: any) => ({ ...b })) : []
+  let blocks = Array.isArray(rawBlocks)
+    ? rawBlocks.map((b: any) => ({ ...b }))
+    : []
   let rules = Array.isArray(rawRules) ? [...rawRules] : []
 
   if (blocks.length === 0) {
@@ -571,10 +470,10 @@ export function ensureStartAndEndNodes(
         icon: 'mdi-flag',
         id: 'start_1',
         left: 50,
-        settings: { label: 'Start' },
         top: 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Start' },
       },
       {
         color: '#10B981',
@@ -582,19 +481,23 @@ export function ensureStartAndEndNodes(
         icon: 'mdi-check-circle',
         id: 'end_1',
         left: 280,
-        settings: { label: 'End' },
         top: 70,
         type: 'END',
         width: 175,
+        settings: { label: 'End' },
       },
     ]
-    rules = [{ from: 'start_1', id: 'rule_start_end', ruleName: '', to: 'end_1' }]
+    rules = [
+      { from: 'start_1', id: 'rule_start_end', ruleName: '', to: 'end_1' },
+    ]
     return { blocks, rules }
   }
 
   // 0. Sanitize block types
   const hasExplicitEndNode = blocks.some((b: any) => {
-    const bt = String(b.type || '').toUpperCase().trim()
+    const bt = String(b.type || '')
+      .toUpperCase()
+      .trim()
     const lbl = String(b.settings?.label || '').toLowerCase()
     const tt = String(b.settings?.toolType || '').toLowerCase()
     return (
@@ -605,7 +508,9 @@ export function ensureStartAndEndNodes(
   })
 
   blocks = blocks.map((b: any, idx: number) => {
-    let blockType = String(b.type || '').toUpperCase().trim()
+    let blockType = String(b.type || '')
+      .toUpperCase()
+      .trim()
     const label = String(b.settings?.label || '').toLowerCase()
     const toolType = String(b.settings?.toolType || '').toLowerCase()
 
@@ -658,10 +563,10 @@ export function ensureStartAndEndNodes(
         icon: 'mdi-flag',
         id: 'start_auto_1',
         left: Math.max(50, firstLeft - 230),
-        settings: { label: 'Start' },
         top: Number(blocks[0]?.top) || 70,
         type: 'START',
         width: 175,
+        settings: { label: 'Start' },
       }
       blocks.unshift(startNode)
 
@@ -705,10 +610,10 @@ export function ensureStartAndEndNodes(
         icon: 'mdi-check-circle',
         id: 'end_auto_1',
         left: lastLeft + 230,
-        settings: { label: 'End' },
         top: Number(lastBlock?.top) || 70,
         type: 'END',
         width: 175,
+        settings: { label: 'End' },
       }
       blocks.push(endNode)
 
@@ -758,6 +663,89 @@ export function ensureStartAndEndNodes(
     })
 
   return { blocks, rules: cleanRules }
+}
+
+export function generateSimpleWorkflowMeta(promptText: string): {
+  description: string
+  name: string
+} {
+  const lower = (promptText || '').toLowerCase().trim()
+
+  if (lower.includes('receivable') || lower.includes('ar')) {
+    return {
+      description:
+        'Customer invoicing, credit checks, payment collection, and revenue posting workflow.',
+      name: 'Accounts Receivable Workflow',
+    }
+  }
+  if (
+    lower.includes('order to pay') ||
+    lower.includes('order to cash') ||
+    lower.includes('o2p')
+  ) {
+    return {
+      description:
+        'End-to-end process workflow for sales order intake, fulfillment, billing, and payment processing.',
+      name: 'Order to Pay',
+    }
+  }
+  if (lower.includes('onboarding') || lower.includes('employee')) {
+    return {
+      description:
+        'Automated multi-stage approval workflow for HR verification, IT setup, and manager sign-off.',
+      name: 'Employee Onboarding',
+    }
+  }
+  if (
+    lower.includes('leave') ||
+    lower.includes('vacation') ||
+    lower.includes('time off')
+  ) {
+    return {
+      description:
+        'Automated workflow for manager review and HR balance verification.',
+      name: 'Leave Request',
+    }
+  }
+  if (
+    lower.includes('purchase') ||
+    lower.includes('requisition') ||
+    lower.includes('po')
+  ) {
+    return {
+      description:
+        'Approval and verification workflow for purchasing requisitions and PO generation.',
+      name: 'Purchase Requisition',
+    }
+  }
+  if (
+    lower.includes('contract') ||
+    lower.includes('signing') ||
+    lower.includes('legal')
+  ) {
+    return {
+      description:
+        'Multi-stage workflow for legal assessment, executive sign-off, and contract archiving.',
+      name: 'Contract Review',
+    }
+  }
+  if (
+    lower.includes('invoice') ||
+    lower.includes('accounts payable') ||
+    lower.includes('ap')
+  ) {
+    return {
+      description:
+        'End-to-end invoice processing workflow with OCR extraction, matching, and ERP export.',
+      name: 'Accounts Payable',
+    }
+  }
+
+  const name = shortenWorkflowName(promptText)
+  return {
+    description: `Automated process workflow configured for ${name.toLowerCase()}.`,
+    name,
+  }
 }
 
 export async function generateWorkflowConfigViaQwen(
@@ -810,10 +798,13 @@ Respond ONLY with JSON shape: { "name": string, "description": string, "blocks":
 
     const parsed = parseJsonFromModelContent<any>(content)
     if (parsed && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
-      const basePayload = JSON.parse(JSON.stringify(apSetupPayloads.workflowPayload))
+      const basePayload = JSON.parse(
+        JSON.stringify(apSetupPayloads.workflowPayload),
+      )
       const rawWfName = parsed.name || meta.name
       const wfName = shortenWorkflowName(rawWfName)
-      const rawWfDesc = parsed.description || options.description || meta.description
+      const rawWfDesc =
+        parsed.description || options.description || meta.description
       const wfDesc = shortenDescription(rawWfDesc)
       if (!basePayload.settings) basePayload.settings = {}
       if (!basePayload.settings.general) basePayload.settings.general = {}
@@ -842,6 +833,104 @@ Respond ONLY with JSON shape: { "name": string, "description": string, "blocks":
   }
 
   const fallback = buildLocalWorkflowConfig(promptText)
-  const { blocks, rules } = ensureStartAndEndNodes(fallback.blocks, fallback.rules)
+  const { blocks, rules } = ensureStartAndEndNodes(
+    fallback.blocks,
+    fallback.rules,
+  )
   return { ...fallback, blocks, rules }
+}
+
+export function shortenDescription(input: string, maxChars = 75): string {
+  if (!input) return ''
+
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(
+      /^(this\s+(is\s+a\s+)?(workflow|process|form)\s+(designed|built|created)\s+to\s+)/i,
+      'Workflow for ',
+    )
+    .replace(/^an?\s+(automated|end-to-end)\s+/i, '')
+    .replace(
+      /^this\s+workflow\s+(allows|manages|handles|tracks)\s+/i,
+      'Workflow to $1 ',
+    )
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (cleaned.includes('.')) {
+    const firstSentence = cleaned.split('.')[0].trim()
+    if (firstSentence.length >= 12) {
+      cleaned = firstSentence + '.'
+    }
+  }
+
+  if (
+    !cleaned.endsWith('.') &&
+    !cleaned.endsWith('!') &&
+    !cleaned.endsWith('?')
+  ) {
+    cleaned += '.'
+  }
+
+  if (cleaned.length > maxChars) {
+    const trimmed = cleaned.slice(0, maxChars)
+    const lastSpace = trimmed.lastIndexOf(' ')
+    cleaned =
+      (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
+  }
+
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
+export function shortenWorkflowName(input: string): string {
+  if (!input) return 'Custom Workflow'
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(
+      /^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i,
+      '',
+    )
+    .replace(/^(a|an|the)\s+/i, '')
+    .replace(/\s+(workflow|form|process|layout|system)\s+for\s+/i, ' ')
+    .replace(/\s+for\s+/i, ' ')
+    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
+    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) cleaned = input.trim().split('.')[0]
+
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (
+    words.length > 1 &&
+    ['workflow', 'process'].includes(words[words.length - 1].toLowerCase())
+  ) {
+    words.pop()
+  }
+
+  const shortWords = words.slice(0, 3)
+  if (
+    shortWords.length > 0 &&
+    ['&', '-', '/'].includes(shortWords[shortWords.length - 1])
+  ) {
+    shortWords.pop()
+  }
+
+  let result = shortWords.join(' ')
+
+  if (result.length > 25) {
+    result = result.slice(0, 25).trim()
+  }
+
+  if (!result) return 'Custom Workflow'
+
+  return result
+    .split(' ')
+    .map((w) => {
+      const upper = w.toUpperCase()
+      if (ACRONYMS.has(upper)) return upper
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    })
+    .join(' ')
 }

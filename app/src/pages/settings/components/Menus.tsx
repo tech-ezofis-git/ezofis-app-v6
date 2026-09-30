@@ -1,3 +1,5 @@
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Building2,
@@ -17,8 +19,6 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { t as staticT } from '@lingui/macro'
-import { useLingui } from '@lingui/react/macro'
 import {
   createMenu as createMenuApi,
   deleteMenu as deleteMenuApi,
@@ -27,15 +27,16 @@ import {
   updateMenu as updateMenuApi,
   type V6MenuItem,
 } from '@/api/v6/user'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
-import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
+import { isDemoAppOrigin } from '@/utils/origin'
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -53,7 +54,6 @@ import SettingsPageHeader, {
 } from './SettingsPageHeader'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import { isDemoAppOrigin } from '@/utils/origin'
 
 type AppMenu = {
   created: string
@@ -128,9 +128,7 @@ const mapApiMenuToAppMenu = (menu: V6MenuItem): AppMenu => ({
   sortOrder: Number(menu.sortOrder ?? 0),
 })
 
-export default function MenuProfileManagement({
-  onBack,
-}: MenuProps) {
+export default function MenuProfileManagement({ onBack }: MenuProps) {
   const { t } = useLingui()
   const [menus, setMenus] = useState<AppMenu[]>([])
   const [isLoadingMenus, setIsLoadingMenus] = useState(true)
@@ -191,34 +189,37 @@ export default function MenuProfileManagement({
     setIsSetupOpen(true)
   }
 
-  const openEditMenu = useCallback(async (menu: AppMenu) => {
-    setIsLoadingMenuDetails(true)
+  const openEditMenu = useCallback(
+    async (menu: AppMenu) => {
+      setIsLoadingMenuDetails(true)
 
-    try {
-      const response = await getMenuById(menu.id)
+      try {
+        const response = await getMenuById(menu.id)
 
-      if (response.error || !response.data) {
-        showToast({
-          message: response.error || t`Failed to load menu`,
-          variant: 'error',
+        if (response.error || !response.data) {
+          showToast({
+            message: response.error || t`Failed to load menu`,
+            variant: 'error',
+          })
+          return
+        }
+
+        const mappedMenu = mapApiMenuToAppMenu(response.data)
+        setEditingMenuId(mappedMenu.id)
+        setFormState({
+          key: mappedMenu.key,
+          label: mappedMenu.label,
+          routePath: mappedMenu.routePath,
+          sortOrder: mappedMenu.sortOrder,
         })
-        return
+        setActiveStep(0)
+        setIsSetupOpen(true)
+      } finally {
+        setIsLoadingMenuDetails(false)
       }
-
-      const mappedMenu = mapApiMenuToAppMenu(response.data)
-      setEditingMenuId(mappedMenu.id)
-      setFormState({
-        key: mappedMenu.key,
-        label: mappedMenu.label,
-        routePath: mappedMenu.routePath,
-        sortOrder: mappedMenu.sortOrder,
-      })
-      setActiveStep(0)
-      setIsSetupOpen(true)
-    } finally {
-      setIsLoadingMenuDetails(false)
-    }
-  }, [t])
+    },
+    [t],
+  )
 
   const deletingMenu = useMemo(
     () => menus.find((menu) => menu.id === deletingMenuId) || null,
@@ -522,16 +523,16 @@ export default function MenuProfileManagement({
   return (
     <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <ConfirmDialog
+        confirmLabel={t`Delete`}
+        isConfirming={isDeletingMenu}
         opened={Boolean(deletingMenuId)}
         title={t`Delete Menu`}
+        variant='danger'
         description={
           deletingMenu
             ? t`Are you sure you want to delete "${deletingMenu.label}"? This action cannot be undone.`
             : t`Are you sure you want to delete this menu? This action cannot be undone.`
         }
-        confirmLabel={t`Delete`}
-        isConfirming={isDeletingMenu}
-        variant='danger'
         onCancel={cancelDeleteMenu}
         onConfirm={() => {
           void confirmDeleteMenu()
@@ -620,7 +621,9 @@ function MenuSetup({
   const getMissingLabels = (step = activeStep) => {
     if (step === 0) {
       return getMissingRequiredLabels([
-        ...(editingMenuId ? [] : [{ label: t`Menu Key`, value: formState.key }]),
+        ...(editingMenuId
+          ? []
+          : [{ label: t`Menu Key`, value: formState.key }]),
         { label: t`Label`, value: formState.label },
       ])
     }
@@ -721,30 +724,35 @@ function MenuSetup({
     const allowAnyStep = isDemoAppOrigin()
     return menuSteps.map((s, idx) => ({
       clickable: allowAnyStep ? true : undefined,
+      description: s.description,
       disabled: allowAnyStep ? false : undefined,
+      icon:
+        s.key === 'details'
+          ? 'tabler:menu-2'
+          : s.key === 'route'
+            ? 'tabler:route'
+            : 'tabler:check',
       id: idx,
       label: s.title,
-      description: s.description,
-      icon: s.key === 'details' ? 'tabler:menu-2' : s.key === 'route' ? 'tabler:route' : 'tabler:check',
     }))
   }, [])
 
   return (
     <SettingsWizardLayout
       activeStep={activeStep}
+      headerDescription={t`Configure application navigation menus, route paths, and display order`}
+      headerTitle={editingMenuId ? t`Edit Menu Setup` : t`New Menu Setup`}
+      isSaving={isSaving}
+      moduleTitle={t`Menu & Profile Management`}
+      saveLabel={editingMenuId ? t`Update Menu` : t`Save Menu`}
       steps={wizardSteps}
-      onStepChange={handleStepChange}
+      setupTitle={editingMenuId ? t`Edit Menu` : t`Create Menu`}
       onBack={handleBack}
+      onBackToSettings={onBack}
+      onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
-      onCancel={onCancel}
-      onBackToSettings={onBack}
-      isSaving={isSaving}
-      saveLabel={editingMenuId ? t`Update Menu` : t`Save Menu`}
-      moduleTitle={t`Menu & Profile Management`}
-      setupTitle={editingMenuId ? t`Edit Menu` : t`Create Menu`}
-      headerTitle={editingMenuId ? t`Edit Menu Setup` : t`New Menu Setup`}
-      headerDescription={t`Configure application navigation menus, route paths, and display order`}
+      onStepChange={handleStepChange}
     >
       {activeStep === 0 ? (
         <SettingsFormSection>
@@ -769,14 +777,10 @@ function MenuSetup({
             />
           )}
           <InputText
+            error={getFieldRequiredError(t`Label`, showErrors, formState.label)}
             label={t`Label *`}
             placeholder={t`e.g. Reports`}
             value={formState.label}
-            error={getFieldRequiredError(
-              t`Label`,
-              showErrors,
-              formState.label,
-            )}
             onChange={(value) => onChange({ ...formState, label: value })}
           />
         </SettingsFormSection>
@@ -793,9 +797,7 @@ function MenuSetup({
               showErrors,
               formState.routePath,
             )}
-            onChange={(value) =>
-              onChange({ ...formState, routePath: value })
-            }
+            onChange={(value) => onChange({ ...formState, routePath: value })}
           />
           <InputNumber
             label={t`Sort Order *`}

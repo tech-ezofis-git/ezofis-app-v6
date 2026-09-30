@@ -4,11 +4,12 @@ import { useDebouncedCallback } from '@mantine/hooks'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import type { Option } from '@/types/option'
+import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
-import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -20,7 +21,6 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import Combobox from '@/components/base/inputs/select/Combobox'
-import type { Option } from '@/types/option'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
@@ -95,7 +95,10 @@ const parseColumnOptions = (col: TableColumn): { id: string; name: string }[] =>
     .map((opt) => ({ id: opt, name: opt }))
 
 const normalizeHeaderKey = (value: string) =>
-  value.trim().toLowerCase().replace(/[\s._-]+/g, '')
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s._-]+/g, '')
 
 const HEADER_ALIAS_GROUPS = [
   ['qty', 'quantity', 'qnty'],
@@ -111,7 +114,7 @@ const headerLookupKeys = (header: string) => {
   return group || [normalized]
 }
 
-const isDescriptionColumn = (col: { name?: string; id?: string }) => {
+const isDescriptionColumn = (col: { id?: string; name?: string }) => {
   const keys = [col.name, col.id].filter(Boolean).map((v) => String(v))
   return keys.some((key) => {
     const normalized = normalizeHeaderKey(key)
@@ -170,9 +173,9 @@ interface Props {
   readOnly?: boolean
   required?: boolean
   showRowApprove?: boolean
+  value?: Array<Record<string, any>>
   /** AP-style flat chrome (default). Use `form` for denser card-style table. */
   variant?: 'flat' | 'form'
-  value?: Array<Record<string, any>>
   onChange: (rows: Record<string, any>[]) => void
 }
 
@@ -232,10 +235,7 @@ const getColumnWidthClass = (size?: string) => {
   }
 }
 
-const toCatalogOptions = (
-  codes: string[],
-  currentValue: string,
-): Option[] => {
+const toCatalogOptions = (codes: string[], currentValue: string): Option[] => {
   const next = codes.map((code) => ({
     id: code,
     name: code,
@@ -298,9 +298,7 @@ const ApiCatalogSelect = ({
       if (seq !== requestSeqRef.current) return
       const fallback = currentValueRef.current
       setOptions(
-        fallback
-          ? [{ id: fallback, name: fallback, value: fallback }]
-          : [],
+        fallback ? [{ id: fallback, name: fallback, value: fallback }] : [],
       )
     } finally {
       if (seq === requestSeqRef.current) {
@@ -348,23 +346,22 @@ const ApiCatalogSelect = ({
       }
     : null
 
-  const placeholder =
-    (col && getColumnPlaceholder(col)) || 'Select product...'
+  const placeholder = (col && getColumnPlaceholder(col)) || 'Select product...'
 
   return (
     <Combobox
       autoOpen={autoOpen}
-      className={compact ? 'w-full min-w-0 max-w-[220px]' : 'w-full'}
+      className={compact ? 'w-full max-w-[220px] min-w-0' : 'w-full'}
       loading={loading || loadingDetails}
       options={options}
       placeholder={placeholder}
       readOnly={readOnly}
       search={search}
-      searchable
       searchPlaceholder='Search...'
       value={selected ? [selected] : []}
       variant='single'
       width={compact ? TABLE_CATALOG_DROPDOWN_WIDTH : 'target'}
+      searchable
       onChange={async (opts) => {
         const opt = opts?.[0] ?? null
         const code = opt ? String(opt.id) : null
@@ -372,10 +369,12 @@ const ApiCatalogSelect = ({
         debouncedLoadCodes.cancel?.()
         setSearch('')
         if (code) {
-          setOptions((prev) => toCatalogOptions(
-            prev.map((o) => String(o.id)),
-            code,
-          ))
+          setOptions((prev) =>
+            toCatalogOptions(
+              prev.map((o) => String(o.id)),
+              code,
+            ),
+          )
         }
         setLoadingDetails(true)
         try {
@@ -471,16 +470,14 @@ const renderCellInput = (
     isApiOptionsColumn(col)
   ) {
     return (
-      <div className='min-w-0 max-w-[220px]'>
+      <div className='max-w-[220px] min-w-0'>
         <ApiCatalogSelect
-          compact
           col={col}
           readOnly={readOnly}
           value={val}
+          compact
           onSelectProduct={(code) =>
-            onApiProductSelect
-              ? onApiProductSelect(code)
-              : onCellChange(code)
+            onApiProductSelect ? onApiProductSelect(code) : onCellChange(code)
           }
         />
       </div>
@@ -643,8 +640,8 @@ const TableFieldRenderer = ({
   readOnly,
   required,
   showRowApprove,
-  variant = 'flat',
   value,
+  variant = 'flat',
   onChange,
 }: Props) => {
   const { t } = useLingui()
@@ -916,7 +913,12 @@ const TableFieldRenderer = ({
   }
 
   return (
-    <div className={cn('w-full max-w-full min-w-0', isFlat ? 'space-y-2.5' : 'space-y-2')}>
+    <div
+      className={cn(
+        'w-full max-w-full min-w-0',
+        isFlat ? 'space-y-2.5' : 'space-y-2',
+      )}
+    >
       <div className='flex items-center justify-between gap-2'>
         <div>
           <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
@@ -933,7 +935,9 @@ const TableFieldRenderer = ({
             {required && <span className='ml-1 text-red-9'>*</span>}
           </h4>
           {general.description && (
-            <p className='mt-0.5 ml-5 text-12 text-gray-9'>{general.description}</p>
+            <p className='mt-0.5 ml-5 text-12 text-gray-9'>
+              {general.description}
+            </p>
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
@@ -982,8 +986,9 @@ const TableFieldRenderer = ({
               />
             </>
           )}
-          {!readOnly && rowsType === 'ON_DEMAND' && (
-            isFlat ? (
+          {!readOnly &&
+            rowsType === 'ON_DEMAND' &&
+            (isFlat ? (
               <IconButton
                 color='primary'
                 icon='lucide:plus'
@@ -1001,8 +1006,7 @@ const TableFieldRenderer = ({
                 <Icon height={13} name='lucide:plus' width={13} />
                 <span>{t`Add Row`}</span>
               </button>
-            )
-          )}
+            ))}
         </div>
       </div>
 
@@ -1055,170 +1059,180 @@ const TableFieldRenderer = ({
             '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-white',
             '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
             !isFlat &&
-              '[&_th]:border-r [&_th]:border-gray-3 [&_td]:border-r [&_td]:border-gray-2 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0',
+              '[&_td]:border-r [&_td]:border-gray-2 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',
           )}
         >
-        <Table className='w-max min-w-full border-collapse'>
-          <Thead className={isFlat ? 'bg-[var(--gray-1)]' : 'bg-gray-2/60'}>
-            <Tr className='border-b border-gray-3'>
-              {rowSelection !== 'NONE' && (
+          <Table className='w-max min-w-full border-collapse'>
+            <Thead className={isFlat ? 'bg-[var(--gray-1)]' : 'bg-gray-2/60'}>
+              <Tr className='border-b border-gray-3'>
+                {rowSelection !== 'NONE' && (
+                  <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
+                    <span className='sr-only'>{t`Select`}</span>
+                  </Th>
+                )}
                 <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
-                  <span className='sr-only'>{t`Select`}</span>
+                  #
                 </Th>
-              )}
-              <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
-                #
-              </Th>
-              {tableColumns.map((col) => (
-                <Th
-                  key={col.id}
-                  className={cn(
-                    'px-3 py-2 text-left text-11 font-bold text-gray-12',
-                    getColumnWidthClass(col.size),
-                  )}
-                >
-                  <span className='truncate'>{col.name || 'Column'}</span>
-                </Th>
-              ))}
-              {showActionColumn && (
-                <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
-                  {showRowApprove ? t`Approve` : <span className='sr-only'>{t`Actions`}</span>}
-                </Th>
-              )}
-            </Tr>
-          </Thead>
-          <Tbody>
-            {rows.length === 0 ? (
-              [0, 1, 2].map((i) => (
-                <Tr
-                  className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
-                  key={`skeleton-${i}`}
-                >
-                  {rowSelection !== 'NONE' && (
-                    <Td className='px-2.5 py-3 text-center align-middle'>
-                      <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                    </Td>
-                  )}
-                  <Td className='px-2.5 py-3 text-center'>
-                    <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                  </Td>
-                  {tableColumns.map((col) => (
-                    <Td className='px-3 py-3 align-middle' key={col.id}>
-                      <div className='h-4 animate-pulse rounded-full bg-[var(--gray-3)] w-5/6' />
-                    </Td>
-                  ))}
-                  {showActionColumn && (
-                    <Td className='px-2 py-3 text-center align-middle'>
-                      <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                    </Td>
-                  )}
-                </Tr>
-              ))
-            ) : (
-              rows.map((row, rowIndex) => {
-                const rowId = row._rowId || `row-${rowIndex}`
-              const isSelected = selectedRowIds.has(rowId)
-              const resolvedRow = resolvedRows[rowIndex] || row
-              return (
-                <Tr
-                  className='group border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
-                  key={rowId}
-                >
-                  {rowSelection !== 'NONE' && (
-                    <Td className='px-2.5 py-1.5 text-center align-middle'>
-                      <input
-                        aria-label={t`Select row`}
-                        checked={isSelected}
-                        className='cursor-pointer'
-                        disabled={readOnly}
-                        type={rowSelection === 'SINGLE' ? 'radio' : 'checkbox'}
-                        onChange={() => toggleRowSelected(rowId)}
-                      />
-                    </Td>
-                  )}
-                  <Td className='px-2.5 py-1.5 text-center text-xs font-semibold text-gray-8'>
-                    {rowIndex + 1}
-                  </Td>
-                  {tableColumns.map((col) => (
-                    <Td className='p-1.5 align-middle' key={col.id}>
-                      {renderCellInput(
-                        col,
-                        resolvedRow[col.id] ?? (col.name ? resolvedRow[col.name] : undefined),
-                        (cellVal) =>
-                          handleCellChange(rowIndex, col.id, cellVal),
-                        readOnly,
-                        lookupOptionsByColumn[col.id],
-                        isApiOptionsColumn(col)
-                          ? (code) =>
-                              handleApiProductSelect(rowIndex, col.id, code)
-                          : undefined,
-                      )}
-                    </Td>
-                  ))}
-                  {showActionColumn && (
-                    <Td className='px-1.5 py-1 text-center align-middle'>
-                      <div className='flex items-center justify-center gap-1'>
-                        {showRowApprove &&
-                          (row._approved ? (
-                            <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
-                              <Icon
-                                height={12}
-                                name='lucide:check'
-                                width={12}
-                              />
-                              {t`Approved`}
-                            </span>
-                          ) : (
-                            <button
-                              className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 opacity-80 transition-all group-hover:opacity-100 hover:bg-green-3 active:scale-95'
-                              type='button'
-                              onClick={() => handleApproveRow(rowIndex)}
-                            >
-                              <Icon
-                                height={12}
-                                name='lucide:check'
-                                width={12}
-                              />
-                              {t`Approve`}
-                            </button>
-                          ))}
-                        {!readOnly && rowsType === 'ON_DEMAND' && (
-                          <IconButton
-                            aria-label={t`Delete row`}
-                            color='red'
-                            icon='lucide:trash-2'
-                            size='xs'
-                            variant='ghost'
-                            onClick={() => handleDeleteRow(rowIndex)}
-                          />
-                        )}
-                      </div>
-                    </Td>
-                  )}
-                </Tr>
-              )
-            }))}
-            {showSummaryRow && (
-              <Tr className='border-t-2 border-gray-3 bg-gray-1/60'>
-                {rowSelection !== 'NONE' && <Td />}
-                <Td className='px-2.5 py-1.5 text-center text-xs font-bold text-gray-9'>
-                  {t`Total`}
-                </Td>
                 {tableColumns.map((col) => (
-                  <Td
-                    className='px-3 py-1.5 text-left text-xs font-bold text-gray-12'
+                  <Th
                     key={col.id}
+                    className={cn(
+                      'px-3 py-2 text-left text-11 font-bold text-gray-12',
+                      getColumnWidthClass(col.size),
+                    )}
                   >
-                    {col.id in columnTotals
-                      ? columnTotals[col.id].toLocaleString()
-                      : ''}
-                  </Td>
+                    <span className='truncate'>{col.name || 'Column'}</span>
+                  </Th>
                 ))}
-                {showActionColumn && <Td />}
+                {showActionColumn && (
+                  <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
+                    {showRowApprove ? (
+                      t`Approve`
+                    ) : (
+                      <span className='sr-only'>{t`Actions`}</span>
+                    )}
+                  </Th>
+                )}
               </Tr>
-            )}
-          </Tbody>
-        </Table>
+            </Thead>
+            <Tbody>
+              {rows.length === 0
+                ? [0, 1, 2].map((i) => (
+                    <Tr
+                      className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                      key={`skeleton-${i}`}
+                    >
+                      {rowSelection !== 'NONE' && (
+                        <Td className='px-2.5 py-3 text-center align-middle'>
+                          <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                        </Td>
+                      )}
+                      <Td className='px-2.5 py-3 text-center'>
+                        <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                      </Td>
+                      {tableColumns.map((col) => (
+                        <Td className='px-3 py-3 align-middle' key={col.id}>
+                          <div className='h-4 w-5/6 animate-pulse rounded-full bg-[var(--gray-3)]' />
+                        </Td>
+                      ))}
+                      {showActionColumn && (
+                        <Td className='px-2 py-3 text-center align-middle'>
+                          <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
+                        </Td>
+                      )}
+                    </Tr>
+                  ))
+                : rows.map((row, rowIndex) => {
+                    const rowId = row._rowId || `row-${rowIndex}`
+                    const isSelected = selectedRowIds.has(rowId)
+                    const resolvedRow = resolvedRows[rowIndex] || row
+                    return (
+                      <Tr
+                        className='group border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                        key={rowId}
+                      >
+                        {rowSelection !== 'NONE' && (
+                          <Td className='px-2.5 py-1.5 text-center align-middle'>
+                            <input
+                              aria-label={t`Select row`}
+                              checked={isSelected}
+                              className='cursor-pointer'
+                              disabled={readOnly}
+                              type={
+                                rowSelection === 'SINGLE' ? 'radio' : 'checkbox'
+                              }
+                              onChange={() => toggleRowSelected(rowId)}
+                            />
+                          </Td>
+                        )}
+                        <Td className='px-2.5 py-1.5 text-center text-xs font-semibold text-gray-8'>
+                          {rowIndex + 1}
+                        </Td>
+                        {tableColumns.map((col) => (
+                          <Td className='p-1.5 align-middle' key={col.id}>
+                            {renderCellInput(
+                              col,
+                              resolvedRow[col.id] ??
+                                (col.name ? resolvedRow[col.name] : undefined),
+                              (cellVal) =>
+                                handleCellChange(rowIndex, col.id, cellVal),
+                              readOnly,
+                              lookupOptionsByColumn[col.id],
+                              isApiOptionsColumn(col)
+                                ? (code) =>
+                                    handleApiProductSelect(
+                                      rowIndex,
+                                      col.id,
+                                      code,
+                                    )
+                                : undefined,
+                            )}
+                          </Td>
+                        ))}
+                        {showActionColumn && (
+                          <Td className='px-1.5 py-1 text-center align-middle'>
+                            <div className='flex items-center justify-center gap-1'>
+                              {showRowApprove &&
+                                (row._approved ? (
+                                  <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
+                                    <Icon
+                                      height={12}
+                                      name='lucide:check'
+                                      width={12}
+                                    />
+                                    {t`Approved`}
+                                  </span>
+                                ) : (
+                                  <button
+                                    className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 opacity-80 transition-all group-hover:opacity-100 hover:bg-green-3 active:scale-95'
+                                    type='button'
+                                    onClick={() => handleApproveRow(rowIndex)}
+                                  >
+                                    <Icon
+                                      height={12}
+                                      name='lucide:check'
+                                      width={12}
+                                    />
+                                    {t`Approve`}
+                                  </button>
+                                ))}
+                              {!readOnly && rowsType === 'ON_DEMAND' && (
+                                <IconButton
+                                  aria-label={t`Delete row`}
+                                  color='red'
+                                  icon='lucide:trash-2'
+                                  size='xs'
+                                  variant='ghost'
+                                  onClick={() => handleDeleteRow(rowIndex)}
+                                />
+                              )}
+                            </div>
+                          </Td>
+                        )}
+                      </Tr>
+                    )
+                  })}
+              {showSummaryRow && (
+                <Tr className='border-t-2 border-gray-3 bg-gray-1/60'>
+                  {rowSelection !== 'NONE' && <Td />}
+                  <Td className='px-2.5 py-1.5 text-center text-xs font-bold text-gray-9'>
+                    {t`Total`}
+                  </Td>
+                  {tableColumns.map((col) => (
+                    <Td
+                      className='px-3 py-1.5 text-left text-xs font-bold text-gray-12'
+                      key={col.id}
+                    >
+                      {col.id in columnTotals
+                        ? columnTotals[col.id].toLocaleString()
+                        : ''}
+                    </Td>
+                  ))}
+                  {showActionColumn && <Td />}
+                </Tr>
+              )}
+            </Tbody>
+          </Table>
         </div>
       </div>
     </div>

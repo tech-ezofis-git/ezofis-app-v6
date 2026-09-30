@@ -1,6 +1,7 @@
 import type { AiSummaryData } from '../types/folderTypes'
 
 type SummaryOutput = {
+  [key: string]: unknown
   ai_recommendations?: unknown
   compliance_and_risk_assessment?: unknown
   confidence_score?: unknown
@@ -9,7 +10,6 @@ type SummaryOutput = {
   ocr_text?: unknown
   recommendations?: unknown
   supplier_trend_insight?: unknown
-  [key: string]: unknown
 }
 
 const COMPLIANCE_ICONS = ['shield', 'check', 'zap', 'bot'] as const
@@ -66,9 +66,7 @@ const parseOutput = (raw: unknown): SummaryOutput => {
   }
 }
 
-const mapFacts = (
-  facts: unknown,
-): Array<{ label: string; value: string }> => {
+const mapFacts = (facts: unknown): Array<{ label: string; value: string }> => {
   if (!facts) return []
 
   if (Array.isArray(facts)) {

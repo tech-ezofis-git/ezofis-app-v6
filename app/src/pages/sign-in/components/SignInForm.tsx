@@ -220,10 +220,9 @@ const SignInForm = ({
     )
     if (match) {
       const rawType = match[1].trim()
-      const loginType =
-        /^[a-z]+$/.test(rawType)
-          ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
-          : rawType
+      const loginType = /^[a-z]+$/.test(rawType)
+        ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+        : rawType
       return t`Please sign in with ${loginType} to continue.`
     }
     return errorMsg
@@ -598,7 +597,9 @@ const SignInForm = ({
 
         const gEmail: string = profile.email
         if (!gEmail) {
-          throw new Error(t`We couldn't get your email address from Google. Please try again.`)
+          throw new Error(
+            t`We couldn't get your email address from Google. Please try again.`,
+          )
         }
 
         setSocialEmail(gEmail)
@@ -668,9 +669,7 @@ const SignInForm = ({
       if (selected?.product === 'v5') {
         await completeClassicSignIn(
           selected,
-          loginType
-            ? { email: socialEmail || email, loginType }
-            : undefined,
+          loginType ? { email: socialEmail || email, loginType } : undefined,
         )
         return
       }
