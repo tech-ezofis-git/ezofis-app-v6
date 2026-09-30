@@ -1624,8 +1624,9 @@ export default function Upload({
           createdAt:
             typeof data.createdAt === 'string'
               ? data.createdAt
-              : typeof data.uploadedAt === 'string'
-                ? data.uploadedAt
+              : typeof (data as unknown as { uploadedAt?: unknown }).uploadedAt ===
+                  'string'
+                ? ((data as unknown as { uploadedAt: string }).uploadedAt as string)
                 : new Date().toISOString(),
           exportStatus: 'idle',
           fieldValues: mappedValues,

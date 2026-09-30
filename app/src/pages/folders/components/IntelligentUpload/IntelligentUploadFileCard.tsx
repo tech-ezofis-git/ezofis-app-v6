@@ -122,33 +122,28 @@ export default function IntelligentUploadFileCard({
 
               {fileItem.status === 'done' && (
                 <div className='flex flex-wrap items-center gap-2'>
-                  {fileItem.documentType && (
-                    <Badge color='indigo' label={fileItem.documentType} />
-                  )}
+                  <Badge
+                    color={selectedRepoName ? 'indigo' : 'gray'}
+                    label={selectedRepoName || t`Unassigned`}
+                  />
 
-                  {!isExpanded && (
-                    <>
-                      <span className='text-text-secondary'>
-                        {t`Target:`}{' '}
-                        <strong className='font-semibold text-text-primary'>
-                          {selectedRepoName || t`Unassigned`}
-                        </strong>
-                      </span>
-                      {selectedSuggestion && (
-                        <Badge
-                          color={
-                            selectedSuggestion.confidence >= 0.8
-                              ? 'green'
-                              : 'orange'
-                          }
-                          label={
-                            selectedSuggestion.confidence >= 0.8
-                              ? t`High Match`
-                              : t`Medium Match`
-                          }
-                        />
-                      )}
-                    </>
+                  {selectedSuggestion && (
+                    <Badge
+                      color={
+                        selectedSuggestion.confidence >= 0.8
+                          ? 'green'
+                          : selectedSuggestion.confidence >= 0.4
+                            ? 'orange'
+                            : 'gray'
+                      }
+                      label={
+                        selectedSuggestion.confidence >= 0.8
+                          ? t`High Match`
+                          : selectedSuggestion.confidence >= 0.4
+                            ? t`Medium Match`
+                            : t`Low Match`
+                      }
+                    />
                   )}
 
                   {isIndexing && (
