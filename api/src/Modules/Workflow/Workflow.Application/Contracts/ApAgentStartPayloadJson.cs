@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -256,8 +255,7 @@ public static class ApAgentStartPayloadJson
 
     /// <summary>
     /// Writes <c>skills</c> onto the flat start-payload JSON (Python / response <c>startPayload</c>).
-    /// Non-empty → string array (replaces existing). Null/empty → keep Enricher-stamped skills when present;
-    /// otherwise write <c>"skills": null</c>.
+    /// Null skills → <c>"skills": null</c>. Non-empty → string array. Replaces any existing skills property.
     /// </summary>
     public static string MergeSkillsIntoPayloadJson(string innerFlatJson, IReadOnlyList<string>? skills)
     {
@@ -269,12 +267,6 @@ public static class ApAgentStartPayloadJson
             return innerFlatJson;
 
         var normalized = NormalizeSkills(skills);
-        if (normalized is null)
-        {
-            var existing = ExtractSkillsFromPayload(doc.RootElement);
-            if (existing is { Count: > 0 })
-                return innerFlatJson;
-        }
 
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
@@ -311,13 +303,6 @@ public static class ApAgentStartPayloadJson
         IReadOnlyList<string>? skills)
     {
         var normalized = NormalizeSkills(skills);
-        if (normalized is null)
-        {
-            var existing = ExtractSkillsFromPayloadDict(startPayload);
-            if (existing is { Count: > 0 })
-                return startPayload;
-        }
-
         // Preserve original key casing (payload may contain both formId and formid).
         var copy = new Dictionary<string, object?>(startPayload.Count + 1);
         foreach (var (key, value) in startPayload)
@@ -329,44 +314,6 @@ public static class ApAgentStartPayloadJson
 
         copy["skills"] = normalized is { Count: > 0 } ? normalized.ToList() : null;
         return copy;
-    }
-
-    /// <summary>
-    /// Reads non-empty <c>skills</c> from a start-payload dictionary (Enricher / bootstrap).
-    /// </summary>
-    public static IReadOnlyList<string>? ExtractSkillsFromPayloadDict(
-        IReadOnlyDictionary<string, object?> startPayload)
-    {
-        if (startPayload is null)
-            return null;
-
-        foreach (var (key, value) in startPayload)
-        {
-            if (!string.Equals(key, "skills", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (value is null)
-                return null;
-            if (value is IEnumerable<string> strings)
-                return NormalizeSkills(strings);
-            if (value is IEnumerable<object> objects)
-            {
-                return NormalizeSkills(
-                    objects
-                        .Select(o => o?.ToString())
-                        .Where(s => !string.IsNullOrWhiteSpace(s))
-                        .Select(s => s!));
-            }
-            if (value is JsonElement el)
-            {
-                if (el.ValueKind == JsonValueKind.Null)
-                    return null;
-                if (el.ValueKind == JsonValueKind.Array)
-                    return NormalizeSkills(ReadStringArray(el));
-            }
-            return null;
-        }
-
-        return null;
     }
 
     /// <summary>

@@ -1,5 +1,4 @@
 using SaaSApp.Workflow.Application.Connectors;
-using SaaSApp.Workflow.Application.Contracts;
 using SaaSApp.Workflow.Application.Workflows;
 
 namespace SaaSApp.Workflow.Infrastructure.Tests;
@@ -134,28 +133,6 @@ public sealed class ApAgentPoMasterStartPayloadEnricherTests
         Assert.Equal(
             new[] { "extract_invoice", "po_lookup_sap", "po_match", "finalize_decision" },
             skills);
-    }
-
-    [Fact]
-    public void MergeSkills_WhenRequestOmitsSkills_PreservesEnricherSapSkills()
-    {
-        var payload = BasePayload();
-        ApAgentPoMasterStartPayloadEnricher.Enrich(
-            payload,
-            EmailIngestMasterSources.Sap,
-            SapConnectorId);
-
-        var merged = ApAgentStartPayloadJson.MergeSkillsIntoStartPayload(payload, skills: null);
-        var skills = Assert.IsType<List<string>>(merged["skills"]);
-        Assert.Contains(ApAgentPoMasterStartPayloadEnricher.SkillPoLookupSap, skills);
-
-        var json = System.Text.Json.JsonSerializer.Serialize(payload);
-        var mergedJson = ApAgentStartPayloadJson.MergeSkillsIntoPayloadJson(json, skills: null);
-        Assert.Contains(ApAgentPoMasterStartPayloadEnricher.SkillPoLookupSap, mergedJson);
-
-        var extracted = ApAgentStartPayloadJson.ExtractSkillsFromPayloadDict(payload);
-        Assert.NotNull(extracted);
-        Assert.Contains(ApAgentPoMasterStartPayloadEnricher.SkillPoLookupSap, extracted!);
     }
 
     [Fact]
