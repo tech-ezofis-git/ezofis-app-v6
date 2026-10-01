@@ -463,12 +463,9 @@ export function DocumentsListView({
 
   const activeCategoryFiles = useMemo(() => {
     if (fileCategory === 'staged') {
-      return files.filter(isUnarchivedStageFile)
+      return []
     }
-    if (fileCategory === 'archived') {
-      return files.filter(isArchivedFile)
-    }
-    return files
+    return files.filter((file) => !isUnarchivedStageFile(file))
   }, [files, fileCategory])
 
   const normalizedFiles = useMemo(

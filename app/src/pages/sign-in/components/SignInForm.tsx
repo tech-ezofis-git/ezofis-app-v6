@@ -397,8 +397,6 @@ const SignInForm = ({
       setTenantList(mapped)
       setShowTenantListModal(true)
     } else {
-      setShowTenantListModal(false)
-      setTenantList([])
       await completeSignIn(data, sEmail, targetTenantId)
     }
   }
@@ -510,8 +508,6 @@ const SignInForm = ({
         setTenantList(mapped)
         setShowTenantListModal(true)
       } else {
-        setShowTenantListModal(false)
-        setTenantList([])
         await completeSignIn(data, email, targetTenantId)
       }
     } catch (e: any) {
@@ -662,7 +658,9 @@ const SignInForm = ({
 
   // === TENANT SELECTION (status 300) ===
   const handleTenantClick = async (tenantId: number | string) => {
-    const selected = tenantList.find((tenant) => tenant.id === tenantId)
+    const selected = tenantList.find(
+      (tenant) => String(tenant.id) === String(tenantId),
+    )
     setSelectedTenantId(tenantId)
     setLoading(true)
     try {
@@ -893,7 +891,9 @@ const SignInForm = ({
 
             <div className='space-y-2'>
               {accountOptions.map((tenant) => {
-                const isSelected = selectedTenantId === tenant.id
+                const isSelected =
+                  selectedTenantId != null &&
+                  String(selectedTenantId) === String(tenant.id)
                 const isLoadingThis = loading && isSelected
                 const optionName =
                   tenant.label.trim() || tenant.email || accountEmail

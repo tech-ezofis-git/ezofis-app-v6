@@ -22,6 +22,14 @@ import { useComments } from '../../hooks/useComments'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
+  extractApAgentJobId,
+  registerApAgentJobProcessing,
+} from '../../utils/registerApAgentJobProcessing'
+import {
+  finalizeApAgentJobIfSucceeded,
+  wasApAgentJobFinalized,
+} from '../../utils/finalizeApAgentJobIfSucceeded'
+import {
   isDecorativeFieldType,
   isMatrixFieldType,
   isTableType,
@@ -679,6 +687,10 @@ const useJobPolling = (
 
     const pollJob = async () => {
       try {
+        if (wasApAgentJobFinalized(apAgentJobId)) {
+          if (intervalId) clearInterval(intervalId)
+          return
+        }
         const res = await workflowsApiV6.getApAgentJobStatus(
           String(apAgentJobId),
         )
@@ -933,6 +945,36 @@ const Request = ({
     'overview' | 'history' | 'attachments' | 'comments'
   >('overview')
   const [isEditing, setIsEditing] = useState<boolean>(false)
+
+  // Ensure Hangfire job polling is registered when the open request already
+  // carries an apAgentJobId (create/move/list), matching AP FileUpload.
+  useEffect(() => {
+    if (!apAgentJobId) return
+    registerApAgentJobProcessing({
+      apAgentJobId,
+      processId: selectedItem?.processId || selectedItem?.id || rowId,
+      requestNo: selectedItem?.requestNo || selectedItem?.reqNo,
+      stage: selectedItem?.stage || selectedItem?.currentStage || 'Processing',
+      transactionId: selectedItem?.transactionId,
+      workflowId:
+        selectedItem?.workflowId ||
+        resolvedWorkflowId ||
+        rawWorkflowData?.id,
+    })
+  }, [
+    apAgentJobId,
+    rawWorkflowData?.id,
+    resolvedWorkflowId,
+    rowId,
+    selectedItem?.currentStage,
+    selectedItem?.id,
+    selectedItem?.processId,
+    selectedItem?.reqNo,
+    selectedItem?.requestNo,
+    selectedItem?.stage,
+    selectedItem?.transactionId,
+    selectedItem?.workflowId,
+  ])
   const openPlayground = usePlaygroundStore((state) => state.open)
   const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
 
@@ -980,6 +1022,9 @@ const Request = ({
     selectedItem?.transactionId,
     initialProcessing,
     workflowFormId,
+    // While Hangfire is running, only poll ap-agent/jobs — not inbox/sent/completed.
+    Boolean(apAgentJobId) &&
+      !jobStatuses?.[`job-${apAgentJobId}`]?.isCompleted,
   )
 
   // Fetch workflow (+ form schema) when missing, mismatched, or panels empty.
@@ -1087,6 +1132,12 @@ const Request = ({
           selectedItem: {
             ...selectedItem,
             ...request,
+            // Keep Hangfire job id from the in-flight create/move — detail
+            // list payloads usually omit it and would wipe live job messages.
+            apAgentJobId:
+              selectedItem.apAgentJobId || request.apAgentJobId || null,
+            isProcessing:
+              selectedItem.isProcessing || request.isProcessing || false,
           },
         })
       }
@@ -1145,13 +1196,13 @@ const Request = ({
       }
     }
 
-    if (isCompleted) {
-      setTimeout(() => {
-        queryClient.invalidateQueries({
-          queryKey: ['request-detail', resolvedWorkflowId],
-        })
-        requestStore.getState().workflowRefresh()
-      }, 1000)
+    if (isCompleted && apAgentJobId) {
+      void finalizeApAgentJobIfSucceeded({
+        apAgentJobId,
+        jobData,
+        queryClient,
+        workflowId: resolvedWorkflowId,
+      })
     }
   })
 
@@ -1189,9 +1240,13 @@ const Request = ({
   const currentActivityId = request?.activityId || selectedItem?.activityId
 
   const dynamicRules = useMemo(() => {
-    const rules = rawWorkflowData?.workflowJson?.rules || []
+    const rules =
+      rawWorkflowData?.workflowJson?.rules || rawWorkflowData?.rules || []
     if (!currentActivityId) return []
-    return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+    return rules.filter((rule: any) => {
+      const fromId = rule.fromBlockId || rule.from
+      return String(fromId) === String(currentActivityId)
+    })
   }, [rawWorkflowData, currentActivityId])
 
   const currentBlock = useMemo(() => {
@@ -1202,18 +1257,31 @@ const Request = ({
     return blocks.find((b: any) => b.id === currentActivityId) || null
   }, [rawWorkflowData, currentActivityId])
 
+  // Agent nodes auto-route from their decision — do not surface their
+  // QUALIFY / DISQUALIFY / MATCHED edges as clickable header buttons.
+  const isAutoRoutedAgentStage = useMemo(() => {
+    const type = String(
+      currentBlock?.type ||
+        request?.stageType ||
+        selectedItem?.stageType ||
+        '',
+    ).toUpperCase()
+    return type.includes('AGENT')
+  }, [currentBlock?.type, request?.stageType, selectedItem?.stageType])
+
   const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
-  console.log('currentBlock', currentBlockSettings)
+
+  // Outgoing workflow rules for the current activity are the source of truth
+  // for which action buttons belong on this stage. Preferring
+  // settings.actions instead pulls in stale prior-stage labels (e.g.
+  // QUALIFY from the Qualify Agent) that are not edges from this block.
   const ruleActions = useMemo(() => {
     const configuredActions = currentBlockSettings?.actions || []
+    const allRules =
+      rawWorkflowData?.workflowJson?.rules || rawWorkflowData?.rules || []
     let derivedActions: any[] = []
-    console.log('current blocksd', currentBlock, dynamicRules)
-    if (configuredActions.length > 0) {
-      derivedActions = configuredActions.map((a: any) => ({
-        label: a.actionName || 'Submit',
-        value: a.actionName || 'Submit',
-      }))
-    } else {
+
+    if (dynamicRules.length > 0) {
       derivedActions = dynamicRules.map((rule: any) => {
         const actionName = rule.proceedAction || rule.action || 'Submit'
         return {
@@ -1221,7 +1289,45 @@ const Request = ({
           value: actionName,
         }
       })
+    } else if (configuredActions.length > 0) {
+      // Fallback: block settings may list every historical action name.
+      // Drop labels that only appear on *incoming* edges (the prior
+      // stage's proceed action), so e.g. QUALIFY does not resurface on
+      // the Manual User stage after the Qualify Agent.
+      const incomingActionKeys = new Set(
+        allRules
+          .filter(
+            (rule: any) =>
+              String(rule.toBlockId || rule.to || '') ===
+              String(currentActivityId || ''),
+          )
+          .map((rule: any) =>
+            String(rule.proceedAction || rule.action || '')
+              .trim()
+              .toLowerCase(),
+          )
+          .filter(Boolean),
+      )
+
+      const mapped = configuredActions.map((a: any) => ({
+        label: a.actionName || 'Submit',
+        value: a.actionName || 'Submit',
+      }))
+      const withoutIncoming = mapped.filter(
+        (a: any) =>
+          !incomingActionKeys.has(String(a.value || '').toLowerCase()),
+      )
+      derivedActions = withoutIncoming.length > 0 ? withoutIncoming : mapped
     }
+
+    // De-dupe by action value while preserving rule order.
+    const seen = new Set<string>()
+    derivedActions = derivedActions.filter((a: any) => {
+      const key = String(a.value || a.label || '').toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 
     if (
       currentBlockSettings?.isForwardEnabled ||
@@ -1239,7 +1345,12 @@ const Request = ({
     }
 
     return derivedActions
-  }, [dynamicRules, currentBlockSettings])
+  }, [
+    currentActivityId,
+    currentBlockSettings,
+    dynamicRules,
+    rawWorkflowData,
+  ])
 
   // Steps carry per-activity assignment (assignedToUserId); block
   // settings.users is the same data as authored in the workflow builder.
@@ -1268,9 +1379,6 @@ const Request = ({
   // The current activity's block carries the Manual User (INTERNAL_ACTOR)
   // settings authored in the workflow builder - assignment mode, checklist
   // items, document/signature requirements, mandatory fields.
-
-  console.log('[Pending with] activityId:', currentActivityId)
-  console.log('[Pending with] matched block:', currentBlock)
 
   const assignedGroupIds = useMemo(
     () => (currentBlockSettings.groups || []).map(String),
@@ -1340,7 +1448,7 @@ const Request = ({
   }, [currentActivityId, selectedItem?.transactionId])
 
   const headerActions = useMemo(() => {
-    if (isApAgentStage) return []
+    if (isApAgentStage || isAutoRoutedAgentStage) return []
     // Sent/Closed are read-only views of a request that has already moved
     // on to (or past) another assignee — only the Inbox view, where the
     // request is actually pending with the current user, can act on it.
@@ -1349,6 +1457,7 @@ const Request = ({
     return ruleActions.length > 0 ? ruleActions : actions
   }, [
     isApAgentStage,
+    isAutoRoutedAgentStage,
     requestListTab,
     isAssignedToCurrentUser,
     ruleActions,
@@ -1790,6 +1899,54 @@ const Request = ({
       // Invalidate notifications query so new ticket notifications load immediately
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
 
+      const responseData = response?.data
+      const nextApAgentJobId = extractApAgentJobId(responseData)
+      const nextInstanceId =
+        responseData?.instanceId ||
+        responseData?.workflowInstanceId ||
+        responseData?.processId ||
+        instanceId
+
+      if (nextApAgentJobId) {
+        registerApAgentJobProcessing({
+          apAgentJobId: nextApAgentJobId,
+          processId: nextInstanceId,
+          requestNo:
+            selectedItem?.requestNo ||
+            selectedItem?.reqNo ||
+            resolvedRequestNo,
+          stage:
+            responseData?.stage ||
+            selectedItem?.stage ||
+            selectedItem?.currentStage ||
+            'Processing',
+          transactionId:
+            responseData?.transactionId || selectedItem?.transactionId,
+          workflowId:
+            selectedItem?.workflowId ||
+            request?.workflowId ||
+            rawWorkflowData?.id,
+        })
+
+        showToast({
+          message: t`Request ${resolvedRequestNo} is being processed.`,
+          variant: 'success',
+        })
+
+        queryClient.invalidateQueries({ queryKey: ['inbox'] })
+        queryClient.invalidateQueries({
+          queryKey: [
+            'request-detail',
+            resolvedWorkflowId,
+            selectedItem?.processId,
+            selectedItem?.transactionId,
+          ],
+        })
+        workflowRefresh()
+        // Stay on the detail view so job polling can show live status messages.
+        return
+      }
+
       showToast({
         message:
           action.toLowerCase() === 'submit'
@@ -1861,6 +2018,42 @@ const Request = ({
               : t`Failed to submit request: ${response.error}`,
           variant: 'error',
         })
+        return
+      }
+
+      const responseData = response?.data ?? response
+      const nextApAgentJobId = extractApAgentJobId(responseData)
+      if (nextApAgentJobId) {
+        registerApAgentJobProcessing({
+          apAgentJobId: nextApAgentJobId,
+          processId:
+            responseData?.instanceId ||
+            responseData?.processId ||
+            selectedItem?.processId ||
+            selectedItem?.id,
+          requestNo:
+            selectedItem?.requestNo ||
+            selectedItem?.reqNo ||
+            resolvedRequestNo,
+          stage: responseData?.stage || 'Processing',
+          transactionId:
+            responseData?.transactionId || selectedItem?.transactionId,
+          workflowId: rawWorkflowData?.id,
+        })
+        showToast({
+          message: t`Request is being processed.`,
+          variant: 'success',
+        })
+        queryClient.invalidateQueries({ queryKey: ['inbox'] })
+        queryClient.invalidateQueries({
+          queryKey: [
+            'request-detail',
+            resolvedWorkflowId,
+            selectedItem?.processId,
+            selectedItem?.transactionId,
+          ],
+        })
+        workflowRefresh()
         return
       }
 

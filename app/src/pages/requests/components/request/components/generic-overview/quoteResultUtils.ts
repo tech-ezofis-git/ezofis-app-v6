@@ -237,8 +237,40 @@ export const buildQuoteViewModel = (
 
   totals.sort((a, b) => TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind])
 
+  // Prefer form-mapped totals, then keep a single entry per kind so keys like
+  // "Freight" / "Freight Amount" don't render as three identical Freights.
+  const preferredTotals = [...totals].sort((a, b) => {
+    const fieldRank = Number(Boolean(b.field)) - Number(Boolean(a.field))
+    if (fieldRank !== 0) return fieldRank
+    return TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind]
+  })
+  const seenKinds = new Set<QuoteTotalKind>()
+  const uniqueTotals: QuoteTotalEntry[] = []
+  for (const entry of preferredTotals) {
+    if (entry.kind !== 'other' && seenKinds.has(entry.kind)) continue
+    seenKinds.add(entry.kind)
+    uniqueTotals.push(entry)
+  }
+  uniqueTotals.sort((a, b) => TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind])
+
+  // When two totals share a display label, surface the result key so the UI
+  // can tell form controls apart.
+  const labelCounts = uniqueTotals.reduce<Record<string, number>>((acc, entry) => {
+    const key = entry.label.trim().toLowerCase()
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+  const labeledTotals = uniqueTotals.map((entry) => {
+    const key = entry.label.trim().toLowerCase()
+    if ((labelCounts[key] || 0) <= 1) return entry
+    return {
+      ...entry,
+      label: entry.resultKey || entry.label,
+    }
+  })
+
   return {
-    grandTotal: totals.find((entry) => entry.kind === 'total') || null,
+    grandTotal: labeledTotals.find((entry) => entry.kind === 'total') || null,
     lineItemTable,
     listEntries: scalars.filter((entry) => entry.isStringList),
     longTextEntries: scalars.filter(
@@ -247,7 +279,7 @@ export const buildQuoteViewModel = (
     metaEntries: shortScalars.slice(1),
     otherTables,
     titleEntry: shortScalars[0] || null,
-    totals,
+    totals: labeledTotals,
   }
 }
 

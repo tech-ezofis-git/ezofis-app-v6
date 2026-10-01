@@ -1,10 +1,24 @@
 import { Icon } from '@iconify/react'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
+import {
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {
+  pdfBase64ToObjectUrl,
+  previewDocument,
+} from '@/api/v6/documentPreview'
+import Button from '@/components/base/button/Button'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import showToast from '@/components/base/toast/showToast'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
   getConfiguredFieldOptions,
@@ -20,6 +34,11 @@ import {
   collectFormTableFields,
 } from './AgentEditableTables'
 import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
+import {
+  buildDocumentPreviewFormData,
+  getDocumentGenerateTemplateJson,
+  getWorkflowFormId,
+} from './documentGenerateTemplate'
 import { getFieldHeading, getFieldId } from './qualifierResultUtils'
 import QuoteLineItemsTable, {
   buildQuoteTotals,
@@ -34,6 +53,8 @@ import {
   type QuoteTableEntry,
   type QuoteTotalEntry,
 } from './quoteResultUtils'
+
+type QuotePaneMode = 'agent_review' | 'preview'
 
 const ensureOnDemandTable = (field: any) => {
   if (!field) return field
@@ -312,8 +333,70 @@ interface Props {
   agentBlock?: AgentBlock | null
   formModel?: Record<string, any>
   readOnly?: boolean
+  requestData?: any
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
+}
+
+/** True when request is on a stage that rules route to directly from Quote Agent. */
+const isOnStageAfterQuoteAgent = (workflow: any, requestData: any) => {
+  const json = workflow?.workflowJson || workflow || {}
+  const blocks = Array.isArray(json.blocks) ? json.blocks : []
+  const rules = Array.isArray(json.rules) ? json.rules : []
+  if (!blocks.length || !rules.length) return false
+
+  const quoteBlock = blocks.find((block: any) => {
+    const type = String(block?.type || '')
+    const label = String(block?.settings?.label || '')
+    const subtype = String(block?.settings?.subtype || '').toUpperCase()
+    return (
+      type === 'QUOTE_AGENT' ||
+      subtype === 'QUOTE' ||
+      label.includes('Quote')
+    )
+  })
+  if (!quoteBlock?.id) return false
+
+  const nextIds = new Set(
+    rules
+      .filter(
+        (rule: any) => String(rule?.fromBlockId || '') === String(quoteBlock.id),
+      )
+      .map((rule: any) => String(rule?.toBlockId || ''))
+      .filter(Boolean),
+  )
+  if (nextIds.size === 0) return false
+
+  const activityId = String(
+    requestData?.activityId ||
+      requestData?.currentActivityId ||
+      requestData?.stageId ||
+      '',
+  ).trim()
+  if (activityId && nextIds.has(activityId)) return true
+
+  const stage = String(
+    requestData?.stage || requestData?.currentStage || '',
+  ).trim()
+  if (!stage) return false
+
+  const nextBlocks = blocks.filter((block: any) =>
+    nextIds.has(String(block?.id || '')),
+  )
+  const labelMatches = nextBlocks.filter((block: any) => {
+    const label = String(block?.settings?.label || '').trim()
+    return label && stage === label
+  })
+  if (labelMatches.length !== 1) return false
+
+  // Duplicate labels (e.g. two "Manual User" blocks) — require activityId.
+  const matchedLabel = String(labelMatches[0]?.settings?.label || '').trim()
+  const sameLabelCount = blocks.filter(
+    (block: any) => String(block?.settings?.label || '').trim() === matchedLabel,
+  ).length
+  if (sameLabelCount > 1) return false
+
+  return true
 }
 
 const resolveTableValue = (
@@ -357,23 +440,104 @@ const QuoteAgentResultView = ({
   agentBlock,
   formModel = {},
   readOnly = false,
+  requestData,
   result,
   workflow,
   onFieldChange,
 }: Props) => {
+  const { t } = useLingui()
   const formFields = useMemo(() => collectFormFields(workflow), [workflow])
   const tableFields = useMemo(
     () => collectFormTableFields(workflow),
     [workflow],
   )
 
+  const documentTemplateJson = useMemo(
+    () => getDocumentGenerateTemplateJson(workflow),
+    [workflow],
+  )
+  const workflowFormId = useMemo(() => getWorkflowFormId(workflow), [workflow])
+  const canPreviewDocument = useMemo(
+    () =>
+      Boolean(documentTemplateJson) &&
+      isOnStageAfterQuoteAgent(workflow, requestData),
+    [documentTemplateJson, requestData, workflow],
+  )
+
+  const [paneMode, setPaneMode] = useState<QuotePaneMode>('agent_review')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewFileName, setPreviewFileName] = useState('quote.pdf')
+  const previewUrlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+        previewUrlRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!canPreviewDocument && paneMode === 'preview') {
+      setPaneMode('agent_review')
+    }
+  }, [canPreviewDocument, paneMode])
+
+  const loadDocumentPreview = async () => {
+    if (!documentTemplateJson) return
+    setPreviewLoading(true)
+    try {
+      const { data, error } = await previewDocument({
+        formData: buildDocumentPreviewFormData(formModel),
+        templateJson: documentTemplateJson,
+        ...(workflowFormId ? { formId: workflowFormId } : {}),
+      })
+      if (error || !data?.pdfBase64) {
+        showToast({
+          message: error || t`Document preview failed`,
+          variant: 'error',
+        })
+        return
+      }
+      const objectUrl = pdfBase64ToObjectUrl(data.pdfBase64)
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = objectUrl
+      setPreviewUrl(objectUrl)
+      setPreviewFileName(data.fileName || 'quote.pdf')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const selectPaneMode = (mode: QuotePaneMode) => {
+    setPaneMode(mode)
+    if (mode === 'preview') {
+      void loadDocumentPreview()
+    }
+  }
+
   const viewModel = useMemo(
     () => buildQuoteViewModel(result, formFields, tableFields),
     [formFields, result, tableFields],
   )
 
-  const freight =
-    viewModel.totals.find((entry) => entry.kind === 'freight')?.value ?? 0
+  const freightEntry = viewModel.totals.find((entry) => entry.kind === 'freight')
+  const freightFromForm = freightEntry
+    ? formModel?.[
+        freightEntry.field
+          ? getFieldId(freightEntry.field)
+          : freightEntry.resultKey
+      ]
+    : undefined
+  const freight = Number(
+    freightFromForm !== undefined &&
+      freightFromForm !== null &&
+      freightFromForm !== ''
+      ? freightFromForm
+      : (freightEntry?.value ?? 0),
+  )
   const taxRate = useMemo(() => getQuoteTaxRate(result), [result])
 
   const lineItems = useMemo(() => {
@@ -407,67 +571,18 @@ const QuoteAgentResultView = ({
       const id = getFieldId(field)
       const stored = formModel?.[id]
       if (Array.isArray(stored) && stored.length > 0) {
-        // Keep agent warning/Note fields if form rows dropped them.
-        const merged = stored.map((row: Record<string, any>, index: number) => {
+        // Form rows are persisted with column UUIDs only — normalize first so
+        // Qty/Price edits win. Then layer agent warning/note metadata.
+        const formRows = normalizeLineItemRows(stored, columns)
+        return formRows.map((row: Record<string, any>, index: number) => {
           const agent = pickAgentRow(row, index)
           const note =
             (typeof row.Note === 'string' && row.Note.trim()) ||
             (typeof agent.Note === 'string' && agent.Note.trim()) ||
             ''
-          const descriptionColumn = columns.find((col: any) =>
-            /description|desc|details/i.test(
-              String(col?.name || col?.label || '').trim(),
-            ),
-          )
-          const rawFormDescription = String(
-            row.Description ??
-              (descriptionColumn?.id != null
-                ? row[descriptionColumn.id]
-                : '') ??
-              '',
-          ).trim()
-          const agentDescription = String(
-            agent.Description ?? agent.description ?? '',
-          ).trim()
-          const formDescriptionIsQty =
-            /^\d+(\.\d+)?$/.test(rawFormDescription) &&
-            (agent.Qty == null ||
-              Number(rawFormDescription) === Number(agent.Qty) ||
-              Number(rawFormDescription) === Number(agent.Quantity))
           const description =
-            agentDescription &&
-            (!rawFormDescription ||
-              formDescriptionIsQty ||
-              /^\d+(\.\d+)?$/.test(rawFormDescription))
-              ? agentDescription
-              : rawFormDescription || agentDescription
-
-          const agentQty =
-            agent.Qty ?? agent.Quantity ?? agent.qty ?? agent.quantity
-          const formQty = row.Qty ?? row.Quantity ?? row.qty ?? row.quantity
-          const asNumber = (value: unknown) => {
-            const num = Number(value)
-            return Number.isFinite(num) ? num : null
-          }
-          const formQtyNum = asNumber(formQty)
-          const formQtyIsMoney =
-            formQtyNum != null &&
-            (formQtyNum === asNumber(agent.Price) ||
-              formQtyNum === asNumber(agent.Subtotal) ||
-              formQtyNum === asNumber(row.Price) ||
-              formQtyNum === asNumber(row.Subtotal))
-          const formQtyUnusable =
-            formQty == null ||
-            String(formQty).trim() === '' ||
-            formQtyIsMoney ||
-            (typeof formQty === 'string' &&
-              !/^\d+(\.\d+)?$/.test(formQty.trim()))
-          const qty =
-            agentQty != null &&
-            String(agentQty).trim() !== '' &&
-            formQtyUnusable
-              ? agentQty
-              : (formQty ?? agentQty)
+            String(row.Description || '').trim() ||
+            String(agent.Description || agent.description || '').trim()
 
           return {
             ...row,
@@ -480,18 +595,22 @@ const QuoteAgentResultView = ({
               agent['Needs Engineering Review'] ??
               false,
             'Note': note,
-            'Qty': qty,
           }
         })
-        return normalizeLineItemRows(merged, columns)
       }
     }
     return agentRows
   }, [formModel, viewModel.lineItemTable])
 
+  const lineItemColumns = useMemo(
+    () =>
+      viewModel.lineItemTable?.field?.settings?.specific?.tableColumns || [],
+    [viewModel.lineItemTable],
+  )
+
   const initialTotals = useMemo(
-    () => buildQuoteTotals(lineItems, freight, taxRate),
-    [freight, lineItems, taxRate],
+    () => buildQuoteTotals(lineItems, freight, taxRate, lineItemColumns),
+    [freight, lineItemColumns, lineItems, taxRate],
   )
 
   const [computedTotals, setComputedTotals] =
@@ -500,8 +619,15 @@ const QuoteAgentResultView = ({
     Record<string, Record<string, any>[]>
   >({})
   const [activeEditId, setActiveEditId] = useState<string | null>(null)
+  const totalsFromEditRef = useRef(false)
 
   useEffect(() => {
+    // Don't clobber totals just updated from an in-table edit with a stale
+    // formModel-derived total in the same turn.
+    if (totalsFromEditRef.current) {
+      totalsFromEditRef.current = false
+      return
+    }
     setComputedTotals(initialTotals)
   }, [initialTotals])
 
@@ -600,7 +726,9 @@ const QuoteAgentResultView = ({
     const raw = stringifyScalar(
       resolveDisplayValue(entry.field, entry.value, entry.resultKey),
     )
-    const canEdit = entry.field ? canEditField(entry.field) : false
+    const canEdit = entry.field
+      ? canEditField(entry.field)
+      : Boolean(!readOnly && onFieldChange)
     return {
       canEdit,
       display: formatFieldDisplay(raw),
@@ -683,12 +811,49 @@ const QuoteAgentResultView = ({
     return resolveTableValue(formModel, field, table.rows)
   }
 
+  const canEditTotalEntry = (entry: QuoteTotalEntry) => {
+    if (readOnly || !onFieldChange) return false
+    // Subtotal/Total are driven by line items + freight/tax.
+    if (entry.kind === 'subtotal' || entry.kind === 'total') return false
+    if (entry.field) return canEditField(entry.field)
+    // Result-only keys (no form field) are still editable via resultKey.
+    return true
+  }
+
+  const commitTotalEntry = (entry: QuoteTotalEntry, raw: unknown) => {
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed)) return
+
+    let next = { ...computedTotals }
+    if (entry.kind === 'freight') {
+      next = buildQuoteTotals(lineItems, parsed, taxRate, lineItemColumns)
+    } else if (entry.kind === 'tax') {
+      next = {
+        ...computedTotals,
+        hst: Number(parsed.toFixed(2)),
+        total: Number(
+          (computedTotals.subtotal + computedTotals.freight + parsed).toFixed(2),
+        ),
+      }
+    } else if (entry.kind === 'other') {
+      writeField(entry.field, parsed, entry.resultKey)
+      return
+    } else {
+      return
+    }
+
+    totalsFromEditRef.current = true
+    setComputedTotals(next)
+    persistTotals(next)
+    writeField(entry.field, parsed, entry.resultKey)
+  }
+
   const totalDisplayValue = (entry: QuoteTotalEntry) => {
     if (entry.kind === 'subtotal') return computedTotals.subtotal
     if (entry.kind === 'freight') return computedTotals.freight
     if (entry.kind === 'tax') return computedTotals.hst
     if (entry.kind === 'total') return computedTotals.total
-    return entry.value
+    return resolveDisplayValue(entry.field, entry.value, entry.resultKey)
   }
 
   const grandTotalLabel =
@@ -704,9 +869,21 @@ const QuoteAgentResultView = ({
     (entry): entry is QuoteScalarEntry => !!entry,
   )
 
+  const scalarLabel = (entry: QuoteScalarEntry) => {
+    const base = controlLabel(entry.field, entry.label) || entry.label
+    const sameLabelCount = headerEntries.filter(
+      (other) =>
+        (controlLabel(other.field, other.label) || other.label)
+          .trim()
+          .toLowerCase() === base.trim().toLowerCase(),
+    ).length
+    if (sameLabelCount > 1) return entry.resultKey || base
+    return base
+  }
+
   const renderHeaderField = (entry: QuoteScalarEntry) => {
     const resolved = resolveScalarEntry(entry)
-    const label = controlLabel(entry.field, entry.label) || entry.label
+    const label = scalarLabel(entry)
 
     return (
       <span
@@ -730,129 +907,201 @@ const QuoteAgentResultView = ({
     )
   }
 
-  return (
-    <div className='flex flex-col gap-6'>
-      <div className='flex items-center justify-between gap-4'>
-        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
-          {headerEntries.map(renderHeaderField)}
-        </div>
+  const renderTotalRow = (entry: QuoteTotalEntry, options?: { bold?: boolean }) => {
+    const canEdit = canEditTotalEntry(entry)
+    const value = totalDisplayValue(entry)
+    const fieldId = entry.field ? getFieldId(entry.field) : entry.resultKey
+    const display = `$${toMoney(value)}`
 
-        <div className='shrink-0 text-left text-sm leading-5 font-normal text-gray-12'>
-          <span className='font-bold'>{grandTotalLabel}: </span>$
-          {toMoney(computedTotals.total)}
-        </div>
+    return (
+      <div
+        className={cn(
+          'grid grid-cols-[1fr_7.5rem] items-center gap-x-6',
+          options?.bold
+            ? 'mt-2 border-t border-gray-2 pt-2 text-base font-bold text-gray-12'
+            : 'text-gray-11',
+        )}
+        key={entry.resultKey}
+      >
+        <span className='min-w-0 truncate text-left'>{entry.label}</span>
+        <HoverEditShell
+          activeEditId={activeEditId}
+          canEdit={canEdit}
+          className={cn(
+            'w-full justify-end text-right font-medium tabular-nums',
+            options?.bold ? 'text-[var(--primary-11)]' : 'text-gray-12',
+          )}
+          editor={
+            <InputNumber
+              className='w-full'
+              value={value}
+              autoFocus
+              onChange={(v) => commitTotalEntry(entry, v)}
+            />
+          }
+          fieldId={fieldId}
+          label={entry.label}
+          onActivate={setActiveEditId}
+        >
+          <span className='block w-full text-right tabular-nums'>{display}</span>
+        </HoverEditShell>
       </div>
+    )
+  }
 
-      {viewModel.lineItemTable && (lineItems.length > 0 || !readOnly) && (
-        <QuoteLineItemsTable
-          freight={freight}
-          items={lineItems}
-          readOnly={readOnly}
-          taxRate={taxRate}
-          title={viewModel.lineItemTable.label}
-          workflow={workflow}
-          onFieldChange={onFieldChange}
-          onTotalsChange={(totals) => {
-            setComputedTotals((prev) =>
-              prev.subtotal === totals.subtotal &&
-              prev.freight === totals.freight &&
-              prev.hst === totals.hst &&
-              prev.total === totals.total
-                ? prev
-                : totals,
-            )
-            persistTotals(totals)
-          }}
-        />
-      )}
+  return (
+    <div className='flex flex-col gap-4'>
+      {canPreviewDocument && paneMode === 'preview' ? (
+        <div className='flex flex-col gap-3'>
+          <div className='flex items-center justify-between gap-3'>
+            <Button
+              color='gray'
+              icon='lucide:arrow-left'
+              label={t`Back`}
+              size='sm'
+              type='button'
+              variant='ghost'
+              onClick={() => selectPaneMode('agent_review')}
+            />
+            <span className='inline-flex shrink-0 items-center rounded-full border border-[var(--secondary-6)] bg-[var(--secondary-2)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--secondary-11)]'>
+              {t`Preview Mode`}
+            </span>
+          </div>
+          <div className='flex min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary'>
+            <DocumentPreviewViewer
+              fileName={previewFileName}
+              fileUrl={previewUrl}
+              isLoading={previewLoading}
+              isPdf
+            />
+          </div>
+        </div>
+      ) : (
+        <div className='flex flex-col gap-6'>
+          <div className='flex flex-wrap items-start justify-between gap-x-6 gap-y-3'>
+            <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
+              {headerEntries.map(renderHeaderField)}
+            </div>
 
-      {breakdownTotals.length > 0 && (
-        <div className='flex justify-end border-t border-gray-3 pt-4'>
-          <div className='flex w-full max-w-sm flex-col gap-2 text-sm'>
-            {breakdownTotals.map((entry) => (
+            <div className='ml-auto flex shrink-0 flex-col items-end gap-1.5 text-right'>
+              {canPreviewDocument ? (
+                <Button
+                  color='secondary'
+                  icon='lucide:eye'
+                  label={t`Preview`}
+                  size='sm'
+                  type='button'
+                  variant='ghost'
+                  onClick={() => selectPaneMode('preview')}
+                />
+              ) : null}
+              <div className='text-sm leading-5 font-normal text-gray-12'>
+                <span className='font-bold'>{grandTotalLabel}: </span>$
+                {toMoney(computedTotals.total)}
+              </div>
+            </div>
+          </div>
+
+          {viewModel.lineItemTable && (lineItems.length > 0 || !readOnly) && (
+            <QuoteLineItemsTable
+              freight={freight}
+              items={lineItems}
+              readOnly={readOnly}
+              taxRate={taxRate}
+              title={viewModel.lineItemTable.label}
+              workflow={workflow}
+              onFieldChange={onFieldChange}
+              onTotalsChange={(totals) => {
+                totalsFromEditRef.current = true
+                setComputedTotals((prev) =>
+                  prev.subtotal === totals.subtotal &&
+                  prev.freight === totals.freight &&
+                  prev.hst === totals.hst &&
+                  prev.total === totals.total
+                    ? prev
+                    : totals,
+                )
+                persistTotals(totals)
+              }}
+            />
+          )}
+
+          {breakdownTotals.length > 0 && (
+            <div className='flex justify-end border-t border-gray-3 pt-4 pr-4'>
+              <div className='mr-2 flex w-full max-w-[18rem] flex-col gap-2 text-sm'>
+                {breakdownTotals.map((entry) => renderTotalRow(entry))}
+                {viewModel.grandTotal
+                  ? renderTotalRow(viewModel.grandTotal, { bold: true })
+                  : null}
+              </div>
+            </div>
+          )}
+
+          {viewModel.longTextEntries.map((entry) => (
+            <div className='flex flex-col gap-2' key={entry.resultKey}>
+              <h4 className='text-sm font-semibold text-gray-12'>
+                {entry.label}
+              </h4>
+              {renderScalarHover(entry)}
+            </div>
+          ))}
+
+          {viewModel.listEntries.map((entry) => {
+            const items = Array.isArray(entry.value)
+              ? entry.value.map(String)
+              : String(entry.value || '')
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+            if (!items.length) return null
+
+            return (
               <div
-                className='flex justify-between text-gray-11'
+                className='flex flex-col gap-2 border-t border-gray-3 pt-2'
                 key={entry.resultKey}
               >
-                <span>{entry.label}</span>
-                <span className='font-medium text-gray-12'>
-                  ${toMoney(totalDisplayValue(entry))}
-                </span>
+                <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
+                  <Icon className='h-4 w-4 text-orange-9' icon='tabler:bulb' />
+                  {entry.label}
+                </h4>
+                <ul className='flex list-disc flex-col gap-1 pl-5'>
+                  {items.map((note: string, i: number) => (
+                    <li className='text-xs text-gray-10' key={`${note}-${i}`}>
+                      {note}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
-            {viewModel.grandTotal ? (
-              <div className='mt-2 flex justify-between border-t border-gray-2 pt-2 text-base font-bold text-gray-12'>
-                <span>{viewModel.grandTotal.label}</span>
-                <span className='text-[var(--primary-11)]'>
-                  ${toMoney(computedTotals.total)}
-                </span>
-              </div>
-            ) : null}
-          </div>
+            )
+          })}
+
+          {viewModel.otherTables.map((table) => {
+            const field = ensureOnDemandTable(table.field)
+            const rows = resolveTableRows(table)
+            const editable =
+              !readOnly &&
+              Boolean(onFieldChange) &&
+              (table.field ? canEditField(table.field) : true)
+
+            if (!rows.length && !editable) return null
+
+            return (
+              <AgentFlatTable
+                columns={field.settings?.specific?.tableColumns || []}
+                icon='tabler:table'
+                key={table.resultKey}
+                readOnly={!editable}
+                title={table.label}
+                rows={normalizeAgentTableRows(
+                  rows,
+                  field.settings?.specific?.tableColumns || [],
+                )}
+                onChange={(nextRows) => writeTable(field, nextRows)}
+              />
+            )
+          })}
         </div>
       )}
-
-      {viewModel.longTextEntries.map((entry) => (
-        <div className='flex flex-col gap-2' key={entry.resultKey}>
-          <h4 className='text-sm font-semibold text-gray-12'>{entry.label}</h4>
-          {renderScalarHover(entry)}
-        </div>
-      ))}
-
-      {viewModel.listEntries.map((entry) => {
-        const items = Array.isArray(entry.value)
-          ? entry.value.map(String)
-          : String(entry.value || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
-        if (!items.length) return null
-
-        return (
-          <div
-            className='flex flex-col gap-2 border-t border-gray-3 pt-2'
-            key={entry.resultKey}
-          >
-            <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
-              <Icon className='h-4 w-4 text-orange-9' icon='tabler:bulb' />
-              {entry.label}
-            </h4>
-            <ul className='flex list-disc flex-col gap-1 pl-5'>
-              {items.map((note: string, i: number) => (
-                <li className='text-xs text-gray-10' key={`${note}-${i}`}>
-                  {note}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )
-      })}
-
-      {viewModel.otherTables.map((table) => {
-        const field = ensureOnDemandTable(table.field)
-        const rows = resolveTableRows(table)
-        const editable =
-          !readOnly &&
-          Boolean(onFieldChange) &&
-          (table.field ? canEditField(table.field) : true)
-
-        if (!rows.length && !editable) return null
-
-        return (
-          <AgentFlatTable
-            columns={field.settings?.specific?.tableColumns || []}
-            icon='tabler:table'
-            key={table.resultKey}
-            readOnly={!editable}
-            title={table.label}
-            rows={normalizeAgentTableRows(
-              rows,
-              field.settings?.specific?.tableColumns || [],
-            )}
-            onChange={(nextRows) => writeTable(field, nextRows)}
-          />
-        )
-      })}
     </div>
   )
 }

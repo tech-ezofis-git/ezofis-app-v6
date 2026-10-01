@@ -14,6 +14,7 @@ interface UploadQueueFileCardProps {
   isOpen: boolean
   className?: string
   disabled?: boolean
+  missingMandatoryFields?: boolean
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onRetryOcr: (id: string) => void
@@ -24,6 +25,7 @@ export default function UploadQueueFileCard({
   disabled = false,
   entry,
   isOpen,
+  missingMandatoryFields = false,
   onOpen,
   onRemove,
   onRetryOcr,
@@ -36,6 +38,7 @@ export default function UploadQueueFileCard({
   )
 
   const canOpen = !disabled && entry.status !== 'indexing'
+  const createdLabel = formatCreatedAt(entry.createdAt)
   const canRemove =
     !disabled && entry.status !== 'indexing' && entry.status !== 'indexed'
 
@@ -79,31 +82,51 @@ export default function UploadQueueFileCard({
               >
                 {entry.fileName}
               </p>
-              {entry.fileSize > 0 && (
-                <span className='shrink-0 text-11 text-text-muted'>
-                  {formatBytes(entry.fileSize)}
-                </span>
-              )}
             </div>
-            <div className='mt-1'>{renderStatusBadge()}</div>
+            {createdLabel || entry.fileSize > 0 ? (
+              <p className='mt-1 flex items-center gap-1.5 text-11 font-medium text-text-muted'>
+                {createdLabel ? <span>{createdLabel}</span> : null}
+                {createdLabel && entry.fileSize > 0 ? (
+                  <span className='text-text-muted/60'>•</span>
+                ) : null}
+                {entry.fileSize > 0 ? (
+                  <span>{formatBytes(entry.fileSize)}</span>
+                ) : null}
+              </p>
+            ) : null}
           </div>
         </div>
 
-        {canRemove && (
-          <Tooltip content={t`Remove file`}>
-            <IconButton
-              aria-label={t`Remove file`}
-              color='gray'
-              icon='lucide:trash-2'
-              size='xs'
-              variant='ghost'
-              onClick={(event: React.MouseEvent) => {
-                event.stopPropagation()
-                onRemove(entry.id)
-              }}
-            />
-          </Tooltip>
-        )}
+        <div className='flex shrink-0 items-center gap-2 self-center'>
+          {entry.status === 'ready' && missingMandatoryFields ? (
+            <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-[var(--orange-10)]'>
+              <Icon className='size-3.5' name='lucide:alert-circle' />
+              {t`Mandatory fields are missing`}
+            </span>
+          ) : null}
+          {entry.status === 'ready' && !missingMandatoryFields ? (
+            <span className='shrink-0 rounded-full border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--orange-7)] uppercase'>
+              {t`Waiting For Export`}
+            </span>
+          ) : null}
+          {entry.status !== 'ready' ? renderStatusBadge() : null}
+
+          {canRemove && (
+            <Tooltip content={t`Remove file`}>
+              <IconButton
+                aria-label={t`Remove file`}
+                color='red'
+                icon='lucide:trash-2'
+                size='xs'
+                variant='ghost'
+                onClick={(event: React.MouseEvent) => {
+                  event.stopPropagation()
+                  onRemove(entry.id)
+                }}
+              />
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       {entry.status === 'analyzing' && (
@@ -136,29 +159,34 @@ export default function UploadQueueFileCard({
 
   function renderStatusBadge() {
     switch (entry.status) {
-      case 'queued':
-        return <Badge color='gray' label={t`Waiting`} />
       case 'analyzing':
         return (
-          <span className='inline-flex items-center gap-1 text-11 font-medium text-accent-primary'>
+          <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-accent-primary'>
             <Icon className='size-3 animate-spin' name='tabler:loader-2' />
             {t`Analyzing...`}
           </span>
         )
       case 'ready':
-        return <Badge color='indigo' label={t`Ready for review`} />
+        return <Badge color='indigo' label={t`Waiting for Export`} />
       case 'indexing':
         return (
-          <span className='inline-flex items-center gap-1 text-11 font-medium text-accent-primary'>
+          <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-accent-primary'>
             <Icon className='size-3 animate-spin' name='tabler:loader-2' />
             {t`Indexing...`}
           </span>
         )
       case 'indexed':
         return (
-          <span className='inline-flex items-center gap-1 text-11 font-medium text-success-main'>
+          <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-success-main'>
             <Icon className='size-3.5' name='lucide:check-circle-2' />
             {t`Indexed`}
+          </span>
+        )
+      case 'queued':
+        return (
+          <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-[var(--gray-10)]'>
+            <Icon className='size-3 animate-spin' name='tabler:loader-2' />
+            {t`Waiting...`}
           </span>
         )
       case 'error':
@@ -167,6 +195,25 @@ export default function UploadQueueFileCard({
         return null
     }
   }
+}
+
+function formatCreatedAt(value?: string) {
+  if (!value) return ''
+  const trimmed = value.trim()
+  const dayMonthYear = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})/)
+  if (dayMonthYear) {
+    return `${dayMonthYear[1]}-${dayMonthYear[2]}-${dayMonthYear[3]}`
+  }
+  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoDate && trimmed.length <= 10) {
+    return `${isoDate[3]}-${isoDate[2]}-${isoDate[1]}`
+  }
+  const date = new Date(trimmed)
+  if (Number.isNaN(date.getTime())) return ''
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = String(date.getFullYear())
+  return `${day}-${month}-${year}`
 }
 
 function formatBytes(bytes: number, decimals = 1) {

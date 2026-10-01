@@ -297,6 +297,62 @@ export const getLatestAttachment = <T>(
   return head
 }
 
+const EMAIL_EXTS = new Set(['eml', 'msg'])
+
+const attachmentExtension = (file: {
+  fileExtension?: unknown
+  fileName?: unknown
+  name?: unknown
+}) => {
+  const explicit = asScalar(file?.fileExtension).toLowerCase()
+  if (explicit) return explicit.replace(/^\./, '')
+  const name = asScalar(file?.fileName || file?.name)
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return ''
+  return name.slice(dot + 1).toLowerCase()
+}
+
+const isEmailAttachment = (file: {
+  contentType?: unknown
+  fileExtension?: unknown
+  fileName?: unknown
+  name?: unknown
+}) => {
+  const contentType = asScalar(file?.contentType).toLowerCase()
+  if (
+    contentType.includes('message/rfc822') ||
+    contentType.includes('application/vnd.ms-outlook')
+  ) {
+    return true
+  }
+  return EMAIL_EXTS.has(attachmentExtension(file))
+}
+
+/**
+ * Prefer the newest real document (PDF/office/image) for the left viewer —
+ * skip email (.eml/.msg) wrappers so the pane shows the file, not mail UI.
+ */
+export const getRecentDocumentAttachment = <T,>(
+  attachments: T[] | null | undefined,
+): T | undefined => {
+  if (!attachments?.length) return undefined
+  const docs = attachments.filter(
+    (item) =>
+      !isEmailAttachment(
+        item as {
+          contentType?: unknown
+          fileExtension?: unknown
+          fileName?: unknown
+          name?: unknown
+        },
+      ),
+  )
+  if (docs.length > 0) {
+    return getLatestAttachment(docs) || docs[0]
+  }
+  return getLatestAttachment(attachments) || attachments[0]
+}
+
 export const attachmentToFormFileValue = (
   attachment:
     | {

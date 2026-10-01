@@ -7,6 +7,7 @@ import type {
   IndexStageFileRequest,
   OcrFieldResult,
   StageFileStatus,
+  StageFileSummary,
 } from '@/api/v6/uploadAndIndex'
 import formApi from '@/api/form/form'
 import { uploadForOcr } from '@/api/v6/folder/folder'
@@ -15,6 +16,7 @@ import {
   deleteStagedFiles,
   fetchStageFileBlob,
   indexStageFile,
+  listStagedFiles,
   loadStageFile,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
@@ -251,6 +253,22 @@ const QUEUE_VERTICAL_THRESHOLD = 6
 
 const getFieldKey = (field: RepositoryField) => field.sqlColumnName || field.id
 
+const isBlankFieldValue = (value: unknown) => {
+  const raw = String(value ?? '').trim()
+  if (!raw) return true
+  const lower = raw.toLowerCase()
+  return lower === 'null' || lower === 'undefined'
+}
+
+const hasMissingMandatoryFields = (
+  fieldValues: Record<string, string>,
+  repositoryFields: RepositoryField[],
+) =>
+  repositoryFields.some((field) => {
+    if (!field.isMandatory) return false
+    return isBlankFieldValue(fieldValues[getFieldKey(field)])
+  })
+
 const getInitialValues = (fields: RepositoryField[]) => {
   return fields.reduce<Record<string, string>>((acc, field) => {
     acc[getFieldKey(field)] = ''
@@ -399,8 +417,9 @@ const appendOcrFieldItems = (target: Map<string, string>, items: unknown) => {
       field.value === null || field.value === undefined
         ? ''
         : String(field.value)
+    const normalized = isBlankFieldValue(value) ? '' : value
 
-    target.set(normalizeFieldKey(name), value)
+    target.set(normalizeFieldKey(name), normalized)
   })
 }
 
@@ -604,13 +623,13 @@ const mapOcrResponseToFieldValues = (
 
     for (const candidate of candidates) {
       const ocrValue = findOcrValue(ocrFieldMap, [candidate])
-      if (ocrValue.trim()) {
+      if (ocrValue.trim() && !isBlankFieldValue(ocrValue)) {
         result[fieldKey] = ocrValue
         return
       }
 
       const flatValue = readFlatValue(flatData, candidate)
-      if (flatValue.trim()) {
+      if (flatValue.trim() && !isBlankFieldValue(flatValue)) {
         result[fieldKey] = flatValue
         return
       }
@@ -653,20 +672,137 @@ const createQueueEntry = (
 })
 
 const backendStatusToQueueStatus = (
-  backendStatus: StageFileStatus,
+  backendStatus: StageFileStatus | string,
 ): QueuedFileStatus => {
-  switch (backendStatus) {
+  switch (String(backendStatus || '').toUpperCase()) {
     case 'OCR':
       return 'ready'
-    case 'OCRFailed':
+    case 'OCRFAILED':
       return 'error'
     case 'ARCHIVED':
       return 'indexed'
-    case 'Queued':
-    case 'PendingOCR':
+    case 'INDEXING':
+    case 'ARCHIVING':
+      return 'indexing'
+    case 'QUEUED':
+    case 'PENDINGOCR':
     default:
       return 'analyzing'
   }
+}
+
+const isDraftReadyForExport = (
+  entry: Pick<QueuedUploadFile, 'fieldValues' | 'status'>,
+  repositoryFields: RepositoryField[],
+) =>
+  entry.status === 'ready' &&
+  !hasMissingMandatoryFields(entry.fieldValues, repositoryFields)
+
+const isDraftStageSummary = (summary: StageFileSummary) =>
+  String(summary.status || '').toUpperCase() !== 'ARCHIVED'
+
+const collectDraftStageFiles = async (repositoryId: string) => {
+  const pageSize = 50
+  const drafts: StageFileSummary[] = []
+  let page = 1
+  let totalItems = 0
+
+  while (page <= 20) {
+    const { data, totalItems: reportedTotal } = await listStagedFiles({
+      currentPage: page,
+      itemsPerPage: pageSize,
+      mode: 'browse',
+      repositoryId,
+    })
+    const items = data ?? []
+    if (page === 1) totalItems = reportedTotal || items.length
+    drafts.push(...items.filter(isDraftStageSummary))
+    if (!items.length || page * pageSize >= totalItems) break
+    page += 1
+  }
+
+  return drafts
+}
+
+const draftSummaryToQueueEntry = (
+  summary: StageFileSummary,
+  repositoryFields: RepositoryField[],
+): QueuedUploadFile => {
+  const status = (summary.status || 'OCR') as StageFileStatus
+  const fieldValues = mapOcrResponseToFieldValues(
+    summary,
+    repositoryFields,
+    summary.name,
+  )
+  return {
+    activeTab: 'fields',
+    backendStatus: status,
+    createdAt:
+      typeof summary.createdAt === 'string'
+        ? summary.createdAt
+        : new Date().toISOString(),
+    exportStatus: 'idle',
+    fieldValues,
+    file: null,
+    fileName: summary.name || 'Untitled',
+    fileSize: typeof summary.size === 'number' ? summary.size : 0,
+    focusedFieldKey: null,
+    id: `staged-${summary.id}`,
+    isSyncing: false,
+    jobId: null,
+    masterSyncedValues: fieldValues,
+    ocrExtractedValues: fieldValues,
+    ocrStatus: status === 'OCR' ? 'complete' : 'idle',
+    previewUrl: null,
+    rawOcrJson: Array.isArray(summary.fields) ? summary.fields : {},
+    rawOcrText: '',
+    restoredFromServer: true,
+    stageFileId: summary.id,
+    status: backendStatusToQueueStatus(status),
+    syncingField: null,
+  }
+}
+
+const countDraftGroups = (
+  drafts: StageFileSummary[],
+  repositoryFields: RepositoryField[] = [],
+) => {
+  let waiting = 0
+  let inProgress = 0
+  for (const summary of drafts) {
+    const queueStatus = backendStatusToQueueStatus(
+      (summary.status || 'OCR') as StageFileStatus,
+    )
+    if (queueStatus === 'ready') {
+      const fieldValues = mapOcrResponseToFieldValues(
+        summary,
+        repositoryFields,
+        summary.name,
+      )
+      if (hasMissingMandatoryFields(fieldValues, repositoryFields)) {
+        inProgress += 1
+      } else {
+        waiting += 1
+      }
+    } else if (queueStatus !== 'indexed') {
+      inProgress += 1
+    }
+  }
+  return { inProgress, total: waiting + inProgress, waiting }
+}
+
+const countQueueDraftGroups = (
+  entries: QueuedUploadFile[],
+  repositoryFields: RepositoryField[],
+) => {
+  let waiting = 0
+  let inProgress = 0
+  for (const entry of entries) {
+    if (entry.status === 'indexed') continue
+    if (isDraftReadyForExport(entry, repositoryFields)) waiting += 1
+    else inProgress += 1
+  }
+  return { inProgress, total: waiting + inProgress, waiting }
 }
 
 const fileFingerprint = (file: File) =>
@@ -704,6 +840,16 @@ export default function Upload({
   const [openFileId, setOpenFileId] = useState<string | null>(null)
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
   const [isRestoringQueue, setIsRestoringQueue] = useState(false)
+  const [draftCounts, setDraftCounts] = useState({
+    inProgress: 0,
+    total: 0,
+    waiting: 0,
+  })
+  const [isLoadingDraftCount, setIsLoadingDraftCount] = useState(false)
+  const [viewingDrafts, setViewingDrafts] = useState(false)
+  const [queueListTab, setQueueListTab] = useState<'uploading' | 'export'>(
+    'export',
+  )
   const [isDeletingStageFile, setIsDeletingStageFile] = useState(false)
   const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
   const [backConfirmOpen, setBackConfirmOpen] = useState(false)
@@ -716,6 +862,32 @@ export default function Upload({
       return (a.orderId ?? 0) - (b.orderId ?? 0)
     })
   }, [repositoryData?.fields])
+
+  const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
+
+  useEffect(() => {
+    if (!activeRepositoryId || queue.length > 0) return
+    let cancelled = false
+
+    const loadCount = async () => {
+      setIsLoadingDraftCount(true)
+      try {
+        const drafts = await collectDraftStageFiles(activeRepositoryId)
+        if (!cancelled) setDraftCounts(countDraftGroups(drafts, repositoryFields))
+      } catch {
+        if (!cancelled) {
+          setDraftCounts({ inProgress: 0, total: 0, waiting: 0 })
+        }
+      } finally {
+        if (!cancelled) setIsLoadingDraftCount(false)
+      }
+    }
+
+    void loadCount()
+    return () => {
+      cancelled = true
+    }
+  }, [activeRepositoryId, queue.length, repositoryFields])
 
   const activeEntry = useMemo(
     () => queue.find((entry) => entry.id === openFileId) ?? null,
@@ -1179,8 +1351,11 @@ export default function Upload({
             )
             if (matchedRepoField) {
               const key = getFieldKey(matchedRepoField)
-              ocrExtractedValues[key] = field.value ?? ''
-              fieldValues[key] = field.value ?? ''
+              const nextValue = isBlankFieldValue(field.value)
+                ? ''
+                : String(field.value ?? '')
+              ocrExtractedValues[key] = nextValue
+              fieldValues[key] = nextValue
             }
           })
         }
@@ -1433,13 +1608,20 @@ export default function Upload({
 
       const remaining = queue.filter((item) => item.id !== id)
       setQueue(remaining)
+      if (viewingDrafts) {
+        setDraftCounts(countQueueDraftGroups(remaining, repositoryFields))
+      }
 
       if (openFileId === id) {
-        const nextOpen =
-          remaining.find((item) => item.status !== 'indexed') ??
-          remaining[0] ??
-          null
-        setOpenFileId(nextOpen ? nextOpen.id : null)
+        if (viewingDrafts) {
+          setOpenFileId(null)
+        } else {
+          const nextOpen =
+            remaining.find((item) => item.status !== 'indexed') ??
+            remaining[0] ??
+            null
+          setOpenFileId(nextOpen ? nextOpen.id : null)
+        }
       }
       setDeleteStageConfirmOpen(false)
 
@@ -1806,8 +1988,8 @@ export default function Upload({
 
   const validateMandatoryFieldsFor = (entry: QueuedUploadFile) => {
     const missingField = repositoryFields.find((field) => {
-      const value = entry.fieldValues[getFieldKey(field)]
-      return field.isMandatory && !String(value ?? '').trim()
+      if (!field.isMandatory) return false
+      return isBlankFieldValue(entry.fieldValues[getFieldKey(field)])
     })
 
     if (missingField) {
@@ -1826,7 +2008,7 @@ export default function Upload({
     if (!activeEntry) return 0
     return repositoryFields.filter((field) => {
       const value = activeEntry.fieldValues[getFieldKey(field)]
-      return Boolean(String(value ?? '').trim())
+      return !isBlankFieldValue(value)
     }).length
   }, [repositoryFields, activeEntry])
 
@@ -1890,7 +2072,17 @@ export default function Upload({
           variant: 'success',
         })
         await onSuccess?.()
-        onBack?.()
+
+        if (viewingDrafts) {
+          setQueue((prev) => {
+            const remaining = prev.filter((item) => item.id !== id)
+            setDraftCounts(countQueueDraftGroups(remaining, repositoryFields))
+            return remaining
+          })
+          setOpenFileId(null)
+        } else {
+          onBack?.()
+        }
 
         return data
       } catch (error: any) {
@@ -1915,6 +2107,7 @@ export default function Upload({
       updateEntry,
       onSuccess,
       onBack,
+      viewingDrafts,
     ],
   )
 
@@ -1922,11 +2115,6 @@ export default function Upload({
     (entry) => entry.status === 'indexed',
   ).length
   const allIndexed = queue.length > 0 && indexedCount === queue.length
-  const waitingCount = queue.filter(
-    (entry) => entry.status === 'queued' || entry.status === 'analyzing',
-  ).length
-  const readyCount = queue.filter((entry) => entry.status === 'ready').length
-  const errorCount = queue.filter((entry) => entry.status === 'error').length
 
   const displayQueueRank: Record<QueuedFileStatus, number> = {
     analyzing: 1,
@@ -1944,6 +2132,24 @@ export default function Upload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [queue],
   )
+  const uploadingQueue = useMemo(
+    () =>
+      sortedQueueForDisplay.filter(
+        (entry) =>
+          entry.status !== 'indexed' &&
+          !isDraftReadyForExport(entry, repositoryFields),
+      ),
+    [repositoryFields, sortedQueueForDisplay],
+  )
+  const exportQueue = useMemo(
+    () =>
+      sortedQueueForDisplay.filter((entry) =>
+        isDraftReadyForExport(entry, repositoryFields),
+      ),
+    [repositoryFields, sortedQueueForDisplay],
+  )
+  const visibleQueue =
+    queueListTab === 'uploading' ? uploadingQueue : exportQueue
 
   const isVerticalQueueLayout = true
 
@@ -2317,36 +2523,109 @@ export default function Upload({
     updateEntry(activeEntry.id, { activeTab: tab })
   }
 
+  const handleOpenDraftFiles = async () => {
+    if (!activeRepositoryId) {
+      showToast({
+        message: t`Repository ID is missing. Cannot run OCR.`,
+        variant: 'error',
+      })
+      return
+    }
+
+    setIsRestoringQueue(true)
+    try {
+      const drafts = await collectDraftStageFiles(activeRepositoryId)
+      setDraftCounts(countDraftGroups(drafts, repositoryFields))
+      if (!drafts.length) {
+        showToast({
+          message: t`No draft files to review.`,
+          variant: 'info',
+        })
+        return
+      }
+      const entries = drafts.map((summary) =>
+        draftSummaryToQueueEntry(summary, repositoryFields),
+      )
+      const hasReady = entries.some((entry) =>
+        isDraftReadyForExport(entry, repositoryFields),
+      )
+      setQueueListTab(hasReady ? 'export' : 'uploading')
+      setViewingDrafts(true)
+      setOpenFileId(null)
+      setQueue(entries)
+    } catch {
+      showToast({
+        message: t`Unable to load draft files.`,
+        variant: 'error',
+      })
+    } finally {
+      setIsRestoringQueue(false)
+    }
+  }
+
+  const handleOpenQueuedFile = (id: string) => {
+    setOpenFileId(id)
+    const entry = queueRef.current.find((item) => item.id === id)
+    if (!entry?.restoredFromServer || !entry.stageFileId) return
+    if (loadedStageFileIdsRef.current.has(entry.stageFileId)) return
+    loadedStageFileIdsRef.current.add(entry.stageFileId)
+    void loadAndPopulateFields(entry)
+  }
+
   // In vertical mode, opening a file replaces the list with a dedicated
   // review "page" (see the header Back button) rather than showing the
   // list and the review panel stacked together. With no file open, the
   // list itself fills the available screen height with its own scroll.
   const showQueueList = !(isVerticalQueueLayout && activeEntry)
   const isListOnlyPage = isVerticalQueueLayout && !activeEntry
+  const draftFileCount = exportQueue.length + uploadingQueue.length
 
   const queueStrip = queue.length > 0 && showQueueList && (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-2xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm',
+        'flex flex-col gap-2 rounded-2xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm sm:p-4',
         isListOnlyPage && 'min-h-0 flex-1',
       )}
     >
-      <div className='flex flex-wrap items-center justify-between gap-2'>
-        <div className='flex flex-wrap items-center gap-1.5 text-xs font-medium text-[var(--gray-10)]'>
-          <span className='font-semibold text-[var(--gray-13)]'>
-            {t`${queue.length} files`}
-          </span>
-          {waitingCount > 0 && <span>{t`· ${waitingCount} analyzing`}</span>}
-          {readyCount > 0 && <span>{t`· ${readyCount} ready`}</span>}
-          {indexedCount > 0 && <span>{t`· ${indexedCount} indexed`}</span>}
-          {errorCount > 0 && (
-            <span className='font-semibold text-[var(--red-10)]'>
-              {t`· ${errorCount} failed`}
-            </span>
-          )}
+      <div className='relative flex items-center justify-between gap-4 border-b border-[var(--gray-3)] px-1 pt-1'>
+        <div className='flex min-w-0 flex-1 items-center gap-6 sm:gap-8'>
+          {(
+            [
+              {
+                count: exportQueue.length,
+                id: 'export' as const,
+                label: t`Ready to review`,
+              },
+              {
+                count: uploadingQueue.length,
+                id: 'uploading' as const,
+                label: t`In progress`,
+              },
+            ] as const
+          ).map((tab) => {
+            const isSelected = queueListTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                className={cn(
+                  'relative flex shrink-0 items-center pb-3 text-sm font-semibold whitespace-nowrap transition-colors',
+                  isSelected
+                    ? 'text-[var(--gray-13)]'
+                    : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
+                )}
+                type='button'
+                onClick={() => setQueueListTab(tab.id)}
+              >
+                {tab.label} ({tab.count})
+                {isSelected ? (
+                  <span className='absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-[var(--primary-9)]' />
+                ) : null}
+              </button>
+            )
+          })}
         </div>
 
-        <div className='flex shrink-0 items-center gap-1.5'>
+        <div className='mb-2 flex shrink-0 items-center'>
           <Tooltip
             content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
             position='top'
@@ -2374,19 +2653,41 @@ export default function Upload({
             isListOnlyPage ? 'min-h-0 flex-1' : 'max-h-[320px]',
           )}
         >
-          {sortedQueueForDisplay.map((entry) => (
-            <UploadQueueFileCard
-              className='w-full'
-              entry={entry}
-              isOpen={entry.id === openFileId}
-              key={entry.id}
-              onOpen={setOpenFileId}
-              onRemove={handleRemoveFromQueue}
-              onRetryOcr={handleRetryOcr}
-            />
-          ))}
+          {visibleQueue.length === 0 ? (
+            <p className='px-3 py-6 text-center text-xs font-medium text-[var(--gray-10)]'>
+              {queueListTab === 'uploading'
+                ? t`No files are processing, and none are missing required fields.`
+                : t`No files are ready to export yet. Files missing required fields are listed under In progress.`}
+            </p>
+          ) : (
+            visibleQueue.map((entry) => (
+              <UploadQueueFileCard
+                className='w-full'
+                entry={entry}
+                isOpen={entry.id === openFileId}
+                key={entry.id}
+                missingMandatoryFields={hasMissingMandatoryFields(
+                  entry.fieldValues,
+                  repositoryFields,
+                )}
+                onOpen={handleOpenQueuedFile}
+                onRemove={handleRemoveFromQueue}
+                onRetryOcr={handleRetryOcr}
+              />
+            ))
+          )}
         </div>
       )}
+
+      {!isQueueCollapsed ? (
+        <div className='flex justify-end px-3 pt-1 pb-3'>
+          <span className='text-xs font-semibold text-[var(--gray-11)]'>
+            {visibleQueue.length === 1
+              ? t`1 file`
+              : t`${visibleQueue.length} files`}
+          </span>
+        </div>
+      ) : null}
     </div>
   )
 
@@ -2428,31 +2729,31 @@ export default function Upload({
             </div>
           </div>
         </div>
-        <AnimateFadeIn className='relative flex h-full flex-col items-center justify-center overflow-y-auto bg-surface-muted px-4 py-4 sm:px-6 lg:px-8'>
-          <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
-            <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
-              <AnimateSlideUp className='space-y-1 text-center'>
-                <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-                  {t`Upload`}{' '}
-                  <span className='text-[var(--primary-9)]'>{t`Files`}</span>
-                </h1>
-                <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
-                  {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
-                </p>
-              </AnimateSlideUp>
+        <AnimateFadeIn className='relative flex h-full flex-col items-stretch overflow-y-auto bg-surface-muted px-4 py-6 sm:px-6 lg:px-8'>
+          <div className='mx-auto flex w-full max-w-5xl flex-col gap-6'>
+            <AnimateSlideUp className='space-y-1 text-center'>
+              <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
+                {t`Upload`}{' '}
+                <span className='text-[var(--primary-9)]'>{t`Files`}</span>
+              </h1>
+              <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
+                {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
+              </p>
+            </AnimateSlideUp>
 
+            <div className='grid w-full grid-cols-1 items-stretch gap-6 md:grid-cols-3'>
               <AnimateSlideUp
-                className='relative z-10 w-full max-w-3xl'
+                className='relative z-10 h-full md:col-span-2'
                 delay={0.1}
               >
-                <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
+                <div className='group relative h-full overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
                   <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
                     <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
                   </div>
 
                   <div
                     className={[
-                      'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
+                      'relative z-10 flex h-full min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out',
                       isDragOver
                         ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
                         : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
@@ -2500,9 +2801,57 @@ export default function Upload({
                   </div>
                 </div>
               </AnimateSlideUp>
+
+              <AnimateEntrancePop className='h-full' delay={0.15}>
+                <button
+                  className='group flex h-full w-full flex-col items-start rounded-xl border border-[var(--orange-4)] bg-[var(--orange-1)] p-5 text-left shadow-sm transition-all duration-300 hover:border-[var(--orange-6)] hover:shadow-md active:scale-[0.99]'
+                  type='button'
+                  onClick={() => {
+                    void handleOpenDraftFiles()
+                  }}
+                >
+                  <div className='flex w-full items-center gap-3'>
+                    <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-3)] text-[var(--orange-11)] transition-transform duration-300 group-hover:scale-110 2xl:size-10'>
+                      <Icon
+                        className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                        name='tabler:file-pencil'
+                      />
+                    </div>
+                    <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
+                      {t`Draft Files`}
+                    </h4>
+                    <span className='ml-auto rounded-full bg-[var(--orange-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--orange-11)]'>
+                      {isLoadingDraftCount ? '…' : draftCounts.total}
+                    </span>
+                  </div>
+                  <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
+                    {t`Open a saved file to review it and finish it.`}
+                  </p>
+                  <div className='mt-3 flex w-full flex-col gap-1.5'>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1 shrink-0 rounded-full bg-[var(--orange-9)]' />
+                        {t`Waiting for Export`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount ? '…' : draftCounts.waiting}
+                      </span>
+                    </div>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1 shrink-0 rounded-full bg-[var(--primary-9)]' />
+                        {t`In Progress`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount ? '…' : draftCounts.inProgress}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </AnimateEntrancePop>
             </div>
 
-            <div className='mt-4 grid w-full grid-cols-1 gap-6 md:grid-cols-3'>
+            <div className='grid w-full grid-cols-1 gap-6 md:grid-cols-3'>
               {[
                 {
                   color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
@@ -2523,7 +2872,7 @@ export default function Upload({
                   title: t`Any Format`,
                 },
               ].map((item, idx) => (
-                <AnimateEntrancePop delay={0.4 + idx * 0.1} key={idx}>
+                <AnimateEntrancePop delay={0.3 + idx * 0.1} key={item.icon}>
                   <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-5 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
                     <div className='flex items-center gap-3'>
                       <div
@@ -2576,6 +2925,34 @@ export default function Upload({
           onChange={(event) => handleInvoiceFiles(event.target.files)}
         />
 
+        {viewingDrafts && isListOnlyPage ? (
+          <div className='flex  shrink-0 items-center gap-3 rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-2.5 shadow-xs'>
+            <button
+              className='flex items-center gap-1.5 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:text-[var(--primary-11)] active:scale-95'
+              type='button'
+              onClick={() => {
+                setViewingDrafts(false)
+                setOpenFileId(null)
+                setQueue([])
+              }}
+            >
+              <Icon
+                className='size-4 text-[var(--gray-10)]'
+                name='lucide:arrow-left'
+              />
+              <span>{t`Back`}</span>
+            </button>
+            <div className='min-w-0 border-l border-[var(--gray-4)] pl-3'>
+              <p className='text-sm font-semibold text-[var(--gray-13)]'>
+                {t`Draft Files`}
+                <span className='ml-1 font-semibold text-[var(--gray-13)]'>
+                  ({draftFileCount})
+                </span>
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {queueStrip}
 
         {!activeEntry ? (
@@ -2603,6 +2980,8 @@ export default function Upload({
                   onClick={() => {
                     if (activeEntry && !allIndexed) {
                       setBackConfirmOpen(true)
+                    } else if (viewingDrafts) {
+                      setOpenFileId(null)
                     } else {
                       onBack()
                     }
@@ -3016,14 +3395,22 @@ export default function Upload({
         variant='danger'
         onCancel={() => {
           setBackConfirmOpen(false)
-          onBack()
+          if (viewingDrafts) {
+            setOpenFileId(null)
+          } else {
+            onBack()
+          }
         }}
         onConfirm={async () => {
           if (activeEntry) {
             await handleDeleteStageFile(activeEntry.id)
           }
           setBackConfirmOpen(false)
-          onBack()
+          if (viewingDrafts) {
+            setOpenFileId(null)
+          } else {
+            onBack()
+          }
         }}
       />
     </AnimateFadeIn>

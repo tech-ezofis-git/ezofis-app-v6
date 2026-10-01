@@ -354,9 +354,14 @@ const listStagedFiles = async ({
   mode = 'browse',
   repositoryId,
 }: ListStagedFilesParams) => {
-  const response: { data: StageFileSummary[] | null; error: string } = {
+  const response: {
+    data: StageFileSummary[] | null
+    error: string
+    totalItems: number
+  } = {
     data: null,
     error: '',
+    totalItems: 0,
   }
   try {
     const { data, status } = await axiosV6({
@@ -367,8 +372,20 @@ const listStagedFiles = async ({
     })
     if (status !== 200) throw new Error('invalid status code')
     const payload = data as Record<string, unknown> | StageFileSummary[]
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      typeof (payload as { meta?: { totalItems?: number } }).meta
+        ?.totalItems === 'number'
+    ) {
+      response.totalItems = (
+        payload as { meta: { totalItems: number } }
+      ).meta.totalItems
+    }
     if (Array.isArray(payload)) {
       response.data = payload
+      response.totalItems = payload.length
     } else if (
       payload &&
       typeof payload === 'object' &&
@@ -400,6 +417,9 @@ const listStagedFiles = async ({
       Array.isArray((payload as { content?: unknown }).content)
     ) {
       response.data = (payload as { content: StageFileSummary[] }).content
+    }
+    if (!response.totalItems && response.data) {
+      response.totalItems = response.data.length
     }
   } catch (e: unknown) {
     console.error(e)

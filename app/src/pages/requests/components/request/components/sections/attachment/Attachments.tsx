@@ -38,6 +38,7 @@ type Props = {
   showRelatedFinder?: boolean
   transactionId?: number | string
   workflowId?: number | string
+  onAttachmentsChanged?: () => void
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void
@@ -266,6 +267,7 @@ export default function Attachments({
   // Hidden for now; pass showRelatedFinder={true} to restore Find related documents.
   showRelatedFinder = false,
   workflowId,
+  onAttachmentsChanged,
   onClose,
   onOpenHistory,
   onOpenMailShare,
@@ -468,6 +470,7 @@ export default function Attachments({
         )
       } else {
         await refetch()
+        onAttachmentsChanged?.()
       }
     } catch (err) {
       console.error('Error uploading file:', err)
@@ -746,7 +749,10 @@ export default function Attachments({
             workflowId={
               workflowId != null ? Number(workflowId) || undefined : undefined
             }
-            onAttached={refetch}
+            onAttached={() => {
+              void refetch()
+              onAttachmentsChanged?.()
+            }}
           />
         ) : null}
 

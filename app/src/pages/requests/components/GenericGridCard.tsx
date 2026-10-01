@@ -5,6 +5,8 @@ import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import {
   extractPreviewValues,
   getGenericStageInfo,
@@ -57,6 +59,59 @@ interface Props {
 // fields are shown and how they're formatted — nothing here is
 // hardcoded to a specific workflow's field names.
 const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
+  const jobStatuses = requestStore((state) => state.jobStatuses)
+  const jobMappings = requestStore((state) => state.jobMappings)
+  const processingProcesses = requestStore((state) => state.processingProcesses)
+  const jobMessage = useMemo(() => {
+    const direct = resolveApAgentJobMessage(row)
+    if (direct) return direct
+
+    // List rows often lack apAgentJobId; match the in-flight Hangfire
+    // process by request number / instance id so the status text still shows.
+    const rowIds = new Set(
+      [
+        row?.id,
+        row?.processId,
+        row?.workflowInstanceId,
+        row?.instanceId,
+        row?.apAgentJobId,
+        row?.jobId,
+        row?.requestNo,
+        row?.reqNo,
+      ]
+        .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
+        .map(String),
+    )
+    if (rowIds.size === 0) return ''
+
+    for (const process of processingProcesses || []) {
+      const processIds = [
+        process.apAgentJobId,
+        process.jobId,
+        process.processId,
+        process.id,
+        process.instanceId,
+        process.requestNo,
+      ]
+        .filter(Boolean)
+        .map(String)
+      if (!processIds.some((id) => rowIds.has(id))) continue
+
+      const jobId = process.apAgentJobId || process.jobId
+      if (!jobId) continue
+      return (
+        resolveApAgentJobMessage({
+          ...row,
+          apAgentJobId: jobId,
+          id: process.processId || process.id || row?.id,
+          jobId,
+        }) || ''
+      )
+    }
+
+    return ''
+  }, [row, jobStatuses, jobMappings, processingProcesses])
+
   // Only show fields the workflow's Settings -> Configuration -> Field
   // Selection preview list opted into (matched by label, case/spacing
   // insensitive). No preview fields configured -> render nothing here,
@@ -146,7 +201,97 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row,
   )
 
-  const isAgentStage = Boolean(row?.stageType?.toUpperCase().includes('AGENT'))
+  // Only the Hangfire job-driven path uses the spinner-only card.
+  // Agent-stage rows without a job id keep the normal stage/title card.
+  const activeJobId = String(
+    row?.apAgentJobId ||
+      row?.jobId ||
+      processingProcesses?.find((p: any) => {
+        const ids = [
+          p.processId,
+          p.id,
+          p.instanceId,
+          p.requestNo,
+          p.apAgentJobId,
+        ]
+          .filter(Boolean)
+          .map(String)
+        return [
+          row?.id,
+          row?.processId,
+          row?.workflowInstanceId,
+          row?.instanceId,
+          row?.requestNo,
+          row?.reqNo,
+          row?.apAgentJobId,
+        ]
+          .filter(Boolean)
+          .map(String)
+          .some((id) => ids.includes(id))
+      })?.apAgentJobId ||
+      '',
+  ).trim()
+
+  const jobStatusForActive =
+    (activeJobId && jobStatuses?.[`job-${activeJobId}`]) ||
+    (activeJobId && jobStatuses?.[activeJobId]) ||
+    null
+
+  const isJobProcessing =
+    Boolean(activeJobId) &&
+    !jobStatusForActive?.isCompleted &&
+    (Boolean(row?.isProcessing) ||
+      Boolean(jobMessage) ||
+      Boolean(jobStatusForActive) ||
+      // Newly registered job — status not polled yet.
+      Boolean(activeJobId && row?.apAgentJobId))
+
+  // Prefer REQ-xxx — never the configured project/stage title.
+  const rawRequestNo = String(
+    (row?.formEntryId != null && String(row.formEntryId).trim() !== ''
+      ? `REQ-${row.formEntryId}`
+      : '') ||
+      row?.referenceNumber ||
+      extractGenericRequestNumber(row) ||
+      row?.requestNo ||
+      row?.reqNo ||
+      '',
+  ).trim()
+  const looksLikeRequestId =
+    Boolean(rawRequestNo) &&
+    rawRequestNo !== '-' &&
+    !/\s/.test(rawRequestNo) &&
+    rawRequestNo.length <= 40
+  const loadingId =
+    (looksLikeRequestId ? rawRequestNo : '') ||
+    (activeJobId ? `JOB-${activeJobId}` : '') ||
+    '…'
+
+  if (isJobProcessing) {
+    return (
+      <div
+        className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
+        onClick={() => onRowClick(row, 'Overview')}
+      >
+        <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-2'>
+          <Icon
+            className='size-4 animate-spin text-orange-9'
+            name='tabler:loader-2'
+          />
+        </div>
+        <span className='shrink-0 text-13 font-bold text-gray-13'>
+          {loadingId}
+        </span>
+        {jobMessage ? (
+          <div className='ml-auto flex min-w-0 max-w-[320px] shrink items-center justify-end pr-1'>
+            <span className='animate-pulse truncate text-right text-12 font-semibold text-[var(--orange-9)]'>
+              {jobMessage}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -156,29 +301,15 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div
         className={cn(
           'flex size-9 shrink-0 items-center justify-center rounded-full',
-          isAgentStage
-            ? 'bg-orange-2'
-            : isTerminal
-              ? 'bg-green-2'
-              : 'bg-orange-2',
+          isTerminal ? 'bg-green-2' : 'bg-orange-2',
         )}
       >
         <Icon
           className={cn(
             'size-4',
-            isAgentStage
-              ? 'animate-spin text-orange-9'
-              : isTerminal
-                ? 'text-green-9'
-                : 'text-orange-9',
+            isTerminal ? 'text-green-9' : 'text-orange-9',
           )}
-          name={
-            isAgentStage
-              ? 'tabler:loader-2'
-              : isTerminal
-                ? 'tabler:check'
-                : 'tabler:clock'
-          }
+          name={isTerminal ? 'tabler:check' : 'tabler:clock'}
         />
       </div>
 
@@ -245,7 +376,9 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
               <div className='flex items-center gap-1 text-11 text-gray-9'>
                 <Icon className='size-3 text-gray-7' name='tabler:calendar' />
                 <span>
-                  {dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}
+                  {dayjs(parseUtcDate(startedAt)).format(
+                    'DD-MMM-YYYY hh:mm A',
+                  )}
                 </span>
               </div>
             </Tooltip>

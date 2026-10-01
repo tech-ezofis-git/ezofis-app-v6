@@ -225,8 +225,9 @@ export const transformProcess = (
     )
   })()
   const isAgentProcessing =
-    (process.stageType === 'AP_AGENT' && !hasAgentDecision) ||
-    (isAgentStage && !hasStageAgentPayload && !process.completedAtUtc)
+    Boolean(process.apAgentJobId || process.jobId) &&
+    ((process.stageType === 'AP_AGENT' && !hasAgentDecision) ||
+      (isAgentStage && !hasStageAgentPayload && !process.completedAtUtc))
 
   if (parsedAgentResponse) {
     parsedAgentResponse = {
