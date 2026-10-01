@@ -4,9 +4,12 @@ import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
+import HoverExpandableText from './HoverExpandableText'
 import {
   extractPreviewValues,
   getGenericStageInfo,
@@ -59,6 +62,10 @@ interface Props {
 // fields are shown and how they're formatted — nothing here is
 // hardcoded to a specific workflow's field names.
 const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
+  const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
+  const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
+
   const jobStatuses = requestStore((state) => state.jobStatuses)
   const jobMappings = requestStore((state) => state.jobMappings)
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -143,7 +150,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     const agentData =
       row?._agentResponse || row?._agentData?.[0] || row?._agentData || {}
     const qualify = row?.qualifyAgentResponse?.qualifier_result
-    return String(
+    const raw = String(
       agentData?.ai_insight ||
         agentData?.aiInsight ||
         agentData?.ai_insect ||
@@ -152,6 +159,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         qualify?.aiInsight ||
         '',
     ).trim()
+    return raw.replace(/^[✨\u2728\u2729\u2730\s]+/, '').trim()
   }, [row])
 
   const isDocumentApproval = workflow?.name === 'Document Approval'
@@ -316,9 +324,12 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div className='min-w-0 flex-1 overflow-hidden'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
         <div className='flex max-w-full min-w-0 flex-wrap items-center gap-2'>
-          <span className='shrink-0 text-13 font-bold text-gray-13'>
+          <h3
+            className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+            style={{ fontWeight: 500 }}
+          >
             {requestNo}
-          </span>
+          </h3>
           <GenericStagePill
             currentLabel={currentLabel}
             isTerminal={isTerminal}
@@ -341,21 +352,42 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
             ))}
           </div>
         )}
+        {/* AI Insight stacked inside left column when playground/chat/sidebar is open */}
+        {aiInsight && isSidebarOpen && (
+          <div className='mt-1 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
+            <AiBrandIcon
+              className='size-3.5 shrink-0'
+              variant='outline-purple'
+            />
+            <HoverExpandableText
+              className='text-[12px] font-medium text-[var(--primary-9)]'
+              expandStyle='inline'
+              maxLines={2}
+              normalMaxWidthClass='max-w-[180px] sm:max-w-[240px]'
+              text={aiInsight}
+            />
+          </div>
+        )}
       </div>
 
-      <div className='hidden w-[240px] shrink-0 items-center justify-center px-3 md:flex'>
-        {aiInsight ? (
-          <div className='flex min-w-0 max-w-full items-center gap-1.5'>
+      {/* AI Insight Line - Centered in middle of row (visible ONLY when sidebar is closed) */}
+      {aiInsight && !isSidebarOpen && (
+        <div className='hidden min-w-0 flex-1 items-center justify-center px-4 md:flex'>
+          <div className='flex min-w-0 items-center gap-1.5'>
             <AiBrandIcon
               className='size-3.5 shrink-0 text-[var(--primary-9)]'
               variant='outline-purple'
             />
-            <span className='truncate text-12 font-medium text-gray-11'>
-              {aiInsight}
-            </span>
+            <HoverExpandableText
+              className='text-[13px] font-medium text-[var(--gray-11)]'
+              expandStyle='inline'
+              maxLines={2}
+              normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+              text={aiInsight}
+            />
           </div>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       {/* Right Side: Raised By & Date + Running Time from Last Action */}
       <div className='hidden shrink-0 items-center gap-5 text-12 md:flex'>

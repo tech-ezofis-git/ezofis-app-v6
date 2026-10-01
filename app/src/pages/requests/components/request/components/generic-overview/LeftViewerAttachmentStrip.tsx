@@ -37,7 +37,7 @@ const LeftViewerAttachmentStrip = ({
   onSelect,
 }: LeftViewerAttachmentStripProps) => {
   const { t } = useLingui()
-  if (!attachments.length) return null
+  if (attachments.length <= 1) return null
 
   // Keep the selected file among the 3 visible cards when it falls past the first three.
   let visible = attachments.slice(0, MAX_VISIBLE)

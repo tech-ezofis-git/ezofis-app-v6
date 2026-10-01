@@ -1731,11 +1731,19 @@ const getBaseColumns = (
       renderCell: (_row: any) => {
         const agentData =
           _row._agentResponse || _row._agentData?.[0] || _row._agentData || {}
-        const aiInsight =
+        const qualify = _row?.qualifyAgentResponse?.qualifier_result
+        const rawInsight = String(
           agentData?.ai_insight ||
-          agentData?.aiInsight ||
-          agentData?.ai_insect ||
-          ''
+            agentData?.aiInsight ||
+            agentData?.ai_insect ||
+            qualify?.['AI Insight'] ||
+            qualify?.['Ai Insight'] ||
+            qualify?.aiInsight ||
+            '',
+        ).trim()
+        const aiInsight = rawInsight
+          .replace(/^[✨\u2728\u2729\u2730\s]+/, '')
+          .trim()
         if (!aiInsight) {
           return (
             <span className='text-[13px] font-semibold text-[var(--gray-9)]'>

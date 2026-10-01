@@ -941,6 +941,7 @@ const Request = ({
   }
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [activeAction, setActiveAction] = useState<string | null>(null)
   const [rightView, setRightView] = useState<
     'overview' | 'history' | 'attachments' | 'comments'
   >('overview')
@@ -1735,6 +1736,7 @@ const Request = ({
   }, [hasAgentData, activeTabValue])
 
   const handleMoveNext = async (action: string) => {
+    setActiveAction(action)
     const checklistItems: { id: string; label: string; required: boolean }[] =
       Array.isArray(currentBlockSettings.checklistItems)
         ? currentBlockSettings.checklistItems
@@ -1743,6 +1745,7 @@ const Request = ({
       (item) => item.required && !checklistChecked[item.id],
     )
     if (missingChecklistItem) {
+      setActiveAction(null)
       showToast({
         message: t`Please complete "${missingChecklistItem.label}" before continuing.`,
         variant: 'info',
@@ -1753,6 +1756,7 @@ const Request = ({
       currentBlockSettings.documentRequired &&
       genericAttachments.length === 0
     ) {
+      setActiveAction(null)
       showToast({
         message: t`Please attach at least one file before continuing.`,
         variant: 'info',
@@ -1760,6 +1764,7 @@ const Request = ({
       return
     }
     if (currentBlockSettings.userSignature && !signatureConfirmed) {
+      setActiveAction(null)
       showToast({
         message: t`Please confirm your signature before continuing.`,
         variant: 'info',
@@ -1778,6 +1783,7 @@ const Request = ({
         return val === undefined || val === null || val === ''
       })
       if (missingField) {
+        setActiveAction(null)
         showToast({
           message: t`Please complete all required fields before continuing.`,
           variant: 'info',
@@ -1969,13 +1975,16 @@ const Request = ({
       console.error(e)
     } finally {
       setSubmitting(false)
+      setActiveAction(null)
       delete (window as any)._selectedForwardUserId
       delete (window as any)._forwardComments
     }
   }
 
   const handleVerifier = async (action: string) => {
+    setActiveAction(action)
     if (action === 'Forward' && !(window as any)._selectedForwardUserId) {
+      setActiveAction(null)
       return
     }
 
@@ -2083,6 +2092,7 @@ const Request = ({
       })
     } finally {
       setSubmitting(false)
+      setActiveAction(null)
     }
   }
 
@@ -2331,6 +2341,7 @@ const Request = ({
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
+          activeAction={activeAction}
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}

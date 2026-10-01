@@ -18,6 +18,7 @@ import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 
 interface HeaderProps {
+  activeAction?: string | null
   isLoading: boolean
   raisedAt: any
   requestNo: string
@@ -146,6 +147,7 @@ const formatRaisedDate = (dateStr?: string | number | Date) => {
 
 const Header: React.FC<HeaderProps> = ({
   actions,
+  activeAction,
   agentData,
   approveLoading,
   assigneeLabel,
@@ -182,6 +184,15 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+  const [localActiveAction, setLocalActiveAction] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!approveLoading) {
+      setLocalActiveAction(null)
+    }
+  }, [approveLoading])
+
+  const effectiveActiveAction = activeAction ?? localActiveAction
 
   const raisedByDisplay =
     typeof raisedBy === 'object' && raisedBy
@@ -671,38 +682,56 @@ const Header: React.FC<HeaderProps> = ({
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
+
+                const actionVal = String(action?.value || action?.label || '')
+                const isThisAction = effectiveActiveAction
+                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  : true
+                const isThisActionLoading = Boolean(
+                  (action?.loading !== undefined ? action.loading : approveLoading) &&
+                    isThisAction,
+                )
+                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isDisabled = Boolean(
+                  isProcessing ||
+                    action?.disabled ||
+                    isOtherActionLoading,
+                )
+
                 const btn = (
                   <Button
                     color={btnColor}
+                    disabled={isDisabled}
                     icon={defaultIcon}
                     iconClass='size-4'
                     label={action?.label}
-                    loading={approveLoading}
+                    loading={isThisActionLoading}
                     size='md'
                     variant='subtle'
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
                     )}
-                    onClick={
-                      action.onClick || (() => onApprove?.(action?.value))
-                    }
+                    onClick={(e: any) => {
+                      if (isDisabled || approveLoading) return
+                      setLocalActiveAction(actionVal)
+                      if (action.onClick) {
+                        action.onClick(e)
+                      } else {
+                        onApprove?.(action?.value || action?.label)
+                      }
+                    }}
                   />
                 )
 
                 return (
                   <div
                     className='flex items-center gap-1.5'
-                    key={action?.value}
+                    key={action?.value || action?.label}
                   >
                     {action.renderWrapper
-                      ? (() => {
-                          console.log(
-                            'Rendering custom wrapper for action:',
-                            action.value,
-                          )
-                          return action.renderWrapper(btn)
-                        })()
+                      ? action.renderWrapper(btn)
                       : btn}
                   </div>
                 )
@@ -1539,15 +1568,22 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex items-center gap-2'>
               {isEditing && (
                 <Button
-                  className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
+                  className={cn(
+                    'h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md',
+                    approveLoading && effectiveActiveAction !== 'Save' && 'pointer-events-none opacity-50 cursor-not-allowed',
+                  )}
                   color='primary'
+                  disabled={Boolean(isProcessing || (approveLoading && effectiveActiveAction !== 'Save'))}
                   icon='lucide:save'
                   iconClass='size-4'
                   label={t`Save`}
-                  loading={approveLoading}
+                  loading={Boolean(approveLoading && (effectiveActiveAction === 'Save' || !effectiveActiveAction))}
                   size='md'
                   variant='solid'
-                  onClick={() => onApprove?.('Save')}
+                  onClick={() => {
+                    setLocalActiveAction('Save')
+                    onApprove?.('Save')
+                  }}
                 />
               )}
 
@@ -1601,38 +1637,55 @@ const Header: React.FC<HeaderProps> = ({
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
 
+                const actionVal = String(action?.value || action?.label || '')
+                const isThisAction = effectiveActiveAction
+                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  : true
+                const isThisActionLoading = Boolean(
+                  (action?.loading !== undefined ? action.loading : approveLoading) &&
+                    isThisAction,
+                )
+                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isDisabled = Boolean(
+                  isProcessing ||
+                    action?.disabled ||
+                    isOtherActionLoading,
+                )
+
                 const btn = (
                   <Button
                     color={btnColor}
+                    disabled={isDisabled}
                     icon={defaultIcon}
                     iconClass='size-4'
                     label={action?.label}
-                    loading={approveLoading}
+                    loading={isThisActionLoading}
                     size='md'
                     variant={btnVariant}
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
                     )}
-                    onClick={
-                      action.onClick || (() => onApprove?.(action?.value))
-                    }
+                    onClick={(e: any) => {
+                      if (isDisabled || approveLoading) return
+                      setLocalActiveAction(actionVal)
+                      if (action.onClick) {
+                        action.onClick(e)
+                      } else {
+                        onApprove?.(action?.value || action?.label)
+                      }
+                    }}
                   />
                 )
 
                 return (
                   <div
                     className='flex items-center gap-1.5'
-                    key={action?.value}
+                    key={action?.value || action?.label}
                   >
                     {action.renderWrapper
-                      ? (() => {
-                          console.log(
-                            'Rendering custom wrapper for action:',
-                            action.value,
-                          )
-                          return action.renderWrapper(btn)
-                        })()
+                      ? action.renderWrapper(btn)
                       : btn}
                   </div>
                 )
