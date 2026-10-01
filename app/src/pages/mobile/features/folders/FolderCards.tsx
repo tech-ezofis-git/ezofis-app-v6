@@ -1,4 +1,5 @@
 import type { FileItem, FolderItem } from '@/pages/folders/types/folderTypes'
+import { formatFolderModifiedDate } from '@/pages/folders/utils/folderExplorerUtils'
 import cn from '@/utils/cn'
 import { Icon } from '../../components/primitives/Icon'
 import {
@@ -14,25 +15,8 @@ import {
 } from './fileCardDisplay'
 
 const formatFolderDate = (value?: string) => {
-  if (!value) return ''
-  const trimmed = value.trim()
-  if (!trimmed || trimmed === '-') return ''
-
-  const raw = trimmed.replace(/^modified\s+/i, '')
-  const date = new Date(raw)
-  if (Number.isNaN(date.getTime())) {
-    // Already human-readable (e.g. "Jul 20, 2026")
-    if (!/T\d{2}:/.test(raw)) return raw
-    return raw.slice(0, 10)
-  }
-
-  return date
-    .toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-    .replace(/\//g, '-')
+  const formatted = formatFolderModifiedDate(value)
+  return formatted === '-' ? '' : formatted
 }
 
 const getFolderMeta = (folder: FolderItem) => {

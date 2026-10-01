@@ -33,7 +33,9 @@ import type {
 } from '../types/folderTypes'
 import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
+  formatCreationTimestampDisplay,
   formatRepositoryDateDisplay,
+  isCreationTimestampKey,
   isRepositoryDateDataType,
 } from '../utils/folderExplorerUtils'
 import { matchesAnyFilterValue } from '../utils/multiFilterValues'
@@ -238,6 +240,10 @@ const getDisplayValue = (
   const normalizedType = String(dataType || '').toLowerCase()
   const normalizedKey = sqlColumnName.toLowerCase()
 
+  if (isCreationTimestampKey(sqlColumnName)) {
+    return formatCreationTimestampDisplay(value)
+  }
+
   if (
     isRepositoryDateDataType(dataType) ||
     normalizedType === 'date' ||
@@ -277,6 +283,7 @@ const getColumnWidth = (key: string, label?: string, dataType?: string) => {
 
   if (key === '__name') return 260
   if (key === '__status') return 130
+  if (isCreationTimestampKey(key)) return 200
   if (isTableColumnType(dataType)) return 130
   if (normalizedType === 'date' || normalizedType === 'datetime') return 150
   if (

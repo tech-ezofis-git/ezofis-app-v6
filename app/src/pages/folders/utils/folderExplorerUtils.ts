@@ -1,4 +1,8 @@
 import dayjs from 'dayjs'
+import {
+  formatUtcToLocalDate,
+  formatUtcToLocalDateTime,
+} from '@/utils/utcDate'
 import type { FolderItem, TreeNode } from '../types/folderTypes'
 import {
   decodeRepositoryNodeId,
@@ -18,7 +22,7 @@ export type FolderFilterOption = { label: string; value: string }
 
 export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
 
-/** Display folder modified timestamps as local DD-MM-YYYY (e.g. 23-07-2026). */
+/** Display folder modified timestamps as local date, with time when present. */
 export function formatFolderModifiedDate(value?: string | null) {
   const raw = String(value || '').trim()
   if (!raw || raw === '-') return '-'
@@ -27,7 +31,35 @@ export function formatFolderModifiedDate(value?: string | null) {
   const parsed = dayjs(cleaned)
   if (!parsed.isValid()) return raw
 
-  return parsed.format('DD-MMM-YYYY')
+  const hasTime = /(?:T|\s)\d{1,2}:\d{2}/.test(cleaned)
+  return parsed.format(hasTime ? 'DD-MMM-YYYY hh:mm A' : 'DD-MMM-YYYY')
+}
+
+const CREATION_TIMESTAMP_KEYS = new Set([
+  'createdat',
+  'createdatutc',
+  'uploadedat',
+  'uploadedatutc',
+])
+
+/** True for createdAt / uploadedAt (and UTC variants) — file creation time. */
+export function isCreationTimestampKey(key?: string | null) {
+  const normalized = String(key || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+  return CREATION_TIMESTAMP_KEYS.has(normalized)
+}
+
+/** Local date and time for a creation timestamp. Date-only values stay date-only. */
+export function formatCreationTimestampDisplay(value?: unknown) {
+  if (value === undefined || value === null || value === '') return '-'
+  const raw = String(value).trim()
+  const hasTime = /(?:T|\s)\d{1,2}:\d{2}/.test(raw)
+  const formatted = hasTime
+    ? formatUtcToLocalDateTime(value, '')
+    : formatUtcToLocalDate(value, '')
+  return formatted || '-'
 }
 
 /**

@@ -38,8 +38,10 @@ import {
 } from '../api/folderApi'
 import {
   FOLDER_FILES_SECTION_MAX_FOLDERS,
+  formatCreationTimestampDisplay,
   formatFolderModifiedDate,
   formatRepositoryDateDisplay,
+  isCreationTimestampKey,
   isRepositoryDateDataType,
 } from '../utils/folderExplorerUtils'
 import {
@@ -239,6 +241,10 @@ const getFileColumnSizing = (
     return { maxSize: 72, minSize: 56, size: 64 }
   }
 
+  if (isCreationTimestampKey(column.key)) {
+    return { maxSize: 240, minSize: 180, size: 200 }
+  }
+
   const dataType = String(column.dataType || '').toLowerCase()
   const key = column.key.toLowerCase()
   const label = column.label || column.key
@@ -289,6 +295,10 @@ const getRepositoryFieldValue = (
     folderContextFilters,
   )
   if (value === undefined || value === null || value === '') return '-'
+
+  if (isCreationTimestampKey(sqlColumnName)) {
+    return formatCreationTimestampDisplay(value)
+  }
 
   const looksLikeDateKey = String(sqlColumnName || '')
     .toLowerCase()
