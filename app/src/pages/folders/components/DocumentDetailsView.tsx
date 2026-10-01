@@ -2825,7 +2825,10 @@ export function DocumentDetailsView({
                                   item.fileSize,
                                 )
                                 const dateLabel = item.createdAtUtc
-                                  ? formatUtcToLocalDate(item.createdAtUtc, '')
+                                  ? formatUtcToLocalDateTime(
+                                      item.createdAtUtc,
+                                      '',
+                                    )
                                   : ''
                                 const repoName =
                                   item.repositoryName &&

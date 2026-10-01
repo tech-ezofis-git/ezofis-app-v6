@@ -8,6 +8,11 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import {
+  formatUtcToLocalDate,
+  formatUtcToLocalDateTime,
+  parseUtcDate,
+} from '@/utils/utcDate'
 import { StagedFileExportButton } from '../StagedFileDeleteButton'
 import type { QueuedUploadFile } from './uploadQueueTypes'
 
@@ -235,23 +240,36 @@ export default function UploadQueueFileCard({
   }
 }
 
-function formatCreatedAt(value?: string) {
+export function formatCreatedAt(value?: string) {
   if (!value) return ''
   const trimmed = value.trim()
-  const dayMonthYear = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})/)
-  if (dayMonthYear) {
-    return `${dayMonthYear[1]}-${dayMonthYear[2]}-${dayMonthYear[3]}`
+  if (!trimmed) return ''
+
+  const hasTime = /(?:T|\s)\d{1,2}:\d{2}/.test(trimmed)
+  if (parseUtcDate(trimmed)) {
+    return hasTime
+      ? formatUtcToLocalDateTime(trimmed, '')
+      : formatUtcToLocalDate(trimmed, '')
   }
-  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (isoDate && trimmed.length <= 10) {
-    return `${isoDate[3]}-${isoDate[2]}-${isoDate[1]}`
-  }
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) return ''
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = String(date.getFullYear())
-  return `${day}-${month}-${year}`
+
+  const dayMonthYear = trimmed.match(
+    /^(\d{2})-(\d{2})-(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/,
+  )
+  if (!dayMonthYear) return ''
+
+  const [, day, month, year, hour, minute, second] = dayMonthYear
+  if (!hour || !minute) return `${day}-${month}-${year}`
+
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second || 0),
+  )
+  if (Number.isNaN(date.getTime())) return `${day}-${month}-${year}`
+  return formatUtcToLocalDateTime(date, '')
 }
 
 function formatBytes(bytes: number, decimals = 1) {

@@ -58,7 +58,7 @@ import {
   AnimateStagger,
 } from './../../../../components/common/animations'
 import TableFieldInput from './TableFieldInput'
-import UploadQueueFileCard from './UploadQueueFileCard'
+import UploadQueueFileCard, { formatCreatedAt } from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
@@ -726,6 +726,19 @@ const collectDraftStageFiles = async (repositoryId: string) => {
   return drafts
 }
 
+const readStageCreatedAt = (record: {
+  createdAt?: unknown
+  uploadedAt?: unknown
+}) => {
+  if (typeof record.createdAt === 'string' && record.createdAt.trim()) {
+    return record.createdAt
+  }
+  if (typeof record.uploadedAt === 'string' && record.uploadedAt.trim()) {
+    return record.uploadedAt
+  }
+  return new Date().toISOString()
+}
+
 const draftSummaryToQueueEntry = (
   summary: StageFileSummary,
   repositoryFields: RepositoryField[],
@@ -739,10 +752,7 @@ const draftSummaryToQueueEntry = (
   return {
     activeTab: 'fields',
     backendStatus: status,
-    createdAt:
-      typeof summary.createdAt === 'string'
-        ? summary.createdAt
-        : new Date().toISOString(),
+    createdAt: readStageCreatedAt(summary),
     exportStatus: 'idle',
     fieldValues,
     file: null,
@@ -927,6 +937,7 @@ export default function Upload({
     () => queue.find((entry) => entry.id === openFileId) ?? null,
     [queue, openFileId],
   )
+  const activeCreatedLabel = formatCreatedAt(activeEntry?.createdAt)
 
   const updateEntry = useCallback(
     (
@@ -1998,13 +2009,7 @@ export default function Upload({
         const entry: QueuedUploadFile = {
           activeTab: 'fields',
           backendStatus: data.status || 'OCR',
-          createdAt:
-            typeof data.createdAt === 'string'
-              ? data.createdAt
-              : typeof (data as unknown as { uploadedAt?: unknown }).uploadedAt ===
-                'string'
-                ? ((data as unknown as { uploadedAt: string }).uploadedAt as string)
-                : new Date().toISOString(),
+          createdAt: readStageCreatedAt(data),
           exportStatus: 'idle',
           fieldValues: mappedValues,
           file: fileObj,
@@ -3441,21 +3446,12 @@ export default function Upload({
                         </Tooltip>
                         <span className='text-[var(--gray-5)]'>•</span>
                         <span>{formatFileSize(activeEntry.fileSize)}</span>
-                        {activeEntry.createdAt && (
+                        {activeCreatedLabel ? (
                           <>
                             <span className='text-[var(--gray-5)]'>•</span>
-                            <span>
-                              {new Date(activeEntry.createdAt)
-                                .toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: '2-digit',
-                                })
-                                .split('/')
-                                .join('-')}
-                            </span>
+                            <span>{activeCreatedLabel}</span>
                           </>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -3760,12 +3756,12 @@ export default function Upload({
         }}
       />
       <ConfirmDialog
-        cancelLabel={t`No`}
+        cancelLabel={t`Go back`}
         confirmLabel={t`Delete`}
-        description={t`Are you sure you want to go back? The current file will be deleted if you choose Delete.`}
+        description={t`Going back keeps this file in Draft Files. Delete removes it.`}
         isConfirming={isDeletingStageFile}
         opened={backConfirmOpen}
-        title={t`Go Back`}
+        title={t`Go back`}
         variant='danger'
         onCancel={() => {
           setBackConfirmOpen(false)

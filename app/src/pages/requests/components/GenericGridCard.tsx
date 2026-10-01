@@ -323,7 +323,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
 
       <div className='min-w-0 flex-1 overflow-hidden'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
-        <div className='flex max-w-full min-w-0 flex-wrap items-center gap-2'>
+        <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
           <h3
             className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
             style={{ fontWeight: 500 }}
@@ -354,7 +354,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         )}
         {/* AI Insight stacked inside left column when playground/chat/sidebar is open */}
         {aiInsight && isSidebarOpen && (
-          <div className='mt-1 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
+          <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
             <AiBrandIcon
               className='size-3.5 shrink-0'
               variant='outline-purple'
@@ -363,7 +363,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
               className='text-[12px] font-medium text-[var(--primary-9)]'
               expandStyle='inline'
               maxLines={2}
-              normalMaxWidthClass='max-w-[180px] sm:max-w-[240px]'
+              normalMaxWidthClass='max-w-[180px]'
               text={aiInsight}
             />
           </div>
@@ -372,7 +372,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
 
       {/* AI Insight Line - Centered in middle of row (visible ONLY when sidebar is closed) */}
       {aiInsight && !isSidebarOpen && (
-        <div className='hidden min-w-0 flex-1 items-center justify-center px-4 md:flex'>
+        <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
           <div className='flex min-w-0 items-center gap-1.5'>
             <AiBrandIcon
               className='size-3.5 shrink-0 text-[var(--primary-9)]'
