@@ -7599,7 +7599,7 @@ msgstr "Manual"
 msgid "Manual PO Import"
 msgstr "Import PO Manual"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:240
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:244
 msgid "Manually routed to"
 msgstr "Dihala secara manual kepada"
 
@@ -11435,7 +11435,7 @@ msgstr "Laluan Laluan *"
 msgid "Route path & sort order"
 msgstr "Laluan laluan & susunan isihan"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:215
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:219
 msgid "Route to a different folder:"
 msgstr ""
 
@@ -12208,7 +12208,7 @@ msgstr "Pilih Lajur Fail"
 msgid "Select first name field"
 msgstr "Pilih medan nama pertama"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:221
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:225
 msgid "Select folder"
 msgstr ""
 
@@ -12216,7 +12216,7 @@ msgstr ""
 msgid "Select Folder"
 msgstr ""
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:224
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:228
 msgid "Select folder..."
 msgstr ""
 
@@ -12721,7 +12721,7 @@ msgstr ""
 msgid "Show Documents"
 msgstr "Tunjukkan Dokumen"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:196
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:200
 msgid "Show fewer suggestions"
 msgstr "Tunjukkan cadangan yang kurang"
 
@@ -15105,7 +15105,7 @@ msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau siste
 msgid "View"
 msgstr "Lihat"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:197
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:201
 msgid "View {remainingCount} more suggestions"
 msgstr "Lihat {remainingCount} lagi cadangan"
 

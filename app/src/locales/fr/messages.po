@@ -7599,7 +7599,7 @@ msgstr "Manuel"
 msgid "Manual PO Import"
 msgstr "Importation manuelle du bon de commande"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:240
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:244
 msgid "Manually routed to"
 msgstr "Acheminé manuellement vers"
 
@@ -11431,7 +11431,7 @@ msgstr "Chemin d'accès *"
 msgid "Route path & sort order"
 msgstr "Chemin d'acheminement et ordre de tri"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:215
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:219
 msgid "Route to a different folder:"
 msgstr ""
 
@@ -12204,7 +12204,7 @@ msgstr "Sélectionnez la colonne de fichier"
 msgid "Select first name field"
 msgstr "Sélectionnez le champ prénom"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:221
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:225
 msgid "Select folder"
 msgstr ""
 
@@ -12212,7 +12212,7 @@ msgstr ""
 msgid "Select Folder"
 msgstr ""
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:224
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:228
 msgid "Select folder..."
 msgstr ""
 
@@ -12717,7 +12717,7 @@ msgstr ""
 msgid "Show Documents"
 msgstr "Afficher les documents"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:196
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:200
 msgid "Show fewer suggestions"
 msgstr "Afficher moins de suggestions"
 
@@ -15101,7 +15101,7 @@ msgstr "Stratégie de versionnement enregistrée. Avez-vous besoin d'une intégr
 msgid "View"
 msgstr "Afficher"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:197
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:201
 msgid "View {remainingCount} more suggestions"
 msgstr "Afficher {remainingCount} suggestions supplémentaires"
 

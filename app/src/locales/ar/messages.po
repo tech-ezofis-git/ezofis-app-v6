@@ -7510,7 +7510,7 @@ msgstr "يدوي"
 msgid "Manual PO Import"
 msgstr "استيراد PO يدوي"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:240
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:244
 msgid "Manually routed to"
 msgstr "تم التوجيه يدوياً إلى"
 
@@ -11307,7 +11307,7 @@ msgstr "مسار التوجيه *"
 msgid "Route path & sort order"
 msgstr "مسار الطريق وترتيب الفرز"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:215
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:219
 msgid "Route to a different folder:"
 msgstr ""
 
@@ -12059,7 +12059,7 @@ msgstr "حدد عمود الملف"
 msgid "Select first name field"
 msgstr "حدد حقل الاسم الأول"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:221
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:225
 msgid "Select folder"
 msgstr ""
 
@@ -12067,7 +12067,7 @@ msgstr ""
 msgid "Select Folder"
 msgstr ""
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:224
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:228
 msgid "Select folder..."
 msgstr ""
 
@@ -12542,7 +12542,7 @@ msgstr ""
 msgid "Show Documents"
 msgstr "إظهار المستندات"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:196
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:200
 msgid "Show fewer suggestions"
 msgstr "إظهار اقتراحات أقل"
 
@@ -14922,7 +14922,7 @@ msgstr "تم حفظ استراتيجية الإصدارات. هل تحتاج ت�
 msgid "View"
 msgstr "عرض"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:197
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:201
 msgid "View {remainingCount} more suggestions"
 msgstr "عرض {remainingCount} من الاقتراحات الإضافية"
 

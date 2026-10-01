@@ -7599,7 +7599,7 @@ msgstr "Manual"
 msgid "Manual PO Import"
 msgstr "Manual PO Import"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:240
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:244
 msgid "Manually routed to"
 msgstr "Manually routed to"
 
@@ -11431,7 +11431,7 @@ msgstr "Route Path *"
 msgid "Route path & sort order"
 msgstr "Route path & sort order"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:215
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:219
 msgid "Route to a different folder:"
 msgstr "Route to a different folder:"
 
@@ -12204,7 +12204,7 @@ msgstr "Select File Column"
 msgid "Select first name field"
 msgstr "Select first name field"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:221
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:225
 msgid "Select folder"
 msgstr "Select folder"
 
@@ -12212,7 +12212,7 @@ msgstr "Select folder"
 msgid "Select Folder"
 msgstr "Select Folder"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:224
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:228
 msgid "Select folder..."
 msgstr "Select folder..."
 
@@ -12717,7 +12717,7 @@ msgstr "Show details"
 msgid "Show Documents"
 msgstr "Show Documents"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:196
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:200
 msgid "Show fewer suggestions"
 msgstr "Show fewer suggestions"
 
@@ -15105,7 +15105,7 @@ msgstr "Versioning strategy saved. Do you require an ERP or system integration, 
 msgid "View"
 msgstr "View"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:197
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:201
 msgid "View {remainingCount} more suggestions"
 msgstr "View {remainingCount} more suggestions"
 

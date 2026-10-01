@@ -210,7 +210,6 @@ const WorkflowFormRenderer = ({
                   field={field}
                   key={field.id}
                   readOnly={isReadOnly}
-                  value={formModel[field.id]}
                   source={
                     formModel[field.id] != null && formModel[field.id] !== ''
                       ? 'ocr'
