@@ -861,6 +861,36 @@ export const shareFile = async (
   return res.data
 }
 
+export const getWorkflowsByActivity = async (
+  workflowId: string,
+  activityIds: string[],
+  pageNumber: number = 1,
+  pageSize: number = 100,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        activityIds,
+        pageNumber,
+        pageSize,
+        workflowId,
+      },
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: '/workflows/by-activity',
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching workflows by activity'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   addInstanceAttachment,
   addInstanceComment,
@@ -886,6 +916,7 @@ export const workflowsApiV6 = {
   getSentList,
   getWorkflowById,
   getWorkflows,
+  getWorkflowsByActivity,
 }
 
 export default workflowsApiV6

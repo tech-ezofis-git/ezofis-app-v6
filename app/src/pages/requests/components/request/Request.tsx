@@ -35,7 +35,10 @@ import {
   isTableType,
 } from '../../utils/dynamicTable.utils'
 import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
-import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import {
+  getStageNameFromWorkflow,
+  isAccountsPayableWorkflow,
+} from '../../utils/workflow.utils'
 import {
   attachmentToFormFileValue,
   getFirstFileUploadField,
@@ -1314,14 +1317,14 @@ const Request = ({
         value: a.actionName || 'Submit',
       }))
       const withoutIncoming = mapped.filter(
-        (a) => !incomingActionKeys.has(String(a.value || '').toLowerCase()),
+        (a: any) => !incomingActionKeys.has(String(a.value || '').toLowerCase()),
       )
       derivedActions = withoutIncoming.length > 0 ? withoutIncoming : mapped
     }
 
     // De-dupe by action value while preserving rule order.
     const seen = new Set<string>()
-    derivedActions = derivedActions.filter((a) => {
+    derivedActions = derivedActions.filter((a: any) => {
       const key = String(a.value || a.label || '').toLowerCase()
       if (!key || seen.has(key)) return false
       seen.add(key)
@@ -1446,21 +1449,82 @@ const Request = ({
     setSignatureConfirmed(false)
   }, [currentActivityId, selectedItem?.transactionId])
 
+  const isStageBased = useMemo(() => {
+    const general =
+      rawWorkflowData?.settings?.general ||
+      rawWorkflowData?.workflowJson?.settings?.general
+    const configuredTabs = Array.isArray(general?.requestTabs)
+      ? general.requestTabs
+      : []
+    return (
+      general?.isStageBased === 1 ||
+      general?.isStageBased === true ||
+      configuredTabs.some(
+        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+      )
+    )
+  }, [rawWorkflowData])
+
+  const isUserEmailMatched = useMemo(() => {
+    const activityEmail = String(
+      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
+    )
+      .toLowerCase()
+      .trim()
+
+    const authState = authUserStore.getState() as any
+    const currentUserEmail = String(
+      authState.session?.email ||
+        authState.identity?.email ||
+        authState.user?.email ||
+        authState.session?.loginName ||
+        authState.identity?.userName ||
+        '',
+    )
+      .toLowerCase()
+      .trim()
+
+    if (activityEmail && currentUserEmail) {
+      return activityEmail === currentUserEmail
+    }
+    return false
+  }, [selectedItem?.activityUserEmail, request?.activityUserEmail])
+
   const headerActions = useMemo(() => {
     if (isApAgentStage || isAutoRoutedAgentStage) return []
-    // Sent/Closed are read-only views of a request that has already moved
-    // on to (or past) another assignee — only the Inbox view, where the
-    // request is actually pending with the current user, can act on it.
-    if (requestListTab !== 'Inbox') return []
-    if (!isAssignedToCurrentUser) return []
+
+    const completedAt = selectedItem?.completedAtUtc || request?.completedAtUtc
+    if (completedAt) return []
+
+    const activityEmail = String(
+      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
+    ).trim()
+
+    if (isStageBased) {
+      // In stage-based mode: enable action button if activityUserEmail matches current logged-in user
+      const isAllowed = activityEmail
+        ? isUserEmailMatched
+        : isAssignedToCurrentUser
+      if (!isAllowed) return []
+    } else {
+      if (requestListTab !== 'Inbox') return []
+      if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
+    }
+
     return ruleActions.length > 0 ? ruleActions : actions
   }, [
     isApAgentStage,
     isAutoRoutedAgentStage,
-    requestListTab,
+    isStageBased,
+    isUserEmailMatched,
     isAssignedToCurrentUser,
+    requestListTab,
     ruleActions,
     actions,
+    selectedItem?.completedAtUtc,
+    selectedItem?.activityUserEmail,
+    request?.completedAtUtc,
+    request?.activityUserEmail,
   ])
 
   const [formModel, setFormModel] = useState<any>({})
@@ -2238,8 +2302,12 @@ const Request = ({
     if (isCurrentlyProcessing || isLoading) {
       finalStatusBadge = 'Setting up...'
     } else {
+      const fallbackStage = selectedItem?.stage || selectedItem?.status
       finalStatusBadge =
-        selectedItem?.stage || selectedItem?.status || 'Finalizing Results...'
+        requestListTab ||
+        activeTabValue ||
+        fallbackStage ||
+        'Finalizing Results...'
     }
   }
 
@@ -2429,10 +2497,10 @@ const Request = ({
             authUserStore.getState().session?.name
           }
           stage={
-            // `lastActionStageName` is the stage the request came FROM (the
-            // last completed action), not where it currently sits — so it
-            // must rank behind the actual current-stage fields, only used
-            // as a last-resort fallback if none of those are populated.
+            getStageNameFromWorkflow(
+              selectedItem?.activityId || request?.activityId,
+              rawWorkflowData || selectedWorkflow,
+            ) ||
             selectedItem?.currentStage ||
             selectedItem?.stageName ||
             selectedItem?.stage ||

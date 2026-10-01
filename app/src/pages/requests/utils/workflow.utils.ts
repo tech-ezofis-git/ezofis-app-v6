@@ -126,6 +126,61 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
+export function getStageNameFromWorkflow(
+  activityId?: string | null,
+  workflow?: any,
+): string | null {
+  if (!activityId || !workflow) return null
+
+  let blocks: any[] = extractBlocks(workflow)
+  if (!blocks || !blocks.length) {
+    const raw = workflow?.workflowJson ?? workflow?.flowJson ?? workflow
+    const flow =
+      typeof raw === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(raw)
+            } catch {
+              return null
+            }
+          })()
+        : raw
+    if (Array.isArray(flow?.nodes)) {
+      blocks = flow.nodes
+    } else if (Array.isArray(flow?.workflowJson?.nodes)) {
+      blocks = flow.workflowJson.nodes
+    }
+  }
+
+  if (!blocks || !blocks.length) return null
+
+  const match = blocks.find(
+    (b: any) =>
+      String(b?.id || b?.activityId || b?.nodeId || b?.key) ===
+      String(activityId),
+  )
+
+  if (!match) return null
+
+  const name =
+    match.name ||
+    match.label ||
+    match.title ||
+    match.stageName ||
+    match.stage ||
+    match.settings?.name ||
+    match.settings?.label ||
+    match.settings?.title ||
+    match.settings?.stageName ||
+    match.data?.name ||
+    match.data?.label ||
+    match.data?.title ||
+    match.data?.stageName ||
+    match.data?.stage
+
+  return name ? String(name) : null
+}
+
 /**
  * An Accounts Payable workflow is one built with the "Intelligent AP Agent"
  * step from the workflow builder (block type `AP_AGENT` — see

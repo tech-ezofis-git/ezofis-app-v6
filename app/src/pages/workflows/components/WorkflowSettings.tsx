@@ -712,6 +712,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
         >
           <RequestTabsSettingsSection
             isAccountsPayable={isAccountsPayable}
+            nodes={nodes}
             tabs={requestTabs}
             onChange={setRequestTabs}
           />

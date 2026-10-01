@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import workflowsApiV6, { type V6FilterField } from '@/api/v6/workflows'
+import authUserStore from '@/stores/authUserStore'
 import type { InboxItem, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 import { extractPONumber } from '../utils/inboxItemDisplay'
@@ -8,7 +9,10 @@ import {
   filterInboxItemsByTab,
   isDuplicatedInboxItem,
 } from '../utils/inboxList.utils'
-import { getActionsForActivity } from '../utils/workflow.utils'
+import {
+  getActionsForActivity,
+  getStageNameFromWorkflow,
+} from '../utils/workflow.utils'
 
 /**
  * Grouping is applied entirely client-side against whatever page of items
@@ -157,6 +161,11 @@ export const transformProcess = (
     isDecisionMatched && !hasAgentResponse ? '' : process.decision
   const review = isReviewMatched && !hasAgentResponse ? '' : process.review
 
+  const matchedStageName = getStageNameFromWorkflow(
+    process.activityId,
+    selectedWorkflow,
+  )
+
   const processCopy = {
     ...process,
     decision,
@@ -165,15 +174,66 @@ export const transformProcess = (
       fields: fieldsSource,
     },
     review,
+    stage: matchedStageName || process.stage,
     status,
   }
 
   const listTab = process._listTab || activeTab
-  const canMove = listTab === 'Inbox' || listTab === 'Exceptions'
+  const activityUserEmail = String(process.activityUserEmail || '')
+    .toLowerCase()
+    .trim()
+
+  const authState = authUserStore.getState() as any
+  const currentUserEmail = String(
+    authState.session?.email ||
+      authState.identity?.email ||
+      authState.user?.email ||
+      authState.session?.loginName ||
+      authState.identity?.userName ||
+      '',
+  )
+    .toLowerCase()
+    .trim()
+
+  const isUserEmailMatched =
+    activityUserEmail !== '' &&
+    currentUserEmail !== '' &&
+    activityUserEmail === currentUserEmail
+
+  const parsedFlowJson =
+    typeof selectedWorkflow?.flowJson === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(selectedWorkflow.flowJson)
+          } catch {
+            return null
+          }
+        })()
+      : selectedWorkflow?.flowJson
+
+  const isStageBased = Boolean(
+    parsedFlowJson?.settings?.general?.isStageBased ||
+      (parsedFlowJson?.settings?.general?.requestTabs || []).some(
+        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+      ),
+  )
+
+  const canMove =
+    !process.completedAtUtc &&
+    (listTab === 'Inbox' ||
+      listTab === 'Exceptions' ||
+      isUserEmailMatched ||
+      (isStageBased && !activityUserEmail))
 
   const dynamicFields = fieldsSource
   let actions: any[] = []
-  if (listTab === 'Inbox' || listTab === 'Exceptions' || listTab === 'Sent') {
+  if (
+    listTab === 'Inbox' ||
+    listTab === 'Exceptions' ||
+    listTab === 'Sent' ||
+    isStageBased ||
+    isUserEmailMatched
+  ) {
     actions = getActionsForActivity(
       process.activityId,
       selectedWorkflow?.flowJson,
@@ -636,6 +696,11 @@ const handleFlatInner = (
   }
 }
 
+export type TabStageConfig = {
+  isStageBased?: boolean
+  nodeIds?: string[]
+}
+
 export const useInboxData = (
   selectedWorkflow: WorkflowOption | null,
   page: number,
@@ -645,6 +710,7 @@ export const useInboxData = (
   filterClauses: any[] = [],
   // Unused: grouping is resolved client-side without the field schema.
   _filterFields: V6FilterField[] = [],
+  tabStageConfig?: TabStageConfig,
 ) => {
   return useQuery({
     enabled: !!selectedWorkflow?.id && selectedWorkflow.id !== 'procurement',
@@ -658,6 +724,8 @@ export const useInboxData = (
       pageSize,
       activeTab,
       filterClauses,
+      tabStageConfig?.isStageBased,
+      tabStageConfig?.nodeIds,
     ],
     retry: 1,
     staleTime: 10000,
@@ -684,6 +752,31 @@ export const useInboxData = (
           )
           if (searchRes.error) throw new Error(searchRes.error)
           return searchRes.data || { data: [], meta: { totalItems: 0 } }
+        }
+
+        if (tabStageConfig?.isStageBased) {
+          const byActivityRes = await workflowsApiV6.getWorkflowsByActivity(
+            String(workflowId),
+            tabStageConfig.nodeIds || [],
+            page,
+            pageSize,
+          )
+          if (byActivityRes.error) {
+            throw new Error(byActivityRes.error)
+          }
+          const payload = unwrapListPayload(byActivityRes.data)
+          const items = readListItems(payload)
+          return {
+            data: [
+              {
+                key: 'root',
+                value: items,
+              },
+            ],
+            meta: {
+              totalItems: readListTotalCount(payload, items.length),
+            },
+          }
         }
 
         return await fetchInboxDataFn(
