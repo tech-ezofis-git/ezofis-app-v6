@@ -17,7 +17,7 @@ export type PrefixSegment = { id: string; key: string; value: string | number }
 // Inbox/Sent/Completed (or Invoices/Exceptions/Processed for AP) buckets
 // regardless of what they're labelled; anything past index 2 has no data
 // source yet and renders empty on the Requests page.
-export type RequestTabConfig = { id: string; label: string }
+export type RequestTabConfig = { id: string; label: string; nodeIds?: string[] }
 
 type AddMenuState = {
   edgeId: string | null
@@ -201,15 +201,19 @@ const useWorkflowStore = create<Store>()((set) => ({
           : []
       requestTabs = Array.isArray(parsed)
         ? parsed
-            .map((entry, index) => {
+            .map((entry, index): RequestTabConfig | null => {
               const label = String(entry?.label ?? '').trim()
               if (!label) return null
+              const nodeIds = Array.isArray(entry?.nodeIds)
+                ? entry.nodeIds.map(String).filter(Boolean)
+                : []
               return {
                 id: String(entry?.id ?? `tab-${index + 1}`),
                 label,
+                nodeIds,
               }
             })
-            .filter((tab): tab is RequestTabConfig => Boolean(tab))
+            .filter((tab): tab is RequestTabConfig => tab !== null)
         : []
     } catch {
       requestTabs = []

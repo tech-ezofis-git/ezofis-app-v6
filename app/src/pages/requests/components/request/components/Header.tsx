@@ -785,6 +785,17 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onNext}
             />
           </Tooltip>
+          {stage && (
+            <Tooltip
+              className='max-w-[11rem] min-w-0'
+              content={String(stage)}
+              position='bottom'
+            >
+              <span className='inline-flex max-w-full min-w-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                <span className='truncate'>{stage}</span>
+              </span>
+            </Tooltip>
+          )}
           <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
             {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
               <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
@@ -870,9 +881,6 @@ const Header: React.FC<HeaderProps> = ({
                         'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
                       isLoaderIcon = true
                     } else {
-                      if (_showApprove) {
-                        return null
-                      }
                       iconName = 'tabler:clock'
                       badgeColorClass =
                         'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'

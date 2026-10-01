@@ -222,6 +222,53 @@ const RequestsPage = () => {
     }
   }, [selectedWorkflow?.id])
 
+  const tabStageConfig = useMemo(() => {
+    const general = rawWorkflowData?.workflowJson?.settings?.general
+    const configuredTabs = Array.isArray(general?.requestTabs)
+      ? general.requestTabs
+      : []
+
+    const isStageBased =
+      general?.isStageBased === 1 ||
+      general?.isStageBased === true ||
+      configuredTabs.some(
+        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+      )
+
+    if (!isStageBased) {
+      return { isStageBased: false, nodeIds: [] }
+    }
+
+    let matchedTab = configuredTabs.find(
+      (t: any) =>
+        t?.id === activeTab ||
+        String(t?.label || '').toLowerCase() === activeTab.toLowerCase(),
+    )
+
+    if (!matchedTab && configuredTabs.length > 0) {
+      const index =
+        activeTab === 'Inbox' || activeTab === 'Invoices'
+          ? 0
+          : activeTab === 'Sent' || activeTab === 'Exceptions'
+            ? 1
+            : activeTab === 'Closed' || activeTab === 'Completed' || activeTab === 'Processed'
+              ? 2
+              : -1
+      if (index >= 0 && configuredTabs[index]) {
+        matchedTab = configuredTabs[index]
+      }
+    }
+
+    const nodeIds = Array.isArray(matchedTab?.nodeIds)
+      ? matchedTab.nodeIds.map(String).filter(Boolean)
+      : []
+
+    return {
+      isStageBased: true,
+      nodeIds,
+    }
+  }, [rawWorkflowData, activeTab])
+
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' and 'filterClauses' to the hook so it knows which API to call
   const {
@@ -237,19 +284,29 @@ const RequestsPage = () => {
     viewMode === 'kanban' ? 'Kanban' : activeTab,
     filterClauses,
     filterFields,
+    tabStageConfig,
   )
 
-  const syncListTabFromItem = (row: InboxItem) => {
-    const listTab = row._listTab || activeTab
-    if (
-      listTab === 'Inbox' ||
-      listTab === 'Exceptions' ||
-      listTab === 'Sent' ||
-      listTab === 'Closed' ||
-      listTab === 'Processed'
-    ) {
-      setRequestListTab(listTab === 'Exceptions' ? 'Inbox' : listTab)
+  const activeTabLabel = useMemo(() => {
+    const match = requestTabs.find(
+      (t) => t.value === activeTab || t.label === activeTab,
+    )
+    return match?.label || activeTab
+  }, [requestTabs, activeTab])
+
+  useEffect(() => {
+    if (activeTabLabel) {
+      setRequestListTab(activeTabLabel)
     }
+  }, [activeTabLabel, setRequestListTab])
+
+  const syncListTabFromItem = (row: InboxItem) => {
+    const rawTab = row._listTab || activeTab
+    const match = requestTabs.find(
+      (t) => t.value === rawTab || t.label === rawTab,
+    )
+    const label = match?.label || activeTabLabel || rawTab
+    setRequestListTab(label)
   }
 
   const handleRowClick = (
