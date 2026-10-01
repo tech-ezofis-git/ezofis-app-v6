@@ -87,7 +87,7 @@ const FormEntriesChoiceInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -95,13 +95,13 @@ const FormEntriesChoiceInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
@@ -177,7 +177,7 @@ const FormEntriesChoiceInput = ({
 
     const toggleOpt = (opt: string) => {
       const next = selectedList.includes(opt)
-        ? selectedList.filter((x) => x !== opt)
+        ? selectedList.filter((x: string) => x !== opt)
         : [...selectedList, opt]
       onChange(next.join(','))
     }
@@ -271,7 +271,7 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -279,13 +279,13 @@ const FormEntriesSelectInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
   const repoParentField = useMemo(() => {
@@ -295,24 +295,24 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === facetSource.repositoryFieldParent ||
         f.settings?.specific?.repositoryField ===
-          facetSource.repositoryFieldParent ||
+        facetSource.repositoryFieldParent ||
         f.settings?.specific?.masterFormColumn ===
-          facetSource.repositoryFieldParent ||
+        facetSource.repositoryFieldParent ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, facetSource.repositoryFieldParent])
 
   const repoParentFieldName = repoParentField
     ? repoParentField.settings?.specific?.repositoryField ||
-      repoParentField.label ||
-      repoParentField.id
+    repoParentField.label ||
+    repoParentField.id
     : facetSource.repositoryFieldParent || ''
 
   const repoParentRawValue = repoParentField
     ? formModel?.[repoParentField.id]
     : facetSource.repositoryFieldParent && formModel
-    ? formModel[facetSource.repositoryFieldParent]
-    : undefined
+      ? formModel[facetSource.repositoryFieldParent]
+      : undefined
 
   const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
 
@@ -406,9 +406,9 @@ const FormEntriesSelectInput = ({
       if (isMulti) {
         const selectedValues = val
           ? String(val)
-              .split(',')
-              .map((v) => v.trim())
-              .filter(Boolean)
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
           : []
         if (selectedValues.length === 0) {
           onChange(singleVal)
@@ -424,9 +424,9 @@ const FormEntriesSelectInput = ({
   if (isMulti) {
     const selectedValues = val
       ? String(val)
-          .split(',')
-          .map((v) => v.trim())
-          .filter(Boolean)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
       : []
     const selectedOpts = selectedValues.map((v) => ({ id: v, name: v }))
 
@@ -542,9 +542,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-        ]
+        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+      ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -821,8 +821,8 @@ const FormLineItemInlineEditor = ({
                 {(idx === 0 ||
                   normId.includes('item') ||
                   normId.includes('part')) && (
-                  <span className='ml-1 font-bold text-red-9'>*</span>
-                )}
+                    <span className='ml-1 font-bold text-red-9'>*</span>
+                  )}
               </label>
 
               {isLongText ? (
@@ -1092,8 +1092,8 @@ const FormLineItemsEditor = ({
                           key={col.id}
                         >
                           {row[col.id] !== undefined &&
-                          row[col.id] !== null &&
-                          String(row[col.id]).trim() !== '' ? (
+                            row[col.id] !== null &&
+                            String(row[col.id]).trim() !== '' ? (
                             String(row[col.id])
                           ) : (
                             <span className='text-gray-5'>—</span>
@@ -1228,7 +1228,7 @@ const FormEntriesPage = () => {
       loggedInSession &&
       (String(loggedInSession.id) === String(userId) ||
         String(loggedInSession.email || '').toLowerCase() ===
-          String(userId).toLowerCase())
+        String(userId).toLowerCase())
     ) {
       if (currentUserName) return currentUserName
     }
@@ -2579,14 +2579,14 @@ const FormEntriesPage = () => {
             filters={[
               ...(nameFieldFilter
                 ? [
-                    {
-                      id: nameFieldFilter.id,
-                      label: nameFieldFilter.label || t`Name`,
-                      options: nameFieldFilter.options || [],
-                      searchable: true,
-                      searchPlaceholder: t`Search name...`,
-                    },
-                  ]
+                  {
+                    id: nameFieldFilter.id,
+                    label: nameFieldFilter.label || t`Name`,
+                    options: nameFieldFilter.options || [],
+                    searchable: true,
+                    searchPlaceholder: t`Search name...`,
+                  },
+                ]
                 : []),
               {
                 id: 'createdBy',
@@ -2615,7 +2615,7 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => {}}
+            onSearchChange={() => { }}
           />
           <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable

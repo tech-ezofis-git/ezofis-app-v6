@@ -199,7 +199,7 @@ const AgentFlatTable = ({
                     className={cn(
                       'min-w-[8rem] border border-gray-3 p-3 align-top text-gray-11',
                       isNumericColumn(col) &&
-                        'text-right font-medium text-gray-12',
+                      'text-right font-medium text-gray-12',
                       columnType(col) === 'LONG_TEXT' && 'min-w-[12rem]',
                     )}
                   >

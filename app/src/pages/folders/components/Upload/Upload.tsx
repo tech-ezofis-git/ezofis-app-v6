@@ -905,9 +905,9 @@ export default function Upload({
         prev.map((entry) =>
           entry.id === id
             ? {
-                ...entry,
-                ...(typeof patch === 'function' ? patch(entry) : patch),
-              }
+              ...entry,
+              ...(typeof patch === 'function' ? patch(entry) : patch),
+            }
             : entry,
         ),
       )
@@ -1012,8 +1012,8 @@ export default function Upload({
           const formJson = res.data.formJson
           const fieldsArray = Array.isArray(formJson?.panels)
             ? formJson.panels.flatMap((panel: any) =>
-                Array.isArray(panel?.fields) ? panel.fields : [],
-              )
+              Array.isArray(panel?.fields) ? panel.fields : [],
+            )
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
@@ -1035,14 +1035,14 @@ export default function Upload({
 
           newLabels[repoField] = fieldDef
             ? `${formName} - ${String(
-                fieldDef.displayLabel ||
-                  fieldDef.label ||
-                  fieldDef.name ||
-                  fieldDef.title ||
-                  fieldDef.id ||
-                  fieldDef.key ||
-                  formFieldId,
-              )}`
+              fieldDef.displayLabel ||
+              fieldDef.label ||
+              fieldDef.name ||
+              fieldDef.title ||
+              fieldDef.id ||
+              fieldDef.key ||
+              formFieldId,
+            )}`
             : `${formName} - ${formFieldId}`
         })
 
@@ -1806,8 +1806,9 @@ export default function Upload({
           createdAt:
             typeof data.createdAt === 'string'
               ? data.createdAt
-              : typeof data.uploadedAt === 'string'
-                ? data.uploadedAt
+              : typeof (data as unknown as { uploadedAt?: unknown }).uploadedAt ===
+                'string'
+                ? ((data as unknown as { uploadedAt: string }).uploadedAt as string)
                 : new Date().toISOString(),
           exportStatus: 'idle',
           fieldValues: mappedValues,
@@ -2300,7 +2301,7 @@ export default function Upload({
     const fieldClassName = cn(
       'w-full',
       isSyncField &&
-        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+      '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
     )
 
     const renderSuggestionCapsule = () => {
@@ -2390,15 +2391,15 @@ export default function Upload({
       const selectedOption = findSelectedOption(options, textVal)
       const effectiveOptions =
         selectedOption &&
-        !options.some(
-          (o) =>
-            String(o.value ?? '').toLowerCase() ===
+          !options.some(
+            (o) =>
+              String(o.value ?? '').toLowerCase() ===
               String(selectedOption.value ?? '').toLowerCase() ||
-            String(o.name).toLowerCase() ===
+              String(o.name).toLowerCase() ===
               selectedOption.name.toLowerCase() ||
-            String(o.id).toLowerCase() ===
+              String(o.id).toLowerCase() ===
               String(selectedOption.id).toLowerCase(),
-        )
+          )
           ? [...options, selectedOption]
           : options
 
@@ -2463,10 +2464,10 @@ export default function Upload({
           value={toTextValue(value)}
           type={
             fieldType === 'decimal' ||
-            fieldType === 'number' ||
-            fieldType === 'int' ||
-            fieldType === 'integer' ||
-            fieldType === 'currency'
+              fieldType === 'number' ||
+              fieldType === 'int' ||
+              fieldType === 'integer' ||
+              fieldType === 'currency'
               ? 'number'
               : 'text'
           }

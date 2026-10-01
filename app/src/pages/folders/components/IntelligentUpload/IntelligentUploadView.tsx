@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { uploadForOcr } from '@/api/v6/folder/folder'
+import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
   deleteStagedFiles,
@@ -27,11 +27,42 @@ import type { CandidateRepository, ClassifiedFile } from './types'
 import { classifyDocument } from './classifyDocument'
 import IntelligentUploadFileCard from './IntelligentUploadFileCard'
 
+const repoFieldsCache = new Map<string, string[]>()
+
+async function getOcrDescriptorsForRepository(repoId: string): Promise<string[]> {
+  if (!repoId) return []
+  if (repoFieldsCache.has(repoId)) {
+    return repoFieldsCache.get(repoId)!
+  }
+  try {
+    const { data } = await getRepositoryById(repoId)
+    if (data?.fields && Array.isArray(data.fields)) {
+      const descriptors = data.fields
+        .map((f: { dataType?: string; name: string; sqlColumnName?: string }) => {
+          const fieldName = f.sqlColumnName || f.name
+          const fieldType = String(f.dataType || 'text').trim()
+          return `${fieldName}, ${fieldType}`
+        })
+        .filter(Boolean)
+      repoFieldsCache.set(repoId, descriptors)
+      return descriptors
+    }
+  } catch (err) {
+    console.warn('[IntelligentUpload] Failed to load repository fields for OCR:', err)
+  }
+  return []
+}
+
 interface IntelligentUploadViewProps {
   candidateRepositories: CandidateRepository[]
   repositoryId?: string | null
   onBack: () => void
   onDone: (targetRepositoryId?: string) => Promise<void> | void
+  onOpenSingleFileIndexing?: (params: {
+    file: File
+    repositoryId: string
+    stagedFileId?: string
+  }) => void
 }
 
 const FILE_TYPE_ICONS = [
@@ -57,6 +88,7 @@ export default function IntelligentUploadView({
   repositoryId,
   onBack,
   onDone,
+  onOpenSingleFileIndexing,
 }: IntelligentUploadViewProps) {
   const { t } = useLingui()
   const dropzoneRef = useRef<DropzoneUploadCardHandle | null>(null)
@@ -286,11 +318,14 @@ export default function IntelligentUploadView({
     try {
       let stageId = targetFile.stagedFileId
       if (!stageId) {
-        // Step 1: Call uploadForOcr first to extract OCR data
+        // Step 1: Call uploadForOcr with repository field descriptors
+        const ocrDescriptors = await getOcrDescriptorsForRepository(
+          targetFile.selectedRepositoryId,
+        )
         const { data: ocrData, error: ocrError } = await uploadForOcr(
           targetFile.selectedRepositoryId,
           targetFile.file,
-          [],
+          ocrDescriptors,
         )
 
         const ocrFieldList = ocrData?.ocrFieldList
@@ -316,6 +351,15 @@ export default function IntelligentUploadView({
           )
         }
         stageId = stageData.fileId
+      }
+
+      if (onOpenSingleFileIndexing && targetFile.selectedRepositoryId) {
+        onOpenSingleFileIndexing({
+          file: targetFile.file,
+          repositoryId: targetFile.selectedRepositoryId,
+          stagedFileId: stageId,
+        })
+        return
       }
 
       const { error: indexError } = await indexStageFile(stageId, {
@@ -380,6 +424,13 @@ export default function IntelligentUploadView({
         message: t`Please assign a folder for all files before proceeding.`,
         variant: 'error',
       })
+      return
+    }
+
+    // If uploading only 1 file, navigate to the Document Indexing page directly
+    if (pendingUploadFiles.length === 1 && onOpenSingleFileIndexing) {
+      const singleFile = pendingUploadFiles[0]
+      await handleIndexSingleFile(singleFile.id)
       return
     }
 
@@ -507,11 +558,12 @@ export default function IntelligentUploadView({
 
           let stageId = item.stagedFileId
           if (!stageId) {
-            // Step 1: Call uploadForOcr
+            // Step 1: Call uploadForOcr carrying repository field descriptors
+            const ocrDescriptors = await getOcrDescriptorsForRepository(repoId)
             const { data: ocrData, error: ocrError } = await uploadForOcr(
               repoId,
               item.file,
-              [],
+              ocrDescriptors,
             )
 
             const ocrFieldList = ocrData?.ocrFieldList

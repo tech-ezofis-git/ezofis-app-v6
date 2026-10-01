@@ -16,114 +16,7 @@ export const CLASSIFICATION_STAGES = [
   'Finalizing recommendations...',
 ] as const
 
-interface DocProfile {
-  defaultKeywords: string[]
-  matchKeywords: string[]
-  reason: string
-  type: string
-}
 
-const DOCUMENT_PROFILES: DocProfile[] = [
-  {
-    defaultKeywords: ['Invoice #', 'Total Amount', 'Vendor Name', 'Tax ID'],
-    matchKeywords: ['invoice', 'inv', 'bill', 'receipt', 'payment', 'po'],
-    reason:
-      'Detected structured tax invoice headers, supplier information, and itemized line amounts.',
-    type: 'Invoice',
-  },
-  {
-    defaultKeywords: [
-      'Parties',
-      'Effective Date',
-      'Terms & Conditions',
-      'Signatures',
-    ],
-    matchKeywords: [
-      'contract',
-      'agreement',
-      'nda',
-      'mou',
-      'lease',
-      'amendment',
-    ],
-    reason:
-      'Identified binding contract clauses, signatory blocks, and effective duration periods.',
-    type: 'Contract / Agreement',
-  },
-  {
-    defaultKeywords: [
-      'Account No.',
-      'Ending Balance',
-      'Transaction Date',
-      'Fiscal Period',
-    ],
-    matchKeywords: [
-      'statement',
-      'bank',
-      'financial',
-      'ledger',
-      'balance',
-      'audit',
-    ],
-    reason:
-      'Matched financial account statements with debit/credit transactions and reconciliation dates.',
-    type: 'Financial Statement',
-  },
-  {
-    defaultKeywords: ['Employee ID', 'Department', 'Job Title', 'Credentials'],
-    matchKeywords: [
-      'hr',
-      'resume',
-      'cv',
-      'employee',
-      'offer',
-      'appraisal',
-      'onboarding',
-    ],
-    reason:
-      'Recognized personnel identification data, qualifications, and HR department records.',
-    type: 'HR & Personnel Record',
-  },
-  {
-    defaultKeywords: [
-      'Executive Summary',
-      'Key Metrics',
-      'Quarterly Trends',
-      'Insights',
-    ],
-    matchKeywords: ['report', 'analysis', 'summary', 'deck', 'review', 'kpi'],
-    reason:
-      'Extracted analytical report structure, KPI scorecards, and performance findings.',
-    type: 'Report & Analysis',
-  },
-  {
-    defaultKeywords: ['Tracking #', 'Consignee', 'Carrier', 'Delivery Date'],
-    matchKeywords: [
-      'shipping',
-      'delivery',
-      'bill-of-lading',
-      'waybill',
-      'bol',
-      'dispatch',
-    ],
-    reason:
-      'Matched logistics waybill numbering, carrier details, and consignment destinations.',
-    type: 'Shipping & Delivery Note',
-  },
-]
-
-const FALLBACK_PROFILE: DocProfile = {
-  defaultKeywords: [
-    'Document ID',
-    'Creation Date',
-    'Subject',
-    'Classification',
-  ],
-  matchKeywords: [],
-  reason:
-    'Matched general corporate document structure and organizational metadata criteria.',
-  type: 'General Business Document',
-}
 
 /**
  * Classifies a document against candidate repositories using the backend Document Intelligent Agent API.
@@ -177,12 +70,19 @@ export async function classifyDocument(
           safeIdMatch(r.id, cand.repository_id),
         )
         const targetId = matchingRepo ? matchingRepo.id : cand.repository_id
+        const candidateReason =
+          cand.rationale ||
+          (safeIdMatch(cand.repository_id, res.repository_id)
+            ? res.rationale
+            : undefined) ||
+          (cand.score !== undefined && cand.score !== null
+            ? `Candidate match score: ${cand.score}`
+            : '')
+
         suggestions.push({
           confidence: normalizeScore(cand.score),
           keywords: [],
-          reason: safeIdMatch(cand.repository_id, res.repository_id)
-            ? res.rationale || 'Selected by Document Intelligent Agent.'
-            : `Candidate match score: ${cand.score}`,
+          reason: candidateReason,
           repositoryId: targetId,
           repositoryName:
             matchingRepo?.name || cand.repository_name || cand.repository_id,
@@ -191,7 +91,7 @@ export async function classifyDocument(
       })
     }
 
-    // Ensure the top recommended repository is present as the first suggestion
+    // Ensure the top recommended repository is present as the first suggestion if returned
     if (res.repository_id) {
       const topExists = suggestions.some((s) =>
         safeIdMatch(s.repositoryId, res.repository_id),
@@ -201,25 +101,28 @@ export async function classifyDocument(
           safeIdMatch(r.id, res.repository_id),
         )
         const targetId = matchingRepo ? matchingRepo.id : res.repository_id
+        const topScore = res.confidence_score ?? suggestions[0]?.score ?? 0
         suggestions.unshift({
-          confidence: normalizeScore(res.confidence_score || 88),
+          confidence: normalizeScore(topScore),
           keywords: [],
-          reason: res.rationale || 'Top AI classification match.',
+          reason:
+            res.rationale ||
+            (topScore !== undefined && topScore !== null
+              ? `Candidate match score: ${topScore}`
+              : ''),
           repositoryId: targetId,
           repositoryName:
             matchingRepo?.name || res.repository_name || res.repository_id,
-          score: res.confidence_score,
+          score: topScore,
         })
       }
     }
 
     suggestions.sort((a, b) => b.confidence - a.confidence)
 
-    const profile = detectProfile(file.name)
-
     return {
-      documentType: res.repository_name || profile.type,
-      keywords: profile.defaultKeywords,
+      documentType: res.repository_name || '',
+      keywords: [],
       ocrText: res.ocr_text,
       rationale: res.rationale,
       sourceReference: res.source_reference || file.name,
@@ -236,14 +139,4 @@ export async function classifyDocument(
       : 'Classification failed for this document. Please try again.'
 
   throw new Error(cleanError)
-}
-
-function detectProfile(fileName?: string): DocProfile {
-  const lowerName = (fileName || '').toLowerCase()
-  for (const profile of DOCUMENT_PROFILES) {
-    if (profile.matchKeywords.some((keyword) => lowerName.includes(keyword))) {
-      return profile
-    }
-  }
-  return FALLBACK_PROFILE
 }
