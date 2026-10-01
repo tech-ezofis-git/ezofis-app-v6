@@ -19,7 +19,11 @@ from app.models.report_agent import (
     ScopeOption,
 )
 from app.report_agent.data_service import execute_report_query
-from app.report_agent.definition_lock import lock_report_definition, parse_definition_json
+from app.report_agent.definition_lock import (
+    fallback_definition_from_prompt,
+    lock_report_definition,
+    parse_definition_json,
+)
 from app.report_agent.definition_sql import generate_definition_sql
 from app.report_agent.metadata_service import get_database_schema
 from app.report_agent.pack import report_system_prompt
@@ -74,23 +78,29 @@ class ReportAgentService:
             return await self._tenant_pools.acquire(tid)
         return self._db_pool
 
-    async def _llm_overrides(
+    async def _resolve_llm_presets(
         self,
         tenant_id: Optional[str],
         model: Optional[str] = None,
-    ) -> dict[str, Any]:
-        overrides: dict[str, Any] = {}
+    ) -> tuple[dict[str, Any], Optional[dict[str, Any]]]:
+        """Return (primary_overrides, fallback_overrides) for chat_completion."""
         if model:
-            overrides["model"] = model
-            return overrides
+            return {"model": model}, None
         tid = (tenant_id or "").strip()
         if not tid or self._catalog_store is None:
-            return overrides
+            return {}, None
         resolved = await apply_tenant_agent_llm(self._catalog_store, tid, "report")
+        primary: dict[str, Any] = {}
         preset = resolved.get("overrides")
         if isinstance(preset, dict):
-            overrides.update({k: v for k, v in preset.items() if v is not None})
-        return overrides
+            primary.update({k: v for k, v in preset.items() if v is not None})
+        fallback = resolved.get("fallback_overrides")
+        if not isinstance(fallback, dict) or not fallback:
+            fallback = None
+        # Avoid retrying the exact same primary preset as "fallback"
+        if fallback and primary and fallback.get("model") == primary.get("model"):
+            fallback = None
+        return primary, fallback
 
     async def _chat(
         self,
@@ -102,17 +112,29 @@ class ReportAgentService:
     ) -> tuple[str, Optional[dict[str, Any]]]:
         if self._llm is None:
             raise RuntimeError("Report Agent LLM adapter is not configured.")
-        overrides = await self._llm_overrides(tenant_id, model)
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        primary, fallback = await self._resolve_llm_presets(tenant_id, model)
         try:
-            result = await self._llm.chat_completion(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                **overrides,
+            result = await self._llm.chat_completion(messages, **primary)
+        except LLMAdapterError as primary_exc:
+            if not fallback:
+                raise RuntimeError(f"Report Agent model call failed: {primary_exc}") from primary_exc
+            logger.warning(
+                "report_agent_llm_primary_failed_retrying_fallback",
+                extra={
+                    "error": str(primary_exc)[:200],
+                    "fallback_model": fallback.get("model"),
+                },
             )
-        except LLMAdapterError as exc:
-            raise RuntimeError(f"Report Agent model call failed: {exc}") from exc
+            try:
+                result = await self._llm.chat_completion(messages, **fallback)
+            except LLMAdapterError as fallback_exc:
+                raise RuntimeError(
+                    f"Report Agent model call failed (primary and fallback): {fallback_exc}"
+                ) from fallback_exc
         return str(result.get("content") or ""), result.get("usage")
 
     async def list_scope_options(
@@ -250,7 +272,7 @@ class ReportAgentService:
                     continue
                 seen.add(key)
                 deduped.append(t)
-            tables = deduped[:40]
+            tables = deduped[:18]
 
         schema_block = schema_slice_to_prompt_block(tables)
         system = await report_system_prompt(
@@ -270,12 +292,15 @@ class ReportAgentService:
             "reportPrompt": prompt,
         }
         user = (
-            "Interpret the report prompt into locked reportDefinition JSON.\n\n"
+            "Interpret the report prompt into locked reportDefinition JSON.\n"
+            "Return ONLY one valid JSON object. No markdown fences, no commentary, "
+            "no trailing commas, no undefined values.\n\n"
             f"Input:\n{json.dumps(user_payload, indent=2)}\n\n"
             f"{schema_block}\n"
         )
 
         warnings: list[str] = []
+        raw_def: Optional[dict[str, Any]] = None
         try:
             content, _usage = await self._chat(
                 system=system,
@@ -283,9 +308,56 @@ class ReportAgentService:
                 tenant_id=request.tenant_id,
                 model=request.model,
             )
-            raw_def = parse_definition_json(content)
+            try:
+                raw_def = parse_definition_json(content)
+            except ValueError as parse_exc:
+                logger.warning(
+                    "report_agent_definition_parse_retry",
+                    extra={"error": str(parse_exc)[:200], "snippet": str(content)[:240]},
+                )
+                repair_user = (
+                    "Your previous response was invalid JSON. "
+                    "Return ONLY a corrected reportDefinition JSON object. "
+                    "No markdown, no trailing commas.\n\n"
+                    f"Broken response:\n{str(content)[:4000]}\n\n"
+                    f"Original request:\n{json.dumps(user_payload, indent=2)}\n\n"
+                    f"{schema_block}\n"
+                )
+                repaired, _ = await self._chat(
+                    system=system,
+                    user=repair_user,
+                    tenant_id=request.tenant_id,
+                    model=request.model,
+                )
+                raw_def = parse_definition_json(repaired)
         except Exception as exc:
             logger.warning("report_agent_run_llm_failed", extra={"error": str(exc)[:200]})
+            raw_def = fallback_definition_from_prompt(
+                prompt,
+                schema,
+                report_type=rt.key if rt else request.report_type,
+                title=(request.report_type or "Report"),
+            )
+            if raw_def is None:
+                duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+                return RunReportResponse(
+                    title="Report",
+                    report_type=rt.key if rt else request.report_type,
+                    columns=[],
+                    rows=[],
+                    total_count=0,
+                    page=request.page,
+                    page_size=request.page_size,
+                    filters=[],
+                    summary={},
+                    warnings=[f"Model failed to produce a report definition: {exc}"],
+                    duration_ms=duration_ms,
+                )
+            warnings.append(
+                f"Model JSON failed ({exc}); used schema-backed fallback definition."
+            )
+
+        if raw_def is None:
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
             return RunReportResponse(
                 title="Report",
@@ -297,7 +369,7 @@ class ReportAgentService:
                 page_size=request.page_size,
                 filters=[],
                 summary={},
-                warnings=[f"Model failed to produce a report definition: {exc}"],
+                warnings=["Model failed to produce a report definition."],
                 duration_ms=duration_ms,
             )
 
