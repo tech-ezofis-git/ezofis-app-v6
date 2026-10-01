@@ -18,6 +18,7 @@ import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 
 interface HeaderProps {
+  activeAction?: string | null
   isLoading: boolean
   raisedAt: any
   requestNo: string
@@ -146,6 +147,7 @@ const formatRaisedDate = (dateStr?: string | number | Date) => {
 
 const Header: React.FC<HeaderProps> = ({
   actions,
+  activeAction,
   agentData,
   approveLoading,
   assigneeLabel,
@@ -182,6 +184,15 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+  const [localActiveAction, setLocalActiveAction] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!approveLoading) {
+      setLocalActiveAction(null)
+    }
+  }, [approveLoading])
+
+  const effectiveActiveAction = activeAction ?? localActiveAction
 
   const raisedByDisplay =
     typeof raisedBy === 'object' && raisedBy
@@ -671,38 +682,56 @@ const Header: React.FC<HeaderProps> = ({
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
+
+                const actionVal = String(action?.value || action?.label || '')
+                const isThisAction = effectiveActiveAction
+                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  : true
+                const isThisActionLoading = Boolean(
+                  (action?.loading !== undefined ? action.loading : approveLoading) &&
+                    isThisAction,
+                )
+                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isDisabled = Boolean(
+                  isProcessing ||
+                    action?.disabled ||
+                    isOtherActionLoading,
+                )
+
                 const btn = (
                   <Button
                     color={btnColor}
+                    disabled={isDisabled}
                     icon={defaultIcon}
                     iconClass='size-4'
                     label={action?.label}
-                    loading={approveLoading}
+                    loading={isThisActionLoading}
                     size='md'
                     variant='subtle'
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
                     )}
-                    onClick={
-                      action.onClick || (() => onApprove?.(action?.value))
-                    }
+                    onClick={(e: any) => {
+                      if (isDisabled || approveLoading) return
+                      setLocalActiveAction(actionVal)
+                      if (action.onClick) {
+                        action.onClick(e)
+                      } else {
+                        onApprove?.(action?.value || action?.label)
+                      }
+                    }}
                   />
                 )
 
                 return (
                   <div
                     className='flex items-center gap-1.5'
-                    key={action?.value}
+                    key={action?.value || action?.label}
                   >
                     {action.renderWrapper
-                      ? (() => {
-                          console.log(
-                            'Rendering custom wrapper for action:',
-                            action.value,
-                          )
-                          return action.renderWrapper(btn)
-                        })()
+                      ? action.renderWrapper(btn)
                       : btn}
                   </div>
                 )
@@ -756,6 +785,17 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onNext}
             />
           </Tooltip>
+          {stage && (
+            <Tooltip
+              className='max-w-[11rem] min-w-0'
+              content={String(stage)}
+              position='bottom'
+            >
+              <span className='inline-flex max-w-full min-w-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                <span className='truncate'>{stage}</span>
+              </span>
+            </Tooltip>
+          )}
           <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
             {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
               <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
@@ -841,9 +881,6 @@ const Header: React.FC<HeaderProps> = ({
                         'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
                       isLoaderIcon = true
                     } else {
-                      if (_showApprove) {
-                        return null
-                      }
                       iconName = 'tabler:clock'
                       badgeColorClass =
                         'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
@@ -1539,15 +1576,22 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex items-center gap-2'>
               {isEditing && (
                 <Button
-                  className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
+                  className={cn(
+                    'h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md',
+                    approveLoading && effectiveActiveAction !== 'Save' && 'pointer-events-none opacity-50 cursor-not-allowed',
+                  )}
                   color='primary'
+                  disabled={Boolean(isProcessing || (approveLoading && effectiveActiveAction !== 'Save'))}
                   icon='lucide:save'
                   iconClass='size-4'
                   label={t`Save`}
-                  loading={approveLoading}
+                  loading={Boolean(approveLoading && (effectiveActiveAction === 'Save' || !effectiveActiveAction))}
                   size='md'
                   variant='solid'
-                  onClick={() => onApprove?.('Save')}
+                  onClick={() => {
+                    setLocalActiveAction('Save')
+                    onApprove?.('Save')
+                  }}
                 />
               )}
 
@@ -1601,38 +1645,55 @@ const Header: React.FC<HeaderProps> = ({
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
 
+                const actionVal = String(action?.value || action?.label || '')
+                const isThisAction = effectiveActiveAction
+                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  : true
+                const isThisActionLoading = Boolean(
+                  (action?.loading !== undefined ? action.loading : approveLoading) &&
+                    isThisAction,
+                )
+                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isDisabled = Boolean(
+                  isProcessing ||
+                    action?.disabled ||
+                    isOtherActionLoading,
+                )
+
                 const btn = (
                   <Button
                     color={btnColor}
+                    disabled={isDisabled}
                     icon={defaultIcon}
                     iconClass='size-4'
                     label={action?.label}
-                    loading={approveLoading}
+                    loading={isThisActionLoading}
                     size='md'
                     variant={btnVariant}
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
                     )}
-                    onClick={
-                      action.onClick || (() => onApprove?.(action?.value))
-                    }
+                    onClick={(e: any) => {
+                      if (isDisabled || approveLoading) return
+                      setLocalActiveAction(actionVal)
+                      if (action.onClick) {
+                        action.onClick(e)
+                      } else {
+                        onApprove?.(action?.value || action?.label)
+                      }
+                    }}
                   />
                 )
 
                 return (
                   <div
                     className='flex items-center gap-1.5'
-                    key={action?.value}
+                    key={action?.value || action?.label}
                   >
                     {action.renderWrapper
-                      ? (() => {
-                          console.log(
-                            'Rendering custom wrapper for action:',
-                            action.value,
-                          )
-                          return action.renderWrapper(btn)
-                        })()
+                      ? action.renderWrapper(btn)
                       : btn}
                   </div>
                 )

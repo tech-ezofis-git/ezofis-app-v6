@@ -13,17 +13,14 @@ import {
   useRef,
   useState,
 } from 'react'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
-import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
@@ -152,13 +149,9 @@ type FolderTableDataTableSplitProps = {
 
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
 
-  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
-
   onEditMetadata?: (id: string) => void
 
   onExportStagedFile?: (file: FileItem) => Promise<void>
-
-  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
 
   onLoadMoreFolders?: () => void
 
@@ -662,13 +655,9 @@ export default function FolderTableDataTableSplit({
 
   onDeleteStagedFile,
 
-  onDeleteStagedFiles,
-
   onEditMetadata,
 
   onExportStagedFile,
-
-  onExportStagedFiles,
 
   onLoadMoreFolders,
 
@@ -1044,10 +1033,8 @@ export default function FolderTableDataTableSplit({
             onAiSummary={onAiSummary}
             onDeleteFile={onDeleteFile}
             onDeleteStagedFile={onDeleteStagedFile}
-            onDeleteStagedFiles={onDeleteStagedFiles}
             onEditMetadata={onEditMetadata}
             onExportStagedFile={onExportStagedFile}
-            onExportStagedFiles={onExportStagedFiles}
             onOpenFile={onOpenFile}
             onPageChange={handleFilePageChange}
             onPageSizeChange={handleFilePageSizeChange}
@@ -1153,10 +1140,8 @@ function FileDataTableSection({
   onAiSummary,
   onDeleteFile,
   onDeleteStagedFile,
-  onDeleteStagedFiles,
   onEditMetadata,
   onExportStagedFile,
-  onExportStagedFiles,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
@@ -1185,10 +1170,8 @@ function FileDataTableSection({
   onAiSummary: (id: string) => void
   onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
-  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onEditMetadata?: (id: string) => void
   onExportStagedFile?: (file: FileItem) => Promise<void>
-  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
@@ -1197,15 +1180,10 @@ function FileDataTableSection({
   onWorkflow?: (id: string) => void
 }) {
   const { t } = useLingui()
-  const [selectedStagedIds, setSelectedStagedIds] = useState<string[]>([])
   const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(
     null,
   )
   const [isDeletingFile, setIsDeletingFile] = useState(false)
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
-  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
-  const [isBulkExporting, setIsBulkExporting] = useState(false)
-  const [isBulkExportConfirmOpen, setIsBulkExportConfirmOpen] = useState(false)
 
   const mergedFileFilters = useMemo(
     () => mergeFileExplorerFilters(folderFilters, fileFilters),
@@ -1221,28 +1199,6 @@ function FileDataTableSection({
         fileSearch,
       ),
     [folderContextFilters, files, mergedFileFilters, fileSearch],
-  )
-
-  const stagedFilesList = useMemo(
-    () => (filteredFiles as FileItem[]).filter(isUnarchivedStageFile),
-    [filteredFiles],
-  )
-  const hasStagedFiles = stagedFilesList.length > 0
-
-  const validSelectedStagedFiles = useMemo(() => {
-    const idSet = new Set(selectedStagedIds)
-    return stagedFilesList.filter((f) => idSet.has(getFileId(f as any)))
-  }, [stagedFilesList, selectedStagedIds])
-
-  const selectedStagedCount = validSelectedStagedFiles.length
-
-  const canBulkExport = useMemo(
-    () =>
-      validSelectedStagedFiles.length > 0 &&
-      validSelectedStagedFiles.every((file) =>
-        hasAllMandatoryFieldsFilled(file, columns, folderContextFilters),
-      ),
-    [columns, folderContextFilters, validSelectedStagedFiles],
   )
 
   const getPrimaryFileName = (file: any) => {
@@ -1416,79 +1372,7 @@ function FileDataTableSection({
       })
     })
 
-    const selectionColumn = [
-      fileColumnHelper.display({
-        enableResizing: false,
-        enableSorting: false,
-        id: 'select',
-        maxSize: 48,
-        meta: {
-          className: '!px-0 !pl-0 !pr-0 text-center',
-          disableEllipsis: true,
-          headerAlign: 'center' as const,
-          headerClassName: '!px-0 !pl-0 !pr-0 text-center',
-        },
-        minSize: 48,
-        size: 48,
-        cell: ({ row }) => {
-          const fileId = row.original.id
-          const isChecked = selectedStagedIds.includes(fileId)
-
-          return (
-            <div
-              className='flex w-full items-center justify-center'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <InputCheckbox
-                aria-label={t`Select file`}
-                checked={isChecked}
-                onChange={(checked) => {
-                  setSelectedStagedIds((prev) =>
-                    checked
-                      ? prev.includes(fileId)
-                        ? prev
-                        : [...prev, fileId]
-                      : prev.filter((id) => id !== fileId),
-                  )
-                }}
-              />
-            </div>
-          )
-        },
-        header: () => {
-          const isAllSelected =
-            filteredFiles.length > 0 &&
-            validSelectedStagedFiles.length === filteredFiles.length
-          const isIndeterminate =
-            validSelectedStagedFiles.length > 0 && !isAllSelected
-
-          return (
-            <div
-              className='flex w-full items-center justify-center'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <InputCheckbox
-                aria-label={t`Select all files`}
-                checked={isAllSelected}
-                indeterminate={isIndeterminate}
-                onChange={(checked) => {
-                  if (checked) {
-                    setSelectedStagedIds(
-                      filteredFiles.map((f) => getFileId(f as any)),
-                    )
-                  } else {
-                    setSelectedStagedIds([])
-                  }
-                }}
-              />
-            </div>
-          )
-        },
-      }),
-    ]
-
     return [
-      ...selectionColumn,
       ...dynamicColumns,
       fileColumnHelper.display({
         enableResizing: false,
@@ -1517,7 +1401,7 @@ function FileDataTableSection({
               >
                 {canExport && onExportStagedFile ? (
                   <StagedFileExportButton
-                    disabled={loadingPage || isBulkExporting || isBulkDeleting}
+                    disabled={loadingPage}
                     fileName={String(
                       file.name || row.original.__name || t`this file`,
                     )}
@@ -1526,7 +1410,7 @@ function FileDataTableSection({
                 ) : null}
                 {onDeleteStagedFile ? (
                   <StagedFileDeleteButton
-                    disabled={loadingPage || isBulkExporting || isBulkDeleting}
+                    disabled={loadingPage}
                     fileName={String(
                       file.name || row.original.__name || t`this file`,
                     )}
@@ -1607,15 +1491,9 @@ function FileDataTableSection({
     columns,
     folderContextFilters,
     filteredFiles,
-    hasStagedFiles,
-    stagedFilesList,
-    validSelectedStagedFiles,
-    selectedStagedIds,
     hiddenFirstColumnKeys,
     primaryNameCol,
     loadingPage,
-    isBulkDeleting,
-    isBulkExporting,
     onAiSummary,
     onDeleteStagedFile,
     onExportStagedFile,
@@ -1641,7 +1519,7 @@ function FileDataTableSection({
     enableSorting: true,
     initialState: {
       columnPinning: {
-        left: ['select', '__name'],
+        left: ['__name'],
         right: ['actions'],
       },
     },
@@ -1684,59 +1562,6 @@ function FileDataTableSection({
 
   return (
     <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-      {selectedStagedCount > 0 &&
-      (onDeleteStagedFiles || onExportStagedFiles) ? (
-        <div className='animate-in fade-in slide-in-from-top-1 flex shrink-0 items-center justify-between border-b border-gray-4 bg-gray-2 px-4 py-2 text-xs duration-200'>
-          <div className='flex items-center gap-2.5'>
-            <span className='inline-flex items-center justify-center rounded-full bg-primary-9 px-2 py-0.5 text-[11px] font-semibold text-white'>
-              {selectedStagedCount}
-            </span>
-            <span className='font-medium text-gray-12'>
-              {selectedStagedCount === 1
-                ? t`1 staged file selected`
-                : t`${selectedStagedCount} staged files selected`}
-            </span>
-            <button
-              className='text-[12px] font-medium text-gray-10 underline hover:text-gray-13'
-              type='button'
-              onClick={() => setSelectedStagedIds([])}
-            >
-              {t`Deselect all`}
-            </button>
-          </div>
-          <div className='flex items-center gap-2'>
-            {canBulkExport && onExportStagedFiles ? (
-              <Tooltip content={t`Export selected staged files`} position='top'>
-                <Button
-                  color='primary'
-                  disabled={isBulkExporting || isBulkDeleting}
-                  loading={isBulkExporting}
-                  size='xs'
-                  onClick={() => setIsBulkExportConfirmOpen(true)}
-                >
-                  <Icon className='size-3.5' name='tabler:file-export' />
-                  {t`Export Selected (${selectedStagedCount})`}
-                </Button>
-              </Tooltip>
-            ) : null}
-            {onDeleteStagedFiles ? (
-              <Tooltip content={t`Delete selected staged files`} position='top'>
-                <Button
-                  color='red'
-                  disabled={isBulkDeleting || isBulkExporting}
-                  loading={isBulkDeleting}
-                  size='xs'
-                  onClick={() => setIsBulkConfirmOpen(true)}
-                >
-                  <DynamicIcon className='size-3.5' name='trash' />
-                  {t`Delete Selected (${selectedStagedCount})`}
-                </Button>
-              </Tooltip>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
           isLoading={(loading || loadingPage) && filteredFiles.length === 0}
@@ -1752,64 +1577,6 @@ function FileDataTableSection({
           onReload={onReload || (() => undefined)}
         />
       </div>
-
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Export`}
-        isConfirming={isBulkExporting}
-        opened={isBulkExportConfirmOpen}
-        title={t`Export staged files`}
-        variant='default'
-        description={
-          selectedStagedCount === 1
-            ? t`Are you sure you want to export 1 selected staged file?`
-            : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
-        }
-        onCancel={() => {
-          if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
-        }}
-        onConfirm={async () => {
-          setIsBulkExporting(true)
-          try {
-            await onExportStagedFiles?.(validSelectedStagedFiles)
-            setSelectedStagedIds([])
-            setIsBulkExportConfirmOpen(false)
-          } catch {
-            // error handled by caller toast
-          } finally {
-            setIsBulkExporting(false)
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Delete`}
-        isConfirming={isBulkDeleting}
-        opened={isBulkConfirmOpen}
-        title={t`Delete staged files`}
-        variant='danger'
-        description={
-          selectedStagedCount === 1
-            ? t`Are you sure you want to delete 1 selected staged file?`
-            : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
-        }
-        onCancel={() => {
-          if (!isBulkDeleting) setIsBulkConfirmOpen(false)
-        }}
-        onConfirm={async () => {
-          setIsBulkDeleting(true)
-          try {
-            await onDeleteStagedFiles?.(validSelectedStagedFiles)
-            setSelectedStagedIds([])
-            setIsBulkConfirmOpen(false)
-          } catch {
-            // error handled by caller toast
-          } finally {
-            setIsBulkDeleting(false)
-          }
-        }}
-      />
 
       <ConfirmDialog
         cancelLabel={t`Cancel`}

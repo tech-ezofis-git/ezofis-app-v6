@@ -241,52 +241,6 @@ export function FolderExplorer() {
     [refreshData, resolvedRepositoryId, t],
   )
 
-  const handleDeleteStagedFiles = useCallback(
-    async (filesToDelete: FileItem[]) => {
-      const fileIds = filesToDelete
-        .map((file) =>
-          String(file.stageFileId || file.id || '')
-            .replace(/^staged-/, '')
-            .trim(),
-        )
-        .filter(Boolean)
-
-      const repositoryId = String(
-        filesToDelete[0]?.repositoryId || resolvedRepositoryId || '',
-      ).trim()
-
-      if (!fileIds.length || !repositoryId) {
-        showToast({
-          message: t`Couldn't delete selected staged files.`,
-          variant: 'error',
-        })
-        throw new Error('missing staged file id or repository id')
-      }
-
-      const { error } = await uploadAndIndexApi.deleteStagedFiles({
-        fileIds,
-        repositoryId,
-      })
-      if (error) {
-        showToast({
-          message: String(error),
-          variant: 'error',
-        })
-        throw new Error(error)
-      }
-
-      showToast({
-        message:
-          fileIds.length === 1
-            ? t`Staged file deleted.`
-            : t`${fileIds.length} staged files deleted.`,
-        variant: 'success',
-      })
-      await refreshData()
-    },
-    [refreshData, resolvedRepositoryId, t],
-  )
-
   const buildStageFileIndexPayload = useCallback(
     (file: FileItem): IndexStageFileRequest => {
       const fields = fileColumns.map((col) => {
@@ -365,52 +319,6 @@ export function FolderExplorer() {
         variant: 'success',
       })
       await refreshData()
-    },
-    [buildStageFileIndexPayload, refreshData, t],
-  )
-
-  const handleExportStagedFiles = useCallback(
-    async (filesToExport: FileItem[]) => {
-      if (!filesToExport.length) return
-
-      let successCount = 0
-      let lastError = ''
-
-      for (const file of filesToExport) {
-        const stageId = String(file.stageFileId || file.id || '')
-          .replace(/^staged-/, '')
-          .trim()
-        if (!stageId) continue
-
-        const payload = buildStageFileIndexPayload(file)
-        const { error } = await uploadAndIndexApi.indexStageFile(
-          stageId,
-          payload,
-        )
-
-        if (error) {
-          lastError = String(error)
-        } else {
-          successCount++
-        }
-      }
-
-      if (successCount > 0) {
-        showToast({
-          message:
-            successCount === 1
-              ? t`Staged file exported successfully.`
-              : t`${successCount} staged files exported successfully.`,
-          variant: 'success',
-        })
-        await refreshData()
-      } else if (lastError) {
-        showToast({
-          message: lastError,
-          variant: 'error',
-        })
-        throw new Error(lastError)
-      }
     },
     [buildStageFileIndexPayload, refreshData, t],
   )
@@ -1038,14 +946,12 @@ export function FolderExplorer() {
           onBreadcrumbSelect={openFolder}
           onDeleteFile={handleDeleteArchivedFile}
           onDeleteStagedFile={handleDeleteStagedFile}
-          onDeleteStagedFiles={handleDeleteStagedFiles}
           onEdit={
             folderPermissions.editMetadata
               ? (id) => handleFileAction(id, 'editMetadata')
               : undefined
           }
           onExportStagedFile={handleExportStagedFile}
-          onExportStagedFiles={handleExportStagedFiles}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
@@ -1163,14 +1069,12 @@ export function FolderExplorer() {
               onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
               onDeleteFile={handleDeleteArchivedFile}
               onDeleteStagedFile={handleDeleteStagedFile}
-              onDeleteStagedFiles={handleDeleteStagedFiles}
               onEditMetadata={
                 folderPermissions.editMetadata
                   ? (id) => handleFileAction(id, 'editMetadata')
                   : undefined
               }
               onExportStagedFile={handleExportStagedFile}
-              onExportStagedFiles={handleExportStagedFiles}
               onLoadMoreFolders={loadMoreFolders}
               onOpenFile={openDetailsFile}
               onOpenFolder={openFolder}

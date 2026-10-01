@@ -988,11 +988,15 @@ const GridRowItem = memo(
         row.status ||
         '',
     ).toUpperCase()
-    const aiInsight =
+    const rawAiInsight = String(
       agentData?.ai_insight ||
-      agentData?.aiInsight ||
-      agentData?.ai_insect ||
-      ''
+        agentData?.aiInsight ||
+        agentData?.ai_insect ||
+        row?.qualifyAgentResponse?.qualifier_result?.['AI Insight'] ||
+        row?.qualifyAgentResponse?.qualifier_result?.['Ai Insight'] ||
+        '',
+    ).trim()
+    const aiInsight = rawAiInsight.replace(/^[✨\u2728\u2729\u2730\s]+/, '').trim()
 
     const isAgentStage = Boolean(
       row?.stageType?.toUpperCase().includes('AGENT'),
@@ -1087,7 +1091,7 @@ const GridRowItem = memo(
         <div className='flex min-w-0 flex-1 flex-col gap-1'>
           <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
             <h3
-              className='shrink-0 text-[15px] tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+              className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
               style={{ fontWeight: 500 }}
             >
               {invoiceNo}

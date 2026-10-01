@@ -4,9 +4,11 @@ import Alert from '@/components/base/Alert'
 import Badge from '@/components/base/Badge'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import { StagedFileExportButton } from '../StagedFileDeleteButton'
 import type { QueuedUploadFile } from './uploadQueueTypes'
 
 interface UploadQueueFileCardProps {
@@ -15,9 +17,14 @@ interface UploadQueueFileCardProps {
   className?: string
   disabled?: boolean
   missingMandatoryFields?: boolean
+  onExport?: (id: string) => Promise<void>
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onRetryOcr: (id: string) => void
+  onToggleSelect?: (id: string, checked: boolean) => void
+  selected?: boolean
+  showCheckbox?: boolean
+  showExport?: boolean
 }
 
 export default function UploadQueueFileCard({
@@ -26,9 +33,14 @@ export default function UploadQueueFileCard({
   entry,
   isOpen,
   missingMandatoryFields = false,
+  onExport,
   onOpen,
   onRemove,
   onRetryOcr,
+  onToggleSelect,
+  selected = false,
+  showCheckbox = false,
+  showExport = false,
 }: UploadQueueFileCardProps) {
   const { t } = useLingui()
 
@@ -65,6 +77,20 @@ export default function UploadQueueFileCard({
       }
     >
       <div className='flex items-start justify-between gap-2'>
+        {showCheckbox ? (
+          <div
+            className='flex shrink-0 items-center self-center'
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <InputCheckbox
+              aria-label={t`Select file`}
+              checked={selected}
+              disabled={!canRemove}
+              onChange={(checked) => onToggleSelect?.(entry.id, checked)}
+            />
+          </div>
+        ) : null}
         <div className='flex min-w-0 flex-1 items-center gap-2.5'>
           <div
             className={cn(
@@ -97,7 +123,11 @@ export default function UploadQueueFileCard({
           </div>
         </div>
 
-        <div className='flex shrink-0 items-center gap-2 self-center'>
+        <div
+          className='flex shrink-0 items-center gap-2 self-center'
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
           {entry.status === 'ready' && missingMandatoryFields ? (
             <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-[var(--orange-10)]'>
               <Icon className='size-3.5' name='lucide:alert-circle' />
@@ -106,10 +136,18 @@ export default function UploadQueueFileCard({
           ) : null}
           {entry.status === 'ready' && !missingMandatoryFields ? (
             <span className='shrink-0 rounded-full border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--orange-7)] uppercase'>
-              {t`Waiting For Export`}
+              {t`Ready to export`}
             </span>
           ) : null}
           {entry.status !== 'ready' ? renderStatusBadge() : null}
+
+          {showExport && onExport ? (
+            <StagedFileExportButton
+              disabled={!canRemove}
+              fileName={entry.fileName || t`this file`}
+              onExport={() => onExport(entry.id)}
+            />
+          ) : null}
 
           {canRemove && (
             <Tooltip content={t`Remove file`}>
@@ -167,7 +205,7 @@ export default function UploadQueueFileCard({
           </span>
         )
       case 'ready':
-        return <Badge color='indigo' label={t`Waiting for Export`} />
+        return <Badge color='indigo' label={t`Ready to export`} />
       case 'indexing':
         return (
           <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-accent-primary'>

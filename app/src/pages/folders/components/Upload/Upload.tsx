@@ -20,9 +20,11 @@ import {
   loadStageFile,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
+import BaseButton from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -805,6 +807,32 @@ const countQueueDraftGroups = (
   return { inProgress, total: waiting + inProgress, waiting }
 }
 
+// Keep the in-memory upload row's job id and file blob when the draft list
+// is reloaded, so OCR polling can continue for files just staged.
+const mergeDraftWithLocalUpload = (
+  base: QueuedUploadFile,
+  local: QueuedUploadFile,
+): QueuedUploadFile => {
+  const serverSettled =
+    base.status === 'ready' ||
+    base.status === 'error' ||
+    base.status === 'indexed' ||
+    base.status === 'indexing'
+
+  return {
+    ...base,
+    file: local.file ?? base.file,
+    previewUrl: local.previewUrl ?? base.previewUrl,
+    ...(serverSettled
+      ? {}
+      : {
+          backendStatus: local.backendStatus ?? base.backendStatus,
+          jobId: local.jobId ?? base.jobId,
+          status: local.jobId ? local.status : base.status,
+        }),
+  }
+}
+
 const fileFingerprint = (file: File) =>
   `${file.name}:${file.size}:${file.lastModified}`
 
@@ -834,6 +862,7 @@ export default function Upload({
     at: number
     fingerprint: string
   } | null>(null)
+  const listExportIdsRef = useRef<Set<string>>(new Set())
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
@@ -853,6 +882,11 @@ export default function Upload({
   const [isDeletingStageFile, setIsDeletingStageFile] = useState(false)
   const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
   const [backConfirmOpen, setBackConfirmOpen] = useState(false)
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [bulkExportConfirmOpen, setBulkExportConfirmOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [isBulkExporting, setIsBulkExporting] = useState(false)
 
   const repositoryFields = useMemo(() => {
     return [...(repositoryData?.fields ?? [])].sort((a, b) => {
@@ -1303,12 +1337,102 @@ export default function Upload({
     [masterFormSyncData, repositoryFields, handleSync],
   )
 
+  const openDraftFilesView = useCallback(
+    async (options?: {
+      preferredLocal?: QueuedUploadFile[]
+      tab?: 'auto' | 'export' | 'uploading'
+    }) => {
+      const tab = options?.tab ?? 'auto'
+      const preferredLocal = options?.preferredLocal ?? []
+
+      if (!activeRepositoryId) {
+        showToast({
+          message: t`Repository ID is missing. Cannot run OCR.`,
+          variant: 'error',
+        })
+        return
+      }
+
+      if (tab === 'uploading' || tab === 'export') {
+        setQueueListTab(tab)
+        setViewingDrafts(true)
+        setOpenFileId(null)
+      }
+
+      setIsRestoringQueue(true)
+      try {
+        const drafts = await collectDraftStageFiles(activeRepositoryId)
+        const preferredByStageId = new Map(
+          preferredLocal
+            .filter((entry) => entry.stageFileId)
+            .map((entry) => [entry.stageFileId as string, entry]),
+        )
+        const listedStageIds = new Set<string>()
+        const entries = drafts.map((summary) => {
+          const base = draftSummaryToQueueEntry(summary, repositoryFields)
+          listedStageIds.add(summary.id)
+          const local = preferredByStageId.get(summary.id)
+          return local ? mergeDraftWithLocalUpload(base, local) : base
+        })
+
+        for (const local of preferredLocal) {
+          if (local.status === 'indexed') continue
+          if (local.stageFileId && listedStageIds.has(local.stageFileId)) {
+            continue
+          }
+          entries.push(local)
+        }
+
+        if (!entries.length) {
+          showToast({
+            message: t`No draft files to review.`,
+            variant: 'info',
+          })
+          return
+        }
+
+        const hasReady = entries.some((entry) =>
+          isDraftReadyForExport(entry, repositoryFields),
+        )
+        setDraftCounts(countQueueDraftGroups(entries, repositoryFields))
+        setQueueListTab(
+          tab === 'auto' ? (hasReady ? 'export' : 'uploading') : tab,
+        )
+        setViewingDrafts(true)
+        setOpenFileId(null)
+        setQueue(entries)
+      } catch {
+        if (preferredLocal.length && tab === 'uploading') {
+          setDraftCounts(
+            countQueueDraftGroups(preferredLocal, repositoryFields),
+          )
+          setQueueListTab('uploading')
+          setViewingDrafts(true)
+          setOpenFileId(null)
+          setQueue(preferredLocal)
+          return
+        }
+        showToast({
+          message: t`Unable to load draft files.`,
+          variant: 'error',
+        })
+      } finally {
+        setIsRestoringQueue(false)
+      }
+    },
+    [activeRepositoryId, repositoryFields, t],
+  )
+
   // Batches every newly-added 'queued' entry into a single bulkUpload call
   // (one network call per drop/selection, not one per file) and stores the
   // returned stageFileId/jobId on each entry so the poller (below) can pick
   // up OCR progress for the whole batch.
   const stageFilesForOcr = useCallback(
-    async (entries: QueuedUploadFile[], activeRepositoryId: string) => {
+    async (
+      entries: QueuedUploadFile[],
+      activeRepositoryId: string,
+      options?: { openDraftsOnSuccess?: boolean },
+    ) => {
       const filesToStage = entries.filter(
         (entry): entry is QueuedUploadFile & { file: File } =>
           Boolean(entry.file),
@@ -1376,7 +1500,9 @@ export default function Upload({
           singleEntry.id,
           JSON.stringify(fieldValues),
         )
-        setOpenFileId(singleEntry.id)
+        if (!options?.openDraftsOnSuccess) {
+          setOpenFileId(singleEntry.id)
+        }
 
         // Stage the file using uploadWithOcr carrying forward the extracted OCR data
         const { data: stageData, error: stageError } = await uploadWithOcr({
@@ -1391,14 +1517,47 @@ export default function Upload({
           repositoryId: activeRepositoryId,
         })
 
+        const stagedEntry: QueuedUploadFile = {
+          ...singleEntry,
+          backendStatus: 'OCR',
+          errorMessage: undefined,
+          fieldValues,
+          masterSyncedValues: fieldValues,
+          ocrExtractedValues,
+          ocrStatus: 'complete',
+          rawOcrJson: data.ocrJson || data.ocrResult,
+          rawOcrText: data.ocrText || '',
+          stageFileId: stageData?.fileId || data.fileId || data.id,
+          status: 'ready',
+        }
+
         if (stageError || !stageData?.fileId) {
           console.warn('[uploadWithOcr] Staging warning:', stageError)
+          if (options?.openDraftsOnSuccess && stagedEntry.stageFileId) {
+            if (onSuccess) await onSuccess()
+            await openDraftFilesView({
+              preferredLocal: [stagedEntry],
+              tab: 'uploading',
+            })
+          }
           return
         }
 
         updateEntry(singleEntry.id, {
           stageFileId: stageData.fileId,
         })
+
+        if (options?.openDraftsOnSuccess) {
+          showToast({
+            message: t`Files uploaded successfully.`,
+            variant: 'success',
+          })
+          if (onSuccess) await onSuccess()
+          await openDraftFilesView({
+            preferredLocal: [{ ...stagedEntry, stageFileId: stageData.fileId }],
+            tab: 'uploading',
+          })
+        }
         return
       }
 
@@ -1423,19 +1582,35 @@ export default function Upload({
       }
 
       let hasSuccess = false
+      const preferredLocal: QueuedUploadFile[] = []
       data.files.forEach((result, index) => {
         const entry = filesToStage[index]
         if (!entry) return
 
         if (!result.succeeded) {
-          updateEntry(entry.id, {
+          const failedEntry: QueuedUploadFile = {
+            ...entry,
             errorMessage: result.error || t`Staging failed.`,
+            status: 'error',
+          }
+          preferredLocal.push(failedEntry)
+          updateEntry(entry.id, {
+            errorMessage: failedEntry.errorMessage,
             status: 'error',
           })
           return
         }
 
         hasSuccess = true
+        const uploadedEntry: QueuedUploadFile = {
+          ...entry,
+          backendStatus: 'Queued',
+          errorMessage: undefined,
+          jobId: data.jobId,
+          stageFileId: result.fileId,
+          status: 'analyzing',
+        }
+        preferredLocal.push(uploadedEntry)
         updateEntry(entry.id, {
           backendStatus: 'Queued',
           errorMessage: undefined,
@@ -1451,10 +1626,25 @@ export default function Upload({
           variant: 'success',
         })
         if (onSuccess) await onSuccess()
-        onBack()
+        if (options?.openDraftsOnSuccess) {
+          await openDraftFilesView({
+            preferredLocal,
+            tab: 'uploading',
+          })
+        } else {
+          onBack()
+        }
       }
     },
-    [repositoryFields, t, updateEntry, setOpenFileId, onBack, onSuccess],
+    [
+      onBack,
+      onSuccess,
+      openDraftFilesView,
+      repositoryFields,
+      setOpenFileId,
+      t,
+      updateEntry,
+    ],
   )
 
   // Tracks which entries already had loadStageFile called for their current
@@ -1743,9 +1933,12 @@ export default function Upload({
           return next
         })
 
-        // Auto-open only if a single file is uploaded. For multiple files (>1), navigate back to previous screen.
-        if (newEntries.length === 1 && queue.length === 0) {
+        const reviewSingleFile = newEntries.length === 1 && queue.length === 0
+        if (reviewSingleFile) {
           setOpenFileId(newEntries[0].id)
+        } else if (newEntries.length > 1) {
+          setQueueListTab('uploading')
+          setOpenFileId(null)
         }
 
         if (newFiles.length < validFiles.length) {
@@ -1755,7 +1948,9 @@ export default function Upload({
           })
         }
 
-        void stageFilesForOcr(newEntries, activeRepositoryId)
+        void stageFilesForOcr(newEntries, activeRepositoryId, {
+          openDraftsOnSuccess: newEntries.length > 1,
+        })
       }
     }
 
@@ -2013,7 +2208,10 @@ export default function Upload({
   }, [repositoryFields, activeEntry])
 
   const indexEntry = useCallback(
-    async (id: string): Promise<any | null> => {
+    async (
+      id: string,
+      options?: { keepList?: boolean; quiet?: boolean },
+    ): Promise<any | null> => {
       const entry = queue.find((item) => item.id === id)
       if (!entry) {
         showToast({
@@ -2044,6 +2242,9 @@ export default function Upload({
       }
 
       try {
+        if (options?.keepList) {
+          setOpenFileId((current) => (current === id ? null : current))
+        }
         updateEntry(id, { exportStatus: 'exporting', status: 'indexing' })
 
         const { data, error } = await indexStageFile(
@@ -2067,19 +2268,21 @@ export default function Upload({
         updateEntry(id, { exportStatus: 'success', status: 'indexed' })
         lastSavedValuesRef.current.set(id, JSON.stringify(entry.fieldValues))
         setAutoSaveStatus('saved')
-        showToast({
-          message: t`File exported successfully.`,
-          variant: 'success',
-        })
+        if (!options?.quiet) {
+          showToast({
+            message: t`File exported successfully.`,
+            variant: 'success',
+          })
+        }
         await onSuccess?.()
 
-        if (viewingDrafts) {
+        if (viewingDrafts || options?.keepList) {
           setQueue((prev) => {
             const remaining = prev.filter((item) => item.id !== id)
             setDraftCounts(countQueueDraftGroups(remaining, repositoryFields))
             return remaining
           })
-          setOpenFileId(null)
+          setOpenFileId((current) => (current === id ? null : current))
         } else {
           onBack?.()
         }
@@ -2523,53 +2726,136 @@ export default function Upload({
     updateEntry(activeEntry.id, { activeTab: tab })
   }
 
-  const handleOpenDraftFiles = async () => {
-    if (!activeRepositoryId) {
-      showToast({
-        message: t`Repository ID is missing. Cannot run OCR.`,
-        variant: 'error',
-      })
-      return
-    }
-
-    setIsRestoringQueue(true)
-    try {
-      const drafts = await collectDraftStageFiles(activeRepositoryId)
-      setDraftCounts(countDraftGroups(drafts, repositoryFields))
-      if (!drafts.length) {
-        showToast({
-          message: t`No draft files to review.`,
-          variant: 'info',
-        })
-        return
-      }
-      const entries = drafts.map((summary) =>
-        draftSummaryToQueueEntry(summary, repositoryFields),
-      )
-      const hasReady = entries.some((entry) =>
-        isDraftReadyForExport(entry, repositoryFields),
-      )
-      setQueueListTab(hasReady ? 'export' : 'uploading')
-      setViewingDrafts(true)
-      setOpenFileId(null)
-      setQueue(entries)
-    } catch {
-      showToast({
-        message: t`Unable to load draft files.`,
-        variant: 'error',
-      })
-    } finally {
-      setIsRestoringQueue(false)
-    }
+  const handleOpenDraftFiles = () => {
+    void openDraftFilesView()
   }
 
   const handleOpenQueuedFile = (id: string) => {
+    if (listExportIdsRef.current.has(id)) return
     setOpenFileId(id)
     const entry = queueRef.current.find((item) => item.id === id)
     if (!entry?.restoredFromServer || !entry.stageFileId) return
     if (loadedStageFileIdsRef.current.has(entry.stageFileId)) return
     loadedStageFileIdsRef.current.add(entry.stageFileId)
     void loadAndPopulateFields(entry)
+  }
+
+  const handleExportQueuedFile = async (id: string) => {
+    listExportIdsRef.current.add(id)
+    setOpenFileId((current) => (current === id ? null : current))
+    try {
+      const result = await indexEntry(id, { keepList: true })
+      if (!result) throw new Error('export failed')
+    } finally {
+      listExportIdsRef.current.delete(id)
+      setOpenFileId((current) => (current === id ? null : current))
+    }
+  }
+
+  const selectedVisibleEntries = visibleQueue.filter((entry) =>
+    selectedDraftIds.includes(entry.id),
+  )
+  const selectedVisibleCount = selectedVisibleEntries.length
+  const allVisibleSelected =
+    visibleQueue.length > 0 && selectedVisibleCount === visibleQueue.length
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && !allVisibleSelected
+
+  const toggleDraftSelection = (id: string, checked: boolean) => {
+    setSelectedDraftIds((prev) =>
+      checked
+        ? prev.includes(id)
+          ? prev
+          : [...prev, id]
+        : prev.filter((item) => item !== id),
+    )
+  }
+
+  const handleBulkDeleteDrafts = async () => {
+    const entries = selectedVisibleEntries.filter(
+      (entry) => entry.status !== 'indexing',
+    )
+    if (!entries.length) return
+
+    setIsBulkDeleting(true)
+    try {
+      const repoId = String(repositoryId || repositoryData?.id || '')
+      const stageIds = entries
+        .map((entry) => entry.stageFileId)
+        .filter((id): id is string => Boolean(id))
+
+      if (stageIds.length && repoId) {
+        const { error } = await deleteStagedFiles({
+          fileIds: stageIds,
+          repositoryId: repoId,
+        })
+        if (error) {
+          showToast({
+            message: String(error),
+            variant: 'error',
+          })
+          return
+        }
+      }
+
+      entries.forEach((entry) => {
+        if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl)
+      })
+
+      const removed = new Set(entries.map((entry) => entry.id))
+      const remaining = queue.filter((item) => !removed.has(item.id))
+      setQueue(remaining)
+      if (viewingDrafts) {
+        setDraftCounts(countQueueDraftGroups(remaining, repositoryFields))
+      }
+      setSelectedDraftIds((prev) => prev.filter((id) => !removed.has(id)))
+      if (openFileId && removed.has(openFileId)) setOpenFileId(null)
+      showToast({
+        message:
+          entries.length === 1
+            ? t`Staged file deleted.`
+            : t`${entries.length} staged files deleted.`,
+        variant: 'success',
+      })
+      setBulkDeleteConfirmOpen(false)
+      if (onSuccess) void onSuccess()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
+  const handleBulkExportDrafts = async () => {
+    const targets = selectedVisibleEntries.filter((entry) =>
+      isDraftReadyForExport(entry, repositoryFields),
+    )
+    if (targets.length < 2) return
+
+    setIsBulkExporting(true)
+    try {
+      let successCount = 0
+      for (const entry of targets) {
+        const result = await indexEntry(entry.id, {
+          keepList: true,
+          quiet: true,
+        })
+        if (result) successCount += 1
+      }
+      setSelectedDraftIds([])
+      setBulkExportConfirmOpen(false)
+      if (successCount > 0) {
+        showToast({
+          message:
+            successCount === 1
+              ? t`File exported successfully.`
+              : t`${successCount} files exported successfully.`,
+          variant: 'success',
+        })
+      }
+    } finally {
+      setIsBulkExporting(false)
+    }
   }
 
   // In vertical mode, opening a file replaces the list with a dedicated
@@ -2594,7 +2880,7 @@ export default function Upload({
               {
                 count: exportQueue.length,
                 id: 'export' as const,
-                label: t`Ready to review`,
+                label: t`Ready to export`,
               },
               {
                 count: uploadingQueue.length,
@@ -2614,7 +2900,10 @@ export default function Upload({
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 type='button'
-                onClick={() => setQueueListTab(tab.id)}
+                onClick={() => {
+                  setQueueListTab(tab.id)
+                  setSelectedDraftIds([])
+                }}
               >
                 {tab.label} ({tab.count})
                 {isSelected ? (
@@ -2646,6 +2935,58 @@ export default function Upload({
         </div>
       </div>
 
+      {!isQueueCollapsed && viewingDrafts && visibleQueue.length > 0 ? (
+        <div className='flex items-center justify-between gap-3 px-1'>
+          <div
+            className='flex min-w-0 items-center gap-2'
+            onClick={(event) => event.stopPropagation()}
+          >
+            <InputCheckbox
+              aria-label={t`Select all files`}
+              checked={allVisibleSelected}
+              indeterminate={someVisibleSelected}
+              onChange={(checked) => {
+                const visibleIds = visibleQueue.map((entry) => entry.id)
+                setSelectedDraftIds((prev) =>
+                  checked
+                    ? Array.from(new Set([...prev, ...visibleIds]))
+                    : prev.filter((id) => !visibleIds.includes(id)),
+                )
+              }}
+            />
+            <span className='text-xs font-medium text-[var(--gray-11)]'>
+              {selectedVisibleCount > 0
+                ? t`${selectedVisibleCount} selected`
+                : t`Select all`}
+            </span>
+          </div>
+          {selectedVisibleCount > 0 ? (
+            <div className='flex shrink-0 items-center gap-2'>
+              {queueListTab === 'export' && selectedVisibleCount > 1 ? (
+                <BaseButton
+                  color='primary'
+                  disabled={isBulkExporting || isBulkDeleting}
+                  icon='tabler:file-export'
+                  label={t`Export selected`}
+                  loading={isBulkExporting}
+                  size='xs'
+                  onClick={() => setBulkExportConfirmOpen(true)}
+                />
+              ) : null}
+              <BaseButton
+                color='red'
+                disabled={isBulkDeleting || isBulkExporting}
+                icon='lucide:trash-2'
+                label={t`Delete selected`}
+                loading={isBulkDeleting}
+                size='xs'
+                onClick={() => setBulkDeleteConfirmOpen(true)}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {!isQueueCollapsed && (
         <div
           className={cn(
@@ -2670,24 +3011,19 @@ export default function Upload({
                   entry.fieldValues,
                   repositoryFields,
                 )}
+                selected={selectedDraftIds.includes(entry.id)}
+                showCheckbox={viewingDrafts}
+                showExport={viewingDrafts && queueListTab === 'export'}
+                onExport={handleExportQueuedFile}
                 onOpen={handleOpenQueuedFile}
                 onRemove={handleRemoveFromQueue}
                 onRetryOcr={handleRetryOcr}
+                onToggleSelect={toggleDraftSelection}
               />
             ))
           )}
         </div>
       )}
-
-      {!isQueueCollapsed ? (
-        <div className='flex justify-end px-3 pt-1 pb-3'>
-          <span className='text-xs font-semibold text-[var(--gray-11)]'>
-            {visibleQueue.length === 1
-              ? t`1 file`
-              : t`${visibleQueue.length} files`}
-          </span>
-        </div>
-      ) : null}
     </div>
   )
 
@@ -2831,7 +3167,7 @@ export default function Upload({
                     <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
                       <span className='flex min-w-0 items-center gap-1.5'>
                         <span className='size-1 shrink-0 rounded-full bg-[var(--orange-9)]' />
-                        {t`Waiting for Export`}
+                        {t`Ready to export`}
                       </span>
                       <span className='font-semibold'>
                         {isLoadingDraftCount ? '…' : draftCounts.waiting}
@@ -2840,7 +3176,7 @@ export default function Upload({
                     <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
                       <span className='flex min-w-0 items-center gap-1.5'>
                         <span className='size-1 shrink-0 rounded-full bg-[var(--primary-9)]' />
-                        {t`In Progress`}
+                        {t`In progress`}
                       </span>
                       <span className='font-semibold'>
                         {isLoadingDraftCount ? '…' : draftCounts.inProgress}
@@ -3125,7 +3461,7 @@ export default function Upload({
                   </div>
                   {isFieldsPhase && !isExporting && (
                     <span className='shrink-0 rounded-full border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--orange-7)] uppercase'>
-                      {t`Waiting For Export`}
+                      {t`Ready to export`}
                     </span>
                   )}
                 </div>
@@ -3383,6 +3719,44 @@ export default function Upload({
         }}
         onConfirm={() => {
           if (activeEntry) void handleDeleteStageFile(activeEntry.id)
+        }}
+      />
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        isConfirming={isBulkDeleting}
+        opened={bulkDeleteConfirmOpen}
+        title={t`Delete staged files`}
+        variant='danger'
+        description={
+          selectedVisibleCount === 1
+            ? t`Are you sure you want to delete 1 selected staged file?`
+            : t`Are you sure you want to delete ${selectedVisibleCount} selected staged files?`
+        }
+        onCancel={() => {
+          if (!isBulkDeleting) setBulkDeleteConfirmOpen(false)
+        }}
+        onConfirm={() => {
+          void handleBulkDeleteDrafts()
+        }}
+      />
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Export`}
+        isConfirming={isBulkExporting}
+        opened={bulkExportConfirmOpen}
+        title={t`Export staged files`}
+        variant='default'
+        description={
+          selectedVisibleCount === 1
+            ? t`Are you sure you want to export 1 selected staged file?`
+            : t`Are you sure you want to export ${selectedVisibleCount} selected staged files?`
+        }
+        onCancel={() => {
+          if (!isBulkExporting) setBulkExportConfirmOpen(false)
+        }}
+        onConfirm={() => {
+          void handleBulkExportDrafts()
         }}
       />
       <ConfirmDialog

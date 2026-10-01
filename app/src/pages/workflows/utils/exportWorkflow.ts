@@ -480,6 +480,10 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
   const { blocks, rules } = ensureStartAndEndNodes(rawBlocks, rawRules)
 
+  const hasSelectedStages = (storeState.requestTabs || []).some(
+    (tab) => Array.isArray(tab.nodeIds) && tab.nodeIds.length > 0,
+  )
+
   return {
     blocks,
     blockStatus: 0,
@@ -500,6 +504,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           repositoryId: storeState.folder,
           type: storeState.initiateUsing,
         },
+        isStageBased: hasSelectedStages ? 1 : 0,
         kanbanSettings: storeState.kanbanSettings || [],
         linkMasterFormId: 0,
         name: storeState.workflowName,

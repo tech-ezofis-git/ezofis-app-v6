@@ -14,14 +14,11 @@ import {
   useState,
 } from 'react'
 import type { Option } from '@/types/option'
-import BaseButton from '@/components/base/button/Button'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
-import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import type {
   DynamicRepositoryColumn,
@@ -109,10 +106,8 @@ type DocumentsListViewProps = {
   onBreadcrumbSelect: (id: string) => void
   onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
-  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onEdit?: (id: string) => void
   onExportStagedFile?: (file: FileItem) => Promise<void>
-  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onFilterMenuOpenChange?: (id: string | null) => void
   onFiltersChange?: (filters: Record<string, string>) => void
   onIntelligentUpload?: () => void
@@ -402,10 +397,8 @@ export function DocumentsListView({
   onBreadcrumbSelect,
   onDeleteFile,
   onDeleteStagedFile,
-  onDeleteStagedFiles,
   onEdit,
   onExportStagedFile,
-  onExportStagedFiles,
   onFilterMenuOpenChange,
   onFiltersChange,
   onIntelligentUpload,
@@ -425,7 +418,6 @@ export function DocumentsListView({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [actionMenuPosition, setActionMenuPosition] =
     useState<ActionMenuPosition | null>(null)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(searchQueryProp)
   const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(
     null,
@@ -579,32 +571,6 @@ export function DocumentsListView({
     })
   }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
 
-  const stagedFilesList = useMemo(
-    () => visibleFiles.filter(isUnarchivedStageFile),
-    [visibleFiles],
-  )
-  const hasStagedFiles = stagedFilesList.length > 0
-
-  const selectedStagedFiles = useMemo(() => {
-    const idSet = new Set(selectedIds)
-    return stagedFilesList.filter((f) => idSet.has(getFileId(f)))
-  }, [stagedFilesList, selectedIds])
-
-  const selectedStagedCount = selectedStagedFiles.length
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
-  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
-  const [isBulkExporting, setIsBulkExporting] = useState(false)
-  const [isBulkExportConfirmOpen, setIsBulkExportConfirmOpen] = useState(false)
-
-  const canBulkExport = useMemo(
-    () =>
-      selectedStagedFiles.length > 0 &&
-      selectedStagedFiles.every((file) =>
-        hasAllMandatoryFieldsFilled(file, fileColumns, folderContextFilters),
-      ),
-    [fileColumns, folderContextFilters, selectedStagedFiles],
-  )
-
   const isStagedCategory = fileCategory === 'staged'
   const totalCount = isStagedCategory
     ? visibleFiles.length
@@ -617,39 +583,9 @@ export function DocumentsListView({
             visibleFiles.length,
           )
 
-  const selectedVisibleCount = visibleFiles.filter((file) =>
-    selectedIds.includes(getFileId(file)),
-  ).length
-
-  const allVisibleSelected =
-    visibleFiles.length > 0 && selectedVisibleCount === visibleFiles.length
-
-  const selectionEnabled = selectedIds.length > 0
-
   const handleRefresh = () => {
     if (isBusy) return
     onRefresh?.()
-  }
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    )
-  }
-
-  const toggleSelectAllVisible = () => {
-    if (allVisibleSelected) {
-      setSelectedIds((prev) =>
-        prev.filter(
-          (id) => !visibleFiles.some((file) => getFileId(file) === id),
-        ),
-      )
-      return
-    }
-
-    setSelectedIds((prev) =>
-      Array.from(new Set([...prev, ...visibleFiles.map(getFileId)])),
-    )
   }
 
   const updateFilter = (key: string, value: string) => {
@@ -710,71 +646,6 @@ export function DocumentsListView({
   }
 
   const dataTableColumns = useMemo<ColumnDef<AnyFileItem>[]>(() => {
-    const selectColumn: ColumnDef<AnyFileItem> = {
-      enableSorting: false,
-      id: 'selection',
-      maxSize: 48,
-      meta: {
-        className: '!px-0 !pl-0 !pr-0 text-center',
-        disableEllipsis: true,
-        headerAlign: 'center',
-        headerClassName: '!px-0 !pl-0 !pr-0 text-center',
-      },
-      minSize: 48,
-      size: 48,
-      cell: ({ row }) => {
-        const file = row.original
-        const fileId = getFileId(file)
-        const isSelected = selectedIds.includes(fileId)
-
-        return (
-          <div
-            className='flex w-full items-center justify-center'
-            onClick={(e) => e.stopPropagation()}
-          >
-            <InputCheckbox
-              aria-label={t`Select file`}
-              checked={isSelected}
-              onChange={() => toggleSelect(fileId)}
-            />
-          </div>
-        )
-      },
-      header: () => {
-        const isAllSelected =
-          visibleFiles.length > 0 &&
-          selectedVisibleCount === visibleFiles.length
-        const isIndeterminate = selectedVisibleCount > 0 && !isAllSelected
-
-        return (
-          <div
-            className='flex w-full items-center justify-center'
-            onClick={(e) => e.stopPropagation()}
-          >
-            <InputCheckbox
-              aria-label={t`Select all files`}
-              checked={isAllSelected}
-              indeterminate={isIndeterminate}
-              onChange={(checked) => {
-                if (checked) {
-                  setSelectedIds((prev) =>
-                    Array.from(
-                      new Set([...prev, ...visibleFiles.map(getFileId)]),
-                    ),
-                  )
-                } else {
-                  const visibleIdSet = new Set(visibleFiles.map(getFileId))
-                  setSelectedIds((prev) =>
-                    prev.filter((id) => !visibleIdSet.has(id)),
-                  )
-                }
-              }}
-            />
-          </div>
-        )
-      },
-    }
-
     const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
       enableResizing: column.key !== '__name',
       id: column.key,
@@ -897,14 +768,14 @@ export function DocumentsListView({
             >
               {canExport && onExportStagedFile ? (
                 <StagedFileExportButton
-                  disabled={isBusy || isBulkExporting || isBulkDeleting}
+                  disabled={isBusy}
                   fileName={String(file.name || t`this file`)}
                   onExport={() => onExportStagedFile(file)}
                 />
               ) : null}
               {onDeleteStagedFile ? (
                 <StagedFileDeleteButton
-                  disabled={isBusy || isBulkExporting || isBulkDeleting}
+                  disabled={isBusy}
                   fileName={String(file.name || t`this file`)}
                   onDelete={() => onDeleteStagedFile(file)}
                 />
@@ -928,26 +799,17 @@ export function DocumentsListView({
       },
     }
 
-    return [selectColumn, ...dynamicColumns, actionColumn]
+    return [...dynamicColumns, actionColumn]
   }, [
-    allVisibleSelected,
     columns,
     fileColumns,
     folderContextFilters,
-    hasStagedFiles,
-    isBulkDeleting,
-    isBulkExporting,
     isBusy,
     onDeleteStagedFile,
     onExportStagedFile,
     onOpenFile,
     openActionMenu,
-    selectedIds,
-    selectedStagedCount,
-    selectionEnabled,
-    stagedFilesList,
     t,
-    visibleFiles,
   ])
 
   const table = useReactTable({
@@ -964,7 +826,7 @@ export function DocumentsListView({
     enableSorting: true,
     initialState: {
       columnPinning: {
-        left: ['selection', '__name'],
+        left: ['__name'],
         right: ['actions'],
       },
     },
@@ -1156,69 +1018,7 @@ export function DocumentsListView({
               loading ||
               loadingPage ||
               refreshing ? (
-              <>
-                {selectedStagedCount > 0 &&
-                (onDeleteStagedFiles || onExportStagedFiles) ? (
-                  <div className='animate-in fade-in slide-in-from-top-1 mb-2 flex shrink-0 items-center justify-between rounded-lg border border-gray-4 bg-gray-2 px-4 py-2 text-xs duration-200'>
-                    <div className='flex items-center gap-2.5'>
-                      <span className='inline-flex items-center justify-center rounded-full bg-primary-9 px-2 py-0.5 text-[11px] font-semibold text-white'>
-                        {selectedStagedCount}
-                      </span>
-                      <span className='font-medium text-gray-12'>
-                        {selectedStagedCount === 1
-                          ? t`1 staged file selected`
-                          : t`${selectedStagedCount} staged files selected`}
-                      </span>
-                      <button
-                        className='text-[12px] font-medium text-gray-10 underline hover:text-gray-13'
-                        type='button'
-                        onClick={() => setSelectedIds([])}
-                      >
-                        {t`Deselect all`}
-                      </button>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                      {canBulkExport && onExportStagedFiles ? (
-                        <Tooltip
-                          content={t`Export selected staged files`}
-                          position='top'
-                        >
-                          <BaseButton
-                            color='primary'
-                            disabled={isBulkExporting || isBulkDeleting}
-                            loading={isBulkExporting}
-                            size='xs'
-                            onClick={() => setIsBulkExportConfirmOpen(true)}
-                          >
-                            <Icon
-                              className='size-3.5'
-                              name='tabler:file-export'
-                            />
-                            {t`Export Selected (${selectedStagedCount})`}
-                          </BaseButton>
-                        </Tooltip>
-                      ) : null}
-                      {onDeleteStagedFiles ? (
-                        <Tooltip
-                          content={t`Delete selected staged files`}
-                          position='top'
-                        >
-                          <BaseButton
-                            color='red'
-                            disabled={isBulkDeleting || isBulkExporting}
-                            loading={isBulkDeleting}
-                            size='xs'
-                            onClick={() => setIsBulkConfirmOpen(true)}
-                          >
-                            <DynamicIcon className='size-3.5' name='trash' />
-                            {t`Delete Selected (${selectedStagedCount})`}
-                          </BaseButton>
-                        </Tooltip>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-                <DataTable
+              <DataTable
                   pageSize={Math.max(5, visibleFiles.length || pageSize)}
                   rowSize='compact'
                   table={table}
@@ -1236,7 +1036,6 @@ export function DocumentsListView({
                   }
                   onReload={handleRefresh}
                 />
-              </>
             ) : null
           ) : null}
         </section>
@@ -1361,93 +1160,7 @@ export function DocumentsListView({
         }}
       />
 
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Delete`}
-        isConfirming={isBulkDeleting}
-        opened={isBulkConfirmOpen}
-        title={t`Delete staged files`}
-        variant='danger'
-        description={
-          selectedStagedCount === 1
-            ? t`Are you sure you want to delete 1 selected staged file?`
-            : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
-        }
-        onCancel={() => {
-          if (!isBulkDeleting) setIsBulkConfirmOpen(false)
-        }}
-        onConfirm={async () => {
-          setIsBulkDeleting(true)
-          try {
-            if (onDeleteStagedFiles) {
-              await onDeleteStagedFiles(selectedStagedFiles)
-              setSelectedIds([])
-              setIsBulkConfirmOpen(false)
-            }
-          } catch {
-            // caller handles error toast
-          } finally {
-            setIsBulkDeleting(false)
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Export`}
-        isConfirming={isBulkExporting}
-        opened={isBulkExportConfirmOpen}
-        title={t`Export staged files`}
-        variant='default'
-        description={
-          selectedStagedCount === 1
-            ? t`Are you sure you want to export 1 selected staged file?`
-            : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
-        }
-        onCancel={() => {
-          if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
-        }}
-        onConfirm={async () => {
-          setIsBulkExporting(true)
-          try {
-            if (onExportStagedFiles) {
-              await onExportStagedFiles(selectedStagedFiles)
-              setSelectedIds([])
-              setIsBulkExportConfirmOpen(false)
-            }
-          } catch {
-            // caller handles error toast
-          } finally {
-            setIsBulkExporting(false)
-          }
-        }}
-      />
     </div>
-  )
-}
-
-function CheckBoxButton({
-  checked,
-  onClick,
-}: {
-  checked: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type='button'
-      className={`flex h-5 w-5 items-center justify-center rounded-[6px] border transition-all focus:ring-2 focus:ring-blue-3 focus:outline-none ${
-        checked
-          ? 'border-[#2196f3] bg-[#2196f3] text-white'
-          : 'border-[#2196f3] bg-surface text-transparent'
-      }`}
-      onClick={(event) => {
-        event.stopPropagation()
-        onClick()
-      }}
-    >
-      <span className='text-[10px] leading-none'>✓</span>
-    </button>
   )
 }
 

@@ -35,7 +35,10 @@ import {
   isTableType,
 } from '../../utils/dynamicTable.utils'
 import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
-import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import {
+  getStageNameFromWorkflow,
+  isAccountsPayableWorkflow,
+} from '../../utils/workflow.utils'
 import {
   attachmentToFormFileValue,
   getFirstFileUploadField,
@@ -941,6 +944,7 @@ const Request = ({
   }
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [activeAction, setActiveAction] = useState<string | null>(null)
   const [rightView, setRightView] = useState<
     'overview' | 'history' | 'attachments' | 'comments'
   >('overview')
@@ -1447,21 +1451,82 @@ const Request = ({
     setSignatureConfirmed(false)
   }, [currentActivityId, selectedItem?.transactionId])
 
+  const isStageBased = useMemo(() => {
+    const general =
+      rawWorkflowData?.settings?.general ||
+      rawWorkflowData?.workflowJson?.settings?.general
+    const configuredTabs = Array.isArray(general?.requestTabs)
+      ? general.requestTabs
+      : []
+    return (
+      general?.isStageBased === 1 ||
+      general?.isStageBased === true ||
+      configuredTabs.some(
+        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+      )
+    )
+  }, [rawWorkflowData])
+
+  const isUserEmailMatched = useMemo(() => {
+    const activityEmail = String(
+      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
+    )
+      .toLowerCase()
+      .trim()
+
+    const authState = authUserStore.getState() as any
+    const currentUserEmail = String(
+      authState.session?.email ||
+        authState.identity?.email ||
+        authState.user?.email ||
+        authState.session?.loginName ||
+        authState.identity?.userName ||
+        '',
+    )
+      .toLowerCase()
+      .trim()
+
+    if (activityEmail && currentUserEmail) {
+      return activityEmail === currentUserEmail
+    }
+    return false
+  }, [selectedItem?.activityUserEmail, request?.activityUserEmail])
+
   const headerActions = useMemo(() => {
     if (isApAgentStage || isAutoRoutedAgentStage) return []
-    // Sent/Closed are read-only views of a request that has already moved
-    // on to (or past) another assignee — only the Inbox view, where the
-    // request is actually pending with the current user, can act on it.
-    if (requestListTab !== 'Inbox') return []
-    if (!isAssignedToCurrentUser) return []
+
+    const completedAt = selectedItem?.completedAtUtc || request?.completedAtUtc
+    if (completedAt) return []
+
+    const activityEmail = String(
+      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
+    ).trim()
+
+    if (isStageBased) {
+      // In stage-based mode: enable action button if activityUserEmail matches current logged-in user
+      const isAllowed = activityEmail
+        ? isUserEmailMatched
+        : isAssignedToCurrentUser
+      if (!isAllowed) return []
+    } else {
+      if (requestListTab !== 'Inbox') return []
+      if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
+    }
+
     return ruleActions.length > 0 ? ruleActions : actions
   }, [
     isApAgentStage,
     isAutoRoutedAgentStage,
-    requestListTab,
+    isStageBased,
+    isUserEmailMatched,
     isAssignedToCurrentUser,
+    requestListTab,
     ruleActions,
     actions,
+    selectedItem?.completedAtUtc,
+    selectedItem?.activityUserEmail,
+    request?.completedAtUtc,
+    request?.activityUserEmail,
   ])
 
   const [formModel, setFormModel] = useState<any>({})
@@ -1735,6 +1800,7 @@ const Request = ({
   }, [hasAgentData, activeTabValue])
 
   const handleMoveNext = async (action: string) => {
+    setActiveAction(action)
     const checklistItems: { id: string; label: string; required: boolean }[] =
       Array.isArray(currentBlockSettings.checklistItems)
         ? currentBlockSettings.checklistItems
@@ -1743,6 +1809,7 @@ const Request = ({
       (item) => item.required && !checklistChecked[item.id],
     )
     if (missingChecklistItem) {
+      setActiveAction(null)
       showToast({
         message: t`Please complete "${missingChecklistItem.label}" before continuing.`,
         variant: 'info',
@@ -1753,6 +1820,7 @@ const Request = ({
       currentBlockSettings.documentRequired &&
       genericAttachments.length === 0
     ) {
+      setActiveAction(null)
       showToast({
         message: t`Please attach at least one file before continuing.`,
         variant: 'info',
@@ -1760,6 +1828,7 @@ const Request = ({
       return
     }
     if (currentBlockSettings.userSignature && !signatureConfirmed) {
+      setActiveAction(null)
       showToast({
         message: t`Please confirm your signature before continuing.`,
         variant: 'info',
@@ -1778,6 +1847,7 @@ const Request = ({
         return val === undefined || val === null || val === ''
       })
       if (missingField) {
+        setActiveAction(null)
         showToast({
           message: t`Please complete all required fields before continuing.`,
           variant: 'info',
@@ -1969,13 +2039,16 @@ const Request = ({
       console.error(e)
     } finally {
       setSubmitting(false)
+      setActiveAction(null)
       delete (window as any)._selectedForwardUserId
       delete (window as any)._forwardComments
     }
   }
 
   const handleVerifier = async (action: string) => {
+    setActiveAction(action)
     if (action === 'Forward' && !(window as any)._selectedForwardUserId) {
+      setActiveAction(null)
       return
     }
 
@@ -2083,6 +2156,7 @@ const Request = ({
       })
     } finally {
       setSubmitting(false)
+      setActiveAction(null)
     }
   }
 
@@ -2239,8 +2313,12 @@ const Request = ({
     if (isCurrentlyProcessing || isLoading) {
       finalStatusBadge = 'Setting up...'
     } else {
+      const fallbackStage = selectedItem?.stage || selectedItem?.status
       finalStatusBadge =
-        selectedItem?.stage || selectedItem?.status || 'Finalizing Results...'
+        requestListTab ||
+        activeTabValue ||
+        fallbackStage ||
+        'Finalizing Results...'
     }
   }
 
@@ -2331,6 +2409,7 @@ const Request = ({
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
+          activeAction={activeAction}
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
@@ -2430,10 +2509,10 @@ const Request = ({
             authUserStore.getState().session?.name
           }
           stage={
-            // `lastActionStageName` is the stage the request came FROM (the
-            // last completed action), not where it currently sits — so it
-            // must rank behind the actual current-stage fields, only used
-            // as a last-resort fallback if none of those are populated.
+            getStageNameFromWorkflow(
+              selectedItem?.activityId || request?.activityId,
+              rawWorkflowData || selectedWorkflow,
+            ) ||
             selectedItem?.currentStage ||
             selectedItem?.stageName ||
             selectedItem?.stage ||
