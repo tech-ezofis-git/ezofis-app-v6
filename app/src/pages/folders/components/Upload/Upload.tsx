@@ -1622,7 +1622,9 @@ export default function Upload({
           activeTab: 'fields',
           backendStatus: data.status || 'OCR',
           createdAt:
-            data.createdAt || data.uploadedAt || new Date().toISOString(),
+            ((data.createdAt as string) ||
+              ((data as any).uploadedAt as string) ||
+              new Date().toISOString()),
           exportStatus: 'idle',
           fieldValues: mappedValues,
           file: fileObj,

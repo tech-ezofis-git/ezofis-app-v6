@@ -388,12 +388,14 @@ const getFieldOptions = (field: Question): string[] => {
 
 const LivePreviewDropdown = ({
   fallbackRepositoryId,
+  field,
   model,
   multiple,
   value,
   onChange,
 }: {
   fallbackRepositoryId?: string
+  field: Question
   model?: Record<string, any>
   multiple?: boolean
   value: any
@@ -1118,7 +1120,6 @@ const renderPreviewInput = (
           model={model}
           multiple
           value={fieldValue}
-          multiple
           onChange={(val) => onChange(field.id, val)}
         />
       )

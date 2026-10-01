@@ -64,12 +64,14 @@ const FormEntriesChoiceInput = ({
   isMultiple,
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
   isMultiple?: boolean
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -174,7 +176,7 @@ const FormEntriesChoiceInput = ({
 
     const toggleOpt = (opt: string) => {
       const next = selectedList.includes(opt)
-        ? selectedList.filter((x) => x !== opt)
+        ? selectedList.filter((x: string) => x !== opt)
         : [...selectedList, opt]
       onChange(next.join(','))
     }
@@ -245,12 +247,14 @@ const FormEntriesSelectInput = ({
   fieldDistinctOptions = [],
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
   fieldDistinctOptions?: Option[]
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -2212,7 +2216,6 @@ const FormEntriesPage = () => {
                               formModel={editValues}
                               isMultiple
                               val={val}
-                              isMultiple
                               onChange={(next) =>
                                 handleFieldChange(field.id, next)
                               }
@@ -2222,7 +2225,6 @@ const FormEntriesPage = () => {
                             <FormEntriesSelectInput
                               allFields={renderableFields}
                               field={field}
-                              val={val}
                               fieldDistinctOptions={
                                 fieldDistinctOptions[field.id] || []
                               }

@@ -294,7 +294,6 @@ function renderCell(
           compact
           col={{ ...col, name: col.name || col.id } as any}
           value={value}
-          compact
           onSelectProduct={(code) => onChange(code)}
         />
       </div>,
