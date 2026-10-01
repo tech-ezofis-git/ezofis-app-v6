@@ -298,6 +298,19 @@ class DocumentPayload(BaseModel):
         validation_alias=AliasChoices("tenant_id", "tenantId", "tenantid", "TenantId"),
         description="Tenant UUID. Required for relative blob filepath (container ezts{tenantid}).",
     )
+    ap_agent_job_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "ap_agent_job_id",
+            "apAgentJobId",
+            "ap_job_id",
+            "apJobId",
+            "job_id",
+            "jobId",
+            "JobId",
+        ),
+        description="Hangfire AP Agent / FTL job progress identifier.",
+    )
     query: Optional[str] = Field(
         default=None,
         description=(
@@ -811,8 +824,9 @@ class ChatResponse(BaseModel):
     document_intelligent_result: Optional[dict[str, Any]] = Field(
         default=None,
         description=(
-            "Document Intelligent output — repository_id, repository_name, "
-            "candidates (each with a score and a one-line rationale), ocr_text "
+            "Document Intelligent output — "
+            "keywords (all candidates' matched fields), candidates (each with a score, "
+            "a one-line rationale and its own keywords), ocr_text "
             "(plus source_reference). "
             "`reply` is a short status line."
         ),
