@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
-import Skeleton from '@/components/base/Skeleton'
 import Icon from '@/components/base/icon/Icon'
+import Skeleton from '@/components/base/Skeleton'
 import cn from '@/utils/cn'
 
 interface Props {
@@ -29,8 +29,7 @@ const BrandCard = ({
   const isConnected = connected ?? checked
   const isSelectedOnly = checked && !isConnected
 
-  let cardClass =
-    'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2'
+  let cardClass = 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2'
   if (isConnected) {
     cardClass = 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
   } else if (isSelectedOnly) {

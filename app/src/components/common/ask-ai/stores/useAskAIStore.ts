@@ -37,11 +37,11 @@ type Store = {
   isLoading: boolean
   isMaximized: boolean
   isOpen: boolean
-  /** Path active when full-view opened — restore on minimize/close if no menu picked. */
-  returnPath: string | null
+  messages: { content: string; data?: any; role: 'user' | 'assistant' }[]
   /** Menu selected while AI is full-view — preferred restore target. */
   pendingPath: string | null
-  messages: { content: string; data?: any; role: 'user' | 'assistant' }[]
+  /** Path active when full-view opened — restore on minimize/close if no menu picked. */
+  returnPath: string | null
   suggestion: string
   suggestions: string[]
   close: () => string | null
@@ -160,8 +160,6 @@ const useAskAIStore = create<Store>((set, get) => ({
       ],
     }))
   },
-  setPendingPath: (path) => set({ pendingPath: path }),
-  setSuggestion: (suggestion: string) => set({ suggestion }),
   toggleMaximize: (currentPath) => {
     const { isMaximized, pendingPath, returnPath } = get()
     if (!isMaximized) {
@@ -176,6 +174,8 @@ const useAskAIStore = create<Store>((set, get) => ({
     set({ isMaximized: false, pendingPath: null, returnPath: null })
     return dest
   },
+  setPendingPath: (path) => set({ pendingPath: path }),
+  setSuggestion: (suggestion: string) => set({ suggestion }),
 }))
 
 export default useAskAIStore

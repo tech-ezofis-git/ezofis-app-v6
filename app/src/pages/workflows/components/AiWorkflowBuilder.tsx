@@ -149,7 +149,7 @@ export default function AiWorkflowBuilder({
               autosize
               classNames={{
                 input:
-                  'border-none bg-transparent p-0 text-sm md:text-base text-gray-12 placeholder:text-gray-8 focus:outline-none',
+                  'border-none bg-transparent p-0 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none md:text-base',
               }}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
@@ -179,13 +179,13 @@ export default function AiWorkflowBuilder({
               const isSelected = prompt === sample.prompt
               return (
                 <button
+                  key={sample.label}
+                  type='button'
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium transition-all ${
                     isSelected
                       ? 'border-primary-9 bg-primary-2 text-primary-11 shadow-xs ring-2 ring-primary-5/20'
                       : 'border-gray-4 bg-surface-primary text-gray-11 hover:border-primary-9/50 hover:text-primary-10'
                   }`}
-                  key={sample.label}
-                  type='button'
                   onClick={() => setPrompt(sample.prompt)}
                 >
                   {sample.label}
@@ -197,8 +197,8 @@ export default function AiWorkflowBuilder({
           <div className='mt-2 flex items-center justify-center gap-2 text-xs text-gray-9'>
             <span>{t`Or prefer to build from scratch?`}</span>
             <button
-              type='button'
               className='inline-flex items-center gap-1 font-semibold text-primary-9 hover:underline'
+              type='button'
               onClick={handleManual}
             >
               <Icon className='size-3.5' name='lucide:pencil' />

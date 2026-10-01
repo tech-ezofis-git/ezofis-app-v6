@@ -1,8 +1,7 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
-import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import type { Column } from '@/components/base/data-table/types'
 import type { RowSize } from '@/components/base/data-table/types'
 import {
@@ -24,6 +23,7 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import CustomFilter from '@/components/common/CustomFilter'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import authUserStore from '@/stores/authUserStore'
@@ -65,7 +65,10 @@ const Table = ({ onCreate }: TableProps) => {
         renderCell: (row) => (
           <FormStatusBadge
             status={
-              (row.flowstatus ?? row.flowStatus ?? row.status ?? row.publishOption) as any
+              (row.flowstatus ??
+                row.flowStatus ??
+                row.status ??
+                row.publishOption) as any
             }
           />
         ),
@@ -189,9 +192,9 @@ const Table = ({ onCreate }: TableProps) => {
   const [page, setPage] = useState(storedState?.page ?? 1)
   const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
   const [rowSize, setRowSize] = useState<RowSize>('default')
-  const [activeFilters, setActiveFiltersState] = useState<Record<string, string>>(
-    storedState?.activeFilters ?? {},
-  )
+  const [activeFilters, setActiveFiltersState] = useState<
+    Record<string, string>
+  >(storedState?.activeFilters ?? {})
   const filtersEphemeralRef = useRef(false)
 
   const setActiveFilters = useCallback(
@@ -403,9 +406,7 @@ const Table = ({ onCreate }: TableProps) => {
               }
             } else if (key === 'createdBy' || key === 'modifiedBy') {
               if (!matchesCategoryFilterValue(w[key], value)) matches = false
-            } else if (
-              !matchesCategoryFilterValue(w[key], value, 'contains')
-            ) {
+            } else if (!matchesCategoryFilterValue(w[key], value, 'contains')) {
               matches = false
             }
           })

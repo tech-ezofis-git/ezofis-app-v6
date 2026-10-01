@@ -296,13 +296,13 @@ export default function EmailSettingsPanel({
                             {allConnectionOptions.map((option) => (
                               <button
                                 key={option.value}
+                                type='button'
                                 className={cn(
                                   'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
                                   String(nodeData.connection) === option.value
                                     ? 'bg-primary-1 font-normal text-primary-9'
                                     : 'text-gray-12 hover:bg-gray-2',
                                 )}
-                                type='button'
                                 onClick={() => {
                                   updateNodeData('connection', option.value)
                                   updateNodeData('connectorId', option.value)
@@ -321,11 +321,19 @@ export default function EmailSettingsPanel({
                                 <Icon
                                   className={cn(
                                     'size-4 shrink-0',
-                                    provider === 'gmail' ? 'text-emerald-600' : 'text-blue-600',
+                                    provider === 'gmail'
+                                      ? 'text-emerald-600'
+                                      : 'text-blue-600',
                                   )}
-                                  name={provider === 'gmail' ? 'brand:gmail' : 'brand:outlook'}
+                                  name={
+                                    provider === 'gmail'
+                                      ? 'brand:gmail'
+                                      : 'brand:outlook'
+                                  }
                                 />
-                                <span className='truncate text-13 font-normal'>{option.label}</span>
+                                <span className='truncate text-13 font-normal'>
+                                  {option.label}
+                                </span>
                               </button>
                             ))}
 
@@ -338,7 +346,10 @@ export default function EmailSettingsPanel({
                               type='button'
                               onClick={() => setIsCreatingConnection(true)}
                             >
-                              <Icon className='size-4 shrink-0' name='lucide:plus' />
+                              <Icon
+                                className='size-4 shrink-0'
+                                name='lucide:plus'
+                              />
                               <span>Create Connection</span>
                             </button>
                           </>

@@ -1,17 +1,9 @@
 import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import { getClassicTenantLogoUrl } from '@/api/v5/classicPortal'
 import {
   emptyPortalAuthentication,
   emptyPortalConfig,
 } from '@/pages/settings/helpers/portalConfigStorage'
-import { getClassicTenantLogoUrl } from '@/api/v5/classicPortal'
-
-export type ClassicPortalLoginType =
-  | 'APP_LOGIN'
-  | 'EMAIL_LOGIN'
-  | 'MASTER_LOGIN'
-  | 'MOBILE_LOGIN'
-
-export type ClassicPortalPasswordType = 'OTP' | 'PASSWORD' | 'SOCIAL_LOGIN'
 
 export type ClassicPortalAuthSettings = {
   firstnameField: string
@@ -23,6 +15,14 @@ export type ClassicPortalAuthSettings = {
   socialLogin: string[]
   usernameField: string[]
 }
+
+export type ClassicPortalLoginType =
+  | 'APP_LOGIN'
+  | 'EMAIL_LOGIN'
+  | 'MASTER_LOGIN'
+  | 'MOBILE_LOGIN'
+
+export type ClassicPortalPasswordType = 'OTP' | 'PASSWORD' | 'SOCIAL_LOGIN'
 
 const asAuth = (settings: Record<string, unknown>) =>
   settings.authentication &&
@@ -51,7 +51,9 @@ export const classicAuthFromSettings = (
   settings: Record<string, unknown>,
 ): ClassicPortalAuthSettings => {
   const auth = asAuth(settings)
-  const loginType = String(auth.loginType || 'EMAIL_LOGIN') as ClassicPortalLoginType
+  const loginType = String(
+    auth.loginType || 'EMAIL_LOGIN',
+  ) as ClassicPortalLoginType
   const passwordTypes = String(
     auth.passwordTypes || 'OTP',
   ) as ClassicPortalPasswordType
@@ -59,9 +61,12 @@ export const classicAuthFromSettings = (
   return {
     firstnameField: String(auth.firstnameField || ''),
     formId: (auth.formId as number | string) || 0,
-    loginType: ['MASTER_LOGIN', 'EMAIL_LOGIN', 'MOBILE_LOGIN', 'APP_LOGIN'].includes(
-      loginType,
-    )
+    loginType: [
+      'MASTER_LOGIN',
+      'EMAIL_LOGIN',
+      'MOBILE_LOGIN',
+      'APP_LOGIN',
+    ].includes(loginType)
       ? loginType
       : 'EMAIL_LOGIN',
     passwordField: String(auth.passwordField || ''),
@@ -78,8 +83,8 @@ export const classicPortalToConfig = ({
   description,
   name,
   portalId,
-  settings,
   tenantId,
+  settings,
 }: {
   description: string
   name: string

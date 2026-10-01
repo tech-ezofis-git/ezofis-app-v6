@@ -88,16 +88,16 @@ export const buildWopiSrc = (fileId: string) =>
 
 export const buildViewerUrl = ({
   accessToken,
-  wopiSrc,
   permission = 'readonly',
-  ui = 'compact',
   postMessageOrigin,
+  ui = 'compact',
+  wopiSrc,
 }: {
   accessToken?: string
-  wopiSrc: string
   permission?: 'edit' | 'readonly'
-  ui?: 'classic' | 'compact'
   postMessageOrigin?: string
+  ui?: 'classic' | 'compact'
+  wopiSrc: string
 }) => {
   const viewerUrl = withScheme(COLLABORA_VIEWER_URL_RAW)
   let url = `${viewerUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}&ui=${ui}&permission=${permission}`

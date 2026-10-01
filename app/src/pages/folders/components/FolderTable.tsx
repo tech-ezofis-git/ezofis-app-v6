@@ -1,40 +1,44 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   createColumnHelper,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useLingui } from '@lingui/react/macro'
 import {
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from 'react'
-import DataTable from '@/components/base/data-table/DataTable'
+import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
+import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
+import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import { isAccountsPayableFolder } from './DocumentsListView'
+import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import {
-  mergeFileExplorerFilters,
-  getPagedData,
-  toPage,
-  toFileItem,
-} from '../api/folderApi'
-import { getRepositoryItems } from '../../../api/v6/folder/folder'
 import type {
   FileItem,
   FolderItem,
   RepositoryFilePage,
 } from '../types/folderTypes'
+import { getRepositoryItems } from '../../../api/v6/folder/folder'
+import {
+  getPagedData,
+  mergeFileExplorerFilters,
+  toFileItem,
+  toPage,
+} from '../api/folderApi'
 import {
   FOLDER_FILES_SECTION_MAX_FOLDERS,
   formatFolderModifiedDate,
@@ -45,16 +49,17 @@ import {
   getRepositoryFieldRawValue,
   getRepositoryFieldStringValue,
 } from '../utils/repositoryFieldUtils'
-import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
-import { filterFolderFiles, filterFolders } from './FolderFilterBar'
+import { isAccountsPayableFolder } from './DocumentsListView'
 import DynamicTableColumnCell, {
   isTableColumnType,
 } from './DynamicTableColumnCell'
+import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
+import {
+  type FileCategory,
+  FileCategorySegmentedControl,
+} from './FileCategorySegmentedControl'
+import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
-import Button from '@/components/base/button/Button'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
-import Tooltip from '@/components/base/Tooltip'
 import {
   hasAllMandatoryFieldsFilled,
   isArchivedFile,
@@ -62,12 +67,7 @@ import {
   StagedFileDeleteButton,
   StagedFileExportButton,
 } from './StagedFileDeleteButton'
-import {
-  FileCategorySegmentedControl,
-  type FileCategory,
-} from './FileCategorySegmentedControl'
 import { EllipsisText, StatusPill } from './Ui'
-import cn from '@/utils/cn'
 
 const HIDDEN_FILE_KEYS = new Set([
   'storageproviderid',
@@ -88,6 +88,8 @@ type FileRow = {
 }
 
 type FolderRow = {
+  createdBy: string
+
   id: string
 
   items: string
@@ -96,14 +98,10 @@ type FolderRow = {
 
   name: string
 
-  createdBy: string
-
   raw: FolderItem
 }
 
 type FolderTableDataTableSplitProps = {
-  repositoryId?: string
-
   error?: string
 
   fileColumns?: DynamicRepositoryColumn[]
@@ -136,17 +134,19 @@ type FolderTableDataTableSplitProps = {
 
   loadingPage?: boolean
 
+  permissions?: {
+    delete?: boolean
+    editMetadata?: boolean
+    upload?: boolean
+  }
+
   refreshing?: boolean
 
+  repositoryId?: string
+
+  uploadDisabled?: boolean
+
   onAiSummary: (id: string) => void
-
-  onEditMetadata?: (id: string) => void
-
-  onLoadMoreFolders?: () => void
-
-  onOpenFile: (id: string) => void
-
-  onOpenFolder: (id: string) => void
 
   onDeleteFile?: (fileId: string) => Promise<void>
 
@@ -154,9 +154,17 @@ type FolderTableDataTableSplitProps = {
 
   onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
 
+  onEditMetadata?: (id: string) => void
+
   onExportStagedFile?: (file: FileItem) => Promise<void>
 
   onExportStagedFiles?: (files: FileItem[]) => Promise<void>
+
+  onLoadMoreFolders?: () => void
+
+  onOpenFile: (id: string) => void
+
+  onOpenFolder: (id: string) => void
 
   onPageChange?: (page: number, cursor?: string | null) => void
 
@@ -169,14 +177,6 @@ type FolderTableDataTableSplitProps = {
   onUpload?: () => void
 
   onUploadFile?: (files: File[]) => void
-
-  permissions?: {
-    delete?: boolean
-    editMetadata?: boolean
-    upload?: boolean
-  }
-
-  uploadDisabled?: boolean
 
   onWorkflow?: (id: string) => void
 }
@@ -209,12 +209,8 @@ const EXPLORER_ICON_CLASS = 'block size-4 text-[#4f5b88]'
 
 function ExplorerValue({ value }: { value: string }) {
   return (
-    <div className='min-w-0 max-w-full'>
-      <EllipsisText
-        className={EXPLORER_VALUE_CLASS}
-        lines={1}
-        value={value}
-      />
+    <div className='max-w-full min-w-0'>
+      <EllipsisText className={EXPLORER_VALUE_CLASS} lines={1} value={value} />
     </div>
   )
 }
@@ -224,10 +220,10 @@ const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 const getFileId = (file: any) =>
   String(
     (file as any)?.id ??
-    (file as any)?.stageFileId ??
-    (file as any)?.ItemId ??
-    (file as any)?.itemId ??
-    '',
+      (file as any)?.stageFileId ??
+      (file as any)?.ItemId ??
+      (file as any)?.itemId ??
+      '',
   )
 
 const getFileColumnSizing = (
@@ -254,7 +250,8 @@ const getFileColumnSizing = (
   const key = column.key.toLowerCase()
   const label = column.label || column.key
   const labelWidth = Math.ceil(label.length * 8.5) + 40
-  const contentWidth = Math.ceil(Math.max(contentLength, label.length) * 8.2) + 40
+  const contentWidth =
+    Math.ceil(Math.max(contentLength, label.length) * 8.2) + 40
 
   if (
     dataType.includes('date') ||
@@ -310,6 +307,314 @@ const getRepositoryFieldValue = (
   return value
 }
 
+export function FolderDataTableSection({
+  folderBodyMaxHeight,
+  folderFilters = {},
+  folders,
+  folderSearch,
+
+  hasFiles,
+
+  hasMoreFolders,
+
+  hideFolderActions = false,
+
+  isExpanded = false,
+
+  isSplitView = false,
+
+  loading,
+
+  loadingFolders,
+
+  loadingPage,
+
+  rowSize = 'compact',
+
+  onLoadMoreFolders,
+
+  onOpenFolder,
+
+  onReload,
+}: {
+  effectiveFolderTotal: number
+  folderBodyMaxHeight?: string
+  folderFilters?: Record<string, string>
+  folders: FolderItem[]
+
+  folderSearch: string
+
+  hasFiles: boolean
+
+  hasMoreFolders: boolean
+
+  hideFolderActions?: boolean
+
+  isExpanded?: boolean
+
+  isSplitView?: boolean
+
+  loading: boolean
+
+  loadingFolders: boolean
+
+  loadingPage: boolean
+
+  rowSize?: 'compact' | 'comfortable' | 'default'
+
+  onLoadMoreFolders?: () => void
+
+  onOpenFolder: (id: string) => void
+
+  onReload?: () => void
+}) {
+  const { t } = useLingui()
+  const folderScrollRef = useRef<HTMLDivElement | null>(null)
+
+  const lastFolderScrollTopRef = useRef(0)
+
+  const requestedFolderCountRef = useRef(0)
+
+  const filteredFolders = useMemo(
+    () => filterFolders(folders, folderFilters, folderSearch),
+    [folderFilters, folders, folderSearch],
+  )
+
+  const folderRows = useMemo<FolderRow[]>(
+    () =>
+      filteredFolders.map((folder) => ({
+        createdBy: folder.createdByName || '-',
+
+        id: folder.id,
+
+        items: folder.itemsText || '-',
+
+        modified: formatFolderModifiedDate(folder.modifiedText),
+
+        name: folder.title,
+
+        raw: folder,
+      })),
+
+    [filteredFolders],
+  )
+
+  const loadNextFolderBatch = useCallback(() => {
+    if (loadingFolders || loadingPage || loading || !hasMoreFolders) return
+
+    onLoadMoreFolders?.()
+  }, [hasMoreFolders, loading, loadingFolders, loadingPage, onLoadMoreFolders])
+
+  const handleFolderScroll = useCallback(() => {
+    if (requestedFolderCountRef.current !== folders.length) {
+      requestedFolderCountRef.current = folders.length
+
+      loadNextFolderBatch()
+    }
+  }, [folders.length, hasMoreFolders, loadNextFolderBatch, loadingFolders])
+
+  useEffect(() => {
+    if (folderScrollRef.current) folderScrollRef.current.scrollTop = 0
+
+    lastFolderScrollTopRef.current = 0
+
+    requestedFolderCountRef.current = 0
+  }, [folders[0]?.id])
+
+  useEffect(() => {
+    if (!loadingFolders) requestedFolderCountRef.current = 0
+  }, [loadingFolders, folders.length])
+
+  const folderColumns = useMemo(
+    () => [
+      folderColumnHelper.accessor('name', {
+        id: 'name',
+        maxSize: 360,
+        meta: EXPLORER_CELL_META,
+        minSize: 200,
+        size: 280,
+        cell: ({ row }) => {
+          const folder = row.original.raw
+
+          return (
+            <button
+              className={`${EXPLORER_NAME_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
+              disabled={loadingFolders || loadingPage}
+              type='button'
+              onClick={() => onOpenFolder(row.original.id)}
+            >
+              <span className={EXPLORER_ICON_WRAP_CLASS}>
+                <DynamicIcon
+                  className={EXPLORER_ICON_CLASS}
+                  name={folder.iconKey || 'folder'}
+                />
+              </span>
+
+              <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
+                <EllipsisText
+                  className={EXPLORER_NAME_TEXT_CLASS}
+                  lines={1}
+                  value={row.original.name}
+                />
+              </span>
+            </button>
+          )
+        },
+        header: () => <EllipsisText lines={1} value={t`Name`} />,
+      }),
+
+      folderColumnHelper.accessor('items', {
+        id: 'items',
+        maxSize: 140,
+        meta: EXPLORER_CELL_META,
+        minSize: 100,
+        size: 120,
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '-').trim()
+          if (raw === '-' || raw === '') return <ExplorerValue value='-' />
+          const num = Number(raw)
+          const displayText = !isNaN(num) ? String(num) : raw
+          return <ExplorerValue value={displayText} />
+        },
+        header: () => <EllipsisText lines={1} value={t`Files`} />,
+      }),
+
+      folderColumnHelper.accessor('modified', {
+        id: 'modified',
+        maxSize: 180,
+        meta: EXPLORER_CELL_META,
+        minSize: 130,
+        size: 150,
+        cell: ({ getValue }) => (
+          <ExplorerValue value={String(getValue() || '-')} />
+        ),
+        header: () => <EllipsisText lines={1} value={t`Date Modified`} />,
+      }),
+
+      folderColumnHelper.accessor('createdBy', {
+        id: 'createdBy',
+        maxSize: 180,
+        meta: EXPLORER_CELL_META,
+        minSize: 130,
+        size: 150,
+        cell: ({ getValue }) => (
+          <ExplorerValue value={String(getValue() || '-')} />
+        ),
+        header: () => <EllipsisText lines={1} value={t`Created By`} />,
+      }),
+
+      ...(hideFolderActions
+        ? []
+        : [
+            folderColumnHelper.display({
+              enableResizing: false,
+              enableSorting: false,
+              header: '',
+              id: 'actions',
+              maxSize: 72,
+              meta: EXPLORER_CELL_META,
+              minSize: 56,
+              size: 64,
+
+              cell: ({ row }) => {
+                const folderId = row.original.id
+
+                return (
+                  <div
+                    className='flex items-center justify-end'
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Menu
+                      position='bottom-end'
+                      width={200}
+                      withinPortal
+                      target={
+                        <button
+                          className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
+                          disabled={loadingFolders}
+                          type='button'
+                        >
+                          <DynamicIcon className='h-4 w-4' name='more' />
+                        </button>
+                      }
+                    >
+                      <MenuItem
+                        icon='lucide:folder'
+                        label={t`Open`}
+                        onClick={() => onOpenFolder(folderId)}
+                      />
+                      <MenuItem icon='lucide:pencil' label={t`Rename`} />
+                      <MenuItem icon='lucide:share-2' label={t`Share`} />
+                      <MenuDivider />
+                      <MenuItem
+                        className='text-red-9'
+                        icon='lucide:trash-2'
+                        iconClass='text-red-9'
+                        label={t`Delete`}
+                      />
+                    </Menu>
+                  </div>
+                )
+              },
+            }),
+          ]),
+    ],
+
+    [hideFolderActions, loadingFolders, loadingPage, onOpenFolder, t],
+  )
+
+  const folderTable = useReactTable({
+    columns: folderColumns,
+    data: folderRows,
+    defaultColumn: {
+      enableSorting: true,
+    },
+    enableSorting: true,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => `folder-${row.id}`,
+    getSortedRowModel: getSortedRowModel(),
+  })
+
+  if (!folders.length && !folderSearch && !loadingFolders) return null
+
+  const resolvedFolderBodyMaxHeight =
+    folderBodyMaxHeight ||
+    (hasFiles && folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
+      ? `${Math.min(220, Math.max(96, folders.length * 56 + 52))}px`
+      : 'calc(100vh - 220px)')
+
+  return (
+    <section
+      className={
+        isExpanded
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+          : isSplitView
+            ? 'shrink-0 overflow-hidden'
+            : hasFiles
+              ? 'shrink-0 overflow-hidden'
+              : 'flex min-h-0 flex-1 flex-col overflow-hidden'
+      }
+    >
+      <DataTable
+        hasMore={hasMoreFolders}
+        isLoading={loadingFolders && !folders.length}
+        isLoadingMore={loadingFolders}
+        isReLoading={loadingFolders && folders.length > 0}
+        pageSize={Math.max(5, folders.length || 5)}
+        rowSize={rowSize || 'compact'}
+        table={folderTable}
+        tableBodyMaxHeight={resolvedFolderBodyMaxHeight}
+        hideActionBar
+        hideGrouping
+        stickyHeader
+        onLoadMore={handleFolderScroll}
+        onReload={onReload || (() => undefined)}
+        onRowClick={(row) => onOpenFolder(row.original.id)}
+      />
+    </section>
+  )
+}
+
 export default function FolderTableDataTableSplit({
   error = '',
 
@@ -343,17 +648,15 @@ export default function FolderTableDataTableSplit({
 
   loadingPage = false,
 
+  permissions,
+
   refreshing = false,
 
+  repositoryId,
+
+  uploadDisabled = false,
+
   onAiSummary,
-
-  onEditMetadata,
-
-  onLoadMoreFolders,
-
-  onOpenFile,
-
-  onOpenFolder,
 
   onDeleteFile,
 
@@ -361,9 +664,17 @@ export default function FolderTableDataTableSplit({
 
   onDeleteStagedFiles,
 
+  onEditMetadata,
+
   onExportStagedFile,
 
   onExportStagedFiles,
+
+  onLoadMoreFolders,
+
+  onOpenFile,
+
+  onOpenFolder,
 
   onPageChange,
 
@@ -377,21 +688,19 @@ export default function FolderTableDataTableSplit({
 
   onUploadFile,
 
-  permissions,
-
-  uploadDisabled = false,
-
   onWorkflow,
-
-  repositoryId,
 }: FolderTableDataTableSplitProps) {
   const { t } = useLingui()
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
-  const [fileCategory, setFileCategory] = useState<'all' | 'staged' | 'archived'>('all')
+  const [fileCategory, setFileCategory] = useState<
+    'all' | 'staged' | 'archived'
+  >('all')
 
   const [archivedCount, setArchivedCount] = useState<number>(0)
   const [archivedFiles, setArchivedFiles] = useState<FileItem[]>([])
-  const [archivedFilePage, setArchivedFilePage] = useState<RepositoryFilePage | undefined>(undefined)
+  const [archivedFilePage, setArchivedFilePage] = useState<
+    RepositoryFilePage | undefined
+  >(undefined)
   const [loadingArchived, setLoadingArchived] = useState<boolean>(false)
 
   const fetchArchivedFileList = useCallback(
@@ -400,8 +709,8 @@ export default function FolderTableDataTableSplit({
       setLoadingArchived(true)
       try {
         const response = await getRepositoryItems({
-          id: repositoryId,
           filters: {},
+          id: repositoryId,
           page: targetPage,
           pageSize: targetPageSize,
           skipTotal: false,
@@ -483,15 +792,17 @@ export default function FolderTableDataTableSplit({
   const handleFilePageChange = useCallback(
     (page: number, cursor?: string | null) => {
       if (fileCategory === 'archived') {
-        void fetchArchivedFileList(
-          page,
-          activeDisplayFilePage?.pageSize || 50,
-        )
+        void fetchArchivedFileList(page, activeDisplayFilePage?.pageSize || 50)
       } else {
         onPageChange?.(page, cursor)
       }
     },
-    [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.pageSize, onPageChange],
+    [
+      fileCategory,
+      fetchArchivedFileList,
+      activeDisplayFilePage?.pageSize,
+      onPageChange,
+    ],
   )
 
   const handleFilePageSizeChange = useCallback(
@@ -513,7 +824,13 @@ export default function FolderTableDataTableSplit({
       )
     }
     onReload?.()
-  }, [fileCategory, fetchArchivedFileList, activeDisplayFilePage?.page, activeDisplayFilePage?.pageSize, onReload])
+  }, [
+    fileCategory,
+    fetchArchivedFileList,
+    activeDisplayFilePage?.page,
+    activeDisplayFilePage?.pageSize,
+    onReload,
+  ])
 
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
@@ -606,7 +923,11 @@ export default function FolderTableDataTableSplit({
             stagedCount={stagedCount}
             onChange={(cat) => {
               setFileCategory(cat)
-              if (cat === 'archived' && archivedFiles.length === 0 && repositoryId) {
+              if (
+                cat === 'archived' &&
+                archivedFiles.length === 0 &&
+                repositoryId
+              ) {
                 void fetchArchivedFileList(1, 50)
               }
               if (splitViewMode === 'folders-only') {
@@ -615,7 +936,7 @@ export default function FolderTableDataTableSplit({
             }}
           />
         ) : (
-          <div className='inline-flex items-center gap-2 rounded-full border border-gray-3 bg-surface px-3.5 py-1 text-xs font-normal leading-none text-gray-10 shadow-sm'>
+          <div className='inline-flex items-center gap-2 rounded-full border border-gray-3 bg-surface px-3.5 py-1 text-xs leading-none font-normal text-gray-10 shadow-sm'>
             {splitViewMode === 'files-only' ? (
               <>
                 <DynamicIcon
@@ -623,7 +944,7 @@ export default function FolderTableDataTableSplit({
                   name='folder'
                 />
                 <span className='leading-none text-gray-8'>{t`FOLDERS`}</span>
-                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] font-medium leading-none text-gray-11'>
+                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] leading-none font-medium text-gray-11'>
                   {folders.length}
                 </span>
               </>
@@ -634,7 +955,7 @@ export default function FolderTableDataTableSplit({
                   name='fileText'
                 />
                 <span className='leading-none text-gray-8'>{t`FILES IN THIS FOLDER`}</span>
-                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] font-medium leading-none text-gray-11'>
+                <span className='rounded-full bg-gray-4 px-1.5 py-0.5 text-[10px] leading-none font-medium text-gray-11'>
                   {allCount > 0 ? allCount : files.length}
                 </span>
               </>
@@ -664,16 +985,9 @@ export default function FolderTableDataTableSplit({
         </div>
       ) : null}
 
-      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-3 sm:px-6 pt-2 pb-1'>
+      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-3 pt-2 pb-1 sm:px-6'>
         {showFoldersPane ? (
           <FolderDataTableSection
-            folderBodyMaxHeight={
-              splitViewMode === 'folders-only' || !canResizeSplit
-                ? FULL_PANEL_FOLDER_HEIGHT
-                : isSplitView
-                  ? `${getSplitFolderBodyHeight(folders.length)}px`
-                  : undefined
-            }
             effectiveFolderTotal={effectiveFolderTotal}
             folderFilters={folderFilters}
             folders={folders}
@@ -686,22 +1000,29 @@ export default function FolderTableDataTableSplit({
             loading={loading}
             loadingFolders={loadingFolders}
             loadingPage={loadingPage}
+            rowSize={hideFolderActions ? 'default' : 'compact'}
+            folderBodyMaxHeight={
+              splitViewMode === 'folders-only' || !canResizeSplit
+                ? FULL_PANEL_FOLDER_HEIGHT
+                : isSplitView
+                  ? `${getSplitFolderBodyHeight(folders.length)}px`
+                  : undefined
+            }
             onLoadMoreFolders={onLoadMoreFolders}
             onOpenFolder={onOpenFolder}
             onReload={onReload}
-            rowSize={hideFolderActions ? 'default' : 'compact'}
           />
         ) : null}
 
         {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
-          (activeDisplayFiles.length > 0 ||
-            files.length > 0 ||
-            loading ||
-            loadingPage ||
-            loadingArchived ||
-            fileCategory === 'archived') ? (
+        (activeDisplayFiles.length > 0 ||
+          files.length > 0 ||
+          loading ||
+          loadingPage ||
+          loadingArchived ||
+          fileCategory === 'archived') ? (
           <FileDataTableSection
             columns={visibleFileColumns}
             fileCategory={fileCategory}
@@ -712,47 +1033,45 @@ export default function FolderTableDataTableSplit({
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
             foldersLength={folders.length}
+            isExpanded={splitViewMode === 'files-only'}
+            isSplitView={isSplitView}
+            loading={loading || loadingArchived}
+            loadingPage={loadingPage}
+            permissions={permissions}
             footerDivider={
               canResizeSplit && splitViewMode === 'files-only'
                 ? renderSplitDivider()
                 : undefined
             }
-            isExpanded={splitViewMode === 'files-only'}
-            isSplitView={isSplitView}
-            loading={loading || loadingArchived}
-            loadingPage={loadingPage}
             onAiSummary={onAiSummary}
+            onDeleteFile={onDeleteFile}
+            onDeleteStagedFile={onDeleteStagedFile}
+            onDeleteStagedFiles={onDeleteStagedFiles}
             onEditMetadata={onEditMetadata}
+            onExportStagedFile={onExportStagedFile}
+            onExportStagedFiles={onExportStagedFiles}
             onOpenFile={onOpenFile}
             onPageChange={handleFilePageChange}
             onPageSizeChange={handleFilePageSizeChange}
             onReload={handleReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
-            onDeleteFile={onDeleteFile}
-            onDeleteStagedFile={onDeleteStagedFile}
-            onDeleteStagedFiles={onDeleteStagedFiles}
-            onExportStagedFile={onExportStagedFile}
-            onExportStagedFiles={onExportStagedFiles}
-            permissions={permissions}
           />
         ) : null}
 
-        {canResizeSplit &&
-          !isSplitView &&
-          splitViewMode !== 'files-only' ? (
-          renderSplitDivider()
-        ) : null}
+        {canResizeSplit && !isSplitView && splitViewMode !== 'files-only'
+          ? renderSplitDivider()
+          : null}
 
         {!loading &&
-          !loadingPage &&
-          !loadingFolders &&
-          !folders.length &&
-          !files.length ? (
+        !loadingPage &&
+        !loadingFolders &&
+        !folders.length &&
+        !files.length ? (
           <EmptyState
+            uploadDisabled={uploadDisabled}
             onUpload={onUpload}
             onUploadFile={onUploadFile}
-            uploadDisabled={uploadDisabled}
           />
         ) : null}
       </div>
@@ -775,13 +1094,13 @@ export default function FolderTableDataTableSplit({
 }
 
 function EmptyState({
+  uploadDisabled = false,
   onUpload,
   onUploadFile,
-  uploadDisabled = false,
 }: {
+  uploadDisabled?: boolean
   onUpload?: () => void
   onUploadFile?: (files: File[]) => void
-  uploadDisabled?: boolean
 }) {
   const { t } = useLingui()
   return (
@@ -832,20 +1151,20 @@ function FileDataTableSection({
   isSplitView = false,
   loading,
   loadingPage,
+  permissions,
   onAiSummary,
+  onDeleteFile,
+  onDeleteStagedFile,
+  onDeleteStagedFiles,
   onEditMetadata,
+  onExportStagedFile,
+  onExportStagedFiles,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
   onReload,
   onShare,
   onWorkflow,
-  onDeleteFile,
-  onDeleteStagedFile,
-  onDeleteStagedFiles,
-  onExportStagedFile,
-  onExportStagedFiles,
-  permissions,
 }: {
   columns: DynamicRepositoryColumn[]
   fileCategory?: 'all' | 'staged' | 'archived'
@@ -861,27 +1180,29 @@ function FileDataTableSection({
   isSplitView?: boolean
   loading: boolean
   loadingPage: boolean
+  permissions?: {
+    delete?: boolean
+    editMetadata?: boolean
+  }
   onAiSummary: (id: string) => void
+  onDeleteFile?: (fileId: string) => Promise<void>
+  onDeleteStagedFile?: (file: FileItem) => Promise<void>
+  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
   onEditMetadata?: (id: string) => void
+  onExportStagedFile?: (file: FileItem) => Promise<void>
+  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onReload?: () => void
   onShare: (id: string) => void
   onWorkflow?: (id: string) => void
-  onDeleteFile?: (fileId: string) => Promise<void>
-  onDeleteStagedFile?: (file: FileItem) => Promise<void>
-  onDeleteStagedFiles?: (files: FileItem[]) => Promise<void>
-  onExportStagedFile?: (file: FileItem) => Promise<void>
-  onExportStagedFiles?: (files: FileItem[]) => Promise<void>
-  permissions?: {
-    delete?: boolean
-    editMetadata?: boolean
-  }
 }) {
   const { t } = useLingui()
   const [selectedStagedIds, setSelectedStagedIds] = useState<string[]>([])
-  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(null)
+  const [confirmDeleteFileId, setConfirmDeleteFileId] = useState<string | null>(
+    null,
+  )
   const [isDeletingFile, setIsDeletingFile] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false)
@@ -971,21 +1292,17 @@ function FileDataTableSection({
       filteredFiles.map((file) => {
         const nameVal = primaryNameCol
           ? getRepositoryFieldValue(
-            file as any,
-            primaryNameCol.key,
-            folderContextFilters,
-          )
+              file as any,
+              primaryNameCol.key,
+              folderContextFilters,
+            )
           : ''
 
         const row: FileRow = {
           __name:
-            nameVal && nameVal !== '-'
-              ? nameVal
-              : getPrimaryFileName(file),
+            nameVal && nameVal !== '-' ? nameVal : getPrimaryFileName(file),
           __status: String(
-            (file as any)?.status ??
-            (file as any)?.Status ??
-            '',
+            (file as any)?.status ?? (file as any)?.Status ?? '',
           ),
           id: getFileId(file),
           raw: file,
@@ -1007,7 +1324,8 @@ function FileDataTableSection({
 
   const fileColumns = useMemo(() => {
     const isAPFolder = isAccountsPayableFolder(
-      folderContextFilters?.repositoryId || folderContextFilters?.repositoryTitle,
+      folderContextFilters?.repositoryId ||
+        folderContextFilters?.repositoryTitle,
       undefined,
       filteredFiles,
     )
@@ -1025,11 +1343,11 @@ function FileDataTableSection({
       } as DynamicRepositoryColumn,
       ...(isAPFolder
         ? [
-          {
-            key: '__status',
-            label: t`Current Stage`,
-          } as DynamicRepositoryColumn,
-        ]
+            {
+              key: '__status',
+              label: t`Current Stage`,
+            } as DynamicRepositoryColumn,
+          ]
         : []),
       ...normalColumns,
     ]
@@ -1040,7 +1358,6 @@ function FileDataTableSection({
 
       return fileColumnHelper.accessor((row) => row[column.key], {
         enableResizing: !isPinnedColumn,
-        header: () => <EllipsisText lines={1} value={column.label} />,
         id: column.key,
         maxSize: sizing.maxSize,
         meta: EXPLORER_CELL_META,
@@ -1051,7 +1368,10 @@ function FileDataTableSection({
           const value = String(getValue() || '-')
 
           if (index === 0) {
-            const fileName = value !== '-' ? value : row.original.name || row.original.fileName || ''
+            const fileName =
+              value !== '-'
+                ? value
+                : row.original.name || row.original.fileName || ''
             const iconName = getFileIcon(fileName)
 
             return (
@@ -1061,10 +1381,7 @@ function FileDataTableSection({
                 onClick={() => onOpenFile(fileId)}
               >
                 <span className={EXPLORER_ICON_WRAP_CLASS}>
-                  <Icon
-                    className='size-4 shrink-0'
-                    name={iconName}
-                  />
+                  <Icon className='size-4 shrink-0' name={iconName} />
                 </span>
                 <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
                   <EllipsisText
@@ -1080,7 +1397,7 @@ function FileDataTableSection({
           if (column.key === '__status') {
             const status = String(getValue() || '').trim()
             if (!status) {
-              return <span className={EXPLORER_VALUE_CLASS}>—</span>
+              return <StatusPill status='Archived' />
             }
             return <StatusPill status={status} />
           }
@@ -1097,6 +1414,7 @@ function FileDataTableSection({
 
           return <ExplorerValue value={value} />
         },
+        header: () => <EllipsisText lines={1} value={column.label} />,
       })
     })
 
@@ -1104,6 +1422,41 @@ function FileDataTableSection({
       fileColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
+        id: 'select',
+        maxSize: 48,
+        meta: {
+          className: '!px-0 !pl-0 !pr-0 text-center',
+          disableEllipsis: true,
+          headerAlign: 'center' as const,
+          headerClassName: '!px-0 !pl-0 !pr-0 text-center',
+        },
+        minSize: 48,
+        size: 48,
+        cell: ({ row }) => {
+          const fileId = row.original.id
+          const isChecked = selectedStagedIds.includes(fileId)
+
+          return (
+            <div
+              className='flex w-full items-center justify-center'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <InputCheckbox
+                aria-label={t`Select file`}
+                checked={isChecked}
+                onChange={(checked) => {
+                  setSelectedStagedIds((prev) =>
+                    checked
+                      ? prev.includes(fileId)
+                        ? prev
+                        : [...prev, fileId]
+                      : prev.filter((id) => id !== fileId),
+                  )
+                }}
+              />
+            </div>
+          )
+        },
         header: () => {
           const isAllSelected =
             filteredFiles.length > 0 &&
@@ -1128,41 +1481,6 @@ function FileDataTableSection({
                   } else {
                     setSelectedStagedIds([])
                   }
-                }}
-              />
-            </div>
-          )
-        },
-        id: 'select',
-        maxSize: 48,
-        meta: {
-          className: '!px-0 !pl-0 !pr-0 text-center',
-          headerClassName: '!px-0 !pl-0 !pr-0 text-center',
-          headerAlign: 'center' as const,
-          disableEllipsis: true,
-        },
-        minSize: 48,
-        size: 48,
-        cell: ({ row }) => {
-          const fileId = row.original.id
-          const isChecked = selectedStagedIds.includes(fileId)
-
-          return (
-            <div
-              className='flex w-full items-center justify-center'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <InputCheckbox
-                aria-label={t`Select file`}
-                checked={isChecked}
-                onChange={(checked) => {
-                  setSelectedStagedIds((prev) =>
-                    checked
-                      ? prev.includes(fileId)
-                        ? prev
-                        : [...prev, fileId]
-                      : prev.filter((id) => id !== fileId),
-                  )
                 }}
               />
             </div>
@@ -1202,14 +1520,18 @@ function FileDataTableSection({
                 {canExport && onExportStagedFile ? (
                   <StagedFileExportButton
                     disabled={loadingPage || isBulkExporting || isBulkDeleting}
-                    fileName={String(file.name || row.original.__name || t`this file`)}
+                    fileName={String(
+                      file.name || row.original.__name || t`this file`,
+                    )}
                     onExport={() => onExportStagedFile(file)}
                   />
                 ) : null}
                 {onDeleteStagedFile ? (
                   <StagedFileDeleteButton
                     disabled={loadingPage || isBulkExporting || isBulkDeleting}
-                    fileName={String(file.name || row.original.__name || t`this file`)}
+                    fileName={String(
+                      file.name || row.original.__name || t`this file`,
+                    )}
                     onDelete={() => onDeleteStagedFile(file)}
                   />
                 ) : null}
@@ -1224,8 +1546,8 @@ function FileDataTableSection({
             >
               <Menu
                 position='bottom-end'
-                withinPortal
                 width={220}
+                withinPortal
                 target={
                   <button
                     className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
@@ -1319,45 +1641,44 @@ function FileDataTableSection({
     },
     enableColumnResizing: true,
     enableSorting: true,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getRowId: (row) => `file-${row.id}`,
     initialState: {
       columnPinning: {
         left: ['select', '__name'],
         right: ['actions'],
       },
     },
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => `file-${row.id}`,
+    getSortedRowModel: getSortedRowModel(),
   })
 
   const currentPage = filePage?.page || 1
   const pageSize = filePage?.pageSize || 50
   const apiTotalCount = Number(filePage?.totalCount ?? 0)
   const isStagedCategory = fileCategory === 'staged'
-  const totalCount =
-    isStagedCategory
-      ? filteredFiles.length
-      : apiTotalCount > 0
-        ? apiTotalCount
-        : filePage?.hasMore
-          ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
-          : Math.max(
+  const totalCount = isStagedCategory
+    ? filteredFiles.length
+    : apiTotalCount > 0
+      ? apiTotalCount
+      : filePage?.hasMore
+        ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
+        : Math.max(
             (currentPage - 1) * pageSize + filteredFiles.length,
             filteredFiles.length,
           )
 
-  const showFiles = filteredFiles.length || files.length || loading || loadingPage
+  const showFiles =
+    filteredFiles.length || files.length || loading || loadingPage
 
   if (!showFiles) return null
 
-  const folderReservedHeight =
-    isExpanded
-      ? SPLIT_DIVIDER_HEIGHT + 24
-      : isSplitView
-        ? getSplitFolderBodyHeight(foldersLength) + SPLIT_DIVIDER_HEIGHT + 32
-        : foldersLength > 0
-          ? Math.min(220, Math.max(96, foldersLength * 56 + 52)) + 84
-          : 15
+  const folderReservedHeight = isExpanded
+    ? SPLIT_DIVIDER_HEIGHT + 24
+    : isSplitView
+      ? getSplitFolderBodyHeight(foldersLength) + SPLIT_DIVIDER_HEIGHT + 32
+      : foldersLength > 0
+        ? Math.min(220, Math.max(96, foldersLength * 56 + 52)) + 84
+        : 15
 
   const fileTableMaxHeight = isExpanded
     ? FULL_PANEL_FILE_HEIGHT
@@ -1365,7 +1686,8 @@ function FileDataTableSection({
 
   return (
     <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-      {selectedStagedCount > 0 && (onDeleteStagedFiles || onExportStagedFiles) ? (
+      {selectedStagedCount > 0 &&
+      (onDeleteStagedFiles || onExportStagedFiles) ? (
         <div className='animate-in fade-in slide-in-from-top-1 flex shrink-0 items-center justify-between border-b border-gray-4 bg-gray-2 px-4 py-2 text-xs duration-200'>
           <div className='flex items-center gap-2.5'>
             <span className='inline-flex items-center justify-center rounded-full bg-primary-9 px-2 py-0.5 text-[11px] font-semibold text-white'>
@@ -1419,13 +1741,13 @@ function FileDataTableSection({
 
       <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
-          hideActionBar
           isLoading={(loading || loadingPage) && filteredFiles.length === 0}
           isReLoading={loadingPage || (loading && filteredFiles.length > 0)}
           pageSize={pageSize}
           rowSize='compact'
           table={fileTable}
           tableBodyMaxHeight={fileTableMaxHeight}
+          hideActionBar
           hideGrouping
           isSticky
           stickyHeader
@@ -1436,15 +1758,15 @@ function FileDataTableSection({
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Export`}
+        isConfirming={isBulkExporting}
+        opened={isBulkExportConfirmOpen}
+        title={t`Export staged files`}
+        variant='default'
         description={
           selectedStagedCount === 1
             ? t`Are you sure you want to export 1 selected staged file?`
             : t`Are you sure you want to export ${selectedStagedCount} selected staged files?`
         }
-        isConfirming={isBulkExporting}
-        opened={isBulkExportConfirmOpen}
-        title={t`Export staged files`}
-        variant='default'
         onCancel={() => {
           if (!isBulkExporting) setIsBulkExportConfirmOpen(false)
         }}
@@ -1465,15 +1787,15 @@ function FileDataTableSection({
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Delete`}
+        isConfirming={isBulkDeleting}
+        opened={isBulkConfirmOpen}
+        title={t`Delete staged files`}
+        variant='danger'
         description={
           selectedStagedCount === 1
             ? t`Are you sure you want to delete 1 selected staged file?`
             : t`Are you sure you want to delete ${selectedStagedCount} selected staged files?`
         }
-        isConfirming={isBulkDeleting}
-        opened={isBulkConfirmOpen}
-        title={t`Delete staged files`}
-        variant='danger'
         onCancel={() => {
           if (!isBulkDeleting) setIsBulkConfirmOpen(false)
         }}
@@ -1519,7 +1841,7 @@ function FileDataTableSection({
       {footerDivider}
 
       {filePage && !isStagedCategory ? (
-        <div className='shrink-0 px-3 sm:px-6 pt-3 pb-2'>
+        <div className='shrink-0 px-3 pt-3 pb-2 sm:px-6'>
           <Pagination
             itemLabel={t`Files`}
             page={currentPage}
@@ -1545,314 +1867,6 @@ function FileDataTableSection({
           />
         </div>
       ) : null}
-    </section>
-  )
-}
-
-export function FolderDataTableSection({
-  folderBodyMaxHeight,
-  folders,
-  folderFilters = {},
-  folderSearch,
-
-  hasFiles,
-
-  hasMoreFolders,
-
-  hideFolderActions = false,
-
-  isExpanded = false,
-
-  isSplitView = false,
-
-  loading,
-
-  loadingFolders,
-
-  loadingPage,
-
-  onLoadMoreFolders,
-
-  onOpenFolder,
-
-  onReload,
-
-  rowSize = 'compact',
-}: {
-  folderBodyMaxHeight?: string
-  effectiveFolderTotal: number
-  folderFilters?: Record<string, string>
-  folders: FolderItem[]
-
-  folderSearch: string
-
-  hasFiles: boolean
-
-  hasMoreFolders: boolean
-
-  hideFolderActions?: boolean
-
-  isExpanded?: boolean
-
-  isSplitView?: boolean
-
-  loading: boolean
-
-  loadingFolders: boolean
-
-  loadingPage: boolean
-
-  onLoadMoreFolders?: () => void
-
-  onOpenFolder: (id: string) => void
-
-  onReload?: () => void
-
-  rowSize?: 'compact' | 'comfortable' | 'default'
-}) {
-  const { t } = useLingui()
-  const folderScrollRef = useRef<HTMLDivElement | null>(null)
-
-  const lastFolderScrollTopRef = useRef(0)
-
-  const requestedFolderCountRef = useRef(0)
-
-  const filteredFolders = useMemo(
-    () => filterFolders(folders, folderFilters, folderSearch),
-    [folderFilters, folders, folderSearch],
-  )
-
-  const folderRows = useMemo<FolderRow[]>(
-    () =>
-      filteredFolders.map((folder) => ({
-        id: folder.id,
-
-        items: folder.itemsText || '-',
-
-        modified: formatFolderModifiedDate(folder.modifiedText),
-
-        name: folder.title,
-
-        createdBy: folder.createdByName || '-',
-
-        raw: folder,
-      })),
-
-    [filteredFolders],
-  )
-
-  const loadNextFolderBatch = useCallback(() => {
-    if (loadingFolders || loadingPage || loading || !hasMoreFolders) return
-
-    onLoadMoreFolders?.()
-  }, [hasMoreFolders, loading, loadingFolders, loadingPage, onLoadMoreFolders])
-
-  const handleFolderScroll = useCallback(() => {
-    if (requestedFolderCountRef.current !== folders.length) {
-      requestedFolderCountRef.current = folders.length
-
-      loadNextFolderBatch()
-    }
-  }, [folders.length, hasMoreFolders, loadNextFolderBatch, loadingFolders])
-
-  useEffect(() => {
-    if (folderScrollRef.current) folderScrollRef.current.scrollTop = 0
-
-    lastFolderScrollTopRef.current = 0
-
-    requestedFolderCountRef.current = 0
-  }, [folders[0]?.id])
-
-  useEffect(() => {
-    if (!loadingFolders) requestedFolderCountRef.current = 0
-  }, [loadingFolders, folders.length])
-
-  const folderColumns = useMemo(
-    () => [
-      folderColumnHelper.accessor('name', {
-        header: () => <EllipsisText lines={1} value={t`Name`} />,
-        id: 'name',
-        maxSize: 360,
-        meta: EXPLORER_CELL_META,
-        minSize: 200,
-        size: 280,
-        cell: ({ row }) => {
-          const folder = row.original.raw
-
-          return (
-            <button
-              className={`${EXPLORER_NAME_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
-              disabled={loadingFolders || loadingPage}
-              type='button'
-              onClick={() => onOpenFolder(row.original.id)}
-            >
-              <span className={EXPLORER_ICON_WRAP_CLASS}>
-                <DynamicIcon
-                  className={EXPLORER_ICON_CLASS}
-                  name={folder.iconKey || 'folder'}
-                />
-              </span>
-
-              <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
-                <EllipsisText
-                  className={EXPLORER_NAME_TEXT_CLASS}
-                  lines={1}
-                  value={row.original.name}
-                />
-              </span>
-            </button>
-          )
-        },
-      }),
-
-      folderColumnHelper.accessor('items', {
-        header: () => <EllipsisText lines={1} value={t`Files`} />,
-        id: 'items',
-        maxSize: 140,
-        meta: EXPLORER_CELL_META,
-        minSize: 100,
-        size: 120,
-        cell: ({ getValue }) => {
-          const raw = String(getValue() || '-').trim()
-          if (raw === '-' || raw === '') return <ExplorerValue value='-' />
-          const num = Number(raw)
-          const displayText = !isNaN(num) ? String(num) : raw
-          return <ExplorerValue value={displayText} />
-        },
-      }),
-
-      folderColumnHelper.accessor('modified', {
-        header: () => <EllipsisText lines={1} value={t`Date Modified`} />,
-        id: 'modified',
-        maxSize: 180,
-        meta: EXPLORER_CELL_META,
-        minSize: 130,
-        size: 150,
-        cell: ({ getValue }) => (
-          <ExplorerValue value={String(getValue() || '-')} />
-        ),
-      }),
-
-      folderColumnHelper.accessor('createdBy', {
-        header: () => <EllipsisText lines={1} value={t`Created By`} />,
-        id: 'createdBy',
-        maxSize: 180,
-        meta: EXPLORER_CELL_META,
-        minSize: 130,
-        size: 150,
-        cell: ({ getValue }) => (
-          <ExplorerValue value={String(getValue() || '-')} />
-        ),
-      }),
-
-      ...(hideFolderActions
-        ? []
-        : [
-          folderColumnHelper.display({
-            enableResizing: false,
-            enableSorting: false,
-            header: '',
-            id: 'actions',
-            maxSize: 72,
-            meta: EXPLORER_CELL_META,
-            minSize: 56,
-            size: 64,
-
-            cell: ({ row }) => {
-              const folderId = row.original.id
-
-              return (
-                <div
-                  className='flex items-center justify-end'
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <Menu
-                    position='bottom-end'
-                    withinPortal
-                    width={200}
-                    target={
-                      <button
-                        className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
-                        disabled={loadingFolders}
-                        type='button'
-                      >
-                        <DynamicIcon className='h-4 w-4' name='more' />
-                      </button>
-                    }
-                  >
-                    <MenuItem
-                      icon='lucide:folder'
-                      label={t`Open`}
-                      onClick={() => onOpenFolder(folderId)}
-                    />
-                    <MenuItem icon='lucide:pencil' label={t`Rename`} />
-                    <MenuItem icon='lucide:share-2' label={t`Share`} />
-                    <MenuDivider />
-                    <MenuItem
-                      className='text-red-9'
-                      icon='lucide:trash-2'
-                      iconClass='text-red-9'
-                      label={t`Delete`}
-                    />
-                  </Menu>
-                </div>
-              )
-            },
-          }),
-        ]),
-    ],
-
-    [hideFolderActions, loadingFolders, loadingPage, onOpenFolder, t],
-  )
-
-  const folderTable = useReactTable({
-    columns: folderColumns,
-    data: folderRows,
-    defaultColumn: {
-      enableSorting: true,
-    },
-    enableSorting: true,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getRowId: (row) => `folder-${row.id}`,
-  })
-
-  if (!folders.length && !folderSearch && !loadingFolders) return null
-
-  const resolvedFolderBodyMaxHeight =
-    folderBodyMaxHeight ||
-    (hasFiles && folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
-      ? `${Math.min(220, Math.max(96, folders.length * 56 + 52))}px`
-      : 'calc(100vh - 220px)')
-
-  return (
-    <section
-      className={
-        isExpanded
-          ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
-          : isSplitView
-            ? 'shrink-0 overflow-hidden'
-            : hasFiles
-              ? 'shrink-0 overflow-hidden'
-              : 'flex min-h-0 flex-1 flex-col overflow-hidden'
-      }
-    >
-      <DataTable
-        hideActionBar
-        hasMore={hasMoreFolders}
-        isLoading={loadingFolders && !folders.length}
-        isLoadingMore={loadingFolders}
-        isReLoading={loadingFolders && folders.length > 0}
-        pageSize={Math.max(5, folders.length || 5)}
-        rowSize={rowSize || 'compact'}
-        table={folderTable}
-        tableBodyMaxHeight={resolvedFolderBodyMaxHeight}
-        hideGrouping
-        stickyHeader
-        onLoadMore={handleFolderScroll}
-        onReload={onReload || (() => undefined)}
-        onRowClick={(row) => onOpenFolder(row.original.id)}
-      />
     </section>
   )
 }

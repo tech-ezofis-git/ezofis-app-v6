@@ -1,5 +1,5 @@
-import cn from '@/utils/cn'
 import type { PortalBrandingSnapshot } from '@/pages/settings/helpers/portalConfigStorage'
+import cn from '@/utils/cn'
 
 const DEFAULT_MARK = '/mark.png'
 const DEFAULT_TEXT = '/text.png'
@@ -51,11 +51,11 @@ export default function PortalBrandMark({
     <div className={cn('flex items-center gap-2.5', className)}>
       <img
         alt={name}
+        src={DEFAULT_MARK}
         className={cn(
           'object-contain object-center',
           isLarge ? 'h-16 w-auto' : 'h-9 w-auto',
         )}
-        src={DEFAULT_MARK}
       />
       {isLarge ? null : (
         <img

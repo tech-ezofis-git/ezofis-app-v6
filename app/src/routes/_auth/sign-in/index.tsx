@@ -10,10 +10,5 @@ export const Route = createFileRoute('/_auth/sign-in/')({
 })
 
 function RouteComponent() {
-  return (
-    <AdaptiveScreen
-      mobile={<LoginScreen />}
-      web={<SignInPage />}
-    />
-  )
+  return <AdaptiveScreen mobile={<LoginScreen />} web={<SignInPage />} />
 }

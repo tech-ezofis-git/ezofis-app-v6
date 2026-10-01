@@ -1,5 +1,3 @@
-import type { ClassicPortalAuthSettings } from '../helpers/classicPortalConfig'
-import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 import { useMsal } from '@azure/msal-react'
 import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
@@ -22,17 +20,22 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import ThemeSwitcher from '@/layouts/auth/components/ThemeSwitcher'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
-import { isClassicIdentity, persistClassicIdentity } from '@/lib/classic-gateway'
+import {
+  isClassicIdentity,
+  persistClassicIdentity,
+} from '@/lib/classic-gateway'
 import cn from '@/utils/cn'
+import type { ClassicPortalAuthSettings } from '../helpers/classicPortalConfig'
+import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 import PortalBrandMark from './PortalBrandMark'
 
 type ClassicPortalLoginProps = {
   auth: ClassicPortalAuthSettings
   logoUrl: string
-  onAuthenticated: (user: PortalAuthUser, identity: unknown) => void
   portalId: string
   portalName: string
   tenantId: string
+  onAuthenticated: (user: PortalAuthUser, identity: unknown) => void
 }
 
 const asRecord = (value: unknown) =>
@@ -64,10 +67,10 @@ const displayNameFromIdentity = (payload: unknown, fallback: string) => {
 export default function ClassicPortalLogin({
   auth,
   logoUrl,
-  onAuthenticated,
   portalId,
   portalName,
   tenantId,
+  onAuthenticated,
 }: ClassicPortalLoginProps) {
   const { t } = useLingui()
   const { instance: msalInstance } = useMsal()
@@ -123,7 +126,11 @@ export default function ClassicPortalLogin({
     )
   }
 
-  const masterPayload = (extra: { otp?: string; password?: string; socialLogin?: boolean }) => ({
+  const masterPayload = (extra: {
+    otp?: string
+    password?: string
+    socialLogin?: boolean
+  }) => ({
     email: identifier.trim(),
     emailColumn: auth.usernameField,
     formId: auth.formId,
@@ -257,7 +264,10 @@ export default function ClassicPortalLogin({
     }
   }
 
-  const completeSocial = async (email: string, loginType: 'Google' | 'Microsoft') => {
+  const completeSocial = async (
+    email: string,
+    loginType: 'Google' | 'Microsoft',
+  ) => {
     setError('')
     setLoading(true)
     try {
@@ -293,9 +303,12 @@ export default function ClassicPortalLogin({
     onError: () => setError(t`Google sign-in was cancelled or failed`),
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        })
+        const res = await fetch(
+          'https://www.googleapis.com/oauth2/v3/userinfo',
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          },
+        )
         const profile = (await res.json()) as { email?: string }
         const gEmail = String(profile.email || '')
         if (!gEmail) throw new Error(t`No email returned from Google`)
@@ -331,9 +344,10 @@ export default function ClassicPortalLogin({
     }
   }
 
-  const showSocialButtons = usesSocial && (showGoogle || showMicrosoft) && (
-    isApp || showMasterSocial || (isMaster && auth.socialLogin.length > 0)
-  )
+  const showSocialButtons =
+    usesSocial &&
+    (showGoogle || showMicrosoft) &&
+    (isApp || showMasterSocial || (isMaster && auth.socialLogin.length > 0))
 
   return (
     <div className='relative min-h-svh bg-surface p-6'>
@@ -357,15 +371,15 @@ export default function ClassicPortalLogin({
 
           <Title
             className='text-center'
+            descriptionClassName='text-center'
+            level={1}
+            title={step === 'otp' ? t`Verify OTP` : t`Sign in to your account`}
+            titleClassName='text-center'
             description={
               step === 'otp'
                 ? t`Code sent to ${identifier}`
                 : t`Hi, Welcome back to ${brandName}`
             }
-            descriptionClassName='text-center'
-            level={1}
-            title={step === 'otp' ? t`Verify OTP` : t`Sign in to your account`}
-            titleClassName='text-center'
           />
 
           {error ? (
@@ -386,15 +400,17 @@ export default function ClassicPortalLogin({
                   <div className='mt-4 space-y-4'>
                     <InputText
                       autoComplete='username'
-                      autoFocus
                       label={identifierLabel}
                       placeholder={identifierPlaceholder}
                       type={isMobile ? 'tel' : 'text'}
                       value={identifier}
+                      autoFocus
                       leftSection={
                         <Icon
                           className='text-gray-8'
-                          name={isMobile ? 'tabler:device-mobile' : 'tabler:mail'}
+                          name={
+                            isMobile ? 'tabler:device-mobile' : 'tabler:mail'
+                          }
                         />
                       }
                       onChange={setIdentifier}
@@ -409,8 +425,8 @@ export default function ClassicPortalLogin({
                       <InputPassword
                         autoComplete='current-password'
                         label={t`Password`}
-                        showPlaceholder
                         value={password}
+                        showPlaceholder
                         leftSection={
                           <Icon className='text-gray-8' name='tabler:lock' />
                         }
@@ -426,9 +442,7 @@ export default function ClassicPortalLogin({
                   </div>
                   <Button
                     className='mt-4 w-full justify-center'
-                    label={
-                      usesPassword || isApp ? t`Sign In` : t`Authenticate`
-                    }
+                    label={usesPassword || isApp ? t`Sign In` : t`Authenticate`}
                     loading={loading}
                     size='lg'
                     type='submit'
@@ -490,14 +504,14 @@ export default function ClassicPortalLogin({
                 {t`Use a different ${identifierLabel.toLowerCase()}`}
               </button>
               <button
+                disabled={elapsed > 0}
+                type='button'
                 className={cn(
                   'mx-auto block text-13',
                   elapsed > 0
                     ? 'cursor-not-allowed text-gray-8'
                     : 'text-primary-11 underline hover:text-primary-12',
                 )}
-                disabled={elapsed > 0}
-                type='button'
                 onClick={() => void handleResend()}
               >
                 {resendLabel}

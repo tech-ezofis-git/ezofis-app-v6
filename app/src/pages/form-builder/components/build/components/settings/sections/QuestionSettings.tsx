@@ -8,17 +8,18 @@ import {
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import type { Option } from '@/types/option'
 import type {
   LogicRule,
   Question,
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
+import connectorApi from '@/api/connector'
+import formApi from '@/api/form/form'
 import {
   getRepositoryItemFilterFields,
   getRepositorys,
 } from '@/api/v6/folder/folder'
-import formApi from '@/api/form/form'
-import connectorApi from '@/api/connector'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -161,7 +162,45 @@ const QuestionSettings = ({
     },
   })
 
-  const currentMasterFormId = activeQuestion.settings.specific.masterFormId || ''
+  const currentMasterFormId =
+    activeQuestion.settings.specific.masterFormId || ''
+
+  const searchFormId = activeQuestion.settings.specific.searchFormId || ''
+
+  const { data: searchMasterFormDetails } = useQuery({
+    enabled: !!searchFormId,
+    queryKey: ['searchMasterFormDetails', searchFormId],
+    queryFn: async () => {
+      if (!searchFormId) return null
+      const res = await formApi.getFormDataById(String(searchFormId))
+      return res.data
+    },
+  })
+
+  const searchMasterFields = (() => {
+    if (!searchMasterFormDetails) return []
+    let raw =
+      searchMasterFormDetails.formJson ||
+      searchMasterFormDetails.data?.formJson ||
+      searchMasterFormDetails.data ||
+      searchMasterFormDetails
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw)
+      } catch {
+        return []
+      }
+    }
+    const panels: any[] = raw?.panels || []
+    return panels
+      .flatMap((p) =>
+        (p.fields || []).map((f: any) => ({
+          id: String(f.id || f.label || ''),
+          name: String(f.label || f.name || f.displayLabel || f.id || ''),
+        })),
+      )
+      .filter((col) => Boolean(col.id))
+  })()
 
   const { data: masterFormDetails } = useQuery({
     enabled: !!currentMasterFormId,
@@ -209,13 +248,13 @@ const QuestionSettings = ({
     },
   })
 
-
   const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
   const [openAppearance, setOpenAppearance] = useState(false)
   const [openAdvanced, setOpenAdvanced] = useState(false)
   const [openLogic, setOpenLogic] = useState(false)
   const [openLookup, setOpenLookup] = useState(false)
+  const [openSearchField, setOpenSearchField] = useState(true)
   const [openSpecific, setOpenSpecific] = useState(false)
 
   const [localLabel, setLocalLabel] = useState(activeQuestion.label || '')
@@ -365,6 +404,11 @@ const QuestionSettings = ({
     activeQuestion.type,
   )
   const isChoice = isChoiceField
+
+  const isSearchableSupported =
+    isShortText ||
+    activeQuestion.type === 'NUMBER' ||
+    activeQuestion.type === 'SINGLE_SELECT'
 
   const optionsPerLineOptions = [
     { id: '0', name: 'Auto (Flex Wrap)' },
@@ -973,7 +1017,9 @@ const QuestionSettings = ({
                     value={
                       optionsTypeOptions.find(
                         (o) =>
-                          o.id === (activeQuestion.settings.specific.optionsType || activeQuestion.settings.specific.optionsSource),
+                          o.id ===
+                          (activeQuestion.settings.specific.optionsType ||
+                            activeQuestion.settings.specific.optionsSource),
                       ) || optionsTypeOptions[0]
                     }
                     onChange={(val) =>
@@ -990,7 +1036,7 @@ const QuestionSettings = ({
                   activeQuestion.settings.specific.optionsType ===
                     'MASTER_TABLE') && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-4 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Master Table Configuration
                     </label>
 
@@ -999,8 +1045,8 @@ const QuestionSettings = ({
                         Target Master Form / Table
                       </label>
                       <InputSelect
-                        placeholder='Select Master Table'
                         options={masterForms}
+                        placeholder='Select Master Table'
                         value={
                           masterForms.find(
                             (f: any) =>
@@ -1024,8 +1070,8 @@ const QuestionSettings = ({
                         Master Column to Display
                       </label>
                       <InputSelect
-                        placeholder='Select Master Column'
                         options={masterColumns}
+                        placeholder='Select Master Column'
                         value={
                           masterColumns.find(
                             (col: any) =>
@@ -1123,7 +1169,9 @@ const QuestionSettings = ({
                               }}
                             />
                           </div>
-                          <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                          <span className='text-xs font-bold text-gray-5'>
+                            &rarr;
+                          </span>
                           <div className='flex-1'>
                             <InputSelect
                               placeholder='Master Column'
@@ -1210,12 +1258,14 @@ const QuestionSettings = ({
                             Display All Data When Parent Empty
                           </div>
                           <div className='text-[10px] text-gray-6'>
-                            Show all options without filtering if parent field is empty
+                            Show all options without filtering if parent field
+                            is empty
                           </div>
                         </div>
                         <InputSwitch
                           checked={
-                            activeQuestion.settings.specific.showAllData || false
+                            activeQuestion.settings.specific.showAllData ||
+                            false
                           }
                           onChange={(checked) =>
                             updateNested('specific', { showAllData: checked })
@@ -1229,7 +1279,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'REPOSITORY' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Repository Source Builder
                     </label>
                     <div className='space-y-3'>
@@ -1327,7 +1377,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'PREDEFINED' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3.5 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Predefined Entity Configuration
                     </label>
 
@@ -1435,7 +1485,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'EXISTING' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Existing Submitted Values
                     </label>
                     <div>
@@ -1454,7 +1504,8 @@ const QuestionSettings = ({
                             .find(
                               (q) =>
                                 q.id ===
-                                activeQuestion.settings.specific.existingFieldId,
+                                activeQuestion.settings.specific
+                                  .existingFieldId,
                             ) || null
                         }
                         onChange={(val) =>
@@ -1464,7 +1515,8 @@ const QuestionSettings = ({
                         }
                       />
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
-                        Options will be dynamically collected from unique values of submitted entries for this field.
+                        Options will be dynamically collected from unique values
+                        of submitted entries for this field.
                       </div>
                     </div>
                   </div>
@@ -1473,7 +1525,7 @@ const QuestionSettings = ({
                 {activeQuestion.settings.specific.optionsType ===
                   'ASSIGN_PARENT_FIELD' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3.5'>
-                    <label className='block text-[11px] font-bold text-primary-9 uppercase tracking-wider'>
+                    <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Assign Control Field
                     </label>
                     <div>
@@ -1502,7 +1554,8 @@ const QuestionSettings = ({
                         }
                       />
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
-                        Options will dynamically match the selected control field's choices.
+                        Options will dynamically match the selected control
+                        field's choices.
                       </div>
                     </div>
                   </div>
@@ -1510,8 +1563,9 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'USER_LIST' && (
-                  <div className='rounded-lg border border-line-strong bg-gray-2 p-3 text-13 text-gray-11'>
-                    Options will be dynamically populated with system user emails.
+                  <div className='border-line-strong rounded-lg border bg-gray-2 p-3 text-13 text-gray-11'>
+                    Options will be dynamically populated with system user
+                    emails.
                   </div>
                 )}
 
@@ -3802,7 +3856,11 @@ const QuestionSettings = ({
                     connectors.length > 0
                       ? connectors.map((c: any) => ({
                           id: String(c.id),
-                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                          name:
+                            c.name ||
+                            c.connectorName ||
+                            c.providerCode ||
+                            `Connection ${c.id}`,
                         }))
                       : [
                           { id: '1', name: 'Main Production Connector' },
@@ -3813,7 +3871,11 @@ const QuestionSettings = ({
                     (connectors.length > 0
                       ? connectors.map((c: any) => ({
                           id: String(c.id),
-                          name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+                          name:
+                            c.name ||
+                            c.connectorName ||
+                            c.providerCode ||
+                            `Connection ${c.id}`,
                         }))
                       : [
                           { id: '1', name: 'Main Production Connector' },
@@ -3853,7 +3915,8 @@ const QuestionSettings = ({
                   label='Primary Name Column (columnNameInAPI)'
                   placeholder='e.g. display_name'
                   value={
-                    activeQuestion.settings.lookupSettings?.columnNameInAPI || ''
+                    activeQuestion.settings.lookupSettings?.columnNameInAPI ||
+                    ''
                   }
                   onChange={(val: string) =>
                     updateNested('lookupSettings', { columnNameInAPI: val })
@@ -3892,7 +3955,8 @@ const QuestionSettings = ({
                     type='button'
                     onClick={() => {
                       const current =
-                        activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
+                        activeQuestion.settings.lookupSettings
+                          ?.syncFieldsForAPI || []
                       updateNested('lookupSettings', {
                         syncFieldsForAPI: [
                           ...current,
@@ -3937,7 +4001,9 @@ const QuestionSettings = ({
                         }}
                       />
                     </div>
-                    <span className='text-xs font-bold text-gray-5'>&rarr;</span>
+                    <span className='text-xs font-bold text-gray-5'>
+                      &rarr;
+                    </span>
                     <div className='flex-1'>
                       <InputText
                         placeholder='API Parameter'
@@ -4028,8 +4094,8 @@ const QuestionSettings = ({
                   </div>
                   <InputSwitch
                     checked={
-                      activeQuestion.settings.lookupSettings?.hasSameConnection ||
-                      false
+                      activeQuestion.settings.lookupSettings
+                        ?.hasSameConnection || false
                     }
                     onChange={(checked) =>
                       updateNested('lookupSettings', {
@@ -4042,6 +4108,288 @@ const QuestionSettings = ({
             </div>
           </SettingsSection>
         )}
+
+      {/* SEARCH FIELD (LOOKUP / AUTO-SYNC) SECTION */}
+      {isSearchableSupported && (
+        <SettingsSection
+          icon='lucide:search'
+          isOpen={openSearchField}
+          title='Search Field Settings'
+          variant='premium'
+          onToggle={() => setOpenSearchField(!openSearchField)}
+        >
+          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
+            <div>
+              <label className='mb-1.5 block text-13 font-medium text-gray-11'>
+                Search Field (Lookup)
+              </label>
+              <SegmentedControl
+                fullWidth
+                size='xs'
+                value={
+                  activeQuestion.settings.specific.isSearchField === 'YES'
+                    ? 'YES'
+                    : 'NO'
+                }
+                data={[
+                  { label: 'Yes', value: 'YES' },
+                  { label: 'No', value: 'NO' },
+                ]}
+                onChange={(val) => updateNested('specific', { isSearchField: val })}
+              />
+            </div>
+
+            {activeQuestion.settings.specific.isSearchField === 'YES' && (
+              <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-4 rounded-lg border p-3.5'>
+                <div>
+                  <label className='mb-1.5 block text-xs font-medium text-gray-11'>
+                    Same Form
+                  </label>
+                  <SegmentedControl
+                    fullWidth
+                    size='xs'
+                    value={
+                      activeQuestion.settings.specific.hasSameForm === 'NO'
+                        ? 'NO'
+                        : 'YES'
+                    }
+                    data={[
+                      { label: 'Yes', value: 'YES' },
+                      { label: 'No', value: 'NO' },
+                    ]}
+                    onChange={(val) =>
+                      updateNested('specific', { hasSameForm: val })
+                    }
+                  />
+                </div>
+
+                {activeQuestion.settings.specific.hasSameForm === 'YES' ||
+                !activeQuestion.settings.specific.hasSameForm ? (
+                  <div>
+                    <label className='mb-1 block text-xs font-medium text-gray-11'>
+                      Form Sync Field *
+                    </label>
+                    <InputSelectMultiple
+                      placeholder='Select form fields to sync'
+                      options={allQuestions
+                        .filter(
+                          (q) =>
+                            q.id !== activeQuestion.id &&
+                            ![
+                              'DIVIDER',
+                              'HEADING',
+                              'LABEL',
+                              'FILE_UPLOAD',
+                              'IMAGE_UPLOAD',
+                            ].includes(q.type),
+                        )
+                        .map((q) => ({
+                          id: q.id,
+                          name: q.label || 'Untitled Field',
+                        }))}
+                      value={allQuestions
+                        .filter((q) =>
+                          (
+                            activeQuestion.settings.specific.formSyncField || []
+                          ).includes(q.id),
+                        )
+                        .map((q) => ({
+                          id: q.id,
+                          name: q.label || 'Untitled Field',
+                        }))}
+                      onChange={(opts: Option[]) =>
+                        updateNested('specific', {
+                          formSyncField: opts.map((o) => o.id),
+                        })
+                      }
+                    />
+                    <div className='mt-1 text-[10px] text-gray-6 italic'>
+                      Matches previous entries of current form and populates selected fields.
+                    </div>
+                  </div>
+                ) : (
+                  <div className='space-y-4'>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Forms *
+                      </label>
+                      <InputSelect
+                        placeholder='Select Master Form'
+                        options={masterForms}
+                        value={
+                          masterForms.find(
+                            (f: any) =>
+                              String(f.id) ===
+                              String(
+                                activeQuestion.settings.specific.searchFormId,
+                              ),
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            masterFormSyncSettings: [],
+                            masterSyncField: '',
+                            searchFormId: val?.id ? String(val.id) : '',
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Master Form Search Match Field *
+                      </label>
+                      <InputSelect
+                        placeholder='Select Master Field'
+                        options={searchMasterFields}
+                        value={
+                          searchMasterFields.find(
+                            (col: any) =>
+                              String(col.id) ===
+                              String(
+                                activeQuestion.settings.specific
+                                  .masterSyncField,
+                              ),
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            masterSyncField: val?.id ? String(val.id) : '',
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className='space-y-2.5 border-t border-gray-1 pt-3'>
+                      <div className='flex items-center justify-between'>
+                        <label className='block text-xs font-bold text-gray-11'>
+                          Form Fields Sync *
+                        </label>
+                        <button
+                          className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
+                          type='button'
+                          onClick={() => {
+                            const current =
+                              activeQuestion.settings.specific
+                                .masterFormSyncSettings || []
+                            updateNested('specific', {
+                              masterFormSyncSettings: [
+                                ...current,
+                                {
+                                  formField: '',
+                                  id: generateId(),
+                                  masterField: '',
+                                },
+                              ],
+                            })
+                          }}
+                        >
+                          <Icon height={10} name='lucide:plus' width={10} />
+                          Add Row
+                        </button>
+                      </div>
+
+                      {(
+                        activeQuestion.settings.specific
+                          .masterFormSyncSettings || []
+                      ).map((row: any, rIdx: number) => (
+                        <div
+                          className='flex items-center gap-2'
+                          key={row.id || rIdx}
+                        >
+                          <div className='flex-1'>
+                            <InputSelect
+                              placeholder='Form Field'
+                              options={allQuestions
+                                .filter(
+                                  (q) =>
+                                    q.id !== activeQuestion.id &&
+                                    ![
+                                      'DIVIDER',
+                                      'HEADING',
+                                      'LABEL',
+                                    ].includes(q.type),
+                                )
+                                .map((q) => ({
+                                  id: q.id,
+                                  name: q.label || 'Untitled',
+                                }))}
+                              value={
+                                allQuestions
+                                  .filter((q) => q.id !== activeQuestion.id)
+                                  .map((q) => ({
+                                    id: q.id,
+                                    name: q.label || 'Untitled',
+                                  }))
+                                  .find((q) => q.id === row.formField) || null
+                              }
+                              onChange={(val) => {
+                                const current = [
+                                  ...(activeQuestion.settings.specific
+                                    .masterFormSyncSettings || []),
+                                ]
+                                current[rIdx] = {
+                                  ...current[rIdx],
+                                  formField: val?.id ? String(val.id) : '',
+                                }
+                                updateNested('specific', {
+                                  masterFormSyncSettings: current,
+                                })
+                              }}
+                            />
+                          </div>
+                          <span className='text-xs font-bold text-gray-5'>
+                            &rarr;
+                          </span>
+                          <div className='flex-1'>
+                            <InputSelect
+                              placeholder='Master Field'
+                              options={searchMasterFields}
+                              value={
+                                searchMasterFields.find(
+                                  (col: any) => col.id === row.masterField,
+                                ) || null
+                              }
+                              onChange={(val) => {
+                                const current = [
+                                  ...(activeQuestion.settings.specific
+                                    .masterFormSyncSettings || []),
+                                ]
+                                current[rIdx] = {
+                                  ...current[rIdx],
+                                  masterField: val?.id ? String(val.id) : '',
+                                }
+                                updateNested('specific', {
+                                  masterFormSyncSettings: current,
+                                })
+                              }}
+                            />
+                          </div>
+                          <IconButton
+                            color='red'
+                            icon='lucide:trash-2'
+                            size='xs'
+                            variant='ghost'
+                            onClick={() => {
+                              const current = (
+                                activeQuestion.settings.specific
+                                  .masterFormSyncSettings || []
+                              ).filter((_: any, idx: number) => idx !== rIdx)
+                              updateNested('specific', {
+                                masterFormSyncSettings: current,
+                              })
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </SettingsSection>
+      )}
 
       {/* 5. APPEARANCE & STYLING */}
       {!isLongText && (
@@ -4342,7 +4690,7 @@ const QuestionSettings = ({
                             }
                           />
                         </div>
-                        <span className='text-[11px] text-gray-6 shrink-0'>
+                        <span className='shrink-0 text-[11px] text-gray-6'>
                           this field
                         </span>
                       </div>

@@ -18,9 +18,25 @@ const DATA_TYPES = [
   { icon: 'tabler:barcode', id: 'BARCODE', name: staticT`Barcode` },
   { icon: 'tabler:checkbox', id: 'OMR', name: staticT`Checkbox/OMR` },
   { icon: 'tabler:calculator', id: 'CALCULATED', name: staticT`Calculated` },
-  { icon: 'tabler:settings', id: 'AUTO_GENERATED', name: staticT`Auto Generated` },
+  {
+    icon: 'tabler:settings',
+    id: 'AUTO_GENERATED',
+    name: staticT`Auto Generated`,
+  },
   { icon: 'tabler:link', id: 'LINK', name: staticT`Link` },
 ]
+
+interface DmsColumnMappingProps {
+  dataTypes: Record<string, string>
+  fields: FieldRow[]
+  mapping: Record<string, string>
+  previewRows: any[]
+  uploadedColumns: string[]
+  syncFields?: string[]
+  onUpdateDataTypes: (dataTypes: Record<string, string>) => void
+  onUpdateMapping: (mapping: Record<string, string>) => void
+  onUpdateSyncFields?: (syncFields: string[]) => void
+}
 
 type FieldRow = {
   dataType: string
@@ -34,62 +50,49 @@ type FieldRow = {
   system?: boolean
 }
 
-interface DmsColumnMappingProps {
-  fields: FieldRow[]
-  mapping: Record<string, string>
-  dataTypes: Record<string, string>
-  previewRows: any[]
-  uploadedColumns: string[]
-  syncFields?: string[]
-  onUpdateMapping: (mapping: Record<string, string>) => void
-  onUpdateDataTypes: (dataTypes: Record<string, string>) => void
-  onUpdateSyncFields?: (syncFields: string[]) => void
-}
-
-const MENU_LABEL_CLASS = 'mb-0.5 flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-13 font-semibold text-gray-12 transition-colors'
-const OPTION_ITEM_CLASS = 'group flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-13 font-normal transition-colors focus-visible:outline-0'
-const OPTION_ITEM_IDLE_CLASS = 'text-gray-12 hover:bg-gray-2 hover:text-gray-13 focus-visible:bg-gray-2'
+const MENU_LABEL_CLASS =
+  'mb-0.5 flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-13 font-semibold text-gray-12 transition-colors'
+const OPTION_ITEM_CLASS =
+  'group flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-13 font-normal transition-colors focus-visible:outline-0'
+const OPTION_ITEM_IDLE_CLASS =
+  'text-gray-12 hover:bg-gray-2 hover:text-gray-13 focus-visible:bg-gray-2'
 const OPTION_ITEM_SELECTED_CLASS = 'bg-primary-2 text-primary-9'
 const OPTION_LABEL_CLASS = 'truncate transition-colors'
 
-function CompactRadioIndicator({ checked }: { checked?: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
-        checked ? 'border-primary-9 bg-primary-9' : 'border-gray-5 bg-transparent',
-      )}
-    >
-      {checked ? <span className='size-1 rounded-full bg-white' /> : null}
-    </span>
-  )
-}
-
 export default function DmsColumnMapping({
+  dataTypes = {},
   fields = [],
   mapping = {},
-  dataTypes = {},
-  syncFields = [],
   previewRows = [],
+  syncFields = [],
   uploadedColumns = [],
-  onUpdateMapping,
   onUpdateDataTypes,
+  onUpdateMapping,
   onUpdateSyncFields,
 }: DmsColumnMappingProps) {
   const { t } = useLingui()
-  const [activeDropdownRow, setActiveDropdownRow] = useState<string | null>(null)
-  const [activeTypeDropdownRow, setActiveTypeDropdownRow] = useState<string | null>(null)
+  const [activeDropdownRow, setActiveDropdownRow] = useState<string | null>(
+    null,
+  )
+  const [activeTypeDropdownRow, setActiveTypeDropdownRow] = useState<
+    string | null
+  >(null)
   const [searchQuery, setSearchQuery] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setActiveDropdownRow(null)
       }
-      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+      if (
+        typeDropdownRef.current &&
+        !typeDropdownRef.current.contains(event.target as Node)
+      ) {
         setActiveTypeDropdownRow(null)
       }
     }
@@ -97,7 +100,10 @@ export default function DmsColumnMapping({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelectExcelColumn = (repoFieldName: string, excelCol: string | null) => {
+  const handleSelectExcelColumn = (
+    repoFieldName: string,
+    excelCol: string | null,
+  ) => {
     const nextMapping = { ...mapping }
     if (excelCol) {
       nextMapping[repoFieldName] = excelCol
@@ -112,7 +118,7 @@ export default function DmsColumnMapping({
   const handleSelectDataType = (repoFieldName: string, typeVal: string) => {
     onUpdateDataTypes({
       ...dataTypes,
-      [repoFieldName]: typeVal
+      [repoFieldName]: typeVal,
     })
     setActiveTypeDropdownRow(null)
   }
@@ -122,7 +128,7 @@ export default function DmsColumnMapping({
     if (checked) {
       onUpdateSyncFields([...(syncFields || []), repoFieldName])
     } else {
-      onUpdateSyncFields((syncFields || []).filter(f => f !== repoFieldName))
+      onUpdateSyncFields((syncFields || []).filter((f) => f !== repoFieldName))
     }
   }
 
@@ -144,15 +150,21 @@ export default function DmsColumnMapping({
       {/* Header Row */}
       <div className='sticky top-0 z-10 grid grid-cols-12 items-center gap-4 border-b border-border-default bg-gray-2/50 px-5 py-3 text-[13px] font-semibold text-gray-12 backdrop-blur-sm'>
         <div className='col-span-3 flex items-center gap-2'>
-          <Icon className='size-3.5 text-green-11' name='lucide:file-spreadsheet' />
+          <Icon
+            className='size-3.5 text-green-11'
+            name='lucide:file-spreadsheet'
+          />
           {t`Excel Fields`}
         </div>
         <div className='col-span-3 flex items-center gap-2'>
-          <Icon className='size-3.5 text-blue-11' name='lucide:layout-template' />
+          <Icon
+            className='size-3.5 text-blue-11'
+            name='lucide:layout-template'
+          />
           {t`Example Value`}
         </div>
         <div className='col-span-6 flex items-center gap-3 pl-2'>
-          <div className='flex-1 flex items-center gap-2'>
+          <div className='flex flex-1 items-center gap-2'>
             <Icon className='size-3.5 text-indigo-11' name='lucide:database' />
             {t`Folder Fields`}
           </div>
@@ -163,27 +175,32 @@ export default function DmsColumnMapping({
       </div>
 
       {/* Rows */}
-      <div className='flex max-h-[400px] flex-col overflow-y-auto overflow-x-hidden'>
+      <div className='flex max-h-[400px] flex-col overflow-x-hidden overflow-y-auto'>
         {uploadedColumns.map((excelColName, index) => {
-          const mappedRepoFieldName = Object.keys(mapping).find(key => mapping[key] === excelColName) || ''
-          const mappedRepoField = fields.find(f => f.fieldName === mappedRepoFieldName)
+          const mappedRepoFieldName =
+            Object.keys(mapping).find((key) => mapping[key] === excelColName) ||
+            ''
+          const mappedRepoField = fields.find(
+            (f) => f.fieldName === mappedRepoFieldName,
+          )
           const isMapped = !!mappedRepoFieldName
           const repoDataType = mappedRepoField?.dataType || 'SHORT_TEXT'
-          const activeDataTypeObj = DATA_TYPES.find(d => d.id === repoDataType) || DATA_TYPES[0]
-          
+          const activeDataTypeObj =
+            DATA_TYPES.find((d) => d.id === repoDataType) || DATA_TYPES[0]
+
           const isDropdownOpen = activeDropdownRow === excelColName
 
-          const filteredFields = fields.filter((f) => 
-            f.fieldName.toLowerCase().includes(searchQuery.toLowerCase())
+          const filteredFields = fields.filter((f) =>
+            f.fieldName.toLowerCase().includes(searchQuery.toLowerCase()),
           )
 
           return (
             <div
+              key={excelColName}
               className={cn(
                 'grid grid-cols-12 items-center gap-4 border-b border-border-default/50 px-5 py-3 transition-colors',
                 isMapped ? 'bg-transparent' : 'bg-gray-1/30',
               )}
-              key={excelColName}
             >
               {/* Excel Field Name */}
               <div className='col-span-3 flex min-w-0 items-center gap-2'>
@@ -199,7 +216,7 @@ export default function DmsColumnMapping({
               <div className='col-span-3 flex min-w-0 items-center gap-2 pr-2'>
                 {previewRows && previewRows.length > 0 ? (
                   <div
-                    className='max-w-[150px] cursor-pointer truncate text-[13px] text-gray-10 transition-all hover:whitespace-normal hover:break-words'
+                    className='max-w-[150px] cursor-pointer truncate text-[13px] text-gray-10 transition-all hover:break-words hover:whitespace-normal'
                     title={String(previewRows[0]?.[excelColName] || '')}
                   >
                     {String(previewRows[0]?.[excelColName] || '')}
@@ -210,12 +227,14 @@ export default function DmsColumnMapping({
               </div>
 
               {/* Combined Folder Field Picker */}
-              <div className='col-span-6 flex items-center relative gap-3'>
-                <div className='flex-1 relative'>
+              <div className='relative col-span-6 flex items-center gap-3'>
+                <div className='relative flex-1'>
                   <div
                     className={cn(
                       'flex h-[36px] w-full cursor-pointer items-center justify-between rounded-lg border bg-surface px-3 font-normal transition-all duration-200 select-none',
-                      isDropdownOpen ? 'border-primary-9 ring-2 ring-primary-9/20' : 'border-gray-3 hover:border-gray-4'
+                      isDropdownOpen
+                        ? 'border-primary-9 ring-2 ring-primary-9/20'
+                        : 'border-gray-3 hover:border-gray-4',
                     )}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -227,11 +246,19 @@ export default function DmsColumnMapping({
                       {isMapped ? (
                         <>
                           <Tooltip content={t`Folder Field`} position='top'>
-                            <span className='inline-flex shrink-0' onClick={(e) => e.stopPropagation()}>
-                              <Icon name='lucide:database' className='size-3.5 text-indigo-11' />
+                            <span
+                              className='inline-flex shrink-0'
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Icon
+                                className='size-3.5 text-indigo-11'
+                                name='lucide:database'
+                              />
                             </span>
                           </Tooltip>
-                          <span className='truncate text-[13px] font-normal'>{mappedRepoFieldName}</span>
+                          <span className='truncate text-[13px] font-normal'>
+                            {mappedRepoFieldName}
+                          </span>
                         </>
                       ) : (
                         <span className='truncate text-[13px] font-normal text-gray-9'>
@@ -243,9 +270,15 @@ export default function DmsColumnMapping({
                     <div className='flex shrink-0 items-center gap-1.5'>
                       {/* Read-only Datatype icon for mapped folder fields */}
                       {isMapped && (
-                        <Tooltip content={activeDataTypeObj.name} position='top'>
+                        <Tooltip
+                          content={activeDataTypeObj.name}
+                          position='top'
+                        >
                           <div className='flex size-6 items-center justify-center rounded-md border border-transparent'>
-                            <Icon className='size-3.5 shrink-0 text-gray-10' name={activeDataTypeObj.icon} />
+                            <Icon
+                              className='size-3.5 shrink-0 text-gray-10'
+                              name={activeDataTypeObj.icon}
+                            />
                           </div>
                         </Tooltip>
                       )}
@@ -262,44 +295,54 @@ export default function DmsColumnMapping({
                   {/* Folder Field Dropdown Selection */}
                   {isDropdownOpen && (
                     <div
-                      className='absolute top-[calc(100%+4px)] right-0 left-0 z-40 flex max-h-[300px] flex-col overflow-hidden rounded-xl border border-border-default bg-surface shadow-lg animate-in fade-in zoom-in-95'
+                      className='animate-in fade-in zoom-in-95 absolute top-[calc(100%+4px)] right-0 left-0 z-40 flex max-h-[300px] flex-col overflow-hidden rounded-xl border border-border-default bg-surface shadow-lg'
                       ref={dropdownRef}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className='border-b border-border-default p-2'>
                         <div className='flex items-center gap-2 rounded-md bg-gray-2 px-2.5 py-1.5 focus-within:ring-1 focus-within:ring-primary-9'>
-                          <Icon className='size-3.5 text-gray-10' name='lucide:search' />
+                          <Icon
+                            className='size-3.5 text-gray-10'
+                            name='lucide:search'
+                          />
                           <input
-                            // eslint-disable-next-line jsx-a11y/no-autofocus
-                            autoFocus
                             className='w-full bg-transparent text-13 text-gray-12 placeholder-gray-9 outline-none'
                             placeholder={t`Search folder fields...`}
                             value={searchQuery}
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
+                            autoFocus
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
                         </div>
                       </div>
 
-                      <div className='flex-1 overflow-y-auto p-1.5 custom-scrollbar'>
+                      <div className='custom-scrollbar flex-1 overflow-y-auto p-1.5'>
                         <div className={MENU_LABEL_CLASS}>
-                          <Icon className='size-3.5 text-indigo-11' name='lucide:database' />
+                          <Icon
+                            className='size-3.5 text-indigo-11'
+                            name='lucide:database'
+                          />
                           {t`Folder Fields`}
                         </div>
-                        
+
                         <button
+                          type='button'
                           className={cn(
                             OPTION_ITEM_CLASS,
-                            !isMapped ? OPTION_ITEM_SELECTED_CLASS : OPTION_ITEM_IDLE_CLASS,
+                            !isMapped
+                              ? OPTION_ITEM_SELECTED_CLASS
+                              : OPTION_ITEM_IDLE_CLASS,
                           )}
-                          type='button'
                           onClick={() => {
                             if (isMapped) {
                               const newMapping = { ...mapping }
                               delete newMapping[mappedRepoFieldName]
                               onUpdateMapping(newMapping)
-                              
+
                               if (onUpdateSyncFields) {
-                                const newSync = syncFields.filter((s) => s !== mappedRepoFieldName)
+                                const newSync = syncFields.filter(
+                                  (s) => s !== mappedRepoFieldName,
+                                )
                                 onUpdateSyncFields(newSync)
                               }
                             }
@@ -307,85 +350,117 @@ export default function DmsColumnMapping({
                           }}
                         >
                           <CompactRadioIndicator checked={!isMapped} />
-                          <span className={OPTION_LABEL_CLASS}>{t`Skip this field (unmapped)`}</span>
+                          <span
+                            className={OPTION_LABEL_CLASS}
+                          >{t`Skip this field (unmapped)`}</span>
                         </button>
-                        
+
                         {filteredFields.length > 0 ? (
                           filteredFields.map((f) => {
-                            const isAlreadyMapped = Object.values(mapping).includes(f.fieldName) && mapping[f.fieldName] !== excelColName;
+                            const isAlreadyMapped =
+                              Object.values(mapping).includes(f.fieldName) &&
+                              mapping[f.fieldName] !== excelColName
                             return (
-                            <button
-                              className={cn(
-                                OPTION_ITEM_CLASS,
-                                mappedRepoFieldName === f.fieldName ? OPTION_ITEM_SELECTED_CLASS : OPTION_ITEM_IDLE_CLASS,
-                                isAlreadyMapped && 'opacity-50 cursor-not-allowed'
-                              )}
-                              key={f.fieldName}
-                              type='button'
-                            disabled={isAlreadyMapped}
-                            onClick={() => {
-                              if (!isAlreadyMapped) {
-                                const newMapping = { ...mapping }
-                                // Remove any existing mapping for this excel col just in case
-                                if (mappedRepoFieldName) {
-                                  delete newMapping[mappedRepoFieldName]
-                                }
-                                newMapping[f.fieldName] = excelColName
-                                onUpdateMapping(newMapping)
-                                setActiveDropdownRow(null)
-                              }
-                            }}
-                          >
-                            <CompactRadioIndicator checked={mappedRepoFieldName === f.fieldName} />
-                            <span className={cn(OPTION_LABEL_CLASS, isAlreadyMapped && 'text-gray-9 line-through')}>
-                              {f.fieldName}
-                            </span>
-                            {isAlreadyMapped && (
-                              <span className="text-[10px] text-gray-8 ml-auto">{t`Already mapped`}</span>
-                            )}
-                          </button>
-                        )})
-                      ) : (
-                        <div className='px-2 py-3 text-center text-12 text-gray-10'>
-                          {t`No fields found`}
-                        </div>
-                      )}
+                              <button
+                                disabled={isAlreadyMapped}
+                                key={f.fieldName}
+                                type='button'
+                                className={cn(
+                                  OPTION_ITEM_CLASS,
+                                  mappedRepoFieldName === f.fieldName
+                                    ? OPTION_ITEM_SELECTED_CLASS
+                                    : OPTION_ITEM_IDLE_CLASS,
+                                  isAlreadyMapped &&
+                                    'cursor-not-allowed opacity-50',
+                                )}
+                                onClick={() => {
+                                  if (!isAlreadyMapped) {
+                                    const newMapping = { ...mapping }
+                                    // Remove any existing mapping for this excel col just in case
+                                    if (mappedRepoFieldName) {
+                                      delete newMapping[mappedRepoFieldName]
+                                    }
+                                    newMapping[f.fieldName] = excelColName
+                                    onUpdateMapping(newMapping)
+                                    setActiveDropdownRow(null)
+                                  }
+                                }}
+                              >
+                                <CompactRadioIndicator
+                                  checked={mappedRepoFieldName === f.fieldName}
+                                />
+                                <span
+                                  className={cn(
+                                    OPTION_LABEL_CLASS,
+                                    isAlreadyMapped &&
+                                      'text-gray-9 line-through',
+                                  )}
+                                >
+                                  {f.fieldName}
+                                </span>
+                                {isAlreadyMapped && (
+                                  <span className='ml-auto text-[10px] text-gray-8'>{t`Already mapped`}</span>
+                                )}
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className='px-2 py-3 text-center text-12 text-gray-10'>
+                            {t`No fields found`}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 </div>
-                
+
                 {/* Sync Checkbox */}
-                <div className='flex shrink-0 items-center w-16 justify-end pr-2'>
-                  <label 
+                <div className='flex w-16 shrink-0 items-center justify-end pr-2'>
+                  <label
                     className={cn(
-                      'flex items-center transition-opacity', 
-                      isMapped ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-40'
-                    )} 
+                      'flex items-center transition-opacity',
+                      isMapped
+                        ? 'cursor-pointer hover:opacity-80'
+                        : 'cursor-not-allowed opacity-40',
+                    )}
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!isMapped) e.preventDefault()
                     }}
                   >
-                    <div className={cn(
-                      'flex size-[18px] items-center justify-center rounded border transition-colors',
-                      syncFields?.includes(mappedRepoFieldName) && isMapped ? 'border-primary-9 bg-primary-9' : 'border-gray-4 bg-surface',
-                      isMapped && 'hover:border-primary-9'
-                    )}>
-                      {syncFields?.includes(mappedRepoFieldName) && isMapped && <Icon name='lucide:check' className='size-3.5 text-white' />}
+                    <div
+                      className={cn(
+                        'flex size-[18px] items-center justify-center rounded border transition-colors',
+                        syncFields?.includes(mappedRepoFieldName) && isMapped
+                          ? 'border-primary-9 bg-primary-9'
+                          : 'border-gray-4 bg-surface',
+                        isMapped && 'hover:border-primary-9',
+                      )}
+                    >
+                      {syncFields?.includes(mappedRepoFieldName) &&
+                        isMapped && (
+                          <Icon
+                            className='size-3.5 text-white'
+                            name='lucide:check'
+                          />
+                        )}
                     </div>
-                    <input 
-                      type='checkbox' 
-                      className='hidden' 
+                    <input
+                      className='hidden'
                       disabled={!isMapped}
-                      checked={syncFields?.includes(mappedRepoFieldName) || false}
+                      type='checkbox'
+                      checked={
+                        syncFields?.includes(mappedRepoFieldName) || false
+                      }
                       onChange={(e) => {
                         const checked = e.target.checked
                         let newSync = [...(syncFields || [])]
                         if (checked && !newSync.includes(mappedRepoFieldName)) {
                           newSync.push(mappedRepoFieldName)
                         } else if (!checked) {
-                          newSync = newSync.filter(s => s !== mappedRepoFieldName)
+                          newSync = newSync.filter(
+                            (s) => s !== mappedRepoFieldName,
+                          )
                         }
                         onUpdateSyncFields?.(newSync)
                       }}
@@ -404,5 +479,21 @@ export default function DmsColumnMapping({
         )}
       </div>
     </div>
+  )
+}
+
+function CompactRadioIndicator({ checked }: { checked?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+        checked
+          ? 'border-primary-9 bg-primary-9'
+          : 'border-gray-5 bg-transparent',
+      )}
+    >
+      {checked ? <span className='size-1 rounded-full bg-white' /> : null}
+    </span>
   )
 }

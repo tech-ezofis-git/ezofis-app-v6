@@ -2,6 +2,7 @@ import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
+import dayjs from 'dayjs'
 import {
   Briefcase,
   Calendar,
@@ -29,17 +30,16 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
-import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/core/lib/styles/index.css'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import '@react-pdf-viewer/search/lib/styles/index.css'
 import {
   localizeRequestFieldLabel,
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
-import '@react-pdf-viewer/search/lib/styles/index.css'
 import { getMockDB, startSupplierVerification } from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
-import dayjs from 'dayjs'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 
@@ -276,7 +276,10 @@ const normalizeExtractedLineItem = (item: any) => {
 
 const getCanonicalColumnKey = (rawKey: string): string => {
   if (!rawKey || !rawKey.trim()) return ''
-  const normalized = rawKey.trim().toLowerCase().replace(/[\s_-]+/g, '')
+  const normalized = rawKey
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
 
   if (
     normalized === 'description' ||
@@ -721,7 +724,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
@@ -900,7 +903,10 @@ const FALLBACK_PO_COLS_MAP: Record<string, string> = {
 
 const normalizeColumnLabel = (label: string): string => {
   if (!label) return ''
-  const norm = label.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  const norm = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
   if (
     norm === 'qty' ||
     norm === 'quantity' ||
@@ -1045,7 +1051,7 @@ const AnalysisCard = ({
       {isPulsing && (
         <div className='pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-[var(--orange-6)]/50' />
       )}
-      <div className='flex items-center justify-between gap-1 flex-wrap'>
+      <div className='flex flex-wrap items-center justify-between gap-1'>
         <div
           className={cn(
             'shrink-0 rounded p-1.5 transition-colors',
@@ -1084,7 +1090,7 @@ const AnalysisCard = ({
           </div>
         )}
         {subtitle && (
-          <div className='text-[10px] font-normal leading-none text-[var(--gray-10)] mt-0.5'>
+          <div className='mt-0.5 text-[10px] leading-none font-normal text-[var(--gray-10)]'>
             {subtitle}
           </div>
         )}
@@ -1121,7 +1127,9 @@ const DetailReportView = ({
             <div className={cn('rounded-md p-1', getStatusStyles(statusType))}>
               <IconComponent className='h-4 w-4' />
             </div>
-            <h3 className='text-sm font-semibold text-[var(--gray-13)]'>{title}</h3>
+            <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
+              {title}
+            </h3>
           </div>
         </div>
         <span
@@ -1215,7 +1223,7 @@ const getPoRowObj = (agentData: any, selectedItem: any, matchingProc: any) => {
             return parsed
           }
         }
-      } catch { }
+      } catch {}
     }
   }
   return null
@@ -1243,16 +1251,10 @@ const getValueFromPoRow = (poRow: any, key: string) => {
     ) {
       return 'supplier'
     }
-    if (
-      norm === 'poamount' ||
-      norm === 'totaldue'
-    ) {
+    if (norm === 'poamount' || norm === 'totaldue') {
       return 'poamount'
     }
-    if (
-      norm === 'invoiceamount' ||
-      norm === 'totalamount'
-    ) {
+    if (norm === 'invoiceamount' || norm === 'totalamount') {
       return 'invoiceamount'
     }
     if (norm === 'ponumber' || norm === 'pono' || norm === 'purchaseorder') {
@@ -1326,8 +1328,8 @@ const FormCard = ({
   label,
   missing = false,
   options = [],
-  poValue,
   poSourceLabel = 'PO Master',
+  poValue,
   score,
   source,
   type = 'text',
@@ -1360,9 +1362,9 @@ const FormCard = ({
   const isPerfectMatch = isUsingPo
   const effectiveScore =
     score !== undefined &&
-      score !== null &&
-      Number(score) < 100 &&
-      isPerfectMatch
+    score !== null &&
+    Number(score) < 100 &&
+    isPerfectMatch
       ? 100
       : score
 
@@ -1396,7 +1398,16 @@ const FormCard = ({
       return 'ai'
     }
     return 'ocr'
-  }, [userEdited, localValue, value, appliedSource, isUsingPo, poSourceLabel, source, label])
+  }, [
+    userEdited,
+    localValue,
+    value,
+    appliedSource,
+    isUsingPo,
+    poSourceLabel,
+    source,
+    label,
+  ])
 
   const renderSourceBadge = (src: string) => {
     const norm = String(src || '').toLowerCase()
@@ -1414,7 +1425,12 @@ const FormCard = ({
         </span>
       )
     }
-    if (norm === 'po_master' || norm === 'po' || norm === 'sap' || norm === 'hana cloud') {
+    if (
+      norm === 'po_master' ||
+      norm === 'po' ||
+      norm === 'sap' ||
+      norm === 'hana cloud'
+    ) {
       const isSap =
         poSourceLabel.toLowerCase() === 'sap' ||
         norm === 'sap' ||
@@ -1509,9 +1525,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1573,8 +1589,8 @@ const FormCard = ({
           <FieldIcon className='h-3.5 w-3.5' />
         </div>
         <div className='min-w-0 flex-1'>
-          <div className='mb-0.5 flex items-center justify-between gap-1 flex-wrap min-w-0'>
-            <p className='min-w-0 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
+          <div className='mb-0.5 flex min-w-0 flex-wrap items-center justify-between gap-1'>
+            <p className='min-w-0 shrink-0 text-[10px] font-semibold text-[var(--gray-11)]'>
               {label}
             </p>
             <div className='flex shrink-0 items-center gap-1.5'>
@@ -1627,8 +1643,8 @@ const FormCard = ({
 
   return (
     <button
-      type='button'
       data-field-id={fieldKey || label}
+      type='button'
       className={cn(
         'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
         missing && 'border border-solid border-red-8 bg-red-1',
@@ -1647,8 +1663,8 @@ const FormCard = ({
         <FieldIcon className='h-3.5 w-3.5' />
       </div>
       <div className='min-w-0 flex-1'>
-        <div className='mb-0.5 flex items-center justify-between gap-1 flex-wrap min-w-0'>
-          <p className='min-w-0 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
+        <div className='mb-0.5 flex min-w-0 flex-wrap items-center justify-between gap-1'>
+          <p className='min-w-0 shrink-0 text-[10px] font-semibold text-[var(--gray-11)]'>
             {label}
           </p>
           <div className='flex shrink-0 items-center gap-1.5'>
@@ -1698,7 +1714,7 @@ const FormCard = ({
                   value === null ||
                   value === undefined ||
                   value === '') &&
-                'font-medium text-[var(--gray-9)]',
+                  'font-medium text-[var(--gray-9)]',
               )}
             >
               {value === null || value === undefined || value === ''
@@ -1738,7 +1754,7 @@ const FormCard = ({
                     </span>
                     <span className='text-[var(--primary-9)]/60'>·</span>
                   </span>{' '}
-                  <span className='truncate inline-block max-w-[calc(100%-80px)] align-middle font-bold text-[var(--gray-13)] group-hover/suggest:inline group-hover/suggest:max-w-none group-hover/suggest:whitespace-normal group-hover/suggest:break-words'>
+                  <span className='inline-block max-w-[calc(100%-80px)] truncate align-middle font-bold text-[var(--gray-13)] group-hover/suggest:inline group-hover/suggest:max-w-none group-hover/suggest:break-words group-hover/suggest:whitespace-normal'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
                 </div>
@@ -2018,7 +2034,7 @@ const Overview = (props: any) => {
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data)
-      } catch { }
+      } catch {}
     }
     if (data && typeof data === 'object') {
       let merged = { ...data }
@@ -2026,7 +2042,7 @@ const Overview = (props: any) => {
         if (typeof merged._agentResponse === 'string') {
           try {
             merged = { ...merged, ...JSON.parse(merged._agentResponse) }
-          } catch { }
+          } catch {}
         } else if (typeof merged._agentResponse === 'object') {
           merged = { ...merged, ...merged._agentResponse }
         }
@@ -2035,7 +2051,7 @@ const Overview = (props: any) => {
         if (typeof merged.agentResponse === 'string') {
           try {
             merged = { ...merged, ...JSON.parse(merged.agentResponse) }
-          } catch { }
+          } catch {}
         } else if (typeof merged.agentResponse === 'object') {
           merged = { ...merged, ...merged.agentResponse }
         }
@@ -2048,9 +2064,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-      selectedItem?.instanceId ||
-      processId ||
-      '',
+        selectedItem?.instanceId ||
+        processId ||
+        '',
     )
   }, [selectedItem, processId])
 
@@ -2092,8 +2108,10 @@ const Overview = (props: any) => {
         try {
           const parsed = JSON.parse(obj)
           if (parsed && typeof parsed === 'object')
-            return parsed.source_type || parsed.sourceType || parsed.source || null
-        } catch { }
+            return (
+              parsed.source_type || parsed.sourceType || parsed.source || null
+            )
+        } catch {}
       }
       return null
     }
@@ -2141,10 +2159,10 @@ const Overview = (props: any) => {
   const isRequestCompleted = useMemo(() => {
     const rawStatus = String(
       selectedItem?.status ||
-      selectedItem?.workflowStatus ||
-      selectedItem?.stage ||
-      agentData?.status ||
-      '',
+        selectedItem?.workflowStatus ||
+        selectedItem?.stage ||
+        agentData?.status ||
+        '',
     )
       .toLowerCase()
       .trim()
@@ -2225,7 +2243,9 @@ const Overview = (props: any) => {
   }
 
   const getFieldPoValue = (key: string) => {
-    const normKey = String(key || '').toLowerCase().trim()
+    const normKey = String(key || '')
+      .toLowerCase()
+      .trim()
     if (
       normKey.includes('invoice amount') ||
       normKey.includes('invoice date') ||
@@ -2410,7 +2430,9 @@ const Overview = (props: any) => {
 
   const [activeTab, setActiveTab] = useState('summary')
   const [activeDetailView, setActiveDetailView] = useState<string | null>(null)
-  const [expandedLedgerKeys, setExpandedLedgerKeys] = useState<Record<string, boolean>>({})
+  const [expandedLedgerKeys, setExpandedLedgerKeys] = useState<
+    Record<string, boolean>
+  >({})
 
   useEffect(() => {
     if (!kanbanMissingFieldIds?.length) return
@@ -2715,7 +2737,7 @@ const Overview = (props: any) => {
         try {
           const parsed = JSON.parse(val)
           if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        } catch { }
+        } catch {}
       }
     }
 
@@ -2736,7 +2758,7 @@ const Overview = (props: any) => {
           try {
             const parsed = JSON.parse(cand)
             if (Array.isArray(parsed) && parsed.length > 0) return parsed
-          } catch { }
+          } catch {}
         }
       }
     }
@@ -2755,12 +2777,19 @@ const Overview = (props: any) => {
         try {
           const parsed = JSON.parse(cand)
           if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        } catch { }
+        } catch {}
       }
     }
 
     return []
-  }, [formModel, parsedFormData, poLineItemsKey, agentData, selectedItem, matchingProc])
+  }, [
+    formModel,
+    parsedFormData,
+    poLineItemsKey,
+    agentData,
+    selectedItem,
+    matchingProc,
+  ])
 
   const poColMap = useMemo(() => {
     return getPoTableColumnsMapping(
@@ -2850,7 +2879,9 @@ const Overview = (props: any) => {
     })
 
     const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
-    const otherCols = Array.from(colSet).filter((k) => !isLineItemAmountColumn(k))
+    const otherCols = Array.from(colSet).filter(
+      (k) => !isLineItemAmountColumn(k),
+    )
 
     return [...result, ...otherCols, ...amountCols]
   }, [poLineItems])
@@ -3291,7 +3322,9 @@ const Overview = (props: any) => {
     })
 
     const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
-    const otherCols = Array.from(colSet).filter((k) => !isLineItemAmountColumn(k))
+    const otherCols = Array.from(colSet).filter(
+      (k) => !isLineItemAmountColumn(k),
+    )
 
     return [...result, ...otherCols, ...amountCols]
   }, [rawLineItems])
@@ -3717,9 +3750,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-        selectedItem?.repositoryId ||
-        repositoryId ||
-        '',
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -3994,10 +4027,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                      No matching fields
-                    </div>
-                  )}
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                    No matching fields
+                  </div>
+                )}
               </div>
             </menu>
           )}
@@ -4015,11 +4048,12 @@ const Overview = (props: any) => {
                     className={cn(
                       'grid gap-3',
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
-                      analysisCardCount === 4 && 'grid-cols-2 md:grid-cols-2 xl:grid-cols-4',
+                      analysisCardCount === 4 &&
+                        'grid-cols-2 md:grid-cols-2 xl:grid-cols-4',
                       analysisCardCount === 5 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -4033,7 +4067,8 @@ const Overview = (props: any) => {
                         formModel?.['Purchase Order'] ||
                         formModel?.['RXwLGHILLrreMmRqlk9mj'] ||
                         resolvedAgentData?.po_row?.['PO Number'] ||
-                        resolvedAgentData?.['Extracted Invoice JSON']?.invoice_header?.['PO Number']
+                        resolvedAgentData?.['Extracted Invoice JSON']
+                          ?.invoice_header?.['PO Number']
 
                       const hasPoMatchingData =
                         Boolean(resolvedAgentData?.decision) ||
@@ -4051,27 +4086,27 @@ const Overview = (props: any) => {
                         <AnalysisCard
                           align='left'
                           icon={Paperclip}
-                          isSelected={activeDetailView === 'po_matching'}
-                          title={t`PO Matching`}
                           isLoading={isPoMatchingLoading}
+                          isSelected={activeDetailView === 'po_matching'}
+                          statusType={isMatched ? 'success' : 'warning'}
+                          title={t`PO Matching`}
                           status={
                             isMatched
                               ? resolvedAgentData?.decision || t`Matched`
                               : t`Not Matched`
                           }
-                          statusType={isMatched ? 'success' : 'warning'}
+                          subtitle={
+                            poVal &&
+                            poVal !== '-' &&
+                            poVal !== 'N/A' &&
+                            resolvedAgentData?.source_type
+                              ? `via ${formatErpSystem(resolvedAgentData.source_type)}`
+                              : undefined
+                          }
                           value={
                             poVal && poVal !== '-' && poVal !== 'N/A'
                               ? `${poVal}`
                               : t`No PO Found`
-                          }
-                          subtitle={
-                            poVal &&
-                              poVal !== '-' &&
-                              poVal !== 'N/A' &&
-                              resolvedAgentData?.source_type
-                              ? `via ${formatErpSystem(resolvedAgentData.source_type)}`
-                              : undefined
                           }
                           onClick={() => setActiveDetailView('po_matching')}
                         />
@@ -4089,20 +4124,22 @@ const Overview = (props: any) => {
                         <AnalysisCard
                           align='left'
                           icon={Layers}
+                          isLoading={isDupLoading}
                           isSelected={activeDetailView === 'duplicate_check'}
                           title={t`Duplicate Detection`}
-                          isLoading={isDupLoading}
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.duplicate_check?.status ||
-                            agentData?.duplicate_check?.status ||
-                            (resolvedAgentData?.invoice_errors?.severity === 'NONE'
-                              ? 'No Duplicate'
-                              : 'No Duplicate'),
+                              agentData?.duplicate_check?.status ||
+                              (resolvedAgentData?.invoice_errors?.severity ===
+                              'NONE'
+                                ? 'No Duplicate'
+                                : 'No Duplicate'),
                           )}
                           statusType={
-                            resolvedAgentData?.duplicate_check?.status === 'Duplicate' ||
-                              agentData?.duplicate_check?.status === 'Duplicate'
+                            resolvedAgentData?.duplicate_check?.status ===
+                              'Duplicate' ||
+                            agentData?.duplicate_check?.status === 'Duplicate'
                               ? 'warning'
                               : 'success'
                           }
@@ -4173,25 +4210,31 @@ const Overview = (props: any) => {
                       <AnalysisCard
                         align='left'
                         icon={Store}
-                        isLoading={isCurrentlyProcessing || (!resolvedAgentData?.supplier_validation && !supplierCheckState.data)}
                         title={t`Supplier Verification`}
+                        isLoading={
+                          isCurrentlyProcessing ||
+                          (!resolvedAgentData?.supplier_validation &&
+                            !supplierCheckState.data)
+                        }
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
                         status={localizeRequestStatus(
                           i18n,
                           resolvedAgentData?.supplier_validation?.status ||
-                          supplierCheckState.data?.status ||
-                          'Verified',
+                            supplierCheckState.data?.status ||
+                            'Verified',
                         )}
                         statusType={
-                          resolvedAgentData?.supplier_validation?.status === 'ACTIVE' ||
-                            supplierCheckState.data?.statusType === 'success'
+                          resolvedAgentData?.supplier_validation?.status ===
+                            'ACTIVE' ||
+                          supplierCheckState.data?.statusType === 'success'
                             ? 'success'
                             : 'warning'
                         }
                         value={
-                          resolvedAgentData?.supplier_validation?.validation_details?.reason ||
+                          resolvedAgentData?.supplier_validation
+                            ?.validation_details?.reason ||
                           supplierCheckState.data?.value ||
                           t`Supplier verified`
                         }
@@ -4226,7 +4269,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                      backOrderDisplay?.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
@@ -4255,18 +4298,24 @@ const Overview = (props: any) => {
                         align='right'
                         icon={CreditCard}
                         isSelected={activeDetailView === 'payment_terms'}
+                        statusType='success'
+                        title={t`Payment Status`}
                         statusContent={
-                          <div className='flex items-center gap-1 rounded-full bg-[var(--purple-1)] border border-[var(--purple-3)] px-2 py-0.5 text-[9px] font-semibold text-[var(--purple-9)]'>
-                            <span>{agentData?.paymentSyncStatus || 'Synced'}</span>
+                          <div className='flex items-center gap-1 rounded-full border border-[var(--purple-3)] bg-[var(--purple-1)] px-2 py-0.5 text-[9px] font-semibold text-[var(--purple-9)]'>
+                            <span>
+                              {agentData?.paymentSyncStatus || 'Synced'}
+                            </span>
                             <span className='size-1.5 rounded-full bg-[var(--purple-9)]' />
                           </div>
                         }
-                        statusType='success'
-                        title={t`Payment Status`}
-                        value={agentData?.paymentStatus || agentData?.payment_status || 'Paid'}
                         subtitle={
                           agentData?.paymentSyncSubtitle ||
                           `via ${agentData?.erpSystem || (agentData?.poMasterSourceType === 'quickbooks' ? 'QuickBooks' : 'SAP')} · ${formattedPaymentSyncTime}`
+                        }
+                        value={
+                          agentData?.paymentStatus ||
+                          agentData?.payment_status ||
+                          'Paid'
                         }
                         onClick={() => setActiveDetailView('payment_terms')}
                       />
@@ -4275,11 +4324,6 @@ const Overview = (props: any) => {
                         align='right'
                         icon={Calendar}
                         isSelected={activeDetailView === 'payment_terms'}
-                        status={
-                          paymentTermsDisplay.calculationText ||
-                          resolvedAgentData?.payment_terms?.raw ||
-                          'In due'
-                        }
                         statusType={paymentTermsDisplay.statusType}
                         title={t`Payment Terms`}
                         isLoading={
@@ -4289,9 +4333,17 @@ const Overview = (props: any) => {
                             (!paymentTermsDisplay?.termsDisplay ||
                               paymentTermsDisplay.termsDisplay === '-'))
                         }
+                        status={
+                          paymentTermsDisplay.calculationText ||
+                          resolvedAgentData?.payment_terms?.raw ||
+                          'In due'
+                        }
                         value={
                           paymentTermsDisplay.daysText
-                            ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
+                            ? paymentTermsDisplay.daysText.replace(
+                                /days/i,
+                                'Days',
+                              )
                             : '0 Days'
                         }
                         onClick={() => setActiveDetailView('payment_terms')}
@@ -4321,9 +4373,9 @@ const Overview = (props: any) => {
                 </div>
 
                 {!activeDetailView && (
-                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-3 sm:px-6 pt-2 overflow-x-auto no-scrollbar scrollbar-none'>
+                  <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-surface px-3 pt-2 sm:px-6'>
                     <div className='flex items-center justify-between gap-4'>
-                      <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
+                      <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
                         {[
                           {
                             icon: FileText,
@@ -4354,7 +4406,7 @@ const Overview = (props: any) => {
                           <button
                             key={tab.id}
                             className={cn(
-                              '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
+                              '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
                               activeTab === tab.id
                                 ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
                                 : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
@@ -4399,7 +4451,7 @@ const Overview = (props: any) => {
                           }
                           statusType={
                             resolvedAgentData?.decision === 'Matched' ||
-                              (poVal && poVal !== '-' && poVal !== 'N/A')
+                            (poVal && poVal !== '-' && poVal !== 'N/A')
                               ? 'success'
                               : 'warning'
                           }
@@ -4410,63 +4462,67 @@ const Overview = (props: any) => {
                             {(resolvedAgentData?.ai_insight ||
                               resolvedAgentData?.reason ||
                               resolvedAgentData?.score !== undefined) && (
-                                <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
-                                  {resolvedAgentData?.ai_insight && (
-                                    <div className='md:col-span-2 flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs'>
-                                      <AiBrandIcon
-                                        className='size-4.5 shrink-0 mt-0.5 text-[var(--purple-9)]'
-                                        variant='outline-purple'
-                                      />
-                                      <div className='space-y-1'>
-                                        <div className='font-semibold text-[var(--purple-12)] text-xs flex items-center gap-1.5'>
-                                          {t`AI Insight & Verification Summary`}
-                                        </div>
-                                        <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
-                                          {resolvedAgentData.ai_insight}
-                                        </p>
-                                        {resolvedAgentData.reason && (
-                                          <p className='text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90 pt-1 border-t border-[var(--purple-3)]/60'>
-                                            {resolvedAgentData.reason}
-                                          </p>
-                                        )}
+                              <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
+                                {resolvedAgentData?.ai_insight && (
+                                  <div className='flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs md:col-span-2'>
+                                    <AiBrandIcon
+                                      className='mt-0.5 size-4.5 shrink-0 text-[var(--purple-9)]'
+                                      variant='outline-purple'
+                                    />
+                                    <div className='space-y-1'>
+                                      <div className='flex items-center gap-1.5 text-xs font-semibold text-[var(--purple-12)]'>
+                                        {t`AI Insight & Verification Summary`}
                                       </div>
+                                      <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
+                                        {resolvedAgentData.ai_insight}
+                                      </p>
+                                      {resolvedAgentData.reason && (
+                                        <p className='border-t border-[var(--purple-3)]/60 pt-1 text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90'>
+                                          {resolvedAgentData.reason}
+                                        </p>
+                                      )}
                                     </div>
-                                  )}
-
-                                  <div
-                                    className={cn(
-                                      'flex flex-col justify-center items-center rounded-xl border p-3.5 text-center shadow-xs',
-                                      (resolvedAgentData?.score ?? 100) >= 90
-                                        ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-11)]'
-                                        : 'border-[var(--amber-3)] bg-[var(--amber-1)] text-[var(--amber-11)]',
-                                    )}
-                                  >
-                                    <span className='text-[11px] font-medium text-[var(--gray-11)] mb-0.5'>
-                                      {t`Match Score`}
-                                    </span>
-                                    <div className='flex items-baseline gap-1'>
-                                      <span className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-                                        {resolvedAgentData?.score !== undefined
-                                          ? `${resolvedAgentData.score}%`
-                                          : '100%'}
-                                      </span>
-                                      <span className='text-xs font-semibold text-[var(--green-9)]'>
-                                        {resolvedAgentData?.decision || 'Matched'}
-                                      </span>
-                                    </div>
-                                    {resolvedAgentData?.source_type && (
-                                      <span className='text-[10px] text-[var(--gray-10)] mt-0.5'>
-                                        {resolvedAgentData.source_type}
-                                      </span>
-                                    )}
                                   </div>
+                                )}
+
+                                <div
+                                  className={cn(
+                                    'flex flex-col items-center justify-center rounded-xl border p-3.5 text-center shadow-xs',
+                                    (resolvedAgentData?.score ?? 100) >= 90
+                                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-11)]'
+                                      : 'border-[var(--amber-3)] bg-[var(--amber-1)] text-[var(--amber-11)]',
+                                  )}
+                                >
+                                  <span className='mb-0.5 text-[11px] font-medium text-[var(--gray-11)]'>
+                                    {t`Match Score`}
+                                  </span>
+                                  <div className='flex items-baseline gap-1'>
+                                    <span className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
+                                      {resolvedAgentData?.score !== undefined
+                                        ? `${resolvedAgentData.score}%`
+                                        : '100%'}
+                                    </span>
+                                    <span className='text-xs font-semibold text-[var(--green-9)]'>
+                                      {resolvedAgentData?.decision || 'Matched'}
+                                    </span>
+                                  </div>
+                                  {resolvedAgentData?.source_type && (
+                                    <span className='mt-0.5 text-[10px] text-[var(--gray-10)]'>
+                                      {resolvedAgentData.source_type}
+                                    </span>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                            )}
 
                             {/* Document & Procurement Ledger Mapping */}
                             {(() => {
                               const poRowObj =
-                                getPoRowObj(resolvedAgentData, selectedItem, matchingProc) ||
+                                getPoRowObj(
+                                  resolvedAgentData,
+                                  selectedItem,
+                                  matchingProc,
+                                ) ||
                                 resolvedAgentData?.po_row ||
                                 agentData?.po_row
 
@@ -4494,38 +4550,64 @@ const Overview = (props: any) => {
                                 'USD'
 
                               const poAmountVal =
-                                poRowObj?.['PO Amount'] !== undefined && poRowObj?.['PO Amount'] !== null
+                                poRowObj?.['PO Amount'] !== undefined &&
+                                poRowObj?.['PO Amount'] !== null
                                   ? poRowObj['PO Amount']
-                                  : poRowObj?.total !== undefined && poRowObj?.total !== null
+                                  : poRowObj?.total !== undefined &&
+                                      poRowObj?.total !== null
                                     ? poRowObj.total
                                     : poRowObj?.po_amount
 
                               const sourceSystemVal =
                                 formatErpSystem(
                                   poRowObj?.source ||
-                                  poRowObj?.source_type ||
-                                  resolvedAgentData?.source_type,
+                                    poRowObj?.source_type ||
+                                    resolvedAgentData?.source_type,
                                 ) || 'SAP'
 
                               // Extract extra key-values from poRowObj that aren't part of standard display
                               const standardKeys = new Set([
-                                'PO Number', 'po_number', 'PO No', 'po_no', 'Supplier', 'supplier', 'Supplier Name',
-                                'Supplier Id', 'Supplier ID', 'Supplier_Id', 'supplier_id', 'Vendor Id', 'Vendor',
-                                'PO Date', 'po_date', 'poDate', 'PO Amount', 'po_amount', 'Currency', 'currency',
-                                'source', 'source_type', 'sourceType', 'total', 'matches', 'PO Line Item Mapped',
-                                'po_line_item_mapped', 'line_items'
+                                'PO Number',
+                                'po_number',
+                                'PO No',
+                                'po_no',
+                                'Supplier',
+                                'supplier',
+                                'Supplier Name',
+                                'Supplier Id',
+                                'Supplier ID',
+                                'Supplier_Id',
+                                'supplier_id',
+                                'Vendor Id',
+                                'Vendor',
+                                'PO Date',
+                                'po_date',
+                                'poDate',
+                                'PO Amount',
+                                'po_amount',
+                                'Currency',
+                                'currency',
+                                'source',
+                                'source_type',
+                                'sourceType',
+                                'total',
+                                'matches',
+                                'PO Line Item Mapped',
+                                'po_line_item_mapped',
+                                'line_items',
                               ])
 
-                              const extraPoRowEntries = poRowObj && typeof poRowObj === 'object'
-                                ? Object.entries(poRowObj).filter(
-                                  ([k, v]) =>
-                                    !standardKeys.has(k) &&
-                                    v !== null &&
-                                    v !== undefined &&
-                                    v !== '' &&
-                                    typeof v !== 'object',
-                                )
-                                : []
+                              const extraPoRowEntries =
+                                poRowObj && typeof poRowObj === 'object'
+                                  ? Object.entries(poRowObj).filter(
+                                      ([k, v]) =>
+                                        !standardKeys.has(k) &&
+                                        v !== null &&
+                                        v !== undefined &&
+                                        v !== '' &&
+                                        typeof v !== 'object',
+                                    )
+                                  : []
 
                               return (
                                 <>
@@ -4534,7 +4616,7 @@ const Overview = (props: any) => {
                                     <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                       {t`Document & Procurement Ledger Mapping`}
                                     </h4>
-                                    <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs'>
+                                    <div className='grid grid-cols-2 gap-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'>
                                       {[
                                         {
                                           label: t`PO Number`,
@@ -4553,8 +4635,11 @@ const Overview = (props: any) => {
                                           value:
                                             poRowObj?.['Supplier'] ||
                                             poRowObj?.supplier ||
-                                            resolvedAgentData?.['Extracted Invoice JSON']
-                                              ?.invoice_header?.['Vendor Name'] ||
+                                            resolvedAgentData?.[
+                                              'Extracted Invoice JSON'
+                                            ]?.invoice_header?.[
+                                              'Vendor Name'
+                                            ] ||
                                             formModel?.['Supplier Name'] ||
                                             formModel?.['Vendor Name'] ||
                                             selectedItem?.vendorName ||
@@ -4572,35 +4657,37 @@ const Overview = (props: any) => {
                                           label: t`Authorized Amount`,
                                           value: poAmountVal
                                             ? `${currencyVal} ${poAmountVal}`
-                                            : agentData?.po_matching?.po_amount || 'N/A',
+                                            : agentData?.po_matching
+                                                ?.po_amount || 'N/A',
                                         },
                                         ...extraPoRowEntries.map(([k, v]) => ({
                                           label: String(k),
                                           value: String(v),
                                         })),
                                       ].map((item, idx) => {
-                                        const isExpanded = !!expandedLedgerKeys[item.label]
+                                        const isExpanded =
+                                          !!expandedLedgerKeys[item.label]
                                         return (
                                           <div
                                             key={idx}
+                                            className={cn(
+                                              'group/card min-w-0 cursor-pointer space-y-0.5 rounded-lg border border-[var(--gray-3)]/60 bg-surface/80 p-2.5 shadow-2xs transition-all hover:border-[var(--primary-4)] hover:bg-surface hover:shadow-xs',
+                                              isExpanded &&
+                                                'col-span-2 border-[var(--primary-4)] bg-surface shadow-xs sm:col-span-2 md:col-span-3',
+                                            )}
                                             onClick={() =>
                                               setExpandedLedgerKeys((prev) => ({
                                                 ...prev,
                                                 [item.label]: !prev[item.label],
                                               }))
                                             }
-                                            className={cn(
-                                              'group/card min-w-0 space-y-0.5 rounded-lg border border-[var(--gray-3)]/60 bg-surface/80 p-2.5 shadow-2xs transition-all cursor-pointer hover:border-[var(--primary-4)] hover:bg-surface hover:shadow-xs',
-                                              isExpanded &&
-                                              'col-span-2 sm:col-span-2 md:col-span-3 border-[var(--primary-4)] bg-surface shadow-xs',
-                                            )}
                                           >
                                             <span
                                               className={cn(
                                                 'block w-full text-[11px] font-medium text-[var(--gray-10)] transition-all',
                                                 isExpanded
-                                                  ? 'whitespace-normal break-words'
-                                                  : 'truncate group-hover/card:whitespace-normal group-hover/card:break-words',
+                                                  ? 'break-words whitespace-normal'
+                                                  : 'truncate group-hover/card:break-words group-hover/card:whitespace-normal',
                                               )}
                                             >
                                               {item.label}
@@ -4609,8 +4696,8 @@ const Overview = (props: any) => {
                                               className={cn(
                                                 'block w-full text-xs font-semibold text-[var(--gray-13)] transition-all',
                                                 isExpanded
-                                                  ? 'whitespace-normal break-words'
-                                                  : 'truncate group-hover/card:whitespace-normal group-hover/card:break-words',
+                                                  ? 'break-words whitespace-normal'
+                                                  : 'truncate group-hover/card:break-words group-hover/card:whitespace-normal',
                                               )}
                                             >
                                               {item.value}
@@ -4622,109 +4709,150 @@ const Overview = (props: any) => {
                                   </div>
 
                                   {/* Mapped PO Line Items from ERP / po_row */}
-                                  {Array.isArray(poLineItemsMapped) && poLineItemsMapped.length > 0 && (
-                                    <div className='space-y-2.5'>
-                                      <div className='flex items-center justify-between'>
-                                        <h4 className='text-xs font-semibold text-[var(--gray-12)] flex items-center gap-1.5'>
-                                          <span>{t`ERP PO Line Items Mapped`}</span>
-                                        </h4>
-                                        <span className='inline-flex items-center gap-1 rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-10)]'>
-                                          <Icon
-                                            className='h-3 w-3 text-[var(--primary-9)] shrink-0'
-                                            name='tabler:list-check'
-                                          />
-                                          <span>
-                                            {poLineItemsMapped.length} {t`Line Items Mapped`}
+                                  {Array.isArray(poLineItemsMapped) &&
+                                    poLineItemsMapped.length > 0 && (
+                                      <div className='space-y-2.5'>
+                                        <div className='flex items-center justify-between'>
+                                          <h4 className='flex items-center gap-1.5 text-xs font-semibold text-[var(--gray-12)]'>
+                                            <span>{t`ERP PO Line Items Mapped`}</span>
+                                          </h4>
+                                          <span className='inline-flex items-center gap-1 rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-10)]'>
+                                            <Icon
+                                              className='h-3 w-3 shrink-0 text-[var(--primary-9)]'
+                                              name='tabler:list-check'
+                                            />
+                                            <span>
+                                              {poLineItemsMapped.length}{' '}
+                                              {t`Line Items Mapped`}
+                                            </span>
                                           </span>
-                                        </span>
-                                      </div>
-                                      <div className='overflow-x-auto rounded-xl border border-[var(--gray-2)] bg-surface'>
-                                        <table className='w-full text-left text-xs border-collapse min-w-[700px]'>
-                                          <thead>
-                                            <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
-                                              <th className='px-3 py-2 w-12 text-center'>#</th>
-                                              <th className='px-3 py-2'>{t`Material ID`}</th>
-                                              <th className='px-3 py-2'>{t`Description`}</th>
-                                              <th className='px-3 py-2'>{t`Material Group`}</th>
-                                              <th className='px-3 py-2 text-center'>{t`Plant`}</th>
-                                              <th className='px-3 py-2 text-center'>{t`Category`}</th>
-                                              <th className='px-3 py-2 text-center'>{t`Qty / UOM`}</th>
-                                              <th className='px-3 py-2 text-right'>{t`Unit Cost`}</th>
-                                              <th className='px-3 py-2 text-right'>{t`Net Value`}</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className='divide-y divide-[var(--gray-2)]'>
-                                            {poLineItemsMapped.map((item: any, idx: number) => {
-                                              const lineNo =
-                                                item.Line ?? item['Item Number'] ?? item.item_no ?? idx + 1
-                                              const matId =
-                                                item['Material Id'] || item['Material ID'] || item.material_id || '-'
-                                              const matDesc =
-                                                item['Material Description'] ||
-                                                item.Description ||
-                                                item.description ||
-                                                '-'
-                                              const matGroup =
-                                                item['Material Group'] || item.material_group || '-'
-                                              const plant = item.Plant || item.plant || '-'
-                                              const cat = item['Item Category'] || item.item_category || 'Standard'
-                                              const qty = item.Quantity ?? item['Order Quantity'] ?? '-'
-                                              const uom = item['Unit of Measure'] || item.uom || ''
-                                              const price = item['Unit Cost'] ?? item['Net Price'] ?? '-'
-                                              const priceUnit = item['Price Unit'] || '1'
-                                              const extended = item.Extended ?? item['Net Value'] ?? item.amount ?? '-'
+                                        </div>
+                                        <div className='overflow-x-auto rounded-xl border border-[var(--gray-2)] bg-surface'>
+                                          <table className='w-full min-w-[700px] border-collapse text-left text-xs'>
+                                            <thead>
+                                              <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                                <th className='w-12 px-3 py-2 text-center'>
+                                                  #
+                                                </th>
+                                                <th className='px-3 py-2'>{t`Material ID`}</th>
+                                                <th className='px-3 py-2'>{t`Description`}</th>
+                                                <th className='px-3 py-2'>{t`Material Group`}</th>
+                                                <th className='px-3 py-2 text-center'>{t`Plant`}</th>
+                                                <th className='px-3 py-2 text-center'>{t`Category`}</th>
+                                                <th className='px-3 py-2 text-center'>{t`Qty / UOM`}</th>
+                                                <th className='px-3 py-2 text-right'>{t`Unit Cost`}</th>
+                                                <th className='px-3 py-2 text-right'>{t`Net Value`}</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className='divide-y divide-[var(--gray-2)]'>
+                                              {poLineItemsMapped.map(
+                                                (item: any, idx: number) => {
+                                                  const lineNo =
+                                                    item.Line ??
+                                                    item['Item Number'] ??
+                                                    item.item_no ??
+                                                    idx + 1
+                                                  const matId =
+                                                    item['Material Id'] ||
+                                                    item['Material ID'] ||
+                                                    item.material_id ||
+                                                    '-'
+                                                  const matDesc =
+                                                    item[
+                                                      'Material Description'
+                                                    ] ||
+                                                    item.Description ||
+                                                    item.description ||
+                                                    '-'
+                                                  const matGroup =
+                                                    item['Material Group'] ||
+                                                    item.material_group ||
+                                                    '-'
+                                                  const plant =
+                                                    item.Plant ||
+                                                    item.plant ||
+                                                    '-'
+                                                  const cat =
+                                                    item['Item Category'] ||
+                                                    item.item_category ||
+                                                    'Standard'
+                                                  const qty =
+                                                    item.Quantity ??
+                                                    item['Order Quantity'] ??
+                                                    '-'
+                                                  const uom =
+                                                    item['Unit of Measure'] ||
+                                                    item.uom ||
+                                                    ''
+                                                  const price =
+                                                    item['Unit Cost'] ??
+                                                    item['Net Price'] ??
+                                                    '-'
+                                                  const priceUnit =
+                                                    item['Price Unit'] || '1'
+                                                  const extended =
+                                                    item.Extended ??
+                                                    item['Net Value'] ??
+                                                    item.amount ??
+                                                    '-'
 
-                                              return (
-                                                <tr
-                                                  key={idx}
-                                                  className='hover:bg-[var(--gray-1)] transition-colors'
-                                                >
-                                                  <td className='px-3 py-2 text-center font-mono text-[11px] text-[var(--gray-10)]'>
-                                                    {lineNo}
-                                                  </td>
-                                                  <td className='px-3 py-2 font-mono text-xs font-semibold text-[var(--primary-9)]'>
-                                                    <span className='block w-full truncate max-w-[140px] hover:whitespace-normal hover:break-words transition-all'>
-                                                      {matId}
-                                                    </span>
-                                                  </td>
-                                                  <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
-                                                    <span className='block w-full truncate max-w-[240px] hover:whitespace-normal hover:break-words transition-all'>
-                                                      {matDesc}
-                                                    </span>
-                                                  </td>
-                                                  <td className='px-3 py-2 text-[var(--gray-11)] text-[11px]'>
-                                                    <span className='block w-full truncate max-w-[180px] hover:whitespace-normal hover:break-words transition-all'>
-                                                      {matGroup}
-                                                    </span>
-                                                  </td>
-                                                  <td className='px-3 py-2 text-center text-[var(--gray-12)] font-mono text-[11px]'>
-                                                    {plant}
-                                                  </td>
-                                                  <td className='px-3 py-2 text-center text-[var(--gray-11)] text-[11px]'>
-                                                    {cat}
-                                                  </td>
-                                                  <td className='px-3 py-2 text-center font-medium text-[var(--gray-13)]'>
-                                                    {qty} {uom}
-                                                  </td>
-                                                  <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
-                                                    {price !== '-' ? `${currencyVal} ${price}` : '-'}
-                                                    {priceUnit && priceUnit !== '1' && (
-                                                      <span className='text-[10px] text-[var(--gray-10)] block'>
-                                                        /{priceUnit}
-                                                      </span>
-                                                    )}
-                                                  </td>
-                                                  <td className='px-3 py-2 text-right font-bold text-[var(--gray-13)]'>
-                                                    {extended !== '-' ? `${currencyVal} ${extended}` : '-'}
-                                                  </td>
-                                                </tr>
-                                              )
-                                            })}
-                                          </tbody>
-                                        </table>
+                                                  return (
+                                                    <tr
+                                                      className='transition-colors hover:bg-[var(--gray-1)]'
+                                                      key={idx}
+                                                    >
+                                                      <td className='px-3 py-2 text-center font-mono text-[11px] text-[var(--gray-10)]'>
+                                                        {lineNo}
+                                                      </td>
+                                                      <td className='px-3 py-2 font-mono text-xs font-semibold text-[var(--primary-9)]'>
+                                                        <span className='block w-full max-w-[140px] truncate transition-all hover:break-words hover:whitespace-normal'>
+                                                          {matId}
+                                                        </span>
+                                                      </td>
+                                                      <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
+                                                        <span className='block w-full max-w-[240px] truncate transition-all hover:break-words hover:whitespace-normal'>
+                                                          {matDesc}
+                                                        </span>
+                                                      </td>
+                                                      <td className='px-3 py-2 text-[11px] text-[var(--gray-11)]'>
+                                                        <span className='block w-full max-w-[180px] truncate transition-all hover:break-words hover:whitespace-normal'>
+                                                          {matGroup}
+                                                        </span>
+                                                      </td>
+                                                      <td className='px-3 py-2 text-center font-mono text-[11px] text-[var(--gray-12)]'>
+                                                        {plant}
+                                                      </td>
+                                                      <td className='px-3 py-2 text-center text-[11px] text-[var(--gray-11)]'>
+                                                        {cat}
+                                                      </td>
+                                                      <td className='px-3 py-2 text-center font-medium text-[var(--gray-13)]'>
+                                                        {qty} {uom}
+                                                      </td>
+                                                      <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
+                                                        {price !== '-'
+                                                          ? `${currencyVal} ${price}`
+                                                          : '-'}
+                                                        {priceUnit &&
+                                                          priceUnit !== '1' && (
+                                                            <span className='block text-[10px] text-[var(--gray-10)]'>
+                                                              /{priceUnit}
+                                                            </span>
+                                                          )}
+                                                      </td>
+                                                      <td className='px-3 py-2 text-right font-bold text-[var(--gray-13)]'>
+                                                        {extended !== '-'
+                                                          ? `${currencyVal} ${extended}`
+                                                          : '-'}
+                                                      </td>
+                                                    </tr>
+                                                  )
+                                                },
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    )}
                                 </>
                               )
                             })()}
@@ -4732,7 +4860,7 @@ const Overview = (props: any) => {
                             {/* Side-by-Side Field Matching Table */}
                             {Array.isArray(
                               resolvedAgentData?.debug?.[
-                              'Side-by-side Field Matching'
+                                'Side-by-side Field Matching'
                               ],
                             ) &&
                               resolvedAgentData.debug[
@@ -4745,7 +4873,7 @@ const Overview = (props: any) => {
                                     </h4>
                                     <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-3)] bg-[var(--green-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-10)]'>
                                       <Icon
-                                        className='h-3 w-3 text-[var(--green-9)] shrink-0'
+                                        className='h-3 w-3 shrink-0 text-[var(--green-9)]'
                                         name='tabler:circle-check'
                                       />
                                       <span>
@@ -4759,7 +4887,7 @@ const Overview = (props: any) => {
                                     </span>
                                   </div>
                                   <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
-                                    <table className='w-full text-left text-xs border-collapse'>
+                                    <table className='w-full border-collapse text-left text-xs'>
                                       <thead>
                                         <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
                                           <th className='px-3 py-2'>{t`Field`}</th>
@@ -4773,14 +4901,16 @@ const Overview = (props: any) => {
                                           'Side-by-side Field Matching'
                                         ].map((row: any, idx: number) => (
                                           <tr
+                                            className='transition-colors hover:bg-[var(--gray-1)]'
                                             key={idx}
-                                            className='hover:bg-[var(--gray-1)] transition-colors'
                                           >
                                             <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
                                               {row.Field}
                                             </td>
                                             <td className='px-3 py-2 text-[var(--gray-12)]'>
-                                              {String(row['Invoice Value'] ?? '-')}
+                                              {String(
+                                                row['Invoice Value'] ?? '-',
+                                              )}
                                             </td>
                                             <td className='px-3 py-2 text-[var(--gray-12)]'>
                                               {String(row['PO Value'] ?? '-')}
@@ -4790,10 +4920,10 @@ const Overview = (props: any) => {
                                                 className={cn(
                                                   'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold',
                                                   Number(row.Score) >= 100
-                                                    ? 'bg-[var(--green-2)] text-[var(--green-9)] border border-[var(--green-3)]'
+                                                    ? 'border border-[var(--green-3)] bg-[var(--green-2)] text-[var(--green-9)]'
                                                     : Number(row.Score) >= 80
-                                                      ? 'bg-[var(--amber-2)] text-[var(--amber-9)] border border-[var(--amber-3)]'
-                                                      : 'bg-[var(--red-2)] text-[var(--red-9)] border border-[var(--red-3)]',
+                                                      ? 'border border-[var(--amber-3)] bg-[var(--amber-2)] text-[var(--amber-9)]'
+                                                      : 'border border-[var(--red-3)] bg-[var(--red-2)] text-[var(--red-9)]',
                                                 )}
                                               >
                                                 {row.Score}%
@@ -4810,7 +4940,7 @@ const Overview = (props: any) => {
                             {/* Side-by-Side Line Item Matching Table */}
                             {Array.isArray(
                               resolvedAgentData?.debug?.[
-                              'Side-by-side Line Item matching'
+                                'Side-by-side Line Item matching'
                               ],
                             ) &&
                               resolvedAgentData.debug[
@@ -4823,7 +4953,7 @@ const Overview = (props: any) => {
                                     </h4>
                                     <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-3)] bg-[var(--green-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-10)]'>
                                       <Icon
-                                        className='h-3 w-3 text-[var(--green-9)] shrink-0'
+                                        className='h-3 w-3 shrink-0 text-[var(--green-9)]'
                                         name='tabler:circle-check'
                                       />
                                       <span>
@@ -4837,7 +4967,7 @@ const Overview = (props: any) => {
                                     </span>
                                   </div>
                                   <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
-                                    <table className='w-full text-left text-xs border-collapse'>
+                                    <table className='w-full border-collapse text-left text-xs'>
                                       <thead>
                                         <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
                                           <th className='px-3 py-2'>{t`Item Description`}</th>
@@ -4852,8 +4982,8 @@ const Overview = (props: any) => {
                                           'Side-by-side Line Item matching'
                                         ].map((line: any, idx: number) => (
                                           <tr
+                                            className='transition-colors hover:bg-[var(--gray-1)]'
                                             key={idx}
-                                            className='hover:bg-[var(--gray-1)] transition-colors'
                                           >
                                             <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
                                               <div>
@@ -4862,32 +4992,42 @@ const Overview = (props: any) => {
                                                 ] || 'N/A'}
                                               </div>
                                               {line.Description?.['PO Value'] &&
-                                                line.Description?.['PO Value'] !==
-                                                line.Description?.['Invoice Value'] && (
+                                                line.Description?.[
+                                                  'PO Value'
+                                                ] !==
+                                                  line.Description?.[
+                                                    'Invoice Value'
+                                                  ] && (
                                                   <div className='text-[10px] text-[var(--gray-10)]'>
-                                                    PO: {line.Description['PO Value']}
+                                                    PO:{' '}
+                                                    {
+                                                      line.Description[
+                                                        'PO Value'
+                                                      ]
+                                                    }
                                                   </div>
                                                 )}
                                             </td>
-                                            <td className='px-3 py-2 text-center text-[var(--gray-12)] font-medium'>
-                                              {line.Quantity?.['Invoice Value']} /{' '}
-                                              {line.Quantity?.['PO Value']}
+                                            <td className='px-3 py-2 text-center font-medium text-[var(--gray-12)]'>
+                                              {line.Quantity?.['Invoice Value']}{' '}
+                                              / {line.Quantity?.['PO Value']}
                                             </td>
-                                            <td className='px-3 py-2 text-right text-[var(--gray-12)] font-medium'>
-                                              ${line.Price?.['Invoice Value']} / $
-                                              {line.Price?.['PO Value']}
+                                            <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
+                                              ${line.Price?.['Invoice Value']} /
+                                              ${line.Price?.['PO Value']}
                                             </td>
-                                            <td className='px-3 py-2 text-right text-[var(--gray-12)] font-medium'>
-                                              ${line.Amount?.['Invoice Value']} / $
-                                              {line.Amount?.['PO Value']}
+                                            <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
+                                              ${line.Amount?.['Invoice Value']}{' '}
+                                              / ${line.Amount?.['PO Value']}
                                             </td>
                                             <td className='px-3 py-2 text-right'>
                                               <span
                                                 className={cn(
                                                   'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                                                  Number(line['Line Score']) >= 100
-                                                    ? 'bg-[var(--green-2)] text-[var(--green-9)] border border-[var(--green-3)]'
-                                                    : 'bg-[var(--amber-2)] text-[var(--amber-9)] border border-[var(--amber-3)]',
+                                                  Number(line['Line Score']) >=
+                                                    100
+                                                    ? 'border border-[var(--green-3)] bg-[var(--green-2)] text-[var(--green-9)]'
+                                                    : 'border border-[var(--amber-3)] bg-[var(--amber-2)] text-[var(--amber-9)]',
                                                 )}
                                               >
                                                 {line['Line Score']}%
@@ -4910,20 +5050,20 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.duplicate_check?.status ||
-                            (resolvedAgentData?.invoice_errors?.severity ===
+                              (resolvedAgentData?.invoice_errors?.severity ===
                               'NONE'
-                              ? 'No Duplicate'
-                              : 'No Duplicate'),
+                                ? 'No Duplicate'
+                                : 'No Duplicate'),
                           )}
                           statusType={
                             resolvedAgentData?.duplicate_check?.status ===
-                              'Duplicate'
+                            'Duplicate'
                               ? 'danger'
                               : 'success'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Historical Match & Integrity Results`}
@@ -4936,14 +5076,14 @@ const Overview = (props: any) => {
                                   <span
                                     className={cn(
                                       'font-semibold',
-                                      resolvedAgentData?.duplicate_check?.status ===
-                                        'Duplicate'
+                                      resolvedAgentData?.duplicate_check
+                                        ?.status === 'Duplicate'
                                         ? 'text-[var(--red-9)]'
                                         : 'text-[var(--green-9)]',
                                     )}
                                   >
-                                    {resolvedAgentData?.duplicate_check?.status ||
-                                      'Passed (No Duplicates)'}
+                                    {resolvedAgentData?.duplicate_check
+                                      ?.status || 'Passed (No Duplicates)'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
@@ -4951,8 +5091,8 @@ const Overview = (props: any) => {
                                     {t`Error Severity`}
                                   </span>
                                   <span className='font-semibold text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.invoice_errors?.severity ||
-                                      'NONE'}
+                                    {resolvedAgentData?.invoice_errors
+                                      ?.severity || 'NONE'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
@@ -4960,8 +5100,9 @@ const Overview = (props: any) => {
                                     {t`Invoice Ref`}
                                   </span>
                                   <span className='font-semibold text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.['Extracted Invoice JSON']
-                                      ?.invoice_header?.['Invoice No'] ||
+                                    {resolvedAgentData?.[
+                                      'Extracted Invoice JSON'
+                                    ]?.invoice_header?.['Invoice No'] ||
                                       formModel?.['Invoice Number'] ||
                                       formModel?.['Invoice No'] ||
                                       selectedItem?.invoiceNumber ||
@@ -4973,8 +5114,9 @@ const Overview = (props: any) => {
                                     {t`Vendor Name`}
                                   </span>
                                   <span className='font-semibold text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.['Extracted Invoice JSON']
-                                      ?.invoice_header?.['Vendor Name'] ||
+                                    {resolvedAgentData?.[
+                                      'Extracted Invoice JSON'
+                                    ]?.invoice_header?.['Vendor Name'] ||
                                       resolvedAgentData?.po_row?.Supplier ||
                                       formModel?.['Supplier Name'] ||
                                       formModel?.['Vendor Name'] ||
@@ -4990,8 +5132,10 @@ const Overview = (props: any) => {
                                     </span>
                                   </div>
                                   <span className='leading-normal font-medium text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.duplicate_check?.message ||
-                                      resolvedAgentData?.duplicate_check?.ai_insight ||
+                                    {resolvedAgentData?.duplicate_check
+                                      ?.message ||
+                                      resolvedAgentData?.duplicate_check
+                                        ?.ai_insight ||
                                       'No duplicate records found in historical ERP database.'}
                                   </span>
                                 </div>
@@ -5022,19 +5166,19 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.supplier_validation?.status ||
-                            supplierCheckState.data?.status ||
-                            'Verified',
+                              supplierCheckState.data?.status ||
+                              'Verified',
                           )}
                           statusType={
                             resolvedAgentData?.supplier_validation?.status ===
                               'ACTIVE' ||
-                              supplierCheckState.data?.statusType === 'success'
+                            supplierCheckState.data?.statusType === 'success'
                               ? 'success'
                               : 'warning'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Supplier Details`}
@@ -5048,8 +5192,9 @@ const Overview = (props: any) => {
                                     {resolvedAgentData?.supplier_validation
                                       ?.vendor_master_match ||
                                       resolvedAgentData?.po_row?.Supplier ||
-                                      resolvedAgentData?.['Extracted Invoice JSON']
-                                        ?.invoice_header?.['Vendor Name'] ||
+                                      resolvedAgentData?.[
+                                        'Extracted Invoice JSON'
+                                      ]?.invoice_header?.['Vendor Name'] ||
                                       'Steel & More Inc.'}
                                   </span>
                                 </div>
@@ -5128,16 +5273,17 @@ const Overview = (props: any) => {
                                 </div>
                                 {(resolvedAgentData?.gl_validation?.reason ||
                                   resolvedAgentData?.gl_matching?.reason) && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
-                                      <span className='font-medium text-[var(--gray-11)]'>
-                                        Matching Rationale
-                                      </span>
-                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                        {resolvedAgentData?.gl_validation?.reason ||
-                                          resolvedAgentData?.gl_matching?.reason}
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      Matching Rationale
+                                    </span>
+                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                      {resolvedAgentData?.gl_validation
+                                        ?.reason ||
+                                        resolvedAgentData?.gl_matching?.reason}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-3'>
@@ -5163,13 +5309,13 @@ const Overview = (props: any) => {
                           title={t`Payment Terms Analysis`}
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Payment Deadlines & Terms`}
                               </h4>
                               <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
                                   <span className='font-medium text-[var(--gray-11)]'>
                                     {t`Payment Terms`}
                                   </span>
@@ -5181,65 +5327,77 @@ const Overview = (props: any) => {
                                       paymentTermsDisplay.termsDisplay}
                                   </span>
                                 </div>
-                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
                                   <span className='font-medium text-[var(--gray-11)]'>
                                     {t`SAP Invoice Status`}
                                   </span>
                                   <span
                                     className={cn(
                                       'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                                      getStatusBorderStyles(isRequestCompleted ? 'success' : 'info'),
+                                      getStatusBorderStyles(
+                                        isRequestCompleted ? 'success' : 'info',
+                                      ),
                                     )}
                                   >
                                     {isRequestCompleted
                                       ? agentData?.sapInvoiceStatus ||
-                                      agentData?.sap_invoice_status ||
-                                      'Paid'
+                                        agentData?.sap_invoice_status ||
+                                        'Paid'
                                       : agentData?.sapInvoiceStatus ||
-                                      agentData?.sap_invoice_status ||
-                                      agentData?.po_row?.sap_invoice_status ||
-                                      agentData?.po_row?.['SAP Invoice Status'] ||
-                                      'Follow-On Documents'}
+                                        agentData?.sap_invoice_status ||
+                                        agentData?.po_row?.sap_invoice_status ||
+                                        agentData?.po_row?.[
+                                          'SAP Invoice Status'
+                                        ] ||
+                                        'Follow-On Documents'}
                                   </span>
                                 </div>
                                 {!isRequestCompleted && (
-                                  <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
                                     <span className='font-medium text-[var(--gray-11)]'>
                                       {t`Days`}
                                     </span>
                                     <span
                                       className={cn(
                                         'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                                        getStatusBorderStyles(paymentTermsDisplay.statusType),
+                                        getStatusBorderStyles(
+                                          paymentTermsDisplay.statusType,
+                                        ),
                                       )}
                                     >
                                       {paymentTermsDisplay.daysText
-                                        ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
+                                        ? paymentTermsDisplay.daysText.replace(
+                                            /days/i,
+                                            'Days',
+                                          )
                                         : '0 Days'}
                                     </span>
                                   </div>
                                 )}
                                 {isRequestCompleted && (
-                                  <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
                                     <span className='font-medium text-[var(--gray-11)]'>
                                       {t`ERP System`}
                                     </span>
                                     <span className='inline-flex items-center rounded-md border border-[var(--purple-3)] bg-[var(--purple-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--purple-9)]'>
                                       {formatErpSystem(
                                         agentData?.erpSystem ||
-                                        (agentData?.poMasterSourceType === 'quickbooks'
-                                          ? 'QuickBooks'
-                                          : resolvedAgentData?.source_type || 'SAP'),
+                                          (agentData?.poMasterSourceType ===
+                                          'quickbooks'
+                                            ? 'QuickBooks'
+                                            : resolvedAgentData?.source_type ||
+                                              'SAP'),
                                       )}
                                     </span>
                                   </div>
                                 )}
-                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
                                   <span className='font-medium text-[var(--gray-11)]'>
                                     {t`Invoice Date`}
                                   </span>
                                   <span className='font-semibold text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.payment_terms?.invoice_date ||
+                                    {resolvedAgentData?.payment_terms
+                                      ?.invoice_date ||
                                       resolvedAgentData?.[
                                         'Extracted Invoice JSON'
                                       ]?.invoice_header?.['Invoice Date'] ||
@@ -5249,7 +5407,7 @@ const Overview = (props: any) => {
                                   </span>
                                 </div>
                                 {isRequestCompleted ? (
-                                  <div className='flex justify-between items-center'>
+                                  <div className='flex items-center justify-between'>
                                     <span className='font-medium text-[var(--gray-11)]'>
                                       {t`Paid Date`}
                                     </span>
@@ -5257,21 +5415,28 @@ const Overview = (props: any) => {
                                       {agentData?.payment_date ||
                                         agentData?.paymentDate ||
                                         (selectedItem?.completedAtUtc
-                                          ? dayjs(selectedItem.completedAtUtc).format('YYYY-MM-DD')
+                                          ? dayjs(
+                                              selectedItem.completedAtUtc,
+                                            ).format('YYYY-MM-DD')
                                           : selectedItem?.completedAt
-                                            ? dayjs(selectedItem.completedAt).format('YYYY-MM-DD')
+                                            ? dayjs(
+                                                selectedItem.completedAt,
+                                              ).format('YYYY-MM-DD')
                                             : agentData?.completedAt
-                                              ? dayjs(agentData.completedAt).format('YYYY-MM-DD')
+                                              ? dayjs(
+                                                  agentData.completedAt,
+                                                ).format('YYYY-MM-DD')
                                               : dayjs().format('YYYY-MM-DD'))}
                                     </span>
                                   </div>
                                 ) : (
-                                  <div className='flex justify-between items-center'>
+                                  <div className='flex items-center justify-between'>
                                     <span className='font-medium text-[var(--gray-11)]'>
                                       {t`Due Date`}
                                     </span>
                                     <span className='font-semibold text-[var(--gray-13)]'>
-                                      {resolvedAgentData?.payment_terms?.due_date ||
+                                      {resolvedAgentData?.payment_terms
+                                        ?.due_date ||
                                         resolvedAgentData?.[
                                           'Extracted Invoice JSON'
                                         ]?.invoice_header?.['Due Date'] ||
@@ -5309,20 +5474,20 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.matter_validation?.status ||
-                            matterValidationDisplay?.status ||
-                            'NOT_PRESENT',
+                              matterValidationDisplay?.status ||
+                              'NOT_PRESENT',
                           )}
                           statusType={
                             resolvedAgentData?.matter_validation?.status ===
                               'VALID' ||
-                              resolvedAgentData?.matter_validation?.status ===
+                            resolvedAgentData?.matter_validation?.status ===
                               'MATCHED'
                               ? 'success'
                               : 'warning'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Associated Entity`}
@@ -5350,18 +5515,18 @@ const Overview = (props: any) => {
                                 </div>
                                 {resolvedAgentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
-                                      <span className='font-medium text-[var(--gray-11)]'>
-                                        {t`Compliance Note`}
-                                      </span>
-                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                        {
-                                          resolvedAgentData.matter_validation
-                                            .validation_details.reason
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`Compliance Note`}
+                                    </span>
+                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                      {
+                                        resolvedAgentData.matter_validation
+                                          .validation_details.reason
+                                      }
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-3'>
@@ -5412,8 +5577,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ]?.recommendation
+                                        activeBackOrderTab
+                                      ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -5473,8 +5638,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                activeBackOrderTab
-                                ] || {}
+                                    activeBackOrderTab
+                                  ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -5546,8 +5711,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-3.5 shadow-xs duration-300'>
@@ -5579,8 +5744,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -5746,166 +5911,171 @@ const Overview = (props: any) => {
                   ) : (
                     <>
                       {activeTab === 'summary' && (
-                        <div className='grid flex-1 grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
+                        <div className='grid flex-1 grid-cols-1 gap-x-4 gap-y-2 overflow-y-auto p-4 md:grid-cols-2'>
                           {!formModel ||
-                            Object.keys(formModel).length === 0 ||
-                            !Object.values(formModel).some(
-                              hasMeaningfulScalarValue,
-                            )
+                          Object.keys(formModel).length === 0 ||
+                          !Object.values(formModel).some(
+                            hasMeaningfulScalarValue,
+                          )
                             ? [
-                              'Supplier Name',
-                              'Invoice Number',
-                              'Invoice Date',
-                              'Invoice Amount',
-                              'PO Number',
-                              'Payment Terms',
-                              'Currency',
-                              'Tax Amount',
-                            ].map((label) => (
-                              <FormCard
-                                fieldKey={label}
-                                icon={getFieldIcon(label)}
-                                isLoading={isCurrentlyProcessing}
-                                key={label}
-                                label={localizeRequestFieldLabel(i18n, label)}
-                                missing={isKanbanMissingMatch(
-                                  kanbanMissingFieldIds,
-                                  label,
-                                )}
-                                options={getOptions(label)}
-                                poValue={getFieldPoValue(label)}
-                                poSourceLabel={poSourceLabel}
-                                type={getFieldType(label)}
-                                value={'-'}
-                                onChange={(newVal: string) =>
-                                  handleFieldChange(label, newVal)
-                                }
-                                onFocus={(val: any) =>
-                                  handleFieldFocus(val, label)
-                                }
-                              />
-                            ))
-                            : Object.entries(formModel || {})
-                              .filter(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) {
-                                  if ('Invoice Value' in val) {
-                                    return true
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ].map((label) => (
+                                <FormCard
+                                  fieldKey={label}
+                                  icon={getFieldIcon(label)}
+                                  isLoading={isCurrentlyProcessing}
+                                  key={label}
+                                  label={localizeRequestFieldLabel(i18n, label)}
+                                  options={getOptions(label)}
+                                  poSourceLabel={poSourceLabel}
+                                  poValue={getFieldPoValue(label)}
+                                  type={getFieldType(label)}
+                                  value={'-'}
+                                  missing={isKanbanMissingMatch(
+                                    kanbanMissingFieldIds,
+                                    label,
+                                  )}
+                                  onChange={(newVal: string) =>
+                                    handleFieldChange(label, newVal)
                                   }
-                                  return false
-                                }
-                                if (typeof val === 'string') {
-                                  const trimmed = val.trim()
-                                  if (
-                                    trimmed.startsWith('[') &&
-                                    trimmed.endsWith(']')
-                                  )
+                                  onFocus={(val: any) =>
+                                    handleFieldFocus(val, label)
+                                  }
+                                />
+                              ))
+                            : Object.entries(formModel || {})
+                                .filter(([key, val]) => {
+                                  if (typeof val === 'object' && val !== null) {
+                                    if ('Invoice Value' in val) {
+                                      return true
+                                    }
                                     return false
-                                  if (
-                                    trimmed.startsWith('{') &&
-                                    trimmed.endsWith('}')
-                                  )
-                                    return false
-                                }
+                                  }
+                                  if (typeof val === 'string') {
+                                    const trimmed = val.trim()
+                                    if (
+                                      trimmed.startsWith('[') &&
+                                      trimmed.endsWith(']')
+                                    )
+                                      return false
+                                    if (
+                                      trimmed.startsWith('{') &&
+                                      trimmed.endsWith('}')
+                                    )
+                                      return false
+                                  }
 
-                                if (
-                                  !allowedLabels ||
-                                  allowedLabels.size === 0
-                                ) {
+                                  if (
+                                    !allowedLabels ||
+                                    allowedLabels.size === 0
+                                  ) {
+                                    return (
+                                      hasMeaningfulScalarValue(val) ||
+                                      isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )
+                                    )
+                                  }
+
                                   return (
+                                    allowedLabels.has(key) ||
                                     hasMeaningfulScalarValue(val) ||
                                     isKanbanMissingMatch(
                                       kanbanMissingFieldIds,
                                       key,
                                     )
                                   )
-                                }
-
-                                return (
-                                  allowedLabels.has(key) ||
-                                  hasMeaningfulScalarValue(val) ||
-                                  isKanbanMissingMatch(
-                                    kanbanMissingFieldIds,
-                                    key,
-                                  )
-                                )
-                              })
-                              .map(([key, val]) => {
-                                const rawVal =
-                                  val &&
+                                })
+                                .map(([key, val]) => {
+                                  const rawVal =
+                                    val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                    ? val['Invoice Value']
-                                    : val
+                                      ? val['Invoice Value']
+                                      : val
 
-                                const fieldType = getFieldType(key)
-                                let displayValue =
-                                  fieldType === 'date' &&
+                                  const fieldType = getFieldType(key)
+                                  let displayValue =
+                                    fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                    ? null
-                                    : rawVal || '-'
+                                      ? null
+                                      : rawVal || '-'
 
-                                if (
-                                  typeof displayValue === 'string' &&
-                                  (key.toLowerCase().includes('invoice no') ||
-                                    key.toLowerCase().includes('invoice number'))
-                                ) {
-                                  displayValue = displayValue
-                                    .replace(/\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi, '')
-                                    .trim()
-                                }
-
-                                return (
-                                  <FormCard
-                                    fieldKey={key}
-                                    icon={getFieldIcon(key)}
-                                    key={key}
-                                    missing={isKanbanMissingMatch(
-                                      kanbanMissingFieldIds,
-                                      key,
-                                    )}
-                                    options={getOptions(key)}
-                                    poValue={getFieldPoValue(key)}
-                                    poSourceLabel={poSourceLabel}
-                                    score={getFieldScore(key)}
-                                    type={fieldType}
-                                    value={displayValue}
-                                    highlight={(() => {
-                                      const normalized = key.toLowerCase()
-                                      if (normalized.includes('due date'))
-                                        return false
-                                      return (
-                                        normalized.includes('total') ||
-                                        normalized === 'due' ||
-                                        normalized.includes('total due')
+                                  if (
+                                    typeof displayValue === 'string' &&
+                                    (key.toLowerCase().includes('invoice no') ||
+                                      key
+                                        .toLowerCase()
+                                        .includes('invoice number'))
+                                  ) {
+                                    displayValue = displayValue
+                                      .replace(
+                                        /\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi,
+                                        '',
                                       )
-                                    })()}
-                                    invoiceValue={
-                                      getFieldInvoiceValue(key) ??
-                                      displayValue
-                                    }
-                                    isLoading={
-                                      isCurrentlyProcessing &&
-                                      (displayValue === null ||
-                                        displayValue === undefined ||
-                                        displayValue === '' ||
-                                        displayValue === '-')
-                                    }
-                                    label={localizeRequestFieldLabel(
-                                      i18n,
-                                      key,
-                                    )}
-                                    onChange={(newVal: string) =>
-                                      handleFieldChange(key, newVal)
-                                    }
-                                    onFocus={(val: any) =>
-                                      handleFieldFocus(val, key)
-                                    }
-                                  />
-                                )
-                              })}
+                                      .trim()
+                                  }
+
+                                  return (
+                                    <FormCard
+                                      fieldKey={key}
+                                      icon={getFieldIcon(key)}
+                                      key={key}
+                                      options={getOptions(key)}
+                                      poSourceLabel={poSourceLabel}
+                                      poValue={getFieldPoValue(key)}
+                                      score={getFieldScore(key)}
+                                      type={fieldType}
+                                      value={displayValue}
+                                      highlight={(() => {
+                                        const normalized = key.toLowerCase()
+                                        if (normalized.includes('due date'))
+                                          return false
+                                        return (
+                                          normalized.includes('total') ||
+                                          normalized === 'due' ||
+                                          normalized.includes('total due')
+                                        )
+                                      })()}
+                                      invoiceValue={
+                                        getFieldInvoiceValue(key) ??
+                                        displayValue
+                                      }
+                                      isLoading={
+                                        isCurrentlyProcessing &&
+                                        (displayValue === null ||
+                                          displayValue === undefined ||
+                                          displayValue === '' ||
+                                          displayValue === '-')
+                                      }
+                                      label={localizeRequestFieldLabel(
+                                        i18n,
+                                        key,
+                                      )}
+                                      missing={isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )}
+                                      onChange={(newVal: string) =>
+                                        handleFieldChange(key, newVal)
+                                      }
+                                      onFocus={(val: any) =>
+                                        handleFieldFocus(val, key)
+                                      }
+                                    />
+                                  )
+                                })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -5961,7 +6131,7 @@ const Overview = (props: any) => {
                             className={cn(
                               'space-y-2.5',
                               poLineItems.length > 0 &&
-                              'border-t border-[var(--gray-3)] pt-4',
+                                'border-t border-[var(--gray-3)] pt-4',
                             )}
                           >
                             <div className='flex items-center justify-between'>

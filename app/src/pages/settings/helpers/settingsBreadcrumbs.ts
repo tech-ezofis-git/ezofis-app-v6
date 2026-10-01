@@ -42,10 +42,7 @@ export function createSettingsListBreadcrumbs(
   settingsLabel: string = SETTINGS_ROOT_LABEL,
 ): SettingsBreadcrumbConfig {
   return {
-    items: [
-      { key: 'settings', label: settingsLabel },
-      { label: moduleLabel },
-    ],
+    items: [{ key: 'settings', label: settingsLabel }, { label: moduleLabel }],
     onNavigate: onBackToSettings
       ? (key) => {
           if (key === 'settings') onBackToSettings()

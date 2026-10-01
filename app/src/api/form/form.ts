@@ -124,9 +124,7 @@ const listAllForms = async (
 const deleteFormEntry = async (fId: string, eId: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosV6.delete(
-      `/form/${fId}/entry/${eId}`,
-    )
+    const { data, status } = await axiosV6.delete(`/form/${fId}/entry/${eId}`)
     if (status !== 200) throw new Error('Invalid status code')
     response.data = data // Success Message
   } catch (e) {
@@ -183,12 +181,16 @@ const searchFormEntries = async (
       store.session?.tenantId ||
       store.identity?.tenantId ||
       ''
-    const { data, status } = await axiosV6.post(`/form/${formId}/entry/all`, payload, {
-      headers: {
-        'X-Tenant-Id': tenantId,
+    const { data, status } = await axiosV6.post(
+      `/form/${formId}/entry/all`,
+      payload,
+      {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+        skipCancellation: true,
       },
-      skipCancellation: true,
-    })
+    )
     if (status !== 200) throw new Error('Invalid status code')
     response.data = data
   } catch (e: any) {
@@ -317,13 +319,12 @@ const formApi = {
   deleteFormEntry,
   listAllForms,
   saveFormEntry,
+  searchFormEntries,
   updateForm,
   uploadMasterFile,
   getFormDataById,
   getFormEntries,
-  searchFormEntries,
   getForms,
 }
 
 export default formApi
-

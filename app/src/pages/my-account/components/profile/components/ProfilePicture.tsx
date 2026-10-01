@@ -1,8 +1,8 @@
 import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Title from '@/components/base/Title'
-import authUserStore from '@/stores/authUserStore'
 import useProfileImage from '@/hooks/useProfileImage'
+import authUserStore from '@/stores/authUserStore'
 
 const ProfilePicture = () => {
   const session = authUserStore((state) => state.session)

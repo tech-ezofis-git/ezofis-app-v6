@@ -1,22 +1,29 @@
 import type { ApiNotification } from '@/api/notifications/notificationsApi'
 import type { NotificationItem, NotificationSeverity } from '../types'
 
-export function mapApiNotificationToUi(apiItem: ApiNotification): NotificationItem {
+export function mapApiNotificationToUi(
+  apiItem: ApiNotification,
+): NotificationItem {
   const category = (apiItem.category || 'request.assigned') as any
   const severity: NotificationSeverity =
     apiItem.category === 'workflow'
       ? 'workflow'
-      : (['info', 'success', 'warning', 'error', 'workflow'].includes(apiItem.severity)
-          ? (apiItem.severity as NotificationSeverity)
-          : 'info')
+      : ['info', 'success', 'warning', 'error', 'workflow'].includes(
+            apiItem.severity,
+          )
+        ? (apiItem.severity as NotificationSeverity)
+        : 'info'
 
-  const apiData: Record<string, any> = (apiItem.data || {}) as Record<string, any>
+  const apiData: Record<string, any> = (apiItem.data || {}) as Record<
+    string,
+    any
+  >
 
   const target = apiItem.target
     ? {
+        params: {},
         route: (apiItem.target.route || 'requests') as any,
         search: apiItem.target.search || {},
-        params: {},
       }
     : {
         route: 'requests' as const,
@@ -29,8 +36,8 @@ export function mapApiNotificationToUi(apiItem: ApiNotification): NotificationIt
 
   const actor = apiItem.actor
     ? {
-        name: apiItem.actor.name,
         email: apiItem.actor.email,
+        name: apiItem.actor.name,
       }
     : undefined
 
@@ -43,16 +50,16 @@ export function mapApiNotificationToUi(apiItem: ApiNotification): NotificationIt
   }
 
   return {
-    id: String(apiItem.id),
-    title: apiItem.title,
-    message: apiItem.message,
-    severity,
+    _rawCategory: apiItem.category,
+    actor,
     category: category.includes('.') ? category : 'request.assigned',
     createdAtUtc: apiItem.createdAtUtc,
-    isRead: apiItem.isRead,
-    actor,
-    target,
     data: data as any,
-    _rawCategory: apiItem.category,
+    id: String(apiItem.id),
+    isRead: apiItem.isRead,
+    message: apiItem.message,
+    severity,
+    target,
+    title: apiItem.title,
   } as NotificationItem
 }

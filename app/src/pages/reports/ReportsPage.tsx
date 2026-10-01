@@ -1,10 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import type { Report } from '@/pages/report-builder/types'
+import { AnimateFadeIn } from '@/components/common/animations'
 import { openReportBuilder } from '@/pages/report-builder/navigation'
 import useReportBuilderDraftStore from '@/pages/report-builder/stores/useReportBuilderDraftStore'
 import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
-import { AnimateFadeIn } from '@/components/common/animations'
 import ReportsListView from './components/ReportsListView'
 
 const ReportsPage = () => {

@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { type KeyboardEvent, useRef, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
 import showToast from '@/components/base/toast/showToast'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
@@ -46,7 +46,10 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
     }
   }
 
-  const handleKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    event: KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (event.key === 'Backspace' && !digits[index] && index > 0) {
       inputsRef.current[index - 1]?.focus()
     }
@@ -107,7 +110,9 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
 
       const otp = otpValue.trim()
       if (otp.length !== OTP_LENGTH) {
-        setError('Please enter the 6-digit verification code sent to your email.')
+        setError(
+          'Please enter the 6-digit verification code sent to your email.',
+        )
         return
       }
 
@@ -162,17 +167,17 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
           <input
             aria-label={`Digit ${index + 1}`}
             autoComplete={index === 0 ? 'one-time-code' : 'off'}
-            className={cn(
-              'size-11 rounded-xl border border-border-default bg-surface-muted text-center text-16 font-semibold text-text-primary outline-none transition-all',
-              'focus:border-border-focus focus:bg-surface-primary focus:ring-2 focus:ring-accent-soft',
-            )}
             inputMode='numeric'
             key={index}
             maxLength={1}
+            value={digit}
+            className={cn(
+              'size-11 rounded-xl border border-border-default bg-surface-muted text-center text-16 font-semibold text-text-primary transition-all outline-none',
+              'focus:border-border-focus focus:bg-surface-primary focus:ring-2 focus:ring-accent-soft',
+            )}
             ref={(el) => {
               inputsRef.current[index] = el
             }}
-            value={digit}
             onChange={(event) => handleChange(index, event.target.value)}
             onKeyDown={(event) => handleKeyDown(index, event)}
             onPaste={(event) => {
@@ -191,9 +196,9 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
 
       <AppButton
         className='mt-5 min-h-12 text-14'
-        fullWidth
         loading={verifyLoading}
         type='button'
+        fullWidth
         onClick={() => void verifyOtp()}
       >
         Verify
@@ -202,10 +207,10 @@ export function VerifyEmailScreen({ onBack }: VerifyEmailScreenProps) {
       <AppButton
         className='mt-2'
         disabled={elapsed !== 0}
-        fullWidth
         loading={loading}
         type='button'
         variant='ghost'
+        fullWidth
         onClick={() => void resendOtp()}
       >
         {elapsed !== 0 ? resendLabel : 'Resend OTP'}

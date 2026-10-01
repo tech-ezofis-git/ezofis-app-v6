@@ -1,7 +1,7 @@
+import type { CloudStorageOption } from '@/pages/settings/components/Folders/FolderStorageConnectorPanel'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import StorageLogo from '@/assets/brands/storage.svg'
-import type { CloudStorageOption } from '@/pages/settings/components/Folders/FolderStorageConnectorPanel'
 
 export type DmsStorageOption = {
   comingSoon: boolean
@@ -87,8 +87,7 @@ export const DataType = {
   // MULTI_SELECT: 'MULTI_SELECT',
 } as const
 
-export type RepositoryFieldDataType =
-  (typeof DataType)[keyof typeof DataType]
+export type RepositoryFieldDataType = (typeof DataType)[keyof typeof DataType]
 
 export const REPOSITORY_FIELD_DATA_TYPES = [
   DataType.SHORT_TEXT,

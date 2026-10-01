@@ -114,21 +114,21 @@ const moveNextWorkflowInstance = async (
   instanceId: string,
   payload: {
     activityid: string
-    review?: string | null
-    comments?: string | null
     activityUserId?: string | null
-    workflowId?: string | null
-    transactionId?: string | number | null
-    instanceId?: string | null
-    processId?: string | null
-    formData?: any
-    formId?: string | null
-    formEntryId?: string | null
-    AIAGENTResponse?: string | null
     AIAGENTHtml?: string | null
-    itemId?: string | null
-    repositoryId?: string | null
+    AIAGENTResponse?: string | null
+    comments?: string | null
+    formData?: any
+    formEntryId?: string | null
+    formId?: string | null
+    instanceId?: string | null
     isItemTable?: boolean | null
+    itemId?: string | null
+    processId?: string | null
+    repositoryId?: string | null
+    review?: string | null
+    transactionId?: string | number | null
+    workflowId?: string | null
   },
 ) => {
   const { data } = await axiosV6.post(
@@ -141,11 +141,10 @@ const moveNextWorkflowInstance = async (
 const workflowApi = {
   createProcessTransaction,
   createWorkflow,
+  moveNextWorkflowInstance,
   updateWorkflow,
   getAllWorkflows,
   getWorkflowById,
-  moveNextWorkflowInstance,
 }
 
 export default workflowApi
-

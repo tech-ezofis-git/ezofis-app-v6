@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import { t } from '@lingui/macro'
+import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import cn from '@/utils/cn'
@@ -432,7 +432,8 @@ export default function History({
     )
   }
 
-  const firstDate = displayFlows.length > 0 ? getStepDate(displayFlows[0]) : null
+  const firstDate =
+    displayFlows.length > 0 ? getStepDate(displayFlows[0]) : null
   const lastDate =
     displayFlows.length > 1
       ? getStepDate(displayFlows[displayFlows.length - 1])

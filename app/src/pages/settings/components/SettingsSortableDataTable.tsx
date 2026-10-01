@@ -34,6 +34,7 @@ import Tr from '@/components/base/table/Tr'
 import cn from '@/utils/cn'
 
 type SettingsSortableDataTableProps<TData> = {
+  disabled?: boolean | ((row: TData) => boolean)
   dragColumnId?: string
   rowClassName?: string
   selectedRowId?: string | null
@@ -48,12 +49,13 @@ type SettingsSortableDataTableProps<TData> = {
     newIndex: number,
     rows: TData[],
   ) => boolean
-  disabled?: boolean | ((row: TData) => boolean)
   renderSubComponent?: (row: TData) => React.ReactNode
 }
 
 export default function SettingsSortableDataTable<TData>({
+  disabled,
   dragColumnId = 'drag',
+  renderSubComponent,
   rowClassName,
   selectedRowId,
   table,
@@ -63,8 +65,6 @@ export default function SettingsSortableDataTable<TData>({
   onRowMouseEnter,
   onRowMouseLeave,
   onValidateReorder,
-  disabled,
-  renderSubComponent,
 }: SettingsSortableDataTableProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -180,8 +180,10 @@ export default function SettingsSortableDataTable<TData>({
 
                   return (
                     <SortableDataRow
+                      disabled={isDragDisabled}
                       dragColumnId={dragColumnId}
                       key={row.id}
+                      renderSubComponent={renderSubComponent}
                       row={row}
                       rowClassName={rowClassName}
                       selectedRowId={selectedRowId}
@@ -190,8 +192,6 @@ export default function SettingsSortableDataTable<TData>({
                       onRowClick={onRowClick}
                       onRowMouseEnter={onRowMouseEnter}
                       onRowMouseLeave={onRowMouseLeave}
-                      disabled={isDragDisabled}
-                      renderSubComponent={renderSubComponent}
                     />
                   )
                 })}
@@ -205,7 +205,9 @@ export default function SettingsSortableDataTable<TData>({
 }
 
 function SortableDataRow<TData>({
+  disabled,
   dragColumnId,
+  renderSubComponent,
   row,
   rowClassName,
   selectedRowId,
@@ -214,9 +216,8 @@ function SortableDataRow<TData>({
   onRowClick,
   onRowMouseEnter,
   onRowMouseLeave,
-  disabled,
-  renderSubComponent,
 }: {
+  disabled?: boolean
   dragColumnId: string
   row: Row<TData>
   rowClassName?: string
@@ -226,7 +227,6 @@ function SortableDataRow<TData>({
   onRowClick?: (rowId: string) => void
   onRowMouseEnter?: (rowId: string) => void
   onRowMouseLeave?: () => void
-  disabled?: boolean
   renderSubComponent?: (row: TData) => React.ReactNode
 }) {
   const { t } = useLingui()
@@ -238,58 +238,58 @@ function SortableDataRow<TData>({
     transition,
     setActivatorNodeRef,
     setNodeRef,
-  } = useSortable({ id: row.id, disabled })
+  } = useSortable({ disabled, id: row.id })
 
   return (
     <>
       <tr
         ref={setNodeRef}
-      className={cn(
-        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] focus-within:z-40 hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
-        rowClassName,
-        getRowClassName?.(row.original),
-        selectedRowId === row.id && 'bg-primary-1',
-        isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
-      )}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      onClick={() => onRowClick?.(row.id)}
-      onMouseEnter={() => onRowMouseEnter?.(row.id)}
-      onMouseLeave={() => onRowMouseLeave?.()}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <Td
-          className={cn(
-            'max-w-0 overflow-visible py-1.5',
-            cell.column.columnDef.meta?.className,
-          )}
-          key={cell.id}
-          style={getColumnPinnedStyles(cell.column, table)}
-        >
-          {cell.column.id === dragColumnId ? (
-            <div className='flex justify-center'>
-              {!disabled ? (
-                <button
-                  aria-label={t`Drag to reorder`}
-                  className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
-                  ref={setActivatorNodeRef}
-                  type='button'
-                  {...attributes}
-                  {...listeners}
-                >
-                  <GripVertical size={16} />
-                </button>
-              ) : (
-                <GripVertical size={16} className='text-gray-4 opacity-40' />
-              )}
-            </div>
-          ) : (
-            flexRender(cell.column.columnDef.cell, cell.getContext())
-          )}
-        </Td>
-      ))}
+        className={cn(
+          'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] focus-within:z-40 hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+          rowClassName,
+          getRowClassName?.(row.original),
+          selectedRowId === row.id && 'bg-primary-1',
+          isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
+        )}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+        onClick={() => onRowClick?.(row.id)}
+        onMouseEnter={() => onRowMouseEnter?.(row.id)}
+        onMouseLeave={() => onRowMouseLeave?.()}
+      >
+        {row.getVisibleCells().map((cell) => (
+          <Td
+            key={cell.id}
+            style={getColumnPinnedStyles(cell.column, table)}
+            className={cn(
+              'max-w-0 overflow-visible py-1.5',
+              cell.column.columnDef.meta?.className,
+            )}
+          >
+            {cell.column.id === dragColumnId ? (
+              <div className='flex justify-center'>
+                {!disabled ? (
+                  <button
+                    aria-label={t`Drag to reorder`}
+                    className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
+                    ref={setActivatorNodeRef}
+                    type='button'
+                    {...attributes}
+                    {...listeners}
+                  >
+                    <GripVertical size={16} />
+                  </button>
+                ) : (
+                  <GripVertical className='text-gray-4 opacity-40' size={16} />
+                )}
+              </div>
+            ) : (
+              flexRender(cell.column.columnDef.cell, cell.getContext())
+            )}
+          </Td>
+        ))}
       </tr>
       {renderSubComponent?.(row.original)}
     </>

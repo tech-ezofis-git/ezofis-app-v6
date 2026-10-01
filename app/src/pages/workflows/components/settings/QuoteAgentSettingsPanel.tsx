@@ -8,6 +8,8 @@ import SettingsSection from './common/SettingsSection'
 export default function QuoteAgentSettingsPanel({ node }: { node?: Node }) {
   return (
     <AgentKnowledgeSkillPanel
+      extraSettings={<QuoteTableEditableSetting node={node} />}
+      node={node}
       config={{
         instructionPlaceholder:
           'Discount limits, margin floor, tax, currency, and how long the quote stays valid.',
@@ -16,8 +18,6 @@ export default function QuoteAgentSettingsPanel({ node }: { node?: Node }) {
         skillPlaceholder:
           'Describe how this agent should price and build the quote.',
       }}
-      extraSettings={<QuoteTableEditableSetting node={node} />}
-      node={node}
     />
   )
 }

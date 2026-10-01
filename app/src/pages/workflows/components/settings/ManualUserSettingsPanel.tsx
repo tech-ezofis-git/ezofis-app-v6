@@ -2,12 +2,9 @@ import type { Node } from '@xyflow/react'
 import { useQuery } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useMemo, useState } from 'react'
-import { requestApi } from '@/api/requests/requests'
-import {
-  getGroups,
-  getUsers,
-} from '@/api/v6/user'
 import type { Option } from '@/types/option'
+import { requestApi } from '@/api/requests/requests'
+import { getGroups, getUsers } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
@@ -56,14 +53,14 @@ export default function ManualUserSettingsPanel({
   const formId = useWorkflowStore((state) => state.form)
 
   const { data: userResponse } = useQuery({
-    queryKey: ['v6-users'],
     queryFn: getUsers,
+    queryKey: ['v6-users'],
   })
   const userData = userResponse?.data
 
   const { data: groupResponse } = useQuery({
-    queryKey: ['v6-groups'],
     queryFn: getGroups,
+    queryKey: ['v6-groups'],
   })
   const groupData = groupResponse?.data
 
@@ -115,13 +112,10 @@ export default function ManualUserSettingsPanel({
           typeof response.formJson === 'string'
             ? JSON.parse(response.formJson)
             : response.formJson
-        const panels = [
-          ...(form.panels || []),
-          ...(form.secondaryPanels || []),
-        ]
+        const panels = [...(form.panels || []), ...(form.secondaryPanels || [])]
         const options: Option[] = []
         panels.forEach((panel: any) => {
-          ; (panel?.fields || []).forEach((field: any) => {
+          ;(panel?.fields || []).forEach((field: any) => {
             if (field.type === 'DIVIDER') return
             // Keyed by field.id to match how the Requests overview reads
             // form data (WorkflowFormRenderer/FieldRenderer key formModel
@@ -178,8 +172,9 @@ export default function ManualUserSettingsPanel({
 
   const [selectedUsers, setSelectedUsers] =
     useState<Option[]>(initialSelectedUsers)
-  const [selectedGroups, setSelectedGroups] =
-    useState<Option[]>(initialSelectedGroups)
+  const [selectedGroups, setSelectedGroups] = useState<Option[]>(
+    initialSelectedGroups,
+  )
 
   const [openBasic, setOpenBasic] = useState(true)
   const [openGeneratePdf, setOpenGeneratePdf] = useState(true)
@@ -306,8 +301,8 @@ export default function ManualUserSettingsPanel({
   // resolution keeps working; merge the mirrors back in for display.
   const mergedNodeData = {
     ...nodeData,
-    selectedUsers,
     selectedGroups,
+    selectedUsers,
   }
 
   return (
@@ -339,8 +334,8 @@ export default function ManualUserSettingsPanel({
             assignedUsers={selectedUsers}
             fieldOptions={fieldOptions}
             nodeData={mergedNodeData}
-            userOptions={userOptions}
             updateNodeData={updateNodeData}
+            userOptions={userOptions}
           />
         </SettingsSection>
 
@@ -380,9 +375,7 @@ export default function ManualUserSettingsPanel({
                 </div>
                 <InputCheckbox
                   checked={Boolean(nodeData.generatePDF)}
-                  onChange={(checked) =>
-                    updateNodeData('generatePDF', checked)
-                  }
+                  onChange={(checked) => updateNodeData('generatePDF', checked)}
                 />
               </div>
 
@@ -390,8 +383,7 @@ export default function ManualUserSettingsPanel({
                 <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
                   <div className='flex items-center justify-between'>
                     <span className='text-13 font-medium text-gray-12'>
-                      Template JSON{' '}
-                      <span className='text-red-11'>*</span>
+                      Template JSON <span className='text-red-11'>*</span>
                     </span>
                     <IconButton
                       ariaLabel={jsonCopied ? 'Copied' : 'Copy JSON'}
@@ -405,7 +397,7 @@ export default function ManualUserSettingsPanel({
                       onClick={copyPdfTemplate}
                     />
                   </div>
-                  <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12 [&_textarea]:resize-none'>
+                  <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:resize-none [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12'>
                     <InputTextarea
                       error={pdfTemplateError || undefined}
                       placeholder={PDF_TEMPLATE_PLACEHOLDER}

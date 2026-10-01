@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
+import { useQuery } from '@tanstack/react-query'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Area,
@@ -24,8 +24,8 @@ import type { Option } from '@/types/option'
 import {
   type CreditsUsageBucket,
   type CreditsUsageTransaction,
-  getCreditsUsage,
   getCreditsMaster,
+  getCreditsUsage,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -33,9 +33,9 @@ import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import Skeleton from '@/components/base/Skeleton'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
-import Skeleton from '@/components/base/Skeleton'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -62,21 +62,24 @@ const PERIOD_FILTER_DEFS: {
   { label: msg`Yearly`, value: 'yearly' },
 ]
 
-const MONTH_OPTION_DEFS: { id: string; name: ReturnType<typeof msg>; value: string }[] =
-  [
-    { id: '1', name: msg`January`, value: '1' },
-    { id: '2', name: msg`February`, value: '2' },
-    { id: '3', name: msg`March`, value: '3' },
-    { id: '4', name: msg`April`, value: '4' },
-    { id: '5', name: msg`May`, value: '5' },
-    { id: '6', name: msg`June`, value: '6' },
-    { id: '7', name: msg`July`, value: '7' },
-    { id: '8', name: msg`August`, value: '8' },
-    { id: '9', name: msg`September`, value: '9' },
-    { id: '10', name: msg`October`, value: '10' },
-    { id: '11', name: msg`November`, value: '11' },
-    { id: '12', name: msg`December`, value: '12' },
-  ]
+const MONTH_OPTION_DEFS: {
+  id: string
+  name: ReturnType<typeof msg>
+  value: string
+}[] = [
+  { id: '1', name: msg`January`, value: '1' },
+  { id: '2', name: msg`February`, value: '2' },
+  { id: '3', name: msg`March`, value: '3' },
+  { id: '4', name: msg`April`, value: '4' },
+  { id: '5', name: msg`May`, value: '5' },
+  { id: '6', name: msg`June`, value: '6' },
+  { id: '7', name: msg`July`, value: '7' },
+  { id: '8', name: msg`August`, value: '8' },
+  { id: '9', name: msg`September`, value: '9' },
+  { id: '10', name: msg`October`, value: '10' },
+  { id: '11', name: msg`November`, value: '11' },
+  { id: '12', name: msg`December`, value: '12' },
+]
 
 const CHART_COLORS = [
   'var(--primary-9)',
@@ -110,16 +113,25 @@ function getAgentBadgeTone(agent: string) {
     return 'border-blue-9 text-blue-9'
   if (key.includes('summary') || key.includes('document'))
     return 'border-violet-9 text-violet-9'
-  if (key.includes('valid') || key.includes('match') || key.includes('supplier'))
+  if (
+    key.includes('valid') ||
+    key.includes('match') ||
+    key.includes('supplier')
+  )
     return 'border-green-9 text-green-9'
-  if (key.includes('duplicate') || key.includes('error') || key.includes('fail'))
+  if (
+    key.includes('duplicate') ||
+    key.includes('error') ||
+    key.includes('fail')
+  )
     return 'border-red-9 text-red-9'
   if (key.includes('order') || key.includes('back'))
     return 'border-orange-9 text-orange-9'
 
   let hash = 0
   for (let i = 0; i < key.length; i += 1) {
-    hash = (hash + key.charCodeAt(i) * (i + 1)) % ACTIVITY_TYPE_BADGE_TONES.length
+    hash =
+      (hash + key.charCodeAt(i) * (i + 1)) % ACTIVITY_TYPE_BADGE_TONES.length
   }
   return ACTIVITY_TYPE_BADGE_TONES[hash]
 }
@@ -127,15 +139,6 @@ function getAgentBadgeTone(agent: string) {
 const MAX_TABLE_ROWS = 200
 const MAX_CHART_ITEMS = 10
 const SESSION_KEY = 'ezofis_credits_state'
-
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
 
 export default function Credits({ onBack }: { onBack?: () => void }) {
   const { i18n, t } = useLingui()
@@ -163,17 +166,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
   const storedState = useMemo(() => getStoredState(), [])
 
-  const [period, setPeriod] = useState<UsagePeriod>(storedState?.period ?? 'monthly')
-  const [month, setMonth] = useState<Option>(storedState?.month ?? (() => ({
-    id: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
-    name: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
-    value: MONTH_OPTION_DEFS[currentMonthIndex]?.value ?? '1',
-  })))
-  const [year, setYear] = useState<Option>(storedState?.year ?? {
-    id: String(currentYear),
-    name: String(currentYear),
-    value: String(currentYear),
-  })
+  const [period, setPeriod] = useState<UsagePeriod>(
+    storedState?.period ?? 'monthly',
+  )
+  const [month, setMonth] = useState<Option>(
+    storedState?.month ??
+      (() => ({
+        id: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
+        name: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
+        value: MONTH_OPTION_DEFS[currentMonthIndex]?.value ?? '1',
+      })),
+  )
+  const [year, setYear] = useState<Option>(
+    storedState?.year ?? {
+      id: String(currentYear),
+      name: String(currentYear),
+      value: String(currentYear),
+    },
+  )
 
   // Keep month label in sync with locale
   useEffect(() => {
@@ -192,10 +202,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     [currentYear],
   )
 
-  const {
-    data: creditMaster,
-    isLoading: isMasterLoading,
-  } = useQuery({
+  const { data: creditMaster, isLoading: isMasterLoading } = useQuery({
     queryKey: ['settings', 'credits-master', month.value, year.value],
     queryFn: async () => {
       const response = await getCreditsMaster({
@@ -248,7 +255,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     try {
       sessionStorage.setItem(
         SESSION_KEY,
-        JSON.stringify({ transactionFilters, period, month, year })
+        JSON.stringify({ month, period, transactionFilters, year }),
       )
     } catch {
       // ignore
@@ -288,10 +295,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   const filteredTransactions = useMemo(() => {
     return transactions.filter((row) => {
       const agentFilter = transactionFilters.agent
-      if (
-        agentFilter &&
-        !matchesCategoryFilterValue(row.agent, agentFilter)
-      ) {
+      if (agentFilter && !matchesCategoryFilterValue(row.agent, agentFilter)) {
         return false
       }
 
@@ -312,10 +316,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }
 
       const dateFilter = transactionFilters.createdAt
-      if (
-        dateFilter &&
-        !matchesDateRangeValue(row.createdAt, dateFilter)
-      ) {
+      if (dateFilter && !matchesDateRangeValue(row.createdAt, dateFilter)) {
         return false
       }
 
@@ -415,14 +416,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     ? creditMaster.balanceCredit
     : Math.max(0, purchasedCredits - creditsUsed)
 
-  const usagePercentage = purchasedCredits > 0
-    ? Math.round((creditsUsed / purchasedCredits) * 100)
-    : 0
+  const usagePercentage =
+    purchasedCredits > 0
+      ? Math.round((creditsUsed / purchasedCredits) * 100)
+      : 0
 
   const isRemainingLow = remainingCredits <= purchasedCredits * 0.2
 
   const dailyBurnRate = useMemo(() => {
-    const days = period === 'today' ? 1 : period === 'yesterday' ? 1 : period === 'monthly' ? 30 : period === 'quarterly' ? 90 : 365
+    const days =
+      period === 'today'
+        ? 1
+        : period === 'yesterday'
+          ? 1
+          : period === 'monthly'
+            ? 30
+            : period === 'quarterly'
+              ? 90
+              : 365
     const rate = creditsUsed / Math.max(1, days)
     return rate > 0 ? Number(rate.toFixed(1)) : 3.2
   }, [creditsUsed, period])
@@ -453,10 +464,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       columnHelper.accessor('fileName', {
         enableSorting: false,
         header: t`Document Reference`,
+        maxSize: 160,
         meta: { ...settingsHeaderMeta.start, label: t`Document Reference` },
         minSize: 100,
         size: 130,
-        maxSize: 160,
         cell: ({ row }) => {
           const tableName = row.original.fileName
           return tableName?.trim() ? tableName : '—'
@@ -465,10 +476,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       columnHelper.accessor('agent', {
         enableSorting: false,
         header: t`Agent`,
+        maxSize: 180,
         meta: { ...settingsHeaderMeta.start, label: t`Agent` },
         minSize: 110,
         size: 140,
-        maxSize: 180,
         cell: ({ getValue }) => {
           const value = getValue()
           if (!value) return '—'
@@ -487,10 +498,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       columnHelper.accessor('credit', {
         enableSorting: false,
         header: t`Credits Used`,
+        maxSize: 110,
         meta: { ...settingsHeaderMeta.end, label: t`Credits Used` },
         minSize: 80,
         size: 90,
-        maxSize: 110,
         cell: ({ getValue }) => formatNumber(Number(getValue() ?? 0)),
       }),
       columnHelper.accessor('remarks', {
@@ -504,10 +515,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       columnHelper.accessor('createdAt', {
         enableSorting: false,
         header: t`Activity Date`,
+        maxSize: 170,
         meta: { ...settingsHeaderMeta.start, label: t`Activity Date` },
         minSize: 120,
         size: 150,
-        maxSize: 170,
         cell: ({ getValue }) => {
           const value = getValue()
           if (!value) return '—'
@@ -642,12 +653,12 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
         <div className='flex-1 overflow-y-auto'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5'>
             {/* Card 1: Credits consumed Consolidated Card */}
-            <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
+            <div className='flex min-h-[120px] cursor-pointer flex-col justify-between rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
                   {t`Credits consumed`}
                 </div>
-                <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
+                <div className='mt-1 flex items-baseline gap-1.5 font-poppins'>
                   {isLoading || isMasterLoading ? (
                     <Skeleton className='h-6 w-28 rounded' />
                   ) : (
@@ -655,7 +666,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                       <span className='font-poppins text-18 font-semibold text-text-primary'>
                         {formatNumber(creditsUsed)}
                       </span>
-                      <span className='text-12 text-text-muted font-normal'>
+                      <span className='text-12 font-normal text-text-muted'>
                         {t`of ${formatNumber(purchasedCredits)}`}
                       </span>
                     </>
@@ -669,18 +680,18 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 {isLoading || isMasterLoading ? (
                   <Skeleton className='h-1.5 w-full rounded-full' />
                 ) : (
-                  <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                  <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
                     <div
+                      style={{ width: `${Math.min(100, usagePercentage)}%` }}
                       className={cn(
                         'h-full rounded-full transition-all duration-500',
-                        isRemainingLow ? 'bg-red-9' : 'bg-primary-9'
+                        isRemainingLow ? 'bg-red-9' : 'bg-primary-9',
                       )}
-                      style={{ width: `${Math.min(100, usagePercentage)}%` }}
                     />
                   </div>
                 )}
 
-                <div className='flex items-center justify-between text-11 text-text-secondary font-medium font-inter'>
+                <div className='flex items-center justify-between font-inter text-11 font-medium text-text-secondary'>
                   {isLoading || isMasterLoading ? (
                     <>
                       <Skeleton className='h-3 w-16 rounded' />
@@ -688,12 +699,12 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                     </>
                   ) : (
                     <>
-                      <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
+                      <span
+                        className={cn(isRemainingLow && 'font-bold text-red-9')}
+                      >
                         {t`${formatNumber(remainingCredits)} remaining`}
                       </span>
-                      <span>
-                        {t`${usagePercentage}% used`}
-                      </span>
+                      <span>{t`${usagePercentage}% used`}</span>
                     </>
                   )}
                 </div>
@@ -701,12 +712,12 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </div>
 
             {/* Card 2: Top activity by credits */}
-            <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
+            <div className='flex min-h-[120px] cursor-pointer flex-col justify-between rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
                   {t`Top activity by credits`}
                 </div>
-                <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
+                <div className='mt-1 flex items-baseline gap-1.5 font-poppins'>
                   {isLoading ? (
                     <Skeleton className='h-6 w-20 rounded' />
                   ) : (
@@ -714,14 +725,17 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                       <span className='font-poppins text-18 font-semibold text-text-primary'>
                         {formatNumber(topActivity?.creditsUsed ?? 0)}
                       </span>
-                      <span className='text-12 text-text-muted font-normal'>
+                      <span className='text-12 font-normal text-text-muted'>
                         {t`credits`}
                       </span>
                     </>
                   )}
                 </div>
               </div>
-              <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={topActivity?.type}>
+              <div
+                className='mt-2 overflow-hidden font-inter text-11 font-normal text-ellipsis whitespace-nowrap text-text-muted'
+                title={topActivity?.type}
+              >
                 {isLoading ? (
                   <Skeleton className='h-3 w-32 rounded' />
                 ) : (
@@ -731,7 +745,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </div>
 
             {/* Card 3: Peak usage period */}
-            <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-cyan-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
+            <div className='flex min-h-[120px] cursor-pointer flex-col justify-between rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-cyan-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
                   {t`Peak usage period`}
@@ -744,7 +758,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   )}
                 </div>
               </div>
-              <div className='mt-2 text-11 text-text-muted font-inter font-normal'>
+              <div className='mt-2 font-inter text-11 font-normal text-text-muted'>
                 {isLoading ? (
                   <Skeleton className='h-3 w-36 rounded' />
                 ) : (
@@ -754,7 +768,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </div>
 
             {/* Card 4: Active AI agents */}
-            <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
+            <div className='flex min-h-[120px] cursor-pointer flex-col justify-between rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
                   {t`Active AI agents`}
@@ -765,24 +779,28 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   ) : (
                     <>
                       {consumptionByAgent.length}
-                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                      <span className='ml-1 text-12 font-normal text-text-muted'>
                         {t`agents`}
                       </span>
                     </>
                   )}
                 </div>
               </div>
-              <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={consumptionByAgent.map(c => c.name).join(', ')}>
+              <div
+                className='mt-2 overflow-hidden font-inter text-11 font-normal text-ellipsis whitespace-nowrap text-text-muted'
+                title={consumptionByAgent.map((c) => c.name).join(', ')}
+              >
                 {isLoading ? (
                   <Skeleton className='h-3 w-32 rounded' />
                 ) : (
-                  (consumptionByAgent.map(c => c.name).join(', ') || t`No active agents`)
+                  consumptionByAgent.map((c) => c.name).join(', ') ||
+                  t`No active agents`
                 )}
               </div>
             </div>
 
             {/* Card 5: Forecast EOM usage */}
-            <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-success bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
+            <div className='border-t-success flex min-h-[120px] cursor-pointer flex-col justify-between rounded-xl border border-t-[3px] border-[var(--border-default)] bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
                   {t`Forecast EOM usage`}
@@ -793,7 +811,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   ) : (
                     <>
                       {formatNumber(projectedMonthEndUsage)}
-                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                      <span className='ml-1 text-12 font-normal text-text-muted'>
                         {t`credits`}
                       </span>
                     </>
@@ -804,17 +822,17 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 {isLoading ? (
                   <>
                     <Skeleton className='h-1.5 w-full rounded-full' />
-                    <Skeleton className='h-3 w-28 rounded mt-1' />
+                    <Skeleton className='mt-1 h-3 w-28 rounded' />
                   </>
                 ) : (
                   <>
-                    <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                    <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
                       <div
                         className='h-full rounded-full bg-primary-9 transition-all duration-500'
                         style={{ width: `${Math.min(100, usagePercentage)}%` }}
                       />
                     </div>
-                    <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
+                    <div className='mt-0.5 font-inter text-11 font-normal text-text-muted'>
                       {t`${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
                     </div>
                   </>
@@ -825,19 +843,31 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
           {/* Dummy Charts Row */}
           <div className='mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4'>
-            <DummyChartCard title={t`Daily credit usage`} subtitle={t`Last 14 days`}>
+            <DummyChartCard
+              subtitle={t`Last 14 days`}
+              title={t`Daily credit usage`}
+            >
               <DailyCreditUsageChart />
             </DummyChartCard>
 
-            <DummyChartCard title={t`Weekly credit consumption`} subtitle={t`By agent, stacked`}>
+            <DummyChartCard
+              subtitle={t`By agent, stacked`}
+              title={t`Weekly credit consumption`}
+            >
               <WeeklyCreditConsumptionChart />
             </DummyChartCard>
 
-            <DummyChartCard title={t`Monthly credit trend`} subtitle={t`Feb – Jul 2026`}>
+            <DummyChartCard
+              subtitle={t`Feb – Jul 2026`}
+              title={t`Monthly credit trend`}
+            >
               <MonthlyCreditTrendChart />
             </DummyChartCard>
 
-            <DummyChartCard title={t`Credit forecast`} subtitle={t`Actual vs projected`}>
+            <DummyChartCard
+              subtitle={t`Actual vs projected`}
+              title={t`Credit forecast`}
+            >
               <CreditForecastChart />
             </DummyChartCard>
           </div>
@@ -883,12 +913,8 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </h4>
             <CustomFilter
               activeFilters={transactionFilters}
-              customSearchComponent={
-                <TableSearch table={transactionTable as any} />
-              }
-              trailingActions={
-                <TableExport table={transactionTable as any} />
-              }
+              showReset={hasTransactionFilters}
+              trailingActions={<TableExport table={transactionTable as any} />}
               actionButtons={[
                 {
                   color: 'gray',
@@ -901,6 +927,9 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   onClick: () => void refetch(),
                 },
               ]}
+              customSearchComponent={
+                <TableSearch table={transactionTable as any} />
+              }
               filters={[
                 {
                   id: 'agent',
@@ -926,7 +955,6 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   options: subActivityFilterOptions,
                 },
               ]}
-              showReset={hasTransactionFilters}
               onFilterChange={(id, value) => {
                 setTransactionFilters((prev) => ({ ...prev, [id]: value }))
                 onPageChange(1)
@@ -1142,9 +1170,18 @@ function formatPeriodSubtitle(
   return period.replaceAll('_', ' ')
 }
 
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 const PIE_COLORS = [
-  'var(--blue-9)',   // Blue (33%)
-  'var(--cyan-9)',   // Cyan/Teal (25%)
+  'var(--blue-9)', // Blue (33%)
+  'var(--cyan-9)', // Cyan/Teal (25%)
   'var(--yellow-9)', // Yellow/Gold (25%)
   'var(--orange-9)', // Coral/Orange (17%)
 ]
@@ -1152,8 +1189,8 @@ const PIE_COLORS = [
 const renderCustomizedLabel = ({
   cx,
   cy,
-  midAngle,
   innerRadius,
+  midAngle,
   outerRadius,
   percent,
 }: any) => {
@@ -1163,13 +1200,13 @@ const renderCustomizedLabel = ({
 
   return (
     <text
-      x={x}
-      y={y}
-      fill='white'
-      textAnchor='middle'
       dominantBaseline='central'
+      fill='white'
       fontSize={12}
       fontWeight={600}
+      textAnchor='middle'
+      x={x}
+      y={y}
     >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
@@ -1203,20 +1240,20 @@ function HighestConsumptionPieChart({
   return (
     <div className='flex flex-col gap-2'>
       <div className='h-[160px] w-full'>
-        <ResponsiveContainer width='100%' height='100%'>
+        <ResponsiveContainer height='100%' width='100%'>
           <PieChart>
             <Pie
-              data={chartData}
-              dataKey='credits'
-              nameKey='name'
               cx='50%'
               cy='50%'
-              outerRadius={75}
-              labelLine={false}
+              data={chartData}
+              dataKey='credits'
               label={renderCustomizedLabel}
+              labelLine={false}
+              nameKey='name'
+              outerRadius={75}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell fill={entry.color} key={`cell-${index}`} />
               ))}
             </Pie>
             <Tooltip
@@ -1226,7 +1263,10 @@ function HighestConsumptionPieChart({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
-              formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Usage`]}
+              formatter={(val: any) => [
+                t`${formatNumber(val)} credits`,
+                t`Usage`,
+              ]}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -1235,22 +1275,26 @@ function HighestConsumptionPieChart({
       {/* Descriptions below */}
       <div className='mt-2 grid grid-cols-2 gap-x-4 gap-y-2 pl-1'>
         {chartData.map((item, index) => {
-          const pct = total > 0 ? ((item.credits / total) * 100).toFixed(0) : '0'
+          const pct =
+            total > 0 ? ((item.credits / total) * 100).toFixed(0) : '0'
           return (
-            <div key={index} className='flex items-center justify-between text-[11px] font-medium'>
-              <div className='flex items-center gap-2 min-w-0'>
+            <div
+              className='flex items-center justify-between text-[11px] font-medium'
+              key={index}
+            >
+              <div className='flex min-w-0 items-center gap-2'>
                 <span
-                  className='size-2 rounded-full shrink-0'
+                  className='size-2 shrink-0 rounded-full'
                   style={{ backgroundColor: item.color }}
                 />
                 <span
-                  className='truncate text-gray-10 font-semibold'
+                  className='truncate font-semibold text-gray-10'
                   title={item.name}
                 >
                   {item.name}
                 </span>
               </div>
-              <span className='font-bold text-gray-13 ml-2 shrink-0'>
+              <span className='ml-2 shrink-0 font-bold text-gray-13'>
                 {formatNumber(item.credits)} ({pct}%)
               </span>
             </div>
@@ -1326,11 +1370,11 @@ function UsageTimelineChart({
     data.length > 0
       ? data
       : [
-          { label: 'Week 1', credits: 0 },
-          { label: 'Week 2', credits: 0 },
-          { label: 'Week 3', credits: 0 },
-          { label: 'Week 4', credits: 84 },
-          { label: 'Week 5', credits: 15 },
+          { credits: 0, label: 'Week 1' },
+          { credits: 0, label: 'Week 2' },
+          { credits: 0, label: 'Week 3' },
+          { credits: 84, label: 'Week 4' },
+          { credits: 15, label: 'Week 5' },
         ]
 
   if (chartData.length === 0) {
@@ -1356,14 +1400,14 @@ function UsageTimelineChart({
             y2='1'
           >
             <stop offset='0%' stopColor='var(--purple-9)' stopOpacity={0.9} />
-            <stop
-              offset='100%'
-              stopColor='var(--purple-4)'
-              stopOpacity={0.4}
-            />
+            <stop offset='100%' stopColor='var(--purple-4)' stopOpacity={0.4} />
           </linearGradient>
         </defs>
-        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+        <CartesianGrid
+          stroke='var(--gray-3)'
+          strokeDasharray='3 3'
+          vertical={false}
+        />
         <XAxis
           axisLine={false}
           dataKey='label'
@@ -1373,22 +1417,22 @@ function UsageTimelineChart({
         />
         <YAxis
           axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
           dx={-10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tickLine={false}
         />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [
-            t`${formatNumber(val)} credits`,
-            t`Credits`,
-          ]}
           contentStyle={{
             border: 'none',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             fontSize: '11px',
           }}
+          formatter={(val: any) => [
+            t`${formatNumber(val)} credits`,
+            t`Credits`,
+          ]}
         />
         <Bar
           barSize={16}
@@ -1430,37 +1474,41 @@ function DailyCreditUsageChart() {
         data={dailyData}
         margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
       >
-        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+        <CartesianGrid
+          stroke='var(--gray-3)'
+          strokeDasharray='3 3'
+          vertical={false}
+        />
         <XAxis
-          dataKey='day'
           axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          dataKey='day'
           dy={10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
         />
         <YAxis
-          domain={[4, 20]}
-          ticks={[4, 6, 8, 10, 12, 14, 16, 18, 20]}
           axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          domain={[4, 20]}
           dx={-10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
+          ticks={[4, 6, 8, 10, 12, 14, 16, 18, 20]}
         />
         <Tooltip
+          formatter={(val: any) => [t`${val} credits`, t`Usage`]}
           contentStyle={{
             border: 'none',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             fontSize: '11px',
           }}
-          formatter={(val: any) => [t`${val} credits`, t`Usage`]}
         />
         <Line
-          type='monotone'
           dataKey='usage'
+          dot={false}
           stroke='var(--purple-9)'
           strokeWidth={2}
-          dot={false}
+          type='monotone'
         />
       </LineChart>
     </ResponsiveContainer>
@@ -1468,10 +1516,10 @@ function DailyCreditUsageChart() {
 }
 
 const weeklyData = [
-  { week: 'Week 1', 'AP agent': 22, 'OCR agent': 8, 'Doc agent': 6 },
-  { week: 'Week 2', 'AP agent': 18, 'OCR agent': 6, 'Doc agent': 5 },
-  { week: 'Week 3', 'AP agent': 24, 'OCR agent': 9, 'Doc agent': 7 },
-  { week: 'Week 4', 'AP agent': 51, 'OCR agent': 17, 'Doc agent': 16 },
+  { 'AP agent': 22, 'Doc agent': 6, 'OCR agent': 8, 'week': 'Week 1' },
+  { 'AP agent': 18, 'Doc agent': 5, 'OCR agent': 6, 'week': 'Week 2' },
+  { 'AP agent': 24, 'Doc agent': 7, 'OCR agent': 9, 'week': 'Week 3' },
+  { 'AP agent': 51, 'Doc agent': 16, 'OCR agent': 17, 'week': 'Week 4' },
 ]
 
 function WeeklyCreditConsumptionChart() {
@@ -1483,21 +1531,25 @@ function WeeklyCreditConsumptionChart() {
           data={weeklyData}
           margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
         >
-          <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+          <CartesianGrid
+            stroke='var(--gray-3)'
+            strokeDasharray='3 3'
+            vertical={false}
+          />
           <XAxis
-            dataKey='week'
             axisLine={false}
-            tickLine={false}
-            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            dataKey='week'
             dy={10}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            tickLine={false}
           />
           <YAxis
-            domain={[0, 90]}
-            ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90]}
             axisLine={false}
-            tickLine={false}
-            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            domain={[0, 90]}
             dx={-10}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            tickLine={false}
+            ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90]}
           />
           <Tooltip
             contentStyle={{
@@ -1507,9 +1559,24 @@ function WeeklyCreditConsumptionChart() {
               fontSize: '11px',
             }}
           />
-          <Bar dataKey='AP agent' stackId='a' fill='var(--purple-9)' radius={[0, 0, 0, 0]} />
-          <Bar dataKey='OCR agent' stackId='a' fill='var(--cyan-9)' radius={[0, 0, 0, 0]} />
-          <Bar dataKey='Doc agent' stackId='a' fill='var(--pink-9)' radius={[4, 4, 0, 0]} />
+          <Bar
+            dataKey='AP agent'
+            fill='var(--purple-9)'
+            radius={[0, 0, 0, 0]}
+            stackId='a'
+          />
+          <Bar
+            dataKey='OCR agent'
+            fill='var(--cyan-9)'
+            radius={[0, 0, 0, 0]}
+            stackId='a'
+          />
+          <Bar
+            dataKey='Doc agent'
+            fill='var(--pink-9)'
+            radius={[4, 4, 0, 0]}
+            stackId='a'
+          />
         </BarChart>
       </ResponsiveContainer>
 
@@ -1541,67 +1608,16 @@ const monthlyData = [
   { month: 'Jul', trend: 80 },
 ]
 
-function MonthlyCreditTrendChart() {
-  const { t } = useLingui()
-  return (
-    <ResponsiveContainer height={200} width='100%'>
-      <AreaChart
-        data={monthlyData}
-        margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
-      >
-        <defs>
-          <linearGradient id='cyanAreaGradient' x1='0' y1='0' x2='0' y2='1'>
-            <stop offset='0%' stopColor='var(--cyan-9)' stopOpacity={0.2} />
-            <stop offset='100%' stopColor='var(--cyan-9)' stopOpacity={0.0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
-        <XAxis
-          dataKey='month'
-          axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
-          dy={10}
-        />
-        <YAxis
-          domain={[50, 350]}
-          ticks={[50, 100, 150, 200, 250, 300, 350]}
-          axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
-          dx={-10}
-        />
-        <Tooltip
-          contentStyle={{
-            border: 'none',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            fontSize: '11px',
-          }}
-          formatter={(val: any) => [t`${val} credits`, t`Trend`]}
-        />
-        <Area
-          type='monotone'
-          dataKey='trend'
-          stroke='var(--cyan-9)'
-          strokeWidth={2}
-          fill='url(#cyanAreaGradient)'
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  )
-}
-
 function DummyChartCard({
-  title,
-  subtitle,
   badge,
   children,
+  subtitle,
+  title,
 }: {
-  title: string
-  subtitle?: string
   badge?: string
   children: React.ReactNode
+  subtitle?: string
+  title: string
 }) {
   return (
     <div className='flex flex-col rounded-xl border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]'>
@@ -1617,7 +1633,7 @@ function DummyChartCard({
           ) : null}
         </div>
         {badge ? (
-          <span className='inline-flex shrink-0 items-center rounded-full border border-[var(--purple-9)] bg-[var(--purple-1)] px-2.5 py-0.5 text-11 font-medium text-[var(--purple-9)] whitespace-nowrap'>
+          <span className='inline-flex shrink-0 items-center rounded-full border border-[var(--purple-9)] bg-[var(--purple-1)] px-2.5 py-0.5 text-11 font-medium whitespace-nowrap text-[var(--purple-9)]'>
             {badge}
           </span>
         ) : null}
@@ -1627,18 +1643,73 @@ function DummyChartCard({
   )
 }
 
+function MonthlyCreditTrendChart() {
+  const { t } = useLingui()
+  return (
+    <ResponsiveContainer height={200} width='100%'>
+      <AreaChart
+        data={monthlyData}
+        margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
+      >
+        <defs>
+          <linearGradient id='cyanAreaGradient' x1='0' x2='0' y1='0' y2='1'>
+            <stop offset='0%' stopColor='var(--cyan-9)' stopOpacity={0.2} />
+            <stop offset='100%' stopColor='var(--cyan-9)' stopOpacity={0.0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          stroke='var(--gray-3)'
+          strokeDasharray='3 3'
+          vertical={false}
+        />
+        <XAxis
+          axisLine={false}
+          dataKey='month'
+          dy={10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
+        />
+        <YAxis
+          axisLine={false}
+          domain={[50, 350]}
+          dx={-10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
+          ticks={[50, 100, 150, 200, 250, 300, 350]}
+        />
+        <Tooltip
+          formatter={(val: any) => [t`${val} credits`, t`Trend`]}
+          contentStyle={{
+            border: 'none',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '11px',
+          }}
+        />
+        <Area
+          dataKey='trend'
+          fill='url(#cyanAreaGradient)'
+          stroke='var(--cyan-9)'
+          strokeWidth={2}
+          type='monotone'
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
 const DONUT_COLORS = [
   'var(--purple-9)', // Payment terms detection
-  'var(--cyan-9)',   // PO validation
-  'var(--pink-9)',   // OCR from document
+  'var(--cyan-9)', // PO validation
+  'var(--pink-9)', // OCR from document
   'var(--orange-9)', // Document classification
-  'var(--green-9)',  // Back order detection
+  'var(--green-9)', // Back order detection
 ]
 
 function CreditDistributionByActivityChart({
   data,
 }: {
-  data: { name: string; credits: number; color?: string }[]
+  data: { color?: string; credits: number; name: string }[]
 }) {
   const chartData =
     data.length > 0
@@ -1649,22 +1720,22 @@ function CreditDistributionByActivityChart({
       : []
 
   return (
-    <div className='flex flex-row items-center gap-6 h-[180px]'>
-      <div className='w-[160px] h-[160px] flex-shrink-0'>
-        <ResponsiveContainer width='100%' height='100%'>
+    <div className='flex h-[180px] flex-row items-center gap-6'>
+      <div className='h-[160px] w-[160px] flex-shrink-0'>
+        <ResponsiveContainer height='100%' width='100%'>
           <PieChart>
             <Pie
-              data={chartData}
-              dataKey='credits'
-              nameKey='name'
               cx='50%'
               cy='50%'
+              data={chartData}
+              dataKey='credits'
               innerRadius={50}
+              nameKey='name'
               outerRadius={70}
               paddingAngle={2}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell fill={entry.color} key={`cell-${index}`} />
               ))}
             </Pie>
             <Tooltip
@@ -1679,22 +1750,25 @@ function CreditDistributionByActivityChart({
         </ResponsiveContainer>
       </div>
 
-      <div className='flex flex-col gap-2.5 flex-1 min-w-0 pr-2'>
+      <div className='flex min-w-0 flex-1 flex-col gap-2.5 pr-2'>
         {chartData.map((item, index) => (
-          <div key={index} className='flex items-center justify-between text-[11px] font-medium'>
-            <div className='flex items-center gap-2 min-w-0'>
+          <div
+            className='flex items-center justify-between text-[11px] font-medium'
+            key={index}
+          >
+            <div className='flex min-w-0 items-center gap-2'>
               <span
-                className='size-2 rounded-full shrink-0'
+                className='size-2 shrink-0 rounded-full'
                 style={{ backgroundColor: item.color }}
               />
               <span
-                className='truncate text-gray-10 font-semibold'
+                className='truncate font-semibold text-gray-10'
                 title={item.name}
               >
                 {item.name}
               </span>
             </div>
-            <span className='font-bold text-gray-13 ml-2 shrink-0'>
+            <span className='ml-2 shrink-0 font-bold text-gray-13'>
               {formatNumber(item.credits)}
             </span>
           </div>
@@ -1707,16 +1781,16 @@ function CreditDistributionByActivityChart({
 function CreditsByAiAgentChart({
   data,
 }: {
-  data: { name: string; credits: number }[]
+  data: { credits: number; name: string }[]
 }) {
   const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data
       : [
-          { name: 'AP agent', credits: 51 },
-          { name: 'OCR agent', credits: 17 },
-          { name: 'Back order agent', credits: 16 },
+          { credits: 51, name: 'AP agent' },
+          { credits: 17, name: 'OCR agent' },
+          { credits: 16, name: 'Back order agent' },
         ]
 
   return (
@@ -1727,43 +1801,46 @@ function CreditsByAiAgentChart({
         margin={{ bottom: 0, left: 10, right: 30, top: 10 }}
       >
         <CartesianGrid
-          strokeDasharray='3 3'
           horizontal={false}
           stroke='var(--gray-3)'
+          strokeDasharray='3 3'
         />
         <XAxis
-          type='number'
-          domain={[0, 60]}
-          ticks={[0, 10, 20, 30, 40, 50, 60]}
           axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          domain={[0, 60]}
           dy={10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
+          ticks={[0, 10, 20, 30, 40, 50, 60]}
+          type='number'
         />
         <YAxis
-          dataKey='name'
-          type='category'
           axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          dataKey='name'
           dx={-10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+          tickLine={false}
+          type='category'
           width={110}
         />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Credits`]}
           contentStyle={{
             border: 'none',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             fontSize: '11px',
           }}
+          formatter={(val: any) => [
+            t`${formatNumber(val)} credits`,
+            t`Credits`,
+          ]}
         />
         <Bar
+          barSize={16}
           dataKey='credits'
           fill='var(--purple-9)'
           radius={[0, 6, 6, 0]}
-          barSize={16}
         />
       </BarChart>
     </ResponsiveContainer>
@@ -1771,12 +1848,12 @@ function CreditsByAiAgentChart({
 }
 
 const forecastData = [
-  { week: 'W1', actual: 22, projected: null },
-  { week: 'W2', actual: 18, projected: null },
-  { week: 'W3', actual: 24, projected: null },
-  { week: 'W4', actual: 20, projected: 20 },
-  { week: 'W5', actual: null, projected: 26 },
-  { week: 'W6', actual: null, projected: 31 },
+  { actual: 22, projected: null, week: 'W1' },
+  { actual: 18, projected: null, week: 'W2' },
+  { actual: 24, projected: null, week: 'W3' },
+  { actual: 20, projected: 20, week: 'W4' },
+  { actual: null, projected: 26, week: 'W5' },
+  { actual: null, projected: 31, week: 'W6' },
 ]
 
 function CreditForecastChart() {
@@ -1788,21 +1865,25 @@ function CreditForecastChart() {
           data={forecastData}
           margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
         >
-          <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+          <CartesianGrid
+            stroke='var(--gray-3)'
+            strokeDasharray='3 3'
+            vertical={false}
+          />
           <XAxis
-            dataKey='week'
             axisLine={false}
-            tickLine={false}
-            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            dataKey='week'
             dy={10}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            tickLine={false}
           />
           <YAxis
-            domain={[18, 32]}
-            ticks={[18, 20, 22, 24, 26, 28, 30, 32]}
             axisLine={false}
-            tickLine={false}
-            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            domain={[18, 32]}
             dx={-10}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            tickLine={false}
+            ticks={[18, 20, 22, 24, 26, 28, 30, 32]}
           />
           <Tooltip
             contentStyle={{
@@ -1813,21 +1894,31 @@ function CreditForecastChart() {
             }}
           />
           <Line
-            type='linear'
             dataKey='actual'
             stroke='var(--purple-9)'
             strokeWidth={2}
+            type='linear'
             connectNulls
-            dot={{ stroke: 'var(--purple-9)', strokeWidth: 2, r: 4, fill: 'var(--surface)' }}
+            dot={{
+              fill: 'var(--surface)',
+              r: 4,
+              stroke: 'var(--purple-9)',
+              strokeWidth: 2,
+            }}
           />
           <Line
-            type='linear'
             dataKey='projected'
             stroke='var(--cyan-9)'
-            strokeWidth={2}
             strokeDasharray='4 4'
+            strokeWidth={2}
+            type='linear'
             connectNulls
-            dot={{ stroke: 'var(--cyan-9)', strokeWidth: 2, r: 4, fill: 'var(--surface)' }}
+            dot={{
+              fill: 'var(--surface)',
+              r: 4,
+              stroke: 'var(--cyan-9)',
+              strokeWidth: 2,
+            }}
           />
         </LineChart>
       </ResponsiveContainer>

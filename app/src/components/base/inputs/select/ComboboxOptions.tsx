@@ -12,10 +12,10 @@ interface Props {
   search: string
   value: Option[]
   creatable?: boolean
+  variant?: SelectVariant
   createOptionLabel?: (search: string) => string
   /** When set, creatable row only shows if this returns true for current search. */
   isCreatableSearch?: (search: string) => boolean
-  variant?: SelectVariant
   onBottomReached?: () => void
   onChange: (value: Option[]) => void
   onSearch?: (search: string) => void
@@ -107,7 +107,10 @@ const ComboboxOptions = ({
 
         {hasOptions && (
           <div
-            className={cn('flex flex-col', optionList[0].description && 'gap-1')}
+            className={cn(
+              'flex flex-col',
+              optionList[0].description && 'gap-1',
+            )}
           >
             {optionList.map((option) => (
               <div key={option.id} onClick={() => handleClick(option)}>
@@ -115,10 +118,10 @@ const ComboboxOptions = ({
                   {...option}
                   iconKey={(option as Option & { iconKey?: string }).iconKey}
                   isSelected={isSelected(option.id)}
+                  variant={variant}
                   rightIconKey={
                     (option as Option & { rightIconKey?: string }).rightIconKey
                   }
-                  variant={variant}
                 />
               </div>
             ))}

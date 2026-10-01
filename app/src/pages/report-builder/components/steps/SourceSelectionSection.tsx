@@ -14,8 +14,8 @@ import Icon from '@/components/base/icon/Icon'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import type { ReportSourceType } from '../../types'
+import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 
 interface Props {
   onBack: () => void
@@ -151,7 +151,7 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
   const isSourceReady = Boolean(draft.sourceId && draft.domain)
 
   return (
-    <div className='flex flex-col gap-6 max-w-3xl mx-auto w-full py-4'>
+    <div className='mx-auto flex w-full max-w-3xl flex-col gap-6 py-4'>
       <div className='flex items-center justify-between'>
         <div>
           <h2 className='text-18 font-bold text-gray-13'>{t`Select Data Basis`}</h2>
@@ -189,23 +189,23 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
       {selectedSourceType === 'Workflow' && (
         <div className='rounded-xl border border-gray-3 bg-surface p-5'>
           <InputSelect
+            disabled={workflowsQuery.isLoading}
+            label={t`Select Workflow`}
+            options={workflowOptions}
+            required
             description={
               workflowsQuery.isLoading ? t`Loading workflows...` : undefined
             }
-            disabled={workflowsQuery.isLoading}
             error={
               workflowsQuery.isError
                 ? t`Couldn't load workflows. Try again.`
                 : undefined
             }
-            label={t`Select Workflow`}
-            options={workflowOptions}
             placeholder={
               workflowsQuery.isLoading
                 ? t`Loading workflows...`
                 : t`Choose a workflow to report on...`
             }
-            required
             value={
               draft.sourceId
                 ? workflowOptions.find((o) => o.id === draft.sourceId) ||
@@ -227,23 +227,23 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
       {selectedSourceType === 'Folder' && (
         <div className='rounded-xl border border-gray-3 bg-surface p-5'>
           <InputSelect
+            disabled={foldersQuery.isLoading}
+            label={t`Select Folder`}
+            options={folderOptions}
+            required
             description={
               foldersQuery.isLoading ? t`Loading folders...` : undefined
             }
-            disabled={foldersQuery.isLoading}
             error={
               foldersQuery.isError
                 ? t`Couldn't load folders. Try again.`
                 : undefined
             }
-            label={t`Select Folder`}
-            options={folderOptions}
             placeholder={
               foldersQuery.isLoading
                 ? t`Loading folders...`
                 : t`Choose a folder to report on...`
             }
-            required
             value={
               draft.sourceId
                 ? folderOptions.find((o) => o.id === draft.sourceId) ||
@@ -266,9 +266,14 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
       {isSourceReady ? (
         <div className='animate-in fade-in slide-in-from-top-3 flex flex-col gap-4 rounded-xl border border-primary-4 bg-primary-1/30 p-5 duration-300'>
           <div className='flex items-center gap-2 text-gray-13'>
-            <Icon className='size-5 text-primary-10' name='lucide:check-circle2' />
+            <Icon
+              className='size-5 text-primary-10'
+              name='lucide:check-circle2'
+            />
             <h4 className='text-14 font-semibold'>
-              {t`Selected Source:`} <span className='text-primary-11'>{draft.domain}</span> ({draft.sourceType})
+              {t`Selected Source:`}{' '}
+              <span className='text-primary-11'>{draft.domain}</span> (
+              {draft.sourceType})
             </h4>
           </div>
           <p className='text-13 text-gray-10'>
@@ -277,11 +282,11 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
           <div className='flex flex-wrap items-center gap-3 pt-1'>
             <Button
               color='primary'
+              label={t`Build with AI`}
+              size='md'
               leftSection={
                 <AiBrandIcon className='size-4' variant='outline-white' />
               }
-              label={t`Build with AI`}
-              size='md'
               onClick={() => onProceed('ai')}
             />
             <Button

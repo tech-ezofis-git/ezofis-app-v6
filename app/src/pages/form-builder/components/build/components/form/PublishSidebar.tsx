@@ -77,7 +77,7 @@ const PublishSidebar = () => {
   return (
     <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-2 bg-surface-primary font-inter shadow-2xl duration-500'>
       {/* Header */}
-      <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3 bg-white'>
+      <div className='flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
         <div className='flex items-center gap-2.5'>
           <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
             <Icon height={16} name='tabler:rocket' width={16} />

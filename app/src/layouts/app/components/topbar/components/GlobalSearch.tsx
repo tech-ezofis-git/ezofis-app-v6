@@ -184,9 +184,9 @@ const GlobalSearch = () => {
       if (requestId !== requestIdRef.current) return
       // Keep already-loaded app hits alongside API results.
       setResults(
-        ENABLE_LOCAL_CACHE 
+        ENABLE_LOCAL_CACHE
           ? mergeSearchHits(hits, searchLocalAppData(trimmed))
-          : hits
+          : hits,
       )
       setResultsSource('api')
       lastApiQueryRef.current = trimmed
@@ -237,7 +237,7 @@ const GlobalSearch = () => {
     const searchText = query.trim()
     if (!searchText) return
 
-    void navigate({ to: '/search', search: { q: searchText } })
+    void navigate({ search: { q: searchText }, to: '/search' })
     closeSearch()
   }
 
@@ -247,9 +247,7 @@ const GlobalSearch = () => {
         ? hit.id.repositoryId
         : undefined
     const rawItemId =
-      typeof hit.id === 'object' && hit.id !== null
-        ? hit.id.itemId
-        : undefined
+      typeof hit.id === 'object' && hit.id !== null ? hit.id.itemId : undefined
     const formId =
       typeof hit.id === 'object' && hit.id !== null
         ? String(hit.id.formId || hit.id.masterFormId || '').trim()
@@ -330,8 +328,9 @@ const GlobalSearch = () => {
       'Repository'
 
     setPending({
-      fileSearch: isFolder ? undefined : title,
+      fileSearch: undefined,
       filters: {},
+      itemName: itemId ? title : undefined,
       openItemId: itemId || undefined,
       repositoryId: repositoryId || undefined,
       repositoryLabel,
@@ -341,6 +340,7 @@ const GlobalSearch = () => {
       search: {
         ...(repositoryId ? { repositoryId } : {}),
         ...(itemId ? { itemId } : {}),
+        ...(itemId && title ? { itemName: title } : {}),
       },
       to: '/folders',
     })
@@ -393,8 +393,8 @@ const GlobalSearch = () => {
             }}
           />
           <button
-            type='button'
             aria-label={t`Search`}
+            type='button'
             className={cn(
               'grid size-7 shrink-0 place-items-center rounded-md transition-colors',
               'text-gray-11 hover:bg-gray-4 hover:text-gray-13',
@@ -628,13 +628,15 @@ const GlobalSearch = () => {
                                   })}
                                 </div>
                                 {hit?.matchSource && (
-                                  <div className="mt-2 flex items-center gap-2">
-                                    <div className="size-[5px] shrink-0 rounded-full bg-[#00bcd4]" />
+                                  <div className='mt-2 flex items-center gap-2'>
+                                    <div className='size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
 
-                                    <div className="line-clamp-1 text-[12.5px] text-slate-500 hover:line-clamp-none">
-                                      <span className="font-medium text-gray-11">{query}</span>
-                                      {" "}Matched in{" "}
-                                      <span className="font-semibold text-primary-9">
+                                    <div className='text-slate-500 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                                      <span className='font-medium text-gray-11'>
+                                        {query}
+                                      </span>{' '}
+                                      Matched in{' '}
+                                      <span className='font-semibold text-primary-9'>
                                         {hit.matchSource}
                                       </span>
                                     </div>
@@ -644,9 +646,9 @@ const GlobalSearch = () => {
                                 {hit.found && hit.found.length > 0 && (
                                   <div className='flex flex-col gap-1.5'>
                                     <div className='flex items-start gap-2'>
-                                      <div className='bg-[#00bcd4] mt-[7px] size-[5px] shrink-0 rounded-full' />
+                                      <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
                                       <div
-                                        className='line-clamp-1 text-[12.5px] leading-relaxed text-slate-600 hover:line-clamp-none'
+                                        className='text-slate-600 line-clamp-1 text-[12.5px] leading-relaxed hover:line-clamp-none'
                                         dangerouslySetInnerHTML={{
                                           __html: foundLine(
                                             hit.found[0],

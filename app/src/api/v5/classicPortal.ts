@@ -27,12 +27,6 @@ const asErrorMessage = (data: unknown, fallback: string) => {
   return fallback
 }
 
-export type ClassicPortalInfo = {
-  description: string
-  name: string
-  settings: Record<string, unknown>
-}
-
 export type ClassicPortalAuthPayload = {
   email: string
   emailColumn?: string | string[]
@@ -45,6 +39,12 @@ export type ClassicPortalAuthPayload = {
   portalId: string
   socialLogin?: boolean
   tenantId: string
+}
+
+export type ClassicPortalInfo = {
+  description: string
+  name: string
+  settings: Record<string, unknown>
 }
 
 export type ClassicPortalResult = {
@@ -116,9 +116,13 @@ const postPortalAuth = async (
   }
 
   try {
-    const { data, status } = await getClient().post(url, JSON.stringify(payload), {
-      headers: { Token: `tenantId ${payload.tenantId}` },
-    })
+    const { data, status } = await getClient().post(
+      url,
+      JSON.stringify(payload),
+      {
+        headers: { Token: `tenantId ${payload.tenantId}` },
+      },
+    )
     response.status = status
 
     if (data === 'Invalid OTP') {
@@ -135,8 +139,8 @@ const postPortalAuth = async (
     if (status === 200) {
       const shouldHaveIdentity = Boolean(
         payload.otp ||
-          (payload.password && payload.password.length > 0) ||
-          payload.socialLogin,
+        (payload.password && payload.password.length > 0) ||
+        payload.socialLogin,
       )
       if (shouldHaveIdentity) {
         const identity = decodeBase64Json(data)

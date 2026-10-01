@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
-import {
-  clearAskAiFolderExplorerQuery,
-} from '@/pages/folders/utils/folderExplorerSession'
 import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -11,6 +8,7 @@ import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
 import BrandingSync from '@/lib/branding/BrandingSync'
 import { resolveSignInPath } from '@/lib/branding/session'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { clearAskAiFolderExplorerQuery } from '@/pages/folders/utils/folderExplorerSession'
 import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
 import useGeoStore from '@/stores/useGeoStore'

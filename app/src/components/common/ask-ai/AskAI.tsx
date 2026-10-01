@@ -1,9 +1,11 @@
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
   ArrowRight,
   BadgeHelp,
   BarChart3,
   Bolt,
+  Bot,
   Building2,
   Calendar,
   ChartLine,
@@ -30,17 +32,13 @@ import {
   Plus,
   ScanLine,
   Send,
-  Bot,
   Store,
   Table2,
   Trash2,
   Workflow,
   X,
 } from 'lucide-react'
-import useGeoStore from '@/stores/useGeoStore'
 import { AnimatePresence, motion } from 'motion/react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
-import { WorkflowChatPage } from '@/pages/workflow-chat/WorkflowChatPage'
 import {
   type CSSProperties,
   type ReactElement,
@@ -50,9 +48,21 @@ import {
   useRef,
   useState,
 } from 'react'
-import Tooltip from '@/components/base/Tooltip'
-import AiBrandIcon from '../AiBrandIcon'
+import type { WorkflowHistoryData } from '@/pages/workflow-chat/WorkflowChatPage'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
+import { WorkflowChatPage } from '@/pages/workflow-chat/WorkflowChatPage'
+import authUserStore from '@/stores/authUserStore'
+import useGeoStore from '@/stores/useGeoStore'
+import type {
+  AskAiActionContext,
+  AskAiAnswer,
+  AskAiBrowseRequest,
+  AskAiCard,
+  AskAiCtaMode,
+  AskAiTextBlock as TextBlock,
+} from './types'
+import AiBrandIcon from '../AiBrandIcon'
 import {
   browseFilterByToUiFiltersAndSearch,
   hasBrowsableAction,
@@ -61,26 +71,16 @@ import {
 } from './chatbotApi'
 import useAskAiActionStore from './stores/useAskAiActionStore'
 import useAskAIStore from './stores/useAskAIStore'
-import authUserStore from '@/stores/authUserStore'
-import type {
-  AskAiAnswer,
-  AskAiActionContext,
-  AskAiBrowseRequest,
-  AskAiCard,
-  AskAiCtaMode,
-  AskAiTextBlock as TextBlock,
-} from './types'
-import type { WorkflowHistoryData } from '@/pages/workflow-chat/WorkflowChatPage'
 
 type HistoryItem = {
   createdAt: string
   creditsRemaining: number
   creditsUsed: number
   id: string
+  isWorkflow?: boolean
   messages: Message[]
   subtitle: string
   title: string
-  isWorkflow?: boolean
   workflowState?: WorkflowHistoryData
 }
 
@@ -138,72 +138,11 @@ const paragraphTextFromBlocks = (blocks: TextBlock[]) =>
     .map((b) => b.text)
     .join('\n')
 
-function resolveCtaMode(
-  answer: AskAiAnswer,
-  pathname: string,
-  currentSpecificId: string,
-): AskAiCtaMode | null {
-  if (!hasBrowsableAction(answer)) return null
-
-  const target = String(answer.actionTo || '').toLowerCase()
-  const browse = answer.action?.browse_request
-  const { filters } = browseFilterByToUiFiltersAndSearch(
-    browse?.filterBy,
-    browse?.contentSearchValue,
-  )
-  if (!Object.keys(filters).length && target !== 'repository' && target !== 'workflow') {
-    return null
-  }
-
-  if (target === 'repository') {
-    const repoId = String(
-      answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
-    ).trim()
-    const onFolders = pathname.startsWith('/folders')
-    const sameRepo =
-      onFolders &&
-      repoId &&
-      currentSpecificId &&
-      String(currentSpecificId).toLowerCase() === repoId.toLowerCase()
-    return sameRepo ? 'apply' : 'navigate'
-  }
-
-  if (target === 'workflow') {
-    const onWorkflows = pathname.startsWith('/workflows')
-    return onWorkflows ? 'apply' : 'navigate'
-  }
-
-  return null
-}
-
 async function fetchAskAIAnswer(
   question: string,
   pageContext: { actionFrom: string; specificId: string },
 ): Promise<AskAiAnswer> {
   return postChatbotMessage(question, pageContext)
-}
-
-function pickCardIdValue(
-  id: AskAiCard['id'],
-  ...keys: string[]
-): string {
-  if (!id || typeof id !== 'object' || Array.isArray(id)) return ''
-  for (const key of keys) {
-    const value = (id as Record<string, unknown>)[key]
-    if (value == null || value === '' || value === 0 || value === '0') continue
-    const text = String(value).trim()
-    if (text) return text
-  }
-  return ''
-}
-
-function getCardTypeLabel(type?: string) {
-  const normalized = String(type || '')
-    .trim()
-    .toLowerCase()
-  if (normalized === 'ticket' || normalized === 'request') return 'Request'
-  if (!normalized) return ''
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
 }
 
 function getCardBodyText(card: AskAiCard) {
@@ -224,6 +163,15 @@ function getCardBodyText(card: AskAiCard) {
   }
 
   return description
+}
+
+function getCardTypeLabel(type?: string) {
+  const normalized = String(type || '')
+    .trim()
+    .toLowerCase()
+  if (normalized === 'ticket' || normalized === 'request') return 'Request'
+  if (!normalized) return ''
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
 }
 
 function isCardNavigable(card: AskAiCard) {
@@ -248,6 +196,58 @@ function isCardNavigable(card: AskAiCard) {
   return false
 }
 
+function pickCardIdValue(id: AskAiCard['id'], ...keys: string[]): string {
+  if (!id || typeof id !== 'object' || Array.isArray(id)) return ''
+  for (const key of keys) {
+    const value = (id as Record<string, unknown>)[key]
+    if (value == null || value === '' || value === 0 || value === '0') continue
+    const text = String(value).trim()
+    if (text) return text
+  }
+  return ''
+}
+
+function resolveCtaMode(
+  answer: AskAiAnswer,
+  pathname: string,
+  currentSpecificId: string,
+): AskAiCtaMode | null {
+  if (!hasBrowsableAction(answer)) return null
+
+  const target = String(answer.actionTo || '').toLowerCase()
+  const browse = answer.action?.browse_request
+  const { filters } = browseFilterByToUiFiltersAndSearch(
+    browse?.filterBy,
+    browse?.contentSearchValue,
+  )
+  if (
+    !Object.keys(filters).length &&
+    target !== 'repository' &&
+    target !== 'workflow'
+  ) {
+    return null
+  }
+
+  if (target === 'repository') {
+    const repoId = String(
+      answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
+    ).trim()
+    const onFolders = pathname.startsWith('/folders')
+    const sameRepo =
+      onFolders &&
+      repoId &&
+      currentSpecificId &&
+      String(currentSpecificId).toLowerCase() === repoId.toLowerCase()
+    return sameRepo ? 'apply' : 'navigate'
+  }
+
+  if (target === 'workflow') {
+    const onWorkflows = pathname.startsWith('/workflows')
+    return onWorkflows ? 'apply' : 'navigate'
+  }
+
+  return null
+}
 
 const iconMap: Record<string, LucideIconType> = {
   add: Plus,
@@ -381,7 +381,11 @@ const uid = () =>
     ? crypto.randomUUID()
     : String(Date.now() + Math.random())
 
-const SparkIconLoading = ({ className = 'size-[18px]' }: { className?: string }) => (
+const SparkIconLoading = ({
+  className = 'size-[18px]',
+}: {
+  className?: string
+}) => (
   <motion.div
     className='inline-flex text-[var(--primary-9)]'
     transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
@@ -551,8 +555,12 @@ const AskAI = () => {
   const [busy, setBusy] = useState(false)
   const [credits, setCredits] = useState(15)
   const [isWorkflowMode, setIsWorkflowMode] = useState(false)
-  const [initialWorkflowAction, setInitialWorkflowAction] = useState<string | undefined>()
-  const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<WorkflowHistoryData | undefined>()
+  const [initialWorkflowAction, setInitialWorkflowAction] = useState<
+    string | undefined
+  >()
+  const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<
+    WorkflowHistoryData | undefined
+  >()
   /** Keep shell mounted after first open so chat state survives close/reopen. */
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -670,8 +678,11 @@ const AskAI = () => {
     setIsWorkflowMode(true)
 
     // Find the last assistant message or user message for subtitle
-    const lastMsg = [...workflowState.messages].reverse().find(m => m.textContent || m.htmlContent)
-    let subtitleText = lastMsg?.textContent || lastMsg?.htmlContent || 'Workflow Assistant'
+    const lastMsg = [...workflowState.messages]
+      .reverse()
+      .find((m) => m.textContent || m.htmlContent)
+    let subtitleText =
+      lastMsg?.textContent || lastMsg?.htmlContent || 'Workflow Assistant'
     // clean up html tags for subtitle if needed
     subtitleText = subtitleText.replace(/<[^>]*>?/gm, '').substring(0, 80)
 
@@ -682,11 +693,14 @@ const AskAI = () => {
         creditsRemaining: existing?.creditsRemaining || 15,
         creditsUsed: existing?.creditsUsed || 0,
         id: sessionId,
+        isWorkflow: true,
         messages: [],
         subtitle: subtitleText,
-        title: existing?.title || workflowState.activeWorkflow?.name || 'Workflow Chat',
-        isWorkflow: true,
-        workflowState
+        title:
+          existing?.title ||
+          workflowState.activeWorkflow?.name ||
+          'Workflow Chat',
+        workflowState,
       }
 
       const withoutCurrent = prev.filter((item) => item.id !== sessionId)
@@ -809,7 +823,12 @@ const AskAI = () => {
     })
   }
 
-  const openResultGroup = (groupType: string, groupId: string, groupName: string, msg: Message) => {
+  const openResultGroup = (
+    groupType: string,
+    groupId: string,
+    groupName: string,
+    msg: Message,
+  ) => {
     if (isMaximized) toggleMaximize(pathname)
 
     const type = groupType.toLowerCase()
@@ -871,7 +890,10 @@ const AskAI = () => {
     if (credits <= 0) return
 
     const lowerText = text.toLowerCase()
-    if (lowerText === 'initiate workflow' || lowerText === 'show my pending requests') {
+    if (
+      lowerText === 'initiate workflow' ||
+      lowerText === 'show my pending requests'
+    ) {
       setInitialWorkflowAction(text)
       setIsWorkflowMode(true)
       setInput('')
@@ -911,7 +933,8 @@ const AskAI = () => {
         'I found matching documents based on your search.'
 
       if (isSearchDocuments && blocks.length === 0) {
-        replyText = 'What document, folder, or keyword would you like to search for?'
+        replyText =
+          'What document, folder, or keyword would you like to search for?'
       }
 
       const ctaMode = resolveCtaMode(
@@ -991,13 +1014,14 @@ const AskAI = () => {
         <motion.aside
           animate={{ opacity: isOpen ? 1 : 0, x: isOpen ? 0 : 28 }}
           aria-hidden={!isOpen}
-          className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${isMaximized
-            ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
-            : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
-            } ${isOpen ? '' : 'pointer-events-none invisible'}`}
           initial={false}
           style={shellStyle}
           transition={{ duration: 0.18, ease: 'easeOut' }}
+          className={`fixed right-0 bottom-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${
+            isMaximized
+              ? 'top-[56px] left-0 w-auto max-w-none border-l border-[var(--border)] xl:left-[56px]'
+              : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
+          } ${isOpen ? '' : 'pointer-events-none invisible'}`}
         >
           <div className='flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-4 pt-3.5 pb-3'>
             {view === 'history' ? (
@@ -1016,7 +1040,10 @@ const AskAI = () => {
                 {busy ? (
                   <SparkIconLoading className='size-[18px]' />
                 ) : (
-                  <AiBrandIcon className='size-[18px]' variant='outline-purple' />
+                  <AiBrandIcon
+                    className='size-[18px]'
+                    variant='outline-purple'
+                  />
                 )}
               </div>
             )}
@@ -1055,7 +1082,7 @@ const AskAI = () => {
             {view === 'history' ? null : (
               <>
                 <HeaderIconButton
-                  disabled={(!hasMessages && !busy) && !isWorkflowMode}
+                  disabled={!hasMessages && !busy && !isWorkflowMode}
                   title='New chat'
                   onClick={clearChat}
                 >
@@ -1095,10 +1122,10 @@ const AskAI = () => {
           ) : isWorkflowMode ? (
             <div className='flex min-h-0 flex-1 flex-col'>
               <WorkflowChatPage
-                embedded
-                initialState={currentWorkflowHistoryData}
                 initialAction={initialWorkflowAction}
+                initialState={currentWorkflowHistoryData}
                 isExpanded={isMaximized}
+                embedded
                 onSaveHistory={saveWorkflowHistory}
               />
             </div>
@@ -1115,11 +1142,15 @@ const AskAI = () => {
                         msg={msg}
                         onActionClick={() => applyAnswerAction(msg)}
                         onCardClick={openResultCard}
-                        onGroupClick={(type, id, name) => openResultGroup(type, id, name, msg)}
+                        onGroupClick={(type, id, name) =>
+                          openResultGroup(type, id, name, msg)
+                        }
                         onRepoSelect={(name) => sendMessage(name)}
                         onTypingComplete={() => finishTyping(msg.id)}
                         onTypingProgress={() =>
-                          bottomRef.current?.scrollIntoView({ behavior: 'auto' })
+                          bottomRef.current?.scrollIntoView({
+                            behavior: 'auto',
+                          })
                         }
                       />
                     ))}
@@ -1203,7 +1234,7 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
             <span className='text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
               {item.label}
             </span>
-            <span className='text-[12px] font-normal leading-normal text-[var(--text2)]'>
+            <span className='text-[12px] leading-normal font-normal text-[var(--text2)]'>
               {item.description}
             </span>
           </div>
@@ -1256,9 +1287,13 @@ const HistoryView = ({
           >
             <div className='mb-1 flex items-center gap-2'>
               <UiIcon
-                className={item.isWorkflow ? 'text-[var(--primary-main)]' : 'text-[var(--purple)]'}
                 name={item.isWorkflow ? 'bot' : 'history'}
                 size={15}
+                className={
+                  item.isWorkflow
+                    ? 'text-[var(--primary-main)]'
+                    : 'text-[var(--purple)]'
+                }
               />
               <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--text1)]'>
                 {item.title}
@@ -1328,7 +1363,9 @@ const ChatMessage = ({
   const paragraphs = msg.text.split('\n').filter(Boolean)
   const showExtras = Boolean(msg.revealExtras)
   const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
-  const hasCards = blocks.some((b) => b.type === 'card' || (b.type === 'cards' && b.items?.length))
+  const hasCards = blocks.some(
+    (b) => b.type === 'card' || (b.type === 'cards' && b.items?.length),
+  )
 
   return (
     <motion.div
@@ -1397,7 +1434,7 @@ const AnswerCardGroup = ({
 }: {
   actionLabel: string
   canApply: boolean
-  group: { name: string; type: string; id: string; cards: AskAiCard[] }
+  group: { cards: AskAiCard[]; id: string; name: string; type: string }
   isApply: boolean
   onCardClick?: (card: AskAiCard) => void
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
@@ -1415,12 +1452,13 @@ const AnswerCardGroup = ({
         : 'folder'
 
   return (
-    <div className='overflow-hidden bg-[var(--bg)] rounded-xl border border-[var(--border)] transition-colors'>
+    <div className='overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] transition-colors'>
       <div
-        className={`group flex w-full cursor-pointer items-center justify-between px-4 py-4 focus-visible:outline-none ${isExpanded ? 'border-b border-[var(--border)]' : ''
-          }`}
         role='button'
         tabIndex={0}
+        className={`group flex w-full cursor-pointer items-center justify-between px-4 py-4 focus-visible:outline-none ${
+          isExpanded ? 'border-b border-[var(--border)]' : ''
+        }`}
         onClick={() => setIsExpanded(!isExpanded)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -1430,14 +1468,17 @@ const AnswerCardGroup = ({
         }}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2 pr-2'>
-          <UiIcon className='shrink-0 text-[var(--purple)]' name={iconName} size={15} />
-          <span className='truncate group-hover:whitespace-normal text-[11.5px] font-bold tracking-[.4px] text-[var(--text1)] uppercase'>
+          <UiIcon
+            className='shrink-0 text-[var(--purple)]'
+            name={iconName}
+            size={15}
+          />
+          <span className='truncate text-[11.5px] font-bold tracking-[.4px] text-[var(--text1)] uppercase group-hover:whitespace-normal'>
             {group.name} ({group.cards?.length || 0})
           </span>
         </div>
 
         <div className='flex shrink-0 items-center gap-2'>
-
           {canApply && !isRestricted && (
             <Tooltip content={actionLabel} position='top'>
               <button
@@ -1457,8 +1498,9 @@ const AnswerCardGroup = ({
             </Tooltip>
           )}
           <ChevronDown
-            className={`size-4 text-[var(--text2)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
-              }`}
+            className={`size-4 text-[var(--text2)] transition-transform duration-200 ${
+              isExpanded ? 'rotate-180' : ''
+            }`}
           />
         </div>
       </div>
@@ -1466,7 +1508,7 @@ const AnswerCardGroup = ({
       {isExpanded && (
         <div className='flex flex-col divide-y divide-[var(--border)]'>
           {group.cards.slice(0, limit).map((card, index) => (
-            <div className='bg-[var(--bg)] mr-2 ml-2 mt-2 mb-2 shadow-md rounded-lg border border-[var(--border)]'>
+            <div className='mt-2 mr-2 mb-2 ml-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] shadow-md'>
               <AnswerCard
                 card={card}
                 key={`${card.title || 'card'}-${index}`}
@@ -1542,18 +1584,25 @@ const AnswerBlock = ({
         <div className='flex flex-col divide-y divide-[var(--border)]'>
           {items.map((item, index) => (
             <button
-              className='group flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-[var(--purple-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--purple)]'
+              className='group flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-[var(--purple-light)] focus-visible:ring-2 focus-visible:ring-[var(--purple)] focus-visible:outline-none focus-visible:ring-inset'
               key={`${item.repositoryId}-${index}`}
               type='button'
               onClick={() => onRepoSelect?.(item.name)}
             >
               <div className='flex items-center gap-2 pr-2'>
-                <UiIcon className='shrink-0 text-[var(--purple)]' name='folder' size={15} />
+                <UiIcon
+                  className='shrink-0 text-[var(--purple)]'
+                  name='folder'
+                  size={15}
+                />
                 <span className='truncate text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
                   {item.name}
                 </span>
               </div>
-              <ExternalLink className='size-3.5 shrink-0 text-[var(--text3)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:text-[var(--purple)] group-hover:opacity-100' strokeWidth={2} />
+              <ExternalLink
+                className='size-3.5 shrink-0 text-[var(--text3)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:text-[var(--purple)] group-hover:opacity-100'
+                strokeWidth={2}
+              />
             </button>
           ))}
         </div>
@@ -1602,7 +1651,7 @@ const AnswerBlock = ({
               className='inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] text-[var(--text1)]'
               key={`${item.label}-${item.value}-${index}`}
             >
-              <span className='shrink-0 whitespace-nowrap font-medium text-[var(--text2)]'>
+              <span className='shrink-0 font-medium whitespace-nowrap text-[var(--text2)]'>
                 {item.label}
               </span>
               <span className='shrink-0 text-[var(--text3)]'>:</span>
@@ -1619,7 +1668,10 @@ const AnswerBlock = ({
               {actionLabel}
             </div>
             {isApply ? (
-              <Filter className='size-4 shrink-0 text-[var(--purple)]' strokeWidth={2} />
+              <Filter
+                className='size-4 shrink-0 text-[var(--purple)]'
+                strokeWidth={2}
+              />
             ) : (
               <ExternalLink
                 className='size-4 shrink-0 text-[var(--purple)]'
@@ -1634,7 +1686,7 @@ const AnswerBlock = ({
     if (isClickable) {
       return (
         <button
-          className='group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)]'
+          className='group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] focus-visible:outline-none'
           type='button'
           onClick={onActionClick}
         >
@@ -1658,10 +1710,15 @@ const AnswerBlock = ({
     const cards = block.items ?? []
     if (!cards.length) return null
 
-    const groups = new Map<string, { name: string; type: string; id: string; cards: AskAiCard[] }>()
+    const groups = new Map<
+      string,
+      { cards: AskAiCard[]; id: string; name: string; type: string }
+    >()
 
     cards.forEach((card) => {
-      const type = String(card.type || '').trim().toLowerCase()
+      const type = String(card.type || '')
+        .trim()
+        .toLowerCase()
       const formId = pickCardIdValue(card.id, 'formId', 'masterFormId')
       const workflowId = pickCardIdValue(card.id, 'workflowId')
       const repoId = pickCardIdValue(card.id, 'repositoryId', 'repoId')
@@ -1685,7 +1742,7 @@ const AnswerBlock = ({
 
       const key = `${type}-${gId}`
       if (!groups.has(key)) {
-        groups.set(key, { name: gName, type, id: gId, cards: [] })
+        groups.set(key, { cards: [], id: gId, name: gName, type })
       }
       groups.get(key)!.cards.push(card)
     })
@@ -1694,13 +1751,19 @@ const AnswerBlock = ({
     const actionLabel = isApply ? 'Apply filter' : 'View all'
 
     return (
-      <div className=' flex flex-col'>
+      <div className='flex flex-col'>
         {block.title && (
           <div className='mb-2.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
             {block.title}
           </div>
         )}
-        <div className={isMaximized ? 'grid grid-cols-1 md:grid-cols-3 gap-2.5 items-start' : 'flex flex-col gap-2.5'}>
+        <div
+          className={
+            isMaximized
+              ? 'grid grid-cols-1 items-start gap-2.5 md:grid-cols-3'
+              : 'flex flex-col gap-2.5'
+          }
+        >
           {Array.from(groups.values()).map((group) => {
             const hasMultiple = group.cards.length > 1
             const canApply = hasMultiple && Boolean(onGroupClick)
@@ -1745,18 +1808,19 @@ const AnswerCard = ({
   const content = (
     <>
       <div
-        className={`px-3 ${nested && (fields.length > 0 || truncatedDescription)
-          ? 'pt-3 pb-1'
-          : 'py-2.5'
-          } ${nested ? '' : 'border-b border-[var(--border)]'}`}
+        className={`px-3 ${
+          nested && (fields.length > 0 || truncatedDescription)
+            ? 'pt-3 pb-1'
+            : 'py-2.5'
+        } ${nested ? '' : 'border-b border-[var(--border)]'}`}
       >
         <div className='flex items-start justify-between gap-2'>
           <div className='flex min-w-0 flex-1 flex-col'>
-            <div className='truncate group-hover:whitespace-normal text-[13.5px] font-semibold text-[var(--text1)]'>
+            <div className='truncate text-[13.5px] font-semibold text-[var(--text1)] group-hover:whitespace-normal'>
               {card.title}
             </div>
             {card.subtitle && (
-              <div className='mt-0.5 truncate group-hover:whitespace-normal text-[11.5px] leading-snug text-[var(--text3)]'>
+              <div className='mt-0.5 truncate text-[11.5px] leading-snug text-[var(--text3)] group-hover:whitespace-normal'>
                 {card.subtitle}
               </div>
             )}
@@ -1777,11 +1841,13 @@ const AnswerCard = ({
           {fields.map((field, index) => (
             <div
               key={`${field.label}-${index}`}
-              className={`border-b border-[var(--border)] px-3 py-2 ${index % 2 === 0 ? 'border-r' : ''
-                } ${fields.length % 2 === 1 && index === fields.length - 1
+              className={`border-b border-[var(--border)] px-3 py-2 ${
+                index % 2 === 0 ? 'border-r' : ''
+              } ${
+                fields.length % 2 === 1 && index === fields.length - 1
                   ? 'col-span-2 border-r-0'
                   : ''
-                }`}
+              }`}
             >
               <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
                 {field.label}
@@ -1794,8 +1860,9 @@ const AnswerCard = ({
         </div>
       ) : truncatedDescription ? (
         <div
-          className={`px-3 text-xs leading-relaxed text-[var(--text2)] ${nested ? 'pb-3' : 'py-2.5'
-            }`}
+          className={`px-3 text-xs leading-relaxed text-[var(--text2)] ${
+            nested ? 'pb-3' : 'py-2.5'
+          }`}
         >
           {truncatedDescription}
         </div>
@@ -1806,12 +1873,12 @@ const AnswerCard = ({
   if (clickable) {
     return (
       <button
+        type='button'
         className={
           nested
-            ? 'group flex w-full flex-col text-left transition  focus-visible:outline-none'
-            : 'group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] active:scale-[0.995]'
+            ? 'group flex w-full flex-col text-left transition focus-visible:outline-none'
+            : 'group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] focus-visible:outline-none active:scale-[0.995]'
         }
-        type='button'
         onClick={() => onCardClick?.(card)}
       >
         {content}

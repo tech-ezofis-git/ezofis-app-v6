@@ -4,8 +4,8 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
-import TableFieldInput from '../components/Upload/TableFieldInput'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
+import TableFieldInput from '../components/Upload/TableFieldInput'
 
 export type SelectOption = {
   description?: string
@@ -214,9 +214,9 @@ export function renderMetadataFieldControl(
         (o) =>
           String(o.value ?? '').toLowerCase() ===
             String(selectedOption.value ?? '').toLowerCase() ||
-          String(o.name).toLowerCase() ===
-            selectedOption.name.toLowerCase() ||
-          String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+          String(o.name).toLowerCase() === selectedOption.name.toLowerCase() ||
+          String(o.id).toLowerCase() ===
+            String(selectedOption.id).toLowerCase(),
       )
         ? [...options, selectedOption]
         : options
@@ -225,9 +225,9 @@ export function renderMetadataFieldControl(
       <InputSelect
         label={label}
         options={effectiveOptions}
-        searchable
-        creatable
         value={selectedOption}
+        creatable
+        searchable
         onChange={(selected: SelectOption | null) =>
           updateFieldValue(
             field.key,

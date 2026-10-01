@@ -1,5 +1,5 @@
-import showToast from '@/components/base/toast/showToast'
 import type { ToastVariant } from '@/components/base/toast/types'
+import showToast from '@/components/base/toast/showToast'
 
 type ToastInput = {
   message: string

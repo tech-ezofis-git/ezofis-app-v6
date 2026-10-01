@@ -7,7 +7,9 @@ interface Props {
 }
 
 const FormStatusBadge = ({ status }: Props) => {
-  const normalized = String(status || '').trim().toUpperCase()
+  const normalized = String(status || '')
+    .trim()
+    .toUpperCase()
 
   const { className, label } = useMemo(() => {
     if (normalized === 'PUBLISHED' || normalized === '1' || status === 1) {

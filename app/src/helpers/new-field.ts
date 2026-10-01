@@ -139,8 +139,12 @@ export const getField = (fieldType: string) => {
       break
     case 'CONSENT':
     case 'LEGAL':
-      baseField.label = fieldType.toUpperCase() === 'LEGAL' ? 'Legal Declaration' : 'Consent'
-      s.customOptions = fieldType.toUpperCase() === 'LEGAL' ? "I Accept,I don't Accept" : 'I agree to the terms and conditions'
+      baseField.label =
+        fieldType.toUpperCase() === 'LEGAL' ? 'Legal Declaration' : 'Consent'
+      s.customOptions =
+        fieldType.toUpperCase() === 'LEGAL'
+          ? "I Accept,I don't Accept"
+          : 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
       s.optionsPerLine = 1
       break

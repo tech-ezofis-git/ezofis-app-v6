@@ -1,5 +1,5 @@
-import React from 'react'
 import { useLingui } from '@lingui/react/macro'
+import React from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
 

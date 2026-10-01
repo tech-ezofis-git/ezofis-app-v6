@@ -56,7 +56,11 @@ const ProviderSettings = () => {
     AnimateFadeIn,
   ]
 
-  const requestSwitch = (nextValue: string, nextName: string, apply: () => void) => {
+  const requestSwitch = (
+    nextValue: string,
+    nextName: string,
+    apply: () => void,
+  ) => {
     if (emailSettings.provider === nextValue) return
 
     const needsConfirm =
@@ -75,9 +79,9 @@ const ProviderSettings = () => {
   return (
     <div className='space-y-6'>
       <SwitchIntegrationConfirm
-        opened={Boolean(pendingSwitch)}
         currentName={getProviderLabel(emailSettings.provider)}
         nextName={pendingSwitch?.name}
+        opened={Boolean(pendingSwitch)}
         onCancel={() => setPendingSwitch(null)}
         onConfirm={() => {
           pendingSwitch?.apply()
@@ -96,14 +100,14 @@ const ProviderSettings = () => {
         <AnimateSlideUp delay={0.15}>
           <BrandCard
             checked={emailSettings.provider === directUploadItem.value}
-            connected={
-              emailSettings.provider === directUploadItem.value &&
-              emailSettings.isConnected
-            }
             description={directUploadItem.description}
             icon={directUploadItem.icon}
             name={directUploadItem.name}
             value={directUploadItem.value}
+            connected={
+              emailSettings.provider === directUploadItem.value &&
+              emailSettings.isConnected
+            }
             onClick={() =>
               requestSwitch(directUploadItem.value, 'Direct Upload', () => {
                 const current = setupStore.getState().emailSettings
@@ -140,6 +144,9 @@ const ProviderSettings = () => {
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
                   checked={emailSettings.provider === item.value}
+                  icon={item.icon}
+                  name={item.name}
+                  value={item.value}
                   connected={
                     emailSettings.provider === item.value &&
                     emailSettings.isConnected
@@ -152,9 +159,6 @@ const ProviderSettings = () => {
                         'Connected'
                       : item.description
                   }
-                  icon={item.icon}
-                  name={item.name}
-                  value={item.value}
                   onClick={() =>
                     requestSwitch(item.value, item.name, () => {
                       const current = setupStore.getState().emailSettings

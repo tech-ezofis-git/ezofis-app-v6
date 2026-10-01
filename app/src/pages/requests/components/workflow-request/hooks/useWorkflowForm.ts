@@ -16,18 +16,11 @@ import {
   buildRepoFieldHints,
   buildRepoMetadata,
   extractOcrText,
+  getDependentChildFieldIds,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
   mapOcrFieldsToModel,
 } from '../utils/fieldRendering'
-
-interface FormRecord {
-  description?: string
-  formJson?: { panels?: any[] }
-  layout?: string
-  name?: string
-  type?: string
-}
 
 // Resolves a workflow's form (via its formId) and drives the fill-and-submit
 // lifecycle for creating a new request against it, per the "Normal
@@ -44,13 +37,24 @@ interface FormRecord {
 //     otherwise uploadWithOcr each pending file (this is what actually
 //     stages it) to get the real fileId used in `stagedFiles`.
 export interface UseWorkflowFormOptions {
-  viewerRepositoryId?: string
-  viewerItemId?: string
-  isRaiseTicket?: boolean
   fileName?: string
+  isRaiseTicket?: boolean
+  viewerItemId?: string
+  viewerRepositoryId?: string
 }
 
-export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions) => {
+interface FormRecord {
+  description?: string
+  formJson?: { panels?: any[] }
+  layout?: string
+  name?: string
+  type?: string
+}
+
+export const useWorkflowForm = (
+  workflow: any,
+  options?: UseWorkflowFormOptions,
+) => {
   const [form, setForm] = useState<FormRecord | null>(null)
   const [isLoadingForm, setIsLoadingForm] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -234,6 +238,10 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
       if (descriptor) {
         next[descriptor.fieldId] = value
         if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
+      }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
       }
       return applyCalculatedFields(panels, next)
     })
@@ -576,20 +584,24 @@ export const useWorkflowForm = (workflow: any, options?: UseWorkflowFormOptions)
       stagedAttachmentFiles,
       context,
     )
-    
+
     let resData, resError
-    
-    if (options?.isRaiseTicket && options.viewerRepositoryId && options.viewerItemId) {
+
+    if (
+      options?.isRaiseTicket &&
+      options.viewerRepositoryId &&
+      options.viewerItemId
+    ) {
       const { data, error } = await workflowsApiV6.raiseTicket(
         String(workflow.id),
         {
-          repositoryId: options.viewerRepositoryId,
-          itemId: options.viewerItemId,
-          formData: payload.formData,
-          fileName: options.fileName,
           context: context || null,
           envType: null,
-        }
+          fileName: options.fileName,
+          formData: payload.formData,
+          itemId: options.viewerItemId,
+          repositoryId: options.viewerRepositoryId,
+        },
       )
       resData = data
       resError = error

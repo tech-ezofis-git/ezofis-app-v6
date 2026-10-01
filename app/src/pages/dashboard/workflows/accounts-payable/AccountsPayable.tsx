@@ -1,8 +1,7 @@
 import { AnimatePresence } from 'motion/react'
+import Overview from './components/Overview'
 import Steps from './components/setup/components/Steps'
 import setupStore from './stores/useSetupStore'
-
-import Overview from './components/Overview'
 
 const AccountsPayable = () => {
   const isSetupStarted = setupStore((state) => state.isSetupStarted)

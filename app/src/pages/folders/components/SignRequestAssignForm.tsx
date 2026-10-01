@@ -1,36 +1,44 @@
-import { useEffect, useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { Loader2, Plus, Send, Trash2, UserPlus, UserRound, X } from 'lucide-react'
-import type { Option } from '@/types/option'
-import { getUsers } from '@/api/v6/user'
+import {
+  Loader2,
+  Plus,
+  Send,
+  Trash2,
+  UserPlus,
+  UserRound,
+  X,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import type {
   CreateSignRequestPayload,
   SignRequestDto,
   SignRequestSigningMode,
 } from '@/api/v6/folder/signRequest'
+import type { Option } from '@/types/option'
 import {
   createSignRequest,
   listItemSignRequests,
 } from '@/api/v6/folder/signRequest'
-import Modal from '@/components/base/Modal'
+import { getUsers } from '@/api/v6/user'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSegmentedControl from '@/components/base/inputs/InputSegmentedControl'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import Modal from '@/components/base/Modal'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
 
 type SignRequestAssignFormProps = {
-  repositoryId: string
-  itemId: string
   className?: string
   /** Compact customer-facing layout (hide existing-requests list). */
   compact?: boolean
   /** When true, primary action prepares the request and lets the parent place areas before API create. */
   deferCreate?: boolean
-  onCreated?: (request: SignRequestDto) => void
+  itemId: string
+  repositoryId: string
   onContinue?: (payload: CreateSignRequestPayload) => void
+  onCreated?: (request: SignRequestDto) => void
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -39,13 +47,13 @@ const signerKey = (signer: Option) =>
   String(signer.id || signer.value || signer.description || '').trim()
 
 export function SignRequestAssignForm({
-  repositoryId,
-  itemId,
   className = '',
   compact = false,
   deferCreate = false,
-  onCreated,
+  itemId,
+  repositoryId,
   onContinue,
+  onCreated,
 }: SignRequestAssignFormProps) {
   const { t } = useLingui()
   const [userOptions, setUserOptions] = useState<Option[]>([])
@@ -289,7 +297,9 @@ export function SignRequestAssignForm({
 
   const handleReorder = (ids: string[]) => {
     setSelectedSigners((previous) => {
-      const byId = new Map(previous.map((signer) => [signerKey(signer), signer]))
+      const byId = new Map(
+        previous.map((signer) => [signerKey(signer), signer]),
+      )
       return ids
         .map((id) => byId.get(id))
         .filter((signer): signer is Option => Boolean(signer))
@@ -318,12 +328,12 @@ export function SignRequestAssignForm({
               <InputSelect
                 label={t`Assign user`}
                 options={availableOptions}
+                required={selectedSigners.length === 0}
+                value={pendingUser}
+                searchable
                 placeholder={
                   loadingUsers ? t`Loading users...` : t`Select one user`
                 }
-                required={selectedSigners.length === 0}
-                searchable
-                value={pendingUser}
                 onChange={(option) => {
                   setPendingUser(option)
                   setError('')
@@ -331,9 +341,9 @@ export function SignRequestAssignForm({
               />
             </div>
             <button
-              type='button'
               className='mb-0.5 inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface-primary px-3 text-[12px] font-semibold text-gray-12 transition-colors hover:bg-gray-2 disabled:cursor-not-allowed disabled:opacity-50'
               disabled={!pendingUser}
+              type='button'
               onClick={handleAddSelectedUser}
             >
               <Plus className='h-3.5 w-3.5' />
@@ -342,8 +352,8 @@ export function SignRequestAssignForm({
           </div>
 
           <button
-            type='button'
             className='inline-flex h-8 items-center gap-1.5 text-[12px] font-semibold text-blue-10 hover:underline'
+            type='button'
             onClick={() => {
               setAddUserError('')
               setAddUserOpen(true)
@@ -375,15 +385,15 @@ export function SignRequestAssignForm({
                   ).trim()
                   return (
                     <SortableItem
-                      key={id}
                       className='rounded-lg border border-gray-3 bg-surface-primary px-2 py-1.5'
                       handlerPosition='before'
                       id={id}
+                      key={id}
                       trailing={
                         <button
-                          type='button'
                           aria-label={`Remove ${option.name}`}
                           className='inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-red-9 transition-colors hover:bg-red-2'
+                          type='button'
                           onClick={() => removeSigner(id)}
                         >
                           <Trash2 className='h-3.5 w-3.5' />
@@ -433,17 +443,17 @@ export function SignRequestAssignForm({
         <InputTextarea
           label={t`Message`}
           minRows={2}
-          optional
           placeholder={t`Please sign this document`}
           value={message}
+          optional
           onChange={setMessage}
         />
 
         <InputNumber
           label={t`Expires in days`}
           min={1}
-          required
           value={expiresInDays}
+          required
           withControls
           onChange={setExpiresInDays}
         />
@@ -455,9 +465,9 @@ export function SignRequestAssignForm({
                 {t`Existing requests`}
               </p>
               <button
-                type='button'
                 className='text-[12px] font-semibold text-blue-10 hover:underline disabled:opacity-50'
                 disabled={loadingRequests}
+                type='button'
                 onClick={() => void refreshRequests()}
               >
                 {loadingRequests ? t`Refreshing...` : t`Refresh`}
@@ -470,8 +480,8 @@ export function SignRequestAssignForm({
             ) : (
               existingRequests.map((request) => (
                 <div
-                  key={request.signRequestId}
                   className='rounded-lg border border-gray-3 bg-gray-1 px-3 py-2'
+                  key={request.signRequestId}
                 >
                   <p className='text-[12px] font-semibold text-gray-13'>
                     {request.status || 'InProgress'} ·{' '}
@@ -494,9 +504,9 @@ export function SignRequestAssignForm({
 
       <div className='shrink-0 border-t border-gray-3 bg-surface-primary pt-3'>
         <button
-          type='button'
           className='inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary-10 px-4 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-blue-11 disabled:cursor-not-allowed disabled:opacity-50'
           disabled={submitting || !selectedSigners.length}
+          type='button'
           onClick={() => void handleSubmit()}
         >
           {submitting ? (
@@ -513,10 +523,10 @@ export function SignRequestAssignForm({
       </div>
 
       <Modal
-        opened={addUserOpen}
-        onClose={() => setAddUserOpen(false)}
-        width={400}
         closeOnInteractOutside={false}
+        opened={addUserOpen}
+        width={400}
+        onClose={() => setAddUserOpen(false)}
       >
         <div className='bg-surface-primary text-[13px] text-gray-11'>
           <div className='flex items-center justify-between border-b border-gray-3 px-4 py-3'>
@@ -524,9 +534,9 @@ export function SignRequestAssignForm({
               Add new user
             </h3>
             <button
-              type='button'
-              className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-10 hover:bg-gray-2'
               aria-label={t`Close`}
+              className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-10 hover:bg-gray-2'
+              type='button'
               onClick={() => setAddUserOpen(false)}
             >
               <X className='h-4 w-4' />
@@ -539,16 +549,16 @@ export function SignRequestAssignForm({
             <InputText
               label={t`Full name`}
               placeholder='Jane Doe'
-              required
               value={newUserName}
+              required
               onChange={setNewUserName}
             />
             <InputText
               label={t`Email`}
               placeholder='jane@company.com'
-              required
               type='email'
               value={newUserEmail}
+              required
               onChange={setNewUserEmail}
             />
             {addUserError ? (
@@ -561,15 +571,15 @@ export function SignRequestAssignForm({
             ) : null}
             <div className='flex justify-end gap-2 pt-1'>
               <button
-                type='button'
                 className='inline-flex h-9 items-center justify-center rounded-lg border border-gray-3 px-3 text-[13px] font-semibold text-gray-12 hover:bg-gray-2'
+                type='button'
                 onClick={() => setAddUserOpen(false)}
               >
                 Cancel
               </button>
               <button
-                type='button'
                 className='inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary-10 px-3 text-[13px] font-semibold text-white hover:bg-blue-11'
+                type='button'
                 onClick={handleAddNewUser}
               >
                 <UserPlus className='h-3.5 w-3.5' />

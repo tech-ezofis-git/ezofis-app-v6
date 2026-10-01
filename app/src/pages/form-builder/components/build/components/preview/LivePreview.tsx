@@ -8,8 +8,8 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import {
   getRepositoryItemFacets,
@@ -24,19 +24,22 @@ import InputTime from '@/components/base/inputs/InputTime'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   type Question,
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import {
   buildMergedOcrFieldHints,
+  extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   findFieldOption,
   getConfiguredFieldOptions,
+  getDependentChildFieldIds,
   getDropdownFacetSource,
-  getFieldOptions as getSharedFieldOptions,
   getMasterFormInfo,
+  getFieldOptions as getSharedFieldOptions,
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
   withExtraFieldOptions,
@@ -97,9 +100,14 @@ const LivePreview = () => {
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
-    setPreviewModel((prev) =>
-      applyCalculatedFields(panels, { ...prev, [fieldId]: value }),
-    )
+    setPreviewModel((prev) => {
+      const next = { ...prev, [fieldId]: value }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
+      }
+      return applyCalculatedFields(panels, next)
+    })
   }
 
   const handleOcrFileSelect = async (file: File, field: Question) => {
@@ -268,7 +276,7 @@ const LivePreview = () => {
           {/* Scrollable Form Content */}
           <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6 sm:p-8'>
             {panels.length === 0 ||
-              panels.every((p) => p.fields.length === 0) ? (
+            panels.every((p) => p.fields.length === 0) ? (
               <div className='py-24 text-center text-gray-10'>
                 <Icon
                   className='mx-auto mb-3 text-gray-8 opacity-60'
@@ -307,7 +315,9 @@ const LivePreview = () => {
                     {panel.fields.map((field) => {
                       const state = fieldStates[field.id]
                       if (state && !state.visible) return null
-                      const isRequired = state ? state.required : field.settings.validation.fieldRule === 'REQUIRED'
+                      const isRequired = state
+                        ? state.required
+                        : field.settings.validation.fieldRule === 'REQUIRED'
 
                       return (
                         <div
@@ -315,14 +325,14 @@ const LivePreview = () => {
                           className={cn(
                             'col-span-12',
                             deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-6' &&
-                            'md:col-span-6',
+                              field.settings.general.size === 'col-6' &&
+                              'md:col-span-6',
                             deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-4' &&
-                            'md:col-span-4',
+                              field.settings.general.size === 'col-4' &&
+                              'md:col-span-4',
                             deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-3' &&
-                            'md:col-span-3',
+                              field.settings.general.size === 'col-3' &&
+                              'md:col-span-3',
                           )}
                         >
                           {!field.settings.general.hideLabel && (
@@ -337,22 +347,29 @@ const LivePreview = () => {
                               </label>
                             </div>
                           )}
-                        {field.settings.general.description && (
-                          <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
-                            {field.settings.general.description}
-                          </p>
-                        )}
-                        {renderPreviewInput(
-                          field,
-                          previewModel,
-                          handleFieldValueChange,
-                          (file) => handleOcrFileSelect(file, field),
-                          extractingFieldId === field.id,
-                          selectedRepoId,
-                        )}
-                      </div>
-                    )
-                  })}
+                          {field.settings.general.description && (
+                            <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
+                              {field.settings.general.description}
+                            </p>
+                          )}
+                          {renderPreviewInput(
+                            field,
+                            previewModel,
+                            handleFieldValueChange,
+                            (file) => handleOcrFileSelect(file, field),
+                            extractingFieldId === field.id,
+                            selectedRepoId,
+                            (patch) =>
+                              setPreviewModel((prev) =>
+                                applyCalculatedFields(panels, {
+                                  ...prev,
+                                  ...patch,
+                                }),
+                              ),
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               ))
@@ -378,15 +395,15 @@ const getFieldOptions = (field: Question): string[] => {
 }
 
 const LivePreviewDropdown = ({
-  field,
   fallbackRepositoryId,
+  field,
   model,
   multiple,
   value,
   onChange,
 }: {
-  field: Question
   fallbackRepositoryId?: string
+  field: Question
   model?: Record<string, any>
   multiple?: boolean
   value: any
@@ -425,32 +442,72 @@ const LivePreviewDropdown = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+          facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+          facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+      repoParentField.label ||
+      repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? model?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && model
+    ? model[facetSource.repositoryFieldParent]
+    : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'livePreviewFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
       })
     },
-    enabled: facetSource.enabled,
   })
 
   const { data: userFieldOptions = [] } = useQuery({
+    enabled: optionsType === 'USER_LIST',
     queryKey: ['livePreviewUserList'],
     queryFn: async () => {
       const res = await getUsers()
       return res.data.map((user) => ({ id: user.email, name: user.email }))
     },
-    enabled: optionsType === 'USER_LIST',
   })
 
   const { data: masterFieldOptions = [] } = useQuery({
@@ -486,6 +543,22 @@ const LivePreviewDropdown = ({
     masterFieldOptions,
   )
 
+  useEffect(() => {
+    if (selectOptions.length === 1) {
+      const singleOptVal = String(selectOptions[0].id ?? selectOptions[0].name)
+      if (multiple) {
+        const currentList = normalizeStoredMultiSelectValue(value)
+        if (currentList.length === 0) {
+          onChange([singleOptVal])
+        }
+      } else {
+        if (value === undefined || value === null || value === '') {
+          onChange(singleOptVal)
+        }
+      }
+    }
+  }, [selectOptions, value, multiple, onChange])
+
   if (multiple) {
     const seen = new Set<string>()
     const selectedOptions = normalizeStoredMultiSelectValue(value).flatMap(
@@ -502,8 +575,10 @@ const LivePreviewDropdown = ({
     return (
       <InputSelectMultiple
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
-        placeholder={field.settings?.general?.placeholder || 'Select options...'}
         value={selectedOptions}
+        placeholder={
+          field.settings?.general?.placeholder || 'Select options...'
+        }
         onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
       />
     )
@@ -553,6 +628,20 @@ const LivePreviewChoiceGroup = ({
       ? [String(value)]
       : []
 
+  useEffect(() => {
+    if (allOptions.length === 1) {
+      if (isSingle) {
+        if (value === undefined || value === null || value === '') {
+          onChange(allOptions[0])
+        }
+      } else if (isMulti) {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          onChange([allOptions[0]])
+        }
+      }
+    }
+  }, [allOptions, value, isSingle, isMulti, onChange])
+
   const handleToggle = (opt: string) => {
     if (isSingle) {
       onChange(opt)
@@ -590,7 +679,7 @@ const LivePreviewChoiceGroup = ({
       className={cn(
         'w-full space-y-2.5',
         specific.showOptionsWrapper &&
-        'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
       )}
     >
       {/* Header controls for QR code and Bulk actions */}
@@ -598,16 +687,16 @@ const LivePreviewChoiceGroup = ({
         {isMulti && specific.bulkActionsEnabled && (
           <div className='flex items-center gap-2'>
             <button
-              type='button'
               className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+              type='button'
               onClick={handleSelectAll}
             >
               Select All
             </button>
-            <span className='text-gray-4 text-xs'>•</span>
+            <span className='text-xs text-gray-4'>•</span>
             <button
-              type='button'
               className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+              type='button'
               onClick={handleClearAll}
             >
               Clear All
@@ -617,8 +706,9 @@ const LivePreviewChoiceGroup = ({
 
         {isSingle && specific.qrCodeEnabled && (
           <button
+            className='ml-auto flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9'
+            title='Simulate QR Code Scan'
             type='button'
-            className='ml-auto flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9 cursor-pointer'
             onClick={() => {
               if (allOptions.length > 0) {
                 const randomOpt =
@@ -626,7 +716,6 @@ const LivePreviewChoiceGroup = ({
                 onChange(randomOpt)
               }
             }}
-            title='Simulate QR Code Scan'
           >
             <Icon height={13} name='lucide:qr-code' width={13} />
             <span>Scan QR</span>
@@ -643,8 +732,8 @@ const LivePreviewChoiceGroup = ({
         style={
           !isAutoFlex
             ? {
-              gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-            }
+                gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+              }
             : undefined
         }
       >
@@ -691,9 +780,9 @@ const LivePreviewChoiceGroup = ({
           {isAddingOption ? (
             <div className='flex items-center gap-2'>
               <input
-                type='text'
                 className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                 placeholder='Type custom option...'
+                type='text'
                 value={newOptionText}
                 autoFocus
                 onChange={(e) => setNewOptionText(e.target.value)}
@@ -703,17 +792,17 @@ const LivePreviewChoiceGroup = ({
                 }}
               />
               <Button
+                className='h-8 cursor-pointer rounded-lg'
                 size='xs'
-                className='h-8 rounded-lg cursor-pointer'
                 onClick={handleAddCustomOption}
               >
                 Add
               </Button>
               <Button
+                className='h-8 cursor-pointer rounded-lg'
+                color='gray'
                 size='xs'
                 variant='subtle'
-                color='gray'
-                className='h-8 rounded-lg cursor-pointer'
                 onClick={() => setIsAddingOption(false)}
               >
                 Cancel
@@ -721,8 +810,8 @@ const LivePreviewChoiceGroup = ({
             </div>
           ) : (
             <button
+              className='flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-primary-9 hover:underline'
               type='button'
-              className='flex items-center gap-1.5 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
               onClick={() => setIsAddingOption(true)}
             >
               <Icon height={13} name='lucide:plus' width={13} />
@@ -736,13 +825,87 @@ const LivePreviewChoiceGroup = ({
       {isMulti &&
         validation.fieldRule === 'REQUIRED' &&
         validation.requiredValidation === 'ALL' && (
-          <div className='flex items-center gap-1 pt-0.5 text-[10px] font-medium text-amber-7'>
+          <div className='text-amber-7 flex items-center gap-1 pt-0.5 text-[10px] font-medium'>
             <Icon height={11} name='lucide:alert-circle' width={11} />
             <span>
-              All {allOptions.length} options must be checked to fulfill requirements.
+              All {allOptions.length} options must be checked to fulfill
+              requirements.
             </span>
           </div>
         )}
+    </div>
+  )
+}
+
+const LivePreviewSearchableInput = ({
+  field,
+  model,
+  onChange,
+  onUpdateModel,
+  fallbackRepositoryId,
+  children,
+}: {
+  field: Question
+  model: Record<string, any>
+  onChange: (fieldId: string, value: any) => void
+  onUpdateModel?: (patch: Record<string, any>) => void
+  fallbackRepositoryId?: string
+  children: React.ReactNode
+}) => {
+  const [isSearching, setIsSearching] = useState(false)
+  const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+  const fieldValue = model[field.id] ?? ''
+  const { panels } = useFormStore()
+
+  if (!isSearchField) return <>{children}</>
+
+  const handleSearch = (overrideVal?: any) => {
+    const valToSearch = overrideVal !== undefined ? overrideVal : fieldValue
+    executeSearchFieldSync({
+      currentFormId: fallbackRepositoryId,
+      field,
+      formModel: model,
+      panels,
+      searchValue: valToSearch,
+      onSearchingStateChange: setIsSearching,
+      onUpdateModel: (patch) => {
+        if (onUpdateModel) {
+          onUpdateModel(patch)
+        } else {
+          Object.entries(patch).forEach(([fId, val]) => {
+            onChange(fId, val)
+          })
+        }
+      },
+    })
+  }
+
+  return (
+    <div className='flex items-end gap-1.5 w-full'>
+      <div
+        className='flex-1 min-w-0'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch()
+          }
+        }}
+      >
+        {children}
+      </div>
+      <button
+        className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+        disabled={isSearching}
+        title='Search & Auto-Sync'
+        type='button'
+        onClick={() => handleSearch()}
+      >
+        {isSearching ? (
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+        ) : (
+          <Icon className='size-4' name='lucide:search' />
+        )}
+      </button>
     </div>
   )
 }
@@ -754,6 +917,7 @@ const renderPreviewInput = (
   onOcrProcessFile?: (file: File) => void,
   isExtracting?: boolean,
   fallbackRepositoryId?: string,
+  onUpdateModel?: (patch: Record<string, any>) => void,
 ) => {
   const fieldValue = model[field.id] ?? ''
 
@@ -866,20 +1030,20 @@ const renderPreviewInput = (
     case 'TIME':
       return (
         <InputTime
+          value={fieldValue || ''}
           format={
             field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
           }
-          value={fieldValue || ''}
           onChange={(val) => onChange(field.id, val)}
         />
       )
     case 'DATE_TIME':
       return (
         <InputDateTime
+          value={fieldValue || null}
           format={
             field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
           }
-          value={fieldValue || null}
           onChange={(val) => onChange(field.id, val)}
         />
       )
@@ -933,6 +1097,7 @@ const renderPreviewInput = (
                       <TextInput
                         placeholder='...'
                         size='xs'
+                        variant='unstyled'
                         type={
                           col.type === 'NUMBER' ||
                           col.type === 'COUNTER' ||
@@ -945,7 +1110,6 @@ const renderPreviewInput = (
                             ? ''
                             : String(row[col.id])
                         }
-                        variant='unstyled'
                         onChange={(event) =>
                           updateCell(rowIndex, col.id, event.target.value)
                         }
@@ -962,30 +1126,60 @@ const renderPreviewInput = (
     case 'SHORT_TEXT':
     case 'EMAIL':
     case 'PHONE_NUMBER':
-    case 'NUMBER':
-    case 'COUNTER':
-    case 'CURRENCY_AMOUNT':
     case 'ADDRESS':
     case 'FULL_NAME':
       return (
-        <TextInput
-          size='sm'
-          value={String(fieldValue)}
-          variant='default'
-          classNames={{
-            input:
-              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-          }}
-          placeholder={
-            field.settings.general.placeholder || 'Type your answer here...'
-          }
-          onChange={(e) => onChange(field.id, e.target.value)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            placeholder={
+              field.settings.general.placeholder || 'Type your answer here...'
+            }
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
+      )
+    case 'NUMBER':
+    case 'COUNTER':
+    case 'CURRENCY_AMOUNT':
+      return (
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            type='number'
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            placeholder={
+              field.settings.general.placeholder || 'Type your answer here...'
+            }
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'CALCULATED':
-      return (
-        <CalculatedFieldInput hideLabel value={fieldValue} />
-      )
+      return <CalculatedFieldInput value={fieldValue} hideLabel />
     case 'LONG_TEXT':
       return (
         <textarea
@@ -1024,13 +1218,21 @@ const renderPreviewInput = (
       )
     case 'SINGLE_SELECT':
       return (
-        <LivePreviewDropdown
+        <LivePreviewSearchableInput
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
           model={model}
-          value={fieldValue}
-          onChange={(val) => onChange(field.id, val)}
-        />
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <LivePreviewDropdown
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'MULTI_SELECT':
       return (

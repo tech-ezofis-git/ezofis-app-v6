@@ -1,18 +1,18 @@
 import { create } from 'zustand'
 
 interface GeoState {
-  countryName: string | null
   countryCode: string | null
-  isRestricted: boolean // true if INDIA or CANADA
+  countryName: string | null
   isLoading: boolean
+  isRestricted: boolean // true if INDIA or CANADA
   fetchLocation: () => Promise<void>
 }
 
 const useGeoStore = create<GeoState>((set) => ({
-  countryName: null,
   countryCode: null,
-  isRestricted: false,
+  countryName: null,
   isLoading: true,
+  isRestricted: false,
   fetchLocation: async () => {
     try {
       const r = await fetch('https://ipapi.co/json/')
@@ -22,17 +22,22 @@ const useGeoStore = create<GeoState>((set) => ({
       const isRestricted = country !== 'INDIA'
 
       set({
-        countryName: data.country_name,
         countryCode: data.country,
+        countryName: data.country_name,
+        isLoading: false,
         isRestricted,
-        isLoading: false
       })
-      console.log('[GeoStore] Location fetched:', data.country_name, 'Restricted:', isRestricted)
+      console.log(
+        '[GeoStore] Location fetched:',
+        data.country_name,
+        'Restricted:',
+        isRestricted,
+      )
     } catch (error) {
       console.error('[GeoStore] Failed to fetch location data:', error)
       set({ isLoading: false })
     }
-  }
+  },
 }))
 
 export default useGeoStore

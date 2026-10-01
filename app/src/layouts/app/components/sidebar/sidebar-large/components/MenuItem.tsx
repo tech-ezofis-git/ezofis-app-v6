@@ -5,8 +5,8 @@ import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
-import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
+import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
@@ -22,8 +22,7 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const isAskAIMaximized = useAskAIStore((s) => s.isMaximized)
   const exitFullView = useAskAIStore((s) => s.exitFullView)
-  const isActive =
-    !isDemoFormOpen && !isAskAIMaximized && pathname === route
+  const isActive = !isDemoFormOpen && !isAskAIMaximized && pathname === route
   const isNavigationLocked = useSetupStore(
     (state) =>
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,

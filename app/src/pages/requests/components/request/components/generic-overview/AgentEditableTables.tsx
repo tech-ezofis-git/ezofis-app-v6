@@ -9,7 +9,9 @@ import QuoteLineItemsTable, {
 const asBool = (value: unknown) =>
   value === true || value === 1 || value === 'true'
 
-export const isShowTableAsEditable = (settings?: Record<string, unknown> | null) =>
+export const isShowTableAsEditable = (
+  settings?: Record<string, unknown> | null,
+) =>
   asBool(
     settings?.showTableAsEditable ??
       settings?.show_table_as_editable ??
@@ -60,7 +62,8 @@ const getFieldValueKeys = (field: any) =>
   )
 
 const parseTableRows = (raw: unknown): Record<string, any>[] => {
-  if (Array.isArray(raw)) return raw.filter((row) => row && typeof row === 'object')
+  if (Array.isArray(raw))
+    return raw.filter((row) => row && typeof row === 'object')
   if (typeof raw === 'string') {
     const trimmed = raw.trim()
     if (!trimmed) return []
@@ -104,10 +107,7 @@ export const collectFormFields = (workflow: any): any[] => {
 export const collectFormTableFields = (workflow: any): any[] =>
   collectFormFields(workflow).filter(isTableField)
 
-export const hasMatchingEditableTables = (
-  workflow: any,
-  requestData?: any,
-) => {
+export const hasMatchingEditableTables = (workflow: any, requestData?: any) => {
   if (collectFormTableFields(workflow).length > 0) return true
   const agentResult = getAgentResultPayload(requestData)
   if (!agentResult || typeof agentResult !== 'object') return false
@@ -165,6 +165,7 @@ export const buildSyntheticTableField = (
   return {
     id: heading,
     label: heading,
+    type: 'TABLE',
     settings: {
       specific: {
         rowsType: 'ON_DEMAND',
@@ -175,7 +176,6 @@ export const buildSyntheticTableField = (
         })),
       },
     },
-    type: 'TABLE',
   }
 }
 
@@ -229,9 +229,9 @@ const AgentEditableTables = ({
   )
   const agentResult = getAgentResultPayload(requestData)
   const seededFieldIds = useRef<Set<string>>(new Set())
-  const [draftRows, setDraftRows] = useState<Record<string, Record<string, any>[]>>(
-    {},
-  )
+  const [draftRows, setDraftRows] = useState<
+    Record<string, Record<string, any>[]>
+  >({})
 
   const tables = useMemo(() => {
     const matched = tableFields
@@ -374,7 +374,11 @@ export const resolveFormFieldAmount = (
     if (!field) continue
     for (const key of getFieldValueKeys(field)) {
       const value = formModel[key]
-      if (value !== undefined && value !== null && String(value).trim() !== '') {
+      if (
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== ''
+      ) {
         return value
       }
     }

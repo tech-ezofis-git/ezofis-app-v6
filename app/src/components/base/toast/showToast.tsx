@@ -8,13 +8,13 @@ const variants = {
     className: 'before:bg-blue-9 bg-blue-3',
     title: 'Info',
   },
-  info: {
-    className: 'before:bg-blue-9 bg-blue-3',
-    title: 'Info',
-  },
   error: {
     className: 'before:bg-red-9 bg-red-3',
     title: 'Error',
+  },
+  info: {
+    className: 'before:bg-blue-9 bg-blue-3',
+    title: 'Info',
   },
   success: {
     className: 'before:bg-green-9 bg-green-3',
@@ -30,7 +30,8 @@ function isMandatoryValidationMessage(
   message: ReactNode,
   title?: string,
 ): boolean {
-  const text = `${typeof message === 'string' ? message : ''} ${title || ''}`.toLowerCase()
+  const text =
+    `${typeof message === 'string' ? message : ''} ${title || ''}`.toLowerCase()
   return (
     text.includes('required') ||
     text.includes('mandatory') ||

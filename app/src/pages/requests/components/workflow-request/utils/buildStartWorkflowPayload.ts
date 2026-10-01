@@ -8,13 +8,13 @@ import {
 export interface StagedFile {
   fileId: string
   repositoryId: string
-  fileName?: string
   // Identify which FILE_UPLOAD/IMAGE_UPLOAD field this entry came from, so a
   // form with multiple file fields can be re-associated on the backend.
   // Undefined for extraAttachments (sidebar attachments aren't tied to a
   // field).
   fieldId?: string
   fieldName?: string
+  fileName?: string
   jsonId?: string
 }
 

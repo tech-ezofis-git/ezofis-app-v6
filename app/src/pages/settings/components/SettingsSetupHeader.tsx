@@ -8,9 +8,9 @@ import SetupProgressBar from './SetupProgressBar'
 type SettingsSetupHeaderProps = {
   moduleTitle: string
   progress?: number
+  setupTitle: string
   showBackButton?: boolean
   showProgress?: boolean
-  setupTitle: string
   stepDescription: string
   stepTitle: string
   onBackToSettings?: () => void
@@ -40,14 +40,7 @@ export default function SettingsSetupHeader({
         },
         t`Settings`,
       ),
-    [
-      i18n.locale,
-      moduleTitle,
-      onBackToSettings,
-      onCancelSetup,
-      setupTitle,
-      t,
-    ],
+    [i18n.locale, moduleTitle, onBackToSettings, onCancelSetup, setupTitle, t],
   )
 
   useSettingsTopbar(breadcrumbConfig)

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   collectSignRequestFields,
   getSignRequest,
@@ -16,39 +16,18 @@ import {
 } from '@/pages/folders/utils/signRequestFieldsStorage'
 import authUserStore from '@/stores/authUserStore'
 
+type Gate = 'loading' | 'auth' | 'signing' | 'done' | 'error'
+
 type SignRequestInvitePageProps = {
+  email: string
   /** Full path after `/sign-request/` (may be one token or tenant/id/token). */
   invitePath: string
-  email: string
   isNew: boolean
 }
 
-type Gate = 'loading' | 'auth' | 'signing' | 'done' | 'error'
-
-function candidateInviteTokens(invitePath: string) {
-  const raw = String(invitePath || '')
-    .replace(/^\/+|\/+$/g, '')
-    .trim()
-  if (!raw) return []
-  const parts = raw.split('/').filter(Boolean)
-  const tokens = [parts[parts.length - 1], raw]
-  return [...new Set(tokens.filter(Boolean))]
-}
-
-function toUiError(value: unknown, fallback: string) {
-  if (typeof value === 'string' && value.trim()) return value.trim()
-  if (value && typeof value === 'object') {
-    const record = value as { error?: string; message?: string; title?: string }
-    return (
-      record.error || record.message || record.title || fallback
-    ).toString()
-  }
-  return fallback
-}
-
 export default function SignRequestInvitePage({
-  invitePath,
   email,
+  invitePath,
   isNew,
 }: SignRequestInvitePageProps) {
   const { t } = useLingui()
@@ -161,9 +140,7 @@ export default function SignRequestInvitePage({
         .trim()
         .toLowerCase()
       const hasToken = Boolean(authUserStore.getState().identity?.accessToken)
-      const recipient = String(
-        email || previewResult.data.recipientEmail || '',
-      )
+      const recipient = String(email || previewResult.data.recipientEmail || '')
         .trim()
         .toLowerCase()
 
@@ -206,18 +183,17 @@ export default function SignRequestInvitePage({
         ? `${window.location.pathname}${window.location.search}`
         : `/sign-request/${invitePath}${email ? `?email=${encodeURIComponent(email)}` : ''}`
 
-    const needsSetup =
-      Boolean(preview?.requiresPasswordSetup) || isNew
+    const needsSetup = Boolean(preview?.requiresPasswordSetup) || isNew
 
     void navigate({
       replace: true,
-      to: '/sign-in',
       search: {
         email: recipientEmail || email || undefined,
         inviteToken,
         isnew: needsSetup ? 'true' : 'false',
         redirect,
       },
+      to: '/sign-in',
     })
   }, [
     gate,
@@ -281,16 +257,40 @@ export default function SignRequestInvitePage({
   return (
     <div className='flex h-screen min-h-0 flex-col overflow-hidden bg-surface-secondary'>
       <DocumentDetailsView
-        compactActions
-        forceSigning
         id={preview.itemId}
         invitePreview={preview}
         inviteToken={inviteToken}
         repositoryId={preview.repositoryId}
-        signRequestId={preview.signRequestId}
         signatureFields={signatureFields}
+        signRequestId={preview.signRequestId}
+        compactActions
+        forceSigning
         onSigningComplete={() => setGate('done')}
       />
     </div>
   )
+}
+
+function candidateInviteTokens(invitePath: string) {
+  const raw = String(invitePath || '')
+    .replace(/^\/+|\/+$/g, '')
+    .trim()
+  if (!raw) return []
+  const parts = raw.split('/').filter(Boolean)
+  const tokens = [parts[parts.length - 1], raw]
+  return [...new Set(tokens.filter(Boolean))]
+}
+
+function toUiError(value: unknown, fallback: string) {
+  if (typeof value === 'string' && value.trim()) return value.trim()
+  if (value && typeof value === 'object') {
+    const record = value as { error?: string; message?: string; title?: string }
+    return (
+      record.error ||
+      record.message ||
+      record.title ||
+      fallback
+    ).toString()
+  }
+  return fallback
 }

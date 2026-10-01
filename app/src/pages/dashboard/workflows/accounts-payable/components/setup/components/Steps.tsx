@@ -47,19 +47,23 @@ const steps = [
   },
 ]
 
-const isEmailStepComplete = (emailSettings?: {
-  isConnected?: boolean
-  provider?: string
-} | null) => Boolean(emailSettings?.provider && emailSettings?.isConnected)
+const isEmailStepComplete = (
+  emailSettings?: {
+    isConnected?: boolean
+    provider?: string
+  } | null,
+) => Boolean(emailSettings?.provider && emailSettings?.isConnected)
 
-const isErpStepComplete = (erpSettings?: {
-  isConnected?: boolean
-  lineItemHeaders?: string[]
-  lineItemMapping?: Record<string, string>
-  mapping?: Record<string, string>
-  system?: string
-  templateUploaded?: boolean
-} | null) => {
+const isErpStepComplete = (
+  erpSettings?: {
+    isConnected?: boolean
+    lineItemHeaders?: string[]
+    lineItemMapping?: Record<string, string>
+    mapping?: Record<string, string>
+    system?: string
+    templateUploaded?: boolean
+  } | null,
+) => {
   if (!erpSettings?.system) return false
   if (erpSettings.system === 'PREDEFINED') return true
 
@@ -74,8 +78,7 @@ const isErpStepComplete = (erpSettings?: {
     const isHeaderMappingComplete =
       requiredHeaderColumns.length > 0 &&
       requiredHeaderColumns.every(
-        (col) =>
-          !!mapping[col.key] && mapping[col.key] !== 'Skip to Import',
+        (col) => !!mapping[col.key] && mapping[col.key] !== 'Skip to Import',
       )
 
     const hasLineItems = lineItemHeaders.length > 0
@@ -107,10 +110,12 @@ const isErpStepComplete = (erpSettings?: {
     : Boolean(erpSettings.system && erpSettings.isConnected)
 }
 
-const isStorageStepComplete = (storageSettings?: {
-  isConnected?: boolean
-  system?: string
-} | null) =>
+const isStorageStepComplete = (
+  storageSettings?: {
+    isConnected?: boolean
+    system?: string
+  } | null,
+) =>
   storageSettings?.system === 'Included storage' ||
   !!storageSettings?.isConnected
 
@@ -262,7 +267,7 @@ const Steps = () => {
         </AnimateSlideUp>
 
         <div
-          className='col-span-1 h-full min-h-0 w-full overflow-y-auto scrollbar'
+          className='scrollbar col-span-1 h-full min-h-0 w-full overflow-y-auto'
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>

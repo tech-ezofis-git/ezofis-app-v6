@@ -10,11 +10,11 @@ import {
 import Menu from '@/components/base/menu/Menu'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import type { NotificationItem } from './types'
 import Header from './components/header/Header'
 import NotificationCard from './components/NotificationCard'
 import NotificationsTrigger from './components/NotificationsTrigger'
 import { mockNotifications } from './mockData'
-import type { NotificationItem } from './types'
 import { mapApiNotificationToUi } from './utils/notificationMapper'
 
 const Notifications = () => {
@@ -24,14 +24,20 @@ const Notifications = () => {
   const [activeTab, setActiveTab] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState<string>('')
 
-  const { data: apiNotifications, isLoading, refetch } = useQuery(getNotificationsQueryOptions())
+  const {
+    data: apiNotifications,
+    isLoading,
+    refetch,
+  } = useQuery(getNotificationsQueryOptions())
   const markAsReadMutation = useMarkNotificationAsReadMutation()
   const deleteMutation = useDeleteNotificationMutation()
 
   const handleMenuChange = (opened: boolean) => {
     setIsNotificationsOpened(opened)
     if (opened) {
-      console.log('🔔 [Notifications Menu Opened] Refetching notifications list API...')
+      console.log(
+        '🔔 [Notifications Menu Opened] Refetching notifications list API...',
+      )
       void refetch()
     }
   }
@@ -75,7 +81,8 @@ const Notifications = () => {
   }
 
   const handleItemClick = (notification: NotificationItem) => {
-    const rawCategory = (notification as any)._rawCategory || notification.category
+    const rawCategory =
+      (notification as any)._rawCategory || notification.category
     console.log('📌 [Step 1: Notification Clicked]', {
       category: notification.category,
       data: notification.data,
@@ -101,7 +108,8 @@ const Notifications = () => {
       const search = (notification.target?.search || {}) as Record<string, any>
 
       const workflowId = search.workflowId || data.workflowId
-      const processId = search.processId || data.processId || data.workflowInstanceId
+      const processId =
+        search.processId || data.processId || data.workflowInstanceId
       const transactionId = search.transactionId || data.transactionId
 
       console.log('📌 [Step 3: Workflow Category Detected]', {
@@ -148,13 +156,13 @@ const Notifications = () => {
     <Menu
       closeOnItemClick={false}
       position='bottom-end'
+      width={380}
       target={
         <NotificationsTrigger
           isNotificationsOpened={isNotificationsOpened}
           unreadCount={unreadCount}
         />
       }
-      width={380}
       onChange={handleMenuChange}
     >
       <Header
@@ -167,7 +175,7 @@ const Notifications = () => {
         onTabChange={setActiveTab}
       />
 
-      <div className='max-h-96 overflow-y-auto divide-y divide-gray-3 bg-surface-primary'>
+      <div className='max-h-96 divide-y divide-gray-3 overflow-y-auto bg-surface-primary'>
         {isLoading ? (
           <div className='p-6 text-center text-13 text-gray-10'>{t`Loading notifications...`}</div>
         ) : filteredNotifications.length > 0 ? (

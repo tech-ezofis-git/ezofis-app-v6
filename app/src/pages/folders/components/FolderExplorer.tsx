@@ -15,8 +15,8 @@ import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import {
-  RESET_FOLDER_VIEW_EVENT,
   markFolderExplorerAskAiQuery,
+  RESET_FOLDER_VIEW_EVENT,
 } from '../utils/folderExplorerSession'
 import {
   findRepositoryNodeId,
@@ -103,6 +103,7 @@ export function FolderExplorer() {
   >(undefined)
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
+    fileName?: string
     id: string
     repositoryId: string
   } | null>(null)
@@ -164,7 +165,7 @@ export function FolderExplorer() {
   /** Prefer an explicit repositoryId (Ask AI / deep-link) so workspace fetch
    *  does not depend on activeFolder having finished switching. */
   const openDetailsFile = useCallback(
-    (fileId: string, repositoryId?: string) => {
+    (fileId: string, repositoryId?: string, fileName?: string) => {
       const trimmedId = String(fileId || '').trim()
       if (!trimmedId) return
       if (
@@ -179,9 +180,17 @@ export function FolderExplorer() {
         setAppView('Upload')
         return
       }
+      const listed = files.find((file) => file.id === trimmedId)
+      const resolvedName = String(
+        fileName || listed?.name || listed?.fileName || '',
+      ).trim()
       const trimmedRepo = String(repositoryId || '').trim()
       if (trimmedRepo) {
-        setDetailsDocument({ id: trimmedId, repositoryId: trimmedRepo })
+        setDetailsDocument({
+          fileName: resolvedName || undefined,
+          id: trimmedId,
+          repositoryId: trimmedRepo,
+        })
       } else {
         setDetailsDocument(null)
       }
@@ -467,11 +476,12 @@ export function FolderExplorer() {
 
   // Deep-link: /folders?repositoryId&itemId (Global Search + Ask AI).
   useEffect(() => {
-    const { folderId, itemId, repositoryId } = deepLinkSearch || {}
+    const { folderId, itemId, itemName, repositoryId } = deepLinkSearch || {}
     const repoId = String(repositoryId || '').trim()
     const openItemId = String(itemId || '').trim()
+    const openItemName = String(itemName || '').trim()
     const folderKey = String(folderId || '').trim()
-    const deepLinkKey = `${repoId}|${openItemId}|${folderKey}`
+    const deepLinkKey = `${repoId}|${openItemId}|${openItemName}|${folderKey}`
 
     if (!repoId && !folderKey) {
       applyingDeepLinkRef.current = null
@@ -498,7 +508,7 @@ export function FolderExplorer() {
     }
 
     if (openItemId) {
-      openDetailsFile(openItemId, repoId || undefined)
+      openDetailsFile(openItemId, repoId || undefined, openItemName || undefined)
     }
 
     if (!globalThis.location?.pathname?.startsWith('/embed')) {
@@ -507,20 +517,28 @@ export function FolderExplorer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkSearch, tree.length])
 
-  const { permissions: folderPermissions } = useFolderSecurityPermissions(
-    resolvedRepositoryId,
-    activeFolder,
-  )
+  const { isLoading: permissionsLoading, permissions: folderPermissions } =
+    useFolderSecurityPermissions(resolvedRepositoryId, activeFolder)
   const canUpload = Boolean(
     activeFolder && resolvedRepositoryId && folderPermissions.upload,
   )
   const canIntelligentUpload = Boolean(!isDemoAppOrigin())
 
   useEffect(() => {
-    if (appView === 'Upload' && !folderPermissions.upload) {
+    if (
+      appView === 'Upload' &&
+      !permissionsLoading &&
+      !folderPermissions.upload &&
+      !pendingStagedFileId &&
+      pendingUploadFiles.length === 0
+    ) {
       exitUpload()
     }
-    if (appView === 'editMetadata' && !folderPermissions.editMetadata) {
+    if (
+      appView === 'editMetadata' &&
+      !permissionsLoading &&
+      !folderPermissions.editMetadata
+    ) {
       setAppView(selectedFile ? 'details' : 'explorer')
     }
     if (appView === 'workflow' && !selectedFile) {
@@ -531,6 +549,9 @@ export function FolderExplorer() {
     exitUpload,
     folderPermissions.editMetadata,
     folderPermissions.upload,
+    pendingStagedFileId,
+    pendingUploadFiles.length,
+    permissionsLoading,
     selectedFile,
     setAppView,
   ])
@@ -624,7 +645,11 @@ export function FolderExplorer() {
 
     const openItemId = pendingAskAiAction.openItemId?.trim() || ''
     if (openItemId) {
-      openDetailsFile(openItemId, repoId || undefined)
+      openDetailsFile(
+        openItemId,
+        repoId || undefined,
+        pendingAskAiAction.itemName,
+      )
     }
 
     clearPending()
@@ -788,6 +813,7 @@ export function FolderExplorer() {
     return (
       <DocumentDetailsView
         autoOpenShare={pendingOpenShare}
+        fileName={detailsDocument?.fileName}
         id={detailsId}
         permissions={folderPermissions}
         repositoryId={detailsRepositoryId}
@@ -815,9 +841,7 @@ export function FolderExplorer() {
         }}
         onShareOpened={() => setPendingOpenShare(false)}
         onWorkflow={
-          hasDocumentApprovalWorkflow
-            ? () => setAppView('workflow')
-            : undefined
+          hasDocumentApprovalWorkflow ? () => setAppView('workflow') : undefined
         }
       />
     )
@@ -895,6 +919,35 @@ export function FolderExplorer() {
             setAppView('explorer')
             await refreshData()
           }
+        }}
+        onOpenSingleFileIndexing={({ file, repositoryId, stagedFileId }) => {
+          console.log(
+            '[FolderExplorer] Opening single-file document indexing view:',
+            { fileName: file.name, repositoryId, stagedFileId },
+          )
+          const targetNodeId =
+            findRepositoryNodeId(tree, repositoryId) ||
+            encodeRepositoryNodeId({
+              kind: 'repository',
+              label: 'Repository',
+              repositoryId,
+            })
+
+          folderBeforeUploadRef.current = activeFolder || targetNodeId
+          selectFolder(targetNodeId)
+
+          setPendingUploadFiles([file])
+          if (stagedFileId) {
+            setPendingStagedFileId(
+              stagedFileId.startsWith('staged-')
+                ? stagedFileId
+                : `staged-${stagedFileId}`,
+            )
+          } else {
+            setPendingStagedFileId(undefined)
+          }
+
+          setAppView('Upload')
         }}
       />
     )

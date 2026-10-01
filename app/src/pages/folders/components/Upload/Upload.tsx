@@ -53,9 +53,9 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from './../../../../components/common/animations'
+import TableFieldInput from './TableFieldInput'
 import UploadQueueFileCard from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
-import TableFieldInput from './TableFieldInput'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
 
@@ -626,6 +626,7 @@ const createQueueEntry = (
 ): QueuedUploadFile => ({
   activeTab: 'fields',
   backendStatus: null,
+  createdAt: new Date().toISOString(),
   exportStatus: 'idle',
   fieldValues: applyFilenamePreFill(
     getInitialValues(repositoryFields),
@@ -705,6 +706,7 @@ export default function Upload({
   const [isRestoringQueue, setIsRestoringQueue] = useState(false)
   const [isDeletingStageFile, setIsDeletingStageFile] = useState(false)
   const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
+  const [backConfirmOpen, setBackConfirmOpen] = useState(false)
 
   const repositoryFields = useMemo(() => {
     return [...(repositoryData?.fields ?? [])].sort((a, b) => {
@@ -731,9 +733,9 @@ export default function Upload({
         prev.map((entry) =>
           entry.id === id
             ? {
-                ...entry,
-                ...(typeof patch === 'function' ? patch(entry) : patch),
-              }
+              ...entry,
+              ...(typeof patch === 'function' ? patch(entry) : patch),
+            }
             : entry,
         ),
       )
@@ -838,8 +840,8 @@ export default function Upload({
           const formJson = res.data.formJson
           const fieldsArray = Array.isArray(formJson?.panels)
             ? formJson.panels.flatMap((panel: any) =>
-                Array.isArray(panel?.fields) ? panel.fields : [],
-              )
+              Array.isArray(panel?.fields) ? panel.fields : [],
+            )
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
@@ -861,14 +863,14 @@ export default function Upload({
 
           newLabels[repoField] = fieldDef
             ? `${formName} - ${String(
-                fieldDef.displayLabel ||
-                  fieldDef.label ||
-                  fieldDef.name ||
-                  fieldDef.title ||
-                  fieldDef.id ||
-                  fieldDef.key ||
-                  formFieldId,
-              )}`
+              fieldDef.displayLabel ||
+              fieldDef.label ||
+              fieldDef.name ||
+              fieldDef.title ||
+              fieldDef.id ||
+              fieldDef.key ||
+              formFieldId,
+            )}`
             : `${formName} - ${formFieldId}`
         })
 
@@ -1195,7 +1197,10 @@ export default function Upload({
           stageFileId: data.fileId || data.id,
           status: 'ready',
         })
-        lastSavedValuesRef.current.set(singleEntry.id, JSON.stringify(fieldValues))
+        lastSavedValuesRef.current.set(
+          singleEntry.id,
+          JSON.stringify(fieldValues),
+        )
         setOpenFileId(singleEntry.id)
 
         // Stage the file using uploadWithOcr carrying forward the extracted OCR data
@@ -1311,13 +1316,13 @@ export default function Upload({
       }
 
       updateEntry(entry.id, {
-        file: fileObj,
-        previewUrl,
         fieldValues: mappedValues,
+        file: fileObj,
         fileName: data.name || entry.fileName,
         fileSize: typeof data.size === 'number' ? data.size : entry.fileSize,
         ocrExtractedValues: mappedValues,
         ocrStatus: 'complete',
+        previewUrl,
         // load/{fileId} returns `fields` as the flat OCR result array
         // directly - show that in the JSON tab when the generic extractor
         // didn't find a nested ocrJson/ocrResult payload.
@@ -1437,6 +1442,10 @@ export default function Upload({
         setOpenFileId(nextOpen ? nextOpen.id : null)
       }
       setDeleteStageConfirmOpen(false)
+
+      if (onSuccess) {
+        void onSuccess()
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -1612,6 +1621,13 @@ export default function Upload({
         const entry: QueuedUploadFile = {
           activeTab: 'fields',
           backendStatus: data.status || 'OCR',
+          createdAt:
+            typeof data.createdAt === 'string'
+              ? data.createdAt
+              : typeof (data as unknown as { uploadedAt?: unknown }).uploadedAt ===
+                'string'
+                ? ((data as unknown as { uploadedAt: string }).uploadedAt as string)
+                : new Date().toISOString(),
           exportStatus: 'idle',
           fieldValues: mappedValues,
           file: fileObj,
@@ -1645,8 +1661,6 @@ export default function Upload({
     void loadSingleStaged()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialStagedFileId, repositoryFields])
-
-
 
   const buildMetadataFor = (entry: QueuedUploadFile) => {
     const fields = repositoryFields.map((field) => {
@@ -1893,7 +1907,15 @@ export default function Upload({
         return null
       }
     },
-    [queue, repositoryId, repositoryData?.id, t, updateEntry, onSuccess, onBack],
+    [
+      queue,
+      repositoryId,
+      repositoryData?.id,
+      t,
+      updateEntry,
+      onSuccess,
+      onBack,
+    ],
   )
 
   const indexedCount = queue.filter(
@@ -2073,7 +2095,7 @@ export default function Upload({
     const fieldClassName = cn(
       'w-full',
       isSyncField &&
-        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+      '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
     )
 
     const renderSuggestionCapsule = () => {
@@ -2163,15 +2185,15 @@ export default function Upload({
       const selectedOption = findSelectedOption(options, textVal)
       const effectiveOptions =
         selectedOption &&
-        !options.some(
-          (o) =>
-            String(o.value ?? '').toLowerCase() ===
+          !options.some(
+            (o) =>
+              String(o.value ?? '').toLowerCase() ===
               String(selectedOption.value ?? '').toLowerCase() ||
-            String(o.name).toLowerCase() ===
+              String(o.name).toLowerCase() ===
               selectedOption.name.toLowerCase() ||
-            String(o.id).toLowerCase() ===
+              String(o.id).toLowerCase() ===
               String(selectedOption.id).toLowerCase(),
-        )
+          )
           ? [...options, selectedOption]
           : options
 
@@ -2236,10 +2258,10 @@ export default function Upload({
           value={toTextValue(value)}
           type={
             fieldType === 'decimal' ||
-            fieldType === 'number' ||
-            fieldType === 'int' ||
-            fieldType === 'integer' ||
-            fieldType === 'currency'
+              fieldType === 'number' ||
+              fieldType === 'int' ||
+              fieldType === 'integer' ||
+              fieldType === 'currency'
               ? 'number'
               : 'text'
           }
@@ -2325,7 +2347,6 @@ export default function Upload({
         </div>
 
         <div className='flex shrink-0 items-center gap-1.5'>
-
           <Tooltip
             content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
             position='top'
@@ -2544,8 +2565,8 @@ export default function Upload({
   }
 
   return (
-    <AnimateFadeIn className='relative flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-muted px-4 pt-2 pb-3'>
-      <div className='mx-auto flex h-full w-full max-w-7xl min-h-0 flex-1 flex-col gap-3 overflow-hidden'>
+    <AnimateFadeIn className='relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-surface-muted px-4 pt-2 pb-3'>
+      <div className='mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-3 overflow-hidden'>
         <input
           accept={DOCUMENT_ACCEPT}
           className='hidden'
@@ -2579,9 +2600,18 @@ export default function Upload({
                 <button
                   className='flex items-center gap-1.5 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:text-[var(--primary-11)] active:scale-95'
                   type='button'
-                  onClick={onBack}
+                  onClick={() => {
+                    if (activeEntry && !allIndexed) {
+                      setBackConfirmOpen(true)
+                    } else {
+                      onBack()
+                    }
+                  }}
                 >
-                  <Icon className='size-4 text-[var(--gray-10)]' name='lucide:arrow-left' />
+                  <Icon
+                    className='size-4 text-[var(--gray-10)]'
+                    name='lucide:arrow-left'
+                  />
                   <span>{t`Back`}</span>
                 </button>
               </div>
@@ -2598,7 +2628,8 @@ export default function Upload({
                   const isFieldsStep = step === 'Fields'
                   const isDoneStep = step === 'Done'
                   const showStepSpinner =
-                    (isAnalysisStep && isAnalyzing) || (isDoneStep && isExporting)
+                    (isAnalysisStep && isAnalyzing) ||
+                    (isDoneStep && isExporting)
 
                   return (
                     <div
@@ -2624,7 +2655,9 @@ export default function Upload({
                               name='tabler:loader-2'
                             />
                           ) : (
-                            <span className='text-sm font-bold'>{index + 1}</span>
+                            <span className='text-sm font-bold'>
+                              {index + 1}
+                            </span>
                           )}
                         </div>
 
@@ -2685,13 +2718,37 @@ export default function Upload({
                       <h2 className='text-base font-bold text-[var(--gray-13)]'>
                         {t`Document Preview`}
                       </h2>
-                      <p className='truncate text-xs font-medium text-[var(--gray-9)]'>
-                        {activeEntry.fileName}
-                        {activeEntry.fileSize > 0 &&
-                          ` (${formatFileSize(activeEntry.fileSize)})`}
-                      </p>
+                      <div className='mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[var(--gray-9)]'>
+                        <Tooltip content={activeEntry.fileName} position='bottom-start'>
+                          <span className='block max-w-[150px] truncate cursor-pointer'>
+                            {activeEntry.fileName}
+                          </span>
+                        </Tooltip>
+                        <span className='text-[var(--gray-5)]'>•</span>
+                        <span>{formatFileSize(activeEntry.fileSize)}</span>
+                        {activeEntry.createdAt && (
+                          <>
+                            <span className='text-[var(--gray-5)]'>•</span>
+                            <span>
+                              {new Date(activeEntry.createdAt)
+                                .toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: '2-digit',
+                                })
+                                .split('/')
+                                .join('-')}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {isFieldsPhase && !isExporting && (
+                    <span className='shrink-0 rounded-full border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--orange-7)] uppercase'>
+                      {t`Waiting For Export`}
+                    </span>
+                  )}
                 </div>
 
                 <div
@@ -2734,21 +2791,21 @@ export default function Upload({
                 <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
                   <div className='flex min-w-0 items-center gap-3'>
                     <Tooltip
+                      position='top'
                       content={
                         activeTab === 'fields'
                           ? t`Switch to JSON view`
                           : t`Switch to Fields view`
                       }
-                      position='top'
                     >
                       <button
+                        className='flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-12)] shadow-xs transition-all hover:bg-[var(--gray-3)] active:scale-95'
+                        type='button'
                         aria-label={
                           activeTab === 'fields'
                             ? t`Switch to JSON view`
                             : t`Switch to Fields view`
                         }
-                        className='flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-12)] shadow-xs transition-all hover:bg-[var(--gray-3)] active:scale-95'
-                        type='button'
                         onClick={() =>
                           setActiveTabForActiveEntry(
                             activeTab === 'fields' ? 'json' : 'fields',
@@ -2776,15 +2833,16 @@ export default function Upload({
                   </div>
 
                   <div className='flex items-center gap-3'>
-                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saving' && (
-                      <span className='inline-flex items-center gap-1.5 text-xs text-[var(--primary-10)] animate-pulse'>
-                        <Icon
-                          className='size-3.5 animate-spin'
-                          name='tabler:loader-2'
-                        />
-                        <span>{t`Saving...`}</span>
-                      </span>
-                    )}
+                    {ENABLE_INDEXING_AUTOSAVE &&
+                      autoSaveStatus === 'saving' && (
+                        <span className='inline-flex animate-pulse items-center gap-1.5 text-xs text-[var(--primary-10)]'>
+                          <Icon
+                            className='size-3.5 animate-spin'
+                            name='tabler:loader-2'
+                          />
+                          <span>{t`Saving...`}</span>
+                        </span>
+                      )}
                     {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saved' && (
                       <span className='inline-flex items-center gap-1 text-xs text-[var(--green-10)]'>
                         <Icon className='size-3.5' name='lucide:check' />
@@ -2927,8 +2985,6 @@ export default function Upload({
                     </div>
                   )}
                 </div>
-
-
               </AnimateSlideUp>
             </div>
           </>
@@ -2948,6 +3004,26 @@ export default function Upload({
         }}
         onConfirm={() => {
           if (activeEntry) void handleDeleteStageFile(activeEntry.id)
+        }}
+      />
+      <ConfirmDialog
+        cancelLabel={t`No`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to go back? The current file will be deleted if you choose Delete.`}
+        isConfirming={isDeletingStageFile}
+        opened={backConfirmOpen}
+        title={t`Go Back`}
+        variant='danger'
+        onCancel={() => {
+          setBackConfirmOpen(false)
+          onBack()
+        }}
+        onConfirm={async () => {
+          if (activeEntry) {
+            await handleDeleteStageFile(activeEntry.id)
+          }
+          setBackConfirmOpen(false)
+          onBack()
         }}
       />
     </AnimateFadeIn>

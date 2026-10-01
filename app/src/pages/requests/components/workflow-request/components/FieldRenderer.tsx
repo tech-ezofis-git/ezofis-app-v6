@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -16,12 +16,14 @@ import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import {
   buildMergedOcrFieldHints,
+  extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   findFieldOption,
@@ -54,13 +56,7 @@ interface Props {
   repositoryId: string | undefined
   value: any
   error?: string
-  // Already-submitted instance attachments known to belong to THIS field
-  // (see WorkflowFormRenderer's getFieldAttachmentMap) — shown below it
-  // when the field has no in-session value of its own (e.g. after a page
-  // reload, since FILE_UPLOAD values never round-trip through formData).
   fallbackAttachments?: any[]
-  // Full form value model — only used to resolve a TABLE field's configured
-  // AI/OCR line-item source (settings.aiSettings.lineItemSourceFieldId).
   formModel?: Record<string, any>
   isPreparing?: boolean
   panels?: any[]
@@ -68,11 +64,10 @@ interface Props {
   repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
+  onMultiFieldChange?: (patch: Record<string, any>) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
-  // Clicking an already-uploaded file below this field opens it in the
-  // owning screen's full-screen preview.
   onOpenAttachment?: (attachment: any) => void
   onRequestUpload?: (file: File) => void | Promise<void>
 }
@@ -120,6 +115,16 @@ const ChoiceRadioGroupField = ({
     : Math.min(optionsPerLine, Math.max(allOptions.length, 1))
   const selectedValue =
     value !== undefined && value !== null ? String(value) : ''
+
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      allOptions.length === 1 &&
+      (value === undefined || value === null || value === '')
+    ) {
+      onChange(allOptions[0])
+    }
+  }, [allOptions, value, readOnly, onChange])
 
   const handleAddCustom = () => {
     const trimmed = newOptionText.trim()
@@ -304,6 +309,16 @@ const ChoiceCheckboxGroupField = ({
     : value
       ? [String(value)]
       : []
+
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      allOptions.length === 1 &&
+      (!value || (Array.isArray(value) && value.length === 0))
+    ) {
+      onChange([allOptions[0]])
+    }
+  }, [allOptions, value, readOnly, onChange])
 
   const handleToggle = (opt: string) => {
     if (readOnly) return
@@ -494,15 +509,39 @@ const FieldRenderer = ({
   value,
   viewOnly,
   onChange,
+  onMultiFieldChange,
   onOcrFieldList,
   onOpenAttachment,
   onRequestUpload,
 }: Props) => {
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const [clearedAttachmentKeys, setClearedAttachmentKeys] = useState<string[]>(
     [],
   )
+
+  const handleTriggerSearch = (searchValOverride?: any) => {
+    const searchVal =
+      searchValOverride !== undefined ? searchValOverride : value
+    executeSearchFieldSync({
+      currentFormId: repositoryId,
+      field,
+      formModel: formModel || {},
+      panels,
+      searchValue: searchVal,
+      onSearchingStateChange: setIsSearching,
+      onUpdateModel: (patch) => {
+        if (onMultiFieldChange) {
+          onMultiFieldChange(patch)
+        } else {
+          Object.entries(patch).forEach(([fId, val]) => {
+            if (fId === field.id) onChange(val)
+          })
+        }
+      },
+    })
+  }
   const general = field?.settings?.general || {}
   const required = isFieldRequired(field)
   const readOnly = viewOnly || isFieldReadOnly(field)
@@ -511,18 +550,63 @@ const FieldRenderer = ({
   const facetSource = getDropdownFacetSource(field, repositoryId)
   const masterInfo = getMasterFormInfo(field)
 
+  const allFields = useMemo(
+    () => (panels || []).flatMap((p: any) => p.fields || []),
+    [panels],
+  )
+
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+          facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+          facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+      repoParentField.label ||
+      repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? formModel?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && formModel
+    ? formModel[facetSource.repositoryFieldParent]
+    : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
-    enabled: facetSource.enabled,
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'repositoryItemFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
@@ -539,10 +623,6 @@ const FieldRenderer = ({
     },
   })
 
-  const allFields = useMemo(
-    () => (panels || []).flatMap((p: any) => p.fields || []),
-    [panels],
-  )
   const parentField = useMemo(() => {
     if (!masterInfo.masterFormParentColumn) return null
     const target = masterInfo.masterFormParentColumn.trim().toLowerCase()
@@ -600,6 +680,29 @@ const FieldRenderer = ({
     masterFieldOptions,
   )
 
+  useEffect(() => {
+    if (readOnly) return
+    if (
+      (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT') &&
+      selectOptions.length === 1
+    ) {
+      const singleOptVal = selectOptionStoredValue(
+        selectOptions[0],
+        selectOptions,
+      )
+      if (field.type === 'SINGLE_SELECT') {
+        if (value === undefined || value === null || value === '') {
+          onChange(singleOptVal)
+        }
+      } else if (field.type === 'MULTI_SELECT') {
+        const currentList = normalizeStoredMultiSelectValue(value)
+        if (currentList.length === 0) {
+          onChange([singleOptVal])
+        }
+      }
+    }
+  }, [field.type, selectOptions, value, readOnly, onChange])
+
   const common = {
     disabled: readOnly,
     error,
@@ -654,8 +757,42 @@ const FieldRenderer = ({
         />
       )
     case 'FULL_NAME':
-    case 'SHORT_TEXT':
+    case 'SHORT_TEXT': {
+      const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+      if (isSearchField) {
+        return (
+          <div className='flex items-end gap-1.5 w-full'>
+            <div className='flex-1 min-w-0'>
+              <InputText
+                {...common}
+                value={value || ''}
+                onChange={onChange}
+                onKeyDown={(e: any) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleTriggerSearch()
+                  }
+                }}
+              />
+            </div>
+            <button
+              className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+              disabled={readOnly || isSearching}
+              title='Search & Auto-Sync'
+              type='button'
+              onClick={() => handleTriggerSearch()}
+            >
+              {isSearching ? (
+                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+              ) : (
+                <Icon className='size-4' name='lucide:search' />
+              )}
+            </button>
+          </div>
+        )
+      }
       return <InputText {...common} value={value || ''} onChange={onChange} />
+    }
 
     case 'TEXT_BUILDER':
     case 'LONG_TEXT':
@@ -670,8 +807,42 @@ const FieldRenderer = ({
 
     case 'CURRENCY_AMOUNT':
     case 'COUNTER':
-    case 'NUMBER':
+    case 'NUMBER': {
+      const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+      if (isSearchField) {
+        return (
+          <div className='flex items-end gap-1.5 w-full'>
+            <div className='flex-1 min-w-0'>
+              <InputNumber
+                {...common}
+                value={value ?? ''}
+                onChange={onChange}
+                onKeyDown={(e: any) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleTriggerSearch()
+                  }
+                }}
+              />
+            </div>
+            <button
+              className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+              disabled={readOnly || isSearching}
+              title='Search & Auto-Sync'
+              type='button'
+              onClick={() => handleTriggerSearch()}
+            >
+              {isSearching ? (
+                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+              ) : (
+                <Icon className='size-4' name='lucide:search' />
+              )}
+            </button>
+          </div>
+        )
+      }
       return <InputNumber {...common} value={value ?? ''} onChange={onChange} />
+    }
 
     case 'CALCULATED':
       return (
@@ -742,6 +913,49 @@ const FieldRenderer = ({
 
     case 'SINGLE_SELECT': {
       const selected = findFieldOption(selectOptions, value)
+      const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+      if (isSearchField) {
+        return (
+          <div className='flex items-end gap-1.5 w-full'>
+            <div className='flex-1 min-w-0'>
+              <InputSelect
+                {...common}
+                createOptionLabel={(query) => t`Add "${query}"`}
+                value={selected}
+                creatable
+                searchable
+                options={withExtraFieldOptions(
+                  selectOptions,
+                  selected ? [selected] : [],
+                )}
+                onChange={(opt: Option | null) => {
+                  const val = opt
+                    ? selectOptionStoredValue(opt, selectOptions)
+                    : null
+                  onChange(val)
+                }}
+              />
+            </div>
+            <button
+              className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+              disabled={readOnly || isSearching}
+              title='Search & Auto-Sync'
+              type='button'
+              onClick={() =>
+                handleTriggerSearch(
+                  selected ? selectOptionStoredValue(selected, selectOptions) : value,
+                )
+              }
+            >
+              {isSearching ? (
+                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+              ) : (
+                <Icon className='size-4' name='lucide:search' />
+              )}
+            </button>
+          </div>
+        )
+      }
       return (
         <InputSelect
           {...common}

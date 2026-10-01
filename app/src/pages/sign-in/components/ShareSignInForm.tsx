@@ -143,10 +143,9 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
       )
       if (match) {
         const rawType = match[1].trim()
-        const loginType =
-          /^[a-z]+$/.test(rawType)
-            ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
-            : rawType
+        const loginType = /^[a-z]+$/.test(rawType)
+          ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+          : rawType
         setError(t`Please sign in with ${loginType} to continue.`)
       } else {
         setError(apiError)

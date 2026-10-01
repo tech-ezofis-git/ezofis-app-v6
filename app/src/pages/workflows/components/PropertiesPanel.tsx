@@ -12,9 +12,9 @@ const FTPAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const KYCAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/KYCAgentNodeSettings'),
 )
-const ProcurementAgentNodeSettings = lazy<
-  React.ComponentType<{ node: Node }>
->(() => import('./settings/ProcurementAgentNodeSettings'))
+const ProcurementAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/ProcurementAgentNodeSettings'),
+)
 const DocumentGenerateAgentNodeSettings = lazy<
   React.ComponentType<{ node: Node }>
 >(() => import('./settings/DocumentGenerateAgentNodeSettings'))

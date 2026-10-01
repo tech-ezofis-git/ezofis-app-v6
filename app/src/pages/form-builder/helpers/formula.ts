@@ -115,9 +115,7 @@ export const sumTableColumn = (
 ): number => {
   if (!columnId) return 0
   return normalizeTableRows(rows).reduce((total, row) => {
-    const parsed = extractNumericValue(
-      cellValueFromRow(row, columnId, aliases),
-    )
+    const parsed = extractNumericValue(cellValueFromRow(row, columnId, aliases))
     return total + (parsed ?? 0)
   }, 0)
 }
@@ -198,7 +196,8 @@ const getDecimalPrecision = (field: Question): number | undefined => {
   const specific = field.settings?.specific?.decimalPrecision
   const validation = field.settings?.validation?.decimalDigits
   const raw = specific ?? validation
-  if (raw === undefined || raw === null || String(raw).trim() === '') return undefined
+  if (raw === undefined || raw === null || String(raw).trim() === '')
+    return undefined
   const parsed = Number(raw)
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined
 }

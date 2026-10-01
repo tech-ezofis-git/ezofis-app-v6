@@ -101,9 +101,7 @@ const SortableSectionItem = ({
 
   const isSectionMatch =
     searchQuery.trim() &&
-    (p.settings.title || '')
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+    (p.settings.title || '').toLowerCase().includes(searchQuery.toLowerCase())
 
   const scrollToQuestion = (qId: string) => {
     setActiveQuestionId(qId)
@@ -127,23 +125,21 @@ const SortableSectionItem = ({
       {...(isConfirmingDelete ? {} : attributes)}
       {...(isConfirmingDelete ? {} : listeners)}
       className={cn(
-        'group relative cursor-default select-none flex flex-col gap-0.5',
+        'group relative flex cursor-default flex-col gap-0.5 select-none',
         isDragging && 'z-50 scale-102 rounded-lg bg-white opacity-50 shadow-lg',
       )}
       onMouseLeave={handleMouseLeave}
     >
       <div
         className={cn(
-          'relative flex w-full items-center rounded-lg transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-0',
+          'relative flex w-full cursor-pointer items-center rounded-lg transition-all duration-200 outline-none focus:ring-0 focus:outline-none',
           isCollapsed
             ? 'size-9 justify-center p-2'
             : 'gap-2 px-2.5 py-1.5 text-left',
           'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
-          isActive &&
-            'bg-primary-3 text-primary-9 font-bold shadow-2xs',
-          isSectionMatch && 'bg-purple-3 text-purple-11 font-bold',
-          isDragging &&
-            'scale-[1.02] bg-primary-3 text-primary-9 shadow-md',
+          isActive && 'bg-primary-3 font-bold text-primary-9 shadow-2xs',
+          isSectionMatch && 'bg-purple-3 font-bold text-purple-11',
+          isDragging && 'scale-[1.02] bg-primary-3 text-primary-9 shadow-md',
           isConfirmingDelete && 'bg-red-3 text-red-11',
         )}
         onClick={handleSectionHeaderClick}
@@ -204,7 +200,7 @@ const SortableSectionItem = ({
                     height={13}
                     width={13}
                     name={
-                      (isFieldsOpen || isSearchActive)
+                      isFieldsOpen || isSearchActive
                         ? 'lucide:chevron-down'
                         : 'lucide:chevron-right'
                     }
@@ -220,9 +216,9 @@ const SortableSectionItem = ({
                   withArrow
                 >
                   <Icon
+                    height={isCollapsed ? 18 : 14}
                     name={p.settings.isLocked ? 'lucide:lock' : 'lucide:layout'}
                     width={isCollapsed ? 18 : 14}
-                    height={isCollapsed ? 18 : 14}
                     className={cn(
                       'shrink-0 transition-all',
                       isActive
@@ -252,7 +248,7 @@ const SortableSectionItem = ({
                 {index > 0 && (
                   <Tooltip label='Move section up' position='top' withArrow>
                     <ActionIcon
-                      className='hover:bg-primary-3 hover:text-primary-9 text-gray-10'
+                      className='text-gray-10 hover:bg-primary-3 hover:text-primary-9'
                       color='gray'
                       size='xs'
                       variant='subtle'
@@ -269,7 +265,7 @@ const SortableSectionItem = ({
                 {index < totalPanels - 1 && (
                   <Tooltip label='Move section down' position='top' withArrow>
                     <ActionIcon
-                      className='hover:bg-primary-3 hover:text-primary-9 text-gray-10'
+                      className='text-gray-10 hover:bg-primary-3 hover:text-primary-9'
                       color='gray'
                       size='xs'
                       variant='subtle'
@@ -285,7 +281,7 @@ const SortableSectionItem = ({
 
                 <Tooltip label='Delete section' position='top' withArrow>
                   <ActionIcon
-                    className='hover:bg-red-3 hover:text-red-11 text-gray-10 transition-colors'
+                    className='text-gray-10 transition-colors hover:bg-red-3 hover:text-red-11'
                     color='red'
                     size='xs'
                     variant='subtle'
@@ -304,60 +300,65 @@ const SortableSectionItem = ({
       </div>
 
       {/* Render Fields Tree inside Section */}
-      {!isCollapsed && (isFieldsOpen || isSearchActive) && p.fields && p.fields.length > 0 && (
-        <div className='ml-5 flex flex-col gap-0.5 border-l border-gray-3 pl-2 py-0.5'>
-          {p.fields.map((f: any) => {
-            const isFieldActive = activeQuestionId === f.id
-            const isFieldMatch =
-              isSearchActive &&
-              ((f.label || '')
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-                (f.type || '').toLowerCase().includes(searchQuery.toLowerCase()))
+      {!isCollapsed &&
+        (isFieldsOpen || isSearchActive) &&
+        p.fields &&
+        p.fields.length > 0 && (
+          <div className='ml-5 flex flex-col gap-0.5 border-l border-gray-3 py-0.5 pl-2'>
+            {p.fields.map((f: any) => {
+              const isFieldActive = activeQuestionId === f.id
+              const isFieldMatch =
+                isSearchActive &&
+                ((f.label || '')
+                  .toLowerCase()
+                  .includes(searchQuery.toLowerCase()) ||
+                  (f.type || '')
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()))
 
-            return (
-              <button
-                key={f.id}
-                type='button'
-                className={cn(
-                  'group/f flex items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-all cursor-pointer border-0 outline-none focus:outline-none focus:ring-0',
-                  isFieldActive
-                    ? 'bg-primary-3 text-primary-9 font-semibold'
-                    : isFieldMatch
-                      ? 'bg-purple-3 text-purple-11 font-semibold'
-                      : 'text-gray-11 hover:bg-gray-2 hover:text-gray-13',
-                )}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  scrollToQuestion(f.id)
-                }}
-              >
-                <Icon
-                  height={12}
-                  name={getFieldIcon(f.type)}
-                  width={12}
+              return (
+                <button
+                  key={f.id}
+                  type='button'
                   className={cn(
-                    'shrink-0 transition-colors',
+                    'group/f flex cursor-pointer items-center gap-2 rounded-md border-0 px-2 py-1 text-left text-xs transition-all outline-none focus:ring-0 focus:outline-none',
                     isFieldActive
-                      ? 'text-primary-9'
+                      ? 'bg-primary-3 font-semibold text-primary-9'
                       : isFieldMatch
-                        ? 'text-purple-11'
-                        : 'text-gray-9 group-hover/f:text-gray-12',
+                        ? 'bg-purple-3 font-semibold text-purple-11'
+                        : 'text-gray-11 hover:bg-gray-2 hover:text-gray-13',
                   )}
-                />
-                <span className='truncate flex-1 font-medium'>
-                  {f.label || 'Untitled Field'}
-                </span>
-                {f.isMandatory && (
-                  <span className='shrink-0 text-[10px] font-bold text-red-11'>
-                    *
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    scrollToQuestion(f.id)
+                  }}
+                >
+                  <Icon
+                    height={12}
+                    name={getFieldIcon(f.type)}
+                    width={12}
+                    className={cn(
+                      'shrink-0 transition-colors',
+                      isFieldActive
+                        ? 'text-primary-9'
+                        : isFieldMatch
+                          ? 'text-purple-11'
+                          : 'text-gray-9 group-hover/f:text-gray-12',
+                    )}
+                  />
+                  <span className='flex-1 truncate font-medium'>
+                    {f.label || 'Untitled Field'}
                   </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
+                  {f.isMandatory && (
+                    <span className='shrink-0 text-[10px] font-bold text-red-11'>
+                      *
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
     </div>
   )
 }
@@ -392,10 +393,9 @@ const LeftSidebar = () => {
   const filteredPanels = useMemo(() => {
     if (!searchQuery.trim()) return panels
     return panels.filter((p) => {
-      const matchTitle =
-        (p?.settings?.title || '')
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
+      const matchTitle = (p?.settings?.title || '')
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
       const matchDesc =
         (p?.settings?.description || '')
           .toLowerCase()
@@ -500,7 +500,7 @@ const LeftSidebar = () => {
                   )}
                 />
                 <input
-                  className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3 shadow-2xs'
+                  className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
                   placeholder='Search sections or fields...'
                   type='text'
                   value={searchQuery}
@@ -555,7 +555,7 @@ const LeftSidebar = () => {
                   {/* Plus button directly on Section header row */}
                   <Tooltip label='Add Section' position='top' withArrow>
                     <ActionIcon
-                      className='hover:bg-primary-3 text-primary-9'
+                      className='text-primary-9 hover:bg-primary-3'
                       color='primary'
                       size='xs'
                       variant='subtle'

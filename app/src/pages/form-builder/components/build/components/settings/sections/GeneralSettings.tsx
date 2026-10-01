@@ -1,5 +1,9 @@
 import { UnstyledButton } from '@mantine/core'
-import type { FormLayout, FormType, PublishStatus } from '@/pages/form-builder/store/formStore'
+import type {
+  FormLayout,
+  FormType,
+  PublishStatus,
+} from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
@@ -123,13 +127,13 @@ const GeneralSettings = () => {
                 <div className='px-1'>
                   <div
                     className={cn(
-                      'mb-0.5 text-12 font-semibold leading-none tracking-tight uppercase',
+                      'mb-0.5 text-12 leading-none font-semibold tracking-tight uppercase',
                       active ? 'text-primary-9' : 'text-gray-12',
                     )}
                   >
                     {t.name}
                   </div>
-                  <div className='truncate text-[10px] font-normal leading-tight text-gray-10'>
+                  <div className='truncate text-[10px] leading-tight font-normal text-gray-10'>
                     {t.desc}
                   </div>
                 </div>
@@ -142,7 +146,8 @@ const GeneralSettings = () => {
       {/* 4. Form Layout Cards */}
       <div className='space-y-2.5'>
         <div className='flex items-center gap-2 text-13 font-medium text-gray-11'>
-          <Icon height={15} name='lucide:layout-template' width={15} /> Form Layout
+          <Icon height={15} name='lucide:layout-template' width={15} /> Form
+          Layout
         </div>
         <div className='flex flex-col gap-2'>
           {LAYOUT_OPTIONS.map((l) => {
@@ -197,7 +202,9 @@ const GeneralSettings = () => {
 
       {/* 5. Publish Option */}
       <div className='flex flex-col gap-1.5 pt-1'>
-        <label className='text-13 font-medium text-gray-11'>Publish Option</label>
+        <label className='text-13 font-medium text-gray-11'>
+          Publish Option
+        </label>
         <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
           {[
             { id: 'DRAFT', label: 'Draft' },
@@ -207,12 +214,12 @@ const GeneralSettings = () => {
             return (
               <button
                 key={opt.id}
+                type='button'
                 className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
                   active
                     ? 'bg-primary-9 text-white shadow-sm'
                     : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
                 }`}
-                type='button'
                 onClick={() => setPublishStatus(opt.id as PublishStatus)}
               >
                 {opt.label}

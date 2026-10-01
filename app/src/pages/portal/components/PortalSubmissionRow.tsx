@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import type { V6WorkflowDetail } from '@/api/v6/workflows'
+import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
@@ -11,7 +12,6 @@ import {
   resolveFormJson,
 } from '@/pages/requests/components/columns/useDynamicColumns'
 import GenericStagePill from '@/pages/requests/components/GenericStagePill'
-import type { WorkflowOption } from '@/pages/requests/types'
 import { buildTableMeta } from '@/pages/requests/utils/dynamicTable.utils'
 import {
   extractPreviewValues,
@@ -65,9 +65,9 @@ const toListRow = (submission: PortalSubmission): Record<string, any> => {
 }
 
 export default function PortalSubmissionRow({
-  onOpen,
   submission,
   workflow,
+  onOpen,
 }: PortalSubmissionRowProps) {
   const row = useMemo(() => toListRow(submission), [submission])
   const previewValues = useMemo(
@@ -147,107 +147,113 @@ export default function PortalSubmissionRow({
       onClick={() => onOpen(submission)}
     >
       <div className='overflow-x-auto'>
-      <div className='grid min-w-[820px] w-full grid-cols-[minmax(0,1.3fr)_9.75rem_11.75rem_minmax(0,1fr)_7.25rem_1rem] items-center gap-3 px-1 py-3.5'>
-        <div className='flex min-w-0 items-center gap-2'>
-          <span className='shrink-0 text-13 font-bold text-gray-13'>
-            {requestNo}
-          </span>
-          <GenericStagePill
-            currentLabel={currentLabel}
-            isTerminal={isTerminal}
-            previousLabel={previousLabel}
-          />
-          {dynamicFieldRows.length > 0 ? (
-            <div className='hidden min-w-0 flex-1 truncate lg:block'>
-              {dynamicFieldRows.map((fieldRow, rowIdx) => (
-                <div
-                  className='flex items-center gap-1.5 truncate'
-                  key={fieldRow.map((col) => col.id).join('-') || rowIdx}
-                >
-                  {fieldRow.map((col, idx) => (
-                    <span className='flex items-center gap-1.5' key={col.id}>
-                      {idx > 0 && <span className='text-gray-6'>·</span>}
-                      <span className='truncate text-11 font-medium text-gray-10'>
-                        {col.renderCell?.(row) ?? '-'}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ) : submission.title !== submission.requestNo ? (
-            <span className='hidden truncate text-11 font-medium text-gray-10 lg:inline'>
-              {submission.title}
+        <div className='grid w-full min-w-[820px] grid-cols-[minmax(0,1.3fr)_9.75rem_11.75rem_minmax(0,1fr)_7.25rem_1rem] items-center gap-3 px-1 py-3.5'>
+          <div className='flex min-w-0 items-center gap-2'>
+            <span className='shrink-0 text-13 font-bold text-gray-13'>
+              {requestNo}
             </span>
-          ) : null}
-        </div>
-
-        <div className='flex min-w-0 justify-start'>
-          <span
-            className={cn(
-              'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-              PORTAL_STATUS_TONE[submission.status],
-            )}
-          >
-            <span className='size-1.5 shrink-0 rounded-full bg-current' />
-            <span className='truncate'>{submission.status}</span>
-          </span>
-        </div>
-
-        <div className='flex min-w-0 items-center'>
-          {startedAt ? (
-            <Tooltip
-              content={`Raised Date: ${dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}`}
-              position='bottom'
-            >
-              <div className='flex items-center gap-1 whitespace-nowrap text-11 text-gray-9'>
-                <Icon className='size-3 shrink-0 text-gray-7' name='tabler:calendar' />
-                <span>
-                  {dayjs(parseUtcDate(startedAt)).format(
-                    'DD-MMM-YYYY hh:mm A',
-                  )}
-                </span>
+            <GenericStagePill
+              currentLabel={currentLabel}
+              isTerminal={isTerminal}
+              previousLabel={previousLabel}
+            />
+            {dynamicFieldRows.length > 0 ? (
+              <div className='hidden min-w-0 flex-1 truncate lg:block'>
+                {dynamicFieldRows.map((fieldRow, rowIdx) => (
+                  <div
+                    className='flex items-center gap-1.5 truncate'
+                    key={fieldRow.map((col) => col.id).join('-') || rowIdx}
+                  >
+                    {fieldRow.map((col, idx) => (
+                      <span className='flex items-center gap-1.5' key={col.id}>
+                        {idx > 0 && <span className='text-gray-6'>·</span>}
+                        <span className='truncate text-11 font-medium text-gray-10'>
+                          {col.renderCell?.(row) ?? '-'}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                ))}
               </div>
-            </Tooltip>
-          ) : null}
-        </div>
-
-        <div className='flex min-w-0 items-center justify-end'>
-          {raisedBy ? (
-            <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
-              <div className='flex min-w-0 items-center gap-1.5 font-medium text-gray-11'>
-                <Icon className='size-3.5 shrink-0 text-gray-8' name='tabler:user' />
-                <span className='truncate'>{raisedBy}</span>
-              </div>
-            </Tooltip>
-          ) : null}
-        </div>
-
-        <div className='flex justify-end'>
-          {lastActionAt ? (
-            <Tooltip
-              position='bottom'
-              content={
-                lastActionBy
-                  ? `Last action by ${lastActionBy}`
-                  : 'Time running from last action'
-              }
-            >
-              <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold whitespace-nowrap text-orange-11'>
-                <Icon className='size-3 text-orange-9' name='tabler:clock' />
-                <span>{formatRunningTime(lastActionAt)}</span>
+            ) : submission.title !== submission.requestNo ? (
+              <span className='hidden truncate text-11 font-medium text-gray-10 lg:inline'>
+                {submission.title}
               </span>
-            </Tooltip>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
 
-        <Icon
-          className={cn(
-            'size-4 shrink-0 justify-self-end text-gray-6 transition-colors group-hover:text-gray-9',
-          )}
-          name='tabler:chevron-right'
-        />
-      </div>
+          <div className='flex min-w-0 justify-start'>
+            <span
+              className={cn(
+                'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
+                PORTAL_STATUS_TONE[submission.status],
+              )}
+            >
+              <span className='size-1.5 shrink-0 rounded-full bg-current' />
+              <span className='truncate'>{submission.status}</span>
+            </span>
+          </div>
+
+          <div className='flex min-w-0 items-center'>
+            {startedAt ? (
+              <Tooltip
+                content={`Raised Date: ${dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}`}
+                position='bottom'
+              >
+                <div className='flex items-center gap-1 text-11 whitespace-nowrap text-gray-9'>
+                  <Icon
+                    className='size-3 shrink-0 text-gray-7'
+                    name='tabler:calendar'
+                  />
+                  <span>
+                    {dayjs(parseUtcDate(startedAt)).format(
+                      'DD-MMM-YYYY hh:mm A',
+                    )}
+                  </span>
+                </div>
+              </Tooltip>
+            ) : null}
+          </div>
+
+          <div className='flex min-w-0 items-center justify-end'>
+            {raisedBy ? (
+              <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
+                <div className='flex min-w-0 items-center gap-1.5 font-medium text-gray-11'>
+                  <Icon
+                    className='size-3.5 shrink-0 text-gray-8'
+                    name='tabler:user'
+                  />
+                  <span className='truncate'>{raisedBy}</span>
+                </div>
+              </Tooltip>
+            ) : null}
+          </div>
+
+          <div className='flex justify-end'>
+            {lastActionAt ? (
+              <Tooltip
+                position='bottom'
+                content={
+                  lastActionBy
+                    ? `Last action by ${lastActionBy}`
+                    : 'Time running from last action'
+                }
+              >
+                <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold whitespace-nowrap text-orange-11'>
+                  <Icon className='size-3 text-orange-9' name='tabler:clock' />
+                  <span>{formatRunningTime(lastActionAt)}</span>
+                </span>
+              </Tooltip>
+            ) : null}
+          </div>
+
+          <Icon
+            name='tabler:chevron-right'
+            className={cn(
+              'size-4 shrink-0 justify-self-end text-gray-6 transition-colors group-hover:text-gray-9',
+            )}
+          />
+        </div>
       </div>
     </button>
   )

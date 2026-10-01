@@ -29,9 +29,27 @@ export const useRequestDetail = (
         const txId = undefined
 
         const [inboxRes, sentRes, completedRes] = await Promise.all([
-          workflowsApiV6.getInboxList(String(workflowId), 1, 5, String(processId), txId),
-          workflowsApiV6.getSentList(String(workflowId), 1, 5, String(processId), txId),
-          workflowsApiV6.getCompletedList(String(workflowId), 1, 5, String(processId), txId),
+          workflowsApiV6.getInboxList(
+            String(workflowId),
+            1,
+            5,
+            String(processId),
+            txId,
+          ),
+          workflowsApiV6.getSentList(
+            String(workflowId),
+            1,
+            5,
+            String(processId),
+            txId,
+          ),
+          workflowsApiV6.getCompletedList(
+            String(workflowId),
+            1,
+            5,
+            String(processId),
+            txId,
+          ),
         ])
 
         const allItems = [
@@ -55,8 +73,20 @@ export const useRequestDetail = (
             if (!Number.isNaN(txA) && !Number.isNaN(txB)) {
               return txB - txA
             }
-            const dateA = new Date(a.transactionCreatedAt || a.lastActionDate || a.updatedAt || a.createdAt || 0).getTime()
-            const dateB = new Date(b.transactionCreatedAt || b.lastActionDate || b.updatedAt || b.createdAt || 0).getTime()
+            const dateA = new Date(
+              a.transactionCreatedAt ||
+                a.lastActionDate ||
+                a.updatedAt ||
+                a.createdAt ||
+                0,
+            ).getTime()
+            const dateB = new Date(
+              b.transactionCreatedAt ||
+                b.lastActionDate ||
+                b.updatedAt ||
+                b.createdAt ||
+                0,
+            ).getTime()
             return dateB - dateA
           })
 
@@ -177,11 +207,15 @@ export const useRequestDetail = (
 
       // Check if it has agent decision or is completed
       const agentDataList = data._agentData || []
-      const hasAgentDecision = agentDataList.some((agent: any) => {
-        return !!(agent?.decision || data.review || data.completedAtUtc)
-      }) || !!data.qualifyAgentResponse?.qualifier_result || !!data.agentResponse
+      const hasAgentDecision =
+        agentDataList.some((agent: any) => {
+          return !!(agent?.decision || data.review || data.completedAtUtc)
+        }) ||
+        !!data.qualifyAgentResponse?.qualifier_result ||
+        !!data.agentResponse
 
-      const isAgentStage = data.stageType?.includes('AGENT') || data.stageType === 'AP_AGENT'
+      const isAgentStage =
+        data.stageType?.includes('AGENT') || data.stageType === 'AP_AGENT'
       const isDone =
         hasAgentDecision ||
         ['Verifier', 'Approved', 'Completed'].includes(data.stage)

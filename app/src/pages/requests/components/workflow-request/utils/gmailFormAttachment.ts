@@ -122,7 +122,9 @@ export const getFormPanels = (workflow: any): any[] => {
 }
 
 export const isFileUploadField = (field: any): boolean => {
-  const type = asScalar(field?.type).toUpperCase().replace(/[\s-]+/g, '_')
+  const type = asScalar(field?.type)
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
   return type === 'FILE_UPLOAD' || type === 'FILEUPLOAD'
 }
 
@@ -144,11 +146,16 @@ export const hasStoredFileValue = (value: unknown): boolean => {
   return Boolean(fileName && itemId)
 }
 
-const attachmentKey = (attachment: {
-  fileId?: unknown
-  id?: unknown
-  itemId?: unknown
-} | null | undefined): string =>
+const attachmentKey = (
+  attachment:
+    | {
+        fileId?: unknown
+        id?: unknown
+        itemId?: unknown
+      }
+    | null
+    | undefined,
+): string =>
   asScalar(
     attachment?.itemId ??
       attachment?.fileId ??
@@ -156,11 +163,16 @@ const attachmentKey = (attachment: {
       (attachment as { attachmentId?: unknown } | undefined)?.attachmentId,
   )
 
-const attachmentReceivedAt = (attachment: {
-  createdAt?: unknown
-  createdAtUtc?: unknown
-  occurredAtUtc?: unknown
-} | null | undefined): number => {
+const attachmentReceivedAt = (
+  attachment:
+    | {
+        createdAt?: unknown
+        createdAtUtc?: unknown
+        occurredAtUtc?: unknown
+      }
+    | null
+    | undefined,
+): number => {
   const raw = asScalar(
     attachment?.createdAtUtc ||
       attachment?.createdAt ||
@@ -171,9 +183,14 @@ const attachmentReceivedAt = (attachment: {
   return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY
 }
 
-const isInitiateAttachment = (attachment: {
-  initiate?: unknown
-} | null | undefined): boolean => {
+const isInitiateAttachment = (
+  attachment:
+    | {
+        initiate?: unknown
+      }
+    | null
+    | undefined,
+): boolean => {
   const flag = attachment?.initiate
   if (flag === true || flag === 1) return true
   if (typeof flag !== 'string') return false
@@ -182,7 +199,7 @@ const isInitiateAttachment = (attachment: {
 
 // Process attachments are usually newest-first. The form's first FILE_UPLOAD
 // field should show the original incoming file (email initiate, or oldest).
-export const getFirstReceivedAttachment = <T,>(
+export const getFirstReceivedAttachment = <T>(
   attachments: T[] | null | undefined,
 ): T | undefined => {
   if (!attachments?.length) return undefined
@@ -223,7 +240,7 @@ export const getFirstReceivedAttachment = <T,>(
 }
 
 /** Newest attachment (generated PDF, latest upload) — opposite of first received. */
-export const getLatestAttachment = <T,>(
+export const getLatestAttachment = <T>(
   attachments: T[] | null | undefined,
 ): T | undefined => {
   if (!attachments?.length) return undefined
@@ -271,23 +288,27 @@ export const getLatestAttachment = <T,>(
     attachments.length > 1 &&
     isInitiateAttachment(head as { initiate?: unknown })
   ) {
-    return attachments.find(
-      (item) => !isInitiateAttachment(item as { initiate?: unknown }),
-    ) || head
+    return (
+      attachments.find(
+        (item) => !isInitiateAttachment(item as { initiate?: unknown }),
+      ) || head
+    )
   }
   return head
 }
 
 export const attachmentToFormFileValue = (
-  attachment: {
-    fileId?: unknown
-    fileName?: string
-    id?: unknown
-    itemId?: unknown
-    name?: string
-    repositoryId?: unknown
-  } | null
-  | undefined,
+  attachment:
+    | {
+        fileId?: unknown
+        fileName?: string
+        id?: unknown
+        itemId?: unknown
+        name?: string
+        repositoryId?: unknown
+      }
+    | null
+    | undefined,
   fallbackRepositoryId?: unknown,
 ): StoredFormFileValue | null => {
   if (!attachment) return null

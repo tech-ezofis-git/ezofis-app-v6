@@ -194,7 +194,13 @@ const norm = (s: any) => String(s || '').toLowerCase()
 const esc = (s: any) =>
   String(s).replace(
     /[&<>"]/g,
-    (c) => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' } as Record<string, string>)[c] || c,
+    (c) =>
+      (
+        ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }) as Record<
+          string,
+          string
+        >
+      )[c] || c,
   )
 
 export function foundLine(f: any, needles: any) {
@@ -223,16 +229,16 @@ export function foundLine(f: any, needles: any) {
 
 export function hl(text: any, needles: any) {
   let out = esc(text)
-    ; (needles || []).filter(Boolean).forEach((n: any) => {
-      const r = new RegExp(
-        '(' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')',
-        'ig',
-      )
-      out = out.replace(
-        r,
-        '<mark class="bg-primary-3 text-primary-11 px-0.5 rounded-sm">$1</mark>',
-      )
-    })
+  ;(needles || []).filter(Boolean).forEach((n: any) => {
+    const r = new RegExp(
+      '(' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')',
+      'ig',
+    )
+    out = out.replace(
+      r,
+      '<mark class="bg-primary-3 text-primary-11 px-0.5 rounded-sm">$1</mark>',
+    )
+  })
   return out
 }
 

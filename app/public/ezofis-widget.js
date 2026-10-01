@@ -52,59 +52,6 @@
   var EzofisWidget = {
     version: '1.6.0',
 
-    init: function (config) {
-      config = config || {};
-      var page = config.page || 'folders';
-      var email = config.email || '';
-      var mode = config.mode || 'inline';
-      var baseUrl = config.baseUrl || DEFAULT_BASE_URL;
-
-      if (mode === 'floating') {
-        return this.createFloatingWidget(page, email, baseUrl, config);
-      } else {
-        var targetEl = typeof config.target === 'string' ? document.querySelector(config.target) : config.target;
-        if (!targetEl) {
-          console.error('[EZOFISWidget] Target element not found:', config.target);
-          return null;
-        }
-        return this.createInlineWidget(targetEl, page, email, baseUrl, config);
-      }
-    },
-
-    createInlineWidget: function (container, page, email, baseUrl, options) {
-      options = options || {};
-      var currentEmail = email;
-      var currentPage = page;
-
-      var iframe = document.createElement('iframe');
-      iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
-      iframe.style.width = options.width || '100%';
-      iframe.style.height = options.height || '650px';
-      iframe.style.border = 'none';
-      iframe.style.borderRadius = options.borderRadius || '12px';
-      iframe.style.boxShadow = options.boxShadow || '0 4px 16px rgba(15, 23, 42, 0.08)';
-      iframe.allow = 'clipboard-read; clipboard-write; camera; microphone';
-      iframe.setAttribute('title', 'EZOFIS ' + currentPage + ' Widget');
-
-      container.innerHTML = '';
-      container.appendChild(iframe);
-
-      return {
-        iframe: iframe,
-        updateUser: function (newEmail) {
-          currentEmail = newEmail;
-          iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
-        },
-        switchPage: function (newPage) {
-          currentPage = newPage;
-          iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
-        },
-        destroy: function () {
-          if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-        }
-      };
-    },
-
     createFloatingWidget: function (page, email, baseUrl, options) {
       options = options || {};
       var currentEmail = email;
@@ -222,15 +169,12 @@
       document.body.appendChild(panel);
 
       var instance = {
-        open: function () { if (!isOpen) button.click(); },
         close: function () { if (isOpen) button.click(); },
-        toggle: function () { button.click(); },
-        updateUser: function (newEmail) {
-          currentEmail = newEmail;
-          if (iframe) {
-            iframe.src = buildEmbedUrl(cleanBase, currentPage, currentEmail, options);
-          }
+        destroy: function () {
+          if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+          if (panel.parentNode) panel.parentNode.removeChild(panel);
         },
+        open: function () { if (!isOpen) button.click(); },
         switchPage: function (newPage) {
           currentPage = newPage;
           if (!isOpen) {
@@ -240,14 +184,70 @@
             iframe.src = buildEmbedUrl(cleanBase, currentPage, currentEmail, options);
           }
         },
-        destroy: function () {
-          if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
-          if (panel.parentNode) panel.parentNode.removeChild(panel);
+        toggle: function () { button.click(); },
+        updateUser: function (newEmail) {
+          currentEmail = newEmail;
+          if (iframe) {
+            iframe.src = buildEmbedUrl(cleanBase, currentPage, currentEmail, options);
+          }
         }
       };
 
       wrapper._instance = instance;
       return instance;
+    },
+
+    createInlineWidget: function (container, page, email, baseUrl, options) {
+      options = options || {};
+      var currentEmail = email;
+      var currentPage = page;
+
+      var iframe = document.createElement('iframe');
+      iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
+      iframe.style.width = options.width || '100%';
+      iframe.style.height = options.height || '650px';
+      iframe.style.border = 'none';
+      iframe.style.borderRadius = options.borderRadius || '12px';
+      iframe.style.boxShadow = options.boxShadow || '0 4px 16px rgba(15, 23, 42, 0.08)';
+      iframe.allow = 'clipboard-read; clipboard-write; camera; microphone';
+      iframe.setAttribute('title', 'EZOFIS ' + currentPage + ' Widget');
+
+      container.innerHTML = '';
+      container.appendChild(iframe);
+
+      return {
+        iframe: iframe,
+        destroy: function () {
+          if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+        },
+        switchPage: function (newPage) {
+          currentPage = newPage;
+          iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
+        },
+        updateUser: function (newEmail) {
+          currentEmail = newEmail;
+          iframe.src = buildEmbedUrl(baseUrl, currentPage, currentEmail, options);
+        }
+      };
+    },
+
+    init: function (config) {
+      config = config || {};
+      var page = config.page || 'folders';
+      var email = config.email || '';
+      var mode = config.mode || 'inline';
+      var baseUrl = config.baseUrl || DEFAULT_BASE_URL;
+
+      if (mode === 'floating') {
+        return this.createFloatingWidget(page, email, baseUrl, config);
+      } else {
+        var targetEl = typeof config.target === 'string' ? document.querySelector(config.target) : config.target;
+        if (!targetEl) {
+          console.error('[EZOFISWidget] Target element not found:', config.target);
+          return null;
+        }
+        return this.createInlineWidget(targetEl, page, email, baseUrl, config);
+      }
     }
   };
 
@@ -279,10 +279,10 @@
         }
 
         this._instance = EzofisWidget.init({
-          page: page,
+          baseUrl: baseUrl,
           email: email,
           mode: mode,
-          baseUrl: baseUrl,
+          page: page,
           target: this
         });
       }

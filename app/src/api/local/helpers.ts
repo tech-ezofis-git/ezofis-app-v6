@@ -97,6 +97,7 @@ export function getPaginatedUsers(
   page: QueryParams['page'] = 1,
   pageSize: QueryParams['pageSize'] = 10,
 ) {
+  if (pageSize === 0) return users
   const startIndex = (page - 1) * pageSize
   const endIndex = startIndex + pageSize
 

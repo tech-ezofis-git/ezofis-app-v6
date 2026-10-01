@@ -1,7 +1,7 @@
 import Skeleton from '@/components/base/Skeleton'
 
 export const PortalStatCardsSkeleton = () => (
-  <div className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:min-w-0 [&>div]:w-full'>
+  <div className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'>
     {[0, 1, 2, 3].map((index) => (
       <div
         className='flex h-full w-full min-w-0 items-center gap-3.5 rounded-xl border border-gray-4 bg-surface px-[18px] py-4'

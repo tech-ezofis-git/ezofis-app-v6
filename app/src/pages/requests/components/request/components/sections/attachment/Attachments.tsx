@@ -512,9 +512,9 @@ export default function Attachments({
         String(repositoryId),
         existingItem
           ? {
-            itemId: existingItem.itemId,
-            repositoryId: existingItem.repositoryId || repositoryId,
-          }
+              itemId: existingItem.itemId,
+              repositoryId: existingItem.repositoryId || repositoryId,
+            }
           : undefined,
       )
 
@@ -624,87 +624,134 @@ export default function Attachments({
   }
 
   const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
-  e.stopPropagation()
-  const repoId = String(file.repositoryId || repositoryId || '').trim()
-  const itemId = String(file.itemId || file.id || '').trim()
+    e.stopPropagation()
+    const repoId = String(file.repositoryId || repositoryId || '').trim()
+    const itemId = String(file.itemId || file.id || '').trim()
 
-  const isUuid = (val: string): boolean => {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      val,
+    const isUuid = (val: string): boolean => {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        val,
+      )
+    }
+
+    if (isUuid(repoId) && isUuid(itemId)) {
+      try {
+        const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+        if (response?.data instanceof Blob) {
+          const url = window.URL.createObjectURL(response.data)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = file.name || 'download'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        } else {
+          console.error('File binary data not found or invalid format.')
+        }
+      } catch (err) {
+        console.error('Error downloading attachment:', err)
+      }
+    } else {
+      const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+      window.open(url, '_blank')
+    }
+  }
+
+  if (pendingUpload) {
+    // Attachments is embedded in narrow containers (a 380px side panel, a
+    // portal detail column, ...), too tight for a document preview +
+    // indexing form. Escape to a full-page takeover, same as the Overview
+    // form-field upload's indexing step, regardless of where this instance
+    // is mounted.
+    return (
+      <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
+        <AttachmentSplitView
+          file={pendingUpload.file}
+          folderFields={pendingUpload.folderFields}
+          isSubmitting={isUploading}
+          metadata={pendingUpload.baseMetadata}
+          repositoryId={repositoryId}
+          title={pendingUpload.file.name}
+          onClose={() => {
+            setPendingUpload(null)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
+          onConfirm={handleConfirmUpload}
+        />
+      </div>
     )
   }
 
-  if (isUuid(repoId) && isUuid(itemId)) {
-    try {
-      const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
-      if (response?.data instanceof Blob) {
-        const url = window.URL.createObjectURL(response.data)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = file.name || 'download'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        window.URL.revokeObjectURL(url)
-      } else {
-        console.error('File binary data not found or invalid format.')
-      }
-    } catch (err) {
-      console.error('Error downloading attachment:', err)
-    }
-  } else {
-    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
-    window.open(url, '_blank')
-  }
-}
-
-if (pendingUpload) {
-  // Attachments is embedded in narrow containers (a 380px side panel, a
-  // portal detail column, ...), too tight for a document preview +
-  // indexing form. Escape to a full-page takeover, same as the Overview
-  // form-field upload's indexing step, regardless of where this instance
-  // is mounted.
   return (
-    <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
-      <AttachmentSplitView
-        file={pendingUpload.file}
-        folderFields={pendingUpload.folderFields}
-        isSubmitting={isUploading}
-        metadata={pendingUpload.baseMetadata}
-        repositoryId={repositoryId}
-        title={pendingUpload.file.name}
-        onClose={() => {
-          setPendingUpload(null)
-          if (fileInputRef.current) fileInputRef.current.value = ''
-        }}
-        onConfirm={handleConfirmUpload}
+    <div
+      className={
+        onClose
+          ? 'flex h-full min-h-0 w-full flex-col font-sans'
+          : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
+      }
+    >
+      <input
+        className='hidden'
+        ref={fileInputRef}
+        type='file'
+        onChange={onFileChange}
       />
-    </div>
-  )
-}
 
-return (
-  <div
-    className={
-      onClose
-        ? 'flex h-full min-h-0 w-full flex-col font-sans'
-        : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
-    }
-  >
-    <input
-      className='hidden'
-      ref={fileInputRef}
-      type='file'
-      onChange={onFileChange}
-    />
+      {onClose && (
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+          <span className='text-xs font-semibold text-gray-12'>
+            {t`Attachments`} ({files.length})
+          </span>
+          <div className='flex items-center gap-1'>
+            {canUpload && !isLoading && (
+              <Button
+                disabled={isUploading}
+                icon='tabler:upload'
+                label={isUploading ? t`Uploading...` : t`Upload`}
+                loading={isUploading}
+                size='sm'
+                type='button'
+                onClick={() => fileInputRef.current?.click()}
+              />
+            )}
+            <IconButton
+              ariaLabel={t`Close`}
+              icon='tabler:x'
+              size='sm'
+              variant='ghost'
+              onClick={onClose}
+            />
+          </div>
+        </div>
+      )}
 
-    {onClose && (
-      <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-        <span className='text-xs font-semibold text-gray-12'>
-          {t`Attachments`} ({files.length})
-        </span>
-        <div className='flex items-center gap-1'>
-          {canUpload && !isLoading && (
+      <div
+        className={
+          onClose
+            ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
+            : 'contents'
+        }
+      >
+        {showRelatedFinder ? (
+          <RelatedDocumentsFinder
+            agentData={selectedItem || formModel}
+            attachedIds={attachedIds}
+            instanceId={targetInstanceId}
+            invoiceAmount={invoiceAmount}
+            invoiceNumber={invoiceNumber}
+            poNumber={poNumber}
+            repositoryId={repositoryId}
+            supplierName={supplierName}
+            workflowId={
+              workflowId != null ? Number(workflowId) || undefined : undefined
+            }
+            onAttached={refetch}
+          />
+        ) : null}
+
+        {canUpload && !isLoading && !onClose && (
+          <div className='mb-3 flex shrink-0 justify-end'>
             <Button
               disabled={isUploading}
               icon='tabler:upload'
@@ -714,172 +761,125 @@ return (
               type='button'
               onClick={() => fileInputRef.current?.click()}
             />
-          )}
-          <IconButton
-            ariaLabel={t`Close`}
-            icon='tabler:x'
-            size='sm'
-            variant='ghost'
-            onClick={onClose}
-          />
-        </div>
-      </div>
-    )}
-
-    <div
-      className={
-        onClose
-          ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
-          : 'contents'
-      }
-    >
-
-      {showRelatedFinder ? (
-        <RelatedDocumentsFinder
-          agentData={selectedItem || formModel}
-          attachedIds={attachedIds}
-          instanceId={targetInstanceId}
-          invoiceAmount={invoiceAmount}
-          invoiceNumber={invoiceNumber}
-          poNumber={poNumber}
-          repositoryId={repositoryId}
-          supplierName={supplierName}
-          workflowId={
-            workflowId != null ? Number(workflowId) || undefined : undefined
-          }
-          onAttached={refetch}
-        />
-      ) : null}
-
-      {canUpload && !isLoading && !onClose && (
-        <div className='mb-3 flex shrink-0 justify-end'>
-          <Button
-            disabled={isUploading}
-            icon='tabler:upload'
-            label={isUploading ? t`Uploading...` : t`Upload`}
-            loading={isUploading}
-            size='sm'
-            type='button'
-            onClick={() => fileInputRef.current?.click()}
-          />
-        </div>
-      )}
-
-      {/* List */}
-      <div className='flex flex-col gap-2'>
-        {isLoading && files.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
-            <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
-            <span className='text-12'>{t`Loading attachments...`}</span>
           </div>
-        ) : files.length === 0 ? (
-          !canUpload && (
+        )}
+
+        {/* List */}
+        <div className='flex flex-col gap-2'>
+          {isLoading && files.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
-              <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
-                <Icon className='size-6 text-gray-7' name='tabler:file-off' />
-              </div>
-              <span className='text-13 font-medium text-gray-10'>
-                No attachments found
-              </span>
+              <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
+              <span className='text-12'>{t`Loading attachments...`}</span>
             </div>
-          )
-        ) : (
-          files.map((file) => {
-            const ext = getExt(file)
-            const icon = getFileIcon(ext)
-            const styles = getFileIconClasses(ext)
-            const sizeStr = formatBytes(file.fileSize)
-            const displayName = file.name || file.name || 'Untitled'
-            const hasExt =
-              ext && displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
-            const displayTitle =
-              ext && !hasExt ? `${displayName}.${ext}` : displayName
-
-            return (
-              <div
-                className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
-                key={file.id}
-                onClick={(e) => handleOpenFile(e, file)}
-              >
-                <div
-                  className={cn(
-                    'flex size-10 shrink-0 items-center justify-center rounded-lg',
-                    styles.wrap,
-                  )}
-                >
-                  <Icon className='size-5' name={icon} />
+          ) : files.length === 0 ? (
+            !canUpload && (
+              <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
+                <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
+                  <Icon className='size-6 text-gray-7' name='tabler:file-off' />
                 </div>
-
-                <div className='min-w-0 flex-1'>
-                  <div className='flex flex-wrap items-baseline gap-1.5'>
-                    <span
-                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:text-primary-9 hover:underline cursor-pointer'
-                      title={displayTitle}
-                      onClick={(e) => handleOpenFile(e, file)}
-                    >
-                      {displayTitle}
-                    </span>
-                    {file.isAiMatch && (
-                      <span className='inline-flex shrink-0 items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
-                        <AiBrandIcon
-                          className='size-3 shrink-0'
-                          variant='outline-purple'
-                        />
-                        Added via AI match
-                      </span>
-                    )}
-                    {sizeStr && (
-                      <span className='shrink-0 text-[11px] font-normal text-gray-8'>
-                        ({sizeStr})
-                      </span>
-                    )}
-                  </div>
-                  <div className='mt-0.5 flex min-w-0 items-center gap-2'>
-                    {file.isAiMatch ? (
-                      <span className='text-[11px] text-[var(--gray-9)]'>
-                        Added just now · from AI cross-reference
-                      </span>
-                    ) : (
-                      <>
-                        <span className='shrink-0 text-[11px] text-gray-8'>
-                          {file.createdAt
-                            ? formatUtcToLocalDate(file.createdAt)
-                            : 'Unknown date'}
-                        </span>
-                        {file.uploadedBy && (
-                          <>
-                            <span className='size-0.5 shrink-0 rounded-full bg-gray-4' />
-                            <Tooltip
-                              className='min-w-0 max-w-full flex-1 justify-start'
-                              content={file.uploadedBy}
-                              position='top'
-                            >
-                              <span className='block min-w-0 w-full truncate text-[11px] font-medium text-gray-9'>
-                                {file.uploadedBy}
-                              </span>
-                            </Tooltip>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  className='flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-8 opacity-0 transition-colors group-hover:opacity-100 hover:bg-gray-2 hover:text-blue-9'
-                  title={t`Download`}
-                  onClick={(e) => handleDownload(e, file)}
-                >
-                  <Icon className='size-4' name='tabler:download' />
-                </button>
+                <span className='text-13 font-medium text-gray-10'>
+                  No attachments found
+                </span>
               </div>
             )
-          })
-        )}
+          ) : (
+            files.map((file) => {
+              const ext = getExt(file)
+              const icon = getFileIcon(ext)
+              const styles = getFileIconClasses(ext)
+              const sizeStr = formatBytes(file.fileSize)
+              const displayName = file.name || file.name || 'Untitled'
+              const hasExt =
+                ext &&
+                displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
+              const displayTitle =
+                ext && !hasExt ? `${displayName}.${ext}` : displayName
+
+              return (
+                <div
+                  className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
+                  key={file.id}
+                  onClick={(e) => handleOpenFile(e, file)}
+                >
+                  <div
+                    className={cn(
+                      'flex size-10 shrink-0 items-center justify-center rounded-lg',
+                      styles.wrap,
+                    )}
+                  >
+                    <Icon className='size-5' name={icon} />
+                  </div>
+
+                  <div className='min-w-0 flex-1'>
+                    <div className='flex flex-wrap items-baseline gap-1.5'>
+                      <span
+                        className='line-clamp-1 cursor-pointer text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:text-primary-9 hover:underline'
+                        title={displayTitle}
+                        onClick={(e) => handleOpenFile(e, file)}
+                      >
+                        {displayTitle}
+                      </span>
+                      {file.isAiMatch && (
+                        <span className='inline-flex shrink-0 items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
+                          <AiBrandIcon
+                            className='size-3 shrink-0'
+                            variant='outline-purple'
+                          />
+                          Added via AI match
+                        </span>
+                      )}
+                      {sizeStr && (
+                        <span className='shrink-0 text-[11px] font-normal text-gray-8'>
+                          ({sizeStr})
+                        </span>
+                      )}
+                    </div>
+                    <div className='mt-0.5 flex min-w-0 items-center gap-2'>
+                      {file.isAiMatch ? (
+                        <span className='text-[11px] text-[var(--gray-9)]'>
+                          Added just now · from AI cross-reference
+                        </span>
+                      ) : (
+                        <>
+                          <span className='shrink-0 text-[11px] text-gray-8'>
+                            {file.createdAt
+                              ? formatUtcToLocalDate(file.createdAt)
+                              : 'Unknown date'}
+                          </span>
+                          {file.uploadedBy && (
+                            <>
+                              <span className='size-0.5 shrink-0 rounded-full bg-gray-4' />
+                              <Tooltip
+                                className='max-w-full min-w-0 flex-1 justify-start'
+                                content={file.uploadedBy}
+                                position='top'
+                              >
+                                <span className='block w-full min-w-0 truncate text-[11px] font-medium text-gray-9'>
+                                  {file.uploadedBy}
+                                </span>
+                              </Tooltip>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    className='flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-8 opacity-0 transition-colors group-hover:opacity-100 hover:bg-gray-2 hover:text-blue-9'
+                    title={t`Download`}
+                    onClick={(e) => handleDownload(e, file)}
+                  >
+                    <Icon className='size-4' name='tabler:download' />
+                  </button>
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
 }
 
 // Download URL

@@ -1,7 +1,5 @@
-import formApi from '@/api/form/form'
 import type { Option } from '@/types/option'
-
-export type PortalFormField = Option
+import formApi from '@/api/form/form'
 
 export type PortalEntrySearchResult = {
   entries: Record<string, unknown>[]
@@ -9,6 +7,8 @@ export type PortalEntrySearchResult = {
   fields: PortalFormField[]
   formJson?: unknown
 }
+
+export type PortalFormField = Option
 
 const SYSTEM_ENTRY_KEYS = new Set([
   'ValidFrom',
@@ -25,7 +25,9 @@ const SYSTEM_ENTRY_KEYS = new Set([
   'todayTask',
 ])
 
-export const extractPortalFormFields = (formJson: unknown): PortalFormField[] => {
+export const extractPortalFormFields = (
+  formJson: unknown,
+): PortalFormField[] => {
   let parsed = formJson
   if (typeof parsed === 'string') {
     try {

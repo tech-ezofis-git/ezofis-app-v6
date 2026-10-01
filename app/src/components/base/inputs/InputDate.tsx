@@ -130,10 +130,6 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           yearsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
         }}
-        styles={{
-          input: { cursor: 'pointer' },
-          wrapper: { cursor: 'pointer', ['--input-cursor' as string]: 'pointer' },
-        }}
         popoverProps={{
           withinPortal: true,
           zIndex: 10050,
@@ -141,6 +137,13 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           classNames: {
             dropdown: 'border border-gray-3 bg-surface-raised p-3 shadow-md',
             ...popoverProps?.classNames,
+          },
+        }}
+        styles={{
+          input: { cursor: 'pointer' },
+          wrapper: {
+            ['--input-cursor' as string]: 'pointer',
+            cursor: 'pointer',
           },
         }}
         onChange={handleChange as any}

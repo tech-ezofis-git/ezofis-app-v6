@@ -75,8 +75,7 @@ export default function Step1TemplateUpload({
     } catch (err) {
       setUploadState('error')
       showToast({
-        message:
-          err instanceof Error ? err.message : t`Failed to parse file`,
+        message: err instanceof Error ? err.message : t`Failed to parse file`,
         variant: 'error',
       })
     }

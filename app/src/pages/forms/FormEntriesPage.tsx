@@ -8,6 +8,8 @@ import type { Question } from '@/pages/form-builder/store/formStore'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import userApi from '@/api/user'
+import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -36,7 +38,19 @@ import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
+import {
+  extractScalarStrings,
+  facetsToFieldOptions,
+  fetchMasterFormColumnOptions,
+  getConfiguredFieldOptions,
+  getDependentChildFieldIds,
+  getDropdownFacetSource,
+  getFieldOptions,
+  getMasterFormInfo,
+  withExtraFieldOptions,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -45,31 +59,20 @@ import {
   matchesDateRangeValue,
 } from '@/utils/filterUtils'
 import GenericFormImportModal from './components/GenericFormImportModal'
-import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
-import { getUsers } from '@/api/v6/user'
-import {
-  facetsToFieldOptions,
-  fetchMasterFormColumnOptions,
-  getConfiguredFieldOptions,
-  getDropdownFacetSource,
-  getFieldOptions,
-  getMasterFormInfo,
-  withExtraFieldOptions,
-} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 
 const FormEntriesChoiceInput = ({
   field,
-  val,
   isMultiple,
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
-  val: any
   isMultiple?: boolean
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -84,7 +87,7 @@ const FormEntriesChoiceInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -92,13 +95,13 @@ const FormEntriesChoiceInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
@@ -145,6 +148,26 @@ const FormEntriesChoiceInput = ({
       ? rawOptions.map((o) => o.name)
       : ['Option 1', 'Option 2', 'Option 3']
 
+  useEffect(() => {
+    if (rawOptions.length === 1) {
+      const singleOpt = rawOptions[0].name || String(rawOptions[0].id)
+      if (isMultiple) {
+        const selectedList = Array.isArray(val)
+          ? val
+          : val
+            ? String(val).split(',')
+            : []
+        if (selectedList.length === 0) {
+          onChange(singleOpt)
+        }
+      } else {
+        if (val === undefined || val === null || val === '') {
+          onChange(singleOpt)
+        }
+      }
+    }
+  }, [rawOptions, val, isMultiple, onChange])
+
   if (isMultiple) {
     const selectedList = Array.isArray(val)
       ? val
@@ -154,7 +177,7 @@ const FormEntriesChoiceInput = ({
 
     const toggleOpt = (opt: string) => {
       const next = selectedList.includes(opt)
-        ? selectedList.filter((x) => x !== opt)
+        ? selectedList.filter((x: string) => x !== opt)
         : [...selectedList, opt]
       onChange(next.join(','))
     }
@@ -177,7 +200,10 @@ const FormEntriesChoiceInput = ({
             >
               <div className='flex size-4 shrink-0 items-center justify-center rounded border border-gray-3'>
                 {isSelected && (
-                  <Icon className='size-3 text-accent-primary' name='lucide:check' />
+                  <Icon
+                    className='size-3 text-accent-primary'
+                    name='lucide:check'
+                  />
                 )}
               </div>
               <span className='text-xs'>{opt}</span>
@@ -219,17 +245,17 @@ const FormEntriesChoiceInput = ({
 
 const FormEntriesSelectInput = ({
   field,
-  val,
   fieldDistinctOptions = [],
   allFields = [],
   formModel = {},
+  val,
   onChange,
 }: {
   field: Question
-  val: any
   fieldDistinctOptions?: Option[]
   allFields?: Question[]
   formModel?: Record<string, any>
+  val?: any
   onChange: (value: any) => void
 }) => {
   const optionsType = String(
@@ -245,7 +271,7 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -253,27 +279,67 @@ const FormEntriesSelectInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
+  const repoParentField = useMemo(() => {
+    if (!facetSource.repositoryFieldParent) return null
+    const target = facetSource.repositoryFieldParent.trim().toLowerCase()
+    return allFields.find(
+      (f: any) =>
+        f.id === facetSource.repositoryFieldParent ||
+        f.settings?.specific?.repositoryField ===
+        facetSource.repositoryFieldParent ||
+        f.settings?.specific?.masterFormColumn ===
+        facetSource.repositoryFieldParent ||
+        (f.label && f.label.trim().toLowerCase() === target),
+    )
+  }, [allFields, facetSource.repositoryFieldParent])
+
+  const repoParentFieldName = repoParentField
+    ? repoParentField.settings?.specific?.repositoryField ||
+    repoParentField.label ||
+    repoParentField.id
+    : facetSource.repositoryFieldParent || ''
+
+  const repoParentRawValue = repoParentField
+    ? formModel?.[repoParentField.id]
+    : facetSource.repositoryFieldParent && formModel
+      ? formModel[facetSource.repositoryFieldParent]
+      : undefined
+
+  const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
+
+  const hasRepoParentFilter = Boolean(facetSource.repositoryFieldParent)
+  const isRepoFacetEnabled =
+    facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
+
   const { data: uniqueFieldOptions = [] } = useQuery({
-    enabled: facetSource.enabled,
+    enabled: isRepoFacetEnabled,
     queryKey: [
       'formEntriesFacets',
       facetSource.repositoryId,
       facetSource.fieldName,
+      repoParentFieldName,
+      repoParentValue,
     ],
     queryFn: async () => {
+      const scopeFilters: Record<string, string> = {}
+      if (repoParentFieldName && repoParentValue) {
+        scopeFilters[repoParentFieldName] = repoParentValue
+      }
       const res = await getRepositoryItemFacets({
         fieldName: facetSource.fieldName,
         limit: 1000,
         repositoryId: facetSource.repositoryId,
+        scopeFilters:
+          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
         splitArrayValues: field.type === 'MULTI_SELECT',
@@ -333,26 +399,48 @@ const FormEntriesSelectInput = ({
 
   const isMulti = field.type === 'MULTI_SELECT'
 
+  useEffect(() => {
+    if (selectOptions.length === 1) {
+      const singleOpt = selectOptions[0]
+      const singleVal = String(singleOpt.id ?? singleOpt.name)
+      if (isMulti) {
+        const selectedValues = val
+          ? String(val)
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
+          : []
+        if (selectedValues.length === 0) {
+          onChange(singleVal)
+        }
+      } else {
+        if (val === undefined || val === null || val === '') {
+          onChange(singleVal)
+        }
+      }
+    }
+  }, [selectOptions, val, isMulti, onChange])
+
   if (isMulti) {
     const selectedValues = val
       ? String(val)
-          .split(',')
-          .map((v) => v.trim())
-          .filter(Boolean)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
       : []
     const selectedOpts = selectedValues.map((v) => ({ id: v, name: v }))
 
     return (
       <InputSelectMultiple
-        creatable
         options={withExtraFieldOptions(selectOptions, selectedOpts)}
-        placeholder={field.settings?.general?.placeholder || 'Select options...'}
-        searchable
         value={selectedOpts}
+        creatable
+        searchable
+        placeholder={
+          field.settings?.general?.placeholder || 'Select options...'
+        }
         onChange={(vals: Option[]) =>
-          onChange(
-            vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','),
-          )
+          onChange(vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','))
         }
       />
     )
@@ -362,18 +450,80 @@ const FormEntriesSelectInput = ({
 
   return (
     <InputSelect
+      placeholder={field.settings?.general?.placeholder || 'Select an option'}
+      value={selectedOpt}
       creatable
+      searchable
       options={withExtraFieldOptions(
         selectOptions,
         selectedOpt ? [selectedOpt] : [],
       )}
-      placeholder={field.settings?.general?.placeholder || 'Select an option'}
-      searchable
-      value={selectedOpt}
       onChange={(opt) =>
         onChange(opt ? String(opt.id ?? opt.value ?? opt.name) : '')
       }
     />
+  )
+}
+
+const FormEntriesSearchableInput = ({
+  field,
+  val,
+  formId,
+  editValues,
+  onUpdateModel,
+  children,
+}: {
+  field: Question
+  val: any
+  formId?: string
+  editValues: Record<string, any>
+  onUpdateModel: (patch: Record<string, any>) => void
+  children: React.ReactNode
+}) => {
+  const [isSearching, setIsSearching] = useState(false)
+  const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
+
+  if (!isSearchField) return <>{children}</>
+
+  const handleSearch = () => {
+    executeSearchFieldSync({
+      field,
+      searchValue: val,
+      currentFormId: formId,
+      formModel: editValues,
+      onUpdateModel,
+      onSearchingStateChange: setIsSearching,
+    })
+  }
+
+  return (
+    <div className='relative flex items-center w-full gap-2'>
+      <div
+        className='flex-1 min-w-0'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch()
+          }
+        }}
+      >
+        {children}
+      </div>
+      <Tooltip label='Search & Auto-Sync Fields' withArrow>
+        <button
+          type='button'
+          disabled={isSearching}
+          className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+          onClick={handleSearch}
+        >
+          {isSearching ? (
+            <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          ) : (
+            <Icon className='size-4' name='lucide:search' />
+          )}
+        </button>
+      </Tooltip>
+    </div>
   )
 }
 
@@ -392,9 +542,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-        ]
+        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+      ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -671,8 +821,8 @@ const FormLineItemInlineEditor = ({
                 {(idx === 0 ||
                   normId.includes('item') ||
                   normId.includes('part')) && (
-                  <span className='ml-1 font-bold text-red-9'>*</span>
-                )}
+                    <span className='ml-1 font-bold text-red-9'>*</span>
+                  )}
               </label>
 
               {isLongText ? (
@@ -942,8 +1092,8 @@ const FormLineItemsEditor = ({
                           key={col.id}
                         >
                           {row[col.id] !== undefined &&
-                          row[col.id] !== null &&
-                          String(row[col.id]).trim() !== '' ? (
+                            row[col.id] !== null &&
+                            String(row[col.id]).trim() !== '' ? (
                             String(row[col.id])
                           ) : (
                             <span className='text-gray-5'>—</span>
@@ -1078,7 +1228,7 @@ const FormEntriesPage = () => {
       loggedInSession &&
       (String(loggedInSession.id) === String(userId) ||
         String(loggedInSession.email || '').toLowerCase() ===
-          String(userId).toLowerCase())
+        String(userId).toLowerCase())
     ) {
       if (currentUserName) return currentUserName
     }
@@ -1302,9 +1452,14 @@ const FormEntriesPage = () => {
   }, [fetchedEntries])
 
   const handleFieldChange = (fieldId: string, val: any) => {
-    setEditValues((prev) =>
-      applyCalculatedFields(panels, { ...prev, [fieldId]: val }),
-    )
+    setEditValues((prev) => {
+      const next = { ...prev, [fieldId]: val }
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        delete next[childId]
+      }
+      return applyCalculatedFields(panels, next)
+    })
   }
 
   // Slide-in pane toggle functions
@@ -1505,6 +1660,7 @@ const FormEntriesPage = () => {
 
   // Paginated list
   const paginatedEntries = useMemo(() => {
+    if (pageSize === 0) return sortedAndFilteredEntries
     const start = (page - 1) * pageSize
     const end = start + pageSize
     return sortedAndFilteredEntries.slice(start, end)
@@ -1934,54 +2090,56 @@ const FormEntriesPage = () => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
               const panelDescription = panel.settings?.description || ''
               const renderableFields = (panel.fields || []).filter((f: any) => {
-                if (['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase()))
+                if (
+                  ['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase())
+                )
                   return false
                 const state = evaluatedFieldStates[f.id]
                 if (state && !state.visible) return false
                 return true
               })
 
-                if (renderableFields.length === 0) return null
+              if (renderableFields.length === 0) return null
 
-                return (
-                  <div
-                    className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
-                    key={panel.id || `panel_${pIdx}`}
-                  >
-                    {/* Block Card Header */}
-                    <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                      <div className='flex items-center gap-3'>
-                        <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                          <Icon className='size-4' name='lucide:layers' />
-                        </div>
-                        <div>
-                          <h4 className='text-sm font-bold text-gray-12'>
-                            {panelTitle}
-                          </h4>
-                          {panelDescription && (
-                            <p className='text-[11px] text-gray-7'>
-                              {panelDescription}
-                            </p>
-                          )}
-                        </div>
+              return (
+                <div
+                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                  key={panel.id || `panel_${pIdx}`}
+                >
+                  {/* Block Card Header */}
+                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+                        <Icon className='size-4' name='lucide:layers' />
+                      </div>
+                      <div>
+                        <h4 className='text-sm font-bold text-gray-12'>
+                          {panelTitle}
+                        </h4>
+                        {panelDescription && (
+                          <p className='text-[11px] text-gray-7'>
+                            {panelDescription}
+                          </p>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Block Fields Layout using 12-column grid */}
-                    <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                      {renderableFields.map((field: Question) => {
-                        const type = (field.type || 'SHORT_TEXT').toUpperCase()
-                        const val = editValues[field.id] ?? ''
-                        const state = evaluatedFieldStates[field.id]
-                        const isFieldRequired = state
-                          ? state.required
-                          : field.settings?.validation?.fieldRule === 'REQUIRED'
-                        const isReadOnly = state
-                          ? state.disabled
-                          : Boolean((field.settings?.specific as any)?.isReadOnly)
-                        const colSpan = getColumnSpan(
-                          field.settings?.general?.size,
-                        )
+                  {/* Block Fields Layout using 12-column grid */}
+                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
+                    {renderableFields.map((field: Question) => {
+                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                      const val = editValues[field.id] ?? ''
+                      const state = evaluatedFieldStates[field.id]
+                      const isFieldRequired = state
+                        ? state.required
+                        : field.settings?.validation?.fieldRule === 'REQUIRED'
+                      const isReadOnly = state
+                        ? state.disabled
+                        : Boolean((field.settings?.specific as any)?.isReadOnly)
+                      const colSpan = getColumnSpan(
+                        field.settings?.general?.size,
+                      )
 
                       const isTableType =
                         type === 'LINE_ITEM' ||
@@ -2051,13 +2209,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                            <InputNumber
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(num) =>
-                                handleFieldChange(field.id, num)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputNumber
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(num) =>
+                                  handleFieldChange(field.id, num)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'CURRENCY_AMOUNT' ? (
                             <div className='max-w-xs'>
                               <InputNumber
@@ -2127,18 +2298,31 @@ const FormEntriesPage = () => {
                             />
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
-                            <FormEntriesSelectInput
-                              allFields={renderableFields}
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
                               field={field}
-                              fieldDistinctOptions={
-                                fieldDistinctOptions[field.id] || []
-                              }
-                              formModel={editValues}
+                              formId={formId}
                               val={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <FormEntriesSelectInput
+                                allFields={renderableFields}
+                                field={field}
+                                fieldDistinctOptions={
+                                  fieldDistinctOptions[field.id] || []
+                                }
+                                formModel={editValues}
+                                val={val}
+                                onChange={(next) =>
+                                  handleFieldChange(field.id, next)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'FILE_UPLOAD' ||
                             type === 'IMAGE_UPLOAD' ? (
                             <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
@@ -2173,7 +2357,7 @@ const FormEntriesPage = () => {
                               />
                             </div>
                           ) : type === 'CALCULATED' ? (
-                            <CalculatedFieldInput hideLabel value={val} />
+                            <CalculatedFieldInput value={val} hideLabel />
                           ) : type === 'LONG_TEXT' ? (
                             <InputTextarea
                               placeholder={field.settings?.general?.placeholder}
@@ -2193,13 +2377,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : (
-                            <InputText
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(text) =>
-                                handleFieldChange(field.id, text)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputText
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(text) =>
+                                  handleFieldChange(field.id, text)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           )}
                         </div>
                       )
@@ -2382,14 +2579,14 @@ const FormEntriesPage = () => {
             filters={[
               ...(nameFieldFilter
                 ? [
-                    {
-                      id: nameFieldFilter.id,
-                      label: nameFieldFilter.label || t`Name`,
-                      options: nameFieldFilter.options || [],
-                      searchable: true,
-                      searchPlaceholder: t`Search name...`,
-                    },
-                  ]
+                  {
+                    id: nameFieldFilter.id,
+                    label: nameFieldFilter.label || t`Name`,
+                    options: nameFieldFilter.options || [],
+                    searchable: true,
+                    searchPlaceholder: t`Search name...`,
+                  },
+                ]
                 : []),
               {
                 id: 'createdBy',
@@ -2418,7 +2615,7 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => {}}
+            onSearchChange={() => { }}
           />
           <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable

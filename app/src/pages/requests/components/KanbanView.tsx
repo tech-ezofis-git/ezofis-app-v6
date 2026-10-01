@@ -3,18 +3,13 @@ import { notifications } from '@mantine/notifications'
 import { type Table as TanstackTable } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 import { motion } from 'motion/react'
-import {
-  type MutableRefObject,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { type MutableRefObject, useMemo, useRef, useState } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import workflowsApiV6 from '@/api/v6/workflows'
 import Avatar from '@/components/base/Avatar'
-import Tooltip from '@/components/base/Tooltip'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import ListEmptyState from '@/components/common/ListEmptyState'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import {
@@ -31,7 +26,6 @@ import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 import {
-  type KanbanColumnRole,
   buildKanbanColumns,
   findMoveRule,
   getKanbanMissingRequiredFields,
@@ -39,6 +33,7 @@ import {
   itemActivityId,
   itemInstanceId,
   itemStageLabel,
+  type KanbanColumnRole,
   matchKanbanColumnIndex,
   normalizeKanbanLabel,
   resolveKanbanActivityId,
@@ -69,8 +64,8 @@ const formatRunningTime = (date: unknown): string => {
 }
 
 const splitItemsByStage = (column: {
-  stages?: { id: string; name: string; terminal: boolean }[]
   items: any[]
+  stages?: { id: string; name: string; terminal: boolean }[]
 }) => {
   const stages = column.stages?.length
     ? column.stages
@@ -116,7 +111,9 @@ const roleIconWrapClass: Record<KanbanColumnRole, string> = {
 }
 
 const getColumnThemeClasses = (color?: string, role?: KanbanColumnRole) => {
-  const base = color || (role === 'success' ? 'green' : role === 'review' ? 'primary' : 'gray')
+  const base =
+    color ||
+    (role === 'success' ? 'green' : role === 'review' ? 'primary' : 'gray')
   switch (base) {
     case 'green':
       return { bg: 'bg-green-2', count: 'bg-green-9 text-white' }
@@ -145,18 +142,18 @@ const getInitials = (nameOrEmail: string): string => {
 }
 
 type KanbanViewProps = {
-  items: any[]
-  workflow: WorkflowOption | null
   isLoading?: boolean
+  items: any[]
   table?: TanstackTable<any>
+  workflow: WorkflowOption | null
   onNewRequest?: () => void
   onRefresh?: () => void
   onRowClick: (item: any, tab: string, missingFieldIds?: string[]) => void
 }
 
 export default function KanbanView({
-  items,
   isLoading = false,
+  items,
   table,
   workflow,
   onNewRequest,
@@ -170,9 +167,9 @@ export default function KanbanView({
   const [movingId, setMovingId] = useState<string | null>(null)
   const [hoveredRequestCard, setHoveredRequestCard] = useState(false)
   const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(
-    {},
-  )
+  const [collapsedGroups, setCollapsedGroups] = useState<
+    Record<string, boolean>
+  >({})
   const dragItemRef = useRef<any>(null)
   const didDragRef = useRef(false)
 
@@ -290,8 +287,6 @@ export default function KanbanView({
 
       const toastId = showToast({
         autoClose: 15_000,
-        toastTitle: t`Action needed`,
-        variant: 'warning',
         message: (
           <div className='space-y-2.5'>
             <p className='text-13 text-gray-12'>
@@ -326,6 +321,8 @@ export default function KanbanView({
             </button>
           </div>
         ),
+        toastTitle: t`Action needed`,
+        variant: 'warning',
       })
       return
     }
@@ -351,7 +348,8 @@ export default function KanbanView({
           : JSON.stringify(item.formData?.fields || item.formData || {})
       const payload = {
         activityid: fromId,
-        activityUserId: authUserStore.getState().session?.id || item.userId || null,
+        activityUserId:
+          authUserStore.getState().session?.id || item.userId || null,
         AIAGENTHtml: item.agentHtml || '',
         AIAGENTResponse:
           typeof item.agentResponse === 'string'
@@ -370,7 +368,10 @@ export default function KanbanView({
         transactionId: item.transactionId || null,
         workflowId: item.workflowId || workflow?.id || null,
       }
-      const response = await workflowsApiV6.moveNext(String(instanceId), payload)
+      const response = await workflowsApiV6.moveNext(
+        String(instanceId),
+        payload,
+      )
       if (response?.error) {
         showToast({
           message: t`We couldn’t move request ${requestNo}. ${response.error}`,
@@ -445,8 +446,13 @@ export default function KanbanView({
               !hoveredRequestCard &&
               !isColumnDropTarget
             const bindDrop = (targetId: string) => ({
-              onDragLeave: (event: { currentTarget: HTMLElement; relatedTarget: EventTarget | null }) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+              onDragLeave: (event: {
+                currentTarget: HTMLElement
+                relatedTarget: EventTarget | null
+              }) => {
+                if (
+                  !event.currentTarget.contains(event.relatedTarget as Node)
+                ) {
                   setDropTargetId((current) =>
                     current === targetId ? null : current,
                   )
@@ -500,6 +506,11 @@ export default function KanbanView({
                       dragItemRef={dragItemRef}
                       dynamicFields={dynamicFields}
                       isAp={isAp}
+                      item={item}
+                      locked={locked}
+                      role={column.role}
+                      stageName={stageName}
+                      workflow={workflow}
                       isDragging={
                         draggingId ===
                         String(item.id || item.processId || index)
@@ -510,13 +521,8 @@ export default function KanbanView({
                           item.id || item.processId || itemInstanceId(item),
                         )
                       }
-                      item={item}
-                      locked={locked}
-                      role={column.role}
                       setDraggingId={setDraggingId}
                       setDropTargetId={setDropTargetId}
-                      stageName={stageName}
-                      workflow={workflow}
                       onHoverChange={setHoveredRequestCard}
                       onRowClick={onRowClick}
                     />
@@ -533,6 +539,7 @@ export default function KanbanView({
             return (
               <div className='relative h-full shrink-0 py-0.5' key={column.id}>
                 <motion.section
+                  initial={false}
                   animate={
                     showColumnHover
                       ? {
@@ -557,7 +564,6 @@ export default function KanbanView({
                       'border-red-8 bg-red-1 shadow-[0_0_0_3px_var(--red-4)]',
                     !isColumnDropTarget && 'border-gray-3',
                   )}
-                  initial={false}
                   transition={{
                     damping: 26,
                     mass: 0.55,
@@ -572,91 +578,97 @@ export default function KanbanView({
                   onHoverStart={() => setHoveredColumnId(column.id)}
                   {...bindDrop(columnDropId)}
                 >
-                <header className={cn('flex shrink-0 items-center gap-2.5 border-b border-gray-3 px-3.5 py-3.5 rounded-t-[11px]', theme.bg)}>
-                  <h3 className='min-w-0 flex-1 truncate text-[13.5px] font-semibold tracking-tight text-gray-13'>
-                    {column.name}
-                  </h3>
-                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-11 font-semibold', theme.count)}>
-                    {column.items.length}
-                  </span>
-                </header>
-                
-                {isGrouped ? (
-                  <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 py-1.5 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
-                    {stageBuckets.map((stage) => {
-                      const groupKey = `${column.id}:${stage.id}`
-                      const collapsed = Boolean(collapsedGroups[groupKey])
-                      const isDropTarget = dropTargetId === stage.id
-                      return (
-                        <div
-                          className={cn(
-                            'rounded-lg transition-all',
-                            isDropTarget &&
-                              dropAllowed &&
-                              'bg-primary-2 shadow-[0_0_0_2px_var(--primary-4)]',
-                            isDropTarget &&
-                              !dropAllowed &&
-                              'bg-red-1 shadow-[0_0_0_2px_var(--red-4)]',
-                          )}
-                          key={stage.id}
-                          {...bindDrop(stage.id)}
-                        >
-                          <button
-                            className='flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-2 active:scale-[0.99]'
-                            type='button'
-                            onClick={() =>
-                              setCollapsedGroups((current) => ({
-                                ...current,
-                                [groupKey]: !current[groupKey],
-                              }))
-                            }
-                          >
-                            <Icon
-                              className={cn(
-                                'size-3.5 shrink-0 text-gray-10 transition-transform',
-                                !collapsed && 'rotate-90',
-                              )}
-                              name='lucide:chevron-right'
-                            />
-                            <span
-                              className={cn(
-                                'size-1.5 shrink-0 rounded-full',
-                                stage.terminal
-                                  ? roleDotClass.success
-                                  : column.color
-                                    ? kanbanColorDotClass(column.color)
-                                    : roleDotClass[column.role],
-                              )}
-                            />
-                            <span className='min-w-0 flex-1 truncate text-[10px] font-semibold tracking-wide text-gray-11 uppercase'>
-                              {stage.name}
-                            </span>
-                            <span className='shrink-0 text-11 font-semibold text-gray-10'>
-                              {stage.items.length}
-                            </span>
-                          </button>
-                          {!collapsed ? (
-                            <div className='flex flex-col gap-0.5 px-1 pb-1.5'>
-                              {renderCards(
-                                stage.items,
-                                stage.name,
-                                stage.terminal || column.terminal,
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 pt-1 pb-2 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
-                    {renderCards(
-                      column.items,
-                      column.name,
-                      column.terminal,
+                  <header
+                    className={cn(
+                      'flex shrink-0 items-center gap-2.5 rounded-t-[11px] border-b border-gray-3 px-3.5 py-3.5',
+                      theme.bg,
                     )}
-                  </div>
-                )}
+                  >
+                    <h3 className='min-w-0 flex-1 truncate text-[13.5px] font-semibold tracking-tight text-gray-13'>
+                      {column.name}
+                    </h3>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-full px-2 py-0.5 text-11 font-semibold',
+                        theme.count,
+                      )}
+                    >
+                      {column.items.length}
+                    </span>
+                  </header>
+
+                  {isGrouped ? (
+                    <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 py-1.5 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
+                      {stageBuckets.map((stage) => {
+                        const groupKey = `${column.id}:${stage.id}`
+                        const collapsed = Boolean(collapsedGroups[groupKey])
+                        const isDropTarget = dropTargetId === stage.id
+                        return (
+                          <div
+                            key={stage.id}
+                            className={cn(
+                              'rounded-lg transition-all',
+                              isDropTarget &&
+                                dropAllowed &&
+                                'bg-primary-2 shadow-[0_0_0_2px_var(--primary-4)]',
+                              isDropTarget &&
+                                !dropAllowed &&
+                                'bg-red-1 shadow-[0_0_0_2px_var(--red-4)]',
+                            )}
+                            {...bindDrop(stage.id)}
+                          >
+                            <button
+                              className='flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-2 active:scale-[0.99]'
+                              type='button'
+                              onClick={() =>
+                                setCollapsedGroups((current) => ({
+                                  ...current,
+                                  [groupKey]: !current[groupKey],
+                                }))
+                              }
+                            >
+                              <Icon
+                                name='lucide:chevron-right'
+                                className={cn(
+                                  'size-3.5 shrink-0 text-gray-10 transition-transform',
+                                  !collapsed && 'rotate-90',
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  'size-1.5 shrink-0 rounded-full',
+                                  stage.terminal
+                                    ? roleDotClass.success
+                                    : column.color
+                                      ? kanbanColorDotClass(column.color)
+                                      : roleDotClass[column.role],
+                                )}
+                              />
+                              <span className='min-w-0 flex-1 truncate text-[10px] font-semibold tracking-wide text-gray-11 uppercase'>
+                                {stage.name}
+                              </span>
+                              <span className='shrink-0 text-11 font-semibold text-gray-10'>
+                                {stage.items.length}
+                              </span>
+                            </button>
+                            {!collapsed ? (
+                              <div className='flex flex-col gap-0.5 px-1 pb-1.5'>
+                                {renderCards(
+                                  stage.items,
+                                  stage.name,
+                                  stage.terminal || column.terminal,
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 pt-1 pb-2 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
+                      {renderCards(column.items, column.name, column.terminal)}
+                    </div>
+                  )}
                 </motion.section>
               </div>
             )
@@ -678,10 +690,10 @@ function KanbanCard({
   item,
   locked,
   role,
-  setDraggingId,
-  setDropTargetId,
   stageName,
   workflow,
+  setDraggingId,
+  setDropTargetId,
   onHoverChange,
   onRowClick,
 }: {
@@ -695,12 +707,12 @@ function KanbanCard({
   item: any
   locked: boolean
   role: KanbanColumnRole
-  setDraggingId: (id: string | null) => void
-  setDropTargetId: (id: string | null) => void
   stageName: string
   workflow: WorkflowOption | null
   onHoverChange?: (hovered: boolean) => void
   onRowClick: (item: any, tab: string, missingFieldIds?: string[]) => void
+  setDraggingId: (id: string | null) => void
+  setDropTargetId: (id: string | null) => void
 }) {
   const { t } = useLingui()
   const [blockCardDrag, setBlockCardDrag] = useState(false)
@@ -764,13 +776,14 @@ function KanbanCard({
 
   return (
     <div
+      draggable={canDrag && !blockCardDrag}
+      role='button'
+      tabIndex={0}
       className={cn(
         'relative z-0 w-full rounded-xl border bg-surface p-3 text-left',
         'duration-200 ease-out',
         isCardHovered ? 'z-20 border-primary-6' : 'border-gray-3',
-        canDrag
-          ? 'cursor-grab active:cursor-grabbing'
-          : 'cursor-default',
+        canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
         (isDragging || isMoving) && 'opacity-40',
       )}
       style={{
@@ -778,18 +791,6 @@ function KanbanCard({
           ? '0 0 0 3px var(--primary-4), 0 10px 24px rgba(15, 23, 42, 0.16)'
           : '0 1px 2px rgba(15, 23, 42, 0.06)',
         transition: 'border-color 200ms ease-out, box-shadow 200ms ease-out',
-      }}
-      draggable={canDrag && !blockCardDrag}
-      role='button'
-      tabIndex={0}
-      onMouseEnter={() => {
-        setIsCardHovered(true)
-        onHoverChange?.(true)
-      }}
-      onMouseLeave={() => {
-        setIsCardHovered(false)
-        setBlockCardDrag(false)
-        onHoverChange?.(false)
       }}
       onClick={() => {
         if (didDragRef.current) {
@@ -824,6 +825,15 @@ function KanbanCard({
           onRowClick(item, 'Overview')
         }
       }}
+      onMouseEnter={() => {
+        setIsCardHovered(true)
+        onHoverChange?.(true)
+      }}
+      onMouseLeave={() => {
+        setIsCardHovered(false)
+        setBlockCardDrag(false)
+        onHoverChange?.(false)
+      }}
     >
       <div className='mb-2 flex items-center gap-2'>
         {raisedBy ? (
@@ -834,7 +844,11 @@ function KanbanCard({
                 roleIconWrapClass[cardRole],
               )}
             >
-              <Avatar className='shrink-0' initials={getInitials(raisedBy)} size={24} />
+              <Avatar
+                className='shrink-0'
+                initials={getInitials(raisedBy)}
+                size={24}
+              />
             </span>
           </Tooltip>
         ) : (
@@ -851,7 +865,7 @@ function KanbanCard({
           </span>
         )}
         <span
-          className='flex min-w-0 flex-1 items-center !cursor-pointer'
+          className='flex min-w-0 flex-1 !cursor-pointer items-center'
           data-no-drag=''
           onMouseEnter={() => setBlockCardDrag(true)}
           onMouseLeave={() => setBlockCardDrag(false)}
@@ -859,10 +873,10 @@ function KanbanCard({
           <HoverExpandableText
             className='text-13 font-bold tracking-tight text-gray-13'
             expandStyle='stack'
-            hoverAccent
             maxLines={1}
             normalMaxWidthClass='min-w-0 max-w-full'
             text={requestNo}
+            hoverAccent
           />
         </span>
         <span
@@ -887,14 +901,14 @@ function KanbanCard({
                 name='lucide:dot'
               />
               <HoverExpandableText
-                className={cn(
-                  'min-w-0 flex-1 text-12 leading-snug text-gray-11',
-                  line.primary && 'text-[13.5px] font-semibold text-gray-13',
-                )}
                 expandStyle='stack'
                 maxLines={1}
                 normalMaxWidthClass='max-w-full'
                 text={line.text}
+                className={cn(
+                  'min-w-0 flex-1 text-12 leading-snug text-gray-11',
+                  line.primary && 'text-[13.5px] font-semibold text-gray-13',
+                )}
               />
             </div>
           ))}
@@ -923,10 +937,6 @@ function KanbanCard({
           ))}
         </div>
       )}
-
-
-
-
     </div>
   )
 }

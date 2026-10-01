@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -116,7 +116,9 @@ const ExtractedFieldCell = ({
     editor = (
       <InputDate
         className='w-full font-semibold'
-        value={localValue != null && localValue !== '' ? String(localValue) : null}
+        value={
+          localValue != null && localValue !== '' ? String(localValue) : null
+        }
         onChange={(val) => commit(val || '')}
       />
     )
@@ -152,8 +154,8 @@ const ExtractedFieldCell = ({
       <InputSelect
         className='w-full font-semibold'
         options={options}
-        searchable
         value={selected}
+        searchable
         onChange={(opt) => {
           commit(opt ? String(opt.id) : null)
           setIsEditing(false)
@@ -170,11 +172,11 @@ const ExtractedFieldCell = ({
         }}
       >
         <InputTextarea
-          autosize
           className='w-full font-semibold'
           maxRows={6}
           minRows={2}
           value={localValue != null ? String(localValue) : ''}
+          autosize
           onChange={(val) => setLocalValue(val)}
         />
       </div>
@@ -182,11 +184,13 @@ const ExtractedFieldCell = ({
   } else {
     editor = (
       <input
-        autoFocus
         className='w-full border-none bg-transparent p-0 text-[13px] font-semibold text-[var(--gray-13)] placeholder:font-normal focus:ring-0 focus:outline-none'
         placeholder={`Enter ${label}...`}
         type='text'
-        value={localValue === '-' || localValue == null ? '' : String(localValue)}
+        autoFocus
+        value={
+          localValue === '-' || localValue == null ? '' : String(localValue)
+        }
         onBlur={stopEditing}
         onChange={(e) => setLocalValue(e.target.value)}
         onKeyDown={(e) => {
@@ -218,7 +222,9 @@ const ExtractedFieldCell = ({
           <p className='shrink-0 text-[10px] font-semibold text-[var(--gray-11)]'>
             {label}
           </p>
-          <div className='flex shrink-0 items-center gap-1.5'>{sourceBadge}</div>
+          <div className='flex shrink-0 items-center gap-1.5'>
+            {sourceBadge}
+          </div>
         </div>
         {isEditing ? (
           <div className='animate-in fade-in zoom-in-95 duration-200'>
@@ -251,9 +257,12 @@ const ExtractedFieldCell = ({
 
   return (
     <button
-      type='button'
-      className={cn(shellClass, 'cursor-pointer focus:outline-none focus:ring-1 focus:ring-[var(--primary-3)]/50')}
       data-field-id={field?.id}
+      type='button'
+      className={cn(
+        shellClass,
+        'cursor-pointer focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
+      )}
       onClick={() => setIsEditing(true)}
     >
       {body}

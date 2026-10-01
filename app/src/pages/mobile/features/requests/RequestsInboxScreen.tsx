@@ -11,49 +11,55 @@ import {
   type RequestCardTone,
 } from './RequestCard'
 import {
-  useMobileRequestsInbox,
   type MobileInboxTab,
+  useMobileRequestsInbox,
 } from './useMobileRequestsInbox'
 
 const FILTERS: {
+  countKey: 'overdue' | 'matched' | 'discrepancies' | 'high'
+  icon: 'Clock' | 'CircleCheck' | 'TriangleAlert' | 'DollarSign'
   id: string
   label: string
-  icon: 'Clock' | 'CircleCheck' | 'TriangleAlert' | 'DollarSign'
-  countKey: 'overdue' | 'matched' | 'discrepancies' | 'high'
   tone: RequestCardTone
 }[] = [
-  { id: 'overdue', label: 'Overdue', icon: 'Clock', countKey: 'overdue', tone: 'error' },
   {
+    countKey: 'overdue',
+    icon: 'Clock',
+    id: 'overdue',
+    label: 'Overdue',
+    tone: 'error',
+  },
+  {
+    countKey: 'matched',
+    icon: 'CircleCheck',
     id: 'matched',
     label: 'Matched',
-    icon: 'CircleCheck',
-    countKey: 'matched',
     tone: 'success',
   },
   {
+    countKey: 'discrepancies',
+    icon: 'TriangleAlert',
     id: 'discrepancies',
     label: 'Discrepancy',
-    icon: 'TriangleAlert',
-    countKey: 'discrepancies',
     tone: 'warning',
   },
   {
+    countKey: 'high',
+    icon: 'DollarSign',
     id: 'highValue',
     label: 'High value',
-    icon: 'DollarSign',
-    countKey: 'high',
     tone: 'accent',
   },
 ]
 
 const TABS: {
+  countKey: 'invoices' | 'exceptions' | 'processed'
   id: MobileInboxTab
   label: string
-  countKey: 'invoices' | 'exceptions' | 'processed'
 }[] = [
-  { id: 'Inbox', label: 'Invoices', countKey: 'invoices' },
-  { id: 'Exceptions', label: 'Exceptions', countKey: 'exceptions' },
-  { id: 'Processed', label: 'Processed', countKey: 'processed' },
+  { countKey: 'invoices', id: 'Inbox', label: 'Invoices' },
+  { countKey: 'exceptions', id: 'Exceptions', label: 'Exceptions' },
+  { countKey: 'processed', id: 'Processed', label: 'Processed' },
 ]
 
 type RequestsInboxScreenProps = {
@@ -85,12 +91,12 @@ export function RequestsInboxScreen({
     loadMore,
     refetch,
     selectedWorkflowId,
-    setActiveTab,
     showTopLoader,
     tabCounts,
     totalItems,
     workflowLoadStatus,
     workflowName,
+    setActiveTab,
   } = useMobileRequestsInbox()
 
   const emptyMessage = useMemo(() => {
@@ -170,11 +176,11 @@ export function RequestsInboxScreen({
           </div>
 
           <div
-            aria-hidden
             className='pointer-events-none absolute inset-x-0 bottom-0 h-[2px] overflow-hidden'
+            aria-hidden
           >
             {showTopLoader ? (
-              <div className='absolute inset-y-0 w-1/3 rounded-full bg-[var(--primary-9)] animate-[mobile-load_1.05s_ease-in-out_infinite]' />
+              <div className='absolute inset-y-0 w-1/3 animate-[mobile-load_1.05s_ease-in-out_infinite] rounded-full bg-[var(--primary-9)]' />
             ) : null}
           </div>
 
@@ -183,14 +189,14 @@ export function RequestsInboxScreen({
               <div className='no-scrollbar flex max-h-40 flex-col gap-0.5 overflow-y-auto'>
                 {allWorkflows.map((wf) => (
                   <button
+                    key={String(wf.id)}
+                    type='button'
                     className={cn(
                       'rounded-lg px-2.5 py-2 text-left text-[12px] transition-colors active:scale-[0.99]',
                       String(wf.id) === String(selectedWorkflowId)
                         ? 'bg-[var(--primary-3)] font-semibold text-[var(--primary-9)]'
                         : 'font-medium text-[var(--gray-11)]',
                     )}
-                    key={String(wf.id)}
-                    type='button'
                     onClick={() => {
                       handleSelectWorkflow(String(wf.id))
                       setWorkflowPickerOpen(false)
@@ -221,14 +227,14 @@ export function RequestsInboxScreen({
             const count = tabCounts[tab.countKey]
             return (
               <button
+                key={tab.id}
+                type='button'
                 className={cn(
                   'flex-1 border-b-2 py-2.5 text-center text-[12px] transition-colors',
                   active
                     ? 'border-[var(--primary-9)] font-semibold text-[var(--primary-9)]'
                     : 'border-transparent font-medium text-[var(--gray-9)]',
                 )}
-                key={tab.id}
-                type='button'
                 onClick={() => setActiveTab(tab.id)}
               >
                 <span className='truncate'>
@@ -242,7 +248,7 @@ export function RequestsInboxScreen({
 
       {/* Capsule filters */}
       {activeTab === 'Inbox' ? (
-        <div className='no-scrollbar shrink-0 flex gap-2 overflow-x-auto px-3 py-2.5'>
+        <div className='no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-3 py-2.5'>
           {FILTERS.map((filter) => (
             <FilterChip
               active={activeQuickFilters.includes(filter.id)}
@@ -267,7 +273,10 @@ export function RequestsInboxScreen({
             </>
           ) : emptyMessage ? (
             <div className='flex flex-col items-center justify-center gap-2 py-16 text-center'>
-              <Icon className='size-8 text-text-muted/50' name='ClipboardList' />
+              <Icon
+                className='size-8 text-text-muted/50'
+                name='ClipboardList'
+              />
               <p className='text-[12px] text-text-muted'>{emptyMessage}</p>
             </div>
           ) : (

@@ -109,11 +109,15 @@ const StorageStep = () => {
 
               return (
                 <div
-                  key={item.id}
                   className={cn(isDisabled && 'pointer-events-none opacity-60')}
+                  key={item.id}
                 >
                   <BrandCard
                     checked={isSelected}
+                    icon={item.icon}
+                    logo={item.logo}
+                    name={item.title}
+                    value={item.id}
                     connected={
                       isSelected && Boolean(storageConnectorId) && !isDisabled
                     }
@@ -124,10 +128,6 @@ const StorageStep = () => {
                           ? storageConnectorLabel || 'Connected'
                           : item.description
                     }
-                    icon={item.icon}
-                    logo={item.logo}
-                    name={item.title}
-                    value={item.id}
                     onClick={() => {
                       if (!isDisabled) {
                         setStorageSelection(item.id, item.storageProviderCode)
@@ -144,13 +144,13 @@ const StorageStep = () => {
           <FolderStorageConnectorPanel
             connectorId={storageConnectorId}
             connectorLabel={storageConnectorLabel}
+            option={selectedStorage}
+            required
             error={
               showConnectorError
                 ? 'Please fill the required field: Connector'
                 : undefined
             }
-            option={selectedStorage}
-            required
             onConnectorChange={setStorageConnector}
           />
         ) : null}

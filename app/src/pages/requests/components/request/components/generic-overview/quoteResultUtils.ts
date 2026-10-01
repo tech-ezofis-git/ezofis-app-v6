@@ -15,8 +15,6 @@ import {
 export type QuoteScalarEntry = QualifierScalarEntry
 export type QuoteTableEntry = QualifierTableEntry
 
-export type QuoteTotalKind = 'subtotal' | 'freight' | 'tax' | 'total' | 'other'
-
 export type QuoteTotalEntry = {
   field: any | null
   kind: QuoteTotalKind
@@ -24,6 +22,8 @@ export type QuoteTotalEntry = {
   resultKey: string
   value: number
 }
+
+export type QuoteTotalKind = 'subtotal' | 'freight' | 'tax' | 'total' | 'other'
 
 export type QuoteViewModel = {
   grandTotal: QuoteTotalEntry | null
@@ -37,7 +37,9 @@ export type QuoteViewModel = {
 }
 
 const singularizeKey = (value: string) =>
-  normalizeQualifierKey(value).replace(/\s+s\b/g, '').trim()
+  normalizeQualifierKey(value)
+    .replace(/\s+s\b/g, '')
+    .trim()
 
 const isTableFieldType = (field: any) => {
   const type = String(field?.type || '')
@@ -63,9 +65,7 @@ const isLongTextValue = (field: any | null, value: unknown) => {
   return typeof value === 'string' && value.length > 160
 }
 
-export const classifyQuoteTotalKey = (
-  key: string,
-): QuoteTotalKind | null => {
+export const classifyQuoteTotalKey = (key: string): QuoteTotalKind | null => {
   const normalized = normalizeQualifierKey(key)
   const singular = singularizeKey(key)
   if (normalized === 'subtotal') return 'subtotal'
@@ -107,8 +107,7 @@ const findResultKeyByKind = (
   result: Record<string, any>,
   kind: QuoteTotalKind,
 ) =>
-  Object.keys(result).find((key) => classifyQuoteTotalKey(key) === kind) ||
-  null
+  Object.keys(result).find((key) => classifyQuoteTotalKey(key) === kind) || null
 
 /** Infer tax rate from quote_result total keys (defaults to 13%). */
 export const getQuoteTaxRate = (result: Record<string, any>) => {
@@ -128,17 +127,15 @@ export const buildQuoteViewModel = (
   formFields: any[],
   tableFields: any[],
 ): QuoteViewModel => {
-  const scalarFormFields = formFields.filter((field) => !isTableFieldType(field))
+  const scalarFormFields = formFields.filter(
+    (field) => !isTableFieldType(field),
+  )
   const usedKeys = new Set<string>()
   const scalars: QuoteScalarEntry[] = []
   const tables: QuoteTableEntry[] = []
   const totals: QuoteTotalEntry[] = []
 
-  const pushScalar = (
-    resultKey: string,
-    value: unknown,
-    field: any | null,
-  ) => {
+  const pushScalar = (resultKey: string, value: unknown, field: any | null) => {
     if (value === null || value === undefined) return
     if (typeof value === 'string' && !value.trim()) return
     scalars.push({
@@ -151,11 +148,7 @@ export const buildQuoteViewModel = (
     })
   }
 
-  const pushTotal = (
-    resultKey: string,
-    value: unknown,
-    field: any | null,
-  ) => {
+  const pushTotal = (resultKey: string, value: unknown, field: any | null) => {
     const kind = classifyQuoteTotalKey(resultKey)
     if (!kind) return
     usedKeys.add(resultKey)
@@ -183,9 +176,7 @@ export const buildQuoteViewModel = (
   for (const field of tableFields) {
     const resultKey = findResultKeyForFormField(result, field)
     const rows =
-      resultKey && isObjectRowArray(result[resultKey])
-        ? result[resultKey]
-        : []
+      resultKey && isObjectRowArray(result[resultKey]) ? result[resultKey] : []
     if (resultKey) usedKeys.add(resultKey)
     if (rows.length > 0 || resultKey) {
       tables.push({
@@ -236,9 +227,8 @@ export const buildQuoteViewModel = (
   }
 
   const lineItemTable =
-    tables.find((table) =>
-      isLineItemTableKey(table.resultKey, table.field),
-    ) || null
+    tables.find((table) => isLineItemTableKey(table.resultKey, table.field)) ||
+    null
   const otherTables = tables.filter((table) => table !== lineItemTable)
 
   const shortScalars = scalars.filter(

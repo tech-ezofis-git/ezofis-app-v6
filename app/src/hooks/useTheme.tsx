@@ -1,7 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { type MantineColorScheme, useMantineColorScheme } from '@mantine/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { applyResolvedTheme, getSystemTheme, type ResolvedTheme, resolveTheme, type ThemeMode } from '@/lib/theme'
+import {
+  applyResolvedTheme,
+  getSystemTheme,
+  type ResolvedTheme,
+  resolveTheme,
+  type ThemeMode,
+} from '@/lib/theme'
 
 interface ColorSchemeOption {
   icon: string

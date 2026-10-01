@@ -1523,7 +1523,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     )
   }
   return (
-    <main className='flex h-full flex-col bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <ConfirmDialog
         confirmLabel={t`Delete`}
         isConfirming={isDeletingUser}
@@ -1540,10 +1540,10 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           void confirmDeleteUser()
         }}
       />
-      <section className='flex flex-1 flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <SettingsPageHeader title={t`User Management`} onBack={onBack} />
 
-        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={userTable as any} />}
@@ -2428,8 +2428,6 @@ function LoginDetails({
         </div>
       </AnimateFadeIn>
 
-
-
       {showPasswordField ? (
         <AnimateFadeIn delay={0.35}>
           <div className='space-y-3'>
@@ -2448,8 +2446,8 @@ function LoginDetails({
                   onChange={(checked) =>
                     onChange({
                       ...user,
-                      resetPassword: checked,
                       password: '',
+                      resetPassword: checked,
                     })
                   }
                 />
@@ -2480,8 +2478,6 @@ function LoginDetails({
           </div>
         </AnimateFadeIn>
       ) : null}
-
-
     </SettingsFormSection>
   )
 }

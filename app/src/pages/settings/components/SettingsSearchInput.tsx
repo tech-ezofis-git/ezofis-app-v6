@@ -71,8 +71,8 @@ export default function SettingsSearchInput({
         )}
       >
         <input
-          ref={inputRef}
           placeholder={defaultPlaceholder}
+          ref={inputRef}
           type='text'
           value={inputValue}
           className={cn(

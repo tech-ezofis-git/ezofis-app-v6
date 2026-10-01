@@ -143,14 +143,14 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
                 : token.type === 'TABLE_SUM'
                   ? formatFormulaExpression([token], fields) || 'Table sum'
                   : token.type === 'FUNCTION'
-                  ? token.value.toUpperCase()
-                  : token.value === '*'
-                    ? '×'
-                    : token.value === '/'
-                      ? '÷'
-                      : token.value === '-'
-                        ? '−'
-                        : token.value}
+                    ? token.value.toUpperCase()
+                    : token.value === '*'
+                      ? '×'
+                      : token.value === '/'
+                        ? '÷'
+                        : token.value === '-'
+                          ? '−'
+                          : token.value}
               <button
                 className='text-gray-8 transition-colors hover:text-error-main active:scale-90'
                 type='button'
@@ -223,9 +223,9 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
         <div className='flex items-end gap-2'>
           <div className='min-w-0 flex-1'>
             <InputNumber
-              allowDecimal
               placeholder='e.g. 10'
               value={manualValue}
+              allowDecimal
               onChange={setManualValue}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
@@ -251,16 +251,16 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           Include field
         </label>
         <InputSelect
-          placeholder={
-            sourceFields.length
-              ? 'Number, currency, counter, or calculated'
-              : 'No compatible fields yet'
-          }
           value={null}
           options={sourceFields.map((field) => ({
             id: field.id,
             name: field.label || 'Untitled',
           }))}
+          placeholder={
+            sourceFields.length
+              ? 'Number, currency, counter, or calculated'
+              : 'No compatible fields yet'
+          }
           onChange={(option) =>
             option &&
             appendTokens([{ type: 'FIELD', value: String(option.id) }])
@@ -277,18 +277,21 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           Sum of table column
         </label>
         <InputSelect
+          options={tableFields.map((field) => ({
+            id: field.id,
+            name: field.label || 'Untitled',
+          }))}
           placeholder={
             tableFields.length ? 'Select table' : 'No table fields yet'
           }
           value={
             selectedTable
-              ? { id: selectedTable.id, name: selectedTable.label || 'Untitled' }
+              ? {
+                  id: selectedTable.id,
+                  name: selectedTable.label || 'Untitled',
+                }
               : null
           }
-          options={tableFields.map((field) => ({
-            id: field.id,
-            name: field.label || 'Untitled',
-          }))}
           onChange={(option) => {
             setTableFieldId(option ? String(option.id) : null)
             setColumnId(null)
@@ -296,6 +299,10 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
         />
         <InputSelect
           disabled={!selectedTable}
+          options={numericColumns.map((column) => ({
+            id: column.id,
+            name: column.name || 'Untitled',
+          }))}
           placeholder={
             !selectedTable
               ? 'Select a table first'
@@ -313,13 +320,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
                 }
               : null
           }
-          options={numericColumns.map((column) => ({
-            id: column.id,
-            name: column.name || 'Untitled',
-          }))}
-          onChange={(option) =>
-            setColumnId(option ? String(option.id) : null)
-          }
+          onChange={(option) => setColumnId(option ? String(option.id) : null)}
         />
         <Button
           className='w-full'

@@ -1,5 +1,5 @@
-import { useLingui } from '@lingui/react/macro'
 import type { Node } from '@xyflow/react'
+import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
@@ -10,12 +10,15 @@ import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
 import { generateId } from '../../utils/generateId'
 import {
+  KANBAN_CARD_COLORS,
   type KanbanCardColor,
   type KanbanCardSetting,
-  KANBAN_CARD_COLORS,
   kanbanColorDotClass,
 } from '../../utils/kanbanSettings'
-import { NODE_TOOL_TYPE, normalizeNodeToolType } from '../../utils/nodeToolTypes'
+import {
+  NODE_TOOL_TYPE,
+  normalizeNodeToolType,
+} from '../../utils/nodeToolTypes'
 
 const SKIP_STAGE_TYPES = new Set([
   NODE_TOOL_TYPE.CONDITION,
@@ -227,14 +230,14 @@ export default function KanbanViewSettingsSection({
                 return (
                   <button
                     aria-label={color.label}
+                    key={color.id}
+                    type='button'
                     className={cn(
                       'flex size-8 items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95',
                       active
                         ? 'border-primary-9 ring-2 ring-primary-4'
                         : 'border-gray-3 hover:border-primary-6',
                     )}
-                    key={color.id}
-                    type='button'
                     onClick={() => setDraft({ ...draft, color: color.id })}
                   >
                     <span className={cn('size-4 rounded-full', color.dot)} />
@@ -266,11 +269,18 @@ export default function KanbanViewSettingsSection({
           ) : null}
 
           <div className='flex items-center justify-end gap-2'>
-            <Button color='gray' size='xs' variant='outline' onClick={cancelDraft}>
+            <Button
+              color='gray'
+              size='xs'
+              variant='outline'
+              onClick={cancelDraft}
+            >
               {t`Cancel`}
             </Button>
             <Button size='xs' onClick={saveDraft}>
-              {cards.some((card) => card.id === draft.id) ? t`Update card` : t`Add card`}
+              {cards.some((card) => card.id === draft.id)
+                ? t`Update card`
+                : t`Add card`}
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { Popover, Textarea } from '@mantine/core'
 import { t } from '@lingui/macro'
+import { Popover, Textarea } from '@mantine/core'
+import React, { useState } from 'react'
 import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -22,17 +22,16 @@ const getInitials = (fullNameOrEmail: string): string => {
     : clean.slice(0, 2).toUpperCase()
 }
 
-
 interface ForwardPopoverProps {
   target: React.ReactNode
-  onConfirm: (userId: string, comments: string) => void
   users: any[]
+  onConfirm: (userId: string, comments: string) => void
 }
 
 const ForwardPopover: React.FC<ForwardPopoverProps> = ({
   target,
-  onConfirm,
   users,
+  onConfirm,
 }) => {
   const [opened, setOpened] = useState(false)
   const [search, setSearch] = useState('')
@@ -42,26 +41,36 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
   const currentUserEmail = authUserStore.getState().session?.email
   const currentUserId = authUserStore.getState().session?.id
 
-  const filteredUsers = users?.filter((u) => {
-    if (
-      (currentUserEmail && u.email?.toLowerCase() === currentUserEmail.toLowerCase()) ||
-      u.id === currentUserId ||
-      u.value === currentUserId
-    ) {
-      return false
-    }
+  const filteredUsers =
+    users?.filter((u) => {
+      if (
+        (currentUserEmail &&
+          u.email?.toLowerCase() === currentUserEmail.toLowerCase()) ||
+        u.id === currentUserId ||
+        u.value === currentUserId
+      ) {
+        return false
+      }
 
-    const term = search.toLowerCase()
-    return (
-      u.name?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term) ||
-      u.loginName?.toLowerCase().includes(term)
-    )
-  }) || []
+      const term = search.toLowerCase()
+      return (
+        u.name?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term) ||
+        u.loginName?.toLowerCase().includes(term)
+      )
+    }) || []
 
   return (
     <Popover
       opened={opened}
+      position='bottom-end'
+      width={320}
+      withinPortal={true}
+      zIndex={5000}
+      classNames={{
+        dropdown:
+          'rounded-lg border border-[var(--gray-3)] bg-surface-raised p-0 shadow-md',
+      }}
       onChange={(isOpen) => {
         setOpened(isOpen)
         if (!isOpen) {
@@ -71,22 +80,15 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           setComments('')
         }
       }}
-      width={320}
-      position='bottom-end'
-      zIndex={5000}
-      withinPortal={true}
-      classNames={{
-        dropdown: 'bg-surface-raised p-0 shadow-md border border-[var(--gray-3)] rounded-lg',
-      }}
     >
       <Popover.Target>
         <div
+          className='inline-block cursor-pointer'
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             setOpened((o) => !o)
           }}
-          className='inline-block cursor-pointer'
         >
           {target}
         </div>
@@ -95,15 +97,15 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
         <div className='flex max-h-[400px] flex-col overflow-hidden rounded-lg bg-surface'>
           <div className='border-b border-[var(--gray-3)] p-3'>
             <input
-              autoFocus
               className='w-full rounded-md border border-[var(--gray-4)] bg-transparent px-3 py-1.5 text-sm text-[var(--gray-12)] focus:border-[var(--primary-9)] focus:outline-none'
               placeholder={t`Search users...`}
               value={search}
+              autoFocus
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className='min-h-[200px] max-h-[250px] flex-1 overflow-y-auto p-2'>
+          <div className='max-h-[250px] min-h-[200px] flex-1 overflow-y-auto p-2'>
             {filteredUsers.length === 0 ? (
               <div className='py-8 text-center text-sm text-[var(--gray-11)]'>
                 {t`No users found`}
@@ -112,11 +114,11 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
               filteredUsers.map((user, index) => {
                 const id = String(
                   user.id ??
-                  user.userId ??
-                  user.value ??
-                  user.email ??
-                  user.loginName ??
-                  `user-${index}`
+                    user.userId ??
+                    user.value ??
+                    user.email ??
+                    user.loginName ??
+                    `user-${index}`,
                 )
                 const name =
                   user.name ||
@@ -129,16 +131,17 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                 const showEmailSubline = Boolean(
                   user.email &&
                   name &&
-                  user.email.toLowerCase().trim() !== name.toLowerCase().trim()
+                  user.email.toLowerCase().trim() !== name.toLowerCase().trim(),
                 )
 
                 return (
                   <div
                     key={id}
-                    className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-all ${isSelected
-                      ? 'border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-11)] shadow-xs'
-                      : 'border-transparent bg-transparent hover:bg-[var(--gray-2)] text-[var(--gray-12)]'
-                      }`}
+                    className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-all ${
+                      isSelected
+                        ? 'border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-11)] shadow-xs'
+                        : 'border-transparent bg-transparent text-[var(--gray-12)] hover:bg-[var(--gray-2)]'
+                    }`}
                     onClick={() =>
                       setSelectedUserId((prev) => (prev === id ? null : id))
                     }
@@ -147,25 +150,30 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
                     <div className='flex-1 overflow-hidden'>
                       <div className='flex items-center justify-between gap-2'>
                         <div
-                          className={`truncate text-sm font-medium ${isSelected
-                            ? 'font-semibold text-[var(--primary-11)]'
-                            : 'text-[var(--gray-12)]'
-                            }`}
+                          className={`truncate text-sm font-medium ${
+                            isSelected
+                              ? 'font-semibold text-[var(--primary-11)]'
+                              : 'text-[var(--gray-12)]'
+                          }`}
                         >
                           {name}
                         </div>
                         {isSelected && (
                           <div className='flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--primary-9)] text-white'>
-                            <Icon name='tabler:check' className='size-3 stroke-[3]' />
+                            <Icon
+                              className='size-3 stroke-[3]'
+                              name='tabler:check'
+                            />
                           </div>
                         )}
                       </div>
                       {showEmailSubline && (
                         <div
-                          className={`truncate text-xs ${isSelected
-                            ? 'text-[var(--primary-10)]'
-                            : 'text-[var(--gray-11)]'
-                            }`}
+                          className={`truncate text-xs ${
+                            isSelected
+                              ? 'text-[var(--primary-10)]'
+                              : 'text-[var(--gray-11)]'
+                          }`}
                         >
                           {user.email}
                         </div>
@@ -180,10 +188,10 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
           {/* Footer with Forward Button */}
           <div className='flex justify-end gap-2 border-t border-[var(--gray-3)] bg-[var(--gray-1)] p-3'>
             <Button
-              variant='subtle'
               color='gray'
-              size='sm'
               label={t`Cancel`}
+              size='sm'
+              variant='subtle'
               onClick={() => {
                 setOpened(false)
                 setSearch('')
@@ -191,11 +199,11 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
               }}
             />
             <Button
-              variant='solid'
               color='primary'
-              size='sm'
-              label={t`Forward`}
               disabled={!selectedUserId}
+              label={t`Forward`}
+              size='sm'
+              variant='solid'
               onClick={() => {
                 if (selectedUserId) {
                   onConfirm(selectedUserId, comments)
@@ -214,4 +222,3 @@ const ForwardPopover: React.FC<ForwardPopoverProps> = ({
 }
 
 export default ForwardPopover
-

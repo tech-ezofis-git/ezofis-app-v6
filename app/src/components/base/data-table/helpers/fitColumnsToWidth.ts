@@ -12,7 +12,7 @@ const FIXED_COLUMN_IDS = new Set([
   'icon',
 ])
 
-const isFixedWidthColumn = <TData,>(column: Column<TData, unknown>) => {
+const isFixedWidthColumn = <TData>(column: Column<TData, unknown>) => {
   if (!column.getCanResize() || FIXED_COLUMN_IDS.has(column.id)) return true
 
   const minSize = column.columnDef.minSize
@@ -24,11 +24,22 @@ const isFixedWidthColumn = <TData,>(column: Column<TData, unknown>) => {
   )
 }
 
-const getDefaultColumnSize = <TData,>(column: Column<TData, unknown>) =>
+const getDefaultColumnSize = <TData>(column: Column<TData, unknown>) =>
   column.columnDef.size ?? column.getSize()
 
-const getMinColumnSize = <TData,>(column: Column<TData, unknown>) =>
+const getMinColumnSize = <TData>(column: Column<TData, unknown>) =>
   column.columnDef.minSize ?? 40
+
+export function columnSizingEquals(
+  current: ColumnSizingState,
+  next: ColumnSizingState,
+) {
+  const currentKeys = Object.keys(current)
+  const nextKeys = Object.keys(next)
+  if (currentKeys.length !== nextKeys.length) return false
+
+  return nextKeys.every((key) => current[key] === next[key])
+}
 
 /** Distribute container width across visible columns (grow or shrink to fit). */
 export default function fitColumnsToWidth<TData>(
@@ -41,7 +52,9 @@ export default function fitColumnsToWidth<TData>(
   if (visibleColumns.length === 0) return null
 
   const fixedColumns = visibleColumns.filter(isFixedWidthColumn)
-  const flexColumns = visibleColumns.filter((column) => !isFixedWidthColumn(column))
+  const flexColumns = visibleColumns.filter(
+    (column) => !isFixedWidthColumn(column),
+  )
 
   const sizing: ColumnSizingState = {}
   let fixedTotal = 0
@@ -64,7 +77,7 @@ export default function fitColumnsToWidth<TData>(
 
   if (available >= defaultTotal) {
     // Grow: keep preferred sizes, share leftover space evenly.
-    let extraSpace = available - defaultTotal
+    const extraSpace = available - defaultTotal
     const baseExtra = Math.floor(extraSpace / flexColumns.length)
     let remainder = extraSpace - baseExtra * flexColumns.length
 
@@ -97,15 +110,4 @@ export default function fitColumnsToWidth<TData>(
   })
 
   return sizing
-}
-
-export function columnSizingEquals(
-  current: ColumnSizingState,
-  next: ColumnSizingState,
-) {
-  const currentKeys = Object.keys(current)
-  const nextKeys = Object.keys(next)
-  if (currentKeys.length !== nextKeys.length) return false
-
-  return nextKeys.every((key) => current[key] === next[key])
 }

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeft, Loader2, ScanLine } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   buildViewerUrl,
   buildWopiSrc,
@@ -62,7 +62,7 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
           ui: 'classic',
           wopiSrc,
         })
-        // eslint-disable-next-line no-console
+
         console.log('[collabora] viewer URL', url)
         setViewerUrl(url)
       } catch (error) {
@@ -98,20 +98,18 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
   const postToCollabora = useCallback((message: Record<string, unknown>) => {
     const iframeWindow = iframeRef.current?.contentWindow
     if (!iframeWindow) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[collabora-debug] Cannot send postMessage: iframe contentWindow is null!',
       )
       return
     }
     const str = JSON.stringify(message)
-    // eslint-disable-next-line no-console
+
     console.log('[collabora-debug] Sending postMessage to iframe window:', str)
     iframeWindow.postMessage(str, '*')
   }, [])
 
   const handleIframeLoad = () => {
-    // eslint-disable-next-line no-console
     console.log(
       '[collabora-debug] iframe onLoad event fired. Sending Host_PostmessageReady...',
     )
@@ -124,7 +122,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      // eslint-disable-next-line no-console
       console.log(
         '[collabora-debug] Incoming window postMessage raw event:',
         event.data,
@@ -137,7 +134,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
         message =
           typeof event.data === 'string' ? JSON.parse(event.data) : event.data
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.log(
           '[collabora-debug] Could not parse postMessage data as JSON string:',
           event.data,
@@ -145,7 +141,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
         return
       }
 
-      // eslint-disable-next-line no-console
       console.log('[collabora-debug] Parsed message object:', message)
 
       if (!message || typeof message !== 'object') return
@@ -157,7 +152,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
         (message.Values?.Status === 'Document_Loaded' ||
           message.status === 'Document_Loaded')
       ) {
-        // eslint-disable-next-line no-console
         console.log(
           '[collabora-debug] App_LoadingStatus Document_Loaded received!',
         )
@@ -170,7 +164,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
         msgId === 'Action_Save' ||
         msgId === 'Doc_Saved'
       ) {
-        // eslint-disable-next-line no-console
         console.log(
           '[collabora-debug] STEP 3: Received Save Response message from Collabora:',
           message,
@@ -184,7 +177,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
           try {
             const isPdf = String(fileType || '').toLowerCase() === 'pdf'
             if (isPdf) {
-              // eslint-disable-next-line no-console
               console.log(
                 '[collabora-debug] Fetching updated PDF blob version >',
                 versionRef.current,
@@ -196,7 +188,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
               versionRef.current = version
               onSave(blob)
             } else {
-              // eslint-disable-next-line no-console
               console.log(
                 '[collabora-debug] STEP 4: Downloading edited document for fileId:',
                 fileIdRef.current,
@@ -210,7 +201,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
               onSave(editedBlob)
             }
           } catch (error) {
-            // eslint-disable-next-line no-console
             console.error(
               '[collabora-debug] ERROR: Failed to download edited document:',
               error,
@@ -223,7 +213,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
             setIsSaving(false)
           }
         } else {
-          // eslint-disable-next-line no-console
           console.warn(
             '[collabora-debug] ERROR: Save returned non-success:',
             message,
@@ -252,7 +241,7 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
     // server-side and emit Action_Save_Resp like any other document.
     postToCollabora({
       MessageId: 'Action_Save',
-      Values: { Notify: true, DontSaveIfUnmodified: false },
+      Values: { DontSaveIfUnmodified: false, Notify: true },
     })
 
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current)
@@ -318,11 +307,11 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
           </div>
         ) : viewerUrl ? (
           <iframe
-            ref={iframeRef}
-            allowFullScreen
             className='h-full w-full border-none'
+            ref={iframeRef}
             src={viewerUrl}
             title='collabora-editor'
+            allowFullScreen
             onLoad={handleIframeLoad}
           />
         ) : null}

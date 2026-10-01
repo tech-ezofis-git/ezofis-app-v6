@@ -70,7 +70,11 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
                 'animate-spin',
               iconClass,
             )}
-            name={loading && !iconClass?.includes('animate-spin') ? 'fa:spinner' : icon}
+            name={
+              loading && !iconClass?.includes('animate-spin')
+                ? 'fa:spinner'
+                : icon
+            }
           />
         )}
       </button>

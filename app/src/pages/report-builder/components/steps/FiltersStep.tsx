@@ -94,13 +94,13 @@ const FiltersStep = () => {
                 key={filter.id}
               >
                 <InputSelect
+                  label={t`Field`}
+                  options={fieldOptions}
                   description={
                     isLoading && fieldOptions.length === 0
                       ? t`Loading fields...`
                       : undefined
                   }
-                  label={t`Field`}
-                  options={fieldOptions}
                   value={
                     fieldOptions.find((o) => o.id === filter.field) ||
                     (filter.field

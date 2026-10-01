@@ -175,9 +175,9 @@ const capturePortalBranding = (): PortalBrandingSnapshot => {
     colorPreferences:
       light || dark
         ? {
-          dark,
-          light,
-        }
+            dark,
+            light,
+          }
         : undefined,
     favicon: readBrandingSession(BRANDING_STORAGE_KEYS.favicon) || '',
     logo: readBrandingSession(BRANDING_STORAGE_KEYS.logo) || '',
@@ -203,9 +203,9 @@ const extractFormFields = (formJson: unknown): Option[] => {
   const record = parsed as Record<string, unknown>
   const rawFields = Array.isArray(record.panels)
     ? record.panels.flatMap((panel) => {
-      const row = panel as Record<string, unknown>
-      return Array.isArray(row.fields) ? row.fields : []
-    })
+        const row = panel as Record<string, unknown>
+        return Array.isArray(row.fields) ? row.fields : []
+      })
     : Array.isArray(record.fields)
       ? record.fields
       : Array.isArray(record.components)
@@ -267,8 +267,8 @@ export default function PortalConfiguration({
       },
       loginType:
         stored.loginType === 'masterLogin' ||
-          stored.loginType === 'applicationLogin' ||
-          stored.loginType === 'emailOtp'
+        stored.loginType === 'applicationLogin' ||
+        stored.loginType === 'emailOtp'
           ? stored.loginType
           : 'emailOtp',
       workflows: Array.isArray(stored.workflows) ? stored.workflows : [],
@@ -635,7 +635,7 @@ export default function PortalConfiguration({
   }
 
   return (
-    <main className='flex h-full flex-col bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <ConfirmDialog
         confirmLabel={t`Delete`}
         opened={deletingPortalId != null}
@@ -649,13 +649,13 @@ export default function PortalConfiguration({
         onCancel={() => setDeletingPortalId(null)}
         onConfirm={() => void confirmDeletePortal()}
       />
-      <section className='flex min-h-0 flex-1 flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <SettingsPageHeader
           description={t`Create branded portals with login methods and connected workflows.`}
           title={t`Portal Configuration`}
           onBack={onBack}
         />
-        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={portalTable as never} />}
@@ -945,8 +945,8 @@ function PortalSetup({
               label: t`Master Form`,
               value:
                 draftPortal.authentication.formId &&
-                  draftPortal.authentication.formId !== 0 &&
-                  draftPortal.authentication.formId !== '0'
+                draftPortal.authentication.formId !== 0 &&
+                draftPortal.authentication.formId !== '0'
                   ? draftPortal.authentication.formId
                   : '',
             },
@@ -1263,14 +1263,12 @@ function PortalSetup({
                       label={t`Password & authentication method`}
                       options={[
                         {
-                          description:
-                            t`Use a one-time password for initial login`,
+                          description: t`Use a one-time password for initial login`,
                           id: 1,
                           name: t`Login With OTP`,
                         },
                         {
-                          description:
-                            t`Use the login password field from the master for authentication`,
+                          description: t`Use the login password field from the master for authentication`,
                           id: 2,
                           name: t`Login Password Field`,
                         },
@@ -1491,14 +1489,14 @@ function PortalSetup({
                           label={t`Password & authentication method`}
                           value={
                             draftPortal.authentication.passwordTypes ===
-                              'PASSWORD'
+                            'PASSWORD'
                               ? t`Login Password Field`
                               : t`Login With OTP`
                           }
                         />
                       </AnimateFadeIn>
                       {draftPortal.authentication.passwordTypes ===
-                        'PASSWORD' ? (
+                      'PASSWORD' ? (
                         <AnimateFadeIn delay={0.39}>
                           <SummaryItem
                             label={t`Password Field`}

@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWizardLayout'
 import showToast from '@/components/base/toast/showToast'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayout'
 import { isDemoAppOrigin } from '@/utils/origin'
 import type { Report, ReportStatus } from '../types'
@@ -11,7 +12,6 @@ import {
   useSaveReportBuilderReportMutation,
 } from '../hooks/useReportBuilderApi'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
-import { AnimateFadeIn } from '@/components/common/animations'
 import AskAiStep from './steps/AskAiStep'
 import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
@@ -216,9 +216,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     switch (stepIds[activeIndex]) {
       case 'ask-ai':
         content = (
-          <AskAiStep
-            onChangeSource={() => setIsSourceConfirmed(false)}
-          />
+          <AskAiStep onChangeSource={() => setIsSourceConfirmed(false)} />
         )
         break
       case 'details':
@@ -238,7 +236,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     }
 
     return (
-      <AnimateFadeIn key={stepIds[activeIndex]} className='flex flex-col gap-6 md:gap-7'>
+      <AnimateFadeIn
+        className='flex flex-col gap-6 md:gap-7'
+        key={stepIds[activeIndex]}
+      >
         {content}
       </AnimateFadeIn>
     )

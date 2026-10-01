@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useMemo } from 'react'
 import type { IDiscrepancy } from '@/pages/requests/types'
 import Title from '@/components/base/Title'
 import Discrepancy from './Discrepancy'

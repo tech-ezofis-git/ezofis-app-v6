@@ -1,14 +1,11 @@
 import { forwardRef } from 'react'
 import type { InputProps } from './shared/types'
-import { classNames } from './shared/constants'
 import InputDate from './InputDate'
 import InputLabel from './InputLabel'
 import InputTime from './InputTime'
+import { classNames } from './shared/constants'
 
-interface Props extends Omit<
-  InputProps,
-  'placeholder'
-> {
+interface Props extends Omit<InputProps, 'placeholder'> {
   value: string | null
   format?: '12h' | '24h'
   maxDate?: string
@@ -77,13 +74,13 @@ const InputDateTime = forwardRef<HTMLInputElement, Props>(
         {_label && <div className='mb-2'>{_label}</div>}
         <div className='flex items-start gap-2'>
           <InputDate
-            ref={ref}
             className='flex-1'
             clearable={clearable}
             disabled={disabled}
             maxDate={maxDate}
             minDate={minDate}
             readOnly={readOnly}
+            ref={ref}
             value={datePart}
             onChange={handleDateChange}
           />

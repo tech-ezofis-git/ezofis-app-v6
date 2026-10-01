@@ -1,6 +1,6 @@
 import type React from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
 import {
@@ -9,19 +9,11 @@ import {
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
-export type SectionTier =
-  | 'tier1'
-  | 'tier2'
-  | 'tier3'
-  | 'tier4'
-  | 'tier5'
-  | 'tier6'
-
 export interface FieldType {
-  section: SectionTier
   description: string
   icon: string
   label: string
+  section: SectionTier
   type:
     | QuestionType
     | 'ADDRESS_INFO'
@@ -32,269 +24,277 @@ export interface FieldType {
 
 export interface SectionConfig {
   id: SectionTier
-  label?: string
   collapsible?: boolean
   description?: string
   hideHeader?: boolean
+  label?: string
 }
 
+export type SectionTier =
+  | 'tier1'
+  | 'tier2'
+  | 'tier3'
+  | 'tier4'
+  | 'tier5'
+  | 'tier6'
+
 export const SECTION_CONFIGS: SectionConfig[] = [
-  { id: 'tier1', hideHeader: true },
-  { id: 'tier2', hideHeader: true },
+  { hideHeader: true, id: 'tier1' },
+  { hideHeader: true, id: 'tier2' },
   { id: 'tier3', label: 'Structural & Layout' },
   { id: 'tier4', label: 'Smart Templates' },
   { id: 'tier5', label: 'Specialized' },
-  { id: 'tier6', label: 'Advanced Fields', collapsible: true },
+  { collapsible: true, id: 'tier6', label: 'Advanced Fields' },
 ]
 
 export const ALL_FIELDS: FieldType[] = [
   // Tier 1 – Core / Most Used (top of list)
   {
-    section: 'tier1',
     description: 'Single line text input',
     icon: 'mdi:form-textbox',
     label: 'Short Text',
+    section: 'tier1',
     type: 'SHORT_TEXT',
   },
   {
-    section: 'tier1',
     description: 'Multi-line text area',
     icon: 'mdi:form-textarea',
     label: 'Long Text',
+    section: 'tier1',
     type: 'LONG_TEXT',
   },
   {
-    section: 'tier1',
     description: 'Validated email input',
     icon: 'lucide:mail',
     label: 'Email',
+    section: 'tier1',
     type: 'EMAIL',
   },
   {
-    section: 'tier1',
     description: 'Numeric only entry',
     icon: 'tabler:number-123',
     label: 'Number',
+    section: 'tier1',
     type: 'NUMBER',
   },
   {
-    section: 'tier1',
     description: 'Phone number field',
     icon: 'lucide:phone',
     label: 'Phone',
+    section: 'tier1',
     type: 'PHONE_NUMBER',
   },
   {
-    section: 'tier1',
     description: 'Select from list',
     icon: 'lucide:list-todo',
     label: 'Dropdown',
+    section: 'tier1',
     type: 'SINGLE_SELECT',
   },
   {
-    section: 'tier1',
     description: 'Radio selection',
     icon: 'mdi:radiobox-marked',
     label: 'Single Choice',
+    section: 'tier1',
     type: 'SINGLE_CHOICE',
   },
   {
-    section: 'tier1',
     description: 'Multiple checkboxes selection',
     icon: 'lucide:check-square',
     label: 'Multiple Choice',
+    section: 'tier1',
     type: 'MULTIPLE_CHOICE',
   },
   {
-    section: 'tier1',
     description: 'Binary toggle switch',
     icon: 'lucide:toggle-left',
     label: 'Yes/No',
+    section: 'tier1',
     type: 'YES_NO_TOGGLE',
   },
   {
-    section: 'tier1',
     description: 'Date picker',
     icon: 'lucide:calendar',
     label: 'Date',
+    section: 'tier1',
     type: 'DATE',
   },
   {
-    section: 'tier1',
     description: 'Document & media capture',
     icon: 'lucide:upload-cloud',
     label: 'File Upload',
+    section: 'tier1',
     type: 'FILE_UPLOAD',
   },
 
   // Tier 2 – Common but secondary
   {
-    section: 'tier2',
     description: 'Searchable dropdown, multiple picks',
     icon: 'lucide:list-checks',
     label: 'Multi Select',
+    section: 'tier2',
     type: 'MULTI_SELECT',
   },
   {
-    section: 'tier2',
     description: 'Combined first & last name',
     icon: 'lucide:user',
     label: 'Full Name',
+    section: 'tier2',
     type: 'FULL_NAME',
   },
   {
-    section: 'tier2',
     description: 'Financial amount with unit',
     icon: 'lucide:banknote',
     label: 'Currency',
+    section: 'tier2',
     type: 'CURRENCY_AMOUNT',
   },
   {
-    section: 'tier2',
     description: 'Star or heart-based feedback',
     icon: 'lucide:star',
     label: 'Rating',
+    section: 'tier2',
     type: 'RATING',
   },
   {
-    section: 'tier2',
     description: 'Numbered 0-10 satisfaction scale',
     icon: 'lucide:bar-chart-3',
     label: 'Opinion Scale',
+    section: 'tier2',
     type: 'OPINION_SCALE',
   },
   {
-    section: 'tier2',
     description: 'Website link input',
     icon: 'lucide:link',
     label: 'URL',
+    section: 'tier2',
     type: 'URL',
   },
   {
-    section: 'tier2',
     description: 'Time picker',
     icon: 'lucide:clock',
     label: 'Time',
+    section: 'tier2',
     type: 'TIME',
   },
   {
-    section: 'tier2',
     description: 'Combined date & time picker',
     icon: 'lucide:calendar-clock',
     label: 'Date & Time',
+    section: 'tier2',
     type: 'DATE_TIME',
   },
 
   // Tier 3 – Structural / layout helpers
   {
-    section: 'tier3',
     description: 'Visual section separator',
     icon: 'lucide:separator-horizontal',
     label: 'Divider',
+    section: 'tier3',
     type: 'DIVIDER',
   },
   {
-    section: 'tier3',
     description: 'Spreadsheet-style data entry',
     icon: 'lucide:layout-grid',
     label: 'Table',
+    section: 'tier3',
     type: 'TABLE',
   },
   {
-    section: 'tier3',
     description: 'Rich-text & dynamic content',
     icon: 'lucide:type',
     label: 'Text Builder',
+    section: 'tier3',
     type: 'TEXT_BUILDER',
   },
 
   // Tier 4 – Smart Templates
   {
-    section: 'tier4',
     description: 'Name, Email, Phone block',
     icon: 'lucide:contact',
     label: 'Contact Template',
+    section: 'tier4',
     type: 'CONTACT_INFO',
   },
   {
-    section: 'tier4',
     description: 'Complete address group',
     icon: 'lucide:home',
     label: 'Address Template',
+    section: 'tier4',
     type: 'ADDRESS_INFO',
   },
   {
-    section: 'tier4',
     description: 'Street, City, State, Zip',
     icon: 'lucide:map-pin',
     label: 'Address',
+    section: 'tier4',
     type: 'ADDRESS',
   },
   {
-    section: 'tier4',
     description: 'Agreement checkbox block',
     icon: 'lucide:shield-check',
     label: 'Consent',
+    section: 'tier4',
     type: 'CONSENT',
   },
 
   // Tier 5 – Specialized / low-frequency
   {
-    section: 'tier5',
     description: 'Intl. dialing prefix',
     icon: 'lucide:globe',
     label: 'Country',
+    section: 'tier5',
     type: 'COUNTRY_CODE',
   },
   {
-    section: 'tier5',
     description: 'Secure text entry',
     icon: 'lucide:lock',
     label: 'Password',
+    section: 'tier5',
     type: 'PASSWORD',
   },
   {
-    section: 'tier5',
     description: 'Hand-drawn signature capture',
     icon: 'lucide:pen-tool',
     label: 'Signature',
+    section: 'tier5',
     type: 'SIGNATURE',
   },
   {
-    section: 'tier5',
     description: 'Increment/Decrement field',
     icon: 'lucide:binary',
     label: 'Counter',
+    section: 'tier5',
     type: 'COUNTER',
   },
 
   // Tier 6 – Advanced / niche (bottom, collapsible)
   {
-    section: 'tier6',
     description: 'Total score calculation',
     icon: 'lucide:trophy',
     label: 'Score',
+    section: 'tier6',
     type: 'SCORE',
   },
   {
-    section: 'tier6',
     description: 'Dynamic formula-based result',
     icon: 'lucide:calculator',
     label: 'Calculated',
+    section: 'tier6',
     type: 'CALCULATED',
   },
   {
-    section: 'tier6',
     description: 'Invoice & PO matching summary',
     icon: 'lucide:file-text',
     label: 'Invoice Report',
+    section: 'tier6',
     type: 'INVOICE_REPORT',
   },
   {
-    section: 'tier6',
     description: 'GL matching & financial audit report',
     icon: 'lucide:file-chart-column',
     label: 'Financial Audit',
+    section: 'tier6',
     type: 'FINANCIAL_AUDIT',
   },
 ]
@@ -391,7 +391,7 @@ const FieldLibrary = () => {
       <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
         <div className='flex items-center gap-2'>
           <button
-            className='rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13 cursor-pointer'
+            className='cursor-pointer rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13'
             onClick={() => setSidebarView('explorer')}
           >
             <Icon height={16} name='lucide:arrow-left' width={16} />
@@ -423,7 +423,7 @@ const FieldLibrary = () => {
           />
           {search && (
             <button
-              className='absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-0.5 text-gray-9 transition-colors hover:bg-gray-2 hover:text-gray-12 cursor-pointer'
+              className='absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded-full p-0.5 text-gray-9 transition-colors hover:bg-gray-2 hover:text-gray-12'
               onClick={() => setSearch('')}
             >
               <Icon height={12} name='lucide:x' width={12} />
@@ -446,19 +446,19 @@ const FieldLibrary = () => {
           return (
             <div className='space-y-2.5' key={section.id}>
               {/* Section Header */}
-              {!section.hideHeader && (
-                isCollapsible ? (
+              {!section.hideHeader &&
+                (isCollapsible ? (
                   <button
+                    className='group/hdr flex w-full cursor-pointer items-center justify-between rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-gray-2'
                     type='button'
-                    className='group/hdr flex w-full items-center justify-between rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-gray-2 cursor-pointer'
                     onClick={() => setIsAdvancedOpen((prev) => !prev)}
                   >
                     <div className='flex items-center gap-2'>
                       <div className='size-2 rounded-full bg-primary-9' />
-                      <div className='text-xs font-bold text-gray-12 group-hover/hdr:text-primary-9 transition-colors'>
+                      <div className='text-xs font-bold text-gray-12 transition-colors group-hover/hdr:text-primary-9'>
                         {section.label}
                       </div>
-                      <span className='rounded-full bg-gray-2 px-1.5 py-0.2 text-[10px] font-semibold text-gray-10'>
+                      <span className='py-0.2 rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-10'>
                         {sectionFields.length}
                       </span>
                     </div>
@@ -468,12 +468,12 @@ const FieldLibrary = () => {
                       </span>
                       <Icon
                         height={14}
+                        width={14}
                         name={
                           isExpanded
                             ? 'lucide:chevron-down'
                             : 'lucide:chevron-right'
                         }
-                        width={14}
                       />
                     </div>
                   </button>
@@ -484,8 +484,7 @@ const FieldLibrary = () => {
                       {section.label}
                     </div>
                   </div>
-                )
-              )}
+                ))}
 
               {/* Field Cards */}
               <AnimatePresence initial={false}>
@@ -494,11 +493,11 @@ const FieldLibrary = () => {
                     animate={{ height: 'auto', opacity: 1 }}
                     className='grid grid-cols-1 gap-2 overflow-hidden'
                     exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     initial={{
                       height: isCollapsible ? 0 : 'auto',
                       opacity: isCollapsible ? 0 : 1,
                     }}
-                    transition={{ duration: 0.2 }}
                   >
                     {sectionFields.map((field, idx) => {
                       const flatIndex = filteredFields.indexOf(field)
@@ -510,7 +509,7 @@ const FieldLibrary = () => {
                           key={field.type + field.label}
                           transition={{ delay: sectionIdx * 0.04 + idx * 0.02 }}
                           className={cn(
-                            'group relative flex items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer',
+                            'group relative flex cursor-pointer items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98]',
                             isSelected
                               ? 'border-primary-4 bg-primary-3/60 shadow-2xs'
                               : 'border-transparent bg-white hover:border-gray-3 hover:bg-gray-2',

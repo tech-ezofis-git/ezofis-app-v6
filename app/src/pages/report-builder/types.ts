@@ -7,8 +7,6 @@ export interface DomainField {
   type: ReportFieldType
 }
 
-export type ReportSourceType = 'Workflow' | 'Folder' | 'Master' | ''
-
 export interface Report {
   createdAt: string
   customFields: Question[]
@@ -26,11 +24,11 @@ export interface Report {
   scheduled: boolean
   sharedGroups: string[]
   sharedUsers: string[]
-  sourceFormId?: string
-  sourceId?: string
   sourceType: ReportSourceType
   status: ReportStatus
   visibility: ReportVisibility
+  sourceFormId?: string
+  sourceId?: string
 }
 
 export type ReportCalc = 'None' | 'Sum' | 'Average' | 'Count' | 'Min' | 'Max'
@@ -93,6 +91,8 @@ export interface ReportSchedule {
 export type ReportScheduleFormat = 'PDF' | 'Excel' | 'CSV'
 
 export type ReportScheduleRecurrence = 'Daily' | 'Weekly' | 'Monthly'
+
+export type ReportSourceType = 'Workflow' | 'Folder' | 'Master' | ''
 
 export type ReportStatus = 'Draft' | 'Published'
 

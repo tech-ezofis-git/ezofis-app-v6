@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Modal from '@/components/base/Modal'
 import cn from '@/utils/cn'
@@ -16,7 +16,12 @@ export const isTableColumnType = (dataType?: string): boolean => {
  * If not in valid JSON format, returns null (treated as empty value).
  */
 export const parseTableData = (rawVal: any): any[] | null => {
-  if (rawVal === undefined || rawVal === null || rawVal === '' || rawVal === '-') {
+  if (
+    rawVal === undefined ||
+    rawVal === null ||
+    rawVal === '' ||
+    rawVal === '-'
+  ) {
     return null
   }
 
@@ -77,14 +82,14 @@ const formatHeaderLabel = (key: string): string => {
 
 interface DynamicTableColumnCellProps {
   rawVal: any
-  title?: string
   className?: string
+  title?: string
 }
 
 export default function DynamicTableColumnCell({
+  className,
   rawVal,
   title,
-  className,
 }: DynamicTableColumnCellProps) {
   const { t } = useLingui()
   const [opened, setOpened] = useState(false)
@@ -121,7 +126,9 @@ export default function DynamicTableColumnCell({
         return String(row).toLowerCase().includes(term)
       }
       return Object.values(row).some((val) =>
-        String(val ?? '').toLowerCase().includes(term),
+        String(val ?? '')
+          .toLowerCase()
+          .includes(term),
       )
     })
   }, [rows, searchTerm])
@@ -136,11 +143,11 @@ export default function DynamicTableColumnCell({
 
     return (
       <span
+        title={stringVal !== '-' ? stringVal : undefined}
         className={cn(
           'block max-w-full truncate text-xs leading-4 font-normal text-gray-10',
           className,
         )}
-        title={stringVal !== '-' ? stringVal : undefined}
       >
         {stringVal}
       </span>
@@ -154,37 +161,43 @@ export default function DynamicTableColumnCell({
   return (
     <>
       <button
+        title={t`Click to view table data (${rowCount} ${rowCount === 1 ? 'row' : 'rows'})`}
         type='button'
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border border-gray-4 bg-surface px-2.5 py-0.5 text-xs font-medium text-gray-12 shadow-2xs hover:border-primary-7 hover:bg-primary-1/30 hover:text-primary-10 transition-all active:scale-95 cursor-pointer',
+          'inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-gray-4 bg-surface px-2.5 py-0.5 text-xs font-medium text-gray-12 shadow-2xs transition-all hover:border-primary-7 hover:bg-primary-1/30 hover:text-primary-10 active:scale-95',
           className,
         )}
         onClick={(e) => {
           e.stopPropagation()
           setOpened(true)
         }}
-        title={t`Click to view table data (${rowCount} ${rowCount === 1 ? 'row' : 'rows'})`}
       >
-        <Icon name='lucide:table-2' className='size-3.5 text-primary-9 shrink-0' />
+        <Icon
+          className='size-3.5 shrink-0 text-primary-9'
+          name='lucide:table-2'
+        />
         <span className='font-semibold text-gray-13'>{rowCount}</span>
-        <span className='text-[10px] text-gray-10'>{rowCount === 1 ? t`row` : t`rows`}</span>
+        <span className='text-[10px] text-gray-10'>
+          {rowCount === 1 ? t`row` : t`rows`}
+        </span>
       </button>
 
       {opened ? (
         <Modal opened={opened} width={920} onClose={() => setOpened(false)}>
-          <div className='flex flex-col max-h-[85vh] min-h-[300px] overflow-hidden bg-surface rounded-xl'>
+          <div className='flex max-h-[85vh] min-h-[300px] flex-col overflow-hidden rounded-xl bg-surface'>
             {/* Modal Header */}
             <div className='flex items-center justify-between border-b border-gray-3 px-6 py-4'>
               <div className='flex items-center gap-3'>
                 <div className='flex size-9 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
-                  <Icon name='lucide:table-2' className='size-5' />
+                  <Icon className='size-5' name='lucide:table-2' />
                 </div>
                 <div>
-                  <h3 className='text-base font-semibold text-gray-13 leading-tight'>
+                  <h3 className='text-base leading-tight font-semibold text-gray-13'>
                     {displayTitle}
                   </h3>
                   <p className='text-xs text-gray-10'>
-                    {rowCount} {rowCount === 1 ? t`total record` : t`total records`}
+                    {rowCount}{' '}
+                    {rowCount === 1 ? t`total record` : t`total records`}
                   </p>
                 </div>
               </div>
@@ -193,26 +206,26 @@ export default function DynamicTableColumnCell({
                 {rowCount > 4 ? (
                   <div className='relative w-56'>
                     <Icon
+                      className='pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-9'
                       name='lucide:search'
-                      className='absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-9 pointer-events-none'
                     />
                     <input
+                      className='w-full rounded-lg border border-gray-4 bg-surface py-1.5 pr-3 pl-8 text-xs text-gray-12 placeholder:text-gray-9 focus:border-primary-9 focus:outline-none'
+                      placeholder={t`Search rows...`}
                       type='text'
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder={t`Search rows...`}
-                      className='w-full rounded-lg border border-gray-4 bg-surface py-1.5 pl-8 pr-3 text-xs text-gray-12 placeholder:text-gray-9 focus:border-primary-9 focus:outline-none'
                     />
                   </div>
                 ) : null}
 
                 <button
+                  aria-label={t`Close`}
+                  className='cursor-pointer rounded-lg p-1.5 text-gray-10 transition-colors hover:bg-gray-3 hover:text-gray-13'
                   type='button'
                   onClick={() => setOpened(false)}
-                  className='rounded-lg p-1.5 text-gray-10 hover:bg-gray-3 hover:text-gray-13 transition-colors cursor-pointer'
-                  aria-label={t`Close`}
                 >
-                  <Icon name='lucide:x' className='size-5' />
+                  <Icon className='size-5' name='lucide:x' />
                 </button>
               </div>
             </div>
@@ -221,22 +234,25 @@ export default function DynamicTableColumnCell({
             <div className='flex-1 overflow-auto p-6'>
               {filteredRows.length === 0 ? (
                 <div className='flex flex-col items-center justify-center py-12 text-center text-gray-10'>
-                  <Icon name='lucide:search-x' className='size-8 text-gray-8 mb-2' />
+                  <Icon
+                    className='mb-2 size-8 text-gray-8'
+                    name='lucide:search-x'
+                  />
                   <p className='text-sm'>{t`No matching rows found.`}</p>
                 </div>
               ) : (
                 <div className='overflow-hidden rounded-lg border border-gray-3 shadow-2xs'>
-                  <div className='max-h-[55vh] overflow-auto ez-scrollbar'>
+                  <div className='ez-scrollbar max-h-[55vh] overflow-auto'>
                     <table className='w-full border-collapse text-left text-xs'>
-                      <thead className='sticky top-0 z-10 bg-gray-2 text-gray-11 font-medium border-b border-gray-3'>
+                      <thead className='sticky top-0 z-10 border-b border-gray-3 bg-gray-2 font-medium text-gray-11'>
                         <tr>
-                          <th className='w-12 px-3 py-2.5 text-center text-[11px] text-gray-9 font-semibold'>
+                          <th className='w-12 px-3 py-2.5 text-center text-[11px] font-semibold text-gray-9'>
                             #
                           </th>
                           {tableColumns.map((col) => (
                             <th
+                              className='px-4 py-2.5 font-semibold whitespace-nowrap text-gray-12'
                               key={col.key}
-                              className='px-4 py-2.5 font-semibold text-gray-12 whitespace-nowrap'
                             >
                               {col.label}
                             </th>
@@ -246,10 +262,10 @@ export default function DynamicTableColumnCell({
                       <tbody className='divide-y divide-gray-3 bg-surface'>
                         {filteredRows.map((row, idx) => (
                           <tr
+                            className='transition-colors hover:bg-gray-2/70'
                             key={idx}
-                            className='hover:bg-gray-2/70 transition-colors'
                           >
-                            <td className='px-3 py-2 text-center text-[11px] text-gray-9 font-mono select-none'>
+                            <td className='px-3 py-2 text-center font-mono text-[11px] text-gray-9 select-none'>
                               {idx + 1}
                             </td>
                             {tableColumns.map((col) => {
@@ -259,8 +275,8 @@ export default function DynamicTableColumnCell({
                                   : row
                               return (
                                 <td
+                                  className='max-w-xs truncate px-4 py-2 text-gray-12'
                                   key={col.key}
-                                  className='px-4 py-2 text-gray-12 max-w-xs truncate'
                                   title={formatCellString(cellVal)}
                                 >
                                   {formatCellString(cellVal)}
@@ -282,9 +298,9 @@ export default function DynamicTableColumnCell({
                 {t`Showing`} {filteredRows.length} {t`of`} {rowCount} {t`rows`}
               </span>
               <button
+                className='cursor-pointer rounded-lg border border-gray-4 bg-surface px-4 py-1.5 text-xs font-medium text-gray-12 shadow-2xs transition-colors hover:bg-gray-3'
                 type='button'
                 onClick={() => setOpened(false)}
-                className='rounded-lg bg-surface px-4 py-1.5 text-xs font-medium text-gray-12 border border-gray-4 hover:bg-gray-3 transition-colors cursor-pointer shadow-2xs'
               >
                 {t`Close`}
               </button>

@@ -6,9 +6,9 @@ type ConfirmDialogProps = {
   cancelLabel?: string
   confirmLabel?: string
   description: string
+  isConfirming?: boolean
   opened: boolean
   title: string
-  isConfirming?: boolean
   variant?: 'danger' | 'default'
   onCancel: () => void
   onConfirm: () => void
@@ -18,9 +18,9 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmLabel = 'Confirm',
   description,
+  isConfirming = false,
   opened,
   title,
-  isConfirming = false,
   variant = 'default',
   onCancel,
   onConfirm,

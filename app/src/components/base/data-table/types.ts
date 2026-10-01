@@ -35,8 +35,8 @@ export interface Row extends Record<string, unknown> {
   group: string
   id: string
   subRows: Row[]
-  type?: string
   rowType?: 'group' | 'item'
+  type?: string
 }
 
 export type RowSize = 'default' | 'compact' | 'comfortable'

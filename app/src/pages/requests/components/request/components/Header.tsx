@@ -25,6 +25,7 @@ interface HeaderProps {
   actions?: any[]
   agentData?: any
   approveLoading?: boolean
+  assigneeLabel?: string
   attachmentCount?: number
   commentsCount?: number
   currency?: string
@@ -43,7 +44,6 @@ interface HeaderProps {
    * or Share, all of which are AP-specific or not yet wired for a generic
    * workflow instance. */
   simple?: boolean
-  assigneeLabel?: string
   stage?: any
   status?: string
   ticketUserId?: string
@@ -148,6 +148,7 @@ const Header: React.FC<HeaderProps> = ({
   actions,
   agentData,
   approveLoading,
+  assigneeLabel,
   attachmentCount = 0,
   commentsCount = 0,
   currency,
@@ -166,7 +167,6 @@ const Header: React.FC<HeaderProps> = ({
   rightView,
   showApprove: _showApprove,
   simple = false,
-  assigneeLabel,
   stage,
   status = 'Pending Review',
   ticketUserId,
@@ -483,8 +483,8 @@ const Header: React.FC<HeaderProps> = ({
       ]
 
     return (
-      <OverlayHeaderWrapper className='min-h-14 py-2 flex-wrap justify-between gap-3 px-4 w-full'>
-        <div className='flex items-center gap-2 flex-wrap min-w-0'>
+      <OverlayHeaderWrapper className='min-h-14 w-full flex-wrap justify-between gap-3 px-4 py-2'>
+        <div className='flex min-w-0 flex-wrap items-center gap-2'>
           <IconButton
             className='shrink-0 cursor-pointer hover:bg-gray-2'
             color='gray'
@@ -493,7 +493,7 @@ const Header: React.FC<HeaderProps> = ({
             variant='ghost'
             onClick={onBack}
           />
-          <div className='flex items-center gap-2 flex-wrap min-w-0'>
+          <div className='flex min-w-0 flex-wrap items-center gap-2'>
             <Tooltip content={t`Previous Request`} position='bottom'>
               <IconButton
                 className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -522,11 +522,11 @@ const Header: React.FC<HeaderProps> = ({
 
             {stage && (
               <Tooltip
-                className='min-w-0 max-w-[11rem]'
+                className='max-w-[11rem] min-w-0'
                 content={String(stage)}
                 position='bottom'
               >
-                <span className='inline-flex min-w-0 max-w-full items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                <span className='inline-flex max-w-full min-w-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
                   <span className='truncate'>{stage}</span>
                 </span>
               </Tooltip>
@@ -534,11 +534,11 @@ const Header: React.FC<HeaderProps> = ({
 
             {assigneeLabel && (
               <Tooltip
-                className='min-w-0 max-w-[16rem]'
+                className='max-w-[16rem] min-w-0'
                 content={assigneeLabel}
                 position='bottom'
               >
-                <span className='inline-flex min-w-0 max-w-full items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                <span className='inline-flex max-w-full min-w-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
                   <Icon className='size-3 shrink-0' name='lucide:user' />
                   <span className='min-w-0 truncate'>{assigneeLabel}</span>
                 </span>
@@ -547,7 +547,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className='flex shrink-0 items-center gap-2 sm:gap-3 flex-wrap'>
+        <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
           <div className='flex shrink-0 items-center gap-1'>
             {rightViewTabs.map((tab) => (
               <Tooltip content={tab.label} key={tab.id} position='bottom'>
@@ -585,7 +585,7 @@ const Header: React.FC<HeaderProps> = ({
                     ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                     : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
                   isProcessing &&
-                  'pointer-events-none animate-pulse opacity-70',
+                    'pointer-events-none animate-pulse opacity-70',
                 )}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
@@ -618,9 +618,7 @@ const Header: React.FC<HeaderProps> = ({
                       <div className='flex flex-col'>
                         <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
                           <div className='flex items-center gap-2'>
-                            <AiBrandIcon
-                              className='size-[20px] text-[var(--primary-9)]'
-                            />
+                            <AiBrandIcon className='size-[20px] text-[var(--primary-9)]' />
                             <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                               {t`Decision Details`}
                             </span>
@@ -686,7 +684,9 @@ const Header: React.FC<HeaderProps> = ({
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
                     )}
-                    onClick={action.onClick || (() => onApprove?.(action?.value))}
+                    onClick={
+                      action.onClick || (() => onApprove?.(action?.value))
+                    }
                   />
                 )
 
@@ -695,10 +695,15 @@ const Header: React.FC<HeaderProps> = ({
                     className='flex items-center gap-1.5'
                     key={action?.value}
                   >
-                    {action.renderWrapper ? (() => {
-                      console.log('Rendering custom wrapper for action:', action.value)
-                      return action.renderWrapper(btn)
-                    })() : btn}
+                    {action.renderWrapper
+                      ? (() => {
+                          console.log(
+                            'Rendering custom wrapper for action:',
+                            action.value,
+                          )
+                          return action.renderWrapper(btn)
+                        })()
+                      : btn}
                   </div>
                 )
               })}
@@ -710,9 +715,9 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='min-h-14 py-2 flex-wrap justify-between gap-x-3 gap-y-2 px-3 sm:px-4 min-w-0 w-full'>
+    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap justify-between gap-x-3 gap-y-2 px-3 py-2 sm:px-4'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-2 sm:gap-3 flex-wrap min-w-0'>
+      <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-3'>
         <IconButton
           className='shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
@@ -722,7 +727,7 @@ const Header: React.FC<HeaderProps> = ({
           onClick={onBack}
         />
 
-        <div className='flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0'>
+        <div className='flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2'>
           <Tooltip content={t`Previous Request`} position='bottom'>
             <IconButton
               className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -735,7 +740,7 @@ const Header: React.FC<HeaderProps> = ({
             />
           </Tooltip>
           <h1
-            className='text-[13px] sm:text-[14px] md:text-[15px] font-semibold tracking-tight text-[var(--gray-13)] whitespace-nowrap'
+            className='text-[13px] font-semibold tracking-tight whitespace-nowrap text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
             title={requestNo}
           >
             {requestNo}
@@ -751,15 +756,15 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onNext}
             />
           </Tooltip>
-          <div className='flex shrink-0 items-center gap-1.5 sm:gap-2 flex-wrap'>
-              {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
-                <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[var(--gray-11)] duration-300 whitespace-nowrap'>
-                  {`# ${poNumber.replace(/^#\s*/, '')}`}
-                </span>
-              )}
-              {status &&
-                (isProcessing && percent !== undefined
-                  ? (() => {
+          <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
+            {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
+              <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
+                {`# ${poNumber.replace(/^#\s*/, '')}`}
+              </span>
+            )}
+            {status &&
+              (isProcessing && percent !== undefined
+                ? (() => {
                     const styles = getProgressStyles(percent)
                     return (
                       <div
@@ -793,7 +798,7 @@ const Header: React.FC<HeaderProps> = ({
                       </div>
                     )
                   })()
-                  : (() => {
+                : (() => {
                     const dec = String(status || '').toUpperCase()
                     let iconName = ''
                     let badgeColorClass = ''
@@ -862,12 +867,12 @@ const Header: React.FC<HeaderProps> = ({
                       </span>
                     )
                   })())}
-            </div>
           </div>
         </div>
+      </div>
 
       {/* Right Side Group: Total Amount + Actions */}
-      <div className='flex items-center gap-2 sm:gap-3 flex-wrap ml-auto'>
+      <div className='ml-auto flex flex-wrap items-center gap-2 sm:gap-3'>
         {(() => {
           const getCurrencyDisplay = (curr: string) => {
             if (!curr) return '$'
@@ -897,9 +902,9 @@ const Header: React.FC<HeaderProps> = ({
             return Number.isNaN(num)
               ? '0.00'
               : num.toLocaleString(undefined, {
-                maximumFractionDigits: 2,
-                minimumFractionDigits: 2,
-              })
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 2,
+                })
           }
 
           const currDisplay = getCurrencyDisplay(currency || '')
@@ -931,9 +936,9 @@ const Header: React.FC<HeaderProps> = ({
           }
 
           return (
-            <div className='flex shrink-0 items-center gap-2 sm:gap-3 pr-1 sm:pr-3'>
-              <div className='flex flex-col border-[var(--gray-3)] pl-2 sm:pl-3 text-right'>
-                <span className='mb-1 text-[9px] sm:text-[10px] leading-none font-semibold text-[var(--gray-11)] whitespace-nowrap'>
+            <div className='flex shrink-0 items-center gap-2 pr-1 sm:gap-3 sm:pr-3'>
+              <div className='flex flex-col border-[var(--gray-3)] pl-2 text-right sm:pl-3'>
+                <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
                   {t`Invoice Value`}
                 </span>
                 <div
@@ -943,23 +948,23 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 >
                   {formatAmount(totalAmount) === '0.00' ? (
-                    <div className='h-3 w-12 sm:w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    <div className='h-3 w-12 animate-pulse rounded bg-[var(--gray-4)] sm:w-16' />
                   ) : (
-                    <span className='text-[12px] sm:text-[13px] leading-tight font-semibold whitespace-nowrap'>
+                    <span className='text-[12px] leading-tight font-semibold whitespace-nowrap sm:text-[13px]'>
                       {currDisplay} {formatAmount(totalAmount)}
                     </span>
                   )}
                 </div>
               </div>
-              <div className='flex flex-col border-l border-[var(--gray-3)] pl-2 sm:pl-3 text-right'>
-                <span className='mb-1 text-[9px] sm:text-[10px] leading-none font-semibold text-[var(--gray-11)] whitespace-nowrap'>
+              <div className='flex flex-col border-l border-[var(--gray-3)] pl-2 text-right sm:pl-3'>
+                <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
                   {t`PO Value`}
                 </span>
                 <div className='flex items-center justify-end text-[var(--primary-9)]'>
                   {formatAmount(poValue) === '0.00' ? (
-                    <div className='h-3 w-12 sm:w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    <div className='h-3 w-12 animate-pulse rounded bg-[var(--gray-4)] sm:w-16' />
                   ) : (
-                    <span className='text-[12px] sm:text-[13px] leading-tight font-semibold whitespace-nowrap'>
+                    <span className='text-[12px] leading-tight font-semibold whitespace-nowrap sm:text-[13px]'>
                       {currDisplay} {formatAmount(poValue)}
                     </span>
                   )}
@@ -981,7 +986,7 @@ const Header: React.FC<HeaderProps> = ({
                     ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                     : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
                   isProcessing &&
-                  'pointer-events-none animate-pulse opacity-70',
+                    'pointer-events-none animate-pulse opacity-70',
                 )}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
@@ -1014,9 +1019,7 @@ const Header: React.FC<HeaderProps> = ({
                       <div className='flex flex-col'>
                         <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
                           <div className='flex items-center gap-2'>
-                            <AiBrandIcon
-                              className='size-[20px] text-[var(--primary-9)]'
-                            />
+                            <AiBrandIcon className='size-[20px] text-[var(--primary-9)]' />
                             <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                               {t`Decision Details`}
                             </span>
@@ -1212,17 +1215,17 @@ const Header: React.FC<HeaderProps> = ({
                                   (u: any) =>
                                     String(
                                       u.userId ||
-                                      u.id ||
-                                      u.value ||
-                                      u.loginName ||
-                                      u.email,
+                                        u.id ||
+                                        u.value ||
+                                        u.loginName ||
+                                        u.email,
                                     ) ===
                                     String(
                                       su.userId ||
-                                      su.id ||
-                                      su.value ||
-                                      su.loginName ||
-                                      su.email,
+                                        su.id ||
+                                        su.value ||
+                                        su.loginName ||
+                                        su.email,
                                     ),
                                 ),
                             ),
@@ -1230,17 +1233,17 @@ const Header: React.FC<HeaderProps> = ({
                           .sort((a: any, b: any) => {
                             const aId = String(
                               a.userId ||
-                              a.id ||
-                              a.value ||
-                              a.loginName ||
-                              a.email,
+                                a.id ||
+                                a.value ||
+                                a.loginName ||
+                                a.email,
                             )
                             const bId = String(
                               b.userId ||
-                              b.id ||
-                              b.value ||
-                              b.loginName ||
-                              b.email,
+                                b.id ||
+                                b.value ||
+                                b.loginName ||
+                                b.email,
                             )
                             const aSelected = !!selectedUsersToShare[aId]
                             const bSelected = !!selectedUsersToShare[bId]
@@ -1251,10 +1254,10 @@ const Header: React.FC<HeaderProps> = ({
                           .map((user: any) => {
                             const id = String(
                               user.userId ||
-                              user.id ||
-                              user.value ||
-                              user.loginName ||
-                              user.email,
+                                user.id ||
+                                user.value ||
+                                user.loginName ||
+                                user.email,
                             )
                             const name = getDisplayName(user)
                             const email = getEmail(user)
@@ -1266,7 +1269,7 @@ const Header: React.FC<HeaderProps> = ({
                               ticketUserId &&
                               (String(user.userId) === String(ticketUserId) ||
                                 String(user.id) ===
-                                String(ticketUserId.toLowerCase()) ||
+                                  String(ticketUserId.toLowerCase()) ||
                                 String(user.value) === String(ticketUserId) ||
                                 String(user.loginName) === String(ticketUserId))
                             // console.log(user, ticketUserId?.toLowerCase(), "Selected user session")
@@ -1277,7 +1280,7 @@ const Header: React.FC<HeaderProps> = ({
                                   'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--gray-2)]/50',
                                   isShared && 'opacity-90',
                                   isSelectedToShare &&
-                                  'bg-[var(--primary-2)]/30',
+                                    'bg-[var(--primary-2)]/30',
                                   isOwner && 'bg-[var(--primary-1)]/40',
                                 )}
                               >
@@ -1418,11 +1421,11 @@ const Header: React.FC<HeaderProps> = ({
                                                 ?.permission ||
                                                 globalShareRole.id) ===
                                                 opt.id && (
-                                                  <Icon
-                                                    className='size-3.5 text-[var(--primary-9)]'
-                                                    name='lucide:check'
-                                                  />
-                                                )}
+                                                <Icon
+                                                  className='size-3.5 text-[var(--primary-9)]'
+                                                  name='lucide:check'
+                                                />
+                                              )}
                                             </button>
                                           ))}
                                         </div>
@@ -1458,7 +1461,7 @@ const Header: React.FC<HeaderProps> = ({
                             <InputCheckbox
                               checked={sendNotification}
                               className='cursor-pointer'
-                              onChange={() => { }}
+                              onChange={() => {}}
                             />
                             <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>
                               {t`Send notification`}
@@ -1530,111 +1533,115 @@ const Header: React.FC<HeaderProps> = ({
                 )}
               </AnimatePresence>
             </div>
-          )
-          }
+          )}
 
-          {
-            !isProcessing && (
-              <div className='flex items-center gap-2'>
-                {isEditing && (
-                  <Button
-                    className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
-                    color='primary'
-                    icon='lucide:save'
-                    iconClass='size-4'
-                    label={t`Save`}
-                    loading={approveLoading}
-                    size='md'
-                    variant='solid'
-                    onClick={() => onApprove?.('Save')}
-                  />
-                )}
+          {!isProcessing && (
+            <div className='flex items-center gap-2'>
+              {isEditing && (
+                <Button
+                  className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
+                  color='primary'
+                  icon='lucide:save'
+                  iconClass='size-4'
+                  label={t`Save`}
+                  loading={approveLoading}
+                  size='md'
+                  variant='solid'
+                  onClick={() => onApprove?.('Save')}
+                />
+              )}
 
-                {actions?.map((action: any) => {
-                  const label = String(action?.label || '').toLowerCase()
-                  let btnColor:
-                    | 'gray'
-                    | 'primary'
-                    | 'secondary'
-                    | 'red'
-                    | 'green' = 'primary'
-                  const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
-                    'subtle'
-                  let borderClass =
-                    'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+              {actions?.map((action: any) => {
+                const label = String(action?.label || '').toLowerCase()
+                let btnColor:
+                  | 'gray'
+                  | 'primary'
+                  | 'secondary'
+                  | 'red'
+                  | 'green' = 'primary'
+                const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
+                  'subtle'
+                let borderClass =
+                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
 
-                  let defaultIcon = action?.icon
-                  if (!defaultIcon) {
-                    if (
-                      label === 'approved' ||
-                      label === 'approve' ||
-                      label.includes('approve')
-                    ) {
-                      defaultIcon = 'lucide:check'
-                    } else if (
-                      label === 'rejected' ||
-                      label === 'reject' ||
-                      label.includes('reject')
-                    ) {
-                      defaultIcon = 'lucide:x'
-                    } else {
-                      defaultIcon = 'lucide:arrow-right'
-                    }
-                  }
-
+                let defaultIcon = action?.icon
+                if (!defaultIcon) {
                   if (
                     label === 'approved' ||
                     label === 'approve' ||
                     label.includes('approve')
                   ) {
-                    btnColor = 'green'
-                    borderClass =
-                      'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+                    defaultIcon = 'lucide:check'
                   } else if (
                     label === 'rejected' ||
                     label === 'reject' ||
                     label.includes('reject')
                   ) {
-                    btnColor = 'red'
-                    borderClass =
-                      'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+                    defaultIcon = 'lucide:x'
+                  } else {
+                    defaultIcon = 'lucide:arrow-right'
                   }
+                }
 
-                  const btn = (
-                    <Button
-                      color={btnColor}
-                      icon={defaultIcon}
-                      iconClass='size-4'
-                      label={action?.label}
-                      loading={approveLoading}
-                      size='md'
-                      variant={btnVariant}
-                      className={cn(
-                        borderClass,
-                        'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                      )}
-                      onClick={action.onClick || (() => onApprove?.(action?.value))}
-                    />
-                  )
+                if (
+                  label === 'approved' ||
+                  label === 'approve' ||
+                  label.includes('approve')
+                ) {
+                  btnColor = 'green'
+                  borderClass =
+                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+                } else if (
+                  label === 'rejected' ||
+                  label === 'reject' ||
+                  label.includes('reject')
+                ) {
+                  btnColor = 'red'
+                  borderClass =
+                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+                }
 
-                  return (
-                    <div
-                      className='flex items-center gap-1.5'
-                      key={action?.value}
-                    >
-                      {action.renderWrapper ? (() => {
-                        console.log('Rendering custom wrapper for action:', action.value)
-                        return action.renderWrapper(btn)
-                      })() : btn}
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          }
-        </div >
-      </div >
-    </OverlayHeaderWrapper >
+                const btn = (
+                  <Button
+                    color={btnColor}
+                    icon={defaultIcon}
+                    iconClass='size-4'
+                    label={action?.label}
+                    loading={approveLoading}
+                    size='md'
+                    variant={btnVariant}
+                    className={cn(
+                      borderClass,
+                      'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                    )}
+                    onClick={
+                      action.onClick || (() => onApprove?.(action?.value))
+                    }
+                  />
+                )
+
+                return (
+                  <div
+                    className='flex items-center gap-1.5'
+                    key={action?.value}
+                  >
+                    {action.renderWrapper
+                      ? (() => {
+                          console.log(
+                            'Rendering custom wrapper for action:',
+                            action.value,
+                          )
+                          return action.renderWrapper(btn)
+                        })()
+                      : btn}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </OverlayHeaderWrapper>
   )
 }
 

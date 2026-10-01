@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
 import {
   type ReactNode,
   useCallback,
@@ -33,6 +34,7 @@ import {
   type V6RoleItem,
 } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableReload from '@/components/base/data-table/actions/TableReload'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
@@ -45,13 +47,10 @@ import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
-import { AnimatePresence } from 'motion/react'
 import { AnimateFadeIn } from '@/components/common/animations'
-import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
-import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import { formatDatetime } from '@/utils/dayjs'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import { isDemoAppOrigin } from '@/utils/origin'
 import {
   getFieldRequiredError,
@@ -71,6 +70,7 @@ import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
 import SettingsSelectedChips from './SettingsSelectedChips'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AssignedUser = {
@@ -123,17 +123,17 @@ type Role = {
   users: number
 }
 
-type RoleUserProps = {
-  onBack?: () => void
-}
-
-type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
-
 type RolePermissionPage = {
   key: string
   name: string
   parentKey?: string
 }
+
+type RoleUserProps = {
+  onBack?: () => void
+}
+
+type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
 
 const tabs: { key: TabKey; label: any }[] = [
   { key: 'roles', label: msg`Role List` },
@@ -176,23 +176,23 @@ const ROLE_PERMISSION_PAGES: RolePermissionPage[] = [
 ]
 
 const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
-  form: 'form',
-  forms: 'form',
-  'folder-creation': 'folder-create',
   'folder-configuration': 'folder-create',
-  report: 'report',
-  reports: 'report',
+  'folder-creation': 'folder-create',
+  'form': 'form',
+  'forms': 'form',
+  'portal': 'portal',
+  'portals': 'portal',
+  'report': 'report',
   'report-builder': 'report-builder',
   'report-builder-settings': 'report-builder',
-  reportbuilder: 'report-builder',
-  request: 'workflow-inbox',
-  requests: 'workflow-inbox',
+  'reportbuilder': 'report-builder',
+  'reports': 'report',
+  'request': 'workflow-inbox',
+  'requests': 'workflow-inbox',
+  'workflow': 'workflow',
   'workflow-inbox': 'workflow-inbox',
-  workflowinbox: 'workflow-inbox',
-  workflow: 'workflow',
-  workflows: 'workflow',
-  portal: 'portal',
-  portals: 'portal',
+  'workflowinbox': 'workflow-inbox',
+  'workflows': 'workflow',
 }
 
 const ALLOWED_ROLE_PERMISSION_KEYS = new Set(
@@ -230,15 +230,6 @@ const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
 const SESSION_KEY = 'ezofis_roles_permissions_state'
 
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
-
 export default function RolesPermissions({ onBack }: RoleUserProps) {
   const { t } = useLingui()
   const [roles, setRoles] = useState<Role[]>([])
@@ -248,11 +239,17 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [apiMenus, setApiMenus] = useState<V6MenuItem[]>([])
   const storedState = useMemo(() => getStoredState(), [])
 
-  const [isCreatingRole, setIsCreatingRole] = useState(storedState?.isCreatingRole ?? false)
+  const [isCreatingRole, setIsCreatingRole] = useState(
+    storedState?.isCreatingRole ?? false,
+  )
   const [createStep, setCreateStep] = useState(storedState?.createStep ?? 0)
   const [newRoleName, setNewRoleName] = useState(storedState?.newRoleName ?? '')
-  const [newRoleDescription, setNewRoleDescription] = useState(storedState?.newRoleDescription ?? '')
-  const [selectedUsers, setSelectedUsers] = useState<Option[]>(storedState?.selectedUsers ?? [])
+  const [newRoleDescription, setNewRoleDescription] = useState(
+    storedState?.newRoleDescription ?? '',
+  )
+  const [selectedUsers, setSelectedUsers] = useState<Option[]>(
+    storedState?.selectedUsers ?? [],
+  )
   const [newPermissionRows, setNewPermissionRows] = useState<PermissionRow[]>(
     storedState?.newPermissionRows ?? [],
   )
@@ -262,7 +259,8 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [userOptions, setUserOptions] = useState<Option[]>([])
   const [isLoadingRoles, setIsLoadingRoles] = useState(true)
   const [isLoadingRoleDetails, setIsLoadingRoleDetails] = useState(false)
-  const [isLoadingRolePermissions, setIsLoadingRolePermissions] = useState(false)
+  const [isLoadingRolePermissions, setIsLoadingRolePermissions] =
+    useState(false)
   const [isSavingRole, setIsSavingRole] = useState(false)
   const [deletingRoleId, setDeletingRoleId] = useState<string | null>(null)
   const [isDeletingRole, setIsDeletingRole] = useState(false)
@@ -500,7 +498,10 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       const role = mapApiRoleToRole(response.data)
       const permissionKeys = getRolePermissionKeys(response.data)
-      const updatedApiMenus = applyPermissionKeysToMenus(apiMenus, permissionKeys)
+      const updatedApiMenus = applyPermissionKeysToMenus(
+        apiMenus,
+        permissionKeys,
+      )
 
       setApiMenus(updatedApiMenus)
       setEditingRoleId(role.id)
@@ -616,9 +617,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         onCancel={resetCreateRole}
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
-        onNext={() =>
-          setCreateStep((step: number) => Math.min(step + 1, 2))
-        }
+        onNext={() => setCreateStep((step: number) => Math.min(step + 1, 2))}
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
         onStepChange={setCreateStep}
@@ -630,16 +629,16 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   return (
     <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <ConfirmDialog
+        confirmLabel={t`Delete`}
+        isConfirming={isDeletingRole}
         opened={deletingRoleId != null}
         title={t`Delete Role`}
+        variant='danger'
         description={
           deletingRole
             ? t`Are you sure you want to delete "${deletingRole.name}"? This action cannot be undone.`
             : t`Are you sure you want to delete this role? This action cannot be undone.`
         }
-        confirmLabel={t`Delete`}
-        isConfirming={isDeletingRole}
-        variant='danger'
         onCancel={cancelDeleteRole}
         onConfirm={() => {
           void confirmDeleteRole()
@@ -667,6 +666,58 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       />
     </main>
   )
+}
+
+function applyPermissionKeysToMenus(
+  menus: V6MenuItem[],
+  permissionKeys: Array<{ key?: string; name?: string; visible?: unknown }>,
+): V6MenuItem[] {
+  const safePermissionKeys = permissionKeys ?? []
+  const permissionKeysMap = buildPermissionKeysMap(safePermissionKeys)
+  const hasPermissionKeys = safePermissionKeys.length > 0
+  const sourceMenus = (
+    menus?.length
+      ? menus
+      : ROLE_PERMISSION_PAGES.map((page) => ({
+          key: page.key,
+          name: page.name,
+          visible: false,
+        }))
+  ).filter((menu) =>
+    isAllowedRolePermissionKey(String(menu.key || (menu as any).id || '')),
+  )
+
+  // Keep a fixed page list only (dashboard, workflow-inbox, folder, workflow, form, settings).
+  const orderedMenus = ROLE_PERMISSION_PAGES.map((page, index) => {
+    const existing =
+      sourceMenus.find(
+        (menu) =>
+          normalizeRolePermissionKey(
+            String(menu.key || (menu as any).id || ''),
+          ) === page.key,
+      ) || null
+    const permission = safePermissionKeys.find(
+      (item) => normalizeRolePermissionKey(String(item.key || '')) === page.key,
+    )
+    const visible = hasPermissionKeys
+      ? permissionKeysMap.get(page.key) === true
+      : existing?.visible !== false
+
+    return {
+      ...existing,
+      key: page.key,
+      label: String(
+        (existing as any)?.label || (existing as any)?.name || page.name,
+      ),
+      name: String(
+        (existing as any)?.name || (existing as any)?.label || page.name,
+      ),
+      sortOrder: Number((existing as any)?.sortOrder ?? index),
+      visible,
+    }
+  })
+
+  return orderedMenus
 }
 
 function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
@@ -704,6 +755,20 @@ function buildPermissionCategoriesFromMenus(menus: V6MenuItem[]) {
       sortOrder: Number(menu?.sortOrder ?? index),
     }
   })
+}
+
+function buildPermissionKeysMap(
+  permissionKeys: Array<{ key?: string; visible?: unknown }>,
+) {
+  return new Map(
+    permissionKeys
+      .map((item) => {
+        const key = normalizeRolePermissionKey(String(item.key || ''))
+        if (!key || !ALLOWED_ROLE_PERMISSION_KEYS.has(key)) return null
+        return [key, isPermissionKeyVisible(item.visible)] as const
+      })
+      .filter((entry): entry is readonly [string, boolean] => Boolean(entry)),
+  )
 }
 
 function CheckBox({
@@ -786,11 +851,13 @@ function CreatePermissionMatrix({
                   <div className='overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-[var(--surface-primary)]'>
                     {settingsChildren.map((child, index) => (
                       <div
+                        key={child.categoryKey}
                         className={[
                           'grid grid-cols-[1fr_120px] items-center px-3.5 py-3',
-                          index > 0 ? 'border-t border-[var(--border-default)]' : '',
+                          index > 0
+                            ? 'border-t border-[var(--border-default)]'
+                            : '',
                         ].join(' ')}
-                        key={child.categoryKey}
                       >
                         <div className='min-w-0 pl-1'>
                           <div className='text-13 font-semibold text-[var(--gray-13)]'>
@@ -954,44 +1021,53 @@ function CreateRolePage({
   const wizardSteps = useMemo(() => {
     const isEditMode = editingRoleId !== null || isDemoAppOrigin()
     return ROLE_STEP_MSGS.map((step, idx) => ({
+      clickable: isEditMode ? true : undefined,
+      description: i18n._(step.description),
+      disabled: isEditMode ? false : undefined,
+      icon:
+        step.key === 'details'
+          ? 'tabler:shield'
+          : step.key === 'permissions'
+            ? 'tabler:shield-check'
+            : 'tabler:check',
       id: idx,
       label: i18n._(step.title),
-      description: i18n._(step.description),
-      icon: step.key === 'details' ? 'tabler:shield' : step.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
-      clickable: isEditMode ? true : undefined,
-      disabled: isEditMode ? false : undefined,
     }))
   }, [i18n, editingRoleId])
 
   return (
     <SettingsWizardLayout
       activeStep={activeStep}
+      headerDescription={ROLE_STEP_MSGS[activeStep]?.description}
+      headerTitle={ROLE_STEP_MSGS[activeStep]?.title}
+      isSaving={isSaving}
+      moduleTitle={msg`Roles & Permissions`}
+      saveLabel={submitLabel}
       steps={wizardSteps}
-      onStepChange={handleStepChange}
+      setupTitle={editingRoleId ? msg`Edit Role` : msg`Create Role`}
       onBack={handleBack}
+      onBackToSettings={onBack}
+      onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
-      onCancel={onCancel}
-      onBackToSettings={onBack}
-      isSaving={isSaving}
-      saveLabel={submitLabel}
-      moduleTitle={msg`Roles & Permissions`}
-      setupTitle={editingRoleId ? msg`Edit Role` : msg`Create Role`}
-      headerTitle={ROLE_STEP_MSGS[activeStep]?.title}
-      headerDescription={ROLE_STEP_MSGS[activeStep]?.description}
+      onStepChange={handleStepChange}
     >
-      <AnimatePresence mode='wait' initial={false}>
+      <AnimatePresence initial={false} mode='wait'>
         {activeStep === 0 && (
-          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-0'>
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <InputText
                   autoFocus={!editingRoleId}
-                  error={getFieldRequiredError(t`Role Name`, showErrors, roleName)}
                   label={t`Role Name`}
-                  required
                   placeholder={t`e.g. AP Supervisor`}
                   value={roleName}
+                  required
+                  error={getFieldRequiredError(
+                    t`Role Name`,
+                    showErrors,
+                    roleName,
+                  )}
                   onChange={onRoleNameChange}
                 />
               </AnimateFadeIn>
@@ -1012,9 +1088,9 @@ function CreateRolePage({
                     label={t`Select Users`}
                     options={userOptions}
                     placeholder={t`Select users...`}
-                    required
                     value={selectedUsers}
                     clearable
+                    required
                     searchable
                     error={
                       showErrors && !selectedUsers.length
@@ -1041,7 +1117,7 @@ function CreateRolePage({
         )}
 
         {activeStep === 1 && (
-          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-1'>
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <CreatePermissionMatrix
@@ -1054,7 +1130,7 @@ function CreateRolePage({
         )}
 
         {activeStep === 2 && (
-          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-2'>
             <SettingsFormSection>
               <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                 <AnimateFadeIn delay={0.1}>
@@ -1073,7 +1149,10 @@ function CreateRolePage({
                     />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.21}>
-                    <SummaryItem label={t`Description`} value={description || '—'} />
+                    <SummaryItem
+                      label={t`Description`}
+                      value={description || '—'}
+                    />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.24}>
                     <SummaryItem
@@ -1103,79 +1182,17 @@ function formatCategoryLabel(key: string): string {
     .join(' ')
 }
 
-function isPermissionKeyVisible(value: unknown): boolean {
-  if (value == null || value === '') return true
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'number') return value === 1
-  const text = String(value).trim().toLowerCase()
-  if (!text) return true
-  return text === 'true' || text === '1' || text === 'yes'
-}
-
 function getRolePermissionKeys(role: V6RoleItem) {
   return Array.isArray(role.permissionKeys) ? role.permissionKeys : []
 }
 
-function buildPermissionKeysMap(
-  permissionKeys: Array<{ key?: string; visible?: unknown }>,
-) {
-  return new Map(
-    permissionKeys
-      .map((item) => {
-        const key = normalizeRolePermissionKey(String(item.key || ''))
-        if (!key || !ALLOWED_ROLE_PERMISSION_KEYS.has(key)) return null
-        return [key, isPermissionKeyVisible(item.visible)] as const
-      })
-      .filter((entry): entry is readonly [string, boolean] => Boolean(entry)),
-  )
-}
-
-function applyPermissionKeysToMenus(
-  menus: V6MenuItem[],
-  permissionKeys: Array<{ key?: string; name?: string; visible?: unknown }>,
-): V6MenuItem[] {
-  const safePermissionKeys = permissionKeys ?? []
-  const permissionKeysMap = buildPermissionKeysMap(safePermissionKeys)
-  const hasPermissionKeys = safePermissionKeys.length > 0
-  const sourceMenus = (
-    menus?.length
-      ? menus
-      : ROLE_PERMISSION_PAGES.map((page) => ({
-          key: page.key,
-          name: page.name,
-          visible: false,
-        }))
-  ).filter((menu) =>
-    isAllowedRolePermissionKey(String(menu.key || (menu as any).id || '')),
-  )
-
-  // Keep a fixed page list only (dashboard, workflow-inbox, folder, workflow, form, settings).
-  const orderedMenus = ROLE_PERMISSION_PAGES.map((page, index) => {
-    const existing =
-      sourceMenus.find(
-        (menu) =>
-          normalizeRolePermissionKey(String(menu.key || (menu as any).id || '')) ===
-          page.key,
-      ) || null
-    const permission = safePermissionKeys.find(
-      (item) =>
-        normalizeRolePermissionKey(String(item.key || '')) === page.key,
-    )
-    const visible = hasPermissionKeys
-      ? permissionKeysMap.get(page.key) === true
-      : existing?.visible !== false
-
-    return {
-      ...existing,
-      key: page.key,
-      label: String((existing as any)?.label || (existing as any)?.name || page.name),
-      name: String((existing as any)?.name || (existing as any)?.label || page.name),
-      sortOrder: Number((existing as any)?.sortOrder ?? index),
-      visible,
-    }
-  })
-
-  return orderedMenus
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
 }
 
 function isPermissionEnabledForCategory(
@@ -1185,6 +1202,15 @@ function isPermissionEnabledForCategory(
   return permissions.some(
     (permission) => normalizeRolePermissionKey(permission) === categoryKey,
   )
+}
+
+function isPermissionKeyVisible(value: unknown): boolean {
+  if (value == null || value === '') return true
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  const text = String(value).trim().toLowerCase()
+  if (!text) return true
+  return text === 'true' || text === '1' || text === 'yes'
 }
 
 function mapApiRoleToRole(role: V6RoleItem): Role {
@@ -1197,8 +1223,8 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
     ? permissionsFromKeys
     : Array.isArray(role.permissions)
       ? role.permissions
-      .map((permission) => normalizeRolePermissionKey(String(permission)))
-      .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
+          .map((permission) => normalizeRolePermissionKey(String(permission)))
+          .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
       : []
   const users = Array.isArray(role.users)
     ? role.users
@@ -1215,7 +1241,7 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
       ? role.permissionCount
       : permissions.length
   const rawStatus = String(
-    (role as { status?: string; isActive?: boolean | string }).status ??
+    (role as { isActive?: boolean | string; status?: string }).status ??
       (role as { isActive?: boolean | string }).isActive ??
       'active',
   )
@@ -1257,7 +1283,11 @@ function mapPermissionsToRows(
   for (const permission of permissions) {
     const key = normalizeRolePermissionKey(permission)
 
-    if (key && !categoryKeys.has(key) && ALLOWED_ROLE_PERMISSION_KEYS.has(key)) {
+    if (
+      key &&
+      !categoryKeys.has(key) &&
+      ALLOWED_ROLE_PERMISSION_KEYS.has(key)
+    ) {
       categories.push({
         key,
         name: getPermissionPageMeta(key)?.name || formatCategoryLabel(key),
@@ -1437,7 +1467,7 @@ function PermissionMatrix({
         meta: settingsHeaderMeta.start,
         minSize: 40,
         size: 240,
-        cell: ({ getValue, row }) => (
+        cell: ({ row, getValue }) => (
           <div
             className={[
               'flex items-center gap-2',
@@ -1774,22 +1804,6 @@ function RoleList({
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={roleTable as any} />}
-          filters={[
-            {
-              id: 'name',
-              label: t`Name`,
-              options: roles
-                .map((r) => String(r.name || '').trim())
-                .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b))
-                .map((name) => ({ label: name, value: name })),
-              searchable: true,
-              searchPlaceholder: t`Search name...`,
-            },
-          ]}
-          trailingActions={
-            <TableExport fileName='roles' table={roleTable as any} />
-          }
           actionButtons={[
             {
               color: 'gray',
@@ -1806,9 +1820,25 @@ function RoleList({
             tooltip: t`Create Role`,
             onClick: onCreate,
           }}
+          filters={[
+            {
+              id: 'name',
+              label: t`Name`,
+              options: roles
+                .map((r) => String(r.name || '').trim())
+                .filter(Boolean)
+                .sort((a, b) => a.localeCompare(b))
+                .map((name) => ({ label: name, value: name })),
+              searchable: true,
+              searchPlaceholder: t`Search name...`,
+            },
+          ]}
           showReset={
             Object.keys(activeFilters).some((k) => activeFilters[k]) ||
             !!tableSearchOptions.state.globalFilter?.value
+          }
+          trailingActions={
+            <TableExport fileName='roles' table={roleTable as any} />
           }
           onFilterChange={(id, val) =>
             setActiveFilters((prev) => ({ ...prev, [id]: val }))

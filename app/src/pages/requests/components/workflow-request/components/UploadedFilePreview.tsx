@@ -16,12 +16,12 @@ export interface PreviewableFile {
 interface Props {
   activeKey: string | null
   files: PreviewableFile[]
-  onSelectKey: (key: string) => void
   // Set when a repository field is clicked — highlights and scrolls to that
   // value's text in the preview. focusRequestId is bumped on every click
   // (even re-clicking the same field) so the viewer re-scrolls each time.
   activeHighlightTerm?: string | null
   focusRequestId?: number
+  onSelectKey: (key: string) => void
 }
 
 const isPdfFile = (file?: File, fileName?: string): boolean =>

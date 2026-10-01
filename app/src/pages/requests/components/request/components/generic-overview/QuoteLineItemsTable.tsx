@@ -1,8 +1,8 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ApiCatalogSelect } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchFtlCatalogProduct } from '@/api/v6/ftlCatalog'
+import { ApiCatalogSelect } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import cn from '@/utils/cn'
 import {
   collectFormTableFields,
@@ -23,11 +23,7 @@ const getFieldId = (field: any) =>
   String(field?.id || field?.jsonId || field?.name || '')
 
 const normalizeHeading = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+  value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ')
 
 const compactHeading = (value: string) =>
   normalizeHeading(value).replace(/\s+/g, '')
@@ -45,8 +41,22 @@ const LINE_FIELD_ALIASES: Record<string, string[]> = {
   Category: ['category'],
   Description: ['description', 'desc', 'details', 'item description'],
   Note: ['note', 'notes', 'remark', 'remarks'],
-  Price: ['price', 'unit price', 'unitprice', 'unit rate', 'rate', 'list price'],
-  Product: ['product', 'sku', 'item', 'item name', 'product code', 'productcode'],
+  Price: [
+    'price',
+    'unit price',
+    'unitprice',
+    'unit rate',
+    'rate',
+    'list price',
+  ],
+  Product: [
+    'product',
+    'sku',
+    'item',
+    'item name',
+    'product code',
+    'productcode',
+  ],
   Qty: ['qty', 'quantity', 'qnty', 'qty.'],
   Subtotal: [
     'subtotal',
@@ -108,7 +118,8 @@ const resolveLineFieldValue = (
   const named = readNamedField(row, canonical, aliases)
   const fromColumn = col?.id != null ? row?.[col.id] : undefined
   const textValue = (value: unknown) => String(value ?? '').trim()
-  const isBareNumber = (value: unknown) => /^\d+(\.\d+)?$/.test(textValue(value))
+  const isBareNumber = (value: unknown) =>
+    /^\d+(\.\d+)?$/.test(textValue(value))
   const qtyValue = row?.Qty ?? row?.Quantity ?? row?.qty ?? row?.quantity
 
   // Description text was being replaced by the qty stored on that column.
@@ -161,10 +172,7 @@ const generateRowId = () => {
   }
 }
 
-const computeLineSubtotal = (
-  row: Record<string, any>,
-  columns: any[] = [],
-) => {
+const computeLineSubtotal = (row: Record<string, any>, columns: any[] = []) => {
   const qty = parseLooseNumber(resolveLineFieldValue(row, columns, 'Qty'))
   const price = parseLooseNumber(resolveLineFieldValue(row, columns, 'Price'))
   if (Number.isFinite(qty) && Number.isFinite(price)) {
@@ -199,23 +207,24 @@ export const normalizeLineItemRow = (
   const categoryValue = resolveLineFieldValue(row, columns, 'Category')
   if (!isEmptyValue(categoryValue)) next.Category = categoryValue
   else if (!isEmptyValue(row?.Category)) next.Category = row.Category
-
-  ;(['Product', 'Description', 'Qty', 'Price'] as const).forEach((canonical) => {
-    const value = resolveLineFieldValue(row, columns, canonical)
-    next[canonical] = value
-    const col = findColumnForCanonical(columns, canonical)
-    const blockedIds = new Set([
-      'Product',
-      'Description',
-      'Qty',
-      'Price',
-      'Subtotal',
-      'Note',
-      'Category',
-    ])
-    blockedIds.delete(canonical)
-    if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = value
-  })
+  ;(['Product', 'Description', 'Qty', 'Price'] as const).forEach(
+    (canonical) => {
+      const value = resolveLineFieldValue(row, columns, canonical)
+      next[canonical] = value
+      const col = findColumnForCanonical(columns, canonical)
+      const blockedIds = new Set([
+        'Product',
+        'Description',
+        'Qty',
+        'Price',
+        'Subtotal',
+        'Note',
+        'Category',
+      ])
+      blockedIds.delete(canonical)
+      if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = value
+    },
+  )
 
   const noteCol = findColumnForCanonical(columns, 'Note')
   if (noteCol?.id && !isEmptyValue(next.Note)) next[noteCol.id] = next.Note
@@ -234,10 +243,7 @@ export const normalizeLineItemRows = (
 ) => (rows || []).map((row, index) => normalizeLineItemRow(row, columns, index))
 
 /** Persist only form column ids (plus meta) — avoids name/UUID scramble. */
-const toFormTableRows = (
-  rows: Record<string, any>[],
-  columns: any[],
-) =>
+const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
   rows.map((row) => {
     const mapped: Record<string, any> = {
       _rowId: row._rowId || generateRowId(),
@@ -293,6 +299,7 @@ const applyLineField = (
 }
 
 const emptyLineRow = (): Record<string, any> => ({
+  _rowId: generateRowId(),
   Category: '',
   Description: '',
   Note: '',
@@ -300,7 +307,6 @@ const emptyLineRow = (): Record<string, any> => ({
   Product: '',
   Qty: 1,
   Subtotal: 0,
-  _rowId: generateRowId(),
 })
 
 const sumLineSubtotals = (rows: Record<string, any>[], columns: any[] = []) =>
@@ -331,8 +337,7 @@ const findPriceColumn = (columns: any[]) =>
 const findDescriptionColumn = (columns: any[]) =>
   findColumnForCanonical(columns, 'Description')
 
-const findQtyColumn = (columns: any[]) =>
-  findColumnForCanonical(columns, 'Qty')
+const findQtyColumn = (columns: any[]) => findColumnForCanonical(columns, 'Qty')
 
 const isApiProductColumn = (col: any) =>
   col?.settings?.lookupSettings?.optionsSource === 'API'
@@ -361,7 +366,7 @@ const itemsFingerprint = (items: Record<string, any>[] | undefined) => {
   try {
     // Ignore volatile row ids so prop sync doesn't thrash.
     const slim = (items || []).map((row) => {
-      const { _rowId, _id, ...rest } = row || {}
+      const { _id, _rowId, ...rest } = row || {}
       return rest
     })
     return JSON.stringify(slim)
@@ -378,8 +383,8 @@ export type QuoteTotals = {
 }
 
 interface Props {
-  freight?: number
   items: Record<string, any>[]
+  freight?: number
   readOnly?: boolean
   taxRate?: number
   title?: string
@@ -465,7 +470,10 @@ const QuoteLineItemsTable = ({
     onTotalsChange?.(totals)
     if (!onFieldChange) return
     if (tableField) {
-      onFieldChange(getFieldId(tableField), toFormTableRows(normalized, tableColumns))
+      onFieldChange(
+        getFieldId(tableField),
+        toFormTableRows(normalized, tableColumns),
+      )
     } else {
       onFieldChange('Line Item', normalized)
     }
@@ -574,10 +582,18 @@ const QuoteLineItemsTable = ({
         <table className='w-full border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
-              <th className='min-w-[220px] border border-gray-3 p-3 font-semibold'>Product</th>
-              <th className='w-24 border border-gray-3 p-3 text-center font-semibold'>Qty</th>
-              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>Price</th>
-              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>Subtotal</th>
+              <th className='min-w-[220px] border border-gray-3 p-3 font-semibold'>
+                Product
+              </th>
+              <th className='w-24 border border-gray-3 p-3 text-center font-semibold'>
+                Qty
+              </th>
+              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>
+                Price
+              </th>
+              <th className='w-28 border border-gray-3 p-3 text-right font-semibold'>
+                Subtotal
+              </th>
               {canEdit && (
                 <th
                   aria-label={t`Actions`}
@@ -620,9 +636,9 @@ function HoverValue({
   canEdit: boolean
   className?: string
   display: ReactNode
-  input: (close: () => void) => ReactNode
   /** Combobox / popover menus render in a portal — don't close on their clicks. */
   keepOpenOnPortal?: boolean
+  input: (close: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -664,22 +680,22 @@ function HoverValue({
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         'group min-w-0',
         open ? 'block w-full' : 'inline-flex max-w-full items-center gap-1',
       )}
-      ref={rootRef}
     >
       {open ? (
         input(close)
       ) : (
         <>
           <button
+            type='button'
             className={cn(
               'min-w-0 flex-1 cursor-text border-0 bg-transparent p-0 text-inherit',
               className,
             )}
-            type='button'
             onClick={() => setOpen(true)}
           >
             {display}
@@ -731,7 +747,8 @@ function QuoteLineRow({
       .toLowerCase() === 'true'
   const noteText = String(item.Note || '').trim()
   // Show warning until the user Approves this row.
-  const showWarning = !approved && !item._hideNote && (Boolean(noteText) || needsReview)
+  const showWarning =
+    !approved && !item._hideNote && (Boolean(noteText) || needsReview)
 
   const productLabel =
     String(productColumn?.name || productColumn?.label || '') || t`Product`
@@ -753,12 +770,12 @@ function QuoteLineRow({
             }
             input={(close) =>
               useApiProduct ? (
-                <div className='min-w-0 w-full max-w-[280px]'>
+                <div className='w-full max-w-[280px] min-w-0'>
                   <ApiCatalogSelect
-                    autoOpen
-                    compact
                     col={productColumn}
                     value={item.Product}
+                    autoOpen
+                    compact
                     onSelectProduct={async (code) => {
                       await onSelectProduct(code)
                       close()
@@ -767,10 +784,10 @@ function QuoteLineRow({
                 </div>
               ) : (
                 <input
-                  autoFocus
                   aria-label={productLabel}
                   className={cn(cellInputClass, 'max-w-full font-semibold')}
                   value={item.Product ?? ''}
+                  autoFocus
                   onChange={(event) => onChange('Product', event.target.value)}
                 />
               )
@@ -787,14 +804,14 @@ function QuoteLineRow({
               }
               input={() => (
                 <textarea
-                  autoFocus
                   aria-label={t`Description`}
-                  className={cn(
-                    cellInputClass,
-                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
-                  )}
                   rows={2}
                   value={item.Description ?? ''}
+                  autoFocus
+                  className={cn(
+                    cellInputClass,
+                    'min-h-[2.5rem] w-full resize-y text-xs break-words',
+                  )}
                   onChange={(event) =>
                     onChange('Description', event.target.value)
                   }
@@ -808,14 +825,14 @@ function QuoteLineRow({
               display={<span className='text-xs text-gray-9'>NA</span>}
               input={() => (
                 <textarea
-                  autoFocus
                   aria-label={t`Description`}
-                  className={cn(
-                    cellInputClass,
-                    'min-h-[2.5rem] w-full resize-y break-words text-xs',
-                  )}
                   rows={2}
                   value={item.Description ?? ''}
+                  autoFocus
+                  className={cn(
+                    cellInputClass,
+                    'min-h-[2.5rem] w-full resize-y text-xs break-words',
+                  )}
                   onChange={(event) =>
                     onChange('Description', event.target.value)
                   }
@@ -832,84 +849,88 @@ function QuoteLineRow({
             </div>
           ) : null}
           {showWarning && noteText ? (
-            <p className='text-xs leading-5 break-words text-gray-9'>{noteText}</p>
+            <p className='text-xs leading-5 break-words text-gray-9'>
+              {noteText}
+            </p>
           ) : null}
         </div>
       </td>
-        <td className='w-24 border border-gray-3 p-3 text-center align-top text-gray-12'>
-          <HoverValue
-            canEdit={canEdit}
-            className='text-center'
-            display={<span>{item.Qty === '' || item.Qty == null ? 'NA' : item.Qty}</span>}
-            input={() => (
-              <input
-                autoFocus
-                aria-label={t`Qty`}
-                className={cn(cellInputClass, 'text-center')}
-                inputMode='decimal'
-                value={item.Qty ?? ''}
-                onChange={(event) => onChange('Qty', event.target.value)}
-              />
-            )}
-          />
-        </td>
-        <td className='w-28 border border-gray-3 p-3 text-right align-top text-gray-12'>
-          <HoverValue
-            canEdit={canEdit}
-            className='text-right'
-            display={<span>${toMoney(item.Price)}</span>}
-            input={() => (
-              <input
-                autoFocus
-                aria-label={t`Price`}
-                className={cn(cellInputClass, 'text-right')}
-                inputMode='decimal'
-                value={item.Price ?? ''}
-                onChange={(event) => onChange('Price', event.target.value)}
-              />
-            )}
-          />
-        </td>
-        <td className='w-28 border border-gray-3 p-3 text-right align-top'>
-          <span className='font-semibold text-gray-12'>
-            ${toMoney(lineSubtotal)}
-          </span>
-        </td>
-        {canEdit && (
-          <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
-            <div className='inline-flex items-center justify-end gap-1'>
-              {approved ? (
-                <span
-                  aria-label={t`Approved`}
-                  className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
-                  title={t`Approved`}
-                >
-                  <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-                </span>
-              ) : (
-                <button
-                  aria-label={t`Approve`}
-                  className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
-                  title={t`Approve`}
-                  type='button'
-                  onClick={onApprove}
-                >
-                  <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-                </button>
-              )}
-              <button
-                aria-label={t`Delete row`}
-                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
-                title={t`Delete row`}
-                type='button'
-                onClick={onDelete}
+      <td className='w-24 border border-gray-3 p-3 text-center align-top text-gray-12'>
+        <HoverValue
+          canEdit={canEdit}
+          className='text-center'
+          display={
+            <span>{item.Qty === '' || item.Qty == null ? 'NA' : item.Qty}</span>
+          }
+          input={() => (
+            <input
+              aria-label={t`Qty`}
+              className={cn(cellInputClass, 'text-center')}
+              inputMode='decimal'
+              value={item.Qty ?? ''}
+              autoFocus
+              onChange={(event) => onChange('Qty', event.target.value)}
+            />
+          )}
+        />
+      </td>
+      <td className='w-28 border border-gray-3 p-3 text-right align-top text-gray-12'>
+        <HoverValue
+          canEdit={canEdit}
+          className='text-right'
+          display={<span>${toMoney(item.Price)}</span>}
+          input={() => (
+            <input
+              aria-label={t`Price`}
+              className={cn(cellInputClass, 'text-right')}
+              inputMode='decimal'
+              value={item.Price ?? ''}
+              autoFocus
+              onChange={(event) => onChange('Price', event.target.value)}
+            />
+          )}
+        />
+      </td>
+      <td className='w-28 border border-gray-3 p-3 text-right align-top'>
+        <span className='font-semibold text-gray-12'>
+          ${toMoney(lineSubtotal)}
+        </span>
+      </td>
+      {canEdit && (
+        <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
+          <div className='inline-flex items-center justify-end gap-1'>
+            {approved ? (
+              <span
+                aria-label={t`Approved`}
+                className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
+                title={t`Approved`}
               >
-                <Icon className='h-4 w-4' icon='tabler:trash' />
+                <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+              </span>
+            ) : (
+              <button
+                aria-label={t`Approve`}
+                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
+                title={t`Approve`}
+                type='button'
+                onClick={onApprove}
+              >
+                <Icon className='h-3.5 w-3.5' icon='tabler:check' />
               </button>
-            </div>
-          </td>
-        )}
-      </tr>
+            )}
+            <button
+              aria-label={t`Delete row`}
+              className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
+              title={t`Delete row`}
+              type='button'
+              onClick={onDelete}
+            >
+              <Icon className='h-4 w-4' icon='tabler:trash' />
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
   )
 }
 

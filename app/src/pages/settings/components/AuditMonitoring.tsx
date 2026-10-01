@@ -1,5 +1,5 @@
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { useLingui } from '@lingui/react/macro'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { Database, LogIn, Settings, Shield, UserCog } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -32,27 +32,20 @@ type Severity = 'info' | 'warning' | 'critical' | string
 const AUDIT_LOGS_PAGE_SIZE = 100
 const SESSION_KEY = 'ezofis_audit_monitoring_state'
 
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
-
 export default function AuditMonitoring({ onBack }: AuditUserProps) {
   const { t } = useLingui()
   const storedState = useMemo(() => getStoredState(), [])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
-    storedState?.activeFilters ?? {}
+    storedState?.activeFilters ?? {},
   )
   const [eventsData, setEventsData] = useState<EventLog[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isReLoading, setIsReLoading] = useState(false)
   const [page, setPage] = useState(storedState?.page ?? 1)
-  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? AUDIT_LOGS_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(
+    storedState?.pageSize ?? AUDIT_LOGS_PAGE_SIZE,
+  )
 
   useEffect(() => {
     try {
@@ -98,7 +91,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           ? activeFilters.dateTo.replace('custom:', '').split('_')[1]
           : activeFilters.dateTo || undefined,
         page,
-        pageSize,
+        pageSize: pageSize === 0 ? 10000 : pageSize,
         search: searchQuery || undefined,
         severity: parseFilterValues(activeFilters.severity)[0] || undefined,
         userEmail: parseFilterValues(activeFilters.userEmail)[0] || undefined,
@@ -277,6 +270,15 @@ function CategoryCell({ category }: { category: EventLog['category'] }) {
 
 function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
+}
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
 }
 
 function SeverityBadge({ severity }: { severity: Severity }) {

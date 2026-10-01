@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
 export interface Toast {
-  autoClose?: number | false
   message: ReactNode
+  autoClose?: number | false
   toastTitle?: string
   variant?: ToastVariant
 }

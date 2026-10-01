@@ -85,12 +85,12 @@ export default function DocumentGenerateAgentSettingsPanel({
       nodes.map((n) =>
         n.id === currentNode.id
           ? {
-            ...n,
-            data: {
-              ...n.data,
-              [key]: value,
-            },
-          }
+              ...n,
+              data: {
+                ...n.data,
+                [key]: value,
+              },
+            }
           : n,
       ),
     )
@@ -129,7 +129,7 @@ export default function DocumentGenerateAgentSettingsPanel({
   }
 
   return (
-    <div className='flex h-full flex-col overflow-y-auto p-4 space-y-3.5 font-sans'>
+    <div className='flex h-full flex-col space-y-3.5 overflow-y-auto p-4 font-sans'>
       {/* Basic Configuration */}
       <SettingsSection
         icon='lucide:file-code'
@@ -139,7 +139,7 @@ export default function DocumentGenerateAgentSettingsPanel({
       >
         <div className='space-y-4'>
           <div className='space-y-1.5'>
-            <span className='text-13 font-normal text-gray-12 block'>
+            <span className='block text-13 font-normal text-gray-12'>
               Output File Format
             </span>
             <InputSelect
@@ -173,7 +173,7 @@ export default function DocumentGenerateAgentSettingsPanel({
               />
             </div>
 
-            <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12 [&_textarea]:resize-none'>
+            <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:resize-none [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12'>
               <InputTextarea
                 error={jsonError || undefined}
                 placeholder={PDF_TEMPLATE_PLACEHOLDER}

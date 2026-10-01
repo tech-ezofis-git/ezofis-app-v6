@@ -21,8 +21,8 @@ export default function PortalPanelNav({
         <div className='relative'>
           {sections.length > 1 && (
             <span
-              aria-hidden
               className='pointer-events-none absolute top-7 bottom-7 left-[26px] z-0 w-px bg-gray-5'
+              aria-hidden
             />
           )}
           <ol className='relative flex flex-col'>

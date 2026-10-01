@@ -5,10 +5,10 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
-import TableFieldInput from './Upload/TableFieldInput'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton } from './Ui'
+import TableFieldInput from './Upload/TableFieldInput'
 
 type EditMetadataViewProps = {
   fileColumns: DynamicRepositoryColumn[]
@@ -280,7 +280,8 @@ export function EditMetadataView({
               String(selectedOption.value ?? '').toLowerCase() ||
             String(o.name).toLowerCase() ===
               selectedOption.name.toLowerCase() ||
-            String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+            String(o.id).toLowerCase() ===
+              String(selectedOption.id).toLowerCase(),
         )
           ? [...options, selectedOption]
           : options
@@ -289,9 +290,9 @@ export function EditMetadataView({
         <InputSelect
           label={label}
           options={effectiveOptions}
-          searchable
-          creatable
           value={selectedOption}
+          creatable
+          searchable
           onChange={(selected: SelectOption | null) =>
             updateFieldValue(
               field.key,

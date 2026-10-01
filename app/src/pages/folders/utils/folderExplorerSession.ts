@@ -3,17 +3,6 @@ export const FOLDER_ASK_AI_QUERY_MARKER = 'ezofis_folder_ask_ai_query'
 export const FOLDER_ENTERING_FROM_OUTSIDE_KEY = 'ezofis_entering_folders'
 export const RESET_FOLDER_VIEW_EVENT = 'ezofis_reset_folder_view'
 
-export function triggerResetFolderView() {
-  try {
-    writeFolderExplorerStoredState({ appView: 'explorer' })
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent(RESET_FOLDER_VIEW_EVENT))
-    }
-  } catch {
-    // ignore
-  }
-}
-
 export type FolderExplorerStoredState = {
   activeFolder?: string
   appView?: string
@@ -26,55 +15,6 @@ export type FolderExplorerStoredState = {
   pageSize?: number
   selectedFile?: string
   viewMode?: string
-}
-
-export function readFolderExplorerStoredState(): FolderExplorerStoredState | null {
-  try {
-    const raw = sessionStorage.getItem(FOLDER_EXPLORER_SESSION_KEY)
-    return raw ? (JSON.parse(raw) as FolderExplorerStoredState) : null
-  } catch {
-    return null
-  }
-}
-
-export function writeFolderExplorerStoredState(
-  patch: Partial<FolderExplorerStoredState>,
-) {
-  try {
-    const stored = readFolderExplorerStoredState() || {}
-    sessionStorage.setItem(
-      FOLDER_EXPLORER_SESSION_KEY,
-      JSON.stringify({ ...stored, ...patch }),
-    )
-  } catch {
-    // ignore
-  }
-}
-
-/** Chatbot-applied folder search/filters — cleared when leaving /folders. */
-export function markFolderExplorerAskAiQuery() {
-  try {
-    sessionStorage.setItem(FOLDER_ASK_AI_QUERY_MARKER, '1')
-    writeFolderExplorerStoredState({ filterSource: 'ask-ai' })
-  } catch {
-    // ignore
-  }
-}
-
-export function clearFolderExplorerAskAiQueryMarker() {
-  try {
-    sessionStorage.removeItem(FOLDER_ASK_AI_QUERY_MARKER)
-  } catch {
-    // ignore
-  }
-}
-
-export function hasFolderExplorerAskAiQueryMarker() {
-  try {
-    return sessionStorage.getItem(FOLDER_ASK_AI_QUERY_MARKER) === '1'
-  } catch {
-    return false
-  }
 }
 
 /** Remove Ask AI search/filters from session storage (sidebar navigation away). */
@@ -99,6 +39,66 @@ export function clearAskAiFolderExplorerQuery() {
       }),
     )
     clearFolderExplorerAskAiQueryMarker()
+  } catch {
+    // ignore
+  }
+}
+
+export function clearFolderExplorerAskAiQueryMarker() {
+  try {
+    sessionStorage.removeItem(FOLDER_ASK_AI_QUERY_MARKER)
+  } catch {
+    // ignore
+  }
+}
+
+export function hasFolderExplorerAskAiQueryMarker() {
+  try {
+    return sessionStorage.getItem(FOLDER_ASK_AI_QUERY_MARKER) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Chatbot-applied folder search/filters — cleared when leaving /folders. */
+export function markFolderExplorerAskAiQuery() {
+  try {
+    sessionStorage.setItem(FOLDER_ASK_AI_QUERY_MARKER, '1')
+    writeFolderExplorerStoredState({ filterSource: 'ask-ai' })
+  } catch {
+    // ignore
+  }
+}
+
+export function readFolderExplorerStoredState(): FolderExplorerStoredState | null {
+  try {
+    const raw = sessionStorage.getItem(FOLDER_EXPLORER_SESSION_KEY)
+    return raw ? (JSON.parse(raw) as FolderExplorerStoredState) : null
+  } catch {
+    return null
+  }
+}
+
+export function triggerResetFolderView() {
+  try {
+    writeFolderExplorerStoredState({ appView: 'explorer' })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(RESET_FOLDER_VIEW_EVENT))
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function writeFolderExplorerStoredState(
+  patch: Partial<FolderExplorerStoredState>,
+) {
+  try {
+    const stored = readFolderExplorerStoredState() || {}
+    sessionStorage.setItem(
+      FOLDER_EXPLORER_SESSION_KEY,
+      JSON.stringify({ ...stored, ...patch }),
+    )
   } catch {
     // ignore
   }

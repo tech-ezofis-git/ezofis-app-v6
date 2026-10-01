@@ -22,15 +22,15 @@ import {
 interface Props {
   items: string[]
   children?: ReactNode
-  onItemsChange: (items: string[]) => void
   constrainToParent?: boolean
+  onItemsChange: (items: string[]) => void
 }
 
 const SortableContainer = ({
   children,
+  constrainToParent = true,
   items,
   onItemsChange,
-  constrainToParent = true,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -58,12 +58,12 @@ const SortableContainer = ({
   return (
     <DndContext
       collisionDetection={closestCenter}
+      sensors={sensors}
       modifiers={
         constrainToParent
           ? [restrictToVerticalAxis, restrictToParentElement]
           : [restrictToVerticalAxis]
       }
-      sensors={sensors}
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={items} strategy={verticalListSortingStrategy}>

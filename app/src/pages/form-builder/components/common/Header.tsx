@@ -113,7 +113,7 @@ const Header = () => {
         <div className='mx-1 h-6 w-px bg-gray-3' />
 
         <Button
-          className='flex cursor-pointer items-center gap-1.5 font-medium border border-purple-4/60 bg-purple-3/80 text-purple-11 hover:bg-purple-4 hover:border-purple-5 shadow-2xs transition-all'
+          className='flex cursor-pointer items-center gap-1.5 border border-purple-4/60 bg-purple-3/80 font-medium text-purple-11 shadow-2xs transition-all hover:border-purple-5 hover:bg-purple-4'
           color='primary'
           size='sm'
           variant='subtle'

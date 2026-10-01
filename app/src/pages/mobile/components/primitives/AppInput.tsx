@@ -2,19 +2,19 @@ import type { InputHTMLAttributes, ReactNode } from 'react'
 import cn from '@/utils/cn'
 
 type AppInputProps = InputHTMLAttributes<HTMLInputElement> & {
+  error?: string
   label?: string
   leadingIcon?: ReactNode
   trailing?: ReactNode
-  error?: string
 }
 
 export function AppInput({
   className,
+  error,
+  id,
   label,
   leadingIcon,
   trailing,
-  error,
-  id,
   ...rest
 }: AppInputProps) {
   const inputId = id || rest.name
@@ -34,18 +34,16 @@ export function AppInput({
           <span className='text-text-muted'>{leadingIcon}</span>
         ) : null}
         <input
+          id={inputId}
           className={cn(
             'min-w-0 flex-1 bg-transparent py-2 text-13 text-text-primary outline-none placeholder:text-text-muted',
             className,
           )}
-          id={inputId}
           {...rest}
         />
         {trailing}
       </div>
-      {error ? (
-        <span className='text-11 text-error-main'>{error}</span>
-      ) : null}
+      {error ? <span className='text-11 text-error-main'>{error}</span> : null}
     </label>
   )
 }

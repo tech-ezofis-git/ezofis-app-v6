@@ -956,10 +956,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1040,7 +1040,9 @@ const StatusCell = ({
                   </div>
                   <div>
                     <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
-                      {row.stageType === 'AP_AGENT' || row.workflowName === 'AP Agent' || row.apAgentJobId
+                      {row.stageType === 'AP_AGENT' ||
+                      row.workflowName === 'AP Agent' ||
+                      row.apAgentJobId
                         ? 'Extraction Progress'
                         : 'Agent Processing'}
                     </h4>
@@ -1057,13 +1059,17 @@ const StatusCell = ({
               {/* Stepper Content */}
               {(() => {
                 const stage = row.stage || 'Start'
-                const isApAgent = row.stageType === 'AP_AGENT' || row.workflowName === 'AP Agent' || row.apAgentJobId
-                
+                const isApAgent =
+                  row.stageType === 'AP_AGENT' ||
+                  row.workflowName === 'AP Agent' ||
+                  row.apAgentJobId
+
                 if (!isApAgent) {
                   return (
                     <div className='relative z-10 flex flex-col pt-2'>
                       <span className='text-[12px] font-medium text-[var(--gray-10)]'>
-                        The AI Agent is currently extracting and analyzing data for this request. Please wait...
+                        The AI Agent is currently extracting and analyzing data
+                        for this request. Please wait...
                       </span>
                     </div>
                   )
@@ -1317,15 +1323,19 @@ export const getFormPanels = (form: any) => {
   return [...rootPanels, ...panels, ...secondaryPanels]
 }
 
-
-export const getFieldKeyByLabel = (workflow: WorkflowOption | null, label: string): string | null => {
+export const getFieldKeyByLabel = (
+  workflow: WorkflowOption | null,
+  label: string,
+): string | null => {
   const form = resolveFormJson(workflow)
   if (!form) return null
 
   const panels = getFormPanels(form)
   for (const panel of panels) {
     if (panel.fields) {
-      const field = panel.fields.find((f: any) => (f.label || f.name || f.id) === label)
+      const field = panel.fields.find(
+        (f: any) => (f.label || f.name || f.id) === label,
+      )
       if (field) {
         return field.name || field.id
       }
@@ -1339,7 +1349,9 @@ export const resolveConfiguredTitle = (
   workflow: WorkflowOption | null,
   isDocumentApproval: boolean,
 ): string | null => {
-  const titleField = workflow?.workflowJson?.settings?.general?.requestTitleField || (workflow as any)?.wSettings?.general?.requestTitleField
+  const titleField =
+    workflow?.workflowJson?.settings?.general?.requestTitleField ||
+    (workflow as any)?.wSettings?.general?.requestTitleField
   if (!titleField && !isDocumentApproval) return null
   if (isDocumentApproval) {
     const val = row?.repositoryItem?.fields?.[titleField]
@@ -1351,8 +1363,12 @@ export const resolveConfiguredTitle = (
   // If we found the actual field key, look it up in formData
   if (actualFieldKey) {
     try {
-      const parsedData = typeof row?.formData === 'string' ? JSON.parse(row.formData) : row?.formData
-      const val = parsedData?.fields?.[actualFieldKey] ?? parsedData?.[actualFieldKey]
+      const parsedData =
+        typeof row?.formData === 'string'
+          ? JSON.parse(row.formData)
+          : row?.formData
+      const val =
+        parsedData?.fields?.[actualFieldKey] ?? parsedData?.[actualFieldKey]
       if (val !== undefined && val !== null && val !== '') return String(val)
     } catch {
       // ignore
@@ -1361,7 +1377,10 @@ export const resolveConfiguredTitle = (
 
   // fallback to trying titleField directly as key just in case
   try {
-    const parsedData = typeof row?.formData === 'string' ? JSON.parse(row.formData) : row?.formData
+    const parsedData =
+      typeof row?.formData === 'string'
+        ? JSON.parse(row.formData)
+        : row?.formData
     const val = parsedData?.fields?.[titleField] ?? parsedData?.[titleField]
     if (val !== undefined && val !== null && val !== '') return String(val)
   } catch {
@@ -1383,7 +1402,11 @@ const getBaseColumns = (
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: isAccountsPayable ? t`Invoice Number` : isDocumentApproval ? t`File Name` : t`Request No`,
+      label: isAccountsPayable
+        ? t`Invoice Number`
+        : isDocumentApproval
+          ? t`File Name`
+          : t`Request No`,
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1410,12 +1433,20 @@ const getBaseColumns = (
                   }}
                 >
                   {(() => {
-                    const configuredTitle = resolveConfiguredTitle(row, workflow, isDocumentApproval)
-                    return configuredTitle || (isAccountsPayable
-                      ? extractInvoiceNumber(row)
-                      : isDocumentApproval
-                        ? (row?.repositoryItem?.fileName || extractGenericRequestNumber(row))
-                        : extractGenericRequestNumber(row))
+                    const configuredTitle = resolveConfiguredTitle(
+                      row,
+                      workflow,
+                      isDocumentApproval,
+                    )
+                    return (
+                      configuredTitle ||
+                      (isAccountsPayable
+                        ? extractInvoiceNumber(row)
+                        : isDocumentApproval
+                          ? row?.repositoryItem?.fileName ||
+                            extractGenericRequestNumber(row)
+                          : extractGenericRequestNumber(row))
+                    )
                   })()}
                 </button>
               }
@@ -1442,7 +1473,7 @@ const getBaseColumns = (
         renderCell: (row: any) => {
           const poNumber = extractPONumber(row)
           return <WrapOnHoverCell value={poNumber} />
-        }
+        },
       })
       columns.push({
         id: 'supplier',
@@ -1458,7 +1489,7 @@ const getBaseColumns = (
               text={supplier}
             />
           )
-        }
+        },
       })
     }
 
@@ -1551,7 +1582,10 @@ const getBaseColumns = (
         if (activeTab === 'Processed') {
           return (
             <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-              <Icon className='size-3.5 text-[var(--green-9)]' name='tabler:circle-check' />
+              <Icon
+                className='size-3.5 text-[var(--green-9)]'
+                name='tabler:circle-check'
+              />
               Paid
             </span>
           )

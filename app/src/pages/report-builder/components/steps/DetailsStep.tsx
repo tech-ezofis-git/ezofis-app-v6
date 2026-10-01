@@ -229,6 +229,7 @@ const DetailsStep = () => {
                 disabled={workflowsQuery.isLoading}
                 label={t`Workflow`}
                 options={workflowOptions}
+                required
                 description={
                   workflowsQuery.isLoading ? t`Loading workflows...` : undefined
                 }
@@ -242,7 +243,6 @@ const DetailsStep = () => {
                     ? t`Loading workflows...`
                     : t`Select a workflow`
                 }
-                required
                 value={
                   draft.sourceId
                     ? workflowOptions.find((o) => o.id === draft.sourceId) ||
@@ -267,6 +267,7 @@ const DetailsStep = () => {
                 disabled={foldersQuery.isLoading}
                 label={t`Folder`}
                 options={folderOptions}
+                required
                 description={
                   foldersQuery.isLoading ? t`Loading folders...` : undefined
                 }
@@ -280,7 +281,6 @@ const DetailsStep = () => {
                     ? t`Loading folders...`
                     : t`Select a folder`
                 }
-                required
                 value={
                   draft.sourceId
                     ? folderOptions.find((o) => o.id === draft.sourceId) ||
@@ -331,7 +331,9 @@ const DetailsStep = () => {
               onClick={() =>
                 setDraft({
                   sharedGroups:
-                    option.value === 'Selected Groups' ? draft.sharedGroups : [],
+                    option.value === 'Selected Groups'
+                      ? draft.sharedGroups
+                      : [],
                   sharedUsers:
                     option.value === 'Selected Users' ? draft.sharedUsers : [],
                   visibility: option.value,

@@ -1,49 +1,53 @@
-import { msg } from '@lingui/core/macro'
 import type { I18n, MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
 
 const FIELD_LABELS: Record<string, MessageDescriptor> = {
-  'Supplier Name': msg`Supplier Name`,
-  'Vendor Name': msg`Vendor Name`,
-  'Invoice Number': msg`Invoice Number`,
-  'Invoice Date': msg`Invoice Date`,
-  'Invoice Amount': msg`Invoice Amount`,
-  'PO Number': msg`PO Number`,
-  'Payment Terms': msg`Payment Terms`,
-  Currency: msg`Currency`,
-  'Tax Amount': msg`Tax Amount`,
+  'Amount': msg`Amount`,
+  'Currency': msg`Currency`,
   'Due Date': msg`Due Date`,
-  Amount: msg`Amount`,
-  Supplier: msg`Supplier`,
+  'Invoice Amount': msg`Invoice Amount`,
+  'Invoice Date': msg`Invoice Date`,
+  'Invoice Number': msg`Invoice Number`,
+  'Payment Terms': msg`Payment Terms`,
+  'PO Number': msg`PO Number`,
+  'Supplier': msg`Supplier`,
+  'Supplier Name': msg`Supplier Name`,
+  'Tax Amount': msg`Tax Amount`,
+  'Vendor Name': msg`Vendor Name`,
 }
 
 const STATUS_LABELS: Record<string, MessageDescriptor> = {
-  Matched: msg`Matched`,
-  'Not Matched': msg`Not Matched`,
-  'Partially Matched': msg`Partially Matched`,
-  Approved: msg`Approved`,
-  'Partially Approved': msg`Partially Approved`,
-  Rejected: msg`Rejected`,
-  Discrepancies: msg`Discrepancies`,
-  'High Value': msg`High Value`,
-  Overdue: msg`Overdue`,
-  'Not Verified': msg`Not Verified`,
-  Verified: msg`Verified`,
-  'No Duplicate': msg`No Duplicate`,
-  Duplicate: msg`Duplicate`,
-  'No PO Found': msg`No PO Found`,
-  'No duplicates detected': msg`No duplicates detected`,
-  Inbox: msg`Inbox`,
-  Exceptions: msg`Exceptions`,
-  Processed: msg`Processed`,
-  'Pending Review': msg`Pending Review`,
-  'Setting up...': msg`Setting up...`,
+  'Approved': msg`Approved`,
+  'Discrepancies': msg`Discrepancies`,
+  'Duplicate': msg`Duplicate`,
+  'Exceptions': msg`Exceptions`,
   'Finalizing Results...': msg`Finalizing Results...`,
+  'High Value': msg`High Value`,
+  'Inbox': msg`Inbox`,
+  'Matched': msg`Matched`,
+  'No Duplicate': msg`No Duplicate`,
+  'No duplicates detected': msg`No duplicates detected`,
+  'No PO Found': msg`No PO Found`,
+  'Not Matched': msg`Not Matched`,
+  'Not Verified': msg`Not Verified`,
+  'Overdue': msg`Overdue`,
+  'Partially Approved': msg`Partially Approved`,
+  'Partially Matched': msg`Partially Matched`,
+  'Pending Review': msg`Pending Review`,
   'Preparing your request...': msg`Preparing your request...`,
+  'Processed': msg`Processed`,
+  'Rejected': msg`Rejected`,
+  'Setting up...': msg`Setting up...`,
+  'Verified': msg`Verified`,
 }
 
 export function localizeRequestFieldLabel(i18n: I18n, label: string): string {
   const descriptor = FIELD_LABELS[label]
   return descriptor ? i18n._(descriptor) : label
+}
+
+export function localizeRequestListTab(i18n: I18n, tab: string): string {
+  return localizeRequestStatus(i18n, tab)
 }
 
 export function localizeRequestStatus(i18n: I18n, status: string): string {
@@ -58,8 +62,4 @@ export function localizeRequestStatus(i18n: I18n, status: string): string {
   }
 
   return trimmed
-}
-
-export function localizeRequestListTab(i18n: I18n, tab: string): string {
-  return localizeRequestStatus(i18n, tab)
 }

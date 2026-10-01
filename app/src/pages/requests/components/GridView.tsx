@@ -800,8 +800,8 @@ const RowStatusBadge = ({
 }
 
 interface TermsColumnProps {
-  activeTab?: string
   row: any
+  activeTab?: string
 }
 
 const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
@@ -811,13 +811,18 @@ const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
     Boolean(row.completedAtUtc) ||
     Boolean(row.completedAt) ||
     ['completed', 'approved', 'closed', 'paid'].includes(
-      String(row.status || '').toLowerCase().trim(),
+      String(row.status || '')
+        .toLowerCase()
+        .trim(),
     )
 
   if (isCompleted) {
     return (
       <span className='inline-flex items-center gap-1 rounded-full border border-[var(--green-4)] bg-[var(--green-2)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-        <Icon className='size-3.5 text-[var(--green-9)]' name='tabler:circle-check' />
+        <Icon
+          className='size-3.5 text-[var(--green-9)]'
+          name='tabler:circle-check'
+        />
         Paid
       </span>
     )
@@ -989,7 +994,9 @@ const GridRowItem = memo(
       agentData?.ai_insect ||
       ''
 
-    const isAgentStage = Boolean(row?.stageType?.toUpperCase().includes('AGENT'))
+    const isAgentStage = Boolean(
+      row?.stageType?.toUpperCase().includes('AGENT'),
+    )
 
     const { iconColorClass, iconName } = getRowIconAndColor(
       !!row.isProcessing || isAgentStage,
@@ -1067,8 +1074,11 @@ const GridRowItem = memo(
             )}
           >
             <Icon
-              className={cn('size-5', (row.isProcessing || isAgentStage) && 'animate-spin')}
               name={iconName}
+              className={cn(
+                'size-5',
+                (row.isProcessing || isAgentStage) && 'animate-spin',
+              )}
             />
           </div>
         </div>

@@ -36,5 +36,6 @@ export interface QueuedUploadFile {
   stageFileId: string | null
   status: QueuedFileStatus
   syncingField: string | null
+  createdAt?: string
   errorMessage?: string
 }

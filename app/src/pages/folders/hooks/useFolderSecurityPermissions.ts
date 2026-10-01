@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   FOLDER_PERMISSIONS_ALLOW_ALL,
   FOLDER_PERMISSIONS_VIEW_ONLY,
+  type FolderPermissionFlags,
   getFolderSecurity,
   resolveEffectiveFolderPermissions,
-  type FolderPermissionFlags,
 } from '@/api/v6/folder/security'
 import authUserStore from '@/stores/authUserStore'
 import { decodeRepositoryNodeId } from '../api/folderApi'
@@ -65,9 +65,9 @@ export default function useFolderSecurityPermissions(
       }
 
       const resolved = resolveEffectiveFolderPermissions({
+        folderId: securityFolderId,
         policies: res.data.policies,
         userId,
-        folderId: securityFolderId,
       })
 
       setPermissions(resolved)

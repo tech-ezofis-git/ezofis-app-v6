@@ -1,10 +1,12 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { getLicenseSummary } from '@/api/v6/license'
 import { getRepositorys } from '@/api/v6/folder/folder'
+import { getLicenseSummary } from '@/api/v6/license'
 import { getUsers } from '@/api/v6/user'
-import workflowsApiV6, { createPublishedWorkflowBrowsePayload } from '@/api/v6/workflows'
+import workflowsApiV6, {
+  createPublishedWorkflowBrowsePayload,
+} from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import AnimateSlideUp from '@/components/common/animations/AnimateSlideUp'
@@ -153,12 +155,14 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
     }
   }, [summary, usersResponse, repositoriesResponse, workflowsResponse])
 
-  const isTrial = resolvedSummary.planType === 'trial' || !resolvedSummary.planType
+  const isTrial =
+    resolvedSummary.planType === 'trial' || !resolvedSummary.planType
   const daysRemaining = resolvedSummary.daysRemaining ?? 12
 
   const topbarAction = useMemo(() => {
     if (!isTrial || screen !== 'overview') return null
-    const actionColor: 'red' | 'primary' = daysRemaining <= 7 ? 'red' : 'primary'
+    const actionColor: 'red' | 'primary' =
+      daysRemaining <= 7 ? 'red' : 'primary'
     return {
       color: actionColor,
       icon: 'lucide:arrow-up',
@@ -230,7 +234,7 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
                 <div className='mt-2 text-15 font-semibold text-white'>
                   {t`Ready to go live? Upgrade to Production.`}
                 </div>
-                <div className='mt-1 max-w-[48ch] text-[12.5px] text-white/90 leading-relaxed'>
+                <div className='mt-1 max-w-[48ch] text-[12.5px] leading-relaxed text-white/90'>
                   {t`Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean.`}
                 </div>
               </div>
@@ -244,7 +248,7 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
                   onClick={handleTalkToSales}
                 />
                 <Button
-                  className='bg-white text-primary-11 hover:bg-white/90 font-semibold'
+                  className='bg-white font-semibold text-primary-11 hover:bg-white/90'
                   icon='lucide:arrow-up'
                   label={t`Upgrade to Production`}
                   size='md'

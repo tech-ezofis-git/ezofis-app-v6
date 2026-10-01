@@ -239,7 +239,7 @@ const SignRequestSignInForm = ({
         setError(e?.message ?? 'Google sign-in failed')
         setSubmitting(false)
       }
-    }
+    },
   })
 
   const handleMicrosoftLogin = async () => {

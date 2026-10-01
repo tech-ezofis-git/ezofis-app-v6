@@ -4,7 +4,7 @@ import { setToLocalStorage } from '../../../utils/local-storage'
 import { axiosV6 } from '../../axios'
 
 const isRequestCanceled = (error: unknown) => {
-  const err = error as { code?: string; name?: string; message?: string }
+  const err = error as { code?: string; message?: string; name?: string }
   return (
     axios.isCancel(error) ||
     err?.name === 'CanceledError' ||
@@ -69,13 +69,13 @@ export interface RepositoryDto {
   createdByName?: any
   description?: string
   fields?: RepositoryFieldDto[]
+  fileCount?: any
   itemsTableName?: string
   modifiedBy?: any
   modifiedByName?: any
   stageTableName?: string
   storageDrive?: string
   storageProviderId?: string
-  fileCount?: any
 }
 
 export interface RepositoryFieldDto {
@@ -192,7 +192,7 @@ export const verifyMailOTP = async (payload: {
 }
 
 export const getRepositorys = async () => {
-  const response: any = { data: null, error: '', canceled: false }
+  const response: any = { canceled: false, data: null, error: '' }
 
   try {
     const { data, status } = await axiosV6({
@@ -401,9 +401,9 @@ const EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES = new Set([
 ])
 
 export interface RepositoryItemFilterField {
+  dataType: string
   name: string
   sqlColumnName: string
-  dataType: string
 }
 
 export interface RepositoryItemFilterFieldsResponse {
@@ -431,12 +431,12 @@ export const getRepositoryItemFilterFields = async (repositoryId: string) => {
     const payload = unwrap(data) as RepositoryItemFilterFieldsResponse
     const fields = Array.isArray(payload?.fields)
       ? payload.fields.filter(
-        (field) =>
-          Boolean(field?.sqlColumnName || field?.name) &&
-          !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
-            String(field?.dataType || '').toUpperCase(),
-          ),
-      )
+          (field) =>
+            Boolean(field?.sqlColumnName || field?.name) &&
+            !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
+              String(field?.dataType || '').toUpperCase(),
+            ),
+        )
       : []
 
     response.data = { fields }
@@ -453,14 +453,14 @@ export const getRepositoryItemFilterFields = async (repositoryId: string) => {
 }
 
 export interface RepositoryItemFacet {
-  value: string
   count: number
+  value: string
 }
 
 export const getRepositoryItemFacets = async (payload: {
-  repositoryId: string
   fieldName: string
   limit?: number
+  repositoryId: string
   scopeFilters?: Record<string, string | string[]>
 }) => {
   const response: { data: RepositoryItemFacet[]; error: string } = {
@@ -620,10 +620,10 @@ export type SharedWithMeItem = {
   fileName?: string
   permission?: string
   recipientEmail?: string
+  sharedAtUtc?: string
   shareId?: string
   shareToken?: string
   shareUrl?: string
-  sharedAtUtc?: string
   sourceItemId?: string
   sourceOrganizationName?: string
   sourceRepositoryId?: string
@@ -819,9 +819,7 @@ export const revokeRepositoryShare = async (payload: {
   } catch (e: any) {
     console.error(e)
     response.error =
-      e?.response?.data?.message ||
-      e?.response?.data ||
-      'error revoking share'
+      e?.response?.data?.message || e?.response?.data || 'error revoking share'
   }
 
   return response
@@ -858,14 +856,14 @@ export const deleteRepositoryItem = async (
   return response
 }
 
-  // Keep the API object extensible for existing imports.
-  ; (authApiV6 as any).getRepositoryItems = getRepositoryItems
-  ; (authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
-  ; (authApiV6 as any).shareRepositoryItem = shareRepositoryItem
-  ; (authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
-  ; (authApiV6 as any).getSharedWithMe = getSharedWithMe
-  ; (authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
-  ; (authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
+// Keep the API object extensible for existing imports.
+;(authApiV6 as any).getRepositoryItems = getRepositoryItems
+;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
+;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+;(authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
+;(authApiV6 as any).getSharedWithMe = getSharedWithMe
+;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
+;(authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>
@@ -1072,7 +1070,8 @@ export const getRepositoryItemRelatedSaved = async (payload: {
     response.data = toRelatedDocumentsResponse(unwrap(data), { page, pageSize })
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error fetching saved related documents'
+    response.error =
+      e?.response?.data || 'error fetching saved related documents'
   }
 
   return response
@@ -1139,7 +1138,6 @@ export const deleteRepositoryItemRelatedSaved = async (payload: {
 
   return response
 }
-
 
 export const addRepositoryItemComment = async (payload: {
   body: string
@@ -1245,18 +1243,18 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
 }
 
 export interface UploadArchiveResponse {
-  itemId: string
   fileName: string
+  itemId: string
   filePath?: string
-  storageProviderCode?: string
   fileVersion?: number
   folderId?: string
   folderPathSegments?: string[]
+  instanceId?: string | null
+  processId?: string | null
   repositoryName?: string
+  storageProviderCode?: string
   workflowAttached?: boolean
   workflowId?: string | null
-  processId?: string | null
-  instanceId?: string | null
 }
 
 /**
@@ -1270,8 +1268,12 @@ export const persistEditedDocumentToRepository = async (
   fileName?: string,
   metadata?: Record<string, string>,
 ) => {
-  // eslint-disable-next-line no-console
-  console.log('[collabora-debug] STEP 9a: Inside persistEditedDocumentToRepository. RepId:', repositoryId, 'ItemId:', itemId)
+  console.log(
+    '[collabora-debug] STEP 9a: Inside persistEditedDocumentToRepository. RepId:',
+    repositoryId,
+    'ItemId:',
+    itemId,
+  )
   try {
     const formData = new FormData()
     const name = fileName || 'edited_document.pdf'
@@ -1281,18 +1283,31 @@ export const persistEditedDocumentToRepository = async (
     }
     formData.append('itemId', itemId)
 
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 9b: Calling UploadFiles with FormData (file name:', name, 'size:', blob.size, 'metadata keys:', metadata ? Object.keys(metadata) : 0, ')...')
+    console.log(
+      '[collabora-debug] STEP 9b: Calling UploadFiles with FormData (file name:',
+      name,
+      'size:',
+      blob.size,
+      'metadata keys:',
+      metadata ? Object.keys(metadata) : 0,
+      ')...',
+    )
     const res = await UploadFiles(repositoryId, formData)
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 9c: UploadFiles returned response:', res)
+
+    console.log(
+      '[collabora-debug] STEP 9c: UploadFiles returned response:',
+      res,
+    )
     return res
   } catch (e: any) {
-    // eslint-disable-next-line no-console
-    console.error('[collabora-debug] STEP 9-ERROR: Failed to persist edited document:', e)
+    console.error(
+      '[collabora-debug] STEP 9-ERROR: Failed to persist edited document:',
+      e,
+    )
     return {
       data: null,
-      error: e?.response?.data || e?.message || 'Error persisting document edits',
+      error:
+        e?.response?.data || e?.message || 'Error persisting document edits',
     }
   }
 }
@@ -1329,14 +1344,14 @@ const fetchRepositoryItemAiSummary = async (payload: {
     const { data, status } = await axiosV6({
       headers: language
         ? {
-          'Accept-Language': language,
-        }
+            'Accept-Language': language,
+          }
         : undefined,
       method: 'POST',
-      // AI generation can take a while on cache miss.
-      timeout: 180_000,
       // Long-running; do not abort when React Strict Mode remounts.
       skipCancellation: true,
+      // AI generation can take a while on cache miss.
+      timeout: 180_000,
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary${languageQuery}`,
     } as any)
 
@@ -1396,9 +1411,10 @@ export const getRepositoryItemAiSummary = async (payload: {
   language?: string
   repositoryId: string
 }) => {
-  const language = String(payload.language || 'en')
-    .trim()
-    .toLowerCase() || 'en'
+  const language =
+    String(payload.language || 'en')
+      .trim()
+      .toLowerCase() || 'en'
   const key = `${payload.repositoryId}:${payload.itemId}:${language}`
 
   if (!payload.force) {
@@ -1421,13 +1437,14 @@ export const getRepositoryItemAiSummary = async (payload: {
   inflightAiSummaryRequests.set(key, request)
   return request
 }
-  ; (authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
-  ; (authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
-  ; (authApiV6 as any).getRepositoryItemRelatedSaved = getRepositoryItemRelatedSaved
-  ; (authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
-  ; (authApiV6 as any).deleteRepositoryItemRelatedSaved =
-    deleteRepositoryItemRelatedSaved
-  ; (authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
-  ; (authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
-  ; (authApiV6 as any).uploadForOcr = uploadForOcr
-  ; (authApiV6 as any).UploadFiles = UploadFiles
+;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
+;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
+;(authApiV6 as any).getRepositoryItemRelatedSaved =
+  getRepositoryItemRelatedSaved
+;(authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
+;(authApiV6 as any).deleteRepositoryItemRelatedSaved =
+  deleteRepositoryItemRelatedSaved
+;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
+;(authApiV6 as any).uploadForOcr = uploadForOcr
+;(authApiV6 as any).UploadFiles = UploadFiles

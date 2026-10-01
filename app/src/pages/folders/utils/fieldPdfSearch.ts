@@ -1,31 +1,5 @@
 import type { FlagKeyword, SingleKeyword } from '@react-pdf-viewer/search'
 
-export function getFieldDisplayValue(value: unknown): string | null {
-  const trimmed = String(value ?? '').trim()
-  if (!trimmed || trimmed === '-' || trimmed.length < 2) return null
-  return trimmed
-}
-
-function keywordSource(keyword: SingleKeyword): string {
-  if (typeof keyword === 'string') return keyword
-  if (keyword instanceof RegExp) return keyword.source
-  return String(keyword.keyword || '')
-}
-
-/** All string variants used when searching a field value in the PDF. */
-export function getFieldSearchVariantStrings(value: string): string[] {
-  const keywords = buildFieldSearchKeywords(value)
-  const variants: string[] = []
-  const seen = new Set<string>()
-  for (const keyword of keywords) {
-    const source = keywordSource(keyword).trim()
-    if (!source || seen.has(source)) continue
-    seen.add(source)
-    variants.push(source)
-  }
-  return variants
-}
-
 /** Build PDF search keywords that prefer exact value matches over label fragments. */
 export function buildFieldSearchKeyword(value: string): SingleKeyword | null {
   const keywords = buildFieldSearchKeywords(value)
@@ -40,10 +14,7 @@ export function buildFieldSearchKeywords(value: string): SingleKeyword[] {
   const keywords: SingleKeyword[] = []
   const seen = new Set<string>()
 
-  const pushFlag = (
-    keyword: string,
-    options: Omit<FlagKeyword, 'keyword'>,
-  ) => {
+  const pushFlag = (keyword: string, options: Omit<FlagKeyword, 'keyword'>) => {
     const key = `f|${options.matchCase ? 'c' : 'i'}|${options.wholeWords ? 'w' : 'p'}|${keyword}`
     if (seen.has(key) || !keyword.trim()) return
     seen.add(key)
@@ -130,4 +101,30 @@ export function buildFieldSearchKeywords(value: string): SingleKeyword[] {
   }
 
   return keywords
+}
+
+export function getFieldDisplayValue(value: unknown): string | null {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed || trimmed === '-' || trimmed.length < 2) return null
+  return trimmed
+}
+
+/** All string variants used when searching a field value in the PDF. */
+export function getFieldSearchVariantStrings(value: string): string[] {
+  const keywords = buildFieldSearchKeywords(value)
+  const variants: string[] = []
+  const seen = new Set<string>()
+  for (const keyword of keywords) {
+    const source = keywordSource(keyword).trim()
+    if (!source || seen.has(source)) continue
+    seen.add(source)
+    variants.push(source)
+  }
+  return variants
+}
+
+function keywordSource(keyword: SingleKeyword): string {
+  if (typeof keyword === 'string') return keyword
+  if (keyword instanceof RegExp) return keyword.source
+  return String(keyword.keyword || '')
 }

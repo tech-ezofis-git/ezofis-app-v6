@@ -1,8 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
 import Avatar from '@/components/base/Avatar'
 import Tooltip from '@/components/base/Tooltip'
-import authUserStore from '@/stores/authUserStore'
 import useProfileImage from '@/hooks/useProfileImage'
+import authUserStore from '@/stores/authUserStore'
 
 const UserMenuTrigger = () => {
   const { t } = useLingui()

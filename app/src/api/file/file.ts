@@ -38,7 +38,7 @@ const viewBinaryV6 = async (
       `/repositories/${repositoryId}/items/${itemId}/file?disposition=${disposition}${bust}`,
       {
         headers: cacheBust
-          ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+          ? { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
           : undefined,
         responseType: 'blob',
       },

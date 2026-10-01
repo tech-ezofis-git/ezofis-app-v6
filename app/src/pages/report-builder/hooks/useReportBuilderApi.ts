@@ -24,17 +24,18 @@ export const reportBuilderKeys = {
 
 export const useReportBuilderListQuery = () =>
   useQuery({
+    queryKey: reportBuilderKeys.list(),
     queryFn: async () => {
       const { data, error } = await listReportBuilderReports()
       if (error) throw new Error(error)
       return data
     },
-    queryKey: reportBuilderKeys.list(),
   })
 
 export const useReportBuilderByIdQuery = (id: string | null | undefined) =>
   useQuery({
     enabled: Boolean(id),
+    queryKey: reportBuilderKeys.detail(id || ''),
     queryFn: async () => {
       const { data, error, notFound } = await getReportBuilderReportById(
         id as string,
@@ -43,18 +44,17 @@ export const useReportBuilderByIdQuery = (id: string | null | undefined) =>
       if (error) throw new Error(error)
       return data
     },
-    queryKey: reportBuilderKeys.detail(id || ''),
   })
 
 export const useReportBuilderDataQuery = (id: string | null | undefined) =>
   useQuery({
     enabled: Boolean(id),
+    queryKey: reportBuilderKeys.data(id || ''),
     queryFn: async () => {
       const { data, error } = await getReportBuilderReportData(id as string)
       if (error) throw new Error(error)
       return data as ReportRunResult
     },
-    queryKey: reportBuilderKeys.data(id || ''),
   })
 
 export const useReportBuilderPreviewMutation = () =>

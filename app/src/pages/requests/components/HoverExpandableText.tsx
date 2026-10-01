@@ -68,12 +68,12 @@ export default function HoverExpandableText({
     const expanded = isHovered && !isFallback
     return (
       <span
+        data-no-drag={hoverAccent ? '' : undefined}
         className={cn(
           'flex min-w-0 flex-col items-stretch',
           hoverAccent && 'cursor-pointer',
           normalMaxWidthClass,
         )}
-        data-no-drag={hoverAccent ? '' : undefined}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

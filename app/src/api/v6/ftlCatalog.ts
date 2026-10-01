@@ -1,27 +1,27 @@
-import { axiosV6 } from '../axios'
 import authUserStore from '../../stores/authUserStore'
+import { axiosV6 } from '../axios'
 
 export type FtlCatalogProduct = {
+  [key: string]: unknown
   category?: string
   currency?: string
   description?: string
   id?: string
   productCode?: string
   unitPrice?: number
-  [key: string]: unknown
-}
-
-export type FtlCatalogResponse = {
-  mode?: 'codes' | 'details' | string
-  product?: FtlCatalogProduct | null
-  /** Newer catalog details payload (preferred over singular `product`). */
-  products?: FtlCatalogProduct[]
-  productCodes?: string[]
 }
 
 export type FtlCatalogRequest = {
   productCode?: string
   searchKey?: string
+}
+
+export type FtlCatalogResponse = {
+  mode?: 'codes' | 'details' | string
+  product?: FtlCatalogProduct | null
+  productCodes?: string[]
+  /** Newer catalog details payload (preferred over singular `product`). */
+  products?: FtlCatalogProduct[]
 }
 
 const tenantHeaders = () => {

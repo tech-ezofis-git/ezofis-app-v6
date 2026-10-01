@@ -2,28 +2,44 @@ import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { FileText, FolderOpen, GitFork, Users } from 'lucide-react'
 import type { LicenseSummaryResponse } from '@/api/v6/license'
-import type { LicenseResourceCategory } from '../../data/licenseMockData'
 import cn from '@/utils/cn'
+import type { LicenseResourceCategory } from '../../data/licenseMockData'
 
 type Props = {
-  onSelectCategory?: (category: LicenseResourceCategory) => void
   selectedCategory?: LicenseResourceCategory
   summary: LicenseSummaryResponse
+  onSelectCategory?: (category: LicenseResourceCategory) => void
 }
 
 export default function LicenseStatsRow({
-  onSelectCategory,
   selectedCategory,
   summary,
+  onSelectCategory,
 }: Props) {
   const { t } = useLingui()
   const storageUsedGb = (summary.storageUsedBytes / 1024 ** 3).toFixed(1)
 
   // Calculations for percent used & limits
-  const usersPct = Math.min(100, Math.round((summary.usersCount / Math.max(1, summary.usersLimit)) * 100))
-  const workflowsPct = Math.min(100, Math.round((summary.workflowsCount / Math.max(1, summary.workflowsLimit)) * 100))
-  const foldersPct = Math.min(100, Math.round((summary.foldersCount / Math.max(1, summary.foldersLimit)) * 100))
-  const filesPct = Math.min(100, Math.round((summary.filesCount / Math.max(1, summary.filesLimit)) * 100))
+  const usersPct = Math.min(
+    100,
+    Math.round((summary.usersCount / Math.max(1, summary.usersLimit)) * 100),
+  )
+  const workflowsPct = Math.min(
+    100,
+    Math.round(
+      (summary.workflowsCount / Math.max(1, summary.workflowsLimit)) * 100,
+    ),
+  )
+  const foldersPct = Math.min(
+    100,
+    Math.round(
+      (summary.foldersCount / Math.max(1, summary.foldersLimit)) * 100,
+    ),
+  )
+  const filesPct = Math.min(
+    100,
+    Math.round((summary.filesCount / Math.max(1, summary.filesLimit)) * 100),
+  )
 
   return (
     <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
@@ -88,9 +104,9 @@ function StatCard({
   icon,
   isSelected,
   label,
-  onClick,
   percent,
   value,
+  onClick,
 }: {
   badgeLabel: string
   category: LicenseResourceCategory
@@ -98,20 +114,20 @@ function StatCard({
   icon: ReactNode
   isSelected?: boolean
   label: string
-  onClick?: () => void
   percent: number
   value: string
+  onClick?: () => void
 }) {
   const barColor = getProgressColorClass(percent)
 
   return (
     <button
-      type='button'
       aria-pressed={isSelected}
+      type='button'
       className={cn(
         'group relative flex cursor-pointer flex-col justify-between gap-3 rounded-xl border p-4 text-left transition-all duration-200 active:scale-[0.98]',
         isSelected
-          ? 'border-2 border-primary-9 bg-primary-1/60 shadow-md ring-2 ring-primary-9/20 -translate-y-0.5'
+          ? '-translate-y-0.5 border-2 border-primary-9 bg-primary-1/60 shadow-md ring-2 ring-primary-9/20'
           : 'border-gray-3 bg-surface hover:border-primary-6 hover:bg-primary-1/30 hover:shadow-[var(--shadow-md)]',
       )}
       onClick={onClick}
@@ -143,7 +159,7 @@ function StatCard({
         </div>
 
         <div className='mt-3'>
-          <div className='font-poppins text-[22px] font-bold text-text-primary tracking-tight'>
+          <div className='font-poppins text-[22px] font-bold tracking-tight text-text-primary'>
             {value}
           </div>
           <div className='mt-0.5 text-12 font-semibold text-text-secondary'>
@@ -155,14 +171,17 @@ function StatCard({
       <div>
         <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
           <div
-            className={cn('h-full rounded-full transition-all duration-500 ease-out', barColor)}
             style={{ width: `${Math.max(4, percent)}%` }}
+            className={cn(
+              'h-full rounded-full transition-all duration-500 ease-out',
+              barColor,
+            )}
           />
         </div>
         <div className='mt-2 flex items-center justify-between text-11 font-medium text-text-muted'>
           <span>{footer}</span>
           {isSelected ? (
-            <span className='size-2 rounded-full bg-primary-9 animate-pulse' />
+            <span className='size-2 animate-pulse rounded-full bg-primary-9' />
           ) : null}
         </div>
       </div>

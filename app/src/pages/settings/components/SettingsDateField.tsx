@@ -19,12 +19,12 @@ export default function SettingsDateField({
 }: SettingsDateFieldProps) {
   return (
     <InputDate
+      clearable={!disabled}
       disabled={disabled}
       label={label}
       minDate={minDate}
       required={required}
       value={value || null}
-      clearable={!disabled}
       onChange={(nextValue) => onChange(nextValue || '')}
     />
   )

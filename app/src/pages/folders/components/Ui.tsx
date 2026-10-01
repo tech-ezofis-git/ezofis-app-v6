@@ -101,40 +101,6 @@ export function PrimaryButton({
   )
 }
 export const Header = PageHeader
-export function StatusPill({ status }: { status: string }) {
-  const raw = String(status || '').trim()
-  const isOcr = raw.toUpperCase() === 'OCR'
-  const displayStatus = isOcr ? 'Indexed' : status
-  const s = displayStatus.toLowerCase()
-  const tone =
-    isOcr ||
-    s.includes('indexed') ||
-    s.includes('approved') ||
-    s.includes('clean') ||
-    s.includes('pass') ||
-    s.includes('verified') ||
-    s.includes('paid')
-      ? 'border-green-6 bg-green-3 text-green-11'
-      : s.includes('approver') ||
-          s.includes('pending') ||
-          s.includes('high')
-        ? 'border-orange-6 bg-orange-3 text-orange-11'
-        : s.includes('flag') || s.includes('reject')
-          ? 'border-red-6 bg-red-3 text-red-11'
-          : s.includes('verifier')
-            ? 'border-blue-6 bg-blue-3 text-blue-11'
-            : 'border-blue-6 bg-blue-3 text-blue-11'
-  return (
-    <span
-      className={`inline-flex max-w-full min-w-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}
-    >
-      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-all'>
-        {displayStatus}
-      </span>
-    </span>
-  )
-}
-
 /** Single-line ellipsis; hover expands text below by wrapping lines (no system tooltip). */
 export function EllipsisText({
   className = '',
@@ -165,6 +131,45 @@ export function EllipsisText({
       } ${className}`}
     >
       {text}
+    </span>
+  )
+}
+
+export function StatusPill({ status }: { status: string }) {
+  const raw = String(status || '').trim()
+  const isOcr = raw.toUpperCase() === 'OCR'
+  let displayStatus = isOcr ? 'Waiting for Export' : status
+  if (displayStatus.toLowerCase() === 'indexed') {
+    displayStatus = 'Waiting for Export'
+  }
+  const s = displayStatus.toLowerCase()
+  const tone =
+    s.includes('archived') ||
+    s.includes('approved') ||
+    s.includes('clean') ||
+    s.includes('pass') ||
+    s.includes('verified') ||
+    s.includes('paid')
+      ? 'border-green-6 bg-green-3 text-green-11'
+      : isOcr ||
+        s.includes('waiting for export') ||
+        s.includes('indexed') ||
+        s.includes('approver') ||
+        s.includes('pending') ||
+        s.includes('high')
+        ? 'border-[var(--orange-7)] bg-[var(--orange-2)] text-[var(--orange-7)]'
+        : s.includes('flag') || s.includes('reject')
+          ? 'border-red-6 bg-red-3 text-red-11'
+          : s.includes('verifier')
+            ? 'border-blue-6 bg-blue-3 text-blue-11'
+            : 'border-blue-6 bg-blue-3 text-blue-11'
+  return (
+    <span
+      className={`inline-flex max-w-full min-w-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}
+    >
+      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:break-all group-hover/dtcell:whitespace-normal'>
+        {displayStatus}
+      </span>
     </span>
   )
 }
