@@ -215,6 +215,7 @@ const WorkflowFormRenderer = ({
                       ? 'ocr'
                       : 'ocr'
                   }
+                  value={formModel[field.id] ?? ''}
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                 />
               )

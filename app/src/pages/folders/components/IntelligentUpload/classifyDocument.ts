@@ -70,12 +70,19 @@ export async function classifyDocument(
           safeIdMatch(r.id, cand.repository_id),
         )
         const targetId = matchingRepo ? matchingRepo.id : cand.repository_id
+        const candidateReason =
+          cand.rationale ||
+          (safeIdMatch(cand.repository_id, res.repository_id)
+            ? res.rationale
+            : undefined) ||
+          (cand.score !== undefined && cand.score !== null
+            ? `Candidate match score: ${cand.score}`
+            : '')
+
         suggestions.push({
           confidence: normalizeScore(cand.score),
           keywords: [],
-          reason: safeIdMatch(cand.repository_id, res.repository_id)
-            ? res.rationale || 'Selected by Document Intelligent Agent.'
-            : `Candidate match score: ${cand.score}`,
+          reason: candidateReason,
           repositoryId: targetId,
           repositoryName:
             matchingRepo?.name || cand.repository_name || cand.repository_id,
@@ -84,7 +91,7 @@ export async function classifyDocument(
       })
     }
 
-    // Ensure the top recommended repository is present as the first suggestion
+    // Ensure the top recommended repository is present as the first suggestion if returned
     if (res.repository_id) {
       const topExists = suggestions.some((s) =>
         safeIdMatch(s.repositoryId, res.repository_id),
@@ -94,14 +101,19 @@ export async function classifyDocument(
           safeIdMatch(r.id, res.repository_id),
         )
         const targetId = matchingRepo ? matchingRepo.id : res.repository_id
+        const topScore = res.confidence_score ?? suggestions[0]?.score ?? 0
         suggestions.unshift({
-          confidence: normalizeScore(res.confidence_score || 88),
+          confidence: normalizeScore(topScore),
           keywords: [],
-          reason: res.rationale || 'Top AI classification match.',
+          reason:
+            res.rationale ||
+            (topScore !== undefined && topScore !== null
+              ? `Candidate match score: ${topScore}`
+              : ''),
           repositoryId: targetId,
           repositoryName:
             matchingRepo?.name || res.repository_name || res.repository_id,
-          score: res.confidence_score,
+          score: topScore,
         })
       }
     }

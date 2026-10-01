@@ -9,14 +9,15 @@ export interface DocumentIntelligentCandidate {
   repository_id: string
   repository_name: string
   score: number
+  rationale?: string
 }
 
 export interface DocumentIntelligentResult {
   candidates: DocumentIntelligentCandidate[]
-  confidence_score: number
-  rationale: string
-  repository_id: string
-  repository_name: string
+  confidence_score?: number
+  rationale?: string
+  repository_id: string | null
+  repository_name: string | null
   ocr_text?: string
   source_reference?: string
 }

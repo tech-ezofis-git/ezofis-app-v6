@@ -158,9 +158,13 @@ export default function IntelligentSuggestionsPanel({
                   </div>
 
                   {/* Reason */}
-                  <p className='line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
-                    {suggestion.reason}
-                  </p>
+                  {suggestion.reason ? (
+                    <p className='text-11 leading-relaxed text-text-secondary whitespace-normal break-words'>
+                      {suggestion.reason}
+                    </p>
+                  ) : (
+                    <div className='min-h-[2rem]' />
+                  )}
                 </div>
 
                 {/* Bottom: Keywords pinned to baseline */}
