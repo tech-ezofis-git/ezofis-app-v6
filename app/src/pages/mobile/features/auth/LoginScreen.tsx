@@ -106,8 +106,6 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       )
       setShowTenantList(true)
     } else {
-      setShowTenantList(false)
-      setTenantList([])
       await handleLoggedNavigation()
     }
   }
@@ -171,8 +169,6 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         setShowTenantList(true)
       } else {
         showToast({ message: 'Successfully logged in', variant: 'success' })
-        setShowTenantList(false)
-        setTenantList([])
         onSignIn?.({ password, username: email })
         await handleLoggedNavigation()
       }

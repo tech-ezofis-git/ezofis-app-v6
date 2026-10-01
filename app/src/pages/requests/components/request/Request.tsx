@@ -1317,7 +1317,8 @@ const Request = ({
         value: a.actionName || 'Submit',
       }))
       const withoutIncoming = mapped.filter(
-        (a: any) => !incomingActionKeys.has(String(a.value || '').toLowerCase()),
+        (a: any) =>
+          !incomingActionKeys.has(String(a.value || '').toLowerCase()),
       )
       derivedActions = withoutIncoming.length > 0 ? withoutIncoming : mapped
     }

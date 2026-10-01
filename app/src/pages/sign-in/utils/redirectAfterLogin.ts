@@ -3,6 +3,7 @@ import apiRouter from '@/api/apiRouter'
 import { markUserSessionFetchedForRedirect } from '@/api/v6/auth'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
+import { isPermissionVisible } from '@/utils/sessionPermissions'
 
 type RedirectAfterLoginOptions = {
   /** Optional return path (e.g. sign-request invite URL) */
@@ -31,12 +32,13 @@ export const redirectAfterLogin = async ({
 }: RedirectAfterLoginOptions) => {
   const explicitRedirect = safeInternalRedirect(redirectTo)
   let destination: NavigateOptions['to'] = (explicitRedirect ||
-    '/requests') as NavigateOptions['to']
+    '/') as NavigateOptions['to']
 
   try {
     const res = await apiRouter.userSession()
+    const sessionData = res?.data
     const configuration =
-      res?.data?.configuration ??
+      sessionData?.configuration ??
       authUserStore.getState().session?.configuration
 
     const shareCtx = authUserStore.getState().shareContext
@@ -66,6 +68,36 @@ export const redirectAfterLogin = async ({
       !useSetupStore.getState().isApSetUpCompleted
     ) {
       destination = '/'
+    } else {
+      const permissions =
+        sessionData?.permissionKeys ||
+        authUserStore.getState().session?.permissionKeys
+      if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+        const hasDashboard = isPermissionVisible(
+          'dashboard',
+          permissions,
+          sessionData?.role,
+        )
+        const hasInbox = isPermissionVisible(
+          'workflow-inbox',
+          permissions,
+          sessionData?.role,
+        )
+        const hasFolders = isPermissionVisible(
+          'folder',
+          permissions,
+          sessionData?.role,
+        )
+        destination = hasDashboard
+          ? '/'
+          : hasInbox
+            ? '/requests'
+            : hasFolders
+              ? '/folders'
+              : '/'
+      } else {
+        destination = '/'
+      }
     }
   } catch (err) {
     console.error('Failed to load session details:', err)
