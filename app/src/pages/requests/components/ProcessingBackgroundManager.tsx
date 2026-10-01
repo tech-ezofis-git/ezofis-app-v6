@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
+import { finalizeApAgentJobIfSucceeded, wasApAgentJobFinalized } from '../utils/finalizeApAgentJobIfSucceeded'
 import requestStore from '../stores/useRequestStore'
 
 const findItemInResponse = (data: any, processId: any) => {
@@ -38,11 +39,16 @@ export const ProcessingBackgroundManager = () => {
       const workflowId = process.workflowId || rawWorkflowData?.id
       const apAgentJobId = process.apAgentJobId
 
-      if (!processId || !workflowId) return null
+      // Job-based polling only needs apAgentJobId (AP Hangfire job).
+      // Instance-list polling needs both processId and workflowId.
+      if (!apAgentJobId && (!processId || !workflowId)) return null
 
       const poll = async () => {
         try {
           if (apAgentJobId) {
+            // Job already finalized — stop further job/list traffic.
+            if (wasApAgentJobFinalized(apAgentJobId)) return
+
             const res = await workflowsApiV6.getApAgentJobStatus(
               String(apAgentJobId),
             )
@@ -76,7 +82,8 @@ export const ProcessingBackgroundManager = () => {
                 stage,
               })
 
-              // If we have an instanceId, map it and transition the process ID
+              // Update processingProcess ID in store — keep apAgentJobId
+              // after the API payload spread so resolve/message UI can find it.
               if (jobData.instanceId) {
                 requestStore
                   .getState()
@@ -92,35 +99,65 @@ export const ProcessingBackgroundManager = () => {
                     stage,
                   })
 
-                // Update processingProcess ID in store
                 requestStore
                   .getState()
                   .updateProcessingProcess(String(processId), {
+                    ...jobData,
+                    apAgentJobId,
                     id: jobData.instanceId,
                     isCompleted,
                     processId: jobData.instanceId,
                     stage,
-                    ...jobData,
                   })
+
+                // Keep open detail row IDs in sync once the real instance appears.
+                requestStore.setState((state) => {
+                  if (
+                    !state.selectedItem ||
+                    (String(state.selectedItem.apAgentJobId) !==
+                      String(apAgentJobId) &&
+                      String(state.selectedItem.processId || '') !==
+                        String(processId) &&
+                      String(state.selectedItem.id || '') !== String(processId))
+                  ) {
+                    return {}
+                  }
+                  return {
+                    selectedItem: {
+                      ...state.selectedItem,
+                      apAgentJobId,
+                      id: jobData.instanceId,
+                      isProcessing: !isCompleted,
+                      processId: jobData.instanceId,
+                      workflowInstanceId:
+                        state.selectedItem.workflowInstanceId ||
+                        jobData.instanceId,
+                    },
+                  }
+                })
               } else {
                 requestStore
                   .getState()
                   .updateProcessingProcess(String(processId), {
+                    ...jobData,
+                    apAgentJobId,
                     isCompleted,
                     stage,
-                    ...jobData,
                   })
               }
 
               if (isCompleted) {
-                queryClient.invalidateQueries({ queryKey: ['inbox'] })
-                queryClient.invalidateQueries({ queryKey: ['request-detail'] })
-                setTimeout(() => {
-                  if (jobData.instanceId) {
-                    removeProcessingProcess(jobData.instanceId)
-                  }
-                  removeProcessingProcess(processId)
-                }, 5000)
+                // Only after Succeeded: fetch inbox/sent/completed for instanceId.
+                void finalizeApAgentJobIfSucceeded({
+                  apAgentJobId,
+                  jobData: {
+                    ...jobData,
+                    isCompleted: true,
+                  },
+                  queryClient,
+                  workflowId:
+                    workflowId || jobData.workflowId || rawWorkflowData?.id,
+                })
               }
             }
             return
@@ -212,7 +249,7 @@ export const ProcessingBackgroundManager = () => {
     return () => {
       pollers.forEach((p) => p && clearInterval(p.intervalId))
     }
-  }, [processingProcesses.length, rawWorkflowData?.id])
+  }, [processingProcesses.length, rawWorkflowData?.id, queryClient, removeProcessingProcess, updateProcessingProcess])
 
   return null
 }

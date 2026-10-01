@@ -756,10 +756,7 @@ export default function FolderTableDataTableSplit({
     return files.filter(isArchivedFile).length
   }, [archivedCount, filePage?.totalCount, files])
 
-  const allCount = useMemo(
-    () => stagedCount + effectiveArchivedCount,
-    [stagedCount, effectiveArchivedCount],
-  )
+  const allCount = effectiveArchivedCount
 
   useEffect(() => {
     if (stagedCount <= 0 && fileCategory !== 'all') {
@@ -767,23 +764,22 @@ export default function FolderTableDataTableSplit({
     }
   }, [stagedCount, fileCategory])
 
+  const showingArchivedList =
+    fileCategory !== 'staged' &&
+    (archivedFiles.length > 0 || Boolean(archivedFilePage))
+
   const activeDisplayFiles = useMemo(() => {
     if (fileCategory === 'staged') {
-      return files.filter(isUnarchivedStageFile)
+      return []
     }
-    if (fileCategory === 'archived') {
-      return archivedFiles.length > 0
-        ? archivedFiles
-        : files.filter(isArchivedFile)
+    if (archivedFiles.length > 0) {
+      return archivedFiles
     }
-    if (archivedFiles.length > 0 && files.filter(isArchivedFile).length === 0) {
-      return [...files.filter(isUnarchivedStageFile), ...archivedFiles]
-    }
-    return files
+    return files.filter(isArchivedFile)
   }, [files, fileCategory, archivedFiles])
 
   const activeDisplayFilePage = useMemo(() => {
-    if (fileCategory === 'archived' && archivedFilePage) {
+    if (fileCategory !== 'staged' && archivedFilePage) {
       return archivedFilePage
     }
     return filePage
@@ -791,13 +787,14 @@ export default function FolderTableDataTableSplit({
 
   const handleFilePageChange = useCallback(
     (page: number, cursor?: string | null) => {
-      if (fileCategory === 'archived') {
+      if (showingArchivedList || fileCategory === 'archived') {
         void fetchArchivedFileList(page, activeDisplayFilePage?.pageSize || 50)
       } else {
         onPageChange?.(page, cursor)
       }
     },
     [
+      showingArchivedList,
       fileCategory,
       fetchArchivedFileList,
       activeDisplayFilePage?.pageSize,
@@ -807,17 +804,17 @@ export default function FolderTableDataTableSplit({
 
   const handleFilePageSizeChange = useCallback(
     (nextPageSize: number) => {
-      if (fileCategory === 'archived') {
+      if (showingArchivedList || fileCategory === 'archived') {
         void fetchArchivedFileList(1, nextPageSize)
       } else {
         onPageSizeChange?.(nextPageSize)
       }
     },
-    [fileCategory, fetchArchivedFileList, onPageSizeChange],
+    [showingArchivedList, fileCategory, fetchArchivedFileList, onPageSizeChange],
   )
 
   const handleReload = useCallback(() => {
-    if (fileCategory === 'archived') {
+    if (showingArchivedList || fileCategory === 'archived') {
       void fetchArchivedFileList(
         activeDisplayFilePage?.page || 1,
         activeDisplayFilePage?.pageSize || 50,
@@ -825,6 +822,7 @@ export default function FolderTableDataTableSplit({
     }
     onReload?.()
   }, [
+    showingArchivedList,
     fileCategory,
     fetchArchivedFileList,
     activeDisplayFilePage?.page,

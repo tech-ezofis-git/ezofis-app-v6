@@ -10,6 +10,11 @@ export const useRequestDetail = (
   isProcessing?: boolean,
   /** Fallback when the list payload omits formId (common after stage moves). */
   fallbackFormId?: number | string | null,
+  /**
+   * When an AP Hangfire job is in flight, skip inbox/sent/completed polling.
+   * Those lists are fetched once after hangfireStatus === Succeeded.
+   */
+  suspendListPolling?: boolean,
 ) => {
   return useQuery({
     enabled:
@@ -198,6 +203,9 @@ export const useRequestDetail = (
     },
 
     refetchInterval: (query) => {
+      // Hangfire job owns progress — do not hammer inbox/sent/completed.
+      if (suspendListPolling) return false
+
       const data: any = query.state.data
 
       // If we don't have data yet but know it's processing from parent

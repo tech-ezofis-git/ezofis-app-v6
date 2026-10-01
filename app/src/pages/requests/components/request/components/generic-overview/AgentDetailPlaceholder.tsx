@@ -9,6 +9,8 @@ import {
   getLatestAttachment,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import {
   type AgentBlock,
   documentGenerateIsComplete,
@@ -35,6 +37,8 @@ interface AgentDetailPlaceholderProps {
 const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
   String(file?.itemId || file?.fileId || file?.id || '')
 
+const textOf = (value: unknown) => String(value || '').trim()
+
 const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   agentBlock,
   attachments = [],
@@ -48,8 +52,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   onFieldChange,
 }) => {
   const { t } = useLingui()
+  const jobStatuses = requestStore((state) => state.jobStatuses)
+  const jobMappings = requestStore((state) => state.jobMappings)
+  const processingProcesses = requestStore((state) => state.processingProcesses)
   const label = agentBlock.settings?.label || 'Agent Details'
   const iconName = agentBlock.icon || 'lucide:cpu'
+  const settings = agentBlock.settings || {}
 
   const isQualify =
     agentBlock.settings?.subtype === 'QUALIFY' || label.includes('Qualify')
@@ -65,8 +73,13 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const isAPAgent =
     agentBlock.settings?.subtype === 'AP_AGENT' || label.includes('AP Agent')
 
+  const docGenComplete = isDocGen
+    ? documentGenerateIsComplete(requestData, agentBlock, rawWorkflowData)
+    : false
+
   // Document Generate: only a distinct generated/recent file — never mirror
-  // the same single inbound upload already shown on the left.
+  // the same single inbound upload already shown on the left. Live preview
+  // belongs on Quote Agent → Preview; do not fake completion here.
   const docPreviewAttachment = useMemo(() => {
     if (!isDocGen) return null
 
@@ -104,6 +117,19 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     return null
   }, [attachments, isDocGen, repositoryId, requestData])
 
+  const docGenDescription = useMemo(() => {
+    const subLabel = textOf(settings.subLabel)
+    const configured =
+      textOf(settings.description) ||
+      textOf(settings.skillText) ||
+      textOf(settings.instructions) ||
+      (subLabel && subLabel.toLowerCase() !== 'click to configure'
+        ? subLabel
+        : '')
+    if (configured && !/\bword\b/i.test(configured)) return configured
+    return t`Generate PDF documents from the template set on this step.`
+  }, [settings, t])
+
   const docRepoId =
     docPreviewAttachment?.repositoryId ||
     repositoryId ||
@@ -123,18 +149,15 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   } else if (isQuote) {
     hasAgentResponse = !!requestData?.quoteAgentResponse
   } else if (isDocGen) {
-    // Document agent has no result payload — only a distinct generated file
-    // or a real completed doc-gen stage counts as a response.
     hasAgentResponse =
       !!requestData?.documentGenerateResponse ||
       Boolean(docPreviewAttachment) ||
-      documentGenerateIsComplete(requestData, agentBlock)
+      docGenComplete
   } else if (isAPAgent) {
     hasAgentResponse =
       !!requestData?.agentResponse ||
       (requestData?._agentData && requestData._agentData.length > 0)
   } else {
-    // Fallback for unknown agents
     hasAgentResponse =
       !!requestData?.agentResponse ||
       (requestData?._agentData && requestData._agentData.length > 0)
@@ -150,9 +173,16 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     status === 'complete' ||
     status === 'closed' ||
     status.includes('success') ||
-    (isDocGen && documentGenerateIsComplete(requestData, agentBlock)),
+    docGenComplete,
   )
   const isProcessing = !hasAgentResponse && !isDone
+
+  const jobMessage = useMemo(
+    () => resolveApAgentJobMessage(requestData),
+    // Recompute when store job status updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requestData, jobStatuses, jobMappings, processingProcesses],
+  )
 
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
@@ -162,6 +192,9 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     (docPreviewAttachment?.fileExtension
       ? `file.${docPreviewAttachment.fileExtension}`
       : undefined)
+
+  // Only show a real generated file here — not a live Quote preview.
+  const showDocPreview = Boolean(isDocGen && docPreviewAttachment)
 
   return (
     <div className='flex flex-col gap-4'>
@@ -182,12 +215,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
 
       <div
         className={
-          isDocGen && docPreviewAttachment
+          showDocPreview
             ? 'flex min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'
             : 'rounded-xl border border-gray-3 bg-surface-primary p-6 shadow-sm'
         }
       >
-        {isDocGen && docPreviewAttachment ? (
+        {showDocPreview ? (
           <div className='min-h-[420px] flex-1'>
             <DocumentPreviewViewer
               fileName={docFileName}
@@ -199,12 +232,11 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
           </div>
         ) : isDocGen ? (
           <div className='flex flex-col items-center justify-center gap-3 py-12 text-center'>
-            <Icon className='h-10 w-10 text-gray-7' icon='tabler:file-off' />
-            <h3 className='text-base font-medium text-gray-12'>
-              {t`No generated document yet`}
-            </h3>
-            <p className='max-w-md text-13 text-gray-9'>
-              {t`The uploaded file is shown on the left. A generated document will appear here when it is available.`}
+            <Icon className='h-10 w-10 text-gray-7' icon='tabler:file-text' />
+            <h3 className='text-base font-medium text-gray-12'>{label}</h3>
+            <p className='max-w-md text-13 text-gray-9'>{docGenDescription}</p>
+            <p className='max-w-md text-12 text-gray-8'>
+              {t`No generated document yet. It will appear here when this stage completes.`}
             </p>
           </div>
         ) : isProcessing ? (
@@ -215,9 +247,9 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
                 icon='tabler:loader-2'
               />
             </div>
-            <div className='text-center'>
-              <h3 className='text-base font-bold text-[var(--gray-13)]'>
-                {label} {t`Processing...`}
+            <div className='max-w-md px-4 text-center'>
+              <h3 className='text-base font-semibold text-[var(--gray-13)]'>
+                {jobMessage || t`Working on this request...`}
               </h3>
             </div>
           </div>
@@ -235,6 +267,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             agentBlock={agentBlock}
             formModel={formModel}
             readOnly={Boolean(viewOnly) || !onFieldChange}
+            requestData={requestData}
             result={requestData.quoteAgentResponse.quote_result}
             workflow={rawWorkflowData}
             onFieldChange={onFieldChange}

@@ -8,6 +8,10 @@ import showToast from '@/components/base/toast/showToast'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import {
+  extractApAgentJobId,
+  registerApAgentJobProcessing,
+} from '@/pages/requests/utils/registerApAgentJobProcessing'
 import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
@@ -79,14 +83,21 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   }, [workflow])
 
   const agentResponseTabs = useMemo(
-    () => getAgentResponseTabs(agentBlocks, requestData),
-    [agentBlocks, requestData],
+    () => getAgentResponseTabs(agentBlocks, requestData, workflow),
+    [agentBlocks, requestData, workflow],
   )
   const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
   const hasAgents = agentBlocks.length > 0
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
-  const initialAgentId = agentBlocks[0]?.id ?? null
+  const initialAgentId =
+    agentResponseTabs[0]?.id ??
+    agentBlocks.find(
+      (b: any) =>
+        String(b.type || '') !== 'DOCUMENT_GENERATE_AGENT' &&
+        String(b.settings?.subtype || '').toUpperCase() !== 'DOCUMENT_GENERATE',
+    )?.id ??
+    null
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
     string | null
   >(initialAgentId)
@@ -113,6 +124,22 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       setActiveTab(`agent:${newestId}`)
     }
   }, [agentResponseTabKey, agentResponseTabs, hasAgentResponseTabs])
+
+  useEffect(() => {
+    if (!selectedAgentBlockId) return
+    const stillVisible = agentResponseTabs.some(
+      (block) => block.id === selectedAgentBlockId,
+    )
+    if (stillVisible) return
+    const fallbackId = agentResponseTabs[0]?.id
+    if (!fallbackId) {
+      setSelectedAgentBlockId(null)
+      setActiveTab('summary')
+      return
+    }
+    setSelectedAgentBlockId(fallbackId)
+    setActiveTab(`agent:${fallbackId}`)
+  }, [agentResponseTabs, selectedAgentBlockId])
 
   const selectTab = (tabId: string) => {
     setActiveTab(tabId)
@@ -193,14 +220,29 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         const parsedData = typeof data === 'string' ? JSON.parse(data) : data
         const processId =
           parsedData?.instanceId || parsedData?.items?.[0]?.workflowInstanceId
+        const apAgentJobId = extractApAgentJobId(parsedData)
 
-        if (processId) {
+        if (processId || apAgentJobId) {
           const item = parsedData?.items?.[0]
+          const resolvedProcessId =
+            processId || (apAgentJobId ? `job-${apAgentJobId}` : null)
+          if (apAgentJobId) {
+            registerApAgentJobProcessing({
+              apAgentJobId,
+              name: file.name,
+              processId: resolvedProcessId,
+              stage: t`Initiating...`,
+              transactionId:
+                item?.transactionId || parsedData?.transactionId || null,
+              workflowId: workflow?.id,
+            })
+          }
           const nextItem = {
             ...(item || lastStubItem),
-            id: item?.id || processId,
+            apAgentJobId: apAgentJobId || null,
+            id: item?.id || resolvedProcessId,
             isProcessing: true,
-            processId: item?.processId || processId,
+            processId: item?.processId || resolvedProcessId,
             transactionId: item?.transactionId || parsedData?.transactionId,
             workflowInstanceId: item?.workflowInstanceId || processId,
           }
@@ -376,6 +418,28 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       message: t`Request submitted successfully.`,
       variant: 'success',
     })
+
+    const responseData = (result as any)?.data
+    const apAgentJobId = extractApAgentJobId(responseData)
+    const processId =
+      responseData?.instanceId ||
+      responseData?.workflowInstanceId ||
+      responseData?.processId ||
+      responseData?.items?.[0]?.workflowInstanceId
+
+    if (apAgentJobId) {
+      registerApAgentJobProcessing({
+        apAgentJobId,
+        processId: processId || `job-${apAgentJobId}`,
+        stage: t`Processing`,
+        transactionId:
+          responseData?.transactionId ||
+          responseData?.items?.[0]?.transactionId ||
+          null,
+        workflowId: workflow?.id,
+      })
+    }
+
     workflowRefresh()
     onClose()
   }
@@ -476,20 +540,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                     <AgentSummaryBoxes
                       agentBlocks={agentBlocks}
                       requestData={requestData || null}
-                      selectedAgentBlockId={selectedAgentBlockId}
-                      onAgentClick={(blockId) => {
-                        if (!blockId) {
-                          setSelectedAgentBlockId(null)
-                          setActiveTab(
-                            hasAgentResponseTabs
-                              ? `agent:${agentResponseTabs[0]?.id}`
-                              : 'summary',
-                          )
-                          return
-                        }
-                        setSelectedAgentBlockId(blockId)
-                        setActiveTab(`agent:${blockId}`)
-                      }}
+                      workflow={workflow}
                     />
                   </div>
                 )}

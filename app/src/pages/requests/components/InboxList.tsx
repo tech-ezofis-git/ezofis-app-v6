@@ -1622,55 +1622,53 @@ const InboxList: React.FC<InboxListProps> = ({
       const updatedItems = (g.items || []).map((i: any) => {
         existingIds.add(String(i.processId || i.id))
 
-        const isApAgent =
-          i.stageType === 'AP_AGENT' ||
-          String(i.workflowName).toLowerCase().includes('ap agent') ||
-          String(i.workflowName).toLowerCase().includes('accounts payable') ||
-          i.apAgentJobId != null
-
-        let isProcessing = i.isProcessing || false
-        
-        const isAgentStage =
-          String(i.stageType || '').toUpperCase().includes('AGENT') ||
-          String(i.stage || '').toLowerCase().includes('agent')
-
-        // Mark loading on Inbox / Sent / Completed when an agent stage
-        // still has no agent response payload.
-        if (
-          !isProcessing &&
-          isAgentStage &&
-          (activeTab === 'Inbox' ||
-            activeTab === 'Sent' ||
-            activeTab === 'Closed' ||
-            activeTab === 'Completed' ||
-            viewMode === 'kanban')
-        ) {
-          if (!isApAgent) {
-            const stageLower = String(i.stage || '').toLowerCase()
-            let hasAgentData = false
-            if (stageLower.includes('document')) {
-              hasAgentData = i.documentGenerateResponse != null
-            } else if (stageLower.includes('quote')) {
-              hasAgentData = i.quoteAgentResponse != null
-            } else if (stageLower.includes('qualify')) {
-              hasAgentData = i.qualifyAgentResponse != null
-            } else {
-              hasAgentData =
-                i.qualifyAgentResponse != null ||
-                i.quoteAgentResponse != null ||
-                i.documentGenerateResponse != null ||
-                i.agentResponse != null ||
-                i._agentResponse != null
-            }
-
-            if (!hasAgentData) {
-              isProcessing = true
-            }
+        // Attach live Hangfire job id onto matching inbox rows so list
+        // cards can resolve the processing status message.
+        // Only mark processing when a job id is present — do not use
+        // agent-stage-without-response as a loading signal.
+        let apAgentJobId = i.apAgentJobId ?? null
+        if (!apAgentJobId && (processingProcesses || []).length > 0) {
+          const itemIds = new Set(
+            [
+              i.id,
+              i.processId,
+              i.workflowInstanceId,
+              i.instanceId,
+              i.requestNo,
+              i.reqNo,
+            ]
+              .filter(Boolean)
+              .map(String),
+          )
+          const matched = (processingProcesses || []).find((p) =>
+            [
+              p.apAgentJobId,
+              p.jobId,
+              p.processId,
+              p.id,
+              p.instanceId,
+              p.requestNo,
+            ]
+              .filter(Boolean)
+              .map(String)
+              .some((id) => itemIds.has(id)),
+          )
+          if (matched?.apAgentJobId) {
+            apAgentJobId = matched.apAgentJobId
           }
+        }
+
+        let isProcessing = false
+        if (apAgentJobId) {
+          const statuses = requestStore.getState().jobStatuses || {}
+          const jobStatus =
+            statuses[`job-${apAgentJobId}`] || statuses[String(apAgentJobId)]
+          isProcessing = !jobStatus?.isCompleted
         }
 
         return {
           ...i,
+          apAgentJobId,
           isProcessing,
         }
       })

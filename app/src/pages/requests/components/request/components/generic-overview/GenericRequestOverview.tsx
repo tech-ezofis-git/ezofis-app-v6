@@ -32,6 +32,7 @@ import {
   getFirstReceivedAttachment,
   getFormPanels,
   getLatestAttachment,
+  getRecentDocumentAttachment,
   getWorkflowRepositoryId,
   hasStoredFileValue,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
@@ -61,6 +62,9 @@ import AgentSummaryBoxes, {
 } from './AgentSummaryBoxes'
 import AttachmentPreviewPanel from './AttachmentPreviewPanel'
 import AttachmentSplitView from './AttachmentSplitView'
+import LeftViewerAttachmentStrip, {
+  attachmentKeyOf,
+} from './LeftViewerAttachmentStrip'
 import TaskRequirements from './TaskRequirements'
 
 interface ChecklistItem {
@@ -342,11 +346,35 @@ const DocumentFormSplitLayout = ({
   onFieldChange?: (fieldId: string, value: any) => void
 }) => {
   const { t } = useLingui()
-  // Left pane: original inbound upload (initiate / oldest), not newest-first [0].
-  const firstAttachment = useMemo(
-    () => getFirstReceivedAttachment(attachments) || attachments[0],
+  // Default left-pane doc: newest real document (skip .eml/.msg so email UI is not shown).
+  const recentDocument = useMemo(
+    () =>
+      getRecentDocumentAttachment(attachments) ||
+      getLatestAttachment(attachments) ||
+      attachments[0],
     [attachments],
   )
+
+  const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
+    attachmentKeyOf(recentDocument),
+  )
+
+  useEffect(() => {
+    const stillExists = attachments.some(
+      (file) => attachmentKeyOf(file) === viewerAttachmentKey,
+    )
+    if (stillExists) return
+    setViewerAttachmentKey(attachmentKeyOf(recentDocument))
+  }, [attachments, recentDocument, viewerAttachmentKey])
+
+  const viewerAttachment = useMemo(() => {
+    if (!attachments.length) return recentDocument
+    return (
+      attachments.find((file) => attachmentKeyOf(file) === viewerAttachmentKey) ||
+      recentDocument ||
+      attachments[0]
+    )
+  }, [attachments, recentDocument, viewerAttachmentKey])
 
   const agentBlocks: AgentBlock[] = useMemo(() => {
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
@@ -354,14 +382,18 @@ const DocumentFormSplitLayout = ({
   }, [rawWorkflowData])
 
   const agentResponseTabs = useMemo(
-    () => getAgentResponseTabs(agentBlocks, selectedItem),
-    [agentBlocks, selectedItem],
+    () => getAgentResponseTabs(agentBlocks, selectedItem, rawWorkflowData),
+    [agentBlocks, rawWorkflowData, selectedItem],
   )
   const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
   const hasAgents = agentBlocks.length > 0
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
-  const initialAgentId = agentBlocks[0]?.id ?? null
+  const initialAgentId = agentResponseTabs[0]?.id ?? agentBlocks.find(
+    (b) =>
+      String(b.type || '') !== 'DOCUMENT_GENERATE_AGENT' &&
+      String(b.settings?.subtype || '').toUpperCase() !== 'DOCUMENT_GENERATE',
+  )?.id ?? null
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
     string | null
   >(initialAgentId)
@@ -387,11 +419,27 @@ const DocumentFormSplitLayout = ({
   }, [agentResponseTabKey, agentResponseTabs, hasAgentResponseTabs])
 
   useEffect(() => {
+    if (!selectedAgentBlockId) return
+    const stillVisible = agentResponseTabs.some(
+      (block) => block.id === selectedAgentBlockId,
+    )
+    if (stillVisible) return
+    const fallbackId = agentResponseTabs[0]?.id
+    if (!fallbackId) {
+      setSelectedAgentBlockId(null)
+      setActiveTab('summary')
+      return
+    }
+    setSelectedAgentBlockId(fallbackId)
+    setActiveTab(`agent:${fallbackId}`)
+  }, [agentResponseTabs, selectedAgentBlockId])
+
+  useEffect(() => {
     if (selectedAgentBlockId || !hasAgents) return
     if (selectedItem?.isProcessing) {
       const activeStage = selectedItem?.stage || selectedItem?.currentStage
       if (activeStage) {
-        const matchingBlock = agentBlocks.find(
+        const matchingBlock = agentResponseTabs.find(
           (b) => b.settings?.label === activeStage,
         )
         if (matchingBlock) {
@@ -405,7 +453,7 @@ const DocumentFormSplitLayout = ({
     selectedItem?.stage,
     selectedItem?.currentStage,
     selectedAgentBlockId,
-    agentBlocks,
+    agentResponseTabs,
     hasAgents,
   ])
 
@@ -491,13 +539,15 @@ const DocumentFormSplitLayout = ({
   }
 
   const targetRepoId =
-    firstAttachment?.repositoryId || repositoryId || selectedItem?.repositoryId
+    viewerAttachment?.repositoryId ||
+    repositoryId ||
+    selectedItem?.repositoryId
   const targetItemId =
-    firstAttachment?.itemId || firstAttachment?.id || selectedItem?.itemId
+    viewerAttachment?.itemId || viewerAttachment?.id || selectedItem?.itemId
 
-  const previewAttachment = firstAttachment
+  const previewAttachment = viewerAttachment
     ? {
-        ...firstAttachment,
+        ...viewerAttachment,
         itemId: targetItemId,
         repositoryId: targetRepoId,
       }
@@ -522,22 +572,30 @@ const DocumentFormSplitLayout = ({
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-[var(--gray-1)]'>
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
-        {previewAttachment ? (
-          <DocumentPreviewViewer
-            fileUrl={previewUrl || null}
-            fileName={
-              previewAttachment.fileName ||
-              previewAttachment.name ||
-              (previewAttachment.fileExtension
-                ? `file.${previewAttachment.fileExtension}`
-                : undefined)
-            }
-          />
-        ) : (
-          <div className='flex h-full items-center justify-center text-13 text-gray-9'>
-            {t`No document attached`}
-          </div>
-        )}
+        <LeftViewerAttachmentStrip
+          attachments={attachments}
+          selectedKey={attachmentKeyOf(viewerAttachment)}
+          onOpenAttachmentsTab={() => selectTab('attachments')}
+          onSelect={(file) => setViewerAttachmentKey(attachmentKeyOf(file))}
+        />
+        <div className='relative min-h-0 flex-1 overflow-hidden'>
+          {previewAttachment ? (
+            <DocumentPreviewViewer
+              fileUrl={previewUrl || null}
+              fileName={
+                previewAttachment.fileName ||
+                previewAttachment.name ||
+                (previewAttachment.fileExtension
+                  ? `file.${previewAttachment.fileExtension}`
+                  : undefined)
+              }
+            />
+          ) : (
+            <div className='flex h-full items-center justify-center text-13 text-gray-9'>
+              {t`No document attached`}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
@@ -546,20 +604,7 @@ const DocumentFormSplitLayout = ({
             <AgentSummaryBoxes
               agentBlocks={agentBlocks}
               requestData={selectedItem}
-              selectedAgentBlockId={selectedAgentBlockId}
-              onAgentClick={(blockId) => {
-                if (!blockId) {
-                  setSelectedAgentBlockId(null)
-                  setActiveTab(
-                    hasAgentResponseTabs
-                      ? `agent:${agentResponseTabs[0]?.id}`
-                      : 'summary',
-                  )
-                  return
-                }
-                setSelectedAgentBlockId(blockId)
-                setActiveTab(`agent:${blockId}`)
-              }}
+              workflow={rawWorkflowData}
             />
           </div>
         )}
@@ -1229,6 +1274,7 @@ const GenericRequestOverview = ({
                 repositoryId={repositoryId}
                 workflowId={workflowId}
                 enabled
+                onAttachmentsChanged={onAttachmentsChanged}
                 onSelect={setOpenedAttachment}
               />
             }
@@ -1334,8 +1380,7 @@ const GenericRequestOverview = ({
                 <AgentSummaryBoxes
                   agentBlocks={agentBlocks}
                   requestData={selectedItem}
-                  selectedAgentBlockId={selectedAgentBlockId}
-                  onAgentClick={setSelectedAgentBlockId}
+                  workflow={rawWorkflowData}
                 />
               </div>
             )}
@@ -1460,6 +1505,7 @@ const GenericRequestOverview = ({
                   repositoryId={repositoryId}
                   workflowId={workflowId}
                   enabled
+                  onAttachmentsChanged={onAttachmentsChanged}
                   onClose={() => setRightView('overview')}
                   onSelect={setOpenedAttachment}
                 />

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { listStagedFiles } from '@/api/v6/uploadAndIndex'
 import useEmbedMode from '@/hooks/useEmbedMode'
 import authUserStore from '@/stores/authUserStore'
 import type { BreadcrumbItem } from '../components/Breadcrumbs'
@@ -149,7 +148,6 @@ export function useFolderExplorer() {
     Record<string, Record<number, string | null>>
   >({})
   const requestSeqRef = useRef(0)
-  const stagedPollTimerRef = useRef<NodeJS.Timeout | null>(null)
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
   const loadedRepositoryIdRef = useRef<string | null>(null)
@@ -315,15 +313,6 @@ export function useFolderExplorer() {
     pageSize,
   ])
 
-  useEffect(() => {
-    return () => {
-      if (stagedPollTimerRef.current) {
-        clearTimeout(stagedPollTimerRef.current)
-        stagedPollTimerRef.current = null
-      }
-    }
-  }, [activeFolder])
-
   const syncFilterOptionsCache = ({
     columns = [],
     files = [],
@@ -422,7 +411,6 @@ export function useFolderExplorer() {
     folderPageOnly = false,
     folderSearch,
     includeFiles,
-    isPoll = false,
     listAllFiles,
     page = 1,
     pageOnly = false,
@@ -438,7 +426,6 @@ export function useFolderExplorer() {
     folderPageOnly?: boolean
     folderSearch?: string
     includeFiles?: boolean
-    isPoll?: boolean
     listAllFiles?: boolean
     page?: number
     pageOnly?: boolean
@@ -455,9 +442,7 @@ export function useFolderExplorer() {
       (fileSearch !== undefined ? fileSearch : fileSearchRef.current).trim(),
     )
 
-    if (isPoll) {
-      // Silent refresh for staged file status polling
-    } else if (folderPageOnly) setLoadingFolders(true)
+    if (folderPageOnly) setLoadingFolders(true)
     else if (pageOnly) setLoadingPage(true)
     else if (isSearchCall) setRefreshing(true)
     else setLoading(true)
@@ -465,146 +450,25 @@ export function useFolderExplorer() {
     setError('')
 
     try {
-      const resolvedRepoId =
-        getRepositoryIdFromFolder(folderId) || selectedRepository?.id
-
-      const [response, stagedRes] = await Promise.all([
-        folderApi.getFolderContent(folderId, {
-          cursor,
-          fileFilters: fileFilters ?? fileFiltersRef.current,
-          fileSearch:
-            fileSearch !== undefined
-              ? fileSearch
-              : fileSearchRef.current.trim() || undefined,
-          folderFilters: folderFilters ?? folderFiltersRef.current,
-          folderSearch:
-            folderSearch !== undefined
-              ? folderSearch
-              : folderSearchRef.current.trim() || undefined,
-          includeFiles,
-          listAllFiles: listAllFiles ?? viewMode === 'list',
-          page,
-          pageSize: pageSizeValue,
-        }),
-        resolvedRepoId && !folderPageOnly && page === 1
-          ? listStagedFiles({
-              currentPage: 1,
-              itemsPerPage: 50,
-              mode: 'browse',
-              repositoryId: String(resolvedRepoId),
-            }).catch(() => ({ data: null, error: '' }))
-          : Promise.resolve({ data: null, error: '' }),
-      ])
-
-      if (requestId !== requestSeqRef.current) return response
-
-      const stagedFiles: FileItem[] = (stagedRes?.data ?? []).map(
-        (summary: any) => {
-          let fieldsObj: Record<string, any> = {}
-          let rawFields =
-            summary.fields ??
-            summary.Fields ??
-            summary.metadata ??
-            summary.Metadata
-          if (typeof rawFields === 'string') {
-            try {
-              rawFields = JSON.parse(rawFields)
-            } catch {}
-          }
-
-          if (Array.isArray(rawFields)) {
-            rawFields.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return
-              const key =
-                item.key ??
-                item.Key ??
-                item.name ??
-                item.Name ??
-                item.fieldId ??
-                item.FieldId ??
-                item.label ??
-                item.Label ??
-                item.fieldName ??
-                item.FieldName ??
-                item.sqlColumnName
-              const val =
-                item.value ??
-                item.Value ??
-                item.fieldValue ??
-                item.FieldValue ??
-                item.val
-              if (key !== undefined && key !== null) {
-                fieldsObj[String(key)] = val
-              }
-            })
-          } else if (rawFields && typeof rawFields === 'object') {
-            fieldsObj = { ...rawFields }
-          }
-
-          const rawStatus = String(summary.status || '')
-          const isArchived = rawStatus === 'ARCHIVED'
-
-          return {
-            ...summary,
-            fields: summary.fields ?? fieldsObj,
-            metadata: summary.metadata ?? fieldsObj,
-            rawStatus,
-            ...fieldsObj,
-            createdAt: summary.createdAt || summary.createdDate,
-            date: summary.createdAt || summary.createdDate,
-            id: `staged-${summary.id}`,
-            isArchived,
-            isStaged: true,
-            modified: summary.createdAt || summary.createdDate,
-            name:
-              summary.name ||
-              fieldsObj.name ||
-              fieldsObj.fileName ||
-              summary.fileName ||
-              summary.fileNameOnly ||
-              'Untitled',
-            repositoryId: summary.repositoryId || String(resolvedRepoId || ''),
-            size: summary.size,
-            stageFileId: summary.id,
-            status: isArchived
-              ? 'Archived'
-              : rawStatus.toUpperCase() === 'OCR'
-                ? 'Indexed'
-                : summary.status,
-            type:
-              (summary.name || summary.fileName || fieldsObj.fileName || '')
-                .split('.')
-                .pop() || 'file',
-          }
-        },
-      )
-
-      if (stagedPollTimerRef.current) {
-        clearTimeout(stagedPollTimerRef.current)
-        stagedPollTimerRef.current = null
-      }
-
-      const hasPendingQueueFile = stagedFiles.some((f: any) => {
-        const statusVal = String(f.rawStatus || f.status || '').toUpperCase()
-        return (
-          statusVal === 'QUEUED' ||
-          statusVal === 'PENDINGOCR' ||
-          statusVal === 'PENDING' ||
-          statusVal === 'PROCESSING' ||
-          statusVal === 'INDEXING' ||
-          statusVal.includes('QUEUE')
-        )
+      const response = await folderApi.getFolderContent(folderId, {
+        cursor,
+        fileFilters: fileFilters ?? fileFiltersRef.current,
+        fileSearch:
+          fileSearch !== undefined
+            ? fileSearch
+            : fileSearchRef.current.trim() || undefined,
+        folderFilters: folderFilters ?? folderFiltersRef.current,
+        folderSearch:
+          folderSearch !== undefined
+            ? folderSearch
+            : folderSearchRef.current.trim() || undefined,
+        includeFiles,
+        listAllFiles: listAllFiles ?? viewMode === 'list',
+        page,
+        pageSize: pageSizeValue,
       })
 
-      if (hasPendingQueueFile && resolvedRepoId && page === 1) {
-        stagedPollTimerRef.current = setTimeout(() => {
-          loadFolderContent({
-            folderId,
-            isPoll: true,
-            syncTree: false,
-          })
-        }, 10000)
-      }
+      if (requestId !== requestSeqRef.current) return response
 
       const nextFolderPage = getFolderPageMeta(response)
 
@@ -644,15 +508,19 @@ export function useFolderExplorer() {
 
       setFiles((previous) => {
         if (folderPageOnly) return previous
-        const apiFiles = response.files || []
-        const combinedFiles = [...stagedFiles, ...apiFiles]
-        if (!activeFileSearch) {
-          return combinedFiles
-        }
-        const clientMatched = previous.filter((file) =>
-          matchesSearchText(file, activeFileSearch),
+        const apiFiles = (response.files || []).filter(
+          (file) => !file.isStaged && !file.stageFileId,
         )
-        return mergeFilesById(clientMatched, combinedFiles)
+        if (!activeFileSearch) {
+          return apiFiles
+        }
+        const clientMatched = previous.filter(
+          (file) =>
+            !file.isStaged &&
+            !file.stageFileId &&
+            matchesSearchText(file, activeFileSearch),
+        )
+        return mergeFilesById(clientMatched, apiFiles)
       })
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
@@ -810,7 +678,8 @@ export function useFolderExplorer() {
 
         const firstRepository =
           response.find((node) => !node.isStatic) || response[0]
-        if (!storedState && firstRepository) {
+        const storedFolderId = String(storedState?.activeFolder || '').trim()
+        if (firstRepository && !storedFolderId) {
           setActiveFolder(firstRepository.id)
           setExpandedIds([firstRepository.id])
           cursorByFolderRef.current[firstRepository.id] = { 1: null }
@@ -1094,16 +963,14 @@ export function useFolderExplorer() {
   )
 
   const openFolder = async (id: string) => {
-    if (loading || loadingPage) return
     if (id === activeFolder) {
       setAppView('explorer')
       return
     }
 
     // Selection only — content + repository details load in the activeFolder
-    // effect. Calling ensureTreeChildrenLoaded / loadSelectedRepository here
-    // fired a duplicate browse/children request; axios aborted the first and
-    // the aborted load cleared the explorer to an empty state.
+    // effect. Do not block on loading; that prevented opening folders on a
+    // fresh render while the tree bootstrap was still finishing.
     selectFolder(id)
   }
 
