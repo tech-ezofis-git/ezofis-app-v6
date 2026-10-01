@@ -1314,14 +1314,15 @@ const Request = ({
         value: a.actionName || 'Submit',
       }))
       const withoutIncoming = mapped.filter(
-        (a) => !incomingActionKeys.has(String(a.value || '').toLowerCase()),
+        (a: any) =>
+          !incomingActionKeys.has(String(a.value || '').toLowerCase()),
       )
       derivedActions = withoutIncoming.length > 0 ? withoutIncoming : mapped
     }
 
     // De-dupe by action value while preserving rule order.
     const seen = new Set<string>()
-    derivedActions = derivedActions.filter((a) => {
+    derivedActions = derivedActions.filter((a: any) => {
       const key = String(a.value || a.label || '').toLowerCase()
       if (!key || seen.has(key)) return false
       seen.add(key)
