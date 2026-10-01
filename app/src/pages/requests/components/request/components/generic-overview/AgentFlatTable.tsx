@@ -199,7 +199,7 @@ const AgentFlatTable = ({
                     className={cn(
                       'min-w-[8rem] border border-gray-3 p-3 align-top text-gray-11',
                       isNumericColumn(col) &&
-                        'text-right font-medium text-gray-12',
+                      'text-right font-medium text-gray-12',
                       columnType(col) === 'LONG_TEXT' && 'min-w-[12rem]',
                     )}
                   >
@@ -291,8 +291,8 @@ function renderCell(
     return withLabel(
       <div className='max-w-[220px] min-w-0'>
         <ApiCatalogSelect
-          compact
           col={{ ...col, name: col.name || col.id } as any}
+          compact
           value={value}
           onSelectProduct={(code) => onChange(code)}
         />

@@ -210,7 +210,6 @@ const WorkflowFormRenderer = ({
                   field={field}
                   key={field.id}
                   readOnly={isReadOnly}
-                  value={formModel[field.id]}
                   source={
                     formModel[field.id] != null && formModel[field.id] !== ''
                       ? 'ocr'
@@ -330,6 +329,11 @@ const WorkflowFormRenderer = ({
                   isReadOnlyByRule
                 }
                 onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
+                onMultiFieldChange={(patch) => {
+                  Object.entries(patch).forEach(([fId, val]) => {
+                    handleFieldChangeWithCascade(fId, val)
+                  })
+                }}
                 onOcrFieldList={onOcrFieldList}
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={

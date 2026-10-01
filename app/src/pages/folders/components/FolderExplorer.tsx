@@ -517,20 +517,28 @@ export function FolderExplorer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkSearch, tree.length])
 
-  const { permissions: folderPermissions } = useFolderSecurityPermissions(
-    resolvedRepositoryId,
-    activeFolder,
-  )
+  const { isLoading: permissionsLoading, permissions: folderPermissions } =
+    useFolderSecurityPermissions(resolvedRepositoryId, activeFolder)
   const canUpload = Boolean(
     activeFolder && resolvedRepositoryId && folderPermissions.upload,
   )
   const canIntelligentUpload = Boolean(!isDemoAppOrigin())
 
   useEffect(() => {
-    if (appView === 'Upload' && !folderPermissions.upload) {
+    if (
+      appView === 'Upload' &&
+      !permissionsLoading &&
+      !folderPermissions.upload &&
+      !pendingStagedFileId &&
+      pendingUploadFiles.length === 0
+    ) {
       exitUpload()
     }
-    if (appView === 'editMetadata' && !folderPermissions.editMetadata) {
+    if (
+      appView === 'editMetadata' &&
+      !permissionsLoading &&
+      !folderPermissions.editMetadata
+    ) {
       setAppView(selectedFile ? 'details' : 'explorer')
     }
     if (appView === 'workflow' && !selectedFile) {
@@ -541,6 +549,9 @@ export function FolderExplorer() {
     exitUpload,
     folderPermissions.editMetadata,
     folderPermissions.upload,
+    pendingStagedFileId,
+    pendingUploadFiles.length,
+    permissionsLoading,
     selectedFile,
     setAppView,
   ])
@@ -908,6 +919,35 @@ export function FolderExplorer() {
             setAppView('explorer')
             await refreshData()
           }
+        }}
+        onOpenSingleFileIndexing={({ file, repositoryId, stagedFileId }) => {
+          console.log(
+            '[FolderExplorer] Opening single-file document indexing view:',
+            { fileName: file.name, repositoryId, stagedFileId },
+          )
+          const targetNodeId =
+            findRepositoryNodeId(tree, repositoryId) ||
+            encodeRepositoryNodeId({
+              kind: 'repository',
+              label: 'Repository',
+              repositoryId,
+            })
+
+          folderBeforeUploadRef.current = activeFolder || targetNodeId
+          selectFolder(targetNodeId)
+
+          setPendingUploadFiles([file])
+          if (stagedFileId) {
+            setPendingStagedFileId(
+              stagedFileId.startsWith('staged-')
+                ? stagedFileId
+                : `staged-${stagedFileId}`,
+            )
+          } else {
+            setPendingStagedFileId(undefined)
+          }
+
+          setAppView('Upload')
         }}
       />
     )

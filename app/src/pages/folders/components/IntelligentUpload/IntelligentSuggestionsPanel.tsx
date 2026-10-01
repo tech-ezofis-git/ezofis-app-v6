@@ -69,7 +69,6 @@ export default function IntelligentSuggestionsPanel({
               <span className='text-13 font-semibold text-text-primary'>
                 {t`AI Suggestions`}
               </span>
-              <Badge color='indigo' label={documentType} />
             </div>
             <p className='text-11 text-text-secondary'>
               {t`Predicted folder routing based on detected document semantics.`}

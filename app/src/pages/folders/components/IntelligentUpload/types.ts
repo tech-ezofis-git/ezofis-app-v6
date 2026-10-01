@@ -4,7 +4,7 @@ export interface CandidateRepository {
 }
 
 export interface ClassificationResult {
-  documentType: string
+  documentType?: string
   keywords: string[]
   suggestions: ClassificationSuggestion[]
   ocrText?: string

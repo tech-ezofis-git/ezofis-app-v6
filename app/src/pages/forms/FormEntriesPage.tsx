@@ -38,6 +38,7 @@ import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import {
   extractScalarStrings,
@@ -86,7 +87,7 @@ const FormEntriesChoiceInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -94,13 +95,13 @@ const FormEntriesChoiceInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
@@ -270,7 +271,7 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-          masterInfo.masterFormParentColumn ||
+        masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -278,13 +279,13 @@ const FormEntriesSelectInput = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-      parentField.label ||
-      parentField.id
+    parentField.label ||
+    parentField.id
     : masterInfo.masterFormParentColumn
 
   const repoParentField = useMemo(() => {
@@ -294,24 +295,24 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === facetSource.repositoryFieldParent ||
         f.settings?.specific?.repositoryField ===
-          facetSource.repositoryFieldParent ||
+        facetSource.repositoryFieldParent ||
         f.settings?.specific?.masterFormColumn ===
-          facetSource.repositoryFieldParent ||
+        facetSource.repositoryFieldParent ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, facetSource.repositoryFieldParent])
 
   const repoParentFieldName = repoParentField
     ? repoParentField.settings?.specific?.repositoryField ||
-      repoParentField.label ||
-      repoParentField.id
+    repoParentField.label ||
+    repoParentField.id
     : facetSource.repositoryFieldParent || ''
 
   const repoParentRawValue = repoParentField
     ? formModel?.[repoParentField.id]
     : facetSource.repositoryFieldParent && formModel
-    ? formModel[facetSource.repositoryFieldParent]
-    : undefined
+      ? formModel[facetSource.repositoryFieldParent]
+      : undefined
 
   const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
 
@@ -405,9 +406,9 @@ const FormEntriesSelectInput = ({
       if (isMulti) {
         const selectedValues = val
           ? String(val)
-              .split(',')
-              .map((v) => v.trim())
-              .filter(Boolean)
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
           : []
         if (selectedValues.length === 0) {
           onChange(singleVal)
@@ -423,9 +424,9 @@ const FormEntriesSelectInput = ({
   if (isMulti) {
     const selectedValues = val
       ? String(val)
-          .split(',')
-          .map((v) => v.trim())
-          .filter(Boolean)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
       : []
     const selectedOpts = selectedValues.map((v) => ({ id: v, name: v }))
 
@@ -464,6 +465,68 @@ const FormEntriesSelectInput = ({
   )
 }
 
+const FormEntriesSearchableInput = ({
+  field,
+  val,
+  formId,
+  editValues,
+  onUpdateModel,
+  children,
+}: {
+  field: Question
+  val: any
+  formId?: string
+  editValues: Record<string, any>
+  onUpdateModel: (patch: Record<string, any>) => void
+  children: React.ReactNode
+}) => {
+  const [isSearching, setIsSearching] = useState(false)
+  const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
+
+  if (!isSearchField) return <>{children}</>
+
+  const handleSearch = () => {
+    executeSearchFieldSync({
+      field,
+      searchValue: val,
+      currentFormId: formId,
+      formModel: editValues,
+      onUpdateModel,
+      onSearchingStateChange: setIsSearching,
+    })
+  }
+
+  return (
+    <div className='relative flex items-center w-full gap-2'>
+      <div
+        className='flex-1 min-w-0'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch()
+          }
+        }}
+      >
+        {children}
+      </div>
+      <Tooltip label='Search & Auto-Sync Fields' withArrow>
+        <button
+          type='button'
+          disabled={isSearching}
+          className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+          onClick={handleSearch}
+        >
+          {isSearching ? (
+            <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          ) : (
+            <Icon className='size-4' name='lucide:search' />
+          )}
+        </button>
+      </Tooltip>
+    </div>
+  )
+}
+
 // Helper to generate dynamic mock values based on field schema
 const generateDummyEntries = (fields: Question[], count: number = 6) => {
   const sampleUsers = [
@@ -479,9 +542,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-        ]
+        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+      ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -758,8 +821,8 @@ const FormLineItemInlineEditor = ({
                 {(idx === 0 ||
                   normId.includes('item') ||
                   normId.includes('part')) && (
-                  <span className='ml-1 font-bold text-red-9'>*</span>
-                )}
+                    <span className='ml-1 font-bold text-red-9'>*</span>
+                  )}
               </label>
 
               {isLongText ? (
@@ -1029,8 +1092,8 @@ const FormLineItemsEditor = ({
                           key={col.id}
                         >
                           {row[col.id] !== undefined &&
-                          row[col.id] !== null &&
-                          String(row[col.id]).trim() !== '' ? (
+                            row[col.id] !== null &&
+                            String(row[col.id]).trim() !== '' ? (
                             String(row[col.id])
                           ) : (
                             <span className='text-gray-5'>—</span>
@@ -1165,7 +1228,7 @@ const FormEntriesPage = () => {
       loggedInSession &&
       (String(loggedInSession.id) === String(userId) ||
         String(loggedInSession.email || '').toLowerCase() ===
-          String(userId).toLowerCase())
+        String(userId).toLowerCase())
     ) {
       if (currentUserName) return currentUserName
     }
@@ -2146,13 +2209,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                            <InputNumber
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(num) =>
-                                handleFieldChange(field.id, num)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputNumber
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(num) =>
+                                  handleFieldChange(field.id, num)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'CURRENCY_AMOUNT' ? (
                             <div className='max-w-xs'>
                               <InputNumber
@@ -2222,18 +2298,31 @@ const FormEntriesPage = () => {
                             />
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
-                            <FormEntriesSelectInput
-                              allFields={renderableFields}
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
                               field={field}
-                              fieldDistinctOptions={
-                                fieldDistinctOptions[field.id] || []
-                              }
-                              formModel={editValues}
+                              formId={formId}
                               val={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <FormEntriesSelectInput
+                                allFields={renderableFields}
+                                field={field}
+                                fieldDistinctOptions={
+                                  fieldDistinctOptions[field.id] || []
+                                }
+                                formModel={editValues}
+                                val={val}
+                                onChange={(next) =>
+                                  handleFieldChange(field.id, next)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           ) : type === 'FILE_UPLOAD' ||
                             type === 'IMAGE_UPLOAD' ? (
                             <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
@@ -2288,13 +2377,26 @@ const FormEntriesPage = () => {
                               }
                             />
                           ) : (
-                            <InputText
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
-                              onChange={(text) =>
-                                handleFieldChange(field.id, text)
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              <InputText
+                                placeholder={field.settings?.general?.placeholder}
+                                value={val}
+                                onChange={(text) =>
+                                  handleFieldChange(field.id, text)
+                                }
+                              />
+                            </FormEntriesSearchableInput>
                           )}
                         </div>
                       )
@@ -2477,14 +2579,14 @@ const FormEntriesPage = () => {
             filters={[
               ...(nameFieldFilter
                 ? [
-                    {
-                      id: nameFieldFilter.id,
-                      label: nameFieldFilter.label || t`Name`,
-                      options: nameFieldFilter.options || [],
-                      searchable: true,
-                      searchPlaceholder: t`Search name...`,
-                    },
-                  ]
+                  {
+                    id: nameFieldFilter.id,
+                    label: nameFieldFilter.label || t`Name`,
+                    options: nameFieldFilter.options || [],
+                    searchable: true,
+                    searchPlaceholder: t`Search name...`,
+                  },
+                ]
                 : []),
               {
                 id: 'createdBy',
@@ -2513,7 +2615,7 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => {}}
+            onSearchChange={() => { }}
           />
           <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable
