@@ -21,7 +21,7 @@ const SetupCallout = () => {
 
   return (
     <AnimateFadeIn delay={0.15}>
-      <div className='mb-6 flex flex-wrap items-center gap-2 border-b border-gray-3 px-6 py-3 md:px-8'>
+      <div className='mb-6 flex flex-wrap items-center gap-2 border-b border-gray-3 px-4 py-3'>
         <div className='font-medium'>
           <Trans>Complete setup to start your AP automation.</Trans>
         </div>

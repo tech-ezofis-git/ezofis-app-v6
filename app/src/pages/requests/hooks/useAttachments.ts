@@ -73,7 +73,6 @@ export function useAttachments(
       setIsLoading(false)
       return
     }
-    setData(defaultData) // Show initial data immediately instead of empty array
     setIsLoading(true)
     setError(null)
 

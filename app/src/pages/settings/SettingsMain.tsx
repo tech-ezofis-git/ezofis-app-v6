@@ -415,7 +415,7 @@ function SettingsLanding({
   return (
     <div className='flex h-full min-h-0 flex-col overflow-hidden'>
       <main className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--surface)]'>
-        <div className='flex flex-col gap-8 px-6 py-4'>
+        <div className='flex flex-col gap-8 px-4 py-4'>
           <SettingsModuleGroup
             items={configurationItems}
             title={t`Configuration`}

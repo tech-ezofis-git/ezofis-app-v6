@@ -1,5 +1,5 @@
 // @/pages/requests/hooks/useAttachmentPreviewUrl.ts
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import fileApi from '@/api/file/file'
 import authUserStore from '@/stores/authUserStore'
 import type { AttachmentItem } from './useAttachments'
@@ -80,36 +80,39 @@ export function useAttachmentPreviewUrl(
 ) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [mimeType, setMimeType] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const lastFetchedRef = useRef<{ itemId: string; repoId: string } | null>(null)
+  const localUrl = file?._localFileUrl || file?.localUrl || ''
+  const repoId = String(file?.repositoryId || fallbackRepositoryId || '').trim()
+  const itemId = String(file?.itemId || file?.id || '').trim()
+  const contentType = file?.type || file?.contentType || ''
+  const legacyFileId = file?.id
+  const fetchKey = `${localUrl}|${repoId}|${itemId}|${String(legacyFileId ?? '')}|${contentType}`
+  const canLoad = Boolean(
+    localUrl ||
+    (repoId && itemId && repoId !== 'undefined' && itemId !== 'undefined'),
+  )
+  const [readyKey, setReadyKey] = useState('')
 
   useEffect(() => {
-    if (!file) {
+    if (!localUrl && !repoId && !itemId) {
       setPreviewUrl(null)
       setMimeType(null)
-      setIsLoading(false)
-      lastFetchedRef.current = null
+      setReadyKey(fetchKey)
       return
     }
 
+    let cancelled = false
     let activeUrl: string | null = null
     const { session } = authUserStore.getState()
     const tenantId = session?.tenantId
     const userId = session?.id
 
     const fetchFile = async () => {
-      const localUrl = file._localFileUrl || file.localUrl
       if (localUrl) {
         setPreviewUrl(localUrl)
-        setMimeType(file.type || file.contentType || 'application/pdf')
-        setIsLoading(false)
+        setMimeType(contentType || 'application/pdf')
+        setReadyKey(fetchKey)
         return
       }
-
-      const repoId = String(
-        file.repositoryId || fallbackRepositoryId || '',
-      ).trim()
-      const itemId = String(file.itemId || file.id || '').trim()
 
       if (
         !repoId ||
@@ -119,23 +122,26 @@ export function useAttachmentPreviewUrl(
       ) {
         setPreviewUrl(null)
         setMimeType(null)
+        setReadyKey(fetchKey)
         return
       }
 
-      if (
-        lastFetchedRef.current?.repoId === repoId &&
-        lastFetchedRef.current?.itemId === itemId
-      ) {
-        return
-      }
-      lastFetchedRef.current = { itemId, repoId }
-
-      setIsLoading(true)
       try {
         const res =
           isUuid(repoId) && isUuid(itemId)
             ? await fetchV6Binary(repoId, itemId)
-            : await fetchLegacyBinary(repoId, itemId, tenantId, userId, file.id)
+            : await fetchLegacyBinary(
+                repoId,
+                itemId,
+                tenantId,
+                userId,
+                legacyFileId,
+              )
+
+        if (cancelled) {
+          if (res?.isBlob) URL.revokeObjectURL(res.url)
+          return
+        }
 
         if (res) {
           if (res.isBlob) activeUrl = res.url
@@ -146,21 +152,30 @@ export function useAttachmentPreviewUrl(
           setMimeType(null)
         }
       } catch (error) {
+        if (cancelled) return
         console.error('Error fetching attachment preview:', error)
-        lastFetchedRef.current = null
         setPreviewUrl(null)
         setMimeType(null)
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setReadyKey(fetchKey)
       }
     }
 
     fetchFile()
 
     return () => {
+      cancelled = true
       if (activeUrl) URL.revokeObjectURL(activeUrl)
     }
-  }, [file, fallbackRepositoryId])
+    // Reload only when the file identity changes. A new attachment object
+    // on each parent render must not revoke the blob and flash the viewer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentType, fetchKey, itemId, legacyFileId, localUrl, repoId])
 
-  return { isLoading, mimeType, previewUrl }
+  const isCurrent = readyKey === fetchKey
+  return {
+    isLoading: canLoad && !isCurrent,
+    mimeType: isCurrent ? mimeType : null,
+    previewUrl: isCurrent ? previewUrl : null,
+  }
 }

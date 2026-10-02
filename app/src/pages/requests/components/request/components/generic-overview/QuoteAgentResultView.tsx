@@ -1,16 +1,7 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
-import {
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import {
-  pdfBase64ToObjectUrl,
-  previewDocument,
-} from '@/api/v6/documentPreview'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { pdfBase64ToObjectUrl, previewDocument } from '@/api/v6/documentPreview'
 import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -181,7 +172,9 @@ const HoverEditShell = ({
           ? inline
             ? 'inline-flex min-w-0 align-middle'
             : 'block w-full'
-          : 'group inline-flex max-w-full min-w-0 items-center gap-1',
+          : inline
+            ? 'group inline-flex max-w-full min-w-0 items-center gap-1'
+            : 'group relative flex w-full min-w-0 items-center',
         className,
       )}
     >
@@ -189,10 +182,15 @@ const HoverEditShell = ({
         editor
       ) : (
         <>
-          <span className='min-w-0'>{children}</span>
+          <span className={cn('min-w-0', inline ? '' : 'block w-full pr-7')}>
+            {children}
+          </span>
           <button
             aria-label='Edit'
-            className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+            className={cn(
+              'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
+              !inline && 'absolute top-1/2 right-0 -translate-y-1/2',
+            )}
             type='button'
             onClick={(event) => {
               event.preventDefault()
@@ -350,9 +348,7 @@ const isOnStageAfterQuoteAgent = (workflow: any, requestData: any) => {
     const label = String(block?.settings?.label || '')
     const subtype = String(block?.settings?.subtype || '').toUpperCase()
     return (
-      type === 'QUOTE_AGENT' ||
-      subtype === 'QUOTE' ||
-      label.includes('Quote')
+      type === 'QUOTE_AGENT' || subtype === 'QUOTE' || label.includes('Quote')
     )
   })
   if (!quoteBlock?.id) return false
@@ -360,7 +356,8 @@ const isOnStageAfterQuoteAgent = (workflow: any, requestData: any) => {
   const nextIds = new Set(
     rules
       .filter(
-        (rule: any) => String(rule?.fromBlockId || '') === String(quoteBlock.id),
+        (rule: any) =>
+          String(rule?.fromBlockId || '') === String(quoteBlock.id),
       )
       .map((rule: any) => String(rule?.toBlockId || ''))
       .filter(Boolean),
@@ -392,7 +389,8 @@ const isOnStageAfterQuoteAgent = (workflow: any, requestData: any) => {
   // Duplicate labels (e.g. two "Manual User" blocks) — require activityId.
   const matchedLabel = String(labelMatches[0]?.settings?.label || '').trim()
   const sameLabelCount = blocks.filter(
-    (block: any) => String(block?.settings?.label || '').trim() === matchedLabel,
+    (block: any) =>
+      String(block?.settings?.label || '').trim() === matchedLabel,
   ).length
   if (sameLabelCount > 1) return false
 
@@ -409,11 +407,11 @@ const resolveTableValue = (
     const stored = formModel?.[id]
     if (Array.isArray(stored) && stored.length > 0) return stored
     const columns = field?.settings?.specific?.tableColumns || []
-    if (columns.length > 0 && agentRows.length > 0) {
+    if (columns.length > 0 && (agentRows?.length ?? 0) > 0) {
       return mapExternalRowsToTableColumns(agentRows, columns)
     }
   }
-  return agentRows
+  return agentRows || []
 }
 
 const resolveStoredProduct = (row: Record<string, any>, columns: any[]) => {
@@ -523,7 +521,9 @@ const QuoteAgentResultView = ({
     [formFields, result, tableFields],
   )
 
-  const freightEntry = viewModel.totals.find((entry) => entry.kind === 'freight')
+  const freightEntry = viewModel.totals.find(
+    (entry) => entry.kind === 'freight',
+  )
   const freightFromForm = freightEntry
     ? formModel?.[
         freightEntry.field
@@ -832,7 +832,9 @@ const QuoteAgentResultView = ({
         ...computedTotals,
         hst: Number(parsed.toFixed(2)),
         total: Number(
-          (computedTotals.subtotal + computedTotals.freight + parsed).toFixed(2),
+          (computedTotals.subtotal + computedTotals.freight + parsed).toFixed(
+            2,
+          ),
         ),
       }
     } else if (entry.kind === 'other') {
@@ -887,10 +889,10 @@ const QuoteAgentResultView = ({
 
     return (
       <span
-        className='inline-flex max-w-full items-baseline text-left text-sm leading-5 font-normal text-gray-12'
+        className='inline-flex max-w-full items-center gap-1.5 pr-1 text-left text-sm leading-5 font-normal text-gray-12'
         key={entry.resultKey}
       >
-        <span className='font-bold'>{label}: </span>
+        <span className='shrink-0 font-bold'>{label}:</span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
@@ -907,7 +909,10 @@ const QuoteAgentResultView = ({
     )
   }
 
-  const renderTotalRow = (entry: QuoteTotalEntry, options?: { bold?: boolean }) => {
+  const renderTotalRow = (
+    entry: QuoteTotalEntry,
+    options?: { bold?: boolean },
+  ) => {
     const canEdit = canEditTotalEntry(entry)
     const value = totalDisplayValue(entry)
     const fieldId = entry.field ? getFieldId(entry.field) : entry.resultKey
@@ -916,9 +921,9 @@ const QuoteAgentResultView = ({
     return (
       <div
         className={cn(
-          'grid grid-cols-[1fr_7.5rem] items-center gap-x-6',
+          'grid grid-cols-[minmax(0,1fr)_10rem] items-baseline gap-x-6',
           options?.bold
-            ? 'mt-2 border-t border-gray-2 pt-2 text-base font-bold text-gray-12'
+            ? 'mt-2 border-t border-gray-2 pt-2 font-bold text-gray-12'
             : 'text-gray-11',
         )}
         key={entry.resultKey}
@@ -943,7 +948,14 @@ const QuoteAgentResultView = ({
           label={entry.label}
           onActivate={setActiveEditId}
         >
-          <span className='block w-full text-right tabular-nums'>{display}</span>
+          <span
+            className={cn(
+              'block w-full text-right tabular-nums',
+              !canEdit && 'pr-7',
+            )}
+          >
+            {display}
+          </span>
         </HoverEditShell>
       </div>
     )
@@ -955,15 +967,18 @@ const QuoteAgentResultView = ({
         <div className='flex flex-col gap-3'>
           <div className='flex items-center justify-between gap-3'>
             <Button
+              aria-label={t`Back to quotation details`}
               color='gray'
               icon='lucide:arrow-left'
               label={t`Back`}
               size='sm'
+              title={t`Back to quotation details`}
               type='button'
               variant='ghost'
               onClick={() => selectPaneMode('agent_review')}
             />
-            <span className='inline-flex shrink-0 items-center rounded-full border border-[var(--secondary-6)] bg-[var(--secondary-2)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--secondary-11)]'>
+            <span className='inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--secondary-6)] bg-[var(--secondary-2)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--secondary-11)]'>
+              <Icon className='size-3.5' icon='lucide:eye' />
               {t`Preview Mode`}
             </span>
           </div>
@@ -977,8 +992,8 @@ const QuoteAgentResultView = ({
           </div>
         </div>
       ) : (
-        <div className='flex flex-col gap-6'>
-          <div className='flex flex-wrap items-start justify-between gap-x-6 gap-y-3'>
+        <div className='flex flex-col gap-4'>
+          <div className='flex flex-wrap items-start justify-between gap-x-4 gap-y-2'>
             <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
               {headerEntries.map(renderHeaderField)}
             </div>
@@ -986,17 +1001,19 @@ const QuoteAgentResultView = ({
             <div className='ml-auto flex shrink-0 flex-col items-end gap-1.5 text-right'>
               {canPreviewDocument ? (
                 <Button
+                  aria-label={t`Quote Preview`}
                   color='secondary'
                   icon='lucide:eye'
-                  label={t`Preview`}
+                  label={t`Quote Preview`}
                   size='sm'
+                  title={t`Quote Preview`}
                   type='button'
                   variant='ghost'
                   onClick={() => selectPaneMode('preview')}
                 />
               ) : null}
               <div className='text-sm leading-5 font-normal text-gray-12'>
-                <span className='font-bold'>{grandTotalLabel}: </span>$
+                <span className='mr-1.5 font-bold'>{grandTotalLabel}:</span>$
                 {toMoney(computedTotals.total)}
               </div>
             </div>
@@ -1027,8 +1044,8 @@ const QuoteAgentResultView = ({
           )}
 
           {breakdownTotals.length > 0 && (
-            <div className='flex justify-end border-t border-gray-3 pt-4 pr-4'>
-              <div className='mr-2 flex w-full max-w-[18rem] flex-col gap-2 text-sm'>
+            <div className='flex justify-end border-t border-gray-3 pt-3 pr-2'>
+              <div className='mr-2 flex w-full max-w-[18rem] flex-col gap-1.5 text-sm'>
                 {breakdownTotals.map((entry) => renderTotalRow(entry))}
                 {viewModel.grandTotal
                   ? renderTotalRow(viewModel.grandTotal, { bold: true })
@@ -1038,7 +1055,7 @@ const QuoteAgentResultView = ({
           )}
 
           {viewModel.longTextEntries.map((entry) => (
-            <div className='flex flex-col gap-2' key={entry.resultKey}>
+            <div className='flex flex-col gap-1.5' key={entry.resultKey}>
               <h4 className='text-sm font-semibold text-gray-12'>
                 {entry.label}
               </h4>
@@ -1057,7 +1074,7 @@ const QuoteAgentResultView = ({
 
             return (
               <div
-                className='flex flex-col gap-2 border-t border-gray-3 pt-2'
+                className='flex flex-col gap-1.5 border-t border-gray-3 pt-2'
                 key={entry.resultKey}
               >
                 <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>

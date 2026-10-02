@@ -1,8 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
-import { finalizeApAgentJobIfSucceeded, wasApAgentJobFinalized } from '../utils/finalizeApAgentJobIfSucceeded'
+import {
+  finalizeApAgentJobIfSucceeded,
+  markApAgentJobHandled,
+  wasApAgentJobFinalized,
+} from '../utils/finalizeApAgentJobIfSucceeded'
 import requestStore from '../stores/useRequestStore'
+import {
+  isJobStatusFailed,
+  stopFailedApAgentJob,
+} from '../utils/resolveApAgentJobMessage'
 
 const findItemInResponse = (data: any, processId: any) => {
   if (!data) return null
@@ -144,6 +152,12 @@ export const ProcessingBackgroundManager = () => {
                     isCompleted,
                     stage,
                   })
+              }
+
+              if (isJobStatusFailed(jobData)) {
+                markApAgentJobHandled(apAgentJobId)
+                stopFailedApAgentJob(apAgentJobId, jobData)
+                return
               }
 
               if (isCompleted) {

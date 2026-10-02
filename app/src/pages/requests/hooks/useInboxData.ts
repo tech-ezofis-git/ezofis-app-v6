@@ -103,15 +103,22 @@ export const transformProcess = (
 ): InboxItem => {
   let fieldsSource: any = {}
   if (process.formData) {
+    // Copy before parsing. The detail view holds the same row object the
+    // list rendered, and writing into formData.fields used to clear the
+    // cached preview values by the time Back returned to the list.
+    const cloneFields = (raw: any) =>
+      raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...raw } : {}
     if (typeof process.formData === 'string') {
       try {
         const parsed = JSON.parse(process.formData)
-        fieldsSource = parsed?.fields || parsed || {}
+        fieldsSource = cloneFields(parsed?.fields || parsed || {})
       } catch {
         fieldsSource = {}
       }
     } else if (typeof process.formData === 'object') {
-      fieldsSource = process.formData?.fields || process.formData || {}
+      fieldsSource = cloneFields(
+        process.formData?.fields || process.formData || {},
+      )
     }
   }
 
@@ -213,9 +220,9 @@ export const transformProcess = (
 
   const isStageBased = Boolean(
     parsedFlowJson?.settings?.general?.isStageBased ||
-      (parsedFlowJson?.settings?.general?.requestTabs || []).some(
-        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
-      ),
+    (parsedFlowJson?.settings?.general?.requestTabs || []).some(
+      (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+    ),
   )
 
   const canMove =
@@ -225,7 +232,35 @@ export const transformProcess = (
       isUserEmailMatched ||
       (isStageBased && !activityUserEmail))
 
-  const dynamicFields = fieldsSource
+  const reservedFieldKeys = new Set([
+    'activityId',
+    'agentResponse',
+    'decision',
+    'documentGenerateResponse',
+    'formData',
+    'id',
+    'processId',
+    'qualifyAgentResponse',
+    'quoteAgentResponse',
+    'review',
+    'stage',
+    'stageType',
+    'status',
+    'workflowInstanceId',
+  ])
+  const dynamicFields: Record<string, any> = {}
+  if (fieldsSource && typeof fieldsSource === 'object') {
+    for (const [key, value] of Object.entries(fieldsSource)) {
+      if (reservedFieldKeys.has(key)) continue
+      const existing = (processCopy as any)[key]
+      const incomingEmpty =
+        value === undefined || value === null || value === ''
+      const existingFilled =
+        existing !== undefined && existing !== null && existing !== ''
+      if (incomingEmpty && existingFilled) continue
+      dynamicFields[key] = value
+    }
+  }
   let actions: any[] = []
   if (
     listTab === 'Inbox' ||
@@ -378,8 +413,7 @@ export const isListTicketLoading = (item: any): boolean => {
 
   const stageType = String(item.stageType || '').toUpperCase()
   const stage = String(item.stage || item.currentStage || '').toLowerCase()
-  const isAgentStage =
-    stageType.includes('AGENT') || stage.includes('agent')
+  const isAgentStage = stageType.includes('AGENT') || stage.includes('agent')
 
   if (!isAgentStage) return false
 

@@ -2138,7 +2138,7 @@ export default function DmsFolderConfiguration({
           onBack={onBack}
         />
 
-        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+        <div className='flex flex-1 flex-col gap-4 overflow-hidden px-4 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             actionButtons={[

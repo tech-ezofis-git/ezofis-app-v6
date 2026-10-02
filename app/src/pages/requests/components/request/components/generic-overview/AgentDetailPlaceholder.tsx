@@ -10,10 +10,15 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
+import {
+  isApAgentJobCompleted,
+  resolveApAgentJobMessage,
+} from '@/pages/requests/utils/resolveApAgentJobMessage'
 import {
   type AgentBlock,
   documentGenerateIsComplete,
+  formatAgentDisplayLabel,
+  isFailedAgentBlock,
 } from './AgentSummaryBoxes'
 import QualifyAgentResultView from './QualifyAgentResultView'
 import QuoteAgentResultView from './QuoteAgentResultView'
@@ -55,20 +60,24 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const jobStatuses = requestStore((state) => state.jobStatuses)
   const jobMappings = requestStore((state) => state.jobMappings)
   const processingProcesses = requestStore((state) => state.processingProcesses)
-  const label = agentBlock.settings?.label || 'Agent Details'
+  const label = formatAgentDisplayLabel(agentBlock)
   const iconName = agentBlock.icon || 'lucide:cpu'
   const settings = agentBlock.settings || {}
 
   const isQualify =
-    agentBlock.settings?.subtype === 'QUALIFY' || label.includes('Qualify')
+    agentBlock.settings?.subtype === 'QUALIFY' ||
+    label.includes('Qualify') ||
+    label.includes('Qualifier')
   const isQuote =
     agentBlock.settings?.subtype === 'QUOTE' ||
     agentBlock.type === 'QUOTE_AGENT' ||
-    label.includes('Quote')
+    label.includes('Quote') ||
+    label.includes('Quote Estimator')
   const isDocGen =
     agentBlock.type === 'DOCUMENT_GENERATE_AGENT' ||
     agentBlock.settings?.subtype === 'DOCUMENT_GENERATE' ||
     label.includes('Document Generate') ||
+    label.includes('Document Generator') ||
     label.includes('Document Agent')
   const isAPAgent =
     agentBlock.settings?.subtype === 'AP_AGENT' || label.includes('AP Agent')
@@ -175,7 +184,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     status.includes('success') ||
     docGenComplete,
   )
-  const isProcessing = !hasAgentResponse && !isDone
+  const thisAgentFailed = isFailedAgentBlock(
+    agentBlock,
+    requestData,
+    rawWorkflowData,
+  )
+  const isProcessing = !hasAgentResponse && !isDone && !thisAgentFailed
 
   const jobMessage = useMemo(
     () => resolveApAgentJobMessage(requestData),
@@ -183,6 +197,16 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [requestData, jobStatuses, jobMappings, processingProcesses],
   )
+  const jobCompleted = useMemo(
+    () => isApAgentJobCompleted(requestData),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requestData, jobStatuses, jobMappings, processingProcesses],
+  )
+  const processingTitle = jobMessage
+    ? jobMessage
+    : jobCompleted
+      ? t`Preparing your request...`
+      : t`Working on this request...`
 
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
@@ -197,7 +221,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   const showDocPreview = Boolean(isDocGen && docPreviewAttachment)
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-3'>
       {!hideBack && (
         <div className='flex items-center gap-3'>
           <button
@@ -217,7 +241,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
         className={
           showDocPreview
             ? 'flex min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary shadow-sm'
-            : 'rounded-xl border border-gray-3 bg-surface-primary p-6 shadow-sm'
+            : 'rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm'
         }
       >
         {showDocPreview ? (
@@ -239,6 +263,20 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
               {t`No generated document yet. It will appear here when this stage completes.`}
             </p>
           </div>
+        ) : thisAgentFailed ? (
+          <div className='flex flex-col items-center justify-center gap-3 py-12 text-center'>
+            <div className='flex size-14 items-center justify-center rounded-full bg-red-2'>
+              <Icon className='size-7 text-red-11' icon='tabler:alert-circle' />
+            </div>
+            <div className='max-w-md px-4 text-center'>
+              <h3 className='text-base font-semibold text-gray-13'>
+                {t`This step could not be completed.`}
+              </h3>
+              <p className='mt-1 text-13 text-gray-9'>
+                {t`The agent stopped. Review the request and try again.`}
+              </p>
+            </div>
+          </div>
         ) : isProcessing ? (
           <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>
             <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
@@ -249,7 +287,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             </div>
             <div className='max-w-md px-4 text-center'>
               <h3 className='text-base font-semibold text-[var(--gray-13)]'>
-                {jobMessage || t`Working on this request...`}
+                {processingTitle}
               </h3>
             </div>
           </div>

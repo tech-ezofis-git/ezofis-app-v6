@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import workflowsApiV6 from '@/api/v6/workflows'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { isJobStatusFailed } from '@/pages/requests/utils/resolveApAgentJobMessage'
 
 /** Jobs we already finalized — avoids inbox/sent/completed storms. */
 const finalizedApJobs = new Set<string>()
@@ -8,14 +9,20 @@ const finalizedApJobs = new Set<string>()
 export const wasApAgentJobFinalized = (jobId: string | number) =>
   finalizedApJobs.has(String(jobId))
 
-export const isApAgentJobSucceeded = (jobData: any) =>
-  Boolean(
-    jobData &&
-      (jobData.isTerminal ||
-        jobData.isCompleted ||
-        String(jobData.stage || '').toUpperCase() === 'COMPLETED' ||
-        String(jobData.hangfireStatus || '') === 'Succeeded'),
+/** Remember a finished job so polling does not start again. */
+export const markApAgentJobHandled = (jobId: string | number) => {
+  finalizedApJobs.add(String(jobId))
+}
+
+export const isApAgentJobSucceeded = (jobData: any) => {
+  if (!jobData || isJobStatusFailed(jobData)) return false
+  return Boolean(
+    String(jobData.stage || '').toUpperCase() === 'COMPLETED' ||
+      String(jobData.hangfireStatus || '') === 'Succeeded' ||
+      jobData.isTerminal ||
+      jobData.isCompleted,
   )
+}
 
 /**
  * When Hangfire reports Succeeded, fetch inbox / sent / completed once for

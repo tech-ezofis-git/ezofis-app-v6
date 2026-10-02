@@ -8,24 +8,16 @@ import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
+import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
-import HoverExpandableText from './HoverExpandableText'
-import {
-  extractPreviewValues,
-  getGenericStageInfo,
-} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
-import { buildTableMeta } from '../utils/dynamicTable.utils'
+import HoverExpandableText from './HoverExpandableText'
 import {
-  buildDynamicColumns,
   extractGenericRequestNumber,
-  extractInvoiceNumber,
-  extractPONumber,
-  findSupplierName,
-  getFormPanels,
+  readPreviewChipText,
   resolveConfiguredTitle,
-  resolveFormJson,
+  resolvePreviewFieldColumns,
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
 
@@ -69,6 +61,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
   const jobStatuses = requestStore((state) => state.jobStatuses)
   const jobMappings = requestStore((state) => state.jobMappings)
   const processingProcesses = requestStore((state) => state.processingProcesses)
+  const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
   const jobMessage = useMemo(() => {
     const direct = resolveApAgentJobMessage(row)
     if (direct) return direct
@@ -123,28 +116,33 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
   // Selection preview list opted into (matched by label, case/spacing
   // insensitive). No preview fields configured -> render nothing here,
   // rather than falling back to an arbitrary "first 3 fields" guess.
-  const previewValues = useMemo(
-    () => extractPreviewValues(workflow),
-    [workflow],
+  // Fall back to the store workflow so opening a request cannot drop the
+  // configured labels when the list's workflow object is replaced.
+  const { columns: dynamicFields, previewValues } = useMemo(
+    () => resolvePreviewFieldColumns(workflow, rawWorkflowData),
+    [workflow, rawWorkflowData],
   )
 
-  const dynamicFields = useMemo(() => {
-    if (!previewValues.length) return []
-
-    const form = resolveFormJson(workflow)
-    if (!form) return []
-    const allPanels = getFormPanels(form)
-    if (!allPanels.length) return []
-    const tableMetaByParentId = buildTableMeta(allPanels)
-    const allFields = buildDynamicColumns(allPanels, null, tableMetaByParentId)
-
-    const wantedLabels = new Set(
-      previewValues.map((label) => normalizeFieldKey(label)),
-    )
-    return allFields.filter((col) =>
-      wantedLabels.has(normalizeFieldKey(col.label)),
-    )
-  }, [workflow, previewValues])
+  const previewChips = useMemo(() => {
+    const chips: { id: string; text: string }[] = []
+    const seen = new Set<string>()
+    for (const col of dynamicFields) {
+      const text = readPreviewChipText(row, col.id, col.label)
+      const key = normalizeFieldKey(col.label || col.id)
+      if (!text || !key || seen.has(key)) continue
+      seen.add(key)
+      chips.push({ id: col.id, text })
+    }
+    for (const label of previewValues) {
+      const key = normalizeFieldKey(label)
+      if (!key || seen.has(key)) continue
+      const text = readPreviewChipText(row, label, label)
+      if (!text) continue
+      seen.add(key)
+      chips.push({ id: label, text })
+    }
+    return chips
+  }, [dynamicFields, previewValues, row])
 
   const aiInsight = useMemo(() => {
     const agentData =
@@ -250,56 +248,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     !jobStatusForActive?.isCompleted &&
     (Boolean(row?.isProcessing) ||
       Boolean(jobMessage) ||
-      Boolean(jobStatusForActive) ||
-      // Newly registered job — status not polled yet.
-      Boolean(activeJobId && row?.apAgentJobId))
-
-  // Prefer REQ-xxx — never the configured project/stage title.
-  const rawRequestNo = String(
-    (row?.formEntryId != null && String(row.formEntryId).trim() !== ''
-      ? `REQ-${row.formEntryId}`
-      : '') ||
-      row?.referenceNumber ||
-      extractGenericRequestNumber(row) ||
-      row?.requestNo ||
-      row?.reqNo ||
-      '',
-  ).trim()
-  const looksLikeRequestId =
-    Boolean(rawRequestNo) &&
-    rawRequestNo !== '-' &&
-    !/\s/.test(rawRequestNo) &&
-    rawRequestNo.length <= 40
-  const loadingId =
-    (looksLikeRequestId ? rawRequestNo : '') ||
-    (activeJobId ? `JOB-${activeJobId}` : '') ||
-    '…'
-
-  if (isJobProcessing) {
-    return (
-      <div
-        className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
-        onClick={() => onRowClick(row, 'Overview')}
-      >
-        <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-2'>
-          <Icon
-            className='size-4 animate-spin text-orange-9'
-            name='tabler:loader-2'
-          />
-        </div>
-        <span className='shrink-0 text-13 font-bold text-gray-13'>
-          {loadingId}
-        </span>
-        {jobMessage ? (
-          <div className='ml-auto flex min-w-0 max-w-[320px] shrink items-center justify-end pr-1'>
-            <span className='animate-pulse truncate text-right text-12 font-semibold text-[var(--orange-9)]'>
-              {jobMessage}
-            </span>
-          </div>
-        ) : null}
-      </div>
-    )
-  }
+      Boolean(jobStatusForActive))
 
   return (
     <div
@@ -315,9 +264,17 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         <Icon
           className={cn(
             'size-4',
-            isTerminal ? 'text-green-9' : 'text-orange-9',
+            isJobProcessing && 'animate-spin text-orange-9',
+            !isJobProcessing && isTerminal && 'text-green-9',
+            !isJobProcessing && !isTerminal && 'text-orange-9',
           )}
-          name={isTerminal ? 'tabler:check' : 'tabler:clock'}
+          name={
+            isJobProcessing
+              ? 'tabler:loader-2'
+              : isTerminal
+                ? 'tabler:check'
+                : 'tabler:clock'
+          }
         />
       </div>
 
@@ -337,21 +294,26 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           />
         </div>
 
-        {dynamicFields.length > 0 && (
+        {previewChips.length > 0 && (
           <div className='mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 overflow-hidden'>
-            {dynamicFields.map((col, idx) => (
+            {previewChips.map((chip, idx) => (
               <span
                 className='flex max-w-full min-w-0 items-center gap-1.5'
-                key={col.id}
+                key={chip.id}
               >
                 {idx > 0 && <span className='shrink-0 text-gray-6'>·</span>}
                 <div className='min-w-0 truncate text-11 font-medium text-gray-10'>
-                  {col.renderCell?.(row) ?? '-'}
+                  {chip.text}
                 </div>
               </span>
             ))}
           </div>
         )}
+        {isJobProcessing && jobMessage ? (
+          <div className='mt-0.5 truncate text-12 font-semibold text-[var(--orange-9)]'>
+            {jobMessage}
+          </div>
+        ) : null}
         {/* AI Insight stacked inside left column when playground/chat/sidebar is open */}
         {aiInsight && isSidebarOpen && (
           <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
@@ -408,9 +370,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
               <div className='flex items-center gap-1 text-11 text-gray-9'>
                 <Icon className='size-3 text-gray-7' name='tabler:calendar' />
                 <span>
-                  {dayjs(parseUtcDate(startedAt)).format(
-                    'DD-MMM-YYYY hh:mm A',
-                  )}
+                  {dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}
                 </span>
               </div>
             </Tooltip>

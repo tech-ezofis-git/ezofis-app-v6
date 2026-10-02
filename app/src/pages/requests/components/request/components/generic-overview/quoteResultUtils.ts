@@ -73,6 +73,8 @@ export const classifyQuoteTotalKey = (key: string): QuoteTotalKind | null => {
   if (normalized.includes('freight')) return 'freight'
   if (
     normalized === 'hst' ||
+    normalized === 'hts' ||
+    normalized.includes('hts') ||
     normalized === 'gst' ||
     normalized === 'vat' ||
     normalized.includes('tax')
@@ -293,11 +295,19 @@ export const summarizeQuoteResult = (
     return { title: '', total: null as number | null }
   }
   const vm = buildQuoteViewModel(result, formFields, tableFields)
-  const titleValue = vm.titleEntry?.value
+  const candidates = [vm.titleEntry, ...vm.metaEntries].filter(Boolean)
+  const orderEntry = candidates.find((entry) => {
+    const label = normalizeQualifierKey(String(entry?.label || ''))
+    const key = normalizeQualifierKey(String(entry?.resultKey || ''))
+    return label === 'order number' || key === 'order number'
+  })
+  const orderValue = orderEntry?.value
   const title =
-    titleValue !== null && titleValue !== undefined && String(titleValue).trim()
-      ? String(titleValue)
-      : 'Completed'
+    orderValue !== null &&
+    orderValue !== undefined &&
+    String(orderValue).trim()
+      ? String(orderValue)
+      : '-'
   return {
     title,
     total: vm.grandTotal?.value ?? null,

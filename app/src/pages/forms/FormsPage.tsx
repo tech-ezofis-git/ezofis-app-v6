@@ -495,7 +495,7 @@ const FormsPage = () => {
   return (
     <div className='flex h-full min-h-0 flex-col'>
       {deletingForm && (
-        <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
+        <div className='animate-in fade-in slide-in-from-top-4 mx-4 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
               <Icon

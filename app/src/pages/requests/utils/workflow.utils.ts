@@ -47,7 +47,8 @@ export const getActionsForActivity = (
 
     // 1. Check Rules (Outgoing Lines)
     rules.forEach((rule: any) => {
-      if (rule.fromBlockId === activityId) {
+      const fromId = String(rule.fromBlockId || rule.from || rule.source || '')
+      if (fromId && fromId === String(activityId)) {
         let color: ActionButton['color'] = 'blue'
         let icon = 'tabler:arrow-right'
 
@@ -72,7 +73,7 @@ export const getActionsForActivity = (
     // 2. Check Block Settings (Internal Forward)
     if (flow && typeof flow === 'object') {
       const blocks = Array.isArray(flow.blocks) ? flow.blocks : []
-      const block = blocks.find((b: any) => b.id === activityId)
+      const block = blocks.find((b: any) => String(b.id) === String(activityId))
       if (block?.settings?.internalForward) {
         actions.push({
           color: 'orange',
@@ -292,6 +293,29 @@ export interface GenericStageInfo {
   previousLabel: string | null
 }
 
+// Settings live on the workflow record, inside workflowJson, or inside a
+// stringified flowJson. Stage tabs (Enquiry / Qualified / Processed) are
+// settings.general.requestTabs. Reading only workflowJson.settings misses
+// them when the API returns workflowJson as a string.
+export function extractWorkflowGeneral(workflow: any): any {
+  if (!workflow) return undefined
+
+  const direct =
+    workflow.settings?.general || workflow.workflowJson?.settings?.general
+  if (direct && typeof direct === 'object') return direct
+
+  const raw = workflow.flowJson ?? workflow.workflowJson
+  if (!raw) return undefined
+  if (typeof raw === 'object') return raw.settings?.general
+
+  try {
+    const flow = JSON.parse(raw)
+    return flow?.settings?.general
+  } catch {
+    return undefined
+  }
+}
+
 // The workflow-settings "Preview" field labels (Workflow Builder ->
 // Settings -> Configuration -> Field Selection), used to decide which
 // form/repository fields show up on a request's list/grid row. Same
@@ -317,25 +341,31 @@ export function extractPreviewValues(workflow: any): string[] {
     return []
   }
 
-  if (workflow.workflowJson?.settings) {
-    return readFromSettings(workflow.workflowJson.settings)
-  }
-  if (workflow.settings) {
-    return readFromSettings(workflow.settings)
+  const candidates: any[] = [
+    workflow.workflowJson?.settings,
+    workflow.settings,
+    workflow.wSettings,
+  ]
+
+  const flowJsonInput = workflow.flowJson
+  if (flowJsonInput && flowJsonInput !== workflow.workflowJson) {
+    try {
+      const flow =
+        typeof flowJsonInput === 'string'
+          ? JSON.parse(flowJsonInput)
+          : flowJsonInput
+      candidates.push(flow?.settings)
+    } catch {
+      // Ignore a flow blob that is not JSON. A later candidate may still
+      // carry the configured preview labels.
+    }
   }
 
-  const flowJsonInput = workflow.flowJson ?? workflow.workflowJson
-  if (!flowJsonInput) return []
-
-  try {
-    const flow =
-      typeof flowJsonInput === 'string'
-        ? JSON.parse(flowJsonInput)
-        : flowJsonInput
-    return readFromSettings(flow?.settings)
-  } catch {
-    return []
+  for (const settings of candidates) {
+    const values = readFromSettings(settings)
+    if (values.length) return values
   }
+  return []
 }
 
 // Previous → Current stage for a list/grid row, without a per-row history

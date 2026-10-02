@@ -595,7 +595,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           onBack={onBack}
         />
 
-        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={groupTable as any} />}

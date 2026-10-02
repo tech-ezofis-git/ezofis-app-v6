@@ -41,6 +41,7 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       size = 'md',
       tooltip,
       variant = 'solid',
+      title: nativeTitle,
       ...props
     },
     ref,
@@ -52,6 +53,8 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       'justify-center',
       className,
     )
+    const tooltipText =
+      tooltip || (typeof nativeTitle === 'string' ? nativeTitle.trim() : '')
 
     const buttonElement = (
       <button
@@ -80,8 +83,8 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       </button>
     )
 
-    if (tooltip) {
-      return <Tooltip content={tooltip}>{buttonElement}</Tooltip>
+    if (tooltipText) {
+      return <Tooltip content={tooltipText}>{buttonElement}</Tooltip>
     }
 
     return buttonElement

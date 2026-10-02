@@ -142,11 +142,7 @@ export const mapExternalRowsToTableColumns = (
   return externalRows.map((row) => {
     const mapped: Record<string, any> = { _rowId: generateRowId() }
     Object.entries(row || {}).forEach(([header, cellVal]) => {
-      if (
-        header === '_rowId' ||
-        header === '_approved' ||
-        header === '_hideNote'
-      ) {
+      if (header.startsWith('_')) {
         mapped[header] = cellVal
         return
       }

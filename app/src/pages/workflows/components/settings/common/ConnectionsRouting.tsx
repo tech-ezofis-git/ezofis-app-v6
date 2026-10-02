@@ -214,11 +214,11 @@ export default function ConnectionsRouting({
     if (conn.targetToolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT)
       return 'Route to Procurement Agent for requisition processing'
     if (conn.targetToolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT)
-      return 'Route to Document Generate Agent for doc creation'
+      return 'Route to Document Generator for doc creation'
     if (conn.targetToolType === NODE_TOOL_TYPE.QUALIFY_AGENT)
-      return 'Route to Qualify Agent for lead evaluation'
+      return 'Route to Qualifier for lead evaluation'
     if (conn.targetToolType === NODE_TOOL_TYPE.QUOTE_AGENT)
-      return 'Route to Quote Agent for pricing & quote generation'
+      return 'Route to Quote Estimator for pricing & quote generation'
     if (conn.targetToolType === NODE_TOOL_TYPE.CLASSIFICATION_AGENT)
       return 'Route to Classification Agent for category classification'
     if (conn.targetToolType === NODE_TOOL_TYPE.MANUAL_USER)

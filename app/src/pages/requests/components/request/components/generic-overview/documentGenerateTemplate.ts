@@ -7,7 +7,7 @@ type WorkflowLike = {
   }
 }
 
-const isDocumentGenerateBlock = (block: Record<string, any> | null | undefined) => {
+export const isDocumentGenerateBlock = (block: Record<string, any> | null | undefined) => {
   if (!block) return false
   const type = String(block.type || '')
   const toolType = String(block.settings?.toolType || '').toLowerCase()
@@ -18,6 +18,7 @@ const isDocumentGenerateBlock = (block: Record<string, any> | null | undefined) 
     toolType === 'document_generate_agent' ||
     subtype === 'DOCUMENT_GENERATE' ||
     label.includes('Document Generate') ||
+    label.includes('Document Generator') ||
     label.includes('Document Agent')
   )
 }

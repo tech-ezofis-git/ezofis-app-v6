@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchFtlCatalogProduct } from '@/api/v6/ftlCatalog'
+import Tooltip from '@/components/base/Tooltip'
 import { ApiCatalogSelect } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import cn from '@/utils/cn'
 import {
@@ -544,6 +545,16 @@ const QuoteLineItemsTable = ({
     )
   }
 
+  const acceptAll = () => {
+    persist(
+      rowsRef.current.map((row) => ({
+        ...row,
+        _approved: true,
+        _hideNote: true,
+      })),
+    )
+  }
+
   const addRow = () => {
     persist([...rowsRef.current, emptyLineRow()])
   }
@@ -554,6 +565,7 @@ const QuoteLineItemsTable = ({
   }
 
   const canEdit = !readOnly
+  const hasUnaccepted = rows.some((row) => !row._approved)
 
   if (!rows.length) return null
 
@@ -568,14 +580,25 @@ const QuoteLineItemsTable = ({
           {title || t`Line Items`} ({rows.length})
         </h4>
         {canEdit && (
-          <button
-            className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-1 text-[11px] font-bold text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)] active:scale-95'
-            type='button'
-            onClick={addRow}
-          >
-            <Icon className='h-3.5 w-3.5' icon='tabler:plus' />
-            {t`Add Row`}
-          </button>
+          <div className='flex items-center gap-2'>
+            {hasUnaccepted ? (
+              <button
+                className='inline-flex cursor-pointer items-center rounded-md border border-orange-7 bg-orange-2 px-2 py-1 text-[11px] font-semibold text-orange-11 transition-all hover:bg-orange-3 active:scale-95'
+                type='button'
+                onClick={acceptAll}
+              >
+                {t`Accept all`}
+              </button>
+            ) : null}
+            <button
+              className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-1 text-[11px] font-bold text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)] active:scale-95'
+              type='button'
+              onClick={addRow}
+            >
+              <Icon className='h-3.5 w-3.5' icon='tabler:plus' />
+              {t`Add Row`}
+            </button>
+          </div>
         )}
       </div>
       <div className='overflow-x-auto rounded-lg border border-gray-3'>
@@ -758,41 +781,65 @@ function QuoteLineRow({
   return (
     <tr className='group'>
       <td className='min-w-[220px] border border-gray-3 p-3 text-left align-top'>
-        <div className='flex flex-col items-start gap-1 text-left'>
-          <HoverValue
-            canEdit={canEdit}
-            className='text-left'
-            keepOpenOnPortal={useApiProduct}
-            display={
-              <span className='block text-left font-semibold text-[var(--primary-11)]'>
-                {item.Product || 'NA'}
-              </span>
-            }
-            input={(close) =>
-              useApiProduct ? (
-                <div className='w-full max-w-[280px] min-w-0'>
-                  <ApiCatalogSelect
-                    col={productColumn}
-                    value={item.Product}
-                    autoOpen
-                    compact
-                    onSelectProduct={async (code) => {
-                      await onSelectProduct(code)
-                      close()
-                    }}
+        <div className='flex min-w-0 flex-col items-start gap-1 text-left'>
+          <div className='flex w-full items-start justify-between gap-3'>
+            <HoverValue
+              canEdit={canEdit}
+              className='min-w-0 flex-1 text-left'
+              keepOpenOnPortal={useApiProduct}
+              display={
+                <span className='block text-left font-semibold text-[var(--primary-11)]'>
+                  {item.Product || 'NA'}
+                </span>
+              }
+              input={(close) =>
+                useApiProduct ? (
+                  <div className='w-full max-w-[280px] min-w-0'>
+                    <ApiCatalogSelect
+                      col={productColumn}
+                      value={item.Product}
+                      autoOpen
+                      compact
+                      onSelectProduct={async (code) => {
+                        await onSelectProduct(code)
+                        close()
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <input
+                    aria-label={productLabel}
+                    className={cn(cellInputClass, 'max-w-full font-semibold')}
+                    value={item.Product ?? ''}
+                    autoFocus
+                    onChange={(event) =>
+                      onChange('Product', event.target.value)
+                    }
                   />
-                </div>
+                )
+              }
+            />
+            {canEdit ? (
+              approved ? (
+                <Tooltip content={t`Accepted`}>
+                  <span
+                    aria-label={t`Accepted`}
+                    className='mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-green-3 text-green-11'
+                  >
+                    <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                  </span>
+                </Tooltip>
               ) : (
-                <input
-                  aria-label={productLabel}
-                  className={cn(cellInputClass, 'max-w-full font-semibold')}
-                  value={item.Product ?? ''}
-                  autoFocus
-                  onChange={(event) => onChange('Product', event.target.value)}
-                />
+                <button
+                  className='mt-0.5 inline-flex shrink-0 cursor-pointer items-center rounded-md border border-orange-7 bg-orange-2 px-2 py-0.5 text-[11px] font-semibold text-orange-11 transition-all hover:bg-orange-3 active:scale-95'
+                  type='button'
+                  onClick={onApprove}
+                >
+                  {t`Accept`}
+                </button>
               )
-            }
-          />
+            ) : null}
+          </div>
           {description ? (
             <HoverValue
               canEdit={canEdit}
@@ -899,34 +946,16 @@ function QuoteLineRow({
       {canEdit && (
         <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
           <div className='inline-flex items-center justify-end gap-1'>
-            {approved ? (
-              <span
-                aria-label={t`Approved`}
-                className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
-                title={t`Approved`}
-              >
-                <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-              </span>
-            ) : (
+            <Tooltip content={t`Delete row`}>
               <button
-                aria-label={t`Approve`}
-                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
-                title={t`Approve`}
+                aria-label={t`Delete row`}
+                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
                 type='button'
-                onClick={onApprove}
+                onClick={onDelete}
               >
-                <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                <Icon className='h-4 w-4' icon='tabler:trash' />
               </button>
-            )}
-            <button
-              aria-label={t`Delete row`}
-              className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
-              title={t`Delete row`}
-              type='button'
-              onClick={onDelete}
-            >
-              <Icon className='h-4 w-4' icon='tabler:trash' />
-            </button>
+            </Tooltip>
           </div>
         </td>
       )}

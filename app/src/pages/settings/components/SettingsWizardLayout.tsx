@@ -149,7 +149,7 @@ export default function SettingsWizardLayout({
       )}
     >
       {/* Top Header */}
-      <div className='mb-4 border-b border-gray-3 px-6 py-4' key={i18n.locale}>
+      <div className='mb-4 border-b border-gray-3 px-4 py-4' key={i18n.locale}>
         <div className='flex min-w-0 items-start justify-between gap-4'>
           <div className='flex min-w-0 flex-col gap-1'>
             <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>

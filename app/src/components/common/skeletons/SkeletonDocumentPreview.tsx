@@ -3,19 +3,31 @@ import cn from '@/utils/cn'
 
 interface Props {
   className?: string
+  /** Fill the viewer edge to edge, with no page outline or inset. */
+  flush?: boolean
 }
 
 /** Placeholder page shown while a document preview is being fetched/rendered. */
-const SkeletonDocumentPreview = ({ className }: Props) => {
+const SkeletonDocumentPreview = ({ className, flush = false }: Props) => {
   return (
     <div
       aria-busy='true'
       className={cn(
-        'flex h-full min-h-[320px] w-full items-start justify-center overflow-hidden bg-gray-1 p-6',
+        'flex h-full w-full overflow-hidden bg-surface',
+        flush
+          ? 'min-h-0 items-stretch'
+          : 'min-h-[320px] items-start justify-center bg-gray-1 p-6',
         className,
       )}
     >
-      <div className='w-full max-w-[620px] rounded-lg border border-gray-3 bg-surface p-8 shadow-sm'>
+      <div
+        className={cn(
+          'w-full bg-surface',
+          flush
+            ? 'h-full p-6'
+            : 'max-w-[620px] rounded-lg border border-gray-3 p-8 shadow-sm',
+        )}
+      >
         <Skeleton className='h-7 w-1/2' />
         <Skeleton className='mt-2 h-4 w-1/3' />
 

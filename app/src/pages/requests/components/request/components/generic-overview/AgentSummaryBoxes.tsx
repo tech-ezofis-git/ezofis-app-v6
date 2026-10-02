@@ -1,13 +1,77 @@
 import { Icon } from '@iconify/react'
 import React from 'react'
+import Tooltip from '@/components/base/Tooltip'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
+import {
+  apAgentJobFailureText,
+  isApAgentJobFailed,
+} from '@/pages/requests/utils/resolveApAgentJobMessage'
 import cn from '@/utils/cn'
+import { collectFormFields } from './AgentEditableTables'
 import {
   qualifyDecisionStyle,
   summarizeQualifierResult,
 } from './qualifierResultUtils'
 import { summarizeQuoteResult } from './quoteResultUtils'
+
+
+export const formatAgentDisplayLabel = (blockOrLabel: any): string => {
+  if (!blockOrLabel) return ''
+  let label = ''
+  let type = ''
+  let subtype = ''
+
+  if (typeof blockOrLabel === 'string') {
+    label = blockOrLabel
+  } else if (typeof blockOrLabel === 'object') {
+    label = String(blockOrLabel.settings?.label || blockOrLabel.label || '')
+    type = String(blockOrLabel.type || blockOrLabel.toolType || '')
+    subtype = String(blockOrLabel.settings?.subtype || '').toUpperCase()
+  }
+
+  const cleanLabel = label.trim()
+
+  if (
+    cleanLabel === 'Qualify Agent' ||
+    cleanLabel === 'Qualify' ||
+    type === 'QUALIFY_AGENT' ||
+    subtype === 'QUALIFY'
+  ) {
+    if (!cleanLabel || cleanLabel === 'Qualify Agent' || cleanLabel === 'Qualify') {
+      return 'Qualifier'
+    }
+  }
+
+  if (
+    cleanLabel === 'Quote Agent' ||
+    cleanLabel === 'Quote' ||
+    type === 'QUOTE_AGENT' ||
+    subtype === 'QUOTE'
+  ) {
+    if (!cleanLabel || cleanLabel === 'Quote Agent' || cleanLabel === 'Quote') {
+      return 'Quote Estimator'
+    }
+  }
+
+  if (
+    cleanLabel === 'Document Generate Agent' ||
+    cleanLabel === 'Document Generate' ||
+    cleanLabel === 'Document Agent' ||
+    type === 'DOCUMENT_GENERATE_AGENT' ||
+    subtype === 'DOCUMENT_GENERATE'
+  ) {
+    if (
+      !cleanLabel ||
+      cleanLabel === 'Document Generate Agent' ||
+      cleanLabel === 'Document Generate' ||
+      cleanLabel === 'Document Agent'
+    ) {
+      return 'Document Generator'
+    }
+  }
+
+  return cleanLabel || 'Agent'
+}
 
 export interface AgentBlock {
   id: string
@@ -38,6 +102,7 @@ const isDocGenBlock = (block: AgentBlock | null | undefined) => {
     type === 'DOCUMENT_GENERATE_AGENT' ||
     subtype === 'DOCUMENT_GENERATE' ||
     label.includes('Document Generate') ||
+    label.includes('Document Generator') ||
     label.includes('Document Agent')
   )
 }
@@ -146,7 +211,7 @@ const documentGenerateFlowState = (
 ): 'pending' | 'running' | 'complete' => {
   if (requestData?.documentGenerateResponse) return 'complete'
 
-  const label = String(block?.settings?.label || 'Document Generate')
+  const label = String(block?.settings?.label || 'Document Generator')
   const { blocks, rules } = getWorkflowGraph(workflow)
   const docGenBlock =
     (block?.id && blocks.find((b) => String(b?.id) === String(block.id))) ||
@@ -255,14 +320,16 @@ export const agentHasResponse = (
   if (
     type === 'QUALIFY_AGENT' ||
     subtype === 'QUALIFY' ||
-    label.includes('Qualify')
+    label.includes('Qualify') ||
+    label.includes('Qualifier')
   ) {
     return Boolean(requestData?.qualifyAgentResponse)
   }
   if (
     type === 'QUOTE_AGENT' ||
     subtype === 'QUOTE' ||
-    label.includes('Quote')
+    label.includes('Quote') ||
+    label.includes('Quote Estimator')
   ) {
     return Boolean(requestData?.quoteAgentResponse)
   }
@@ -283,6 +350,36 @@ export const agentHasResponse = (
     requestData?.agentResponse ||
     (requestData?._agentData && requestData._agentData.length > 0),
   )
+}
+
+export const isFailedAgentBlock = (
+  block: AgentBlock | null | undefined,
+  requestData: any,
+  workflow?: WorkflowLike,
+) => {
+  if (!block || !isApAgentJobFailed(requestData)) return false
+  const failureText = apAgentJobFailureText(requestData)
+  const type = String(block.type || '')
+  const label = String(block.settings?.label || '').toLowerCase()
+  if (
+    (type === 'QUALIFY_AGENT' || label.includes('qualif')) &&
+    failureText.includes('qualif')
+  ) {
+    return true
+  }
+  if (
+    (type === 'QUOTE_AGENT' || label.includes('quote')) &&
+    failureText.includes('quote')
+  ) {
+    return true
+  }
+  if (
+    isDocGenBlock(block) &&
+    (failureText.includes('document') || failureText.includes('generat'))
+  ) {
+    return true
+  }
+  return agentIsRunning(block, requestData, workflow)
 }
 
 export const agentIsRunning = (
@@ -355,7 +452,6 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
 }) => {
   const jobStatuses = requestStore((state) => state.jobStatuses)
   const jobMappings = requestStore((state) => state.jobMappings)
-  const jobMessage = resolveApAgentJobMessage(requestData)
   // Keep subscription so cards re-render when jobStatuses update.
   void jobStatuses
   void jobMappings
@@ -373,12 +469,13 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
       )}
     >
       {agentBlocks.map((block) => {
-        const label = block.settings?.label || 'Agent'
+        const label = formatAgentDisplayLabel(block)
         const iconName = block.icon || 'lucide:cpu'
 
         let status = 'Pending'
         let statusColor = 'text-gray-9 bg-gray-2 border-gray-3'
         let value = '-'
+        let isRunning = false
 
         if (block.type === 'QUALIFY_AGENT') {
           const qualifyResult =
@@ -396,9 +493,9 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
             (requestData?.stage === label &&
               !requestData?.qualifyAgentResponse)
           ) {
+            isRunning = true
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
-            value = jobMessage || '—'
           }
         } else if (block.type === 'QUOTE_AGENT') {
           status = 'Pending'
@@ -410,15 +507,16 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
               'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
             const summary = summarizeQuoteResult(
               requestData.quoteAgentResponse.quote_result,
+              collectFormFields(workflow),
             )
-            value = summary.title
+            value = summary.title || '-'
           } else if (
             agentIsRunning(block, requestData, workflow) ||
             requestData?.stage === label
           ) {
+            isRunning = true
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
-            value = jobMessage || '—'
           }
         } else if (isDocGenBlock(block)) {
           status = 'Pending'
@@ -435,10 +533,17 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
               'text-[var(--primary-10)] bg-[var(--primary-2)] border-[var(--primary-3)]'
             value = 'Document ready'
           } else if (flowState === 'running') {
+            isRunning = true
             status = 'Processing'
             statusColor = 'text-orange-10 bg-orange-2 border-orange-3'
-            value = jobMessage || '—'
           }
+        }
+
+        if (isFailedAgentBlock(block, requestData, workflow)) {
+          isRunning = false
+          status = 'Failed'
+          statusColor = 'text-red-11 bg-red-2 border-red-3'
+          value = '-'
         }
 
         return (
@@ -472,9 +577,19 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
               <span className='truncate text-[11px] leading-none font-semibold tracking-tight text-[var(--gray-11)]'>
                 {label}
               </span>
-              <div className='truncate text-[13px] leading-tight font-semibold text-[var(--gray-13)]'>
-                {value || '---'}
-              </div>
+              {isRunning ? (
+                <div className='mt-1 h-4 w-4/5 animate-pulse rounded bg-gray-3' />
+              ) : (
+                <Tooltip
+                  className='w-full max-w-full'
+                  content={String(value || '')}
+                  disabled={!value || value === '-'}
+                >
+                  <div className='w-full truncate text-[13px] leading-tight font-semibold text-[var(--gray-13)]'>
+                    {value || '---'}
+                  </div>
+                </Tooltip>
+              )}
             </div>
           </div>
         )

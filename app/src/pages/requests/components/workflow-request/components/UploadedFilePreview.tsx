@@ -91,7 +91,7 @@ const UploadedFilePreview = ({
           })}
         </div>
       )}
-      <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
+      <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
         <DocumentPreviewViewer
           activeHighlightTerm={activeHighlightTerm}
           enableHighlight={Boolean(activeHighlightTerm)}

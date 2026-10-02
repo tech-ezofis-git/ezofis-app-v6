@@ -20,7 +20,7 @@ const Header = ({ tabValue, onOpenAiBuilder, onTabChange }: HeaderProps) => {
   }
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
+    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-4'>
       <Tabs
         color='primary'
         value={tabValue}

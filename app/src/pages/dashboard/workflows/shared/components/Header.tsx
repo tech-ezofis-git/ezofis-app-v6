@@ -821,7 +821,7 @@ export default function DashboardCharts() {
   }
 
   return (
-    <div className='flex flex-col gap-4 px-6 pt-3 pb-6'>
+    <div className='flex flex-col gap-4 px-4 pt-3 pb-6'>
       {/* 1. QUICK FILTERS ROW */}
       <CustomFilter
         filters={filtersProp}

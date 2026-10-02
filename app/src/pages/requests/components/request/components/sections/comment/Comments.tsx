@@ -212,8 +212,8 @@ export default function Comments({
 
         {sortedComments.map((c, idx) => {
           const isMe =
-            c?.createdByEmail === currentUserEmail ||
-            (c?.createdBy && c.createdBy === session?.id)
+            Boolean(currentUserEmail && c?.createdByEmail === currentUserEmail) ||
+            Boolean(session?.id && c?.createdBy && String(c.createdBy) === String(session.id))
           const rawName = String(
             c?.createdByName ||
               c?.createdByEmail ||
@@ -221,13 +221,23 @@ export default function Comments({
               c?.author ||
               '',
           ).trim()
+          const lowerName = rawName.toLowerCase()
           const isAi =
-            !rawName ||
-            isUuid(rawName) ||
-            ['system', 'bot', 'ai', 'ai agent', 'ezofis ai'].includes(
-              rawName.toLowerCase(),
+            !isMe &&
+            Boolean(
+              c?.isAi ||
+                c?.isBot ||
+                ['system', 'bot', 'ai', 'ai agent', 'ezofis ai'].includes(
+                  lowerName,
+                ),
             )
-          const name = isMe ? t`You` : isAi ? t`AI` : rawName
+          const name = isMe
+            ? t`You`
+            : isAi
+              ? t`AI`
+              : rawName && !isUuid(rawName)
+                ? rawName
+                : c?.createdByEmail || t`User`
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
             ? formatDatetime(
@@ -239,7 +249,7 @@ export default function Comments({
             ? myInitials
             : isAi
               ? 'AI'
-              : getInitials(rawName)
+              : getInitials(name)
 
           return (
             <div className='flex items-start gap-3' key={`${c?.id ?? idx}`}>

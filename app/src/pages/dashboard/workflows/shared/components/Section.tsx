@@ -16,7 +16,7 @@ const Section = ({ children, title }: Props) => {
   return (
     <div
       className={cn(
-        `${isApSetUpCompleted ? 'pt-6' : 'pt-1'} mb-8 px-6 md:px-8`,
+        `${isApSetUpCompleted ? 'pt-6' : 'pt-1'} mb-8 px-4`,
         width >= SCREEN_XL && '@container',
       )}
     >

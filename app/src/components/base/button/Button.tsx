@@ -1,6 +1,7 @@
 import { type HTMLMotionProps, motion } from 'motion/react'
 import { forwardRef, type ReactNode } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
@@ -48,14 +49,16 @@ const Button = forwardRef<HTMLButtonElement, Props>(
       suffixIcon,
       suffixIconClass,
       variant = 'solid',
+      title,
       ...props
     },
     ref,
   ) => {
     const variantClassName = getVariantClassName(variant, color)
     const _className = cn(variantClassName, sizeClassName[size], className)
+    const tooltipText = typeof title === 'string' ? title.trim() : ''
 
-    return (
+    const button = (
       <motion.button
         className={_className}
         data-loading={loading || undefined}
@@ -98,6 +101,9 @@ const Button = forwardRef<HTMLButtonElement, Props>(
         )}
       </motion.button>
     )
+
+    if (!tooltipText) return button
+    return <Tooltip content={tooltipText}>{button}</Tooltip>
   },
 )
 

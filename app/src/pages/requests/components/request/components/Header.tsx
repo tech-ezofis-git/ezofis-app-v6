@@ -744,7 +744,7 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap justify-between gap-x-3 gap-y-2 px-3 py-2 sm:px-4'>
+    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap justify-between gap-x-3 gap-y-2 px-4 py-2'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
       <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-3'>
         <IconButton
@@ -768,12 +768,11 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onPrev}
             />
           </Tooltip>
-          <h1
-            className='text-[13px] font-semibold tracking-tight whitespace-nowrap text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
-            title={requestNo}
-          >
-            {requestNo}
-          </h1>
+          <Tooltip content={requestNo || ''}>
+            <h1 className='text-[13px] font-semibold tracking-tight whitespace-nowrap text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'>
+              {requestNo}
+            </h1>
+          </Tooltip>
           <Tooltip content={t`Next Request`} position='bottom'>
             <IconButton
               className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -1331,15 +1330,14 @@ const Header: React.FC<HeaderProps> = ({
                                   }
                                 >
                                   {isOwner ? (
-                                    <div
-                                      className='flex w-5 shrink-0 items-center justify-center'
-                                      title={t`Request Owner`}
-                                    >
-                                      <Icon
-                                        className='size-4 text-[var(--primary-9)]'
-                                        name='tabler:crown'
-                                      />
-                                    </div>
+                                    <Tooltip content={t`Request Owner`}>
+                                      <div className='flex w-5 shrink-0 items-center justify-center'>
+                                        <Icon
+                                          className='size-4 text-[var(--primary-9)]'
+                                          name='tabler:crown'
+                                        />
+                                      </div>
+                                    </Tooltip>
                                   ) : (
                                     <div
                                       className='flex shrink-0 items-center justify-center'
@@ -1368,19 +1366,17 @@ const Header: React.FC<HeaderProps> = ({
 
                                   {/* Name & Email */}
                                   <div className='min-w-0 flex-1'>
-                                    <p
-                                      className='truncate text-[12px] font-semibold text-[var(--gray-13)]'
-                                      title={name}
-                                    >
-                                      {name}
-                                    </p>
-                                    {email && (
-                                      <p
-                                        className='truncate text-[11px] text-[var(--gray-9)]'
-                                        title={email}
-                                      >
-                                        {email}
+                                    <Tooltip className='max-w-full' content={name}>
+                                      <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                                        {name}
                                       </p>
+                                    </Tooltip>
+                                    {email && (
+                                      <Tooltip className='max-w-full' content={email}>
+                                        <p className='truncate text-[11px] text-[var(--gray-9)]'>
+                                          {email}
+                                        </p>
+                                      </Tooltip>
                                     )}
                                   </div>
                                 </div>

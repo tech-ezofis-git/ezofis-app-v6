@@ -3049,7 +3049,7 @@ export default function Upload({
   if (queue.length === 0) {
     return (
       <>
-        <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+        <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-4 py-4'>
           <div className='flex items-start gap-3'>
             <IconButton
               ariaLabel={t`Back`}

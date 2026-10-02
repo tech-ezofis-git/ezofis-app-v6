@@ -573,7 +573,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     <div className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <SettingsPageHeader title={t`Credit Usage`} onBack={onBack} />
 
-      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4'>
         <CustomFilter
           activeQuickFilters={[period]}
           customSearchComponent={<div />}

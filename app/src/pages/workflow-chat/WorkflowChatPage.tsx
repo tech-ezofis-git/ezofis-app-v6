@@ -2507,7 +2507,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       {/* ---------------- Assistant panel header ---------------- */}
       {!embedded && (
         <div
-          className='flex flex-shrink-0 items-center justify-between border-b border-gray-5 bg-surface px-5 py-3'
+          className='flex flex-shrink-0 items-center justify-between border-b border-gray-5 bg-surface px-4 py-3'
           id='assistant-header'
         >
           <div className='flex items-center gap-3'>
@@ -2562,7 +2562,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           id='chat-col'
         >
           <div
-            className='flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5'
+            className='flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-5'
             ref={chatScrollRef}
           >
             {messages.map((msg) => {
@@ -2799,7 +2799,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
           {/* Composer */}
           <div
-            className='flex-shrink-0 border-t border-gray-5 px-6 py-3'
+            className='flex-shrink-0 border-t border-gray-5 px-4 py-3'
             id='composer-wrap'
           >
             <div className='flex items-center gap-3'>

@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import Tooltip from '@/components/base/Tooltip'
 import {
   ApiCatalogSelect,
@@ -9,7 +9,44 @@ import {
 import cn from '@/utils/cn'
 
 const cellInputClass =
-  'w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-surface'
+  'w-full rounded-md border border-transparent bg-transparent px-0 py-0.5 text-left text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-surface'
+
+const wrappingTextClass =
+  'block min-w-0 break-words whitespace-pre-wrap'
+
+const AutoGrowTextarea = ({
+  className,
+  value,
+  onChange,
+}: {
+  className?: string
+  value: string
+  onChange: (value: string) => void
+}) => {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = '0px'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      className={cn(
+        cellInputClass,
+        wrappingTextClass,
+        'block min-h-[1.5rem] w-full resize-none overflow-hidden',
+        className,
+      )}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  )
+}
 
 const META_ROW_KEYS = new Set(['_rowId', '_approved', '_hideNote'])
 
@@ -59,7 +96,15 @@ export const resolveAgentTableColumns = (
   const extras: AgentFlatTableColumn[] = []
   rows.forEach((row) => {
     Object.keys(row || {}).forEach((key) => {
-      if (META_ROW_KEYS.has(key) || knownIds.has(key)) return
+      if (META_ROW_KEYS.has(key) || key.startsWith('_') || knownIds.has(key)) {
+        return
+      }
+      if (
+        base.length > 0 &&
+        /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(key)
+      ) {
+        return
+      }
       const normalized = normalizeKey(key)
       if (knownNames.has(normalized)) return
       knownIds.add(key)
@@ -82,20 +127,30 @@ interface Props {
   columns: AgentFlatTableColumn[]
   rows: Record<string, any>[]
   title: string
+  allowAddRow?: boolean
   icon?: string
+  iconClassName?: string
   readOnly?: boolean
   showRowApprove?: boolean
   onChange: (rows: Record<string, any>[]) => void
+  onMoveRow?: (row: Record<string, any>) => void
+  onRemoveRow?: (row: Record<string, any>) => void
+  allowDelete?: boolean
 }
 
 const AgentFlatTable = ({
+  allowAddRow = true,
+  allowDelete = true,
   columns: columnsProp,
   icon = 'tabler:table',
+  iconClassName = 'text-[var(--primary-9)]',
   readOnly = false,
   rows: rowsProp,
   showRowApprove = false,
   title,
   onChange,
+  onMoveRow,
+  onRemoveRow,
 }: Props) => {
   const { t } = useLingui()
   const [rows, setRows] = useState<Record<string, any>[]>(() => rowsProp || [])
@@ -133,8 +188,23 @@ const AgentFlatTable = ({
   }
 
   const deleteRow = (index: number) => {
+    const row = rows[index]
     const next = rows.filter((_, i) => i !== index)
     persist(next.length > 0 ? next : [{ ...emptyRow, _rowId: generateRowId() }])
+    if (!row || !onRemoveRow) return
+    const hasValue = Object.entries(row).some(
+      ([key, value]) =>
+        !key.startsWith('_') && String(value ?? '').trim() !== '',
+    )
+    if (hasValue) onRemoveRow(row)
+  }
+
+  const moveRow = (index: number) => {
+    const row = rows[index]
+    if (!row || !onMoveRow) return
+    const next = rows.filter((_, i) => i !== index)
+    persist(next)
+    onMoveRow(row)
   }
 
   const approveRow = (index: number) => {
@@ -146,6 +216,9 @@ const AgentFlatTable = ({
   }
 
   const canEdit = !readOnly
+  const actionCount =
+    (onMoveRow ? 1 : 0) + (showRowApprove ? 1 : 0) + (allowDelete ? 1 : 0)
+  const singleAction = actionCount <= 1
 
   if (!columns.length) return null
 
@@ -153,10 +226,10 @@ const AgentFlatTable = ({
     <div className='flex flex-col gap-3'>
       <div className='flex items-center justify-between gap-2'>
         <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
-          <Icon className='h-4 w-4 text-[var(--primary-9)]' icon={icon} />
+          <Icon className={cn('h-4 w-4', iconClassName)} icon={icon} />
           {title} ({rows.length})
         </h4>
-        {canEdit && (
+        {canEdit && allowAddRow && (
           <button
             className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-1 text-[11px] font-bold text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)] active:scale-95'
             type='button'
@@ -167,25 +240,32 @@ const AgentFlatTable = ({
           </button>
         )}
       </div>
-      <div className='overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full min-w-max border-collapse text-left text-sm'>
+      <div className='w-full overflow-x-auto rounded-lg border border-gray-3'>
+        <table className='w-full table-fixed border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
-              {columns.map((col) => (
+              {columns.map((col, index) => (
                 <th
                   key={col.id}
                   className={cn(
-                    'border border-gray-3 p-3 font-semibold whitespace-nowrap',
-                    isNumericColumn(col) && 'text-right',
+                    'border border-gray-3 px-3 py-2 text-left font-semibold',
+                    index === 0 && 'w-auto',
+                    index > 0 &&
+                      !isNumericColumn(col) &&
+                      'w-[12.5rem] whitespace-nowrap',
+                    isNumericColumn(col) ? 'text-right' : 'text-left',
                   )}
                 >
                   {columnLabel(col)}
                 </th>
               ))}
-              {canEdit && (
+              {canEdit && actionCount > 0 && (
                 <th
                   aria-label={t`Actions`}
-                  className='w-px border border-gray-3 p-2 whitespace-nowrap'
+                  className={cn(
+                    'border border-gray-3 py-2 whitespace-nowrap',
+                    singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
+                  )}
                 />
               )}
             </tr>
@@ -193,54 +273,84 @@ const AgentFlatTable = ({
           <tbody className='bg-surface'>
             {rows.map((row, index) => (
               <tr className='group' key={row._rowId || index}>
-                {columns.map((col) => (
+                {columns.map((col, colIdx) => (
                   <td
                     key={col.id}
                     className={cn(
-                      'min-w-[8rem] border border-gray-3 p-3 align-top text-gray-11',
-                      isNumericColumn(col) &&
-                      'text-right font-medium text-gray-12',
-                      columnType(col) === 'LONG_TEXT' && 'min-w-[12rem]',
+                      'border border-gray-3 px-3 py-2 text-left align-top text-gray-11',
+                      colIdx === 0 && 'w-auto',
+                      colIdx > 0 &&
+                        !isNumericColumn(col) &&
+                        'w-[12.5rem] whitespace-nowrap',
+                      isNumericColumn(col)
+                        ? 'text-right font-medium text-gray-12'
+                        : 'text-left',
                     )}
                   >
-                    {renderCell(col, row[col.id], canEdit, (value) =>
-                      updateCell(index, col.id, value),
+                    {renderCell(
+                      col,
+                      row[col.id],
+                      canEdit,
+                      (value) => updateCell(index, col.id, value),
+                      colIdx > 0 && !isNumericColumn(col),
                     )}
                   </td>
                 ))}
-                {canEdit && (
-                  <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>
-                    <div className='inline-flex items-center justify-end gap-1'>
+                {canEdit && actionCount > 0 && (
+                  <td
+                    className={cn(
+                      'border border-gray-3 py-1 text-center align-middle whitespace-nowrap',
+                      singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
+                    )}
+                  >
+                    <div className='inline-flex items-center justify-center gap-0.5'>
+                      {onMoveRow ? (
+                        <Tooltip content={t`Move to matched items`}>
+                          <button
+                            aria-label={t`Move to matched items`}
+                            className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
+                            type='button'
+                            onClick={() => moveRow(index)}
+                          >
+                            <Icon className='h-4 w-4' icon='tabler:arrow-right' />
+                          </button>
+                        </Tooltip>
+                      ) : null}
                       {showRowApprove ? (
                         row._approved ? (
-                          <span
-                            aria-label={t`Approved`}
-                            className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
-                            title={t`Approved`}
-                          >
-                            <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-                          </span>
+                          <Tooltip content={t`Approved`}>
+                            <span
+                              aria-label={t`Approved`}
+                              className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
+                            >
+                              <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                            </span>
+                          </Tooltip>
                         ) : (
-                          <button
-                            aria-label={t`Approve`}
-                            className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
-                            title={t`Approve`}
-                            type='button'
-                            onClick={() => approveRow(index)}
-                          >
-                            <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-                          </button>
+                          <Tooltip content={t`Approve`}>
+                            <button
+                              aria-label={t`Approve`}
+                              className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
+                              type='button'
+                              onClick={() => approveRow(index)}
+                            >
+                              <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                            </button>
+                          </Tooltip>
                         )
                       ) : null}
-                      <button
-                        aria-label={t`Delete row`}
-                        className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
-                        title={t`Delete row`}
-                        type='button'
-                        onClick={() => deleteRow(index)}
-                      >
-                        <Icon className='h-4 w-4' icon='tabler:trash' />
-                      </button>
+                      {allowDelete ? (
+                        <Tooltip content={t`Delete row`}>
+                          <button
+                            aria-label={t`Delete row`}
+                            className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
+                            type='button'
+                            onClick={() => deleteRow(index)}
+                          >
+                            <Icon className='h-4 w-4' icon='tabler:trash' />
+                          </button>
+                        </Tooltip>
+                      ) : null}
                     </div>
                   </td>
                 )}
@@ -258,6 +368,7 @@ function renderCell(
   value: any,
   canEdit: boolean,
   onChange: (value: any) => void,
+  singleLine = false,
 ): ReactNode {
   const type = columnType(col)
   const label = columnLabel(col)
@@ -266,7 +377,7 @@ function renderCell(
     if (!label) return control
     return (
       <Tooltip
-        className='flex w-full min-w-0'
+        className='flex w-full min-w-0 items-start'
         content={label}
         openDelay={200}
         position='top'
@@ -278,7 +389,14 @@ function renderCell(
 
   if (!canEdit) {
     return withLabel(
-      <span className='block min-w-0 truncate'>
+      <span
+        className={cn(
+          wrappingTextClass,
+          'text-left leading-snug',
+          singleLine && 'whitespace-nowrap',
+          isNumericColumn(col) ? 'text-right font-medium' : 'text-left',
+        )}
+      >
         {value != null && value !== '' ? String(value) : 'NA'}
       </span>,
     )
@@ -302,12 +420,7 @@ function renderCell(
 
   if (type === 'LONG_TEXT') {
     return withLabel(
-      <textarea
-        className={cn(cellInputClass, 'min-h-[2.5rem] resize-y')}
-        rows={2}
-        value={value ?? ''}
-        onChange={(event) => onChange(event.target.value)}
-      />,
+      <AutoGrowTextarea value={value ?? ''} onChange={onChange} />,
     )
   }
 
@@ -316,10 +429,7 @@ function renderCell(
       <input
         type='number'
         value={value ?? ''}
-        className={cn(
-          cellInputClass,
-          type === 'CURRENCY_AMOUNT' ? 'text-right' : 'text-center',
-        )}
+        className={cn(cellInputClass, 'text-right')}
         onChange={(event) => onChange(event.target.value)}
       />,
     )
@@ -344,10 +454,10 @@ function renderCell(
   }
 
   return withLabel(
-    <input
-      className={cellInputClass}
+    <AutoGrowTextarea
+      className={singleLine ? 'whitespace-nowrap' : undefined}
       value={value ?? ''}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={onChange}
     />,
   )
 }
@@ -356,7 +466,7 @@ export const normalizeAgentTableRows = (
   externalRows: Record<string, any>[],
   columns: AgentFlatTableColumn[],
 ) => {
-  if (!externalRows.length) return []
+  if (!externalRows?.length) return []
   const resolvedColumns = resolveAgentTableColumns(columns, externalRows)
   const mapped = mapExternalRowsToTableColumns(externalRows, resolvedColumns)
   return mapped.map((row) =>

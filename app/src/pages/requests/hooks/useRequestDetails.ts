@@ -30,8 +30,13 @@ export const useRequestDetail = (
       // 1. Fetch Basic Process Data from V6 API instead of discontinued rowInfo
       let processData: any = null
       try {
-        // Do not filter list calls by transactionId in detail view to ensure we always fetch the latest active transaction (e.g. Inbox transaction after AP Agent finishes)
-        const txId = undefined
+        // Stage-based tickets (Enquiry / Qualified) are not always in Inbox.
+        // Keep the transaction the user opened instead of a Sent/Completed
+        // copy of an earlier agent step.
+        const openedTransactionId =
+          transactionId != null && String(transactionId) !== ''
+            ? String(transactionId)
+            : ''
 
         const [inboxRes, sentRes, completedRes] = await Promise.all([
           workflowsApiV6.getInboxList(
@@ -39,21 +44,21 @@ export const useRequestDetail = (
             1,
             5,
             String(processId),
-            txId,
+            undefined,
           ),
           workflowsApiV6.getSentList(
             String(workflowId),
             1,
             5,
             String(processId),
-            txId,
+            undefined,
           ),
           workflowsApiV6.getCompletedList(
             String(workflowId),
             1,
             5,
             String(processId),
-            txId,
+            undefined,
           ),
         ])
 
@@ -69,33 +74,52 @@ export const useRequestDetail = (
         })
 
         if (processItems.length > 0) {
-          // Sort by transactionId descending to always get the latest transaction.
-          // This solves Elasticsearch indexing delays (where an old Inbox item is returned alongside the new Sent item)
-          // and supports AP Agent auto-advancing (where a new Inbox item replaces the old Completed item).
-          processItems.sort((a, b) => {
-            const txA = Number(a.transactionId)
-            const txB = Number(b.transactionId)
-            if (!Number.isNaN(txA) && !Number.isNaN(txB)) {
-              return txB - txA
-            }
-            const dateA = new Date(
-              a.transactionCreatedAt ||
-                a.lastActionDate ||
-                a.updatedAt ||
-                a.createdAt ||
-                0,
-            ).getTime()
-            const dateB = new Date(
-              b.transactionCreatedAt ||
-                b.lastActionDate ||
-                b.updatedAt ||
-                b.createdAt ||
-                0,
-            ).getTime()
-            return dateB - dateA
-          })
+          const opened = openedTransactionId
+            ? processItems.find(
+                (item: any) =>
+                  String(item.transactionId || '') === openedTransactionId,
+              )
+            : null
 
-          processData = processItems[0]
+          if (opened) {
+            processData = opened
+          } else {
+            // Numeric transaction ids sort descending. UUID ids fall back to
+            // the newest timestamp. A completed Sent row must not replace the
+            // live person step the user opened when that step is not in Inbox.
+            const liveItems = processItems.filter(
+              (item: any) => !item.completedAtUtc,
+            )
+            const pool =
+              liveItems.length > 0
+                ? liveItems
+                : openedTransactionId
+                  ? []
+                  : processItems
+            pool.sort((a: any, b: any) => {
+              const txA = Number(a.transactionId)
+              const txB = Number(b.transactionId)
+              if (!Number.isNaN(txA) && !Number.isNaN(txB)) {
+                return txB - txA
+              }
+              const dateA = new Date(
+                a.transactionCreatedAt ||
+                  a.lastActionDate ||
+                  a.updatedAt ||
+                  a.createdAt ||
+                  0,
+              ).getTime()
+              const dateB = new Date(
+                b.transactionCreatedAt ||
+                  b.lastActionDate ||
+                  b.updatedAt ||
+                  b.createdAt ||
+                  0,
+              ).getTime()
+              return dateB - dateA
+            })
+            processData = pool[0] || null
+          }
         }
       } catch (err) {
         console.error('Error fetching process details from V6 lists:', err)
