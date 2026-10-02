@@ -874,7 +874,7 @@ export function DocumentsListView({
 
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface text-sm text-gray-11 duration-300'>
-      <div className='relative z-40 shrink-0 bg-surface px-6 py-2'>
+      <div className='relative z-40 shrink-0 bg-surface px-4 py-2'>
         <FolderFilterBar
           activeFilters={fileFilters}
           currentFolderGroupField={currentFolderGroupField}
@@ -923,7 +923,7 @@ export function DocumentsListView({
         />
       </div>
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pt-1 pb-2'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1 pb-2'>
         <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden'>
           {error ? (
             <div className='m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
@@ -1049,7 +1049,7 @@ export function DocumentsListView({
       </div>
 
       {!activeRepositoryId || isStagedCategory ? null : (
-        <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
+        <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-4 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
           <Pagination
             itemLabel={t`Files`}
             page={currentPage}

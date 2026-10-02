@@ -46,7 +46,7 @@ export default function SettingsSetupHeader({
   useSettingsTopbar(breadcrumbConfig)
 
   return (
-    <header className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-4'>
+    <header className='mb-4 flex items-center justify-between border-b border-gray-3 px-4 py-4'>
       <div className='flex min-w-0 items-start gap-3'>
         {showBackButton ? (
           <IconButton

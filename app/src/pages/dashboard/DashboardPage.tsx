@@ -268,7 +268,7 @@ const DashboardPage = () => {
 
   if (isActivatingAutomation) {
     return (
-      <div className='flex h-full min-h-[50vh] flex-col gap-6 p-6'>
+      <div className='flex h-full min-h-[50vh] flex-col gap-6 p-4'>
         <div className='flex items-center justify-between gap-4'>
           <div className='space-y-2'>
             <Skeleton className='h-5 w-56' />
@@ -307,7 +307,7 @@ const DashboardPage = () => {
         <>
           {!isSetupStarted && (
             <AnimateFadeIn delay={0.05}>
-              <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-3 px-6 py-3'>
+              <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-3 px-4 py-3'>
                 <div className='min-w-0'>
                   <p className='text-14 font-medium text-gray-13'>
                     {displayTitle}

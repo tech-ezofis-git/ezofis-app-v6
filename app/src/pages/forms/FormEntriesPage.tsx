@@ -2052,7 +2052,7 @@ const FormEntriesPage = () => {
     return (
       <div className='bg-surface-muted/20 flex h-full flex-col font-inter'>
         {/* Compact Enterprise Form Banner Header */}
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-surface px-8 py-3.5 shadow-xs'>
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-surface px-4 py-3.5 shadow-xs'>
           <div className='flex min-w-0 items-center gap-3.5'>
             <IconButton
               color='gray'
@@ -2084,7 +2084,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Scrollable Form Body with ~80% Width Container */}
-        <div className='custom-scrollbar bg-surface-muted/40 flex-1 overflow-y-auto px-6 py-6'>
+        <div className='custom-scrollbar bg-surface-muted/40 flex-1 overflow-y-auto px-4 py-6'>
           <div className='mx-auto w-full max-w-[1200px] space-y-6'>
             {panels.map((panel: any, pIdx: number) => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
@@ -2415,7 +2415,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-surface/95 px-8 py-3.5 shadow-lg backdrop-blur-md'>
+        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-surface/95 px-4 py-3.5 shadow-lg backdrop-blur-md'>
           {/* Action Buttons */}
           <div className='flex items-center gap-3'>
             <Button
@@ -2442,7 +2442,7 @@ const FormEntriesPage = () => {
   return (
     <div className='relative flex h-full flex-col bg-surface'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
-      <div className='flex items-center justify-between border-b border-gray-2 px-6'>
+      <div className='flex items-center justify-between border-b border-gray-2 px-4'>
         <div className='flex items-center gap-4'>
           <IconButton
             color='gray'
@@ -2545,7 +2545,7 @@ const FormEntriesPage = () => {
 
       {/* 2. MAIN LAYOUT (Table view) */}
       <div className='relative flex flex-1 overflow-hidden'>
-        <div className='bg-surface-muted/50 flex flex-1 flex-col overflow-hidden p-6'>
+        <div className='bg-surface-muted/50 flex flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={table as any} />}

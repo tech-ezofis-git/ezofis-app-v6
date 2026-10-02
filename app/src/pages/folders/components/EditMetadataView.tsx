@@ -384,7 +384,7 @@ export function EditMetadataView({
 
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary duration-300'>
-      <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface px-6'>
+      <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface px-4'>
         <div className='flex min-w-0 items-center gap-4'>
           <button
             className='inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-2 text-[14px] font-semibold text-gray-13 hover:bg-gray-2'

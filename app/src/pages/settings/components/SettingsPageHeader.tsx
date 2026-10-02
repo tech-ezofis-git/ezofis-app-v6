@@ -62,7 +62,7 @@ export default function SettingsPageHeader({
   }
 
   return (
-    <div className='border-b border-gray-3 bg-surface px-6 py-3'>
+    <div className='border-b border-gray-3 bg-surface px-4 py-3'>
       <div
         className={cn(
           'flex flex-wrap items-center gap-4',

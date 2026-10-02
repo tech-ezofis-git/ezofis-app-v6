@@ -821,7 +821,7 @@ export default function FolderRetentionPolicyWizard({
 
   return (
     <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1'>
-      <div className='mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8'>
+      <div className='mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-4 py-3.5'>
         <div className='flex items-center gap-3'>
           <IconButton
             ariaLabel={t`Back`}

@@ -1,5 +1,12 @@
 import requestStore from '@/pages/requests/stores/useRequestStore'
 
+export const isJobStatusFailed = (status: any) => {
+  if (!status) return false
+  const hangfire = String(status.hangfireStatus || '').toLowerCase()
+  const stage = String(status.stage || '').toUpperCase()
+  return hangfire === 'failed' || stage === 'FAILED'
+}
+
 const normalizeJobMessage = (raw: unknown) => {
   const message = String(raw || '').trim()
   if (!message) return ''
@@ -22,8 +29,7 @@ const candidateIdsOf = (requestData: any) => {
     .map((v) => String(v))
 }
 
-/** Resolve live AP-agent job status for a request row / selected item. */
-export const resolveApAgentJobStatus = (requestData: any) => {
+const lookupJobStatus = (requestData: any, includeCompleted: boolean) => {
   const { jobMappings, jobStatuses, processingProcesses } =
     requestStore.getState()
 
@@ -31,17 +37,15 @@ export const resolveApAgentJobStatus = (requestData: any) => {
   const mappings = jobMappings || {}
   const candidateIds = candidateIdsOf(requestData)
 
-  const pickActive = (status: any) => {
-    if (!status || status.isCompleted) return null
+  const pick = (status: any) => {
+    if (!status) return null
+    if (!includeCompleted && status.isCompleted) return null
     return status
   }
 
   // 1) Direct lookup by known ids (job-37334, 37334, instance uuid, …)
   for (const id of candidateIds) {
-    const hit =
-      pickActive(statuses[`job-${id}`]) ||
-      pickActive(statuses[id]) ||
-      null
+    const hit = pick(statuses[`job-${id}`]) || pick(statuses[id]) || null
     if (hit) return hit
   }
 
@@ -49,9 +53,9 @@ export const resolveApAgentJobStatus = (requestData: any) => {
   for (const [jobId, instanceId] of Object.entries(mappings)) {
     if (!candidateIds.includes(String(instanceId))) continue
     const hit =
-      pickActive(statuses[`job-${jobId}`]) ||
-      pickActive(statuses[String(jobId)]) ||
-      pickActive(statuses[String(instanceId)]) ||
+      pick(statuses[`job-${jobId}`]) ||
+      pick(statuses[String(jobId)]) ||
+      pick(statuses[String(instanceId)]) ||
       null
     if (hit) return hit
   }
@@ -77,16 +81,14 @@ export const resolveApAgentJobStatus = (requestData: any) => {
     const jobId = process.apAgentJobId || process.jobId
     if (jobId) {
       const hit =
-        pickActive(statuses[`job-${jobId}`]) ||
-        pickActive(statuses[String(jobId)]) ||
-        null
+        pick(statuses[`job-${jobId}`]) || pick(statuses[String(jobId)]) || null
       if (hit) return hit
     }
   }
 
   // 4) Scan statuses for matching instanceId / jobId fields
   for (const status of Object.values(statuses) as any[]) {
-    if (!pickActive(status)) continue
+    if (!pick(status)) continue
     const statusIds = [status.instanceId, status.jobId, status.apAgentJobId]
       .filter(Boolean)
       .map(String)
@@ -94,14 +96,76 @@ export const resolveApAgentJobStatus = (requestData: any) => {
   }
 
   // 5) Detail view usually has one in-flight job — use its message.
-  const active = (Object.values(statuses) as any[]).filter(
-    (status) =>
-      pickActive(status) &&
-      normalizeJobMessage(status.message || status.hangfireStatus),
-  )
-  if (active.length === 1) return active[0]
+  if (!includeCompleted) {
+    const active = (Object.values(statuses) as any[]).filter(
+      (status) =>
+        pick(status) &&
+        normalizeJobMessage(status.message || status.hangfireStatus),
+    )
+    if (active.length === 1) return active[0]
+  }
 
   return null
+}
+
+/** Resolve live AP-agent job status for a request row / selected item. */
+export const resolveApAgentJobStatus = (requestData: any) =>
+  lookupJobStatus(requestData, false)
+
+/** Job already succeeded, but the request result may still be loading. */
+export const isApAgentJobCompleted = (requestData: any) => {
+  if (resolveApAgentJobStatus(requestData)) return false
+  const status = lookupJobStatus(requestData, true)
+  if (!status?.isCompleted || isJobStatusFailed(status)) return false
+  return true
+}
+
+/** Hangfire reported a terminal failure for this request's agent job. */
+export const isApAgentJobFailed = (requestData: any) =>
+  isJobStatusFailed(lookupJobStatus(requestData, true))
+
+export const apAgentJobFailureText = (requestData: any) => {
+  const status = lookupJobStatus(requestData, true)
+  if (!isJobStatusFailed(status)) return ''
+  return [status?.message, status?.errorMessage, status?.stage]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
+/** Drop the in-flight process so the request stops looking like it is still running. */
+export const stopFailedApAgentJob = (
+  apAgentJobId: string | number,
+  jobData?: any,
+) => {
+  const store = requestStore.getState()
+  const ids = [
+    `job-${apAgentJobId}`,
+    apAgentJobId,
+    jobData?.instanceId,
+    jobData?.processId,
+  ].filter((id) => id !== null && id !== undefined && String(id).trim() !== '')
+  ids.forEach((id) => store.removeProcessingProcess(id))
+
+  requestStore.setState((state) => {
+    const selected = state.selectedItem
+    if (!selected) return {}
+    const selectedIds = [
+      selected.apAgentJobId,
+      selected.processId,
+      selected.id,
+      selected.workflowInstanceId,
+      selected.instanceId,
+    ].map((id) => String(id || ''))
+    const failedIds = ids.map((id) => String(id))
+    if (!selectedIds.some((id) => id && failedIds.includes(id))) return {}
+    return {
+      selectedItem: {
+        ...selected,
+        isProcessing: false,
+      },
+    }
+  })
 }
 
 export const resolveApAgentJobMessage = (requestData?: any) => {

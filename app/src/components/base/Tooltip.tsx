@@ -68,7 +68,8 @@ const Tooltip = ({
     >
       <div
         className={cn(
-          'group inline-flex max-w-full min-w-0 items-center justify-center',
+          'group inline-flex max-w-full min-w-0 items-center',
+          !className?.includes('justify-') && 'justify-start',
           className,
         )}
       >

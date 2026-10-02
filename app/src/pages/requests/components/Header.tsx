@@ -80,7 +80,7 @@ const Header = ({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6',
+        'flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-4',
         hideListTabs ? 'py-2.5' : '',
       )}
     >

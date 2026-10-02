@@ -262,7 +262,7 @@ const ReportsListView = ({
   return (
     <div className='flex h-full min-h-0 flex-col'>
       {listError && (
-        <div className='mx-6 mt-4 flex items-center gap-3 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11'>
+        <div className='mx-4 mt-4 flex items-center gap-3 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11'>
           <Icon className='size-5 shrink-0' name='lucide:triangle-alert' />
           <p className='text-13'>
             {listError instanceof Error
@@ -273,7 +273,7 @@ const ReportsListView = ({
       )}
 
       {deletingReport && (
-        <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
+        <div className='animate-in fade-in slide-in-from-top-4 mx-4 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
               <Icon

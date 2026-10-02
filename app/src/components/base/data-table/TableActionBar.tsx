@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import { type Table as TanstackTable } from '@tanstack/react-table'
 // If you have a base Button component, use it. Otherwise plain button works.
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { RowSize } from './types'
 import TableColumns from './actions/TableColumns'
@@ -73,24 +74,35 @@ const TableActionBar = <TData,>({
           {/* ✅ left side (before search) */}
           {!!leftActions.length && (
             <div className='flex flex-wrap items-center gap-2'>
-              {leftActions.map((a, idx) => (
-                <button
-                  disabled={a.disabled}
-                  key={`${a.label}-${idx}`}
-                  title={a.title ?? a.label}
-                  type='button'
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]',
-                    a.disabled &&
-                      'cursor-not-allowed opacity-60 hover:bg-surface',
-                    a.className,
-                  )}
-                  onClick={a.onClick}
-                >
-                  {a.icon ? <Icon className='size-4' name={a.icon} /> : null}
-                  {a.label}
-                </button>
-              ))}
+              {leftActions.map((a, idx) => {
+                const tip =
+                  a.title && a.title !== a.label ? a.title : ''
+                const button = (
+                  <button
+                    disabled={a.disabled}
+                    type='button'
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]',
+                      a.disabled &&
+                        'cursor-not-allowed opacity-60 hover:bg-surface',
+                      a.className,
+                    )}
+                    onClick={a.onClick}
+                  >
+                    {a.icon ? <Icon className='size-4' name={a.icon} /> : null}
+                    {a.label}
+                  </button>
+                )
+                return (
+                  <Tooltip
+                    content={tip || a.label}
+                    disabled={!tip}
+                    key={`${a.label}-${idx}`}
+                  >
+                    {button}
+                  </Tooltip>
+                )
+              })}
             </div>
           )}
 
@@ -113,27 +125,37 @@ const TableActionBar = <TData,>({
           {/* ✅ right side (after built-in buttons) */}
           {!!rightActions.length && (
             <div className='flex flex-wrap items-center gap-2'>
-              {rightActions.map((a, idx) => (
-                <button
-                  disabled={a.disabled}
-                  key={`${a.label}-${idx}`}
-                  title={a.title ?? a.label}
-                  type='button'
-                  className={cn(
-                    'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-2 text-12 font-semibold text-white hover:bg-[var(--secondary-10)]',
-                    a.disabled &&
-                      'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
-                    a.className,
-                  )}
-                  onClick={() => {
-                    console.log(a)
-                    a.onClick()
-                  }}
-                >
-                  {a.icon ? <Icon className='size-4' name={a.icon} /> : null}
-                  {a.label}
-                </button>
-              ))}
+              {rightActions.map((a, idx) => {
+                const tip = a.title && a.title !== a.label ? a.title : ''
+                const button = (
+                  <button
+                    disabled={a.disabled}
+                    type='button'
+                    className={cn(
+                      'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-2 text-12 font-semibold text-white hover:bg-[var(--secondary-10)]',
+                      a.disabled &&
+                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                      a.className,
+                    )}
+                    onClick={() => {
+                      console.log(a)
+                      a.onClick()
+                    }}
+                  >
+                    {a.icon ? <Icon className='size-4' name={a.icon} /> : null}
+                    {a.label}
+                  </button>
+                )
+                return (
+                  <Tooltip
+                    content={tip || a.label}
+                    disabled={!tip}
+                    key={`${a.label}-${idx}`}
+                  >
+                    {button}
+                  </Tooltip>
+                )
+              })}
             </div>
           )}
         </>

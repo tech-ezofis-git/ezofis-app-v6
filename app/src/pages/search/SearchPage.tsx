@@ -387,7 +387,7 @@ export default function SearchPage() {
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface'>
-      <div className='bg-surface px-6 pt-8 pb-4'>
+      <div className='bg-surface px-4 pt-8 pb-4'>
         <div className='mx-auto flex max-w-4xl flex-col items-start'>
           <div className='w-full'>
             <InputText
@@ -466,7 +466,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-6 pt-0 pb-6'>
+      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-4 pt-0 pb-6'>
         {!query.trim() && !loading && (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-6 flex items-center justify-center'>

@@ -377,7 +377,7 @@ export default function DocumentPreviewViewer({
   let content = null
 
   if (isLoading) {
-    content = <SkeletonDocumentPreview />
+    content = <SkeletonDocumentPreview flush />
   } else if (!fileUrl && !fileBlob) {
     content = (
       <UnsupportedPreview fileName={fileName} message='Preview not available' />
@@ -549,7 +549,7 @@ function SpreadsheetPreview({
     )
   }, [activeSheet, loading, sheetNames])
 
-  if (loading) return <SkeletonDocumentPreview />
+  if (loading) return <SkeletonDocumentPreview flush />
   if (error) {
     return (
       <UnsupportedPreview
@@ -871,7 +871,7 @@ function DocxRenderedPreview({
     <div className='relative h-full min-h-[320px] bg-[var(--gray-2)]'>
       {loading && (
         <div className='absolute inset-0 z-10'>
-          <SkeletonDocumentPreview />
+          <SkeletonDocumentPreview flush />
         </div>
       )}
       <div className='hidden' ref={styleRef} />
@@ -976,7 +976,7 @@ function TextFilePreview({
     }
   }, [fileUrl])
 
-  if (loading) return <SkeletonDocumentPreview />
+  if (loading) return <SkeletonDocumentPreview flush />
   if (error) {
     return (
       <UnsupportedPreview
@@ -1762,7 +1762,7 @@ function PdfViewer({
       ref={viewerContainerRef}
     >
       {!documentReady && !loadError ? (
-        <SkeletonDocumentPreview className='absolute inset-0 z-10' />
+        <SkeletonDocumentPreview className='absolute inset-0 z-10' flush />
       ) : null}
 
       {loadError ? (

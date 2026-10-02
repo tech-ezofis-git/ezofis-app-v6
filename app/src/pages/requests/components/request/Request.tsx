@@ -27,8 +27,13 @@ import {
 } from '../../utils/registerApAgentJobProcessing'
 import {
   finalizeApAgentJobIfSucceeded,
+  markApAgentJobHandled,
   wasApAgentJobFinalized,
 } from '../../utils/finalizeApAgentJobIfSucceeded'
+import {
+  isJobStatusFailed,
+  stopFailedApAgentJob,
+} from '../../utils/resolveApAgentJobMessage'
 import {
   isDecorativeFieldType,
   isMatrixFieldType,
@@ -36,6 +41,9 @@ import {
 } from '../../utils/dynamicTable.utils'
 import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
 import {
+  extractWorkflowGeneral,
+  extractWorkflowGraph,
+  getActionsForActivity,
   getStageNameFromWorkflow,
   isAccountsPayableWorkflow,
 } from '../../utils/workflow.utils'
@@ -50,6 +58,7 @@ import {
   seedGmailFirstFileUpload,
   shouldSeedFirstFileUploadFromAttachment,
 } from '../workflow-request/utils/gmailFormAttachment'
+import { isDocumentGenerateBlock } from './components/generic-overview/documentGenerateTemplate'
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
@@ -569,12 +578,15 @@ const handleJobData = (
 
   const stage = jobData.stage || 'OCR Extraction'
   const message = jobData.message || jobData.hangfireStatus || ''
+  const isFailed = isJobStatusFailed(jobData)
   const isCompleted =
+    isFailed ||
     jobData.isTerminal ||
     jobData.stage === 'COMPLETED' ||
     jobData.hangfireStatus === 'Succeeded'
 
   setJobStatus({
+    errorMessage: jobData.errorMessage || '',
     hangfireStatus: jobData.hangfireStatus || '',
     isCompleted,
     message: jobData.message || '',
@@ -586,6 +598,8 @@ const handleJobData = (
   const jobKey = `job-${apAgentJobId}`
   requestStore.getState().setJobStatus(jobKey, {
     apAgentJobId,
+    errorMessage: jobData.errorMessage || '',
+    hangfireStatus: jobData.hangfireStatus || '',
     isCompleted,
     message,
     percent,
@@ -596,6 +610,8 @@ const handleJobData = (
     requestStore.getState().setJobMapping(apAgentJobId, jobData.instanceId)
     requestStore.getState().setJobStatus(String(jobData.instanceId), {
       apAgentJobId,
+      errorMessage: jobData.errorMessage || '',
+      hangfireStatus: jobData.hangfireStatus || '',
       isCompleted,
       message,
       percent,
@@ -609,6 +625,13 @@ const handleJobData = (
       percent,
       stage: jobData.stage || 'Initializing....',
     })
+
+  if (isFailed) {
+    stopPolling()
+    markApAgentJobHandled(apAgentJobId)
+    stopFailedApAgentJob(apAgentJobId, jobData)
+    return
+  }
 
   if (isCompleted) {
     stopPolling()
@@ -789,7 +812,8 @@ const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
 const safeParseFormData = (formData: unknown): Record<string, any> => {
   if (!formData) return {}
   if (typeof formData === 'object') {
-    return (formData as any).fields || formData || {}
+    const fields = (formData as any).fields || formData || {}
+    return fields && typeof fields === 'object' ? { ...fields } : {}
   }
   if (typeof formData === 'string') {
     try {
@@ -846,6 +870,14 @@ const parseCleanFields = (
   mergeInvoiceHeader(cleanFields, invoiceHeader)
 
   return cleanFields
+}
+
+const normalizeAssigneeEmail = (value: unknown) => {
+  const raw = String(value || '')
+    .trim()
+    .toLowerCase()
+  const angled = raw.match(/<([^>]+)>/)
+  return (angled?.[1] || raw).trim()
 }
 
 const Request = ({
@@ -961,9 +993,7 @@ const Request = ({
       stage: selectedItem?.stage || selectedItem?.currentStage || 'Processing',
       transactionId: selectedItem?.transactionId,
       workflowId:
-        selectedItem?.workflowId ||
-        resolvedWorkflowId ||
-        rawWorkflowData?.id,
+        selectedItem?.workflowId || resolvedWorkflowId || rawWorkflowData?.id,
     })
   }, [
     apAgentJobId,
@@ -986,25 +1016,30 @@ const Request = ({
     const stage = selectedItem?.stage || selectedItem?.currentStage
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
     const activityBlock = blocks.find(
-      (b: any) => b.id === selectedItem?.activityId,
+      (b: any) => String(b.id) === String(selectedItem?.activityId || ''),
     )
+    // The live transaction stage wins. A manual "Qualify" step is
+    // INTERNAL_ACTOR even when an earlier agent block is also named Qualify.
     const blockType = String(
-      activityBlock?.type || selectedItem?.stageType || '',
+      selectedItem?.stageType || activityBlock?.type || '',
     ).toUpperCase()
     const stageName = String(stage || '').toLowerCase()
     const currentIsAgent =
       blockType.includes('AGENT') ||
-      (!activityBlock && stageName.includes('agent'))
+      (!selectedItem?.stageType &&
+        !activityBlock &&
+        stageName.includes('agent'))
 
     // Checker / maker steps still need Verify, Approve, or Submit.
     // Only the agent node itself waits on a response.
     if (!currentIsAgent) return false
 
-    const fromStore = processingProcesses.some(
-      (p) =>
-        String(p.processId || p.id) ===
-        String(selectedItem?.processId || selectedItem?.id),
-    ) || selectedItem?.isProcessing
+    const fromStore =
+      processingProcesses.some(
+        (p) =>
+          String(p.processId || p.id) ===
+          String(selectedItem?.processId || selectedItem?.id),
+      ) || selectedItem?.isProcessing
 
     if (fromStore) return true
 
@@ -1027,8 +1062,7 @@ const Request = ({
     initialProcessing,
     workflowFormId,
     // While Hangfire is running, only poll ap-agent/jobs — not inbox/sent/completed.
-    Boolean(apAgentJobId) &&
-      !jobStatuses?.[`job-${apAgentJobId}`]?.isCompleted,
+    Boolean(apAgentJobId) && !jobStatuses?.[`job-${apAgentJobId}`]?.isCompleted,
   )
 
   // Fetch workflow (+ form schema) when missing, mismatched, or panels empty.
@@ -1237,41 +1271,142 @@ const Request = ({
     return list
   }, [request?._actions, selectedItem?._actions, storeSelectedItem?._actions])
 
-  const isApAgentStage = request
-    ? request.stageType === 'AP_AGENT'
-    : selectedItem?.stageType === 'AP_AGENT'
+  // Detail lookup also reads Sent/Completed. A different transaction must
+  // not replace the person step the user opened from a stage tab.
+  const stageRow = useMemo(() => {
+    if (!request) return selectedItem
+    if (!selectedItem) return request
+    const openedTx = selectedItem.transactionId
+    const loadedTx = request.transactionId
+    if (openedTx && loadedTx && String(openedTx) !== String(loadedTx)) {
+      return selectedItem
+    }
+    return request
+  }, [request, selectedItem])
 
-  const currentActivityId = request?.activityId || selectedItem?.activityId
+  const isApAgentStage = stageRow?.stageType === 'AP_AGENT'
+
+  const currentActivityId = stageRow?.activityId || selectedItem?.activityId
+
+  const workflowGraph = useMemo(() => {
+    const fromRaw = extractWorkflowGraph(rawWorkflowData)
+    if (fromRaw.blocks.length || fromRaw.rules.length) return fromRaw
+    return extractWorkflowGraph(selectedWorkflow)
+  }, [rawWorkflowData, selectedWorkflow])
 
   const dynamicRules = useMemo(() => {
-    const rules =
-      rawWorkflowData?.workflowJson?.rules || rawWorkflowData?.rules || []
+    const rules = workflowGraph.rules || []
     if (!currentActivityId) return []
     return rules.filter((rule: any) => {
-      const fromId = rule.fromBlockId || rule.from
+      const fromId = rule.fromBlockId || rule.from || rule.source
       return String(fromId) === String(currentActivityId)
     })
-  }, [rawWorkflowData, currentActivityId])
+  }, [workflowGraph, currentActivityId])
 
   const currentBlock = useMemo(() => {
-    const blocks = rawWorkflowData?.workflowJson?.blocks || []
+    const blocks = workflowGraph.blocks || []
     if (!currentActivityId) {
       return blocks.find((b: any) => b.type === 'START') || null
     }
-    return blocks.find((b: any) => b.id === currentActivityId) || null
-  }, [rawWorkflowData, currentActivityId])
+    return (
+      blocks.find((b: any) => String(b.id) === String(currentActivityId)) ||
+      null
+    )
+  }, [workflowGraph, currentActivityId])
+
+  const hasDocumentGenerateAgent = useMemo(
+    () =>
+      (workflowGraph.blocks || []).some((block: any) =>
+        isDocumentGenerateBlock(block),
+      ),
+    [workflowGraph],
+  )
+  const documentGenerated = Boolean(
+    (request || selectedItem)?.documentGenerateResponse,
+  )
+  const onDocumentGenerateNode = useMemo(() => {
+    if (!hasDocumentGenerateAgent) return false
+    if (isDocumentGenerateBlock(currentBlock)) return true
+    const stageType = String(
+      stageRow?.stageType || selectedItem?.stageType || '',
+    ).toUpperCase()
+    if (stageType.includes('DOCUMENT_GENERATE')) return true
+    const stage = String(
+      stageRow?.stage ||
+        stageRow?.currentStage ||
+        selectedItem?.stage ||
+        selectedItem?.currentStage ||
+        '',
+    ).toLowerCase()
+    return (
+      stage.includes('document generate') || stage.includes('document generator')
+    )
+  }, [
+    currentBlock,
+    hasDocumentGenerateAgent,
+    selectedItem?.currentStage,
+    selectedItem?.stage,
+    selectedItem?.stageType,
+    stageRow,
+  ])
+  // The generated file is written after the agent finishes. Refresh the
+  // shared attachment list so the header count, the attachments panel, and
+  // the viewer strip (shown once more than one file exists) pick it up.
+  useEffect(() => {
+    if (!isGenericWorkflow || !hasDocumentGenerateAgent) return
+    if (!resolvedWorkflowId || !genericInstanceId) return
+    if (!onDocumentGenerateNode && !documentGenerated) return
+
+    let cancelled = false
+    const refresh = () => {
+      if (!cancelled) void refetchGenericAttachments()
+    }
+    refresh()
+
+    if (onDocumentGenerateNode) {
+      const intervalId = window.setInterval(refresh, 4000)
+      return () => {
+        cancelled = true
+        window.clearInterval(intervalId)
+      }
+    }
+
+    const timers = [4000, 8000, 12000].map((ms) =>
+      window.setTimeout(refresh, ms),
+    )
+    return () => {
+      cancelled = true
+      timers.forEach((id) => window.clearTimeout(id))
+    }
+  }, [
+    documentGenerated,
+    genericInstanceId,
+    hasDocumentGenerateAgent,
+    isGenericWorkflow,
+    onDocumentGenerateNode,
+    refetchGenericAttachments,
+    resolvedWorkflowId,
+  ])
 
   // Agent nodes auto-route from their decision — do not surface their
   // QUALIFY / DISQUALIFY / MATCHED edges as clickable header buttons.
   const isAutoRoutedAgentStage = useMemo(() => {
-    const type = String(
-      currentBlock?.type ||
-        request?.stageType ||
-        selectedItem?.stageType ||
-        '',
+    const liveType = String(
+      stageRow?.stageType || selectedItem?.stageType || '',
     ).toUpperCase()
+    // Person steps keep Approve / Submit / Reject. Only the agent node
+    // itself auto-routes and must not show those edges as buttons.
+    if (
+      liveType === 'INTERNAL_ACTOR' ||
+      liveType === 'USER' ||
+      liveType.includes('MANUAL')
+    ) {
+      return false
+    }
+    const blockType = String(currentBlock?.type || '').toUpperCase()
+    const type = liveType || blockType
     return type.includes('AGENT')
-  }, [currentBlock?.type, request?.stageType, selectedItem?.stageType])
+  }, [currentBlock?.type, stageRow?.stageType, selectedItem?.stageType])
 
   const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
 
@@ -1281,8 +1416,7 @@ const Request = ({
   // QUALIFY from the Qualify Agent) that are not edges from this block.
   const ruleActions = useMemo(() => {
     const configuredActions = currentBlockSettings?.actions || []
-    const allRules =
-      rawWorkflowData?.workflowJson?.rules || rawWorkflowData?.rules || []
+    const allRules = workflowGraph.rules || []
     let derivedActions: any[] = []
 
     if (dynamicRules.length > 0) {
@@ -1349,12 +1483,7 @@ const Request = ({
     }
 
     return derivedActions
-  }, [
-    currentActivityId,
-    currentBlockSettings,
-    dynamicRules,
-    rawWorkflowData,
-  ])
+  }, [currentActivityId, currentBlockSettings, dynamicRules, workflowGraph])
 
   // Steps carry per-activity assignment (assignedToUserId); block
   // settings.users is the same data as authored in the workflow builder.
@@ -1364,15 +1493,15 @@ const Request = ({
     if (!currentActivityId) return []
 
     const step = (rawWorkflowData?.steps || []).find(
-      (s: any) => s.activityId === currentActivityId,
+      (s: any) => String(s.activityId) === String(currentActivityId),
     )
     if (step?.assignedToUserId) return [String(step.assignedToUserId)]
 
-    const block = (rawWorkflowData?.workflowJson?.blocks || []).find(
-      (b: any) => b.id === currentActivityId,
+    const block = (workflowGraph.blocks || []).find(
+      (b: any) => String(b.id) === String(currentActivityId),
     )
     return (block?.settings?.users || []).map(String)
-  }, [rawWorkflowData, currentActivityId])
+  }, [rawWorkflowData, workflowGraph, currentActivityId])
 
   const isAssignedToCurrentUser = useMemo(() => {
     if (assignedUserIds.length === 0) return true
@@ -1451,81 +1580,106 @@ const Request = ({
     setSignatureConfirmed(false)
   }, [currentActivityId, selectedItem?.transactionId])
 
-  const isStageBased = useMemo(() => {
+  // Workflow Settings → tab names. An empty list means the request list
+  // stays Inbox / Sent / Completed. A saved list replaces those buckets.
+  const hasCustomTabConfig = useMemo(() => {
     const general =
-      rawWorkflowData?.settings?.general ||
-      rawWorkflowData?.workflowJson?.settings?.general
+      extractWorkflowGeneral(rawWorkflowData) ||
+      extractWorkflowGeneral(selectedWorkflow)
     const configuredTabs = Array.isArray(general?.requestTabs)
       ? general.requestTabs
       : []
-    return (
-      general?.isStageBased === 1 ||
-      general?.isStageBased === true ||
-      configuredTabs.some(
-        (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
-      )
-    )
-  }, [rawWorkflowData])
+    return configuredTabs.length > 0
+  }, [rawWorkflowData, selectedWorkflow])
+
+  const sessionEmail = authUserStore((state) => {
+    const session = state.session as any
+    const identity = state.identity as any
+    const candidates = [
+      session?.email,
+      session?.Email,
+      session?.userEmail,
+      session?.mail,
+      session?.user?.email,
+      session?.loginName,
+      identity?.email,
+      identity?.Email,
+      identity?.userEmail,
+      identity?.userName,
+    ]
+    for (const candidate of candidates) {
+      const value = String(candidate || '').trim()
+      if (value.includes('@')) return value
+    }
+    return ''
+  })
 
   const isUserEmailMatched = useMemo(() => {
-    const activityEmail = String(
-      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
+    const activityEmail = normalizeAssigneeEmail(
+      stageRow?.activityUserEmail ||
+        selectedItem?.activityUserEmail ||
+        request?.activityUserEmail,
     )
-      .toLowerCase()
-      .trim()
-
-    const authState = authUserStore.getState() as any
-    const currentUserEmail = String(
-      authState.session?.email ||
-        authState.identity?.email ||
-        authState.user?.email ||
-        authState.session?.loginName ||
-        authState.identity?.userName ||
-        '',
-    )
-      .toLowerCase()
-      .trim()
+    const currentUserEmail = normalizeAssigneeEmail(sessionEmail)
 
     if (activityEmail && currentUserEmail) {
       return activityEmail === currentUserEmail
     }
     return false
-  }, [selectedItem?.activityUserEmail, request?.activityUserEmail])
+  }, [
+    stageRow?.activityUserEmail,
+    selectedItem?.activityUserEmail,
+    request?.activityUserEmail,
+    sessionEmail,
+  ])
 
   const headerActions = useMemo(() => {
     if (isApAgentStage || isAutoRoutedAgentStage) return []
 
-    const completedAt = selectedItem?.completedAtUtc || request?.completedAtUtc
+    const completedAt = stageRow?.completedAtUtc || selectedItem?.completedAtUtc
     if (completedAt) return []
 
-    const activityEmail = String(
-      selectedItem?.activityUserEmail || request?.activityUserEmail || '',
-    ).trim()
-
-    if (isStageBased) {
-      // In stage-based mode: enable action button if activityUserEmail matches current logged-in user
-      const isAllowed = activityEmail
-        ? isUserEmailMatched
-        : isAssignedToCurrentUser
-      if (!isAllowed) return []
+    if (hasCustomTabConfig) {
+      // Configured tabs replace Inbox / Sent / Completed. A request opened
+      // from any of those tabs shows actions when the signed-in email is
+      // the activity assignee.
+      if (!isUserEmailMatched) return []
     } else {
+      // No tab configuration: actions only from Inbox.
       if (requestListTab !== 'Inbox') return []
       if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
     }
 
-    return ruleActions.length > 0 ? ruleActions : actions
+    if (ruleActions.length > 0) return ruleActions
+    if (actions.length > 0) return actions
+
+    // List payloads omit flowJson. Outgoing buttons live on the loaded
+    // workflow, matched to this activity.
+    const graphSource =
+      (workflowGraph.blocks.length || workflowGraph.rules.length
+        ? { blocks: workflowGraph.blocks, rules: workflowGraph.rules }
+        : null) ||
+      rawWorkflowData?.workflowJson ||
+      rawWorkflowData?.flowJson ||
+      selectedWorkflow?.flowJson
+    return getActionsForActivity(String(currentActivityId || ''), graphSource)
   }, [
     isApAgentStage,
     isAutoRoutedAgentStage,
-    isStageBased,
+    hasCustomTabConfig,
     isUserEmailMatched,
     isAssignedToCurrentUser,
     requestListTab,
     ruleActions,
     actions,
+    currentActivityId,
+    workflowGraph,
+    rawWorkflowData,
+    selectedWorkflow?.flowJson,
+    stageRow?.completedAtUtc,
+    stageRow?.activityUserEmail,
     selectedItem?.completedAtUtc,
     selectedItem?.activityUserEmail,
-    request?.completedAtUtc,
     request?.activityUserEmail,
   ])
 
@@ -1982,9 +2136,7 @@ const Request = ({
           apAgentJobId: nextApAgentJobId,
           processId: nextInstanceId,
           requestNo:
-            selectedItem?.requestNo ||
-            selectedItem?.reqNo ||
-            resolvedRequestNo,
+            selectedItem?.requestNo || selectedItem?.reqNo || resolvedRequestNo,
           stage:
             responseData?.stage ||
             selectedItem?.stage ||
@@ -2105,9 +2257,7 @@ const Request = ({
             selectedItem?.processId ||
             selectedItem?.id,
           requestNo:
-            selectedItem?.requestNo ||
-            selectedItem?.reqNo ||
-            resolvedRequestNo,
+            selectedItem?.requestNo || selectedItem?.reqNo || resolvedRequestNo,
           stage: responseData?.stage || 'Processing',
           transactionId:
             responseData?.transactionId || selectedItem?.transactionId,
@@ -2160,20 +2310,10 @@ const Request = ({
     }
   }
 
-  const parsedFormData = useMemo(() => {
-    const formData = selectedItem?.formData
-    if (!formData) return {}
-    if (typeof formData === 'object') return formData.fields || formData
-    if (typeof formData === 'string') {
-      try {
-        const parsed = JSON.parse(formData)
-        return parsed.fields || parsed || {}
-      } catch {
-        return {}
-      }
-    }
-    return {}
-  }, [selectedItem])
+  const parsedFormData = useMemo(
+    () => safeParseFormData(selectedItem?.formData),
+    [selectedItem],
+  )
 
   const totalAmount =
     formModel?.['Invoice Amount'] ||
@@ -2407,7 +2547,7 @@ const Request = ({
     <div
       className={`flex min-h-0 w-full flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
     >
-      <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
+      <div className='sticky top-0 z-50 bg-surface'>
         <Header
           activeAction={activeAction}
           agentData={currentAgentData}
@@ -2418,7 +2558,7 @@ const Request = ({
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
-          isProcessing={isCurrentlyProcessing}
+          isProcessing={isCurrentlyProcessing && isAutoRoutedAgentStage}
           percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
@@ -2555,7 +2695,11 @@ const Request = ({
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
-                viewOnly={requestListTab !== 'Inbox'}
+                viewOnly={
+                  hasCustomTabConfig
+                    ? !isUserEmailMatched
+                    : requestListTab !== 'Inbox'
+                }
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
                     ? currentBlockSettings.checklistItems

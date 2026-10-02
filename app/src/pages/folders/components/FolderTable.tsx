@@ -982,7 +982,7 @@ export default function FolderTableDataTableSplit({
         </div>
       ) : null}
 
-      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-3 pt-2 pb-1 sm:px-6'>
+      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-4 pt-2 pb-1'>
         {showFoldersPane ? (
           <FolderDataTableSection
             effectiveFolderTotal={effectiveFolderTotal}
@@ -1616,7 +1616,7 @@ function FileDataTableSection({
       {footerDivider}
 
       {filePage && !isStagedCategory ? (
-        <div className='shrink-0 px-3 pt-3 pb-2 sm:px-6'>
+        <div className='shrink-0 px-4 pt-3 pb-2'>
           <Pagination
             itemLabel={t`Files`}
             page={currentPage}

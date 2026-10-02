@@ -163,7 +163,7 @@ const DocumentFormUpload = ({
       DOCUMENT_GENERATE_AGENT: {
         detail: t`Generate PDF documents from the template set on this step.`,
         icon: 'lucide:file-text',
-        label: t`Document Generate`,
+        label: t`Document Generator`,
       },
       FTP_AGENT: {
         detail: t`Send files out and bring files in through the FTP connection.`,
@@ -188,12 +188,12 @@ const DocumentFormUpload = ({
       QUALIFY_AGENT: {
         detail: t`Qualify each lead and prospect using the rules on this step.`,
         icon: 'lucide:user-check',
-        label: t`Qualify Agent`,
+        label: t`Qualifier`,
       },
       QUOTE_AGENT: {
         detail: t`Build pricing and sales quotes from the details in this request.`,
         icon: 'lucide:calculator',
-        label: t`Quote Agent`,
+        label: t`Quote Estimator`,
       },
     }
 

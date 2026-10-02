@@ -727,7 +727,7 @@ export default function IntelligentUploadView({
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-text-primary'>
       {/* Header Bar */}
-      <header className='flex shrink-0 items-center justify-between border-b border-border-default bg-surface-primary px-6 py-4'>
+      <header className='flex shrink-0 items-center justify-between border-b border-border-default bg-surface-primary px-4 py-4'>
         <div className='flex items-center gap-4'>
           <Tooltip content={t`Back to folder explorer`} position='bottom'>
             <IconButton
@@ -937,7 +937,7 @@ export default function IntelligentUploadView({
 
       {/* Bottom Sticky Action Footer */}
       {files.length > 0 && (
-        <footer className='flex shrink-0 items-center justify-between border-t border-border-default bg-surface-primary px-6 py-3.5'>
+        <footer className='flex shrink-0 items-center justify-between border-t border-border-default bg-surface-primary px-4 py-3.5'>
           <div className='flex items-center gap-2'>
             {allIndexed ? (
               <div className='flex items-center gap-2 rounded-lg bg-success-subtle/80 px-3 py-1.5 text-12 font-medium text-success-main'>

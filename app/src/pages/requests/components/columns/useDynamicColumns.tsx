@@ -13,6 +13,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
+import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import {
   buildTableMeta,
   getFieldKey,
@@ -23,6 +24,7 @@ import {
 } from '@/pages/requests/utils/dynamicTable.utils'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import {
+  extractPreviewValues,
   getGenericStageInfo,
   isAccountsPayableWorkflow,
   safeParse,
@@ -1253,7 +1255,7 @@ const renderCellByType = (type: string, rawVal: any, row: any) => {
       return (
         <WrapOnHoverCell
           value={
-            <span className='text-gray-12 font-medium'>{String(rawVal)}</span>
+            <span className='font-medium text-gray-12'>{String(rawVal)}</span>
           }
         />
       )
@@ -1266,6 +1268,80 @@ const renderCellByType = (type: string, rawVal: any, row: any) => {
   }
 }
 
+const isFilledPreviewValue = (val: unknown) => {
+  if (val === undefined || val === null) return false
+  const text = String(val).trim()
+  return text !== '' && text !== '-'
+}
+
+const unwrapPreviewValue = (val: unknown): unknown => {
+  if (Array.isArray(val)) return undefined
+  if (val && typeof val === 'object') {
+    const record = val as Record<string, unknown>
+    const inner =
+      record.value ??
+      record.Value ??
+      record.fieldValue ??
+      record.FieldValue ??
+      record.text
+    if (
+      typeof inner === 'string' ||
+      typeof inner === 'number' ||
+      typeof inner === 'boolean'
+    ) {
+      return inner
+    }
+    return undefined
+  }
+  return val
+}
+
+// List rows store the same preview field under different keys depending on
+// which endpoint last returned them: form jsonId, field id, label, or a
+// repository column. Opening a request must not make that lookup miss.
+export const readListFieldValue = (
+  row: any,
+  ...keys: Array<string | null | undefined>
+) => {
+  const wanted = keys.map((key) => String(key || '').trim()).filter(Boolean)
+  if (!row || wanted.length === 0) return undefined
+
+  const sources = [
+    row.formData?.fields,
+    row.formData,
+    row.repositoryItem?.fields,
+    row.repositoryItem,
+    row.fields,
+    row,
+  ].filter(
+    (source) => source && typeof source === 'object' && !Array.isArray(source),
+  )
+
+  for (const key of wanted) {
+    for (const source of sources) {
+      const value = unwrapPreviewValue(source[key])
+      if (isFilledPreviewValue(value)) return value
+    }
+  }
+
+  const normalized = wanted.map((key) => normalizeFieldKey(key))
+  for (const source of sources) {
+    for (const sourceKey of Object.keys(source)) {
+      if (!normalized.includes(normalizeFieldKey(sourceKey))) continue
+      const value = unwrapPreviewValue(source[sourceKey])
+      if (isFilledPreviewValue(value)) return value
+    }
+  }
+
+  return undefined
+}
+
+export const readPreviewChipText = (row: any, key?: string, label?: string) => {
+  const raw = readListFieldValue(row, key, label)
+  if (!isFilledPreviewValue(raw)) return ''
+  return String(raw).trim()
+}
+
 const renderDynamicCell = (
   row: any,
   fieldKey: string,
@@ -1273,10 +1349,14 @@ const renderDynamicCell = (
   field: any,
   tableMetaByParentId: Map<string, any>,
 ) => {
-  let rawVal =
-    row[fieldKey] ??
-    row.formData?.fields?.[fieldKey] ??
-    row.formData?.[fieldKey]
+  let rawVal = readListFieldValue(
+    row,
+    fieldKey,
+    field?.jsonId,
+    field?.id,
+    field?.name,
+    label,
+  )
 
   const extracted = extractStandardFieldValue(row, fieldKey, label)
   if (extracted !== null) {
@@ -1313,13 +1393,26 @@ const renderDynamicCell = (
 
 export const getFormPanels = (form: any) => {
   if (!form) return []
+  const nested =
+    !Array.isArray(form) &&
+    form?.formJson &&
+    typeof form.formJson === 'object' &&
+    !Array.isArray(form.formJson)
+      ? form.formJson
+      : null
+  const hasOwnControls =
+    Array.isArray(form?.panels) ||
+    Array.isArray(form?.fields) ||
+    Array.isArray(form?.controlList) ||
+    Array.isArray(form?.controllist)
+  const source = !hasOwnControls && nested ? nested : form
   const panels =
-    !Array.isArray(form) && Array.isArray(form?.panels) ? form.panels : []
+    !Array.isArray(source) && Array.isArray(source?.panels) ? source.panels : []
   const secondaryPanels =
-    !Array.isArray(form) && Array.isArray(form?.secondaryPanels)
-      ? form.secondaryPanels
+    !Array.isArray(source) && Array.isArray(source?.secondaryPanels)
+      ? source.secondaryPanels
       : []
-  const rootPanels = Array.isArray(form) ? form : [form]
+  const rootPanels = Array.isArray(source) ? source : [source]
   return [...rootPanels, ...panels, ...secondaryPanels]
 }
 
@@ -1870,6 +1963,7 @@ export const buildDynamicColumns = (
   allPanels: any[],
   selectedItem: any,
   tableMetaByParentId: Map<string, any>,
+  options?: { includeStandard?: boolean },
 ) => {
   const dynamicCols: Column[] = []
   for (const panel of allPanels) {
@@ -1884,7 +1978,18 @@ export const buildDynamicColumns = (
       if (!fieldKey) continue
 
       const label = getFieldLabel(field)
-      if (isStandardField(field, label)) continue
+      const type = String(field.type ?? '').toUpperCase()
+      if (
+        type === 'FILE_UPLOAD' ||
+        type === 'IMAGE_UPLOAD' ||
+        type === 'DYNAMIC_TABLE' ||
+        type === 'TABLE'
+      ) {
+        continue
+      }
+      // Preview chips must still show a field the workflow explicitly
+      // selected, even when the table hides it as a "standard" column.
+      if (!options?.includeStandard && isStandardField(field, label)) continue
 
       if (!selectedItem) {
         dynamicCols.push({
@@ -1898,6 +2003,43 @@ export const buildDynamicColumns = (
     }
   }
   return dynamicCols
+}
+
+export const resolvePreviewFieldColumns = (
+  workflow: any,
+  fallbackWorkflow?: any,
+) => {
+  const primary = extractPreviewValues(workflow)
+  const previewValues = primary.length
+    ? primary
+    : extractPreviewValues(fallbackWorkflow)
+
+  if (!previewValues.length) {
+    return { columns: [] as Column[], previewValues }
+  }
+
+  const wantedLabels = new Set(
+    previewValues.map((label) => normalizeFieldKey(label)),
+  )
+  const forms = [
+    resolveFormJson(workflow),
+    resolveFormJson(fallbackWorkflow),
+  ].filter(Boolean)
+
+  let columns: Column[] = []
+  for (const form of forms) {
+    const allPanels = getFormPanels(form)
+    if (!allPanels.length) continue
+    const matched = buildDynamicColumns(
+      allPanels,
+      null,
+      buildTableMeta(allPanels),
+      { includeStandard: true },
+    ).filter((col) => wantedLabels.has(normalizeFieldKey(col.label)))
+    if (matched.length > columns.length) columns = matched
+  }
+
+  return { columns, previewValues }
 }
 
 export const useDynamicColumns = (

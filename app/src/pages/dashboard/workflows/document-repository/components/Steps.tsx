@@ -118,7 +118,7 @@ const DocumentRepositorySteps = () => {
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <AnimateSlideRight delay={0.1}>
-        <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-4 md:px-8'>
+        <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-4 py-4'>
           <div className='flex flex-col gap-1'>
             <h2 className='text-18/6 font-semibold tracking-tight text-gray-13'>
               Set up your folder

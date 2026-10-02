@@ -11,13 +11,12 @@ import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import ListEmptyState from '@/components/common/ListEmptyState'
-import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import {
   findInvoiceNumber,
   findSupplierName,
 } from '@/pages/requests/utils/inboxItemDisplay'
 import {
-  extractPreviewValues,
   getGenericStageInfo,
   isAccountsPayableWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
@@ -38,12 +37,10 @@ import {
   normalizeKanbanLabel,
   resolveKanbanActivityId,
 } from '../helpers/kanbanBoard'
-import { buildTableMeta, toDisplayString } from '../utils/dynamicTable.utils'
 import {
-  buildDynamicColumns,
   extractGenericRequestNumber,
-  getFormPanels,
-  resolveFormJson,
+  readPreviewChipText,
+  resolvePreviewFieldColumns,
 } from './columns/useDynamicColumns'
 import HoverExpandableText from './HoverExpandableText'
 
@@ -175,27 +172,12 @@ export default function KanbanView({
 
   const columns = useMemo(() => buildKanbanColumns(workflow), [workflow])
   const isAp = isAccountsPayableWorkflow(workflow)
+  const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
 
-  const previewValues = useMemo(
-    () => extractPreviewValues(workflow),
-    [workflow],
+  const { columns: dynamicFields, previewValues } = useMemo(
+    () => resolvePreviewFieldColumns(workflow, rawWorkflowData),
+    [rawWorkflowData, workflow],
   )
-
-  const dynamicFields = useMemo(() => {
-    if (!previewValues.length) return []
-    const form = resolveFormJson(workflow)
-    if (!form) return []
-    const allPanels = getFormPanels(form)
-    if (!allPanels.length) return []
-    const tableMetaByParentId = buildTableMeta(allPanels)
-    const allFields = buildDynamicColumns(allPanels, null, tableMetaByParentId)
-    const wantedLabels = new Set(
-      previewValues.map((label) => normalizeFieldKey(label)),
-    )
-    return allFields.filter((col) =>
-      wantedLabels.has(normalizeFieldKey(col.label)),
-    )
-  }, [previewValues, workflow])
 
   const grouped = useMemo(() => {
     const buckets: any[][] = columns.map(() => [])
@@ -508,6 +490,7 @@ export default function KanbanView({
                       isAp={isAp}
                       item={item}
                       locked={locked}
+                      previewValues={previewValues}
                       role={column.role}
                       stageName={stageName}
                       workflow={workflow}
@@ -696,11 +679,12 @@ function KanbanCard({
   setDropTargetId,
   onHoverChange,
   onRowClick,
+  previewValues,
 }: {
   columnId: string
   didDragRef: MutableRefObject<boolean>
   dragItemRef: MutableRefObject<any>
-  dynamicFields: ReturnType<typeof buildDynamicColumns>
+  dynamicFields: { id: string; label: string }[]
   isAp: boolean
   isDragging: boolean
   isMoving: boolean
@@ -711,6 +695,7 @@ function KanbanCard({
   workflow: WorkflowOption | null
   onHoverChange?: (hovered: boolean) => void
   onRowClick: (item: any, tab: string, missingFieldIds?: string[]) => void
+  previewValues: string[]
   setDraggingId: (id: string | null) => void
   setDropTargetId: (id: string | null) => void
 }) {
@@ -761,17 +746,21 @@ function KanbanCard({
 
   const previewFieldTexts = (() => {
     if (isAp) return []
-    return dynamicFields
-      .map((col) => {
-        const text = toDisplayString(
-          item?.[col.id] ??
-            item?.formData?.fields?.[col.id] ??
-            item?.formData?.[col.id],
-        )
-        if (!text || text === '-') return ''
-        return text
-      })
-      .filter(Boolean)
+    const texts: string[] = []
+    const seen = new Set<string>()
+    for (const col of dynamicFields) {
+      const text = readPreviewChipText(item, col.id, col.label)
+      if (!text || seen.has(text)) continue
+      seen.add(text)
+      texts.push(text)
+    }
+    for (const label of previewValues) {
+      const text = readPreviewChipText(item, label, label)
+      if (!text || seen.has(text)) continue
+      seen.add(text)
+      texts.push(text)
+    }
+    return texts
   })()
 
   return (

@@ -4,7 +4,15 @@ import { type Table as TanstackTable } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 // ✅ Motion
 import { motion, useReducedMotion } from 'framer-motion'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { TableActionButton } from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
 import type { WorkflowOption } from '@/pages/requests/types'
@@ -1362,6 +1370,8 @@ const GridView = <TData,>({
   onRowSizeChange: _onRowSizeChange,
 }: GridViewProps<TData>) => {
   const { t } = useLingui()
+  const listScrollRef = useRef<HTMLDivElement>(null)
+  const [scrollbarWidth, setScrollbarWidth] = useState(0)
   const [selectedFile, setSelectedFile] = useState<any>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
     new Set(),
@@ -1372,6 +1382,19 @@ const GridView = <TData,>({
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(
     new Set(),
   )
+
+  useLayoutEffect(() => {
+    const el = listScrollRef.current
+    if (!el) return
+    const measure = () => {
+      const width = Math.max(0, el.offsetWidth - el.clientWidth)
+      setScrollbarWidth((current) => (current === width ? current : width))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [data, isLoading])
 
   const toggleGroupCollapsed = useCallback((groupId: string) => {
     setCollapsedGroupIds((prev) => {
@@ -1495,7 +1518,7 @@ const GridView = <TData,>({
   let content
   if (isLoading) {
     content = (
-      <div className='flex flex-col gap-3 p-2'>
+      <div className='flex flex-col gap-3 py-2'>
         {[1, 2, 3].map((i) => (
           <GridRowSkeleton index={i} key={i} />
         ))}
@@ -1521,7 +1544,7 @@ const GridView = <TData,>({
   } else {
     let flatIndex = 0
     content = (
-      <div className='flex flex-col gap-3 px-2 pt-3 pr-3 pb-4'>
+      <div className='flex flex-col gap-3 pt-3 pb-4'>
         {data.map((group: any) => {
           const groupId = group.groupId || 'root'
           const isRealGroup = Boolean(group.groupKey && group.groupValue)
@@ -1827,8 +1850,18 @@ const GridView = <TData,>({
           </div>
         </div>
 
-        <div className='minimal-scrollbar min-h-0 flex-1 overflow-y-auto [scrollbar-color:var(--scrollbar-thumb)_transparent]'>
-          {content}
+        <div className='flex min-h-0 flex-1'>
+          <div className='w-4 shrink-0' />
+          <div className='relative min-h-0 min-w-0 flex-1'>
+            <div
+              className='minimal-scrollbar absolute inset-y-0 left-0 overflow-y-auto'
+              ref={listScrollRef}
+              style={{ width: `calc(100% + ${scrollbarWidth}px)` }}
+            >
+              {content}
+            </div>
+          </div>
+          <div className='w-4 shrink-0' />
         </div>
       </div>
 

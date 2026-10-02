@@ -164,7 +164,7 @@ msgid "{0} remaining"
 msgstr "{0} remaining"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1721
+#: src/pages/requests/components/GridView.tsx:1744
 msgid "{0} Selected"
 msgstr "{0} Selected"
 
@@ -247,7 +247,7 @@ msgstr "{activeCard}"
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} active workflows"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1031
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1027
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} line item(s) found in the uploaded document."
 
@@ -583,6 +583,19 @@ msgstr "A quantity on the invoice does not match the purchase order or the recei
 msgid "a trigger field"
 msgstr "a trigger field"
 
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:838
+msgid "Accept"
+msgstr "Accept"
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:590
+msgid "Accept all"
+msgstr "Accept all"
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:824
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:826
+msgid "Accepted"
+msgstr "Accepted"
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:171
 msgid "Accepted formats: CSV, XLSX"
 msgstr "Accepted formats: CSV, XLSX"
@@ -635,7 +648,7 @@ msgstr "Accounts Receivable"
 msgid "Action"
 msgstr "Action"
 
-#: src/pages/requests/components/KanbanView.tsx:324
+#: src/pages/requests/components/KanbanView.tsx:306
 msgid "Action needed"
 msgstr "Action needed"
 
@@ -648,11 +661,11 @@ msgstr "Action Required"
 #: src/pages/forms/FormEntriesPage.tsx:1815
 #: src/pages/forms/FormsPage.tsx:265
 #: src/pages/reports/components/ReportsListView.tsx:228
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1961
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:187
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:599
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:2103
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:264
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:622
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1092
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1088
 #: src/pages/settings/components/Menus.tsx:416
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -734,7 +747,7 @@ msgid "Add \"{query}\""
 msgstr "Add \"{query}\""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2720
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:346
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:356
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:104
 msgid "Add a comment..."
 msgstr "Add a comment..."
@@ -857,7 +870,7 @@ msgstr "Add Line Item"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1037
-#: src/pages/requests/components/request/components/Header.tsx:1510
+#: src/pages/requests/components/request/components/Header.tsx:1506
 msgid "Add message (optional)"
 msgstr "Add message (optional)"
 
@@ -867,13 +880,13 @@ msgstr "Add more files"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:614
-#: src/pages/requests/components/request/components/Header.tsx:1158
+#: src/pages/requests/components/request/components/Header.tsx:1157
 msgid "Add more people..."
 msgstr "Add more people..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:615
-#: src/pages/requests/components/request/components/Header.tsx:1159
+#: src/pages/requests/components/request/components/Header.tsx:1158
 msgid "Add names or emails"
 msgstr "Add names or emails"
 
@@ -894,10 +907,10 @@ msgid "Add Portal"
 msgstr "Add Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:166
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:577
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:996
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1007
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:239
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:599
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:992
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1003
 msgid "Add Row"
 msgstr "Add Row"
 
@@ -934,9 +947,7 @@ msgstr "Add, edit, and manage platform users. Configure authentication and assig
 msgid "Additional conditions"
 msgstr "Additional conditions"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:504
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:220
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:367
 #: src/pages/settings/components/credits/Credits.tsx:478
 #: src/pages/settings/components/credits/Credits.tsx:480
 #: src/pages/settings/components/credits/Credits.tsx:936
@@ -959,7 +970,7 @@ msgstr "aging"
 #~ msgid "Aging & Process Oversight"
 #~ msgstr "Aging & Process Oversight"
 
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:230
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:237
 msgid "AI"
 msgstr "AI"
 
@@ -1017,7 +1028,7 @@ msgstr "AI Folder Builder"
 msgid "AI generated"
 msgstr "AI generated"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1729
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1822
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5131
 msgid "AI Insight"
 msgstr "AI Insight"
@@ -1027,7 +1038,7 @@ msgid "AI Insight & Verification Summary"
 msgstr "AI Insight & Verification Summary"
 
 #: src/pages/requests/components/request/components/Header.tsx:606
-#: src/pages/requests/components/request/components/Header.tsx:1033
+#: src/pages/requests/components/request/components/Header.tsx:1032
 msgid "AI Insights"
 msgstr "AI Insights"
 
@@ -1129,7 +1140,7 @@ msgstr "Aligning CSV/XLSX headers with database mapping schema."
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
-#: src/pages/requests/components/InboxList.tsx:1940
+#: src/pages/requests/components/InboxList.tsx:1952
 #: src/pages/search/SearchPage.tsx:309
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:565
@@ -1262,7 +1273,7 @@ msgid "An error occurred during indexing."
 msgstr "An error occurred during indexing."
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2154
+#: src/pages/requests/components/request/Request.tsx:2304
 msgid "An error occurred: {0}"
 msgstr "An error occurred: {0}"
 
@@ -1449,12 +1460,10 @@ msgstr "Approval delay heat map"
 #~ msgid "Approval Rate"
 #~ msgstr "Approval Rate"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:225
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:227
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:912
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:914
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1090
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1196
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:330
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:332
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1086
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1192
 msgid "Approve"
 msgstr "Approve"
 
@@ -1462,11 +1471,9 @@ msgstr "Approve"
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:217
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:219
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:904
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:906
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1183
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:321
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:323
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1179
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Approved"
 msgstr "Approved"
@@ -1642,7 +1649,7 @@ msgstr "At least one attachment is required"
 #~ msgid "At least one rule is required."
 #~ msgstr "At least one rule is required."
 
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:318
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:328
 msgid "Attach file (optional)..."
 msgstr "Attach file (optional)..."
 
@@ -1655,21 +1662,21 @@ msgstr "Attach file (optional)..."
 #~ msgstr "Attach to invoice"
 
 #: src/pages/portal/components/PortalDetail.tsx:294
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1549
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1558
 msgid "Attachment"
 msgstr "Attachment"
 
 #: src/pages/portal/components/PortalDetail.tsx:341
 #: src/pages/portal/components/PortalWizard.tsx:1063
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:480
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:512
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:488
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:520
 #: src/pages/requests/components/request/components/Header.tsx:485
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4393
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:339
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:375
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:340
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:376
 msgid "Attachments"
 msgstr "Attachments"
 
@@ -1826,7 +1833,7 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/portal/components/PortalShell.tsx:132
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:960
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:973
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:64
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1166
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1123
@@ -1898,6 +1905,11 @@ msgstr "Back to PO Setup"
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:692
 msgid "Back to Prompt"
 msgstr "Back to Prompt"
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:970
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:975
+msgid "Back to quotation details"
+msgstr "Back to quotation details"
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:165
 #: src/pages/reports/ReportDetailPage.tsx:41
@@ -2068,7 +2080,7 @@ msgstr "Built-in secure storage"
 
 #. placeholder {0}: actionValidation.action.label
 #. placeholder {1}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1753
+#: src/pages/requests/components/GridView.tsx:1776
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Bulk action \"{0}\" applied to {1} requests successfully!"
 
@@ -2082,7 +2094,7 @@ msgid "Bulk Import Entries"
 msgstr "Bulk Import Entries"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1730
+#: src/pages/requests/components/GridView.tsx:1753
 msgid "Bulk marked {0} requests as Paid successfully!"
 msgstr "Bulk marked {0} requests as Paid successfully!"
 
@@ -2195,7 +2207,7 @@ msgstr "Can View"
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:261
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:465
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:706
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:707
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:268
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:188
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:278
@@ -2584,7 +2596,7 @@ msgstr "Client Number"
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:305
 #: src/pages/folders/components/SignRequestAssignForm.tsx:537
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:537
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1463
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1472
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
@@ -2592,7 +2604,7 @@ msgid "Close"
 msgstr "Close"
 
 #: src/pages/requests/components/request/components/Header.tsx:638
-#: src/pages/requests/components/request/components/Header.tsx:1065
+#: src/pages/requests/components/request/components/Header.tsx:1064
 msgid "Close AI Insights"
 msgstr "Close AI Insights"
 
@@ -2682,15 +2694,15 @@ msgid "Coming Soon"
 msgstr "Coming Soon"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1603
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:486
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:518
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:494
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:526
 #: src/pages/requests/components/request/components/Header.tsx:491
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4398
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:345
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:381
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:346
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:382
 msgid "Comments"
 msgstr "Comments"
 
@@ -2811,7 +2823,7 @@ msgid "Configure application navigation menus, route paths, and display order"
 msgstr "Configure application navigation menus, route paths, and display order"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:497
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:244
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:247
 msgid "Configure Approvers"
 msgstr ""
 
@@ -3088,7 +3100,7 @@ msgstr "Could not generate fields. Try Recommend fields again."
 msgid "Could not generate folder configuration. Try again."
 msgstr "Could not generate folder configuration. Try again."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:874
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:870
 msgid "Could not read that file."
 msgstr "Could not read that file."
 
@@ -3379,7 +3391,7 @@ msgstr "Current Role"
 
 #: src/pages/folders/components/DocumentsListView.tsx:534
 #: src/pages/folders/components/FolderTable.tsx:1312
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1499
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1592
 msgid "Current Stage"
 msgstr "Current Stage"
 
@@ -3571,7 +3583,7 @@ msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Decide how document revisions are tracked when files are updated."
 
 #: src/pages/requests/components/request/components/Header.tsx:634
-#: src/pages/requests/components/request/components/Header.tsx:1061
+#: src/pages/requests/components/request/components/Header.tsx:1060
 msgid "Decision Details"
 msgstr "Decision Details"
 
@@ -3710,11 +3722,11 @@ msgid "Delete Role"
 msgstr "Delete Role"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:472
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:236
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:238
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:922
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:924
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1201
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:343
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:345
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:949
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:951
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1197
 msgid "Delete row"
 msgstr "Delete row"
 
@@ -3872,8 +3884,8 @@ msgstr "Describe your report for \"{0}\""
 
 #: src/pages/forms/FormsPage.tsx:206
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:308
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:807
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:828
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:854
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:875
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:522
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4738
@@ -3965,7 +3977,7 @@ msgstr "Direct Upload"
 msgid "Disabled"
 msgstr "Disabled"
 
-#: src/pages/requests/components/InboxList.tsx:1937
+#: src/pages/requests/components/InboxList.tsx:1949
 #: src/pages/requests/components/QuickFilters.tsx:156
 #: src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx:56
 #: src/pages/requests/utils/localizeRequestUi.ts:21
@@ -4033,13 +4045,17 @@ msgid "Document deleted successfully."
 msgstr "Document deleted successfully."
 
 #: src/pages/folders/components/StartWorkflowView.tsx:534
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:269
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:272
 msgid "Document Details"
 msgstr "Document Details"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:166
-msgid "Document Generate"
-msgstr "Document Generate"
+#~ msgid "Document Generate"
+#~ msgstr "Document Generate"
+
+#: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:166
+msgid "Document Generator"
+msgstr "Document Generator"
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:83
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:74
@@ -4069,7 +4085,7 @@ msgstr "Document owners are notified beforehand."
 msgid "Document Preview"
 msgstr "Document Preview"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:499
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:497
 msgid "Document preview failed"
 msgstr "Document preview failed"
 
@@ -4358,7 +4374,7 @@ msgstr "Dropdown Options"
 #~ msgid "Dual axis spending trend comparison"
 #~ msgstr "Dual axis spending trend comparison"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1791
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1884
 msgid "Due & Terms"
 msgstr "Due & Terms"
 
@@ -4368,7 +4384,7 @@ msgstr "due date"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1039
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2181
-#: src/pages/requests/components/InboxList.tsx:1925
+#: src/pages/requests/components/InboxList.tsx:1937
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5435
@@ -4984,7 +5000,7 @@ msgstr "Excel Spreadsheet"
 msgid "Exception uploading file: {detail}"
 msgstr "Exception uploading file: {detail}"
 
-#: src/pages/requests/components/InboxList.tsx:2110
+#: src/pages/requests/components/InboxList.tsx:2123
 #: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
@@ -5041,7 +5057,7 @@ msgstr "Explore, test, and debug API endpoints with live requests and sample res
 #: src/pages/folders/components/Upload/Upload.tsx:3741
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1978
+#: src/pages/requests/components/InboxList.tsx:1990
 msgid "Export"
 msgstr "Export"
 
@@ -5080,7 +5096,7 @@ msgstr "Export staged file"
 msgid "Export staged files"
 msgstr "Export staged files"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:983
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:979
 msgid "Export to Excel"
 msgstr "Export to Excel"
 
@@ -5103,10 +5119,10 @@ msgid "EXTRACTED"
 msgstr "EXTRACTED"
 
 #: src/pages/folders/components/Upload/Upload.tsx:3537
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:468
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:476
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
 #: src/pages/requests/components/RequestSummary.tsx:194
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:327
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:328
 msgid "Extracted Data"
 msgstr "Extracted Data"
 
@@ -5362,7 +5378,7 @@ msgid "Failed to proceed request:"
 msgstr "Failed to proceed request:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1963
+#: src/pages/requests/components/request/Request.tsx:2117
 msgid "Failed to proceed request: {0}"
 msgstr "Failed to proceed request: {0}"
 
@@ -5388,7 +5404,7 @@ msgid "Failed to save report"
 msgstr "Failed to save report"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2090
+#: src/pages/requests/components/request/Request.tsx:2242
 msgid "Failed to save request: {0}"
 msgstr "Failed to save request: {0}"
 
@@ -5404,7 +5420,7 @@ msgstr "Failed to share dashboard"
 msgid "Failed to share report"
 msgstr "Failed to share report"
 
-#: src/pages/requests/components/request/Request.tsx:2401
+#: src/pages/requests/components/request/Request.tsx:2541
 msgid "Failed to share request"
 msgstr "Failed to share request"
 
@@ -5420,16 +5436,16 @@ msgstr "Failed to stage file for upload."
 msgid "Failed to stage files for upload."
 msgstr "Failed to stage files for upload."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:403
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:404
 msgid "Failed to start the workflow. Please try again."
 msgstr "Failed to start the workflow. Please try again."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:258
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:259
 msgid "Failed to start workflow"
 msgstr "Failed to start workflow"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2091
+#: src/pages/requests/components/request/Request.tsx:2243
 msgid "Failed to submit request: {0}"
 msgstr "Failed to submit request: {0}"
 
@@ -5442,14 +5458,14 @@ msgstr "Failed to update folder: {0}"
 msgid "Failed to upload master file to the server"
 msgstr "Failed to upload master file to the server"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1084
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1107
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1162
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1186
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1093
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1116
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1171
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1195
 msgid "Failed to upload the file."
 msgstr "Failed to upload the file."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:453
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:454
 msgid "Failed to upload the file. Please try again."
 msgstr "Failed to upload the file. Please try again."
 
@@ -5581,7 +5597,7 @@ msgstr "File Ingestion & Parsing"
 msgid "File is too large. Max size is 50MB."
 msgstr "File is too large. Max size is 50MB."
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1408
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1501
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:214
 msgid "File Name"
 msgstr "File Name"
@@ -6006,7 +6022,7 @@ msgstr "Generate Dashboard Design"
 msgid "Generate KPIs and charts from your prompt, then load live data."
 msgstr "Generate KPIs and charts from your prompt, then load live data."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:130
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:139
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:164
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:225
 msgid "Generate PDF documents from the template set on this step."
@@ -6063,7 +6079,7 @@ msgstr "Get Started"
 msgid "Give your report a name, select the data source, and configure sharing permissions."
 msgstr "Give your report a name, select the data source, and configure sharing permissions."
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1698
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1791
 msgid "GL & Category"
 msgstr "GL & Category"
 
@@ -6376,7 +6392,7 @@ msgstr "High Precision"
 #~ msgid "High Risk"
 #~ msgstr "High Risk"
 
-#: src/pages/requests/components/InboxList.tsx:1957
+#: src/pages/requests/components/InboxList.tsx:1969
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "High Value"
 msgstr "High Value"
@@ -6397,13 +6413,13 @@ msgstr "Historical Match & Integrity Results"
 #~ msgid "Historical Match Results"
 #~ msgstr "Historical Match Results"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:488
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:520
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1460
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:496
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:528
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1469
 #: src/pages/requests/components/request/components/Header.tsx:493
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4403
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:347
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:383
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:348
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:384
 msgid "History"
 msgstr "History"
 
@@ -6479,16 +6495,16 @@ msgstr "IMAP Server"
 msgid "Immediate Invoice Processing"
 msgstr "Immediate Invoice Processing"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:973
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:969
 msgid "Import CSV/Excel"
 msgstr "Import CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1040
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1036
 msgid "Import extracted items"
 msgstr "Import extracted items"
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1985
+#: src/pages/requests/components/InboxList.tsx:1997
 msgid "Import PO Data"
 msgstr "Import PO Data"
 
@@ -6519,7 +6535,7 @@ msgstr "Import your records via CSV or Excel."
 msgid "In progress"
 msgstr "In progress"
 
-#: src/pages/requests/components/KanbanView.tsx:233
+#: src/pages/requests/components/KanbanView.tsx:215
 msgid "In Progress"
 msgstr "In Progress"
 
@@ -6659,8 +6675,8 @@ msgid "Initializing upload..."
 msgstr "Initializing upload..."
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:822
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:198
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:234
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:199
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:235
 msgid "Initiating..."
 msgstr "Initiating..."
 
@@ -6766,7 +6782,7 @@ msgid "Invite sent"
 msgstr "Invite sent"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1407
+#: src/pages/requests/components/request/components/Header.tsx:1403
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Invited"
@@ -6800,7 +6816,7 @@ msgstr "Invoice #"
 msgid "Invoice Amount"
 msgstr "Invoice Amount"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1841
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1934
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5396
@@ -6837,7 +6853,7 @@ msgstr "Invoice Line Items"
 msgid "Invoice matched against approved master"
 msgstr "Invoice matched against approved master"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1406
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1499
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "Invoice Number"
 msgstr "Invoice Number"
@@ -6868,7 +6884,7 @@ msgstr "Invoice status updated in SAP"
 msgid "Invoice Summary"
 msgstr "Invoice Summary"
 
-#: src/pages/requests/components/request/components/Header.tsx:979
+#: src/pages/requests/components/request/components/Header.tsx:978
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4894
 msgid "Invoice Value"
 msgstr "Invoice Value"
@@ -7232,13 +7248,13 @@ msgstr "Line Item Matching"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:473
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:568
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:481
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:580
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1519
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4388
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:332
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:333
 msgid "Line Items"
 msgstr "Line Items"
 
@@ -7355,7 +7371,7 @@ msgstr "Loading fields..."
 msgid "Loading folders..."
 msgstr "Loading folders..."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:483
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:484
 msgid "Loading form…"
 msgstr "Loading form…"
 
@@ -7722,7 +7738,7 @@ msgstr "Mark as mandatory"
 msgid "Mark as optional"
 msgstr "Mark as optional"
 
-#: src/pages/requests/components/GridView.tsx:1740
+#: src/pages/requests/components/GridView.tsx:1763
 msgid "Mark as Paid"
 msgstr "Mark as Paid"
 
@@ -7816,7 +7832,7 @@ msgstr "Match Score"
 msgid "Match:"
 msgstr "Match:"
 
-#: src/pages/requests/components/InboxList.tsx:1932
+#: src/pages/requests/components/InboxList.tsx:1944
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:498
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4095
@@ -8141,7 +8157,7 @@ msgid "months"
 msgstr "months"
 
 #: src/pages/portal/components/PortalWizardChat.tsx:239
-#: src/pages/requests/components/KanbanView.tsx:306
+#: src/pages/requests/components/KanbanView.tsx:288
 msgid "more"
 msgstr "more"
 
@@ -8169,17 +8185,22 @@ msgstr "Move Entry to Trash"
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Move matched documents out of active storage into the archive."
 
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:308
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:310
+msgid "Move to matched items"
+msgstr "Move to matched items"
+
 #: src/pages/forms/FormEntriesPage.tsx:1844
 #: src/pages/forms/FormEntriesPage.tsx:2539
 msgid "Move to Trash"
 msgstr "Move to Trash"
 
-#: src/pages/requests/components/KanbanView.tsx:334
+#: src/pages/requests/components/KanbanView.tsx:316
 msgid "Move unavailable"
 msgstr "Move unavailable"
 
-#: src/pages/requests/components/KanbanView.tsx:378
-#: src/pages/requests/components/KanbanView.tsx:392
+#: src/pages/requests/components/KanbanView.tsx:360
+#: src/pages/requests/components/KanbanView.tsx:374
 msgid "Move unsuccessful"
 msgstr "Move unsuccessful"
 
@@ -8219,8 +8240,8 @@ msgstr "My Submissions"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:107
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1832
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1843
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1925
 msgid "N/A"
 msgstr "N/A"
 
@@ -8283,7 +8304,7 @@ msgstr "Narrow down rows"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Narrow down which rows this report includes. Leave empty to include every row."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:848
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:895
 msgid "needs engineering review"
 msgstr "needs engineering review"
 
@@ -8305,7 +8326,7 @@ msgid "Net Value"
 msgstr "Net Value"
 
 #: src/components/common/SharePopover.tsx:700
-#: src/pages/requests/components/request/components/Header.tsx:1540
+#: src/pages/requests/components/request/components/Header.tsx:1536
 #: src/pages/requests/RequestsPage.tsx:1004
 msgid "New"
 msgstr ""
@@ -8350,9 +8371,9 @@ msgstr "New Report"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:821
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:74
 #: src/pages/requests/components/request/NewRequestSheet.tsx:105
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:196
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:197
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:466
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:198
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:467
 msgid "New Request"
 msgstr "New Request"
 
@@ -8405,7 +8426,7 @@ msgid "Next page"
 msgstr "Next page"
 
 #: src/pages/requests/components/request/components/Header.tsx:522
-#: src/pages/requests/components/request/components/Header.tsx:777
+#: src/pages/requests/components/request/components/Header.tsx:776
 msgid "Next Request"
 msgstr "Next Request"
 
@@ -8426,8 +8447,8 @@ msgstr "No"
 msgid "No account found for this username."
 msgstr "No account found for this username."
 
-#: src/pages/requests/components/GridView.tsx:1433
-#: src/pages/requests/components/GridView.tsx:1437
+#: src/pages/requests/components/GridView.tsx:1456
+#: src/pages/requests/components/GridView.tsx:1460
 msgid "No action"
 msgstr "No action"
 
@@ -8504,8 +8525,8 @@ msgstr "No compliance assessment available."
 msgid "No consumption data for this period."
 msgstr "No consumption data for this period."
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:685
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:645
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:694
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:646
 msgid "No data available yet."
 msgstr "No data available yet."
 
@@ -8518,7 +8539,7 @@ msgid "No data loss, no rework — just choose how your trial carries over."
 msgstr "No data loss, no rework — just choose how your trial carries over."
 
 #: src/pages/requests/components/request/components/Header.tsx:648
-#: src/pages/requests/components/request/components/Header.tsx:1075
+#: src/pages/requests/components/request/components/Header.tsx:1074
 msgid "No decision details available for this request."
 msgstr "No decision details available for this request."
 
@@ -8526,12 +8547,12 @@ msgstr "No decision details available for this request."
 msgid "No distribution data for this period."
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:229
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:595
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:232
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:603
 msgid "No document attached"
 msgstr "No document attached"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:302
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:305
 msgid "No document details available."
 msgstr "No document details available."
 
@@ -8651,7 +8672,7 @@ msgstr "No form panels found for this request."
 #~ msgid "No generated document yet"
 #~ msgstr "No generated document yet"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:239
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:263
 msgid "No generated document yet. It will appear here when this stage completes."
 msgstr "No generated document yet. It will appear here when this stage completes."
 
@@ -8671,7 +8692,7 @@ msgstr ""
 msgid "No history found"
 msgstr "No history found"
 
-#: src/pages/requests/components/request/Request.tsx:2377
+#: src/pages/requests/components/request/Request.tsx:2517
 msgid "No instance ID available to share"
 msgstr "No instance ID available to share"
 
@@ -8693,7 +8714,7 @@ msgstr "No key facts extracted."
 msgid "No logs found"
 msgstr "No logs found"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:868
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:864
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "No matching columns found — CSV/Excel headers must match table column names."
 
@@ -8816,7 +8837,7 @@ msgstr "No repository fields configured."
 msgid "No repository items found"
 msgstr "No repository items found"
 
-#: src/pages/requests/components/KanbanView.tsx:533
+#: src/pages/requests/components/KanbanView.tsx:516
 msgid "No requests in this stage"
 msgstr "No requests in this stage"
 
@@ -8902,7 +8923,7 @@ msgstr "No supplier trend insight available."
 msgid "No suppliers found"
 msgstr "No suppliers found"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:910
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:906
 msgid "No table columns configured."
 msgstr "No table columns configured."
 
@@ -9015,7 +9036,7 @@ msgstr "Not Equals"
 msgid "Not mapped"
 msgstr "Not mapped"
 
-#: src/pages/requests/components/InboxList.tsx:1944
+#: src/pages/requests/components/InboxList.tsx:1956
 #: src/pages/requests/components/request/components/sections/history/History.tsx:508
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4096
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4450
@@ -9065,7 +9086,7 @@ msgid "Notify document owner beforehand"
 msgstr "Notify document owner beforehand"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:1537
+#: src/pages/requests/components/request/components/Header.tsx:1533
 msgid "Notify me when accessed"
 msgstr "Notify me when accessed"
 
@@ -9200,7 +9221,7 @@ msgstr "Open Invoices"
 #~ msgid "Open portal"
 #~ msgstr "Open portal"
 
-#: src/pages/requests/components/KanbanView.tsx:319
+#: src/pages/requests/components/KanbanView.tsx:301
 msgid "Open request"
 msgstr "Open request"
 
@@ -9326,8 +9347,8 @@ msgstr "Order"
 #~ msgid "Organized"
 #~ msgstr "Organized"
 
-#: src/pages/requests/components/KanbanView.tsx:219
-#: src/pages/requests/components/KanbanView.tsx:224
+#: src/pages/requests/components/KanbanView.tsx:201
+#: src/pages/requests/components/KanbanView.tsx:206
 msgid "Other"
 msgstr "Other"
 
@@ -9384,7 +9405,7 @@ msgstr "owner"
 #: src/pages/folders/components/FolderSharePopover.tsx:791
 #: src/pages/folders/components/FolderSharePopover.tsx:851
 #: src/pages/reports/components/ReportsListView.tsx:212
-#: src/pages/requests/components/request/components/Header.tsx:1399
+#: src/pages/requests/components/request/components/Header.tsx:1395
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -9416,7 +9437,7 @@ msgstr "Partially Approved"
 msgid "PARTIALLY APPROVED"
 msgstr "PARTIALLY APPROVED"
 
-#: src/pages/requests/components/InboxList.tsx:1948
+#: src/pages/requests/components/InboxList.tsx:1960
 #: src/pages/requests/components/request/components/sections/history/History.tsx:503
 #: src/pages/requests/utils/localizeRequestUi.ts:35
 msgid "Partially Matched"
@@ -9722,7 +9743,7 @@ msgstr "Please assign a folder for all files before proceeding."
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Please attach a file to continue."
 
-#: src/pages/requests/components/request/Request.tsx:1825
+#: src/pages/requests/components/request/Request.tsx:1979
 msgid "Please attach at least one file before continuing."
 msgstr "Please attach at least one file before continuing."
 
@@ -9735,12 +9756,12 @@ msgid "Please click 'Verify' to check if this supplier is legitimate and prevent
 msgstr "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:1814
+#: src/pages/requests/components/request/Request.tsx:1968
 msgid "Please complete \"{0}\" before continuing."
 msgstr "Please complete \"{0}\" before continuing."
 
 #: src/pages/portal/components/PortalWizard.tsx:834
-#: src/pages/requests/components/request/Request.tsx:1852
+#: src/pages/requests/components/request/Request.tsx:2006
 msgid "Please complete all required fields before continuing."
 msgstr "Please complete all required fields before continuing."
 
@@ -9770,7 +9791,7 @@ msgstr "Please complete these required fields: {0} and {1}."
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr "Please complete these required fields: {rest}, and {last}."
 
-#: src/pages/requests/components/request/Request.tsx:1833
+#: src/pages/requests/components/request/Request.tsx:1987
 msgid "Please confirm your signature before continuing."
 msgstr "Please confirm your signature before continuing."
 
@@ -10184,8 +10205,8 @@ msgstr "PO Matching"
 msgid "PO Matching Analysis"
 msgstr "PO Matching Analysis"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1471
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1777
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1564
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1870
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4622
@@ -10214,7 +10235,7 @@ msgstr "PO Reference"
 msgid "PO Setup"
 msgstr "PO Setup"
 
-#: src/pages/requests/components/request/components/Header.tsx:998
+#: src/pages/requests/components/request/components/Header.tsx:997
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4895
 msgid "PO Value"
@@ -10361,6 +10382,7 @@ msgstr "Preferences"
 msgid "Prepare your file"
 msgstr "Prepare your file"
 
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:208
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Preparing your request..."
 msgstr "Preparing your request..."
@@ -10382,7 +10404,6 @@ msgstr "Press Enter to add this email"
 #~ msgstr "Press Enter to search API for “{searchLabel}”"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:700
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:991
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:783
 msgid "Preview"
 msgstr "Preview"
@@ -10391,7 +10412,7 @@ msgstr "Preview"
 msgid "Preview & Confirm"
 msgstr "Preview & Confirm"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:967
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:982
 msgid "Preview Mode"
 msgstr "Preview Mode"
 
@@ -10416,7 +10437,7 @@ msgstr "Previous Request"
 msgid "Previous step"
 msgstr "Previous step"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:884
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:931
 msgid "Price"
 msgstr "Price"
 
@@ -10477,7 +10498,7 @@ msgstr "Process invoices and match them to the related purchase orders."
 msgid "Process Overview"
 msgstr "Process Overview"
 
-#: src/pages/requests/components/InboxList.tsx:2112
+#: src/pages/requests/components/InboxList.tsx:2125
 #: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:38
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
@@ -10489,7 +10510,7 @@ msgstr "Processed"
 #~ msgstr "Processed ({processedCount})"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2673
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:434
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:435
 msgid "Processing"
 msgstr "Processing"
 
@@ -10502,7 +10523,7 @@ msgstr "Processing \"{0}\""
 msgid "Processing & Bottlenecks"
 msgstr "Processing & Bottlenecks"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:192
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:193
 msgid "Processing Document..."
 msgstr "Processing Document..."
 
@@ -10523,7 +10544,7 @@ msgstr "Procurement (POs & Requisitions)"
 msgid "Procurement Agent"
 msgstr "Procurement Agent"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:754
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:777
 msgid "Product"
 msgstr "Product"
 
@@ -10616,7 +10637,7 @@ msgstr "Purged"
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "Put overdue first in red. Donut on the left in blue..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:867
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:914
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:526
 msgid "Qty"
@@ -10627,8 +10648,12 @@ msgid "Qty / UOM"
 msgstr "Qty / UOM"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:191
-msgid "Qualify Agent"
-msgstr "Qualify Agent"
+msgid "Qualifier"
+msgstr "Qualifier"
+
+#: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:191
+#~ msgid "Qualify Agent"
+#~ msgstr "Qualify Agent"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:189
 msgid "Qualify each lead and prospect using the rules on this step."
@@ -10681,15 +10706,25 @@ msgstr "Quick Try"
 #~ msgstr "Quickly view resources created during your evaluation"
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:196
-msgid "Quote Agent"
-msgstr "Quote Agent"
+#~ msgid "Quote Agent"
+#~ msgstr "Quote Agent"
+
+#: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:196
+msgid "Quote Estimator"
+msgstr "Quote Estimator"
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1004
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1007
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1009
+msgid "Quote Preview"
+msgstr "Quote Preview"
 
 #: src/pages/requests/components/Table.tsx:74
 msgid "Raised At"
 msgstr "Raised At"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1515
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1677
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1608
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1770
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Raised By"
@@ -10841,7 +10876,7 @@ msgstr "Reference Document Number"
 #: src/pages/portal/components/PortalHome.tsx:429
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
-#: src/pages/requests/components/InboxList.tsx:1969
+#: src/pages/requests/components/InboxList.tsx:1981
 #: src/pages/settings/components/AuditMonitoring.tsx:186
 #: src/pages/settings/components/credits/Credits.tsx:925
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2151
@@ -11086,7 +11121,7 @@ msgstr "Request {0} action \"{action}\" completed successfully"
 msgid "Request {0} submitted successfully"
 msgstr "Request {0} submitted successfully"
 
-#: src/pages/requests/components/KanbanView.tsx:384
+#: src/pages/requests/components/KanbanView.tsx:366
 msgid "Request {requestNo} has been moved successfully."
 msgstr "Request {requestNo} has been moved successfully."
 
@@ -11094,15 +11129,15 @@ msgstr "Request {requestNo} has been moved successfully."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Request {requestNo} moved successfully"
 
-#: src/pages/requests/components/request/Request.tsx:2024
+#: src/pages/requests/components/request/Request.tsx:2176
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 
-#: src/pages/requests/components/request/Request.tsx:2002
+#: src/pages/requests/components/request/Request.tsx:2154
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr "Request {resolvedRequestNo} is being processed."
 
-#: src/pages/requests/components/request/Request.tsx:2023
+#: src/pages/requests/components/request/Request.tsx:2175
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Request {resolvedRequestNo} submitted successfully"
 
@@ -11121,29 +11156,29 @@ msgstr "Request a Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Request created. You can track it from My Submissions."
 
-#: src/pages/requests/components/request/Request.tsx:2117
+#: src/pages/requests/components/request/Request.tsx:2267
 msgid "Request is being processed."
 msgstr "Request is being processed."
 
-#: src/pages/requests/components/KanbanView.tsx:385
+#: src/pages/requests/components/KanbanView.tsx:367
 msgid "Request moved"
 msgstr "Request moved"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1409
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1502
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:28
 msgid "Request No"
 msgstr "Request No"
 
-#: src/pages/requests/components/request/components/Header.tsx:1336
+#: src/pages/requests/components/request/components/Header.tsx:1333
 msgid "Request Owner"
 msgstr "Request Owner"
 
-#: src/pages/requests/components/request/Request.tsx:2136
+#: src/pages/requests/components/request/Request.tsx:2286
 msgid "Request saved successfully"
 msgstr "Request saved successfully"
 
 #: src/pages/requests/components/request/components/Header.tsx:403
-#: src/pages/requests/components/request/Request.tsx:2397
+#: src/pages/requests/components/request/Request.tsx:2537
 msgid "Request shared successfully"
 msgstr "Request shared successfully"
 
@@ -11154,11 +11189,11 @@ msgid "Request Status"
 msgstr "Request Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2137
+#: src/pages/requests/components/request/Request.tsx:2287
 msgid "Request submitted successfully"
 msgstr "Request submitted successfully"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:418
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:419
 msgid "Request submitted successfully."
 msgstr "Request submitted successfully."
 
@@ -11167,8 +11202,8 @@ msgstr "Request submitted successfully."
 #~ msgstr "Request submitted."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:76
-#: src/pages/requests/components/InboxList.tsx:2108
-#: src/pages/requests/components/InboxList.tsx:2113
+#: src/pages/requests/components/InboxList.tsx:2121
+#: src/pages/requests/components/InboxList.tsx:2126
 #: src/pages/requests/components/Table.tsx:178
 #: src/pages/search/SearchPage.tsx:334
 msgid "Requests"
@@ -11622,7 +11657,7 @@ msgstr "SAP Table Field Mapping"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2197
 #: src/pages/folders/components/DocumentDetailsView.tsx:2219
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1587
+#: src/pages/requests/components/request/components/Header.tsx:1583
 #: src/pages/settings/components/SettingsWizardLayout.tsx:81
 msgid "Save"
 msgstr "Save"
@@ -11765,7 +11800,7 @@ msgid "Scan QR"
 msgstr "Scan QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:949
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:945
 msgid "Scan QR / Barcode"
 msgstr "Scan QR / Barcode"
 
@@ -11963,7 +11998,7 @@ msgstr "Search icons"
 #~ msgstr "Search in {0}..."
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
-#: src/pages/requests/components/InboxList.tsx:1888
+#: src/pages/requests/components/InboxList.tsx:1900
 msgid "Search invoice, supplier, PO..."
 msgstr "Search invoice, supplier, PO..."
 
@@ -12123,7 +12158,7 @@ msgstr ""
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1070
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1066
 #: src/pages/settings/components/ManageUser.tsx:1903
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -12405,7 +12440,7 @@ msgstr "Select recipients"
 msgid "Select role"
 msgstr "Select role"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1137
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1133
 msgid "Select row"
 msgstr "Select row"
 
@@ -12541,8 +12576,8 @@ msgstr "Semantic Classification"
 msgid "Send"
 msgstr "Send"
 
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:360
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:362
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:370
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:372
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:120
 msgid "Send comment"
 msgstr "Send comment"
@@ -12557,7 +12592,7 @@ msgstr "Send for Signature"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1031
-#: src/pages/requests/components/request/components/Header.tsx:1504
+#: src/pages/requests/components/request/components/Header.tsx:1500
 msgid "Send notification"
 msgstr "Send notification"
 
@@ -12714,8 +12749,8 @@ msgstr "Severity"
 #: src/pages/folders/components/FolderTable.tsx:1472
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1102
-#: src/pages/requests/components/request/components/Header.tsx:1527
+#: src/pages/requests/components/request/components/Header.tsx:1101
+#: src/pages/requests/components/request/components/Header.tsx:1523
 msgid "Share"
 msgstr "Share"
 
@@ -12727,7 +12762,7 @@ msgstr "Share Dashboard"
 msgid "Share Report"
 msgstr "Share Report"
 
-#: src/pages/requests/components/request/components/Header.tsx:1127
+#: src/pages/requests/components/request/components/Header.tsx:1126
 msgid "Share Request"
 msgstr "Share Request"
 
@@ -12763,7 +12798,7 @@ msgstr "Sharing"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1055
-#: src/pages/requests/components/request/components/Header.tsx:1527
+#: src/pages/requests/components/request/components/Header.tsx:1523
 msgid "Sharing..."
 msgstr "Sharing..."
 
@@ -13186,7 +13221,7 @@ msgstr "Source: SAP (HANA Cloud)"
 msgid "Stage processed"
 msgstr "Stage processed"
 
-#: src/pages/requests/components/KanbanView.tsx:267
+#: src/pages/requests/components/KanbanView.tsx:249
 msgid "Stage unavailable"
 msgstr "Stage unavailable"
 
@@ -13480,8 +13515,8 @@ msgstr "supplier"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1036
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2178
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1480
-#: src/pages/requests/components/InboxList.tsx:1912
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1573
+#: src/pages/requests/components/InboxList.tsx:1924
 #: src/pages/requests/components/QuickFilters.tsx:359
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:19
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
@@ -13836,6 +13871,10 @@ msgstr "Test Connection"
 msgid "That's everything for this section. Continue when you're ready."
 msgstr "That's everything for this section. Continue when you're ready."
 
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:276
+msgid "The agent stopped. Review the request and try again."
+msgstr "The agent stopped. Review the request and try again."
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1088
 msgid "the demo data"
 msgstr "the demo data"
@@ -14029,11 +14068,11 @@ msgstr "This report has no fields configured yet."
 #~ msgid "This request can only move to a connected stage."
 #~ msgstr "This request can only move to a connected stage."
 
-#: src/pages/requests/components/KanbanView.tsx:266
+#: src/pages/requests/components/KanbanView.tsx:248
 msgid "This request can’t be moved to this stage from its current stage."
 msgstr "This request can’t be moved to this stage from its current stage."
 
-#: src/pages/requests/components/KanbanView.tsx:293
+#: src/pages/requests/components/KanbanView.tsx:275
 msgid "This request is missing a few required details to move forward."
 msgstr "This request is missing a few required details to move forward."
 
@@ -14056,6 +14095,10 @@ msgstr "This sign area belongs to another user."
 #: src/pages/sign-request/SignRequestInvitePage.tsx:126
 msgid "This sign request link is invalid."
 msgstr "This sign request link is invalid."
+
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:273
+msgid "This step could not be completed."
+msgstr "This step could not be completed."
 
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:296
 msgid "This usually takes under a minute. Don't close this page."
@@ -14100,7 +14143,7 @@ msgstr "Time"
 #~ msgid "Time Remaining"
 #~ msgstr "Time Remaining"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1536
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1629
 msgid "Time Running"
 msgstr "Time Running"
 
@@ -14173,7 +14216,7 @@ msgstr "Top agents by credit usage · {periodSubtitle}"
 #~ msgstr "Top-3 Concentration"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1219
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1215
 msgid "Total"
 msgstr "Total"
 
@@ -14247,7 +14290,7 @@ msgstr "Total runs"
 msgid "Total Submitted"
 msgstr "Total Submitted"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1818
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1911
 msgid "Total Value"
 msgstr "Total Value"
 
@@ -14577,8 +14620,8 @@ msgstr "Unknown error"
 msgid "Unknown Item"
 msgstr "Unknown Item"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1685
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1689
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1778
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1782
 msgid "Unknown Supplier"
 msgstr "Unknown Supplier"
 
@@ -14704,7 +14747,7 @@ msgstr "Upgrading…"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:714
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:764
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:712
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:713
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:82
 msgid "Upload"
 msgstr "Upload"
@@ -14936,6 +14979,7 @@ msgstr "Use this plan"
 #~ msgstr "Use this setup"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2564
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:240
 #: src/pages/settings/components/AuditMonitoring.tsx:331
 #: src/pages/settings/components/AuditMonitoring.tsx:332
 #: src/pages/settings/components/RolesPermissions.tsx:2078
@@ -15368,16 +15412,16 @@ msgstr "We couldn't find any records matching “{searchLabel}”. Try searching
 msgid "We couldn't get your email address from Google. Please try again."
 msgstr "We couldn't get your email address from Google. Please try again."
 
-#: src/pages/requests/components/KanbanView.tsx:333
+#: src/pages/requests/components/KanbanView.tsx:315
 msgid "We couldn’t identify this request, so it couldn’t be moved."
 msgstr "We couldn’t identify this request, so it couldn’t be moved."
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/KanbanView.tsx:377
+#: src/pages/requests/components/KanbanView.tsx:359
 msgid "We couldn’t move request {requestNo}. {0}"
 msgstr "We couldn’t move request {requestNo}. {0}"
 
-#: src/pages/requests/components/KanbanView.tsx:391
+#: src/pages/requests/components/KanbanView.tsx:373
 msgid "We couldn’t move this request right now. Please try again."
 msgstr "We couldn’t move this request right now. Please try again."
 
@@ -15553,7 +15597,7 @@ msgstr "Workflows"
 msgid "Workflows List"
 msgstr "Workflows List"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:252
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:209
 msgid "Working on this request..."
 msgstr "Working on this request..."
 
@@ -15588,7 +15632,7 @@ msgstr "Yes, Delete"
 msgid "Yesterday"
 msgstr "Yesterday"
 
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:230
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:235
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:83
 msgid "You"
 msgstr "You"

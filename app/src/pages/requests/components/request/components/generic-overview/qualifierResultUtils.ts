@@ -262,6 +262,15 @@ export const summarizeQualifierResult = (
   return { qualify: vm.qualify, title }
 }
 
+/** Same bands as the overview confidence badge: 90+ green, 70+ orange, below red. */
+export const confidenceToneClass = (value: unknown) => {
+  const numeric = Number(String(value ?? '').replace(/[^0-9.]/g, ''))
+  if (!Number.isFinite(numeric)) return 'text-gray-9'
+  if (numeric >= 90) return 'text-green-11'
+  if (numeric >= 70) return 'text-orange-11'
+  return 'text-red-11'
+}
+
 export const qualifyDecisionStyle = (value: string) => {
   const decision = String(value || '')
     .toLowerCase()

@@ -31,7 +31,7 @@ const MyAccountPage = () => {
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
-      <div className='shrink-0 border-b border-gray-3 px-6'>
+      <div className='shrink-0 border-b border-gray-3 px-4'>
         <Tabs color='primary' value={slug || 'profile'} onChange={goto}>
           <Tab label={t`Profile`} value='profile' />
           <Tab label={t`Security`} value='security' />

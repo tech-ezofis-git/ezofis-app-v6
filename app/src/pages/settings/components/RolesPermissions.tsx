@@ -1800,7 +1800,7 @@ function RoleList({
     <div className='flex h-full min-h-0 flex-col'>
       <SettingsPageHeader title={t`Roles & Permissions`} onBack={onBack} />
 
-      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4'>
+      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4'>
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={roleTable as any} />}

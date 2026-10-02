@@ -10,7 +10,7 @@ interface HeaderProps {
 
 const Header = ({ tabValue, onCreate, onTabChange }: HeaderProps) => {
   return (
-    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6'>
+    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-4'>
       <Tabs
         color='primary'
         value={tabValue}

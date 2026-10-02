@@ -57,6 +57,7 @@ import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
 import AgentDetailPlaceholder from './AgentDetailPlaceholder'
 import AgentSummaryBoxes, {
+  formatAgentDisplayLabel,
   type AgentBlock,
   getAgentResponseTabs,
 } from './AgentSummaryBoxes'
@@ -191,10 +192,11 @@ const DocumentApprovalSplitLayout = ({
         }
       : null
 
-  const { mimeType, previewUrl } = useAttachmentPreviewUrl(
-    previewAttachment as any,
-    targetRepoId,
-  )
+  const {
+    isLoading: previewLoading,
+    mimeType,
+    previewUrl,
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
 
   useEffect(() => {
     if (!targetItemId || !targetRepoId) return
@@ -215,7 +217,6 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            fileUrl={previewUrl || null}
             fileName={
               previewAttachment.fileName ||
               previewAttachment.name ||
@@ -223,6 +224,8 @@ const DocumentApprovalSplitLayout = ({
                 ? `file.${previewAttachment.fileExtension}`
                 : undefined)
             }
+            fileUrl={previewUrl || null}
+            isLoading={previewLoading}
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -370,7 +373,9 @@ const DocumentFormSplitLayout = ({
   const viewerAttachment = useMemo(() => {
     if (!attachments.length) return recentDocument
     return (
-      attachments.find((file) => attachmentKeyOf(file) === viewerAttachmentKey) ||
+      attachments.find(
+        (file) => attachmentKeyOf(file) === viewerAttachmentKey,
+      ) ||
       recentDocument ||
       attachments[0]
     )
@@ -389,11 +394,14 @@ const DocumentFormSplitLayout = ({
   const hasAgents = agentBlocks.length > 0
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
-  const initialAgentId = agentResponseTabs[0]?.id ?? agentBlocks.find(
-    (b) =>
-      String(b.type || '') !== 'DOCUMENT_GENERATE_AGENT' &&
-      String(b.settings?.subtype || '').toUpperCase() !== 'DOCUMENT_GENERATE',
-  )?.id ?? null
+  const initialAgentId =
+    agentResponseTabs[0]?.id ??
+    agentBlocks.find(
+      (b) =>
+        String(b.type || '') !== 'DOCUMENT_GENERATE_AGENT' &&
+        String(b.settings?.subtype || '').toUpperCase() !== 'DOCUMENT_GENERATE',
+    )?.id ??
+    null
   const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
     string | null
   >(initialAgentId)
@@ -501,7 +509,7 @@ const DocumentFormSplitLayout = ({
     const agentTabs = agentResponseTabs.map((block) => ({
       icon: block.icon || 'lucide:cpu',
       id: `agent:${block.id}`,
-      label: block.settings?.label || t`Agent`,
+      label: formatAgentDisplayLabel(block),
     }))
     return [
       ...agentTabs,
@@ -539,9 +547,7 @@ const DocumentFormSplitLayout = ({
   }
 
   const targetRepoId =
-    viewerAttachment?.repositoryId ||
-    repositoryId ||
-    selectedItem?.repositoryId
+    viewerAttachment?.repositoryId || repositoryId || selectedItem?.repositoryId
   const targetItemId =
     viewerAttachment?.itemId || viewerAttachment?.id || selectedItem?.itemId
 
@@ -564,43 +570,46 @@ const DocumentFormSplitLayout = ({
         }
       : null
 
-  const { previewUrl } = useAttachmentPreviewUrl(
+  const { isLoading: previewLoading, previewUrl } = useAttachmentPreviewUrl(
     previewAttachment as any,
     targetRepoId,
   )
 
   return (
-    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-[var(--gray-1)]'>
-      <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
+    <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
+      <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1'>
         <LeftViewerAttachmentStrip
           attachments={attachments}
           selectedKey={attachmentKeyOf(viewerAttachment)}
           onOpenAttachmentsTab={() => selectTab('attachments')}
           onSelect={(file) => setViewerAttachmentKey(attachmentKeyOf(file))}
         />
-        <div className='relative min-h-0 flex-1 overflow-hidden'>
-          {previewAttachment ? (
-            <DocumentPreviewViewer
-              fileUrl={previewUrl || null}
-              fileName={
-                previewAttachment.fileName ||
-                previewAttachment.name ||
-                (previewAttachment.fileExtension
-                  ? `file.${previewAttachment.fileExtension}`
-                  : undefined)
-              }
-            />
-          ) : (
-            <div className='flex h-full items-center justify-center text-13 text-gray-9'>
-              {t`No document attached`}
-            </div>
-          )}
+        <div className='min-h-0 flex-1 p-4'>
+          <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
+            {previewAttachment ? (
+              <DocumentPreviewViewer
+                fileName={
+                  previewAttachment.fileName ||
+                  previewAttachment.name ||
+                  (previewAttachment.fileExtension
+                    ? `file.${previewAttachment.fileExtension}`
+                    : undefined)
+                }
+                fileUrl={previewUrl || null}
+                isLoading={previewLoading}
+              />
+            ) : (
+              <div className='flex h-full items-center justify-center text-13 text-gray-9'>
+                {t`No document attached`}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
         {agentBlocks.length > 0 && (
-          <div className='mb-4 px-4 pt-3'>
+          <div className='px-4 pt-3 pb-2'>
             <AgentSummaryBoxes
               agentBlocks={agentBlocks}
               requestData={selectedItem}
@@ -608,14 +617,14 @@ const DocumentFormSplitLayout = ({
             />
           </div>
         )}
-        <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4 pt-2'>
+        <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4 pt-1.5'>
           <div className='flex items-center justify-between gap-4'>
             <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   className={cn(
-                    '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
+                    '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-2.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
                     activeTab === tab.id
                       ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
                       : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
@@ -637,7 +646,7 @@ const DocumentFormSplitLayout = ({
 
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-            <div className='mx-4 mt-3 mb-4 flex min-h-0 flex-1 flex-col overflow-y-auto'>
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
                 attachments={attachments}
@@ -660,20 +669,20 @@ const DocumentFormSplitLayout = ({
             </div>
           ) : activeTab === 'summary' ||
             (!hasAgents && activeTab === 'summary') ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
+            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
               {taskNode}
               {formNode}
             </div>
           ) : activeTab === 'attachments' && attachmentsNode ? (
-            <div className='flex min-h-0 flex-1 flex-col pt-2'>
+            <div className='flex min-h-0 flex-1 flex-col px-4 pt-4'>
               {attachmentsNode}
             </div>
           ) : activeTab === 'comments' && commentsNode ? (
-            <div className='flex min-h-0 flex-1 flex-col pt-2 pb-0'>
+            <div className='flex min-h-0 flex-1 flex-col px-4 pt-4 pb-0'>
               {commentsNode}
             </div>
           ) : activeTab === 'history' && historyNode ? (
-            <div className='flex min-h-0 flex-1 flex-col pt-2'>
+            <div className='flex min-h-0 flex-1 flex-col px-4 pt-4'>
               {historyNode}
             </div>
           ) : activeTab === 'line_items' && lineItemsNode ? (
@@ -901,12 +910,12 @@ const GenericRequestOverview = ({
   const showAgentProcess = agentBlocks.some((block) => {
     const type = String(block.type || '')
     const subtype = String(block.settings?.subtype || '').toUpperCase()
-    return (
-      type !== 'DOCUMENT_GENERATE_AGENT' && subtype !== 'DOCUMENT_GENERATE'
-    )
+    return type !== 'DOCUMENT_GENERATE_AGENT' && subtype !== 'DOCUMENT_GENERATE'
   })
 
-  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<string | null>(null)
+  const [selectedAgentBlockId, setSelectedAgentBlockId] = useState<
+    string | null
+  >(null)
   const selectedAgentBlock = useMemo(() => {
     if (!selectedAgentBlockId) return null
     return agentBlocks.find((b) => b.id === selectedAgentBlockId) || null

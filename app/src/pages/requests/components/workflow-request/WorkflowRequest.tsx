@@ -16,6 +16,7 @@ import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import AgentSummaryBoxes, {
+  formatAgentDisplayLabel,
   getAgentResponseTabs,
 } from '../request/components/generic-overview/AgentSummaryBoxes'
 import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
@@ -364,7 +365,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     const agentTabs = agentResponseTabs.map((block) => ({
       icon: block.icon || 'lucide:cpu',
       id: `agent:${block.id}`,
-      label: block.settings?.label || t`Agent`,
+      label: formatAgentDisplayLabel(block),
     }))
     return [
       ...agentTabs,
@@ -514,8 +515,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
             (uploadedFiles.length > 0 ||
               createdInstanceId ||
               isStartingAgentWorkflow) ? (
-            <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-[var(--gray-1)]'>
-              <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
+            <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-gray-1'>
+              <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1 p-4'>
                 <UploadedFilePreview
                   activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
@@ -534,9 +535,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   onSelectKey={setActiveFileKey}
                 />
               </div>
-              <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-1'>
                 {agentBlocks.length > 0 && (
-                  <div className='mt-5 mr-5 ml-5 pb-5'>
+                  <div className='px-4 pt-4 pb-3'>
                     <AgentSummaryBoxes
                       agentBlocks={agentBlocks}
                       requestData={requestData || null}
@@ -544,7 +545,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                     />
                   </div>
                 )}
-                <div className='no-scrollbar scrollbar-none sticky top-0 z-10 mb-4 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-surface px-2 pt-2'>
+                <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-gray-3 bg-surface px-4 pt-2'>
                   <div className='flex items-center justify-between gap-4'>
                     <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
                       {tabs.map((tab) => (
@@ -572,7 +573,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 </div>
                 <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                   {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pr-3.5'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
                       <AgentDetailPlaceholder
                         agentBlock={selectedAgentBlock}
                         formModel={formModel}
@@ -591,7 +592,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'summary' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
                       <WorkflowFormRenderer
                         formModel={formModel}
                         hasAttemptedSubmit={hasAttemptedSubmit}
@@ -623,7 +624,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'attachments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 pr-3.5'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4'>
                       <AttachmentsPanel
                         attachments={attachments}
                         isUploading={isUploadingAttachment}
@@ -632,7 +633,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                       />
                     </div>
                   ) : activeTab === 'comments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 pr-3.5 pb-0'>
+                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4 pb-0'>
                       <CommentsPanel
                         comments={comments}
                         draft={commentDraft}

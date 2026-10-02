@@ -1658,12 +1658,23 @@ const InboxList: React.FC<InboxListProps> = ({
           }
         }
 
+        // A stored job id with no live status is a finished request, not a
+        // spinner. Treating "no status" as still running replaced the card
+        // after Back and hid the preview values.
         let isProcessing = false
         if (apAgentJobId) {
           const statuses = requestStore.getState().jobStatuses || {}
           const jobStatus =
             statuses[`job-${apAgentJobId}`] || statuses[String(apAgentJobId)]
-          isProcessing = !jobStatus?.isCompleted
+          if (jobStatus) {
+            isProcessing = !jobStatus.isCompleted
+          } else {
+            isProcessing = (processingProcesses || []).some(
+              (p) =>
+                String(p.apAgentJobId || p.jobId || '') ===
+                String(apAgentJobId),
+            )
+          }
         }
 
         return {
@@ -1878,8 +1889,9 @@ const InboxList: React.FC<InboxListProps> = ({
     (totalItems > 0 || flatRows.length > 0 || hasActiveFiltersOrSearch)
 
   return (
-    <div className='bg-primary flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
+    <div className='bg-primary flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden py-2'>
       {showFilterSection && (
+        <div className='px-4'>
         <DynamicFilter
           activeQuickFilters={activeQuickFilters}
           dataset={flatRows}
@@ -2011,12 +2023,13 @@ const InboxList: React.FC<InboxListProps> = ({
           }}
           onViewModeChange={setViewMode}
         />
+        </div>
       )}
       <div className='relative mt-1 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden'>
         <div className='flex h-full min-h-0 w-full min-w-0 gap-3'>
           {/* Left */}
           {!selectedItem && viewMode === 'table' && (
-            <div className='flex h-full min-w-0 flex-1 flex-col'>
+            <div className='flex h-full min-w-0 flex-1 flex-col px-4'>
               <DataTable
                 actions={[]}
                 component={selectedItem}
@@ -2076,7 +2089,7 @@ const InboxList: React.FC<InboxListProps> = ({
           )}
 
           {!selectedItem && viewMode === 'kanban' && (
-            <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
+            <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4'>
               <KanbanView
                 isLoading={isLoading || isRefetching}
                 items={flatFinalRows}
@@ -2097,7 +2110,7 @@ const InboxList: React.FC<InboxListProps> = ({
 
       {/* Footer */}
       {!selectedItem && (
-        <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface pt-2'>
+        <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface px-4 pt-2'>
           <Pagination
             page={page}
             pageSize={pageSize}

@@ -22,6 +22,7 @@ import {
 import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
 import {
   buildQualifierViewModel,
+  confidenceToneClass,
   getFieldHeading,
   getFieldId,
   type QualifierScalarEntry,
@@ -55,11 +56,11 @@ const resolveTableValue = (
     const stored = formModel?.[id]
     if (Array.isArray(stored) && stored.length > 0) return stored
     const columns = field?.settings?.specific?.tableColumns || []
-    if (columns.length > 0 && agentRows.length > 0) {
+    if (columns.length > 0 && (agentRows?.length ?? 0) > 0) {
       return mapExternalRowsToTableColumns(agentRows, columns)
     }
   }
-  return agentRows
+  return agentRows || []
 }
 
 const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
@@ -85,6 +86,88 @@ const isEmptyDisplay = (value: string) => {
 const formatFieldDisplay = (value: string) => {
   if (!isEmptyDisplay(value)) return value
   return 'NA'
+}
+
+const compactName = (value: string) =>
+  value.toLowerCase().replace(/[\s._-]+/g, '')
+
+const isItemColumnName = (name: string) =>
+  ['item', 'product', 'itemname', 'sku'].includes(compactName(name))
+
+const isReasonColumnName = (name: string) => compactName(name).includes('reason')
+
+const isCategoryColumnName = (name: string) =>
+  compactName(name).includes('category')
+
+const CATEGORY_META = '_category'
+
+const readColumnValue = (
+  row: Record<string, any>,
+  columns: Array<{ id: string; name?: string }>,
+  match: (name: string) => boolean,
+) => {
+  const column = columns.find(
+    (col) => match(String(col.name || '')) || match(String(col.id || '')),
+  )
+  if (column) {
+    const value = row[column.id]
+    if (value != null && String(value).trim() !== '') return value
+  }
+  for (const [key, value] of Object.entries(row)) {
+    if (key.startsWith('_')) continue
+    if (!match(key)) continue
+    if (value != null && String(value).trim() !== '') return value
+  }
+  return ''
+}
+
+/** Keep only the excluded table's own columns so matched-item ids are not added as headers. */
+const projectRowOntoColumns = (
+  row: Record<string, any>,
+  targetColumns: Array<{ id: string; name?: string }>,
+  sourceColumns: Array<{ id: string; name?: string }>,
+) => {
+  const categoryValue =
+    readColumnValue(row, sourceColumns, isCategoryColumnName) ||
+    readColumnValue(row, targetColumns, isCategoryColumnName) ||
+    row[CATEGORY_META] ||
+    ''
+  const next: Record<string, any> = {
+    _rowId: row._rowId || `row-${Date.now()}`,
+  }
+  if (String(categoryValue).trim() !== '') next[CATEGORY_META] = categoryValue
+  targetColumns.forEach((col) => {
+    const name = String(col.name || '')
+    if (isItemColumnName(name)) {
+      next[col.id] =
+        readColumnValue(row, sourceColumns, isItemColumnName) ||
+        readColumnValue(row, targetColumns, isItemColumnName) ||
+        ''
+      return
+    }
+    if (isCategoryColumnName(name)) {
+      next[col.id] = categoryValue
+      return
+    }
+    if (isReasonColumnName(name)) {
+      next[col.id] =
+        readColumnValue(row, targetColumns, isReasonColumnName) || ''
+      return
+    }
+    const sameName = (value: string) => compactName(value) === compactName(name)
+    next[col.id] =
+      readColumnValue(row, targetColumns, sameName) ||
+      readColumnValue(row, sourceColumns, sameName) ||
+      ''
+  })
+  return next
+}
+
+const qualifierTableKind = (label: string) => {
+  const text = label.toLowerCase()
+  if (text.includes('exclud')) return 'excluded'
+  if (text.includes('match')) return 'matched'
+  return 'other'
 }
 
 const isAiInsightEntry = (entry: { label: string; resultKey: string }) => {
@@ -182,7 +265,9 @@ const HoverEditShell = ({
           ? inline
             ? 'inline-flex min-w-0 align-middle'
             : 'block w-full'
-          : 'group relative inline-flex max-w-full min-w-0 items-center',
+          : inline
+            ? 'group inline-flex max-w-full min-w-0 items-center gap-1'
+            : 'group relative flex w-full min-w-0 items-center',
         className,
       )}
     >
@@ -190,10 +275,15 @@ const HoverEditShell = ({
         editor
       ) : (
         <>
-          <span className='min-w-0'>{children}</span>
+          <span className={cn('min-w-0', inline ? '' : 'block w-full pr-7')}>
+            {children}
+          </span>
           <button
             aria-label='Edit'
-            className='absolute top-1/2 left-full z-10 ml-1 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+            className={cn(
+              'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
+              !inline && 'absolute top-1/2 right-0 -translate-y-1/2',
+            )}
             type='button'
             onClick={(event) => {
               event.preventDefault()
@@ -534,10 +624,10 @@ const QualifyAgentResultView = ({
 
     return (
       <span
-        className='inline-flex max-w-full items-baseline text-left text-sm leading-5 font-normal text-gray-12'
+        className='inline-flex max-w-full items-center gap-1.5 pr-1 text-left text-sm leading-5 font-normal text-gray-12'
         key={entry.resultKey}
       >
-        <span className='font-bold'>{label}: </span>
+        <span className='shrink-0 font-bold'>{label}:</span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
@@ -555,7 +645,7 @@ const QualifyAgentResultView = ({
   }
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       <div className='flex items-center justify-between gap-4'>
         <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
           {headerEntries.map(renderHeaderField)}
@@ -574,7 +664,12 @@ const QualifyAgentResultView = ({
             </div>
           ) : null}
           {viewModel.confidence != null && viewModel.confidence !== '' ? (
-            <div className='flex items-center gap-1 text-xs leading-5 font-semibold text-gray-9'>
+            <div
+              className={cn(
+                'flex items-center gap-1 text-xs leading-5 font-semibold',
+                confidenceToneClass(viewModel.confidence),
+              )}
+            >
               <Icon className='h-3.5 w-3.5' icon='tabler:target' />
               {String(viewModel.confidence)}% {viewModel.confidenceLabel}
             </div>
@@ -586,7 +681,7 @@ const QualifyAgentResultView = ({
         .filter((entry) => !isAiInsightEntry(entry))
         .map((entry) => (
           <div
-            className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-4 text-primary-11'
+            className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-3 text-primary-11'
             key={entry.resultKey}
           >
             <Icon
@@ -610,7 +705,7 @@ const QualifyAgentResultView = ({
         if (!flags.length) return null
 
         return (
-          <div className='flex flex-col gap-2' key={entry.resultKey}>
+          <div className='flex flex-col gap-1.5' key={entry.resultKey}>
             <h4 className='text-sm font-semibold text-gray-12'>
               {entry.label}
             </h4>
@@ -645,21 +740,105 @@ const QualifyAgentResultView = ({
           !readOnly &&
           Boolean(onFieldChange) &&
           (table.field ? canEditField(table.field) : true)
+        const kind = qualifierTableKind(table.label)
+        const matchedTable =
+          kind === 'excluded'
+            ? viewModel.tables.find(
+                (entry) => qualifierTableKind(entry.label) === 'matched',
+              )
+            : null
+        const excludedTable =
+          kind === 'matched'
+            ? viewModel.tables.find(
+                (entry) => qualifierTableKind(entry.label) === 'excluded',
+              )
+            : null
+        const columns = field.settings?.specific?.tableColumns || []
+        const matchedColumns =
+          kind === 'excluded' && matchedTable
+            ? ensureOnDemandTable(matchedTable.field).settings?.specific
+                ?.tableColumns || []
+            : columns
+        const displayRows =
+          kind === 'excluded' && columns.length
+            ? rows.map((row) =>
+                projectRowOntoColumns(row, columns, matchedColumns),
+              )
+            : rows
 
         if (!rows.length && !editable) return null
 
         return (
           <AgentFlatTable
-            columns={field.settings?.specific?.tableColumns || []}
-            icon='tabler:table'
+            allowAddRow={kind !== 'excluded'}
+            allowDelete={kind !== 'excluded'}
+            columns={columns}
+            icon={
+              kind === 'matched'
+                ? 'tabler:circle-check'
+                : kind === 'excluded'
+                  ? 'tabler:circle-x'
+                  : 'tabler:table'
+            }
+            iconClassName={
+              kind === 'matched'
+                ? 'text-green-11'
+                : kind === 'excluded'
+                  ? 'text-red-11'
+                  : 'text-[var(--primary-9)]'
+            }
             key={table.resultKey}
             readOnly={!editable}
             title={table.label}
-            rows={normalizeAgentTableRows(
-              rows,
-              field.settings?.specific?.tableColumns || [],
-            )}
+            rows={normalizeAgentTableRows(displayRows, columns)}
             onChange={(nextRows) => writeTable(field, nextRows)}
+            onMoveRow={
+              editable && matchedTable
+                ? (row) => {
+                    const matchedField = ensureOnDemandTable(matchedTable.field)
+                    const matchedColumns =
+                      matchedField.settings?.specific?.tableColumns || []
+                    const matchedRows = resolveTableRows(matchedTable).filter(
+                      (matchedRow) =>
+                        Object.entries(matchedRow).some(
+                          ([key, value]) =>
+                            !key.startsWith('_') &&
+                            String(value ?? '').trim() !== '',
+                        ),
+                    )
+                    const moved = projectRowOntoColumns(
+                      row,
+                      matchedColumns,
+                      columns,
+                    )
+                    moved._rowId = `row-${Date.now()}`
+                    writeTable(matchedField, [...matchedRows, moved])
+                  }
+                : undefined
+            }
+            onRemoveRow={
+              editable && excludedTable
+                ? (row) => {
+                    const excludedField = ensureOnDemandTable(
+                      excludedTable.field,
+                    )
+                    const excludedColumns =
+                      excludedField.settings?.specific?.tableColumns || []
+                    const excludedRows = resolveTableRows(excludedTable).map(
+                      (excludedRow) =>
+                        projectRowOntoColumns(
+                          excludedRow,
+                          excludedColumns,
+                          columns,
+                        ),
+                    )
+                    writeTable(excludedField, [
+                      ...excludedRows,
+                      projectRowOntoColumns(row, excludedColumns, columns),
+                    ])
+                  }
+                : undefined
+            }
           />
         )
       })}
