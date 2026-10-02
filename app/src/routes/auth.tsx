@@ -42,7 +42,7 @@ const Sparkles = () => {
           }}
         >
           <svg
-            className='text-yellow-400'
+            className='text-yellow-8'
             fill='orange'
             height='12'
             viewBox='0 0 24 24'

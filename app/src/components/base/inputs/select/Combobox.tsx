@@ -39,6 +39,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       value,
       variant,
       width = 'target',
+      wrapOptions,
       onBottomReached,
       onChange,
       onDropdownClose,
@@ -134,7 +135,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         position={position}
         store={comboboxStore}
         transitionProps={{ transition: 'pop' }}
-        width={width}
+        width={wrapOptions && width === 'target' ? 340 : width}
         // Above Ask AI drawer (z-[9999]) and similar overlays so the menu is visible
         zIndex={10050}
         withinPortal
@@ -176,6 +177,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
             search={search}
             value={value}
             variant={variant}
+            wrapOptions={wrapOptions}
             onBottomReached={onBottomReached}
             onChange={onChange}
             onSearch={onSearch}

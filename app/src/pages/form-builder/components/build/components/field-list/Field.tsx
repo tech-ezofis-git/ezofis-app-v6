@@ -20,7 +20,7 @@ const Field = ({ draggable, icon, label, type }: Props) => {
 
   return (
     <div
-      className='group flex cursor-grab items-center gap-3 rounded-lg border border-gray-2 bg-white p-2.5 transition-all hover:border-accent-primary hover:shadow-sm active:cursor-grabbing'
+      className='group flex cursor-grab items-center gap-3 rounded-lg border border-gray-2 bg-surface p-2.5 transition-all hover:border-accent-primary hover:shadow-sm active:cursor-grabbing'
       draggable={draggable}
       onDragStart={onDragStart}
     >

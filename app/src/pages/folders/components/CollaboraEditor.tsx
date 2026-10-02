@@ -284,7 +284,7 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
           {isLoading && !loadError ? (
             <motion.div
               animate={{ opacity: 1 }}
-              className='pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-gray-4 bg-white/95 px-4 py-2 shadow-md backdrop-blur-sm'
+              className='pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-gray-4 bg-surface/95 px-4 py-2 shadow-md backdrop-blur-sm'
               exit={{ opacity: 0 }}
               initial={{ opacity: 0 }}
             >

@@ -273,7 +273,7 @@ const AddNodeMenu = () => {
 
     // Agents
     {
-      bgColor: 'bg-blue-50',
+      bgColor: 'bg-blue-2',
       category: 'agents',
       description: 'Extract text from images/PDFs',
       icon: 'lucide:scan-text',
@@ -283,7 +283,7 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-emerald-50',
+      bgColor: 'bg-green-2',
       category: 'agents',
       description: 'Accounts Payable automation',
       icon: 'lucide:receipt-text',
@@ -293,7 +293,17 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-violet-50',
+      bgColor: 'bg-purple-2',
+      category: 'agents',
+      description: 'Classify & route documents or requests',
+      icon: 'lucide:tags',
+      iconColor: '#8b5cf6',
+      label: 'Classification Agent',
+      toolType: NODE_TOOL_TYPE.CLASSIFICATION_AGENT,
+      type: 'popular',
+    },
+    {
+      bgColor: 'bg-violet-2',
       category: 'agents',
       description: 'File Transfer Protocol',
       icon: 'lucide:server',
@@ -303,7 +313,7 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-amber-50',
+      bgColor: 'bg-yellow-2',
       category: 'agents',
       description: 'Verify identity & compliance documents',
       icon: 'lucide:shield-check',
@@ -323,7 +333,7 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-indigo-50',
+      bgColor: 'bg-indigo-2',
       category: 'agents',
       description: 'Generate PDF documents from a template',
       icon: 'lucide:file-text',
@@ -333,7 +343,7 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-sky-50',
+      bgColor: 'bg-blue-2',
       category: 'agents',
       description: 'Qualify leads & prospect data',
       icon: 'lucide:user-check',
@@ -343,7 +353,7 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
-      bgColor: 'bg-emerald-50',
+      bgColor: 'bg-green-2',
       category: 'agents',
       description: 'Generate pricing & sales quotes',
       icon: 'lucide:calculator',
@@ -375,7 +385,7 @@ const AddNodeMenu = () => {
 
     // Triggers
     {
-      bgColor: 'bg-pink-50',
+      bgColor: 'bg-pink-2',
       category: 'triggers',
       description: 'Trigger manually by user',
       icon: 'lucide:user',
@@ -385,7 +395,7 @@ const AddNodeMenu = () => {
       type: 'highlight',
     },
     {
-      bgColor: 'bg-orange-50',
+      bgColor: 'bg-orange-2',
       category: 'triggers',
       description: 'Check logic conditions',
       icon: 'lucide:split',
@@ -426,7 +436,7 @@ const AddNodeMenu = () => {
 
   return (
     <div
-      className='animate-in fade-in zoom-in-95 flex w-[420px] flex-col overflow-hidden rounded-xl bg-white font-sans shadow-2xl ring-1 ring-black/5 duration-200'
+      className='animate-in fade-in zoom-in-95 flex w-[420px] flex-col overflow-hidden rounded-xl bg-surface font-sans shadow-2xl ring-1 ring-black/5 duration-200'
       ref={menuRef}
       style={{
         left: screenX,
@@ -442,12 +452,12 @@ const AddNodeMenu = () => {
       <div className='shrink-0 p-4 pb-2'>
         <div className='relative'>
           <Input
-            className='bg-gray-50 focus:border-primary-500 focus:ring-primary-100 w-full rounded-xl border-transparent py-2.5 text-sm transition-all focus:bg-white focus:ring-2'
+            className='bg-surface-muted focus:border-primary-8 focus:ring-primary-4 w-full rounded-xl border-transparent py-2.5 text-sm transition-all focus:bg-surface focus:ring-2'
             placeholder='Search apps, tools, or logic...'
             value={search}
             leftSection={
               <Icon
-                className='text-gray-400 h-4.5 w-4.5'
+                className='text-gray-8 h-4.5 w-4.5'
                 name='lucide:search'
               />
             }
@@ -469,7 +479,7 @@ const AddNodeMenu = () => {
             className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
               activeTab === tab.id
                 ? 'bg-[var(--primary-3)] text-[var(--primary-9)]'
-                : 'text-gray-600 hover:bg-[var(--primary-1)] hover:text-[var(--primary-9)]'
+                : 'text-gray-10 hover:bg-[var(--primary-1)] hover:text-[var(--primary-9)]'
             }`}
             onClick={() => setActiveTab(tab.id as TabType)}
           >
@@ -479,7 +489,7 @@ const AddNodeMenu = () => {
               className={`h-4 w-4 transition-colors ${
                 activeTab === tab.id
                   ? 'text-[var(--primary-9)]'
-                  : 'text-gray-500 group-hover:text-[var(--primary-9)]'
+                  : 'text-gray-9 group-hover:text-[var(--primary-9)]'
               }`}
             />
             <span>{tab.label}</span>
@@ -493,9 +503,9 @@ const AddNodeMenu = () => {
           <div className='grid grid-cols-2 gap-8'>
             {/* Integrations Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-400 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+              <h3 className='text-gray-8 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
                 <Icon
-                  className='text-gray-400/70'
+                  className='text-gray-8/70'
                   height={12}
                   name='lucide:layout-grid'
                   width={12}
@@ -521,7 +531,7 @@ const AddNodeMenu = () => {
                       }
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                  <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -530,9 +540,9 @@ const AddNodeMenu = () => {
 
             {/* Triggers Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-400 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+              <h3 className='text-gray-8 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
                 <Icon
-                  className='text-gray-400/70'
+                  className='text-gray-8/70'
                   height={12}
                   name='lucide:zap'
                   width={12}
@@ -554,7 +564,7 @@ const AddNodeMenu = () => {
                       style={{ color: item.iconColor }}
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                  <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -581,7 +591,7 @@ const AddNodeMenu = () => {
                     }
                   />
                 </div>
-                <span className='text-gray-700 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
                   {item.label}
                 </span>
               </button>

@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { type ComponentProps, useState } from 'react'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputNumber from '@/components/base/inputs/InputNumber'
-import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSelectBase from '@/components/base/inputs/InputSelect'
 import {
   encodeTableSumValue,
   formatFormulaExpression,
@@ -14,6 +14,10 @@ import {
   isTableFieldType,
 } from '@/pages/form-builder/helpers/formula'
 import cn from '@/utils/cn'
+
+function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
+  return <InputSelectBase searchable wrapOptions {...props} />
+}
 
 interface Props {
   activeQuestion: Question

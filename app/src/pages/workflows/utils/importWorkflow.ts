@@ -59,6 +59,15 @@ function getNodeDefaults(toolType: string) {
       iconColor: '#16a34a',
       subLabel: 'Generate pricing & sales quotes',
     }
+  if (
+    typeStr === NODE_TOOL_TYPE.CLASSIFICATION_AGENT ||
+    typeStr.includes('classification')
+  )
+    return {
+      icon: 'lucide:tags',
+      iconColor: '#8b5cf6',
+      subLabel: 'Classify & route documents or requests',
+    }
   if (typeStr === NODE_TOOL_TYPE.GOOGLE_DRIVE)
     return {
       icon: 'logos:google-drive',
@@ -169,6 +178,8 @@ function mapLegacyTypeToToolType(
       return NODE_TOOL_TYPE.QUALIFY_AGENT
     case 'QUOTE_AGENT':
       return NODE_TOOL_TYPE.QUOTE_AGENT
+    case 'CLASSIFICATION_AGENT':
+      return NODE_TOOL_TYPE.CLASSIFICATION_AGENT
     case 'FTP_AGENT':
       return NODE_TOOL_TYPE.FTP_AGENT
     case 'GOOGLE_DRIVE':

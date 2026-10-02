@@ -1,5 +1,5 @@
 import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -10,6 +10,7 @@ import {
 import SettingsSection from './SettingsSection'
 
 interface ConnectionsRoutingProps {
+  defaultOpen?: boolean
   node: Node
 }
 
@@ -35,11 +36,20 @@ const routingActionOptions = [
 const getRoutingAction = (data: Record<string, unknown> | undefined) =>
   String(data?.action || data?.proceedAction || '')
 
-export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function ConnectionsRouting({
+  defaultOpen = false,
+  node,
+}: ConnectionsRoutingProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const edges = useEdges()
   const nodes = useNodes()
   const { setEdges } = useReactFlow()
+
+  useEffect(() => {
+    if (defaultOpen) {
+      setIsOpen(true)
+    }
+  }, [node.id, defaultOpen])
 
   const onUpdateAction = (edgeId: string, action: string) => {
     setEdges((eds) =>
@@ -68,6 +78,8 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
 
   const nodeToolType = getNodeToolType(node.data)
   const isQualifyAgent = nodeToolType === NODE_TOOL_TYPE.QUALIFY_AGENT
+  const isClassificationAgent =
+    nodeToolType === NODE_TOOL_TYPE.CLASSIFICATION_AGENT
   const isConditionNode =
     nodeToolType === NODE_TOOL_TYPE.CONDITION ||
     nodeToolType === 'condition' ||
@@ -106,6 +118,11 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     { id: 2, name: 'FAILED' },
   ]
 
+  const classificationActionOptions = [
+    { id: 1, name: 'Classified' },
+    { id: 2, name: 'Unclassified' },
+  ]
+
   // Dynamic options: Base defaults + any unique actions found across all workflow edges
   const dynamicActions = isQualifyAgent
     ? qualifyActionOptions
@@ -115,16 +132,28 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
         ? apActionOptions
         : isFtpAgent
           ? ftpActionOptions
-          : Array.from(
-              new Set([
-                ...routingActionOptions.map((o) => o.name),
-                ...edges
-                  .map((e) =>
-                    getRoutingAction(e.data as Record<string, unknown>),
-                  )
-                  .filter(Boolean),
-              ]),
-            ).map((name, index) => ({ id: index + 1, name }))
+          : isClassificationAgent
+            ? Array.from(
+                new Set([
+                  ...classificationActionOptions.map((o) => o.name),
+                  ...routingActionOptions.map((o) => o.name),
+                  ...edges
+                    .map((e) =>
+                      getRoutingAction(e.data as Record<string, unknown>),
+                    )
+                    .filter(Boolean),
+                ]),
+              ).map((name, index) => ({ id: index + 1, name }))
+            : Array.from(
+                new Set([
+                  ...routingActionOptions.map((o) => o.name),
+                  ...edges
+                    .map((e) =>
+                      getRoutingAction(e.data as Record<string, unknown>),
+                    )
+                    .filter(Boolean),
+                ]),
+              ).map((name, index) => ({ id: index + 1, name }))
 
   const connections: ConnectionWithData[] = outgoingEdges
     .filter((edge) => nodes.some((n) => n.id === edge.target))
@@ -190,6 +219,8 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
       return 'Route to Qualify Agent for lead evaluation'
     if (conn.targetToolType === NODE_TOOL_TYPE.QUOTE_AGENT)
       return 'Route to Quote Agent for pricing & quote generation'
+    if (conn.targetToolType === NODE_TOOL_TYPE.CLASSIFICATION_AGENT)
+      return 'Route to Classification Agent for category classification'
     if (conn.targetToolType === NODE_TOOL_TYPE.MANUAL_USER)
       return 'Route for manual user intervention'
     return `Define behavior when routing to ${conn.targetLabel}`
@@ -207,12 +238,12 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
         {connections.length > 0 ? (
           connections.map((conn) => (
             <div
-              className='space-y-4 rounded-xl bg-white p-4 shadow-sm'
+              className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'
               key={conn.edgeId}
             >
               <div className='flex items-start gap-2.5'>
                 <Icon
-                  className='text-purple-600 mt-0.5 h-4 w-4 stroke-[2]'
+                  className='text-purple-10 mt-0.5 h-4 w-4 stroke-[2]'
                   name='lucide:link-2'
                 />
                 <div className='flex flex-col space-y-0.5'>
@@ -228,7 +259,7 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
               <div className='animate-in fade-in slide-in-from-top-1 space-y-1.5 pt-1 duration-300'>
                 <div className='text-12 font-medium text-gray-12'>Action</div>
                 <InputSelect
-                  className='bg-white'
+                  className='bg-surface'
                   options={dynamicActions}
                   placeholder='Select Action Type'
                   rightSectionIcon='lucide:chevrons-up-down'

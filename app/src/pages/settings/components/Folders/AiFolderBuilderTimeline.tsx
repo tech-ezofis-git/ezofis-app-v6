@@ -300,7 +300,7 @@ function StepCircle({
             ? 'border border-green-6 bg-green-6 text-white shadow-xs'
             : isActive
               ? 'bg-primary-9 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.25)]'
-              : 'bg-gray-200 border border-gray-3 text-gray-7',
+              : 'bg-gray-4 border border-gray-3 text-gray-7',
         )}
       >
         {isCompleted ? (

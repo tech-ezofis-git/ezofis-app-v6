@@ -89,7 +89,7 @@ export function FileCategorySegmentedControl({
         className={cn(
           'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
           activeCategory === 'archived'
-            ? 'bg-[#10B981] text-white shadow-xs'
+            ? 'bg-green-9 text-white shadow-xs'
             : 'text-gray-10 hover:bg-green-2 hover:text-green-7',
         )}
         onClick={() => onChange('archived')}

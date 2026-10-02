@@ -69,9 +69,9 @@ export default function SecurityTab({
 
   return (
     <div className='flex flex-col gap-2.5'>
-      <div className='space-y-3 rounded-xl bg-[#F8FAFC] p-3'>
+      <div className='space-y-3 rounded-xl bg-surface-muted p-3'>
         <div className='flex items-center gap-2.5 px-1'>
-          <Icon className='text-purple-600 h-4 w-4' name='lucide:edit-3' />
+          <Icon className='text-purple-10 h-4 w-4' name='lucide:edit-3' />
           <div className='flex flex-col space-y-1'>
             <span className='text-13 font-medium text-gray-12'>
               Editable Fields
@@ -82,7 +82,7 @@ export default function SecurityTab({
           </div>
         </div>
         <InputSelect
-          className='bg-white'
+          className='bg-surface'
           options={accessModeOptions}
           value={accessModeOptions.find((o) => o.id === formEditAccess) || null}
           onChange={(val) => updateNodeData('formEditAccess', val?.id ?? 'ALL')}
@@ -100,9 +100,9 @@ export default function SecurityTab({
         )}
       </div>
 
-      <div className='space-y-3 rounded-xl bg-[#F8FAFC] p-3'>
+      <div className='space-y-3 rounded-xl bg-surface-muted p-3'>
         <div className='flex items-center gap-2.5 px-1'>
-          <Icon className='text-blue-600 h-4 w-4' name='lucide:eye' />
+          <Icon className='text-blue-10 h-4 w-4' name='lucide:eye' />
           <div className='flex flex-col space-y-1'>
             <span className='text-13 font-medium text-gray-12'>
               Visible Fields
@@ -113,7 +113,7 @@ export default function SecurityTab({
           </div>
         </div>
         <InputSelect
-          className='bg-white'
+          className='bg-surface'
           options={accessModeOptions}
           value={
             accessModeOptions.find((o) => o.id === formVisibilityAccess) || null
@@ -135,13 +135,13 @@ export default function SecurityTab({
         )}
       </div>
 
-      <div className='space-y-2 rounded-xl bg-[#F8FAFC] p-3'>
+      <div className='space-y-2 rounded-xl bg-surface-muted p-3'>
         <InputLabel label='Mandatory Fields' />
         <span className='block text-11 leading-tight text-gray-9'>
           These fields must be filled before the step can be completed
         </span>
         <InputSelectMultiple
-          className='bg-white'
+          className='bg-surface'
           maxDisplayCount={3}
           options={fieldOptions}
           placeholder='Select fields...'
@@ -196,13 +196,13 @@ function AccessRuleEditor({
     <div className='space-y-2'>
       {rules.map((rule) => (
         <div
-          className='flex items-start gap-2 rounded-xl bg-white p-3 shadow-sm'
+          className='flex items-start gap-2 rounded-xl bg-surface p-3 shadow-sm'
           key={rule.id}
         >
           {isSingleUser ? (
             <div className='min-w-0 flex-1'>
               <InputSelectMultiple
-                className='bg-white'
+                className='bg-surface'
                 maxDisplayCount={3}
                 options={fieldOptions}
                 placeholder='Select form fields...'
@@ -226,7 +226,7 @@ function AccessRuleEditor({
                   User
                 </span>
                 <InputSelect
-                  className='bg-white'
+                  className='bg-surface'
                   options={availableUsers}
                   placeholder='Select user...'
                   searchable
@@ -245,7 +245,7 @@ function AccessRuleEditor({
                   Form Fields
                 </span>
                 <InputSelectMultiple
-                  className='bg-white'
+                  className='bg-surface'
                   maxDisplayCount={3}
                   options={fieldOptions}
                   placeholder='Select form fields...'
@@ -264,7 +264,7 @@ function AccessRuleEditor({
             </div>
           )}
           <button
-            className='text-gray-400 hover:text-red-500 mt-1 shrink-0 p-1.5 transition-colors'
+            className='text-gray-8 hover:text-red-9 mt-1 shrink-0 p-1.5 transition-colors'
             title='Remove rule'
             type='button'
             onClick={() => removeRule(rule.id)}
@@ -274,7 +274,7 @@ function AccessRuleEditor({
         </div>
       ))}
       <button
-        className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-12 font-medium transition-all hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+        className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-12 font-medium transition-all hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
         type='button'
         onClick={addRule}
       >

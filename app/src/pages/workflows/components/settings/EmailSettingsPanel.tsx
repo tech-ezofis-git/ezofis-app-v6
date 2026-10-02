@@ -236,7 +236,7 @@ export default function EmailSettingsPanel({
     toolType === NODE_TOOL_TYPE.OUTLOOK
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <SettingsSection
           icon='lucide:settings-2'
@@ -246,7 +246,7 @@ export default function EmailSettingsPanel({
           onToggle={() => setOpenBasic(!openBasic)}
         >
           <div className='space-y-4 pt-1'>
-            <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='space-y-1.5'>
                 <label className='flex items-center gap-1 text-[13px] font-medium text-gray-11'>
                   Connection <span className='text-red-11'>*</span>
@@ -254,7 +254,7 @@ export default function EmailSettingsPanel({
                 <div className='relative'>
                   <button
                     className={cn(
-                      'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                      'flex h-10 w-full items-center justify-between rounded-md border bg-surface px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                       isConnectionOpen
                         ? 'border-primary-9 ring-2 ring-primary-4'
                         : 'border-gray-3 hover:border-primary-5',
@@ -290,7 +290,7 @@ export default function EmailSettingsPanel({
                           setNewConnectionName('')
                         }}
                       />
-                      <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
+                      <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-surface p-1 shadow-xl duration-100'>
                         {!isCreatingConnection ? (
                           <>
                             {allConnectionOptions.map((option) => (
@@ -322,8 +322,8 @@ export default function EmailSettingsPanel({
                                   className={cn(
                                     'size-4 shrink-0',
                                     provider === 'gmail'
-                                      ? 'text-emerald-600'
-                                      : 'text-blue-600',
+                                      ? 'text-green-10'
+                                      : 'text-blue-10',
                                   )}
                                   name={
                                     provider === 'gmail'
@@ -424,11 +424,11 @@ export default function EmailSettingsPanel({
             onToggle={() => setOpenTrigger(!openTrigger)}
           >
             <div className='flex flex-col gap-2.5 py-1'>
-              <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+              <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-purple-600 h-4 w-4 stroke-[2]'
+                      className='text-purple-10 h-4 w-4 stroke-[2]'
                       name='lucide:type'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -455,7 +455,7 @@ export default function EmailSettingsPanel({
                         Mail Subject To Monitor
                       </div>
                       <Input
-                        className='bg-white'
+                        className='bg-surface'
                         placeholder='Enter subject to monitor...'
                         value={mailSubjectToMonitor}
                         onChange={(val) => {
@@ -468,11 +468,11 @@ export default function EmailSettingsPanel({
                 )}
               </div>
 
-              <div className='rounded-xl bg-white p-4 shadow-sm'>
+              <div className='rounded-xl bg-surface p-4 shadow-sm'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-blue-600 h-4 w-4 stroke-[2]'
+                      className='text-blue-10 h-4 w-4 stroke-[2]'
                       name='lucide:paperclip'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -494,11 +494,11 @@ export default function EmailSettingsPanel({
                 </div>
               </div>
 
-              <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+              <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-amber-600 h-4 w-4 stroke-[2]'
+                      className='text-yellow-10 h-4 w-4 stroke-[2]'
                       name='lucide:file-text'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -525,7 +525,7 @@ export default function EmailSettingsPanel({
                         Specific Mail Content To Monitor
                       </div>
                       <Input
-                        className='bg-white'
+                        className='bg-surface'
                         placeholder='Enter content to monitor...'
                         value={mailContentToMonitor}
                         onChange={(val) => {
@@ -538,11 +538,11 @@ export default function EmailSettingsPanel({
                 )}
               </div>
 
-              <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+              <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-rose-600 h-4 w-4 stroke-[2]'
+                      className='text-red-10 h-4 w-4 stroke-[2]'
                       name='lucide:mail'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -569,7 +569,7 @@ export default function EmailSettingsPanel({
                         Sender Email Addresses
                       </div>
                       <InputSelectMultiple
-                        className='bg-white'
+                        className='bg-surface'
                         options={[]}
                         placeholder='Add email address...'
                         value={fromMailAddresses}
@@ -585,11 +585,11 @@ export default function EmailSettingsPanel({
                 )}
               </div>
 
-              <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+              <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-emerald-600 h-4 w-4 stroke-[2]'
+                      className='text-green-10 h-4 w-4 stroke-[2]'
                       name='lucide:globe'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -616,7 +616,7 @@ export default function EmailSettingsPanel({
                         Sender Domains
                       </div>
                       <InputSelect
-                        className='bg-white'
+                        className='bg-surface'
                         options={domainNameOptions}
                         placeholder='Select or add domain...'
                         value={fromDomainName}

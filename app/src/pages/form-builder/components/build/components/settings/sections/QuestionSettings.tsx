@@ -7,7 +7,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { type ComponentProps, useEffect, useState } from 'react'
 import type { Option } from '@/types/option'
 import type {
   LogicRule,
@@ -22,8 +22,8 @@ import {
 } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
-import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputSelectBase from '@/components/base/inputs/InputSelect'
+import InputSelectMultipleBase from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import { classNames as baseInputClassNames } from '@/components/base/inputs/shared/constants'
@@ -34,6 +34,16 @@ import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
 import FormulaBuilder from './FormulaBuilder'
 import TableColumnSettingsPanel from './TableColumnSettingsPanel'
+
+function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
+  return <InputSelectBase searchable wrapOptions {...props} />
+}
+
+function InputSelectMultiple(
+  props: ComponentProps<typeof InputSelectMultipleBase>,
+) {
+  return <InputSelectMultipleBase searchable wrapOptions {...props} />
+}
 
 const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
   { label: 'Short Text', value: 'SHORT_TEXT' },
@@ -520,7 +530,7 @@ const QuestionSettings = ({
   ]
 
   return (
-    <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-white p-4 duration-500'>
+    <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-surface p-4 duration-500'>
       {/* 1. GENERAL SETUP SECTION */}
       <SettingsSection
         icon='lucide:settings-2'
@@ -679,7 +689,7 @@ const QuestionSettings = ({
                 />
               )}
 
-              <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+              <div className='bg-surface-muted/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
                 <div className='text-xs font-semibold text-gray-7'>
                   Hide Label
                 </div>
@@ -697,7 +707,7 @@ const QuestionSettings = ({
                 </label>
                 <div className='relative'>
                   <textarea
-                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
                     placeholder='Add extra instructions...'
                     value={localDesc}
                     onBlur={() =>
@@ -726,7 +736,7 @@ const QuestionSettings = ({
                 isTime ||
                 isDateTime ||
                 isSelect) && (
-                <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                <div className='bg-surface-muted/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Answer Status Indicator
@@ -784,7 +794,7 @@ const QuestionSettings = ({
                 !isDateTime &&
                 !isSelect && (
                   <div className='grid grid-cols-2 gap-2'>
-                    <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='bg-surface-muted/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Read Only
                       </div>
@@ -797,7 +807,7 @@ const QuestionSettings = ({
                         }
                       />
                     </div>
-                    <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='bg-surface-muted/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Hidden Field
                       </div>
@@ -1589,7 +1599,7 @@ const QuestionSettings = ({
                       />
                     </div>
                     <textarea
-                      className='min-h-[100px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                      className='min-h-[100px] w-full resize-none rounded-md border border-gray-1 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
                       placeholder={
                         activeQuestion.settings.specific
                           .separateOptionsUsing === 'COMMA'
@@ -1630,7 +1640,7 @@ const QuestionSettings = ({
                 {showSelectAdvanced && (
                   <>
                     {isMulti && (
-                      <div className='bg-gray-50/50 space-y-4 rounded-xl border border-gray-1 p-3'>
+                      <div className='bg-surface-muted/50 space-y-4 rounded-xl border border-gray-1 p-3'>
                         <div className='flex items-center justify-between'>
                           <div>
                             <div className='text-xs font-bold text-gray-8'>
@@ -1927,7 +1937,7 @@ const QuestionSettings = ({
 
             {isNumber && (
               <div className='space-y-4'>
-                <div className='bg-gray-50/50 space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='bg-surface-muted/50 space-y-3 rounded-xl border border-gray-1 p-3'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-bold text-gray-13'>
@@ -2097,14 +2107,14 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.dateDefaultValueType ===
                   'CUSTOM' && (
-                  <div className='bg-gray-50 rounded-lg border border-gray-1 p-3'>
+                  <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
                     <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
                       {isDateTime
                         ? 'Pick Fixed Date & Time'
                         : 'Pick Fixed Date'}
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-white px-2 py-1 text-sm outline-none focus:border-primary-8'
+                      className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
                       type={isDateTime ? 'datetime-local' : 'date'}
                       value={
                         activeQuestion.settings.specific.defaultValue || ''
@@ -2180,12 +2190,12 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.timeDefaultValueType ===
                   'CUSTOM' && (
-                  <div className='bg-gray-50 rounded-lg border border-gray-1 p-3'>
+                  <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
                     <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
                       Pick Fixed Time
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-white px-2 py-1 text-sm outline-none focus:border-primary-8'
+                      className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
                       type='time'
                       value={
                         activeQuestion.settings.specific.defaultValue || ''
@@ -2235,28 +2245,28 @@ const QuestionSettings = ({
                   <label className='block text-13 font-medium text-gray-11'>
                     Default Content
                   </label>
-                  <div className='overflow-hidden rounded-lg border bg-white'>
-                    <div className='bg-gray-50 flex items-center gap-1 border-b border-gray-1 p-1'>
+                  <div className='overflow-hidden rounded-lg border bg-surface'>
+                    <div className='bg-surface-muted flex items-center gap-1 border-b border-gray-1 p-1'>
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-white'
+                        className='rounded p-1 text-gray-4 hover:bg-surface'
                         height={14}
                         name='lucide:bold'
                         width={14}
                       />
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-white'
+                        className='rounded p-1 text-gray-4 hover:bg-surface'
                         height={14}
                         name='lucide:italic'
                         width={14}
                       />
                       <div className='mx-1 h-3 w-px bg-gray-2' />
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-white'
+                        className='rounded p-1 text-gray-4 hover:bg-surface'
                         height={14}
                         name='lucide:list'
                         width={14}
                       />
-                      <div className='bg-blue-50 text-blue-700 hover:bg-blue-100 ml-auto flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-colors'>
+                      <div className='bg-blue-2 text-blue-11 hover:bg-blue-3 ml-auto flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-colors'>
                         <Icon height={10} name='lucide:plus' width={10} />
                         Insert Field
                       </div>
@@ -2391,10 +2401,10 @@ const QuestionSettings = ({
                                 id={col.id}
                                 key={col.id}
                               >
-                                <div className='group/col bg-gray-50/80 flex-1 space-y-2 rounded-lg border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
+                                <div className='group/col bg-surface-muted/80 flex-1 space-y-2 rounded-lg border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
                                   <div className='flex items-center justify-between gap-2'>
                                     <input
-                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-white focus:border-accent-primary focus:bg-white focus:outline-none'
+                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
                                       placeholder='Column name...'
                                       type='text'
                                       value={col.name}
@@ -2441,12 +2451,15 @@ const QuestionSettings = ({
                                   <div className='flex items-center gap-2'>
                                     <div className='flex-1'>
                                       <Select
+                                        comboboxProps={{ width: 340 }}
                                         data={TABLE_COLUMN_TYPES}
+                                        searchable
                                         size='xs'
                                         value={col.type || 'SHORT_TEXT'}
                                         classNames={{
                                           input:
-                                            'h-7 border-gray-3 bg-white text-xs font-medium text-gray-12',
+                                            'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
+                                          option: 'whitespace-normal break-words',
                                         }}
                                         onChange={(val) =>
                                           val &&
@@ -2534,7 +2547,7 @@ const QuestionSettings = ({
                               Table Entry Type
                             </label>
                             <SegmentedControl
-                              className='bg-gray-50'
+                              className='bg-surface-muted'
                               size='xs'
                               fullWidth
                               data={[
@@ -2700,7 +2713,7 @@ const QuestionSettings = ({
                     Icon Type
                   </label>
                   <SegmentedControl
-                    className='bg-gray-50 drop-shadow-sm'
+                    className='bg-surface-muted drop-shadow-sm'
                     size='xs'
                     value={activeQuestion.settings.specific.iconType || 'STAR'}
                     fullWidth
@@ -2740,7 +2753,7 @@ const QuestionSettings = ({
                       Min Label
                     </label>
                     <input
-                      className='bg-gray-50 w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.min ||
@@ -2761,7 +2774,7 @@ const QuestionSettings = ({
                       Mid Label
                     </label>
                     <input
-                      className='bg-gray-50 w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.mid ||
@@ -2782,7 +2795,7 @@ const QuestionSettings = ({
                       Max Label
                     </label>
                     <input
-                      className='bg-gray-50 w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.max ||
@@ -2804,7 +2817,7 @@ const QuestionSettings = ({
                     Scale Range
                   </label>
                   <SegmentedControl
-                    className='bg-gray-50 drop-shadow-sm'
+                    className='bg-surface-muted drop-shadow-sm'
                     size='xs'
                     fullWidth
                     data={[
@@ -2963,7 +2976,7 @@ const QuestionSettings = ({
 
             {isFullName && (
               <div className='space-y-4'>
-                <div className='bg-gray-50 space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='bg-surface-muted space-y-3 rounded-xl border border-gray-1 p-3'>
                   <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
                     Field Options
                   </div>
@@ -3048,7 +3061,7 @@ const QuestionSettings = ({
                     }
                   />
                 </div>
-                <div className='bg-gray-50 space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='bg-surface-muted space-y-3 rounded-xl border border-gray-1 p-3'>
                   <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
                     Required Fields
                   </div>
@@ -3373,7 +3386,7 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.dateLimitType ===
                     'RANGE' && (
-                    <div className='bg-gray-50 grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
+                    <div className='bg-surface-muted grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
                       <div>
                         <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
                           Start Date
@@ -3479,7 +3492,7 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.timeLimitType ===
                     'RANGE' && (
-                    <div className='bg-gray-50 grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
+                    <div className='bg-surface-muted grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
                       <div>
                         <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
                           Start Time
@@ -3701,7 +3714,7 @@ const QuestionSettings = ({
                                 .allowedFileTypes || []
                             ).includes(ext)
                               ? 'border-accent-primary bg-accent-soft text-accent-primary'
-                              : 'hover:bg-gray-50 border-gray-2 bg-white text-gray-8 hover:border-accent-primary/40',
+                              : 'hover:bg-surface-hover border-gray-2 bg-surface text-gray-8 hover:border-accent-primary/40',
                           )}
                           onClick={() => {
                             const current =
@@ -3907,7 +3920,7 @@ const QuestionSettings = ({
                 }
               />
 
-              <div className='bg-gray-50/50 space-y-3 rounded-xl border border-gray-1 p-3'>
+              <div className='bg-surface-muted/50 space-y-3 rounded-xl border border-gray-1 p-3'>
                 <div className='text-xs font-bold text-gray-12'>
                   Column Mappings
                 </div>
@@ -4454,7 +4467,7 @@ const QuestionSettings = ({
                 Visual Style
               </label>
               <SegmentedControl
-                className='bg-gray-50 w-full border border-gray-1'
+                className='bg-surface-muted w-full border border-gray-1'
                 size='xs'
                 value={activeQuestion.settings.specific.variant || 'default'}
                 data={[
@@ -4474,7 +4487,7 @@ const QuestionSettings = ({
                     Divider Style
                   </label>
                   <SegmentedControl
-                    className='bg-gray-50 border border-gray-1'
+                    className='bg-surface-muted border border-gray-1'
                     size='xs'
                     fullWidth
                     data={[
@@ -4525,7 +4538,7 @@ const QuestionSettings = ({
         onToggle={() => setOpenAdvanced(!openAdvanced)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-          <div className='bg-gray-50 rounded-lg border border-gray-1 p-3'>
+          <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
             <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
               Field ID / Key
             </div>
@@ -4575,7 +4588,7 @@ const QuestionSettings = ({
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
             {logicRules.length === 0 ? (
-              <div className='bg-gray-50/50 rounded-xl border border-gray-2 p-4 text-center'>
+              <div className='bg-surface-muted/50 rounded-xl border border-gray-2 p-4 text-center'>
                 <div className='mb-1 text-sm font-semibold text-gray-9'>
                   Visibility Logic
                 </div>
@@ -4608,7 +4621,7 @@ const QuestionSettings = ({
                   )
                   return (
                     <div
-                      className='space-y-2 rounded-xl border border-gray-1 bg-white p-3 shadow-sm'
+                      className='space-y-2 rounded-xl border border-gray-1 bg-surface p-3 shadow-sm'
                       key={rule.id}
                     >
                       <div className='flex items-center justify-between'>
@@ -4616,7 +4629,7 @@ const QuestionSettings = ({
                           {idx === 0 ? 'If' : 'And if'}
                         </span>
                         <button
-                          className='hover:text-red-500 text-gray-4 transition-colors'
+                          className='hover:text-red-9 text-gray-4 transition-colors'
                           title='Remove rule'
                           onClick={() => removeLogicRule(rule.id)}
                         >
@@ -4699,7 +4712,7 @@ const QuestionSettings = ({
                 })}
 
                 <Button
-                  className='w-full border border-dashed border-gray-2 bg-white'
+                  className='w-full border border-dashed border-gray-2 bg-surface'
                   color='gray'
                   disabled={logicRules.length >= logicFieldOptions.length}
                   size='xs'

@@ -1536,7 +1536,7 @@ const Header: React.FC<HeaderProps> = ({
                               <span className='text-[13px] font-medium text-[var(--gray-13)]'>
                                 {t`Notify me when accessed`}
                               </span>
-                              <span className='ml-0.5 rounded-full bg-[#8c52ff] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white'>
+                              <span className='ml-0.5 rounded-full bg-primary-9 px-1.5 py-0.5 text-[10px] leading-none font-bold text-white'>
                                 {t`New`}
                               </span>
                             </div>
@@ -1548,14 +1548,14 @@ const Header: React.FC<HeaderProps> = ({
                               className={cn(
                                 'relative inline-flex h-[20px] w-[36px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
                                 notifyAccessed
-                                  ? 'bg-[#8c52ff]'
+                                  ? 'bg-primary-9'
                                   : 'bg-[var(--gray-5)]',
                               )}
                               onClick={() => setNotifyAccessed(!notifyAccessed)}
                             >
                               <span
                                 className={cn(
-                                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[var(--control-thumb)] shadow ring-0 transition duration-200 ease-in-out',
                                   notifyAccessed
                                     ? 'translate-x-4'
                                     : 'translate-x-0',

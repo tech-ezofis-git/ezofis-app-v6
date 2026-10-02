@@ -117,7 +117,7 @@ const FileUploadCell: React.FC<Props> = ({
           setOpened(true)
         }}
       >
-        <Icon className='text-gray-600 shrink-0' name={fileIcon} />
+        <Icon className='text-gray-10 shrink-0' name={fileIcon} />
         <span className={className}>{fileName}</span>
       </span>
 

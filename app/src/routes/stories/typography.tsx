@@ -83,7 +83,7 @@ function RouteComponent() {
               <span className='ml-1 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 H1 / Page Title
               </span>
-              <div className='rounded-lg border border-gray-2 bg-white p-4'>
+              <div className='rounded-lg border border-gray-2 bg-surface p-4'>
                 <h1 className='font-poppins text-21 font-semibold text-gray-12'>
                   The quick brown fox jumps over the lazy dog
                 </h1>
@@ -97,7 +97,7 @@ function RouteComponent() {
               <span className='ml-1 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 H2 / Section Title
               </span>
-              <div className='rounded-lg border border-gray-2 bg-white p-4'>
+              <div className='rounded-lg border border-gray-2 bg-surface p-4'>
                 <h2 className='font-poppins text-19 font-semibold text-gray-12'>
                   The quick brown fox jumps over the lazy dog
                 </h2>
@@ -111,7 +111,7 @@ function RouteComponent() {
               <span className='ml-1 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 H3 / Subsection Title
               </span>
-              <div className='rounded-lg border border-gray-2 bg-white p-4'>
+              <div className='rounded-lg border border-gray-2 bg-surface p-4'>
                 <h3 className='font-poppins text-17 font-semibold text-gray-12'>
                   The quick brown fox jumps over the lazy dog
                 </h3>
@@ -125,7 +125,7 @@ function RouteComponent() {
               <span className='ml-1 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 H4 / Card Title
               </span>
-              <div className='rounded-lg border border-gray-2 bg-white p-4'>
+              <div className='rounded-lg border border-gray-2 bg-surface p-4'>
                 <h4 className='font-inter text-15 font-semibold text-gray-12'>
                   The quick brown fox jumps over the lazy dog
                 </h4>
@@ -146,7 +146,7 @@ function RouteComponent() {
               <p className='mb-4 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 Page Header
               </p>
-              <div className='space-y-2 rounded-xl border border-gray-3 bg-white p-6'>
+              <div className='space-y-2 rounded-xl border border-gray-3 bg-surface p-6'>
                 <h2 className='text-18 font-semibold text-gray-12'>
                   Account Settings
                 </h2>
@@ -167,7 +167,7 @@ function RouteComponent() {
               <p className='mb-4 text-12 font-semibold tracking-wider text-gray-9 uppercase'>
                 Body Content
               </p>
-              <div className='space-y-3 rounded-xl border border-gray-3 bg-white p-6'>
+              <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-6'>
                 <h4 className='text-15 font-semibold text-gray-12'>
                   About this project
                 </h4>

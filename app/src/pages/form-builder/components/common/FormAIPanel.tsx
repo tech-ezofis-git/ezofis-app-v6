@@ -64,9 +64,9 @@ const FormAIPanel = () => {
   }
 
   return (
-    <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-2 bg-white font-inter shadow-xl duration-300'>
+    <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-2 bg-surface font-inter shadow-xl duration-300'>
       {/* Header */}
-      <div className='flex shrink-0 items-center justify-between gap-2 border-b border-gray-2 bg-white px-5 py-4'>
+      <div className='flex shrink-0 items-center justify-between gap-2 border-b border-gray-2 bg-surface px-5 py-4'>
         <div className='flex min-w-0 items-center gap-3'>
           <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
             <AiBrandIcon className='size-5' variant='outline-purple' />
@@ -107,7 +107,7 @@ const FormAIPanel = () => {
               </div>
               {suggestions.map((s) => (
                 <button
-                  className='w-full rounded-lg border border-gray-1 bg-white px-3 py-2 text-left text-13 text-gray-11 transition-colors hover:border-accent-soft hover:bg-accent-soft/5 hover:text-accent-primary'
+                  className='w-full rounded-lg border border-gray-1 bg-surface px-3 py-2 text-left text-13 text-gray-11 transition-colors hover:border-accent-soft hover:bg-accent-soft/5 hover:text-accent-primary'
                   key={s}
                   onClick={() => sendSuggestion(s)}
                 >
@@ -125,7 +125,7 @@ const FormAIPanel = () => {
         )}
 
         {isLoading && (
-          <div className='flex items-center gap-2.5 self-start rounded-2xl rounded-tl-sm border border-gray-1 bg-white px-3.5 py-2.5'>
+          <div className='flex items-center gap-2.5 self-start rounded-2xl rounded-tl-sm border border-gray-1 bg-surface px-3.5 py-2.5'>
             <Icon
               className='shrink-0 text-accent-primary'
               height={16}
@@ -164,7 +164,7 @@ const FormAIPanel = () => {
       </div>
 
       {/* Composer */}
-      <div className='shrink-0 space-y-2 border-t border-gray-2 bg-white p-4'>
+      <div className='shrink-0 space-y-2 border-t border-gray-2 bg-surface p-4'>
         {credits <= 0 ? (
           <div className='rounded-lg border border-gray-1 bg-gray-1 px-3 py-2 text-center text-12 text-gray-8'>
             You've used all your AI generations for this session.
@@ -180,7 +180,7 @@ const FormAIPanel = () => {
               autosize
               classNames={{
                 input:
-                  'border-gray-2 bg-gray-1/50 text-13 focus:border-accent-primary focus:bg-white',
+                  'border-gray-2 bg-gray-1/50 text-13 focus:border-accent-primary focus:bg-surface',
               }}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
@@ -213,7 +213,7 @@ const FormAIPanel = () => {
 const cnRole = (role: 'user' | 'assistant') =>
   role === 'user'
     ? 'ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-accent-primary px-3.5 py-2 text-13 text-white'
-    : 'mr-auto max-w-[85%] rounded-2xl rounded-tl-sm border border-gray-1 bg-white px-3.5 py-2 text-13 text-gray-12'
+    : 'mr-auto max-w-[85%] rounded-2xl rounded-tl-sm border border-gray-1 bg-surface px-3.5 py-2 text-13 text-gray-12'
 
 FormAIPanel.displayName = 'FormAIPanel'
 export default FormAIPanel

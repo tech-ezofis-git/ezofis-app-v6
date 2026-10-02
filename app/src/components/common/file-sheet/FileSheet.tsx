@@ -209,7 +209,7 @@ const FileSheet: React.FC<any> = ({
     return (
       <Modal opened={opened} fullScreen onClose={onClose}>
         {/* Header */}
-        <div className='flex items-center justify-between border-b border-gray-3 bg-white px-2 py-2'>
+        <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-2 py-2'>
           <div className='flex min-w-0 items-center gap-4'>
             <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-2 text-primary-9 ring-1 ring-primary-4'>
               <Icon className='size-6' name='tabler:file-search' />
@@ -263,7 +263,7 @@ const FileSheet: React.FC<any> = ({
                     <div className='scanning-bar animate-scan absolute inset-x-0 z-40 h-1 bg-[var(--primary-9)] shadow-[0_0_15px_rgba(var(--primary-9),0.8)]'></div>
 
                     {/* Floating Indicator Pill */}
-                    <div className='absolute bottom-10 left-1/2 z-50 flex shrink-0 -translate-x-1/2 transform items-center gap-2 rounded-full border border-[var(--gray-4)] bg-white/90 px-5 py-2.5 shadow-xl backdrop-blur-sm'>
+                    <div className='absolute bottom-10 left-1/2 z-50 flex shrink-0 -translate-x-1/2 transform items-center gap-2 rounded-full border border-[var(--gray-4)] bg-surface/90 px-5 py-2.5 shadow-xl backdrop-blur-sm'>
                       <div className='flex items-center gap-3'>
                         <div className='flex size-5 items-center justify-center rounded-full bg-[var(--primary-1)]'>
                           <Icon

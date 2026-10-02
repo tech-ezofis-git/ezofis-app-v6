@@ -1256,7 +1256,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             value={answers[id] || ''}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',
@@ -1280,7 +1280,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             options={getOptions(control)}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',
@@ -1308,7 +1308,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             value={answers[id] ? answers[id] : null}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',
@@ -2593,7 +2593,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                   {/* Optional Tip pill */}
                   {msg.tipText && (
                     <div className='-mt-1.5 ml-[40px]'>
-                      <span className='inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#fed7aa] bg-[#fff7ed] px-3 py-1 text-xs font-medium text-[#c2410c]'>
+                      <span className='inline-flex items-center gap-1.5 rounded-full border border-dashed border-orange-6 bg-orange-2 px-3 py-1 text-xs font-medium text-orange-11'>
                         💡 {msg.tipText}
                       </span>
                     </div>
@@ -2606,7 +2606,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                         <span className='text-sm font-bold text-gray-12'>
                           {msg.uploadCardDoc.label}
                           {msg.uploadCardDoc.required && (
-                            <span className='text-red-500 ml-0.5'>*</span>
+                            <span className='text-red-9 ml-0.5'>*</span>
                           )}
                         </span>
                         <span className='rounded bg-gray-3 px-2 py-0.5 text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
@@ -2968,7 +2968,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                         >
                           <div className='flex min-w-0 items-center gap-2'>
                             {isDone ? (
-                              <CheckCircle2 className='text-green-500 h-4 w-4 flex-shrink-0' />
+                              <CheckCircle2 className='text-green-9 h-4 w-4 flex-shrink-0' />
                             ) : (
                               <Circle className='h-4 w-4 flex-shrink-0 text-gray-8' />
                             )}

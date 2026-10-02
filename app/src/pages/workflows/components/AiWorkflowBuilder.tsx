@@ -130,7 +130,7 @@ export default function AiWorkflowBuilder({
 
       <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-6 sm:pt-8 md:pt-10'>
         <div className='flex flex-col items-center gap-3 text-center'>
-          <div className='bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex h-12 w-12 items-center justify-center rounded-2xl'>
+          <div className='bg-purple-2 text-purple-11 flex h-12 w-12 items-center justify-center rounded-2xl'>
             <AiBrandIcon className='size-6' variant='outline-purple' />
           </div>
           <h1 className='text-xl font-semibold text-gray-12 md:text-2xl'>

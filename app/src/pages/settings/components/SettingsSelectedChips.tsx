@@ -42,7 +42,7 @@ export default function SettingsSelectedChips({
               className='inline-flex h-8 max-w-full items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs transition hover:border-primary-8 hover:from-primary-3 hover:to-primary-3/80'
               key={`${String(item.id)}-${index}`}
             >
-              <span className='flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
+              <span className='flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-surface text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                 {initials}
               </span>
               <span className='truncate'>{item.name}</span>

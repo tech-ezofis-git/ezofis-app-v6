@@ -224,13 +224,13 @@ const InvoiceTablePanel = ({ activeCard, onClose }: InvoiceTablePanelProps) => {
         </div>
 
         <div className='flex items-center gap-2'>
-          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-white px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all hover:bg-gray-2 active:scale-95'>
+          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all hover:bg-gray-2 active:scale-95'>
             <Icon className='size-3.5 text-gray-10' name='lucide:download' />
             <span>
               <Trans>Export CSV</Trans>
             </span>
           </button>
-          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-white px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all hover:bg-gray-2 active:scale-95'>
+          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all hover:bg-gray-2 active:scale-95'>
             <Icon className='size-3.5 text-gray-10' name='lucide:filter' />
             <span>
               <Trans>Filters</Trans>
@@ -466,7 +466,7 @@ const Overview = () => {
                   'relative cursor-pointer overflow-hidden rounded-xl border bg-surface p-4 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]',
                   isSelected
                     ? 'border-accent-primary shadow-[0_4px_12px_rgba(147,51,234,0.06)] ring-2 ring-accent-primary/12'
-                    : 'border-gray-3 hover:border-[#e0dde8] hover:shadow-[0_3px_8px_rgba(0,0,0,0.07)]',
+                    : 'border-gray-3 hover:border-gray-5 hover:shadow-[0_3px_8px_rgba(0,0,0,0.07)]',
                 )}
                 onClick={() => handleCardClick(item.name)}
               >

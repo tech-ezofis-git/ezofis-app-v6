@@ -1,5 +1,6 @@
 export const NODE_TOOL_TYPE = {
   AP_AGENT: 'ap_agent',
+  CLASSIFICATION_AGENT: 'classification_agent',
   CONDITION: 'condition',
   DOCUMENT_GENERATE_AGENT: 'document_generate_agent',
   END: 'end',

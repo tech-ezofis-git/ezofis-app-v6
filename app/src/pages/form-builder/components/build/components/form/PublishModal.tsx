@@ -80,7 +80,7 @@ const PublishModal = () => {
     >
       <div className='overflow-hidden border border-surface-secondary font-inter shadow-2xl'>
         {/* Header */}
-        <div className='to-indigo-600 relative bg-gradient-to-br from-accent-primary p-6 text-white'>
+        <div className='to-indigo-10 relative bg-gradient-to-br from-accent-primary p-6 text-white'>
           <div className='relative z-10'>
             <Group justify='space-between' mb='xs'>
               <div className='flex size-10 items-center justify-center rounded-xl bg-white/20'>
@@ -111,7 +111,7 @@ const PublishModal = () => {
               value={name}
               classNames={{
                 input:
-                  'bg-gray-50 h-11 border-gray-2 transition-colors focus:border-accent-primary',
+                  'bg-surface-muted h-11 border-gray-2 transition-colors focus:border-accent-primary',
               }}
               label={
                 <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
@@ -128,7 +128,7 @@ const PublishModal = () => {
               autosize
               classNames={{
                 input:
-                  'bg-gray-50 border-gray-2 transition-colors focus:border-accent-primary',
+                  'bg-surface-muted border-gray-2 transition-colors focus:border-accent-primary',
               }}
               label={
                 <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
@@ -154,7 +154,7 @@ const PublishModal = () => {
                       'flex items-center gap-4 rounded-xl border p-3 transition-all duration-200',
                       isActive
                         ? 'border-accent-primary bg-accent-soft/10 shadow-sm'
-                        : 'hover:bg-gray-50 border-gray-2 bg-surface-primary hover:border-gray-3',
+                        : 'hover:bg-surface-hover border-gray-2 bg-surface-primary hover:border-gray-3',
                     )}
                     onClick={() => setPreviewMode(layout.id as any)}
                   >
@@ -163,7 +163,7 @@ const PublishModal = () => {
                         'flex size-10 shrink-0 items-center justify-center rounded-lg border',
                         isActive
                           ? 'border-accent-primary bg-accent-primary text-white'
-                          : 'bg-opacity-50 text-gray-400 border-gray-2 bg-gray-1',
+                          : 'bg-opacity-50 text-gray-8 border-gray-2 bg-gray-1',
                       )}
                     >
                       <Icon height={18} name={layout.icon} width={18} />

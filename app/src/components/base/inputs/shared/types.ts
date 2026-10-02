@@ -58,6 +58,8 @@ export interface SelectProps extends InputProps {
   rightSectionIcon?: string
   searchable?: boolean
   searchPlaceholder?: string
+  /** Keep the full option label visible when the menu is open. */
+  wrapOptions?: boolean
   width?: ComboboxProps['width']
   /** Label for the creatable option. Receives current search text. */
   createOptionLabel?: (search: string) => string

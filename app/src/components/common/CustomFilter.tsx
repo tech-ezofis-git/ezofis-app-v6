@@ -505,7 +505,7 @@ export default function CustomFilter({
               zIndex: FILTER_MENU_Z_INDEX,
             }}
           >
-            <div className='flex max-h-[340px] w-[184px] shrink-0 flex-col border-r border-border-default bg-primary-3/30 dark:bg-gray-12'>
+            <div className='flex max-h-[340px] w-[184px] shrink-0 flex-col border-r border-border-default bg-primary-3/30'>
               <div className='border-b border-border-default/60 p-1.5'>
                 <div className='relative flex items-center'>
                   <Search className='pointer-events-none absolute left-2 h-3.5 w-3.5 text-text-muted' />
@@ -541,7 +541,7 @@ export default function CustomFilter({
                         'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
                         isActive
                           ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
-                          : 'hover:bg-gray-2 dark:hover:bg-gray-10',
+                          : 'hover:bg-gray-2',
                       )}
                       onClick={() => {
                         setActiveFilterGroup(group.id)
@@ -702,7 +702,7 @@ export default function CustomFilter({
                   FILTER_CHIP_SHELL,
                   'cursor-pointer gap-1.5 pr-3.5',
                   isActive ? FILTER_CHIP_ACTIVE : FILTER_CHIP_INACTIVE,
-                  !isActive && 'hover:bg-gray-3 dark:hover:bg-gray-10',
+                  !isActive && 'hover:bg-gray-3',
                 )}
                 onClick={() => onQuickFilterToggle?.(qf.id)}
               >
@@ -1081,7 +1081,7 @@ export default function CustomFilter({
                 className={cn(
                   'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'grid'
-                    ? 'bg-surface text-[var(--primary-9)] shadow-xs'
+                    ? 'bg-surface-contrast text-[var(--primary-9)] shadow-xs'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('grid')}
@@ -1095,7 +1095,7 @@ export default function CustomFilter({
                 className={cn(
                   'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'table'
-                    ? 'bg-surface text-[var(--primary-9)] shadow-xs'
+                    ? 'bg-surface-contrast text-[var(--primary-9)] shadow-xs'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('table')}

@@ -309,7 +309,7 @@ export function EditMetadataView({
       fieldType === 'checkbox'
     ) {
       return (
-        <div className='rounded-xl border border-gray-2 bg-white px-4 py-3'>
+        <div className='rounded-xl border border-gray-2 bg-surface px-4 py-3'>
           <div className='mb-2 text-xs font-bold tracking-wider text-gray-9 uppercase'>
             {label}
             {required ? <span className='ml-1 text-red-9'>*</span> : null}
@@ -330,7 +330,7 @@ export function EditMetadataView({
 
     if (fieldType === 'radio') {
       return (
-        <div className='rounded-xl border border-gray-2 bg-white px-4 py-3'>
+        <div className='rounded-xl border border-gray-2 bg-surface px-4 py-3'>
           <div className='mb-3 text-xs font-bold tracking-wider text-gray-9 uppercase'>
             {label}
             {required ? <span className='ml-1 text-red-9'>*</span> : null}
@@ -384,7 +384,7 @@ export function EditMetadataView({
 
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary duration-300'>
-      <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6'>
+      <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface px-6'>
         <div className='flex min-w-0 items-center gap-4'>
           <button
             className='inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-2 text-[14px] font-semibold text-gray-13 hover:bg-gray-2'

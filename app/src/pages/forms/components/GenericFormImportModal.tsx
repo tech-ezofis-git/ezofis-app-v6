@@ -582,10 +582,10 @@ export default function GenericFormImportModal({
                   className={cn(
                     'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                     step1State === 'done'
-                      ? 'border border-green-9 bg-white text-green-9'
+                      ? 'border border-green-9 bg-surface text-green-9'
                       : step1State === 'active'
-                        ? 'border-2 border-primary-9 bg-white text-primary-9'
-                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                        ? 'border-2 border-primary-9 bg-surface text-primary-9'
+                        : 'border-2 border-gray-3 bg-surface text-gray-4',
                   )}
                 >
                   {step1State === 'done' ? (
@@ -604,7 +604,7 @@ export default function GenericFormImportModal({
                     {t`File Ingestion & Parsing`}
                   </h3>
                   {step1State === 'done' && (
-                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                    <span className='shrink-0 rounded-full border border-green-9 bg-surface px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                       {t`Completed in 0.4s`}
                     </span>
                   )}
@@ -664,10 +664,10 @@ export default function GenericFormImportModal({
                   className={cn(
                     'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                     step2State === 'done'
-                      ? 'border border-green-9 bg-white text-green-9'
+                      ? 'border border-green-9 bg-surface text-green-9'
                       : step2State === 'active'
-                        ? 'border-2 border-primary-9 bg-white text-primary-9'
-                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                        ? 'border-2 border-primary-9 bg-surface text-primary-9'
+                        : 'border-2 border-gray-3 bg-surface text-gray-4',
                   )}
                 >
                   {step2State === 'done' ? (
@@ -686,7 +686,7 @@ export default function GenericFormImportModal({
                     {t`Column & Row Extraction`}
                   </h3>
                   {step2State === 'done' && (
-                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                    <span className='shrink-0 rounded-full border border-green-9 bg-surface px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                       {t`Completed in 0.9s`}
                     </span>
                   )}
@@ -734,10 +734,10 @@ export default function GenericFormImportModal({
                   className={cn(
                     'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                     step3State === 'done'
-                      ? 'border border-green-9 bg-white text-green-9'
+                      ? 'border border-green-9 bg-surface text-green-9'
                       : step3State === 'active'
-                        ? 'border-2 border-primary-9 bg-white text-primary-9'
-                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                        ? 'border-2 border-primary-9 bg-surface text-primary-9'
+                        : 'border-2 border-gray-3 bg-surface text-gray-4',
                   )}
                 >
                   {step3State === 'done' ? (
@@ -756,7 +756,7 @@ export default function GenericFormImportModal({
                     {t`Schema Auto-Mapping`}
                   </h3>
                   {step3State === 'done' && (
-                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                    <span className='shrink-0 rounded-full border border-green-9 bg-surface px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                       {t`Completed`}
                     </span>
                   )}

@@ -266,7 +266,7 @@ export default function FTPAgentSettingsPanel({
   const [openBasic, setOpenBasic] = useState(false)
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <SettingsSection
           icon='lucide:settings-2'
@@ -277,7 +277,7 @@ export default function FTPAgentSettingsPanel({
         >
           <div className='flex flex-col gap-2.5 py-1'>
             <div className='flex items-center gap-2.5 px-1 pb-1'>
-              <Icon className='text-blue-600 h-4 w-4' name='lucide:server' />
+              <Icon className='text-blue-10 h-4 w-4' name='lucide:server' />
               <div className='flex flex-col space-y-1'>
                 <span className='text-13 font-medium text-gray-12'>
                   Connection Details
@@ -288,7 +288,7 @@ export default function FTPAgentSettingsPanel({
               </div>
             </div>
 
-            <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='space-y-1.5'>
                 <label
                   className='flex items-center gap-1 text-[13px] font-medium text-gray-11'
@@ -300,7 +300,7 @@ export default function FTPAgentSettingsPanel({
                   <button
                     id='connection-select'
                     className={cn(
-                      'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                      'flex h-10 w-full items-center justify-between rounded-md border bg-surface px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                       isConnectionOpen
                         ? 'border-primary-9 ring-2 ring-primary-4'
                         : 'border-gray-3 hover:border-primary-5',
@@ -340,7 +340,7 @@ export default function FTPAgentSettingsPanel({
                       />
                       <div
                         className={cn(
-                          'animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col rounded-lg border border-gray-3 bg-white py-1 shadow-xl duration-100',
+                          'animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col rounded-lg border border-gray-3 bg-surface py-1 shadow-xl duration-100',
                           isCreatingConnection
                             ? 'max-h-[400px] overflow-y-auto'
                             : 'overflow-hidden',
@@ -382,7 +382,7 @@ export default function FTPAgentSettingsPanel({
                               </span>
                               <fieldset
                                 aria-labelledby='protocol-label'
-                                className='bg-gray-50/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'
+                                className='bg-surface-muted/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'
                               >
                                 {protocolOptions.map((opt) => (
                                   <button
@@ -583,9 +583,9 @@ export default function FTPAgentSettingsPanel({
               </div>
             </div>
 
-            <div className='rounded-xl bg-white p-4 shadow-sm'>
+            <div className='rounded-xl bg-surface p-4 shadow-sm'>
               <Input
-                className='bg-white'
+                className='bg-surface'
                 label='Folder path'
                 placeholder='e.g. /inbox/invoices'
                 value={path}

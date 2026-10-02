@@ -64,7 +64,7 @@ function RouteComponent() {
 <IconButton color='green' icon='lucide:check' />
 <IconButton color='gray' icon='lucide:settings' />`}
           </StoryCode>
-          <div className='flex flex-wrap items-center gap-4 rounded-md bg-white p-6 dark:bg-gray-13'>
+          <div className='flex flex-wrap items-center gap-4 rounded-md bg-surface p-6'>
             <IconButton icon='lucide:plus' />
             <IconButton color='secondary' icon='lucide:plus' />
             <IconButton color='red' icon='lucide:trash' />

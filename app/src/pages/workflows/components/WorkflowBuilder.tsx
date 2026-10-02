@@ -383,13 +383,13 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
               variant={BackgroundVariant.Lines}
             />
             <Controls
-              className='overflow-hidden !rounded-xl !border-2 !border-gray-2 !bg-white !shadow-xl'
+              className='overflow-hidden !rounded-xl !border-2 !border-gray-2 !bg-surface !shadow-xl'
               position='bottom-right'
             />
             <AddNodeMenu />
             {contextMenu && (
               <div
-                className='border-gray-200 fixed z-[1000] min-w-[150px] overflow-hidden rounded-lg border bg-white p-1 shadow-lg'
+                className='border-gray-4 fixed z-[1000] min-w-[150px] overflow-hidden rounded-lg border bg-surface p-1 shadow-lg'
                 style={{
                   left: contextMenu.left,
                   top: contextMenu.top,
@@ -401,7 +401,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
                     nodes.find((n) => n.id === contextMenu.id)?.data.label !==
                       'Workflow Success')) && (
                   <button
-                    className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
+                    className='text-red-10 hover:bg-red-2 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
                     onClick={deleteItem}
                   >
                     {contextMenu.type === 'node'

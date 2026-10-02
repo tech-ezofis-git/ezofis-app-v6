@@ -51,7 +51,7 @@ export default function DTModelTable({ colMeta, rows }: Props) {
           <tbody>
             {safeRows.map((row, idx) => (
               <tr
-                className='hover:bg-gray-50 border-b border-gray-3 last:border-b-0'
+                className='hover:bg-surface-hover border-b border-gray-3 last:border-b-0'
                 key={idx}
               >
                 {primitiveMode ? (

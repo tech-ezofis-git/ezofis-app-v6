@@ -388,7 +388,7 @@ const FieldLibrary = () => {
   return (
     <div className='animate-in fade-in slide-in-from-bottom-4 flex h-full flex-col duration-500'>
       {/* Header */}
-      <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
+      <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-surface px-4 py-3'>
         <div className='flex items-center gap-2'>
           <button
             className='cursor-pointer rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13'
@@ -401,7 +401,7 @@ const FieldLibrary = () => {
       </div>
 
       {/* Search */}
-      <div className='sticky top-0 z-10 border-b border-gray-3 bg-white p-3'>
+      <div className='sticky top-0 z-10 border-b border-gray-3 bg-surface p-3'>
         <div className='group relative w-full'>
           <Icon
             height={14}
@@ -413,7 +413,7 @@ const FieldLibrary = () => {
             )}
           />
           <input
-            className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
+            className='w-full rounded-lg border border-gray-3 bg-surface py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
             placeholder='Search fields...'
             ref={searchRef}
             type='text'
@@ -512,7 +512,7 @@ const FieldLibrary = () => {
                             'group relative flex cursor-pointer items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98]',
                             isSelected
                               ? 'border-primary-4 bg-primary-3/60 shadow-2xs'
-                              : 'border-transparent bg-white hover:border-gray-3 hover:bg-gray-2',
+                              : 'border-transparent bg-surface hover:border-gray-3 hover:bg-gray-2',
                           )}
                           onClick={() => handleSelect(field.type)}
                           onMouseEnter={() => setSelectedIndex(flatIndex)}

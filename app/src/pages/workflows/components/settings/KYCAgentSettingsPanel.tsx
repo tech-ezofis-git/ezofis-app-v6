@@ -87,13 +87,13 @@ export default function KYCAgentSettingsPanel({
   return (
     <div className='flex h-full flex-col space-y-3.5 overflow-y-auto p-4 font-sans'>
       {/* Header Banner */}
-      <div className='border-amber-200 bg-amber-50/70 text-amber-900 flex items-center gap-3 rounded-xl border p-3.5 shadow-xs'>
-        <div className='bg-amber-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white shadow-xs'>
+      <div className='border-yellow-4 bg-yellow-2/70 text-yellow-12 flex items-center gap-3 rounded-xl border p-3.5 shadow-xs'>
+        <div className='bg-yellow-9 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white shadow-xs'>
           <Icon className='h-5 w-5' name='lucide:shield-check' />
         </div>
         <div>
-          <h3 className='text-amber-950 text-sm font-bold'>KYC Agent</h3>
-          <p className='text-amber-700 text-xs leading-relaxed font-medium'>
+          <h3 className='text-yellow-12 text-sm font-bold'>KYC Agent</h3>
+          <p className='text-yellow-11 text-xs leading-relaxed font-medium'>
             Identity verification, document authentication & risk analysis.
           </p>
         </div>
@@ -200,7 +200,7 @@ export default function KYCAgentSettingsPanel({
                 updateNodeData('riskThreshold', val)
               }}
             />
-            <p className='text-gray-500 mt-1 text-[11px]'>
+            <p className='text-gray-9 mt-1 text-[11px]'>
               Requests scoring below this threshold will be flagged for manual
               review.
             </p>

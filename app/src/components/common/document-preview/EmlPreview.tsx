@@ -61,7 +61,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
 
   if (error) {
     return (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-white px-6 text-center'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-surface px-6 text-center'>
         <FileText className='text-[var(--primary-9)]' size={40} />
         <p className='text-sm font-semibold text-[var(--gray-13)]'>
           Unable to preview email
@@ -110,11 +110,11 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
     <div className='flex h-full w-full flex-col overflow-hidden bg-surface font-sans text-[13px]'>
       <div className='flex-shrink-0 px-4 pt-4 pb-3 sm:px-5 sm:pt-5'>
         <div className='flex items-start gap-3'>
-          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#d7caed] text-sm font-semibold text-[#4f4270]'>
+          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-4 text-sm font-semibold text-primary-12'>
             {initials}
           </div>
           <div className='flex min-w-0 flex-col pt-0.5'>
-            <div className='truncate text-[14px] font-medium text-[#0a58ca]'>
+            <div className='truncate text-[14px] font-medium text-blue-11'>
               {from?.name ? `${from.name}<${from.address}>` : from?.address}
             </div>
             <div className='mt-1.5 flex gap-1.5 text-[var(--gray-11)]'>
@@ -145,7 +145,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
                   key={idx}
                 >
                   <div className='flex items-center gap-3 overflow-hidden'>
-                    <FileText className='text-red-500 shrink-0' size={20} />
+                    <FileText className='text-red-9 shrink-0' size={20} />
                     <div className='flex min-w-0 flex-col'>
                       <span className='mb-0.5 truncate text-[13px] leading-tight text-[var(--gray-12)]'>
                         {att.filename || `attachment-${idx}`}

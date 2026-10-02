@@ -120,7 +120,7 @@ const Form = (props: any) => {
             value={formModel[control.id] || ''}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',
@@ -144,7 +144,7 @@ const Form = (props: any) => {
             options={getOptions(control)}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',
@@ -175,7 +175,7 @@ const Form = (props: any) => {
             value={formModel[control.id] ? formModel[control.id] : null}
             styles={{
               input: {
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--gray-4)',
                 borderRadius: '0.5rem',
                 color: 'var(--gray-13)',

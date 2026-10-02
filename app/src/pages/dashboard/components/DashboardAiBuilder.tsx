@@ -802,7 +802,7 @@ export default function DashboardAiBuilder({
           />
         </div>
         <DashboardHtmlPreview
-          className='min-h-[720px] w-full overflow-auto rounded-[16px] border border-border-default bg-white p-3'
+          className='min-h-[720px] w-full overflow-auto rounded-[16px] border border-border-default bg-surface p-3'
           html={dashboardHtml}
           title={t`Dashboard preview`}
         />
@@ -1422,8 +1422,8 @@ function renderWidgetComponent(
       </div>
       <div className='flex items-center gap-2'>
         {comp.type === 'insights' && (
-          <span className='border-orange-200 bg-orange-50/50 text-10 text-orange-600 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-bold tracking-wider uppercase'>
-            <span className='bg-orange-500 size-1.5 animate-pulse rounded-full' />
+          <span className='border-orange-4 bg-orange-2/50 text-10 text-orange-10 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-bold tracking-wider uppercase'>
+            <span className='bg-orange-9 size-1.5 animate-pulse rounded-full' />
             LIVE
           </span>
         )}

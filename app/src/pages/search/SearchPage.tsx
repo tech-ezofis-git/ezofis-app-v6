@@ -444,7 +444,7 @@ export default function SearchPage() {
                     'flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
                     activeTab === tab.id
                       ? 'bg-primary-2 text-primary-9'
-                      : 'border border-gray-4 bg-white text-gray-11 hover:bg-gray-2',
+                      : 'border border-gray-4 bg-surface text-gray-11 hover:bg-gray-2',
                   )}
                   onClick={() => setActiveTab(tab.id as any)}
                 >
@@ -472,7 +472,7 @@ export default function SearchPage() {
             <div className='mb-6 flex items-center justify-center'>
               <AiBrandIcon className='size-10 shrink-0' />
             </div>
-            <h3 className='mb-3 text-[22px] font-medium text-[#1B326D]'>
+            <h3 className='mb-3 text-[22px] font-medium text-gray-13'>
               Start typing to search
             </h3>
             <p className='max-w-sm text-[16px] leading-relaxed text-gray-11'>
@@ -487,7 +487,7 @@ export default function SearchPage() {
             <div className='mb-6 flex size-[72px] items-center justify-center rounded-full bg-gray-2 text-gray-9'>
               <Icon className='size-8' name='lucide:search' />
             </div>
-            <h3 className='mb-4 text-[22px] font-medium text-[#1B326D]'>
+            <h3 className='mb-4 text-[22px] font-medium text-gray-13'>
               No matching results found
             </h3>
             <p className='max-w-md text-[16px] leading-relaxed text-gray-11'>
@@ -523,7 +523,7 @@ export default function SearchPage() {
 
                 return (
                   <div
-                    className='group flex w-full cursor-pointer items-start gap-4 rounded-xl border border-gray-4 bg-white p-4 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:outline-none active:scale-[0.995]'
+                    className='group flex w-full cursor-pointer items-start gap-4 rounded-xl border border-gray-4 bg-surface p-4 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:outline-none active:scale-[0.995]'
                     key={
                       hit.id?.itemId ||
                       hit.id?.formEntryId ||
@@ -580,9 +580,9 @@ export default function SearchPage() {
 
                       {hit?.matchSource && (
                         <div className='mt-2 flex items-center gap-2'>
-                          <div className='size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
+                          <div className='size-[5px] shrink-0 rounded-full bg-secondary-9' />
 
-                          <div className='text-slate-500 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                          <div className='text-gray-9 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
                             <span className='font-medium text-gray-11'>
                               {query}
                             </span>{' '}

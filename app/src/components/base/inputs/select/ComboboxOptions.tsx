@@ -13,6 +13,7 @@ interface Props {
   value: Option[]
   creatable?: boolean
   variant?: SelectVariant
+  wrapOptions?: boolean
   createOptionLabel?: (search: string) => string
   /** When set, creatable row only shows if this returns true for current search. */
   isCreatableSearch?: (search: string) => boolean
@@ -30,6 +31,7 @@ const ComboboxOptions = ({
   search,
   value,
   variant,
+  wrapOptions,
   onBottomReached,
   onChange,
   onSearch,
@@ -119,6 +121,7 @@ const ComboboxOptions = ({
                   iconKey={(option as Option & { iconKey?: string }).iconKey}
                   isSelected={isSelected(option.id)}
                   variant={variant}
+                  wrapLabel={wrapOptions}
                   rightIconKey={
                     (option as Option & { rightIconKey?: string }).rightIconKey
                   }
@@ -137,6 +140,7 @@ const ComboboxOptions = ({
                 createOptionLabel?.(trimmedSearch) ||
                 `Create "${trimmedSearch}"`
               }
+              wrapLabel={wrapOptions}
             />
           </div>
         )}

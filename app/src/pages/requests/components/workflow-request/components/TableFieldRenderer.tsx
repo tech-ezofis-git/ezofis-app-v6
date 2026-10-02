@@ -595,7 +595,7 @@ const renderCellInput = (
     case 'IMAGE_UPLOAD': {
       const fileName: string | undefined = val?.fileName
       return (
-        <label className='flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-white px-2 py-1 text-xs text-gray-9 hover:border-primary-5'>
+        <label className='flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5'>
           <Icon
             className='shrink-0 text-gray-6'
             height={12}
@@ -1033,7 +1033,7 @@ const TableFieldRenderer = ({
             </span>
           </div>
           <button
-            className='shrink-0 rounded-md border border-primary-5/50 bg-white px-2.5 py-1 text-11 font-bold text-primary-9 hover:bg-primary-1'
+            className='shrink-0 rounded-md border border-primary-5/50 bg-surface px-2.5 py-1 text-11 font-bold text-primary-9 hover:bg-primary-1'
             type='button'
             onClick={handleImportOcrLineItems}
           >
@@ -1047,7 +1047,7 @@ const TableFieldRenderer = ({
           'relative w-full max-w-full min-w-0 overflow-hidden',
           isFlat
             ? 'rounded-xl border border-[var(--gray-3)] bg-surface'
-            : 'rounded-lg border border-gray-3 bg-white shadow-2xs',
+            : 'rounded-lg border border-gray-3 bg-surface shadow-2xs',
         )}
       >
         <div
@@ -1056,7 +1056,7 @@ const TableFieldRenderer = ({
             // Spreadsheet-like borderless inputs
             '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
             '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
-            '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-white',
+            '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-surface',
             '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
             !isFlat &&
               '[&_td]:border-r [&_td]:border-gray-2 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',

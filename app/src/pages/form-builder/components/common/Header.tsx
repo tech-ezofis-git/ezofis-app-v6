@@ -58,7 +58,7 @@ const Header = () => {
                 {name || 'Untitled Form'}
               </span>
               <input
-                className='col-start-1 row-start-1 w-full min-w-0 cursor-text rounded-md border border-transparent bg-transparent px-1 py-0.5 text-15/5 font-semibold text-gray-13 transition-all placeholder:text-gray-5 hover:bg-gray-1 focus:border-gray-2 focus:bg-white focus:shadow-sm focus:outline-none'
+                className='col-start-1 row-start-1 w-full min-w-0 cursor-text rounded-md border border-transparent bg-transparent px-1 py-0.5 text-15/5 font-semibold text-gray-13 transition-all placeholder:text-gray-5 hover:bg-gray-1 focus:border-gray-2 focus:bg-surface focus:shadow-sm focus:outline-none'
                 placeholder='Untitled Form'
                 style={{ fieldSizing: 'content' } as any}
                 type='text'

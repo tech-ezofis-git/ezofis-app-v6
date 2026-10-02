@@ -200,7 +200,7 @@ const EXPLORER_NAME_TEXT_WRAP_CLASS = 'min-w-0 flex-1'
 const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-4 text-gray-12'
 const EXPLORER_ICON_WRAP_CLASS =
   'inline-flex size-4 shrink-0 items-center justify-center pt-0.5'
-const EXPLORER_ICON_CLASS = 'block size-4 text-[#4f5b88]'
+const EXPLORER_ICON_CLASS = 'block size-4 text-gray-11'
 
 function ExplorerValue({ value }: { value: string }) {
   return (
@@ -977,7 +977,7 @@ export default function FolderTableDataTableSplit({
   return (
     <div className='animate-in fade-in relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface duration-300'>
       {(refreshing || loading) && !loadingPage && !loadingFolders ? (
-        <div className='absolute top-0 right-0 left-0 z-30 h-1 overflow-hidden bg-[#edf0fb]'>
+        <div className='absolute top-0 right-0 left-0 z-30 h-1 overflow-hidden bg-primary-3'>
           <div className='h-full origin-left animate-[ez-loading-fill_4s_ease-in-out_infinite] rounded-full bg-primary-9' />
         </div>
       ) : null}
@@ -1102,7 +1102,7 @@ function EmptyState({
     <div className='flex h-full min-h-[320px] items-center justify-center bg-surface px-6 text-center'>
       <div className='flex w-full max-w-3xl flex-col items-center'>
         <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
-          <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
+          <div className='flex h-14 w-14 items-center justify-center rounded-full bg-surface'>
             <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
           </div>
         </div>

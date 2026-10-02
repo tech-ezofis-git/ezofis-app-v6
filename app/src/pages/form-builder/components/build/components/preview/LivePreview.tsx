@@ -186,7 +186,7 @@ const LivePreview = () => {
   return (
     <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 font-inter backdrop-blur-sm duration-300'>
       {/* Header Control Bar */}
-      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 shadow-2xs'>
+      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-surface px-6 shadow-2xs'>
         <div className='flex items-center gap-3'>
           <div className='flex size-9 items-center justify-center rounded-xl border border-gray-3 bg-primary-3 text-primary-9 shadow-2xs'>
             <Icon height={18} name='tabler:eye' width={18} />
@@ -222,7 +222,7 @@ const LivePreview = () => {
             size='xs'
             value={deviceType}
             classNames={{
-              indicator: 'bg-white shadow-xs',
+              indicator: 'bg-surface-contrast shadow-xs',
               root: 'border border-gray-3 bg-gray-2 p-1',
             }}
             data={[
@@ -267,7 +267,7 @@ const LivePreview = () => {
       <div className='relative flex flex-1 items-center justify-center overflow-hidden bg-gray-2/40 p-4 sm:p-6'>
         <div
           className={cn(
-            'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xl transition-all duration-300',
+            'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-surface shadow-xl transition-all duration-300',
             deviceType === 'desktop' && 'max-w-4xl',
             deviceType === 'tablet' && 'max-w-[768px]',
             deviceType === 'mobile' && 'max-w-[380px]',
@@ -295,7 +295,7 @@ const LivePreview = () => {
             ) : (
               panels.map((panel, idx) => (
                 <div
-                  className='space-y-4 rounded-xl border border-gray-3 bg-white p-5 shadow-2xs'
+                  className='space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs'
                   key={panel.id}
                 >
                   {/* Section Title & Description Header */}
@@ -592,7 +592,7 @@ const LivePreviewDropdown = ({
       value={String(value) || null}
       classNames={{
         input:
-          'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+          'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
       }}
       onChange={(val) => onChange(val)}
     />
@@ -706,7 +706,7 @@ const LivePreviewChoiceGroup = ({
 
         {isSingle && specific.qrCodeEnabled && (
           <button
-            className='ml-auto flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9'
+            className='ml-auto flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-surface px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9'
             title='Simulate QR Code Scan'
             type='button'
             onClick={() => {
@@ -747,7 +747,7 @@ const LivePreviewChoiceGroup = ({
                 isAutoFlex ? 'flex-shrink-0' : '',
                 isSelected
                   ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
-                  : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                  : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
               )}
               onClick={() => handleToggle(opt)}
             >
@@ -757,7 +757,7 @@ const LivePreviewChoiceGroup = ({
                   isSingle ? 'rounded-full' : 'rounded-md',
                   isSelected
                     ? 'border-primary-9 bg-primary-9 text-white'
-                    : 'border-gray-4 bg-white',
+                    : 'border-gray-4 bg-surface',
                 )}
               >
                 {isSelected && (
@@ -780,7 +780,7 @@ const LivePreviewChoiceGroup = ({
           {isAddingOption ? (
             <div className='flex items-center gap-2'>
               <input
-                className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                className='h-8 flex-1 rounded-lg border border-gray-3 bg-surface px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                 placeholder='Type custom option...'
                 type='text'
                 value={newOptionText}
@@ -932,7 +932,7 @@ const renderPreviewInput = (
       return <Divider className='my-2' />
     case 'TEXT_BUILDER':
       return (
-        <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-white'>
+        <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-surface'>
           <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
             <Icon
               className='text-gray-10'
@@ -1072,7 +1072,7 @@ const renderPreviewInput = (
       }
 
       return (
-        <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
+        <div className='overflow-x-auto rounded-lg border border-gray-3 bg-surface'>
           <table className='w-full border-collapse text-left text-xs'>
             <thead className='border-b border-gray-3 bg-gray-2/60'>
               <tr>
@@ -1142,7 +1142,7 @@ const renderPreviewInput = (
             variant='default'
             classNames={{
               input:
-                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+                'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
             }}
             placeholder={
               field.settings.general.placeholder || 'Type your answer here...'
@@ -1169,7 +1169,7 @@ const renderPreviewInput = (
             variant='default'
             classNames={{
               input:
-                'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+                'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
             }}
             placeholder={
               field.settings.general.placeholder || 'Type your answer here...'
@@ -1183,7 +1183,7 @@ const renderPreviewInput = (
     case 'LONG_TEXT':
       return (
         <textarea
-          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-surface p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
           value={String(fieldValue)}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
@@ -1201,7 +1201,7 @@ const renderPreviewInput = (
           variant='default'
           classNames={{
             input:
-              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+              'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
@@ -1262,7 +1262,7 @@ const renderPreviewInput = (
           variant='default'
           classNames={{
             input:
-              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+              'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'

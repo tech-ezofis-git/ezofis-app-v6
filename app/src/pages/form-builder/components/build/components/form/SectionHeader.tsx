@@ -20,7 +20,7 @@ const SectionHeader = ({
   const { updatePanel } = useFormStore()
 
   return (
-    <div className='group/header relative flex flex-col gap-0.5 rounded-t-xl bg-white px-4 pt-3.5 pb-2 transition-all'>
+    <div className='group/header relative flex flex-col gap-0.5 rounded-t-xl bg-surface px-4 pt-3.5 pb-2 transition-all'>
       {/* Header: Title + Expand Toggle + Count Badge */}
       <div className='flex w-full items-center justify-between gap-3'>
         <div className='-ml-1.5 flex min-w-0 flex-1 items-center gap-1'>

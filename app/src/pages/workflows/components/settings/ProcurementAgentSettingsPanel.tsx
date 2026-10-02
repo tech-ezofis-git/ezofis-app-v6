@@ -159,7 +159,7 @@ export default function ProcurementAgentSettingsPanel({
                 updateNodeData('toleranceThreshold', val)
               }}
             />
-            <p className='text-gray-500 mt-1 text-[11px]'>
+            <p className='text-gray-9 mt-1 text-[11px]'>
               Maximum allowed variance between PO amount and vendor invoice.
             </p>
           </div>

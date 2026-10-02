@@ -119,7 +119,7 @@ const GeneralSettings = () => {
                     'flex size-8 items-center justify-center rounded-lg transition-transform group-hover:scale-105',
                     active
                       ? 'bg-primary-9 text-white shadow-xs'
-                      : 'border border-gray-4 bg-white text-gray-8',
+                      : 'border border-gray-4 bg-surface text-gray-8',
                   )}
                 >
                   <Icon height={16} name={t.icon} width={16} />
@@ -168,7 +168,7 @@ const GeneralSettings = () => {
                     'flex size-8 shrink-0 items-center justify-center rounded-lg border',
                     active
                       ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-3 bg-white text-gray-8',
+                      : 'border-gray-3 bg-surface text-gray-8',
                   )}
                 >
                   <Icon height={16} name={l.icon} width={16} />
@@ -205,7 +205,7 @@ const GeneralSettings = () => {
         <label className='text-13 font-medium text-gray-11'>
           Publish Option
         </label>
-        <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
+        <div className='bg-surface-muted flex rounded-lg border border-gray-3 p-1'>
           {[
             { id: 'DRAFT', label: 'Draft' },
             { id: 'PUBLISHED', label: 'Published' },
@@ -218,7 +218,7 @@ const GeneralSettings = () => {
                 className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
                   active
                     ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                    : 'text-gray-9 hover:bg-surface/50 hover:text-gray-12'
                 }`}
                 onClick={() => setPublishStatus(opt.id as PublishStatus)}
               >

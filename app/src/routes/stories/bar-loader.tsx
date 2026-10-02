@@ -59,7 +59,7 @@ function BarLoaderStory() {
           <p className='mb-6 text-14 text-gray-11'>
             Commonly placed at the very top of a container or content block.
           </p>
-          <div className='overflow-hidden rounded-xl border border-gray-3 bg-white dark:bg-black'>
+          <div className='overflow-hidden rounded-xl border border-gray-3 bg-surface'>
             {/* <BarLoader /> */}
             <div className='space-y-4 p-8'>
               <div className='h-6 w-1/3 rounded bg-gray-3 transition-colors duration-300 dark:bg-gray-8' />

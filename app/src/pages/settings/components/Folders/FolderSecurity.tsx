@@ -416,7 +416,7 @@ export default function FolderSecurity({
                     className='flex items-center gap-2'
                     key={`${item.type}-${item.id}`}
                   >
-                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
+                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-surface text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                       {initials}
                     </div>
                     <span className='text-xs font-semibold text-gray-13'>
@@ -570,7 +570,7 @@ export default function FolderSecurity({
                     className='flex items-center gap-2'
                     key={`${item.type}-${item.id}`}
                   >
-                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
+                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-surface text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                       {initials}
                     </div>
                     <span className='text-xs font-semibold text-gray-13'>

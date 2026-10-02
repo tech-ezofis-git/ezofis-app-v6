@@ -333,7 +333,7 @@ export default function ConditionSettingsPanel({
   ]
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <SettingsSection
           icon='lucide:settings-2'
@@ -351,8 +351,8 @@ export default function ConditionSettingsPanel({
                   className={cn(
                     'flex-1 rounded-md py-1.5 text-12 font-semibold transition-all',
                     mode === 'standard'
-                      ? 'ring-gray-200 bg-white text-primary-9 shadow-sm ring-1'
-                      : 'hover:bg-gray-100 text-gray-9',
+                      ? 'ring-gray-4 bg-surface text-primary-9 shadow-sm ring-1'
+                      : 'hover:bg-gray-3 text-gray-9',
                   )}
                   onClick={() => {
                     setMode('standard')
@@ -365,8 +365,8 @@ export default function ConditionSettingsPanel({
                   className={cn(
                     'flex-1 rounded-md py-1.5 text-12 font-semibold transition-all',
                     mode === 'advanced'
-                      ? 'ring-gray-200 bg-white text-primary-9 shadow-sm ring-1'
-                      : 'hover:bg-gray-100 text-gray-9',
+                      ? 'ring-gray-4 bg-surface text-primary-9 shadow-sm ring-1'
+                      : 'hover:bg-gray-3 text-gray-9',
                   )}
                   onClick={() => {
                     setMode('advanced')
@@ -418,15 +418,15 @@ export default function ConditionSettingsPanel({
                           {/* Logic Divider */}
                           {index > 0 && (
                             <div className='relative my-4 flex items-center justify-center'>
-                              <div className='bg-slate-100 absolute h-px w-full' />
-                              <span className='bg-slate-50 text-slate-400 relative rounded-full px-3 py-1 text-[10px] font-bold uppercase shadow-sm'>
+                              <div className='bg-gray-3 absolute h-px w-full' />
+                              <span className='bg-surface-muted text-gray-8 relative rounded-full px-3 py-1 text-[10px] font-bold uppercase shadow-sm'>
                                 {logicCombine === 'ALL' ? 'AND' : 'OR'}
                               </span>
                             </div>
                           )}
 
                           {/* Individual Rule Card */}
-                          <div className='group hover:border-slate-100/60 relative flex items-center justify-between gap-4 rounded-xl border border-transparent bg-white p-4 shadow-sm transition-all hover:shadow-md'>
+                          <div className='group hover:border-gray-3/60 relative flex items-center justify-between gap-4 rounded-xl border border-transparent bg-surface p-4 shadow-sm transition-all hover:shadow-md'>
                             <div className='flex flex-1 flex-col gap-3'>
                               {/* Field Selection */}
                               <InputSelect
@@ -464,10 +464,10 @@ export default function ConditionSettingsPanel({
                                 rightSectionWidth={60}
                                 value={row.value || ''}
                                 classNames={{
-                                  input: 'h-10 bg-white px-3 text-13',
+                                  input: 'h-10 bg-surface px-3 text-13',
                                 }}
                                 rightSection={
-                                  <div className='border-slate-100 flex h-full items-center border-l px-2.5'>
+                                  <div className='border-gray-3 flex h-full items-center border-l px-2.5'>
                                     <InputSwitch
                                       checked={!!row.isAction}
                                       onChange={(v: boolean) =>
@@ -488,7 +488,7 @@ export default function ConditionSettingsPanel({
 
                             {/* Removal Action */}
                             <button
-                              className='text-slate-300 hover:text-red-500 hover:bg-red-50 shrink-0 rounded-lg p-2 transition-colors'
+                              className='text-gray-6 hover:text-red-9 hover:bg-red-2 shrink-0 rounded-lg p-2 transition-colors'
                               title='Remove Condition'
                               onClick={() => removeCondition(row.id)}
                             >
@@ -504,7 +504,7 @@ export default function ConditionSettingsPanel({
 
                     <div className='pt-1'>
                       <button
-                        className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all duration-300 hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+                        className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all duration-300 hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
                         onClick={addCondition}
                       >
                         <Icon className='h-4 w-4' name='lucide:plus' />
@@ -598,7 +598,7 @@ export default function ConditionSettingsPanel({
                             />
                           </div>
                           <button
-                            className='text-gray-400 hover:text-red-500 p-1.5 transition-colors'
+                            className='text-gray-8 hover:text-red-9 p-1.5 transition-colors'
                             title='Remove Mapping'
                             onClick={() => removeMapping(row.id)}
                           >

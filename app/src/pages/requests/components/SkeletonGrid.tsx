@@ -138,7 +138,7 @@ const SkeletonCard = ({
 
             {/* Text & Pill Placeholders */}
             <div className='flex w-full flex-col gap-2'>
-              <div className='bg-slate-200/80 h-4 w-24 rounded' /> {/* Label */}
+              <div className='bg-gray-4/80 h-4 w-24 rounded' /> {/* Label */}
               <div
                 className={cn('h-5 w-16 rounded-full opacity-40', t.pillBg)}
               />{' '}
@@ -148,16 +148,16 @@ const SkeletonCard = ({
         </div>
 
         {/* Metric Value */}
-        <div className='bg-slate-200/80 mb-3 h-8 w-1/3 rounded' />
+        <div className='bg-gray-4/80 mb-3 h-8 w-1/3 rounded' />
 
         {/* Sub-label Row */}
         <div className='mb-4 flex items-center gap-2'>
-          <div className='bg-slate-200 size-4 rounded-full' />
-          <div className='bg-slate-200/60 h-3 w-1/2 rounded' />
+          <div className='bg-gray-4 size-4 rounded-full' />
+          <div className='bg-gray-4/60 h-3 w-1/2 rounded' />
         </div>
 
         {/* Progress Bar */}
-        <div className='bg-slate-100 h-2 w-full overflow-hidden rounded-full'>
+        <div className='bg-gray-3 h-2 w-full overflow-hidden rounded-full'>
           <div
             className={cn('h-full rounded-full opacity-30', t.bar)}
             style={{ width: '60%' }}

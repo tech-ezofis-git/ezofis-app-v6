@@ -176,7 +176,7 @@ const { table } = useDataTable({ columns, rows, state })
             A live demonstration showing server-side integration, custom badges,
             and action menus.
           </p>
-          <div className='mt-8 overflow-hidden rounded-xl border border-gray-3 bg-white'>
+          <div className='mt-8 overflow-hidden rounded-xl border border-gray-3 bg-surface'>
             <div className='border-b border-gray-3 bg-gray-1 p-4'>
               <p className='text-13 font-medium text-gray-12'>
                 User Management System

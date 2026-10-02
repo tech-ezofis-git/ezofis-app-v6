@@ -1,15 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
+import type { ComponentProps } from 'react'
 import type {
   Question,
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
 import { getRepositoryItemFilterFields } from '@/api/v6/folder/folder'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
-import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import FormulaBuilder from './FormulaBuilder'
+
+function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
+  return <InputSelectBase searchable wrapOptions {...props} />
+}
 
 const OPTIONS_SOURCE = {
   API: 2,

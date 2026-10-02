@@ -32,7 +32,7 @@ export default function ChecklistTab({
     setItems(items.map((i) => (i.id === id ? { ...i, ...patch } : i)))
 
   return (
-    <div className='space-y-3 rounded-xl bg-[#F8FAFC] p-3'>
+    <div className='space-y-3 rounded-xl bg-surface-muted p-3'>
       <div className='flex items-center gap-2.5 px-1'>
         <Icon className='h-4 w-4 text-primary-9' name='lucide:list-checks' />
         <div className='flex flex-col space-y-1'>
@@ -48,7 +48,7 @@ export default function ChecklistTab({
       <div className='space-y-2'>
         {items.map((item) => (
           <div
-            className='flex items-center gap-2 rounded-xl bg-white p-3 shadow-sm'
+            className='flex items-center gap-2 rounded-xl bg-surface p-3 shadow-sm'
             key={item.id}
           >
             <InputText
@@ -67,7 +67,7 @@ export default function ChecklistTab({
               />
             </div>
             <button
-              className='text-gray-400 hover:text-red-500 shrink-0 p-1 transition-colors'
+              className='text-gray-8 hover:text-red-9 shrink-0 p-1 transition-colors'
               title='Remove item'
               onClick={() => removeItem(item.id)}
             >
@@ -78,7 +78,7 @@ export default function ChecklistTab({
       </div>
 
       <button
-        className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+        className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
         onClick={addItem}
       >
         <Icon className='h-4 w-4' name='lucide:plus' />

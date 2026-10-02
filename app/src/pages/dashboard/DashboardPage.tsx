@@ -456,7 +456,7 @@ const DashboardPage = () => {
                 </>
               ) : isCustomerDocuments ? (
                 <iframe
-                  className='w-full flex-1 rounded-xl border-0 bg-white shadow-xs'
+                  className='w-full flex-1 rounded-xl border-0 bg-surface shadow-xs'
                   srcDoc={customerDocumentsHtml}
                   title='Customer Documents Dashboard'
                 />

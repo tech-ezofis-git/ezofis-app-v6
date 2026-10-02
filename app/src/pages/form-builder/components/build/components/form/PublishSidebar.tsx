@@ -77,7 +77,7 @@ const PublishSidebar = () => {
   return (
     <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-2 bg-surface-primary font-inter shadow-2xl duration-500'>
       {/* Header */}
-      <div className='flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
+      <div className='flex items-center justify-between border-b border-gray-2 bg-surface px-4 py-3'>
         <div className='flex items-center gap-2.5'>
           <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
             <Icon height={16} name='tabler:rocket' width={16} />
@@ -105,7 +105,7 @@ const PublishSidebar = () => {
             size='sm'
             value={name}
             classNames={{
-              input: 'bg-gray-50 h-10 border-gray-2 focus:bg-white',
+              input: 'bg-surface-muted h-10 border-gray-2 focus:bg-surface',
             }}
             label={
               <div className='mb-1 text-xs font-bold text-gray-12'>
@@ -115,7 +115,7 @@ const PublishSidebar = () => {
             onChange={(e) => setName(e.target.value)}
           />
           <Textarea
-            classNames={{ input: 'bg-gray-50 border-gray-2 focus:bg-white' }}
+            classNames={{ input: 'bg-surface-muted border-gray-2 focus:bg-surface' }}
             minRows={2}
             placeholder='Internal notes for this form...'
             size='sm'
@@ -145,7 +145,7 @@ const PublishSidebar = () => {
                     'flex items-center gap-3 rounded-xl border p-3 transition-all duration-200',
                     isActive
                       ? 'border-accent-primary bg-accent-soft/5 shadow-sm'
-                      : 'hover:bg-gray-50 border-gray-2 bg-surface-primary hover:border-gray-3',
+                      : 'hover:bg-surface-hover border-gray-2 bg-surface-primary hover:border-gray-3',
                   )}
                   onClick={() => setLayout(l.id as any)}
                 >
@@ -154,7 +154,7 @@ const PublishSidebar = () => {
                       'flex size-8 shrink-0 items-center justify-center rounded-lg border',
                       isActive
                         ? 'border-accent-primary bg-accent-primary text-white'
-                        : 'bg-gray-50 text-gray-400 border-gray-2',
+                        : 'bg-surface-muted text-gray-8 border-gray-2',
                     )}
                   >
                     <Icon height={16} name={l.icon} width={16} />
@@ -193,7 +193,7 @@ const PublishSidebar = () => {
           </div>
           <div className='flex items-center gap-2 text-[11px] font-medium text-gray-7'>
             <Icon
-              className='text-green-500'
+              className='text-green-9'
               height={12}
               name='lucide:check-circle'
               width={12}
@@ -205,7 +205,7 @@ const PublishSidebar = () => {
           </div>
           <div className='flex items-center gap-2 text-[11px] font-medium text-gray-7'>
             <Icon
-              className='text-green-500'
+              className='text-green-9'
               height={12}
               name='lucide:check-circle'
               width={12}
@@ -216,7 +216,7 @@ const PublishSidebar = () => {
       </div>
 
       {/* Footer */}
-      <div className='bg-gray-50 shrink-0 space-y-3 border-t border-gray-2 p-5'>
+      <div className='bg-surface-muted shrink-0 space-y-3 border-t border-gray-2 p-5'>
         <Group gap='sm' grow>
           <Button
             className='h-11 text-[11px] font-bold tracking-wider uppercase'
@@ -243,11 +243,11 @@ const PublishSidebar = () => {
           </Button>
         </Group>
         <div className='flex items-center justify-center gap-2 opacity-50'>
-          <div className='bg-gray-400 size-1 rounded-full' />
+          <div className='bg-gray-8 size-1 rounded-full' />
           <div className='text-[9px] font-black text-gray-5 uppercase'>
             v1.0.4 Staging
           </div>
-          <div className='bg-gray-400 size-1 rounded-full' />
+          <div className='bg-gray-8 size-1 rounded-full' />
         </div>
       </div>
 
