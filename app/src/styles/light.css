@@ -254,6 +254,7 @@
   --surface: white;
   --surface-raised: white;
   --surface-muted: var(--gray-2);
+  --surface-contrast: white;
   --surface-hover: var(--gray-2);
   --surface-overlay: var(--gray-0);
 

@@ -83,7 +83,7 @@ function hasData(obj: any): boolean {
 
 const BulletIcon = () => (
   <svg
-    className='mt-0.5 h-4 w-4 shrink-0 animate-pulse text-[#00a2c7]'
+    className='mt-0.5 h-4 w-4 shrink-0 animate-pulse text-secondary-11'
     fill='none'
     stroke='currentColor'
     strokeWidth='2'
@@ -876,7 +876,7 @@ export default function DashboardCharts() {
         </div>
         <div className='relative z-10 flex flex-wrap items-center gap-6'>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
-            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
               {t`Total AP`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
@@ -889,7 +889,7 @@ export default function DashboardCharts() {
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
-            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
               {t`Overdue`}
             </span>
             <span
@@ -907,7 +907,7 @@ export default function DashboardCharts() {
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
-            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
               {t`Open Invoices`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
@@ -919,7 +919,7 @@ export default function DashboardCharts() {
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
-            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+            <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
               {t`DPO`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
@@ -1222,7 +1222,7 @@ export default function DashboardCharts() {
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {profitMarginKpi?.label || 'Profit Margin'}
                   </span>
                   <span className='text-15 font-semibold text-cyan-9'>
@@ -1234,7 +1234,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {next4WeeksKpi?.label || 'Next 4 Weeks'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -1246,7 +1246,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {peakWeekKpi?.label || 'Peak Week'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -1471,7 +1471,7 @@ export default function DashboardCharts() {
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {activeSuppliersKpi?.label || 'Active Suppliers'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -1483,7 +1483,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {highRiskSuppliersKpi?.label || 'High Risk'}
                   </span>
                   <span className='text-15 font-semibold text-red-9'>
@@ -1495,7 +1495,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {top3ConcentrationKpi?.label || 'Top-3 Concentration'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -1809,7 +1809,7 @@ export default function DashboardCharts() {
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {aging90PlusKpi?.label || '90+ Days'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -1821,7 +1821,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {criticalExceptionsKpi?.label || 'Critical Exceptions'}
                   </span>
                   <span className='text-15 font-semibold text-red-9'>
@@ -1833,7 +1833,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {approvalRateKpi?.label || 'Approval Rate'}
                   </span>
                   <span className='text-success text-15 font-semibold'>
@@ -1948,11 +1948,11 @@ export default function DashboardCharts() {
                             {row.dept}
                           </div>
                           {row.cells.map((val, idx) => {
-                            let color = 'bg-[#F1E1FC]'
-                            if (val > 7) color = 'bg-[#643094] text-white'
-                            else if (val > 4) color = 'bg-[#8300e6] text-white'
+                            let color = 'bg-primary-4'
+                            if (val > 7) color = 'bg-primary-10 text-white'
+                            else if (val > 4) color = 'bg-primary-9 text-white'
                             else if (val > 2)
-                              color = 'bg-[#EEE6FD] text-primary-9'
+                              color = 'bg-primary-3 text-primary-9'
                             return (
                               <div
                                 key={idx}
@@ -2112,7 +2112,7 @@ export default function DashboardCharts() {
                 </div>
                 <div className='flex flex-wrap items-center gap-6'>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                       {t`Due Today`}
                     </span>
                     <span className='text-15 font-semibold text-cyan-9'>
@@ -2120,7 +2120,7 @@ export default function DashboardCharts() {
                     </span>
                   </div>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                       {t`Cash This Week`}
                     </span>
                     <span className='text-15 font-semibold text-primary-9'>
@@ -2128,7 +2128,7 @@ export default function DashboardCharts() {
                     </span>
                   </div>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                    <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                       {t`Queue Size`}
                     </span>
                     <span className='text-15 font-semibold text-primary-9'>
@@ -2283,7 +2283,7 @@ export default function DashboardCharts() {
                                   </td>
                                 </tr>
                                 {isExpanded && (
-                                  <tr className='bg-primary-3/10 dark:bg-gray-12/30'>
+                                  <tr className='bg-primary-3/10'>
                                     <td
                                       className='border-b border-border-default p-4'
                                       colSpan={9}
@@ -2467,7 +2467,7 @@ export default function DashboardCharts() {
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Total Invoices`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -2475,7 +2475,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Touchless Rate`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -2483,7 +2483,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Avg Approval Days`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -2587,11 +2587,11 @@ export default function DashboardCharts() {
                             {row.user}
                           </div>
                           {row.cells.map((val, idx) => {
-                            let color = 'bg-[#F1E1FC]'
-                            if (val > 7) color = 'bg-[#643094] text-white'
-                            else if (val > 4) color = 'bg-[#8300e6] text-white'
+                            let color = 'bg-primary-4'
+                            if (val > 7) color = 'bg-primary-10 text-white'
+                            else if (val > 4) color = 'bg-primary-9 text-white'
                             else if (val > 2)
-                              color = 'bg-[#EEE6FD] text-primary-9'
+                              color = 'bg-primary-3 text-primary-9'
                             return (
                               <div
                                 key={idx}
@@ -2699,7 +2699,7 @@ export default function DashboardCharts() {
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Overdue Amount`}
                   </span>
                   <span className='text-15 font-semibold text-red-9'>
@@ -2707,7 +2707,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Duplicates Value`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
@@ -2715,7 +2715,7 @@ export default function DashboardCharts() {
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {t`Suppliers to Chase`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>

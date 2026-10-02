@@ -24,6 +24,9 @@ const QualifyAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const QuoteAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/QuoteAgentNodeSettings'),
 )
+const ClassificationAgentNodeSettings = lazy<
+  React.ComponentType<{ node: Node }>
+>(() => import('./settings/ClassificationAgentNodeSettings'))
 const OCRAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/OCRAgentNodeSettings'),
 )
@@ -167,7 +170,7 @@ function PropertiesPanel({
     }
 
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {/* Header */}
         <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3'>
           <div className='flex items-center gap-2'>
@@ -248,7 +251,7 @@ function PropertiesPanel({
         {isEditingLabel ? (
           <div className='flex flex-1 items-center gap-1'>
             <input
-              className='min-w-0 flex-1 rounded border border-primary-5 bg-white px-1 text-15/5 font-semibold text-gray-13 focus:ring-1 focus:ring-primary-5 focus:outline-none'
+              className='min-w-0 flex-1 rounded border border-primary-5 bg-surface px-1 text-15/5 font-semibold text-gray-13 focus:ring-1 focus:ring-primary-5 focus:outline-none'
               ref={inputRef}
               type='text'
               value={editedLabel}
@@ -344,7 +347,7 @@ function PropertiesPanel({
   )
 
   const CommonFooter = (
-    <div className='flex items-center justify-end gap-3 border-t border-gray-3 bg-white px-6 py-4'>
+    <div className='flex items-center justify-end gap-3 border-t border-gray-3 bg-surface px-6 py-4'>
       <Button
         className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
         variant='ghost'
@@ -382,7 +385,7 @@ function PropertiesPanel({
   // Render AP Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.AP_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -401,7 +404,7 @@ function PropertiesPanel({
   // Render FTP Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.FTP_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -420,7 +423,7 @@ function PropertiesPanel({
   // Render Google Drive settings panel
   if (toolType === NODE_TOOL_TYPE.GOOGLE_DRIVE) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -439,7 +442,7 @@ function PropertiesPanel({
   // Render OneDrive settings panel
   if (toolType === NODE_TOOL_TYPE.ONEDRIVE) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -458,7 +461,7 @@ function PropertiesPanel({
   // Render OCR Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.OCR_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -477,7 +480,7 @@ function PropertiesPanel({
   // Render KYC Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.KYC_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -496,7 +499,7 @@ function PropertiesPanel({
   // Render Procurement Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -515,7 +518,7 @@ function PropertiesPanel({
   // Render Document Generate Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -534,7 +537,7 @@ function PropertiesPanel({
   // Render Qualify Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.QUALIFY_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -553,7 +556,7 @@ function PropertiesPanel({
   // Render Quote Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.QUOTE_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -569,10 +572,29 @@ function PropertiesPanel({
     )
   }
 
+  // Render Classification Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.CLASSIFICATION_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <ClassificationAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
   // Render Condition node settings panel
   if (toolType === NODE_TOOL_TYPE.CONDITION) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -594,7 +616,7 @@ function PropertiesPanel({
     toolType === NODE_TOOL_TYPE.FORM_SUBMISSION
   ) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -615,7 +637,7 @@ function PropertiesPanel({
     toolType === NODE_TOOL_TYPE.OUTLOOK
   ) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -632,7 +654,7 @@ function PropertiesPanel({
   }
 
   return (
-    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
       {NodeHeader}
 
       {/* Content */}

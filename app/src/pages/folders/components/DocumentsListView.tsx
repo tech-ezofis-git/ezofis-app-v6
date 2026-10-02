@@ -996,7 +996,7 @@ export function DocumentsListView({
               ) : (
                 <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
                   <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
-                    <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
+                    <div className='flex h-14 w-14 items-center justify-center rounded-full bg-surface'>
                       <DynamicIcon
                         className='h-8 w-8 text-gray-10'
                         name='folder'

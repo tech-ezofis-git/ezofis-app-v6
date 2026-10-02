@@ -2445,7 +2445,7 @@ export function DocumentSigningPage({
                             position='top'
                           >
                             <div
-                              className={`relative w-[348px] max-w-full overflow-hidden rounded-lg border border-gray-3 bg-white ${styles.penCursor}`}
+                              className={`relative w-[348px] max-w-full overflow-hidden rounded-lg border border-gray-3 bg-surface ${styles.penCursor}`}
                             >
                               {!hasDrawnStroke ? (
                                 <div className='pointer-events-none absolute inset-0 z-[1] flex flex-col items-center justify-center gap-2 px-4 text-center'>

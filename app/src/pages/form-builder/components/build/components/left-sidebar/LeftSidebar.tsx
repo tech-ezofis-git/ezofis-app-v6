@@ -126,7 +126,7 @@ const SortableSectionItem = ({
       {...(isConfirmingDelete ? {} : listeners)}
       className={cn(
         'group relative flex cursor-default flex-col gap-0.5 select-none',
-        isDragging && 'z-50 scale-102 rounded-lg bg-white opacity-50 shadow-lg',
+        isDragging && 'z-50 scale-102 rounded-lg bg-surface opacity-50 shadow-lg',
       )}
       onMouseLeave={handleMouseLeave}
     >
@@ -174,7 +174,7 @@ const SortableSectionItem = ({
                 Delete
               </button>
               <button
-                className='flex-1 rounded-lg border border-gray-3 bg-white py-1.5 text-xs font-bold text-gray-12 transition-all hover:bg-gray-1 active:scale-95'
+                className='flex-1 rounded-lg border border-gray-3 bg-surface py-1.5 text-xs font-bold text-gray-12 transition-all hover:bg-gray-1 active:scale-95'
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsConfirmingDelete(false)
@@ -432,7 +432,7 @@ const LeftSidebar = () => {
   return (
     <div
       className={cn(
-        'animate-in slide-in-from-left relative flex h-full shrink-0 flex-col border-r border-gray-3 bg-white font-inter transition-all duration-300',
+        'animate-in slide-in-from-left relative flex h-full shrink-0 flex-col border-r border-gray-3 bg-surface font-inter transition-all duration-300',
         isLeftSidebarCollapsed ? 'w-14' : 'w-[270px]',
       )}
     >
@@ -444,7 +444,7 @@ const LeftSidebar = () => {
           <button
             className={cn(
               'absolute top-1/2 -right-3 z-50 -translate-y-1/2',
-              'flex size-6 items-center justify-center rounded-full border border-gray-3 bg-white text-gray-10 shadow-xs',
+              'flex size-6 items-center justify-center rounded-full border border-gray-3 bg-surface text-gray-10 shadow-xs',
               'group transition-all hover:border-primary-9 hover:text-primary-9 hover:shadow-sm active:scale-90',
             )}
             title={
@@ -467,7 +467,7 @@ const LeftSidebar = () => {
           {/* Search Box - Visible & High Contrast */}
           <div
             className={cn(
-              'sticky top-0 z-10 border-b border-gray-3 bg-white p-3 transition-all',
+              'sticky top-0 z-10 border-b border-gray-3 bg-surface p-3 transition-all',
               isLeftSidebarCollapsed
                 ? 'flex justify-center px-2 py-3'
                 : 'px-3 py-2.5',
@@ -500,7 +500,7 @@ const LeftSidebar = () => {
                   )}
                 />
                 <input
-                  className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
+                  className='w-full rounded-lg border border-gray-3 bg-surface py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
                   placeholder='Search sections or fields...'
                   type='text'
                   value={searchQuery}

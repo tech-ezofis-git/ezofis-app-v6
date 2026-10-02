@@ -11,7 +11,7 @@ const InputRadio = forwardRef<HTMLInputElement, Props>(
       inner: 'size-5 flex items-center justify-center',
       label: 'pl-2 text-13 font-medium text-gray-12',
       radio: cn(
-        'border-slate-300 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50',
+        'border-gray-6 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50',
         Boolean(error) && 'border-red-9',
       ),
     }

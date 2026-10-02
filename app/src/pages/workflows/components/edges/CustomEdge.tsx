@@ -114,7 +114,7 @@ const CustomEdge = ({
           onMouseLeave={handleMouseLeave}
         >
           <button
-            className='flex h-9 w-9 items-center justify-center rounded-full border-2 border-primary-3 bg-white text-primary-9 shadow-md transition-all hover:scale-125 hover:rotate-90 hover:border-primary-9 hover:bg-primary-1'
+            className='flex h-9 w-9 items-center justify-center rounded-full border-2 border-primary-3 bg-surface text-primary-9 shadow-md transition-all hover:scale-125 hover:rotate-90 hover:border-primary-9 hover:bg-primary-1'
             title='Add step'
             onClick={onAddClick}
           >
@@ -136,7 +136,7 @@ const CustomEdge = ({
           onMouseLeave={handleMouseLeave}
         >
           <button
-            className='text-gray-500 flex h-6 w-6 items-center justify-center rounded-full border border-gray-3 bg-white shadow-sm transition-all hover:scale-110 hover:border-red-9 hover:bg-red-1 hover:text-red-9'
+            className='text-gray-9 flex h-6 w-6 items-center justify-center rounded-full border border-gray-3 bg-surface shadow-sm transition-all hover:scale-110 hover:border-red-9 hover:bg-red-1 hover:text-red-9'
             title='Delete connection'
             onClick={onDeleteClick}
           >

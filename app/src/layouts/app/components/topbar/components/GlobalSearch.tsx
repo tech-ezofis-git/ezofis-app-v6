@@ -579,8 +579,8 @@ const GlobalSearch = () => {
                                 className={cn(
                                   'flex size-8 shrink-0 items-center justify-center rounded-lg border border-gray-4 bg-surface shadow-sm transition-all',
                                   hit.pinned
-                                    ? 'border-primary-4 bg-white text-primary-9'
-                                    : 'text-gray-11 group-hover:border-gray-6 group-hover:bg-white',
+                                    ? 'border-primary-4 bg-surface text-primary-9'
+                                    : 'text-gray-11 group-hover:border-gray-6 group-hover:bg-surface',
                                 )}
                               >
                                 <Icon className='size-4' name={iconName} />
@@ -629,9 +629,9 @@ const GlobalSearch = () => {
                                 </div>
                                 {hit?.matchSource && (
                                   <div className='mt-2 flex items-center gap-2'>
-                                    <div className='size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
+                                    <div className='size-[5px] shrink-0 rounded-full bg-secondary-9' />
 
-                                    <div className='text-slate-500 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                                    <div className='text-gray-9 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
                                       <span className='font-medium text-gray-11'>
                                         {query}
                                       </span>{' '}
@@ -646,9 +646,9 @@ const GlobalSearch = () => {
                                 {hit.found && hit.found.length > 0 && (
                                   <div className='flex flex-col gap-1.5'>
                                     <div className='flex items-start gap-2'>
-                                      <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-[#00bcd4]' />
+                                      <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-secondary-9' />
                                       <div
-                                        className='text-slate-600 line-clamp-1 text-[12.5px] leading-relaxed hover:line-clamp-none'
+                                        className='text-gray-10 line-clamp-1 text-[12.5px] leading-relaxed hover:line-clamp-none'
                                         dangerouslySetInnerHTML={{
                                           __html: foundLine(
                                             hit.found[0],

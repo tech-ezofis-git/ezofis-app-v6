@@ -61,7 +61,7 @@ export const MenuListEmptyPanel = ({
   onPrimaryAction,
   onSecondaryAction,
 }: MenuListEmptyPanelProps) => (
-  <div className='flex min-h-0 w-full flex-1 rounded-xl border border-[var(--gray-3)] bg-white shadow-sm'>
+  <div className='flex min-h-0 w-full flex-1 rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
     <ListEmptyState
       containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
       page={page}

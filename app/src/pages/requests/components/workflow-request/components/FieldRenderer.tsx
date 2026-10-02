@@ -146,7 +146,7 @@ const ChoiceRadioGroupField = ({
 
           {specific.qrCodeEnabled && !readOnly && (
             <button
-              className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-8 shadow-2xs transition-colors hover:border-primary-5 hover:text-primary-9'
+              className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-surface px-2 py-0.5 text-[11px] font-medium text-gray-8 shadow-2xs transition-colors hover:border-primary-5 hover:text-primary-9'
               title={t`Scan QR code to select`}
               type='button'
               onClick={() => {
@@ -205,7 +205,7 @@ const ChoiceRadioGroupField = ({
                       : 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
                     : readOnly
                       ? 'border-gray-3 bg-gray-3 text-gray-10'
-                      : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                      : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
                 )}
                 onClick={() => !readOnly && onChange(opt)}
               >
@@ -214,7 +214,7 @@ const ChoiceRadioGroupField = ({
                     'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
                     isSelected
                       ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-white',
+                      : 'border-gray-4 bg-surface',
                   )}
                 >
                   {isSelected && (
@@ -233,7 +233,7 @@ const ChoiceRadioGroupField = ({
               {isAddingOption ? (
                 <div className='flex items-center gap-2'>
                   <input
-                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-surface px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                     placeholder={t`Type custom option...`}
                     type='text'
                     value={newOptionText}
@@ -409,7 +409,7 @@ const ChoiceCheckboxGroupField = ({
                       : 'border-primary-9 bg-primary-9 font-semibold text-white shadow-2xs'
                     : readOnly
                       ? 'border-gray-3 bg-gray-3 text-gray-10'
-                      : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                      : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
                 )}
                 onClick={() => handleToggle(opt)}
               >
@@ -418,7 +418,7 @@ const ChoiceCheckboxGroupField = ({
                     'flex size-4 shrink-0 items-center justify-center rounded border transition-colors',
                     isSelected
                       ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-white',
+                      : 'border-gray-4 bg-surface',
                   )}
                 >
                   {isSelected && (
@@ -437,7 +437,7 @@ const ChoiceCheckboxGroupField = ({
               {isAddingOption ? (
                 <div className='flex items-center gap-2'>
                   <input
-                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-surface px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                     placeholder={t`Type custom option...`}
                     type='text'
                     value={newOptionText}

@@ -29,7 +29,7 @@ export default function DashboardHtmlPreview({
       role='region'
       className={
         className ||
-        'min-h-[640px] w-full overflow-auto rounded-[16px] border border-border-default bg-white p-3'
+        'min-h-[640px] w-full overflow-auto rounded-[16px] border border-border-default bg-surface p-3'
       }
     />
   )

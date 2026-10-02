@@ -41,7 +41,7 @@ export default function InputSegmentedControl({
         role='tablist'
       >
         <motion.div
-          className='pointer-events-none absolute inset-y-0.5 rounded-full border border-gray-3 bg-surface-primary shadow-sm'
+          className='pointer-events-none absolute inset-y-0.5 rounded-full border border-gray-3 bg-surface-contrast shadow-sm'
           initial={false}
           transition={{ damping: 32, stiffness: 420, type: 'spring' }}
           aria-hidden

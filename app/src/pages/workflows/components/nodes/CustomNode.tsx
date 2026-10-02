@@ -55,7 +55,7 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
           )}
         >
           <button
-            className='flex h-8 w-8 items-center justify-center rounded-full border border-gray-2 bg-white text-gray-8 shadow-md transition-colors hover:border-red-4 hover:bg-red-1 hover:text-red-9'
+            className='flex h-8 w-8 items-center justify-center rounded-full border border-gray-2 bg-surface text-gray-8 shadow-md transition-colors hover:border-red-4 hover:bg-red-1 hover:text-red-9'
             title='Delete Node'
             onClick={handleDelete}
           >
@@ -90,7 +90,7 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
         className={cn(
           'group/node relative min-w-[280px] overflow-visible rounded-xl border-2 bg-surface-raised shadow-sm transition-all duration-300',
           isActive &&
-            'border-green-500 ring-green-200 z-10 scale-[1.05] shadow-xl ring-4',
+            'border-green-9 ring-green-4 z-10 scale-[1.05] shadow-xl ring-4',
           selected &&
             !isActive &&
             'z-10 scale-[1.02] border-primary-9 shadow-lg ring-4 ring-primary-3',
@@ -133,7 +133,7 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
               (data.icon as string)?.startsWith('logos:') ||
                 (data.icon as string)?.startsWith('vscode-icons:')
                 ? 'bg-transparent'
-                : 'border border-gray-2 bg-white shadow-inner',
+                : 'border border-gray-2 bg-surface shadow-inner',
             )}
             style={{
               backgroundColor:

@@ -76,7 +76,7 @@ const QuestionCard = ({
           : 'cursor-pointer hover:bg-gray-1/60',
         isActive
           ? 'border-primary-9 bg-primary-3/30 shadow-xs ring-1 ring-primary-9'
-          : 'border-gray-3 bg-white hover:border-gray-4 hover:shadow-2xs',
+          : 'border-gray-3 bg-surface hover:border-gray-4 hover:shadow-2xs',
       )}
       style={{
         padding: '0',
@@ -165,7 +165,7 @@ const QuestionCard = ({
                   return (
                     <div className='relative flex items-center rounded-full border border-gray-2 bg-gray-1 p-0.5'>
                       <div
-                        className='absolute top-0.5 bottom-0.5 rounded-full bg-white shadow-sm transition-all duration-300 ease-out'
+                        className='absolute top-0.5 bottom-0.5 rounded-full bg-surface shadow-sm transition-all duration-300 ease-out'
                         style={{
                           left: `calc(${(activeIndex * 100) / sizeOptions.length}% + 1px)`,
                           width: `calc(${100 / sizeOptions.length}% - 2px)`,
@@ -237,7 +237,7 @@ const QuestionCard = ({
                   </Tooltip>
 
                   <Menu.Dropdown
-                    className='rounded-xl border border-gray-3 bg-white p-1 shadow-lg'
+                    className='rounded-xl border border-gray-3 bg-surface p-1 shadow-lg'
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Menu.Item
@@ -308,29 +308,29 @@ const QuestionCard = ({
           {question.type === 'TEXT_BUILDER' ? (
             <div
               className={cn(
-                'w-full overflow-hidden rounded-xl border bg-white transition-all duration-300',
+                'w-full overflow-hidden rounded-xl border bg-surface transition-all duration-300',
                 isActive
                   ? 'border-accent-primary/60 shadow-sm'
                   : 'border-gray-2 group-hover:border-gray-3',
               )}
             >
               {/* Toolbar Simulation */}
-              <div className='bg-gray-50/50 flex items-center gap-1 border-b border-gray-1 p-1.5'>
+              <div className='bg-surface-muted/50 flex items-center gap-1 border-b border-gray-1 p-1.5'>
                 <div className='mr-1 flex items-center gap-0.5 border-r border-gray-2 pr-1'>
                   <Icon
-                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-surface'
                     height={14}
                     name='lucide:bold'
                     width={14}
                   />
                   <Icon
-                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-surface'
                     height={14}
                     name='lucide:italic'
                     width={14}
                   />
                   <Icon
-                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-surface'
                     height={14}
                     name='lucide:underline'
                     width={14}
@@ -338,19 +338,19 @@ const QuestionCard = ({
                 </div>
                 <div className='mr-1 flex items-center gap-0.5 border-r border-gray-2 pr-1'>
                   <Icon
-                    className='rounded bg-white p-0.5 text-gray-8 shadow-xs'
+                    className='rounded bg-surface p-0.5 text-gray-8 shadow-xs'
                     height={14}
                     name='lucide:align-left'
                     width={14}
                   />
                   <Icon
-                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-surface'
                     height={14}
                     name='lucide:align-center'
                     width={14}
                   />
                   <Icon
-                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-surface'
                     height={14}
                     name='lucide:list'
                     width={14}
@@ -368,7 +368,7 @@ const QuestionCard = ({
               <div className='flex min-h-[80px] flex-col gap-1.5 p-2.5'>
                 <div className='flex items-center gap-1.5 text-[13px] text-gray-12'>
                   <span>Hello</span>
-                  <div className='border-blue-200 bg-blue-50 text-blue-700 flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-bold shadow-xs'>
+                  <div className='border-blue-4 bg-blue-2 text-blue-11 flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-bold shadow-xs'>
                     <Icon height={10} name='lucide:user' width={10} />
                     FULL_NAME
                   </div>
@@ -386,8 +386,8 @@ const QuestionCard = ({
               className={cn(
                 'w-full resize-none rounded-lg border p-3 text-[13px] font-medium text-gray-12 transition-colors outline-none placeholder:font-normal placeholder:text-gray-8',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
               placeholder={
                 question.settings.general.placeholder ||
@@ -405,7 +405,7 @@ const QuestionCard = ({
                     className={cn(
                       'cursor-pointer transition-all duration-300',
                       i <= 3
-                        ? 'text-yellow-400 fill-yellow-400'
+                        ? 'text-yellow-8 fill-yellow-8'
                         : 'text-gray-2',
                     )}
                     name={
@@ -430,7 +430,7 @@ const QuestionCard = ({
                       'flex aspect-square max-w-[40px] flex-1 cursor-pointer items-center justify-center rounded-lg border text-[12px] font-bold shadow-xs transition-all duration-300',
                       i === 8
                         ? 'z-10 scale-110 border-accent-primary bg-accent-primary text-white shadow-lg'
-                        : 'border-gray-2 bg-white text-gray-6 hover:border-gray-3',
+                        : 'border-gray-2 bg-surface text-gray-6 hover:border-gray-3',
                     )}
                   >
                     {i}
@@ -447,7 +447,7 @@ const QuestionCard = ({
               </div>
             </div>
           ) : (question.type as string) === 'SIGNATURE' ? (
-            <div className='bg-gray-50/30 group/sig flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-gray-2 p-6 transition-all hover:border-accent-soft hover:bg-white'>
+            <div className='bg-surface-muted/30 group/sig flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-gray-2 p-6 transition-all hover:border-accent-soft hover:bg-surface'>
               <div className='relative flex w-full flex-col items-center'>
                 <span className='font-cursive pointer-events-none -rotate-2 transform text-[32px] text-gray-8 opacity-60 select-none'>
                   Johnathon Doe
@@ -455,7 +455,7 @@ const QuestionCard = ({
                 <div className='mt-2 h-px w-full bg-gray-2' />
               </div>
               <div className='flex items-center gap-2 opacity-40 transition-opacity group-hover/sig:opacity-100'>
-                <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-6 shadow-xs'>
+                <div className='hover:bg-surface-hover flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-surface px-3 py-1.5 text-[11px] font-bold text-gray-6 shadow-xs'>
                   <Icon height={14} name='lucide:rotate-ccw' width={14} />
                   Clear
                 </div>
@@ -479,16 +479,16 @@ const QuestionCard = ({
               return (
                 <div
                   className={cn(
-                    'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
+                    'w-full overflow-hidden rounded-xl border bg-surface shadow-sm transition-all duration-300',
                     isActive
                       ? 'border-accent-primary/60'
                       : 'border-gray-2 group-hover:border-gray-3',
                   )}
                 >
                   {/* Table Toolbar */}
-                  <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
+                  <div className='bg-surface-muted/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
                     <div className='flex items-center gap-2'>
-                      <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
+                      <div className='hover:bg-surface-hover flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-surface px-2 py-1 shadow-xs transition-colors'>
                         <Icon
                           className='text-gray-6'
                           height={14}
@@ -526,7 +526,7 @@ const QuestionCard = ({
                     <div className='overflow-x-auto'>
                       {/* Grid Header */}
                       <div
-                        className='bg-gray-50/80 grid border-b border-gray-1 px-3 py-2 text-[10px] font-bold tracking-wider text-gray-5 uppercase'
+                        className='bg-surface-muted/80 grid border-b border-gray-1 px-3 py-2 text-[10px] font-bold tracking-wider text-gray-5 uppercase'
                         style={{ gridTemplateColumns: gridTemplate }}
                       >
                         <div className='flex items-center justify-center'>
@@ -546,7 +546,7 @@ const QuestionCard = ({
 
                       {/* Placeholder Row */}
                       <div
-                        className='hover:bg-gray-50/30 grid items-center px-3 py-2.5 transition-colors'
+                        className='hover:bg-surface-hover/30 grid items-center px-3 py-2.5 transition-colors'
                         style={{ gridTemplateColumns: gridTemplate }}
                       >
                         <div className='flex items-center justify-center'>
@@ -554,7 +554,7 @@ const QuestionCard = ({
                         </div>
                         {tableColumns.map((col) => (
                           <div className='px-2' key={col.id}>
-                            <div className='bg-gray-50/40 flex h-7 w-full items-center rounded border border-dashed border-gray-2 px-2 text-[11px] text-gray-4 italic'>
+                            <div className='bg-surface-muted/40 flex h-7 w-full items-center rounded border border-dashed border-gray-2 px-2 text-[11px] text-gray-4 italic'>
                               {col.name}...
                             </div>
                           </div>
@@ -564,8 +564,8 @@ const QuestionCard = ({
                   )}
 
                   {/* Grid Footer */}
-                  <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
-                    <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
+                  <div className='bg-surface-muted/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
+                    <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-surface px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
                       <Icon height={14} name='lucide:plus' width={14} />
                       <span className='text-[11px] font-bold tracking-tight uppercase'>
                         Add New Row
@@ -583,14 +583,14 @@ const QuestionCard = ({
             <div className='space-y-3'>
               <div
                 className={cn(
-                  'group-hover:bg-gray-50/30 flex h-[80px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white transition-all duration-300',
+                  'group-hover:bg-surface-muted/30 flex h-[80px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-surface transition-all duration-300',
                   isActive
                     ? 'border-accent-primary/60 bg-accent-soft/5'
-                    : 'bg-gray-50/50 border-dashed border-gray-2 group-hover:border-gray-3',
+                    : 'bg-surface-muted/50 border-dashed border-gray-2 group-hover:border-gray-3',
                 )}
               >
                 <div className='flex items-center gap-3'>
-                  <div className='bg-gray-50 flex items-center gap-2 rounded-lg border border-gray-1 px-3 py-1.5 shadow-sm transition-colors group-hover:bg-white'>
+                  <div className='bg-surface-muted flex items-center gap-2 rounded-lg border border-gray-1 px-3 py-1.5 shadow-sm transition-colors group-hover:bg-surface'>
                     <Icon
                       className='text-accent-primary'
                       height={16}
@@ -602,7 +602,7 @@ const QuestionCard = ({
                     </span>
                   </div>
                   {question.settings.specific.qrCodeEnabled !== false && (
-                    <div className='bg-gray-50 cursor-pointer rounded-lg border border-gray-1 p-2 transition-colors hover:bg-white'>
+                    <div className='bg-surface-muted cursor-pointer rounded-lg border border-gray-1 p-2 transition-colors hover:bg-surface'>
                       <Icon
                         className='text-gray-6'
                         height={16}
@@ -622,8 +622,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center rounded-lg border px-4 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <Rating
@@ -641,8 +641,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <span className='text-[13px] font-medium text-gray-8'>
@@ -682,8 +682,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-[46px] w-full overflow-hidden rounded-lg border font-inter transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <div className='flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-primary-3/30 px-3 transition-colors hover:bg-primary-3/50'>
@@ -706,13 +706,13 @@ const QuestionCard = ({
           ) : question.type === 'COUNTRY_CODE' ? (
             <div
               className={cn(
-                'flex h-11 w-full items-center overflow-hidden rounded-lg border bg-white font-inter transition-colors',
+                'flex h-11 w-full items-center overflow-hidden rounded-lg border bg-surface font-inter transition-colors',
                 isActive
                   ? 'border-accent-primary/50'
                   : 'border-gray-2 group-hover:border-gray-3',
               )}
             >
-              <div className='bg-gray-50/50 flex items-center gap-2 border-r border-gray-1 px-3 py-2'>
+              <div className='bg-surface-muted/50 flex items-center gap-2 border-r border-gray-1 px-3 py-2'>
                 <div className='h-3.5 w-5 flex-shrink-0 rounded-sm border border-gray-3 bg-gray-2' />
                 <span className='text-[13px] font-bold text-gray-8'>+1</span>
                 <Icon
@@ -758,14 +758,14 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full overflow-hidden rounded-lg border transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <div className='flex flex-1 items-center px-4 text-[13px] font-medium text-gray-12'>
                 {question.settings.specific.defaultValue || '0'}
               </div>
-              <div className='bg-gray-50/30 flex w-10 flex-col border-l border-gray-1'>
+              <div className='bg-surface-muted/30 flex w-10 flex-col border-l border-gray-1'>
                 <div className='flex flex-1 cursor-pointer items-center justify-center transition-colors hover:bg-gray-1'>
                   <Icon
                     className='text-gray-5'
@@ -811,7 +811,7 @@ const QuestionCard = ({
                   className={cn(
                     'w-full transition-all',
                     showWrapper &&
-                      'bg-gray-50/50 rounded-xl border border-gray-2 p-2.5 shadow-2xs',
+                      'bg-surface-muted/50 rounded-xl border border-gray-2 p-2.5 shadow-2xs',
                   )}
                 >
                   <div
@@ -834,8 +834,8 @@ const QuestionCard = ({
                           'flex min-h-[34px] items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors',
                           isAutoFlex ? 'flex-shrink-0' : '',
                           isActive
-                            ? 'border-primary-4 bg-white shadow-2xs'
-                            : 'border-gray-2 bg-white group-hover:border-gray-3',
+                            ? 'border-primary-4 bg-surface shadow-2xs'
+                            : 'border-gray-2 bg-surface group-hover:border-gray-3',
                         )}
                       >
                         <div
@@ -861,10 +861,10 @@ const QuestionCard = ({
               )
             })()
           ) : (question.type as string) === 'MATRIX' ? (
-            <div className='w-full overflow-x-auto rounded-xl border border-gray-1 bg-white/50 shadow-sm backdrop-blur-sm'>
+            <div className='w-full overflow-x-auto rounded-xl border border-gray-1 bg-surface/50 shadow-sm backdrop-blur-sm'>
               <table className='w-full min-w-[400px] border-collapse text-left'>
                 <thead>
-                  <tr className='bg-gray-50/50 border-b border-gray-1'>
+                  <tr className='bg-surface-muted/50 border-b border-gray-1'>
                     <th className='w-[30%] p-3 text-[10px] font-bold tracking-wider text-gray-4 uppercase'>
                       Rows
                     </th>
@@ -894,7 +894,7 @@ const QuestionCard = ({
                               'mx-auto flex h-4 w-4 items-center justify-center rounded-full border-2 transition-all duration-300',
                               col === 2
                                 ? 'scale-110 border-accent-primary bg-accent-primary shadow-sm'
-                                : 'border-gray-2 bg-white group-hover/row:border-gray-3',
+                                : 'border-gray-2 bg-surface group-hover/row:border-gray-3',
                             )}
                           >
                             {col === 2 && (
@@ -909,8 +909,8 @@ const QuestionCard = ({
               </table>
             </div>
           ) : (question.type as string) === 'YES_NO_TOGGLE' ? (
-            <div className='bg-gray-50 flex w-full max-w-[280px] gap-1 rounded-xl border border-gray-1 p-1 shadow-inner'>
-              <div className='group/yes flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-2 bg-white px-3 py-1.5 shadow-sm transition-all hover:border-accent-soft/50 active:scale-[0.98]'>
+            <div className='bg-surface-muted flex w-full max-w-[280px] gap-1 rounded-xl border border-gray-1 p-1 shadow-inner'>
+              <div className='group/yes flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-2 bg-surface px-3 py-1.5 shadow-sm transition-all hover:border-accent-soft/50 active:scale-[0.98]'>
                 <div className='flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-accent-primary'>
                   <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-accent-primary' />
                 </div>
@@ -918,7 +918,7 @@ const QuestionCard = ({
                   Yes
                 </span>
               </div>
-              <div className='hover:bg-gray-100 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-bold text-gray-4 transition-all'>
+              <div className='hover:bg-gray-3 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-bold text-gray-4 transition-all'>
                 <div className='h-3.5 w-3.5 rounded-full border-2 border-gray-3' />
                 <span>No</span>
               </div>
@@ -967,8 +967,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <Icon
@@ -997,13 +997,13 @@ const QuestionCard = ({
               <div className='h-12 w-12 animate-spin rounded-full border-4 border-accent-primary/20 border-t-accent-primary' />
             </div>
           ) : (question.type as string) === 'FILL_IN_THE_BLANKS' ? (
-            <div className='bg-gray-50/50 w-full rounded-xl border border-gray-1 p-4 text-[13px] leading-relaxed font-medium text-gray-12'>
+            <div className='bg-surface-muted/50 w-full rounded-xl border border-gray-1 p-4 text-[13px] leading-relaxed font-medium text-gray-12'>
               The quick brown{' '}
-              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-white px-3 py-1 font-bold text-accent-primary shadow-sm'>
+              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-surface px-3 py-1 font-bold text-accent-primary shadow-sm'>
                 fox
               </span>{' '}
               jumps over the{' '}
-              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-white px-3 py-1 font-normal text-gray-4 italic shadow-sm'>
+              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-surface px-3 py-1 font-normal text-gray-4 italic shadow-sm'>
                 lazy dog
               </span>
               .
@@ -1016,9 +1016,9 @@ const QuestionCard = ({
             </div>
           ) : (question.type as string) === 'LABEL' ? (
             <div className='w-full py-1'>
-              <div className='bg-blue-50/30 border-blue-50 flex items-start gap-2 rounded-lg border p-3 text-[12px] leading-relaxed text-gray-11'>
+              <div className='bg-blue-2/30 border-blue-2 flex items-start gap-2 rounded-lg border p-3 text-[12px] leading-relaxed text-gray-11'>
                 <Icon
-                  className='text-blue-500 mt-0.5 shrink-0'
+                  className='text-blue-9 mt-0.5 shrink-0'
                   height={14}
                   name='lucide:info'
                   width={14}
@@ -1034,8 +1034,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <span className='truncate text-[13px] font-medium text-gray-8'>
@@ -1053,8 +1053,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center justify-between rounded-lg border px-3 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <div className='flex items-center gap-1.5 overflow-hidden'>
@@ -1087,8 +1087,8 @@ const QuestionCard = ({
               className={cn(
                 'flex h-11 w-full items-center rounded-lg border px-4 transition-colors',
                 isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  ? 'border-accent-primary/50 bg-surface'
+                  : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
               <span className='truncate text-[13px] font-medium text-gray-8'>

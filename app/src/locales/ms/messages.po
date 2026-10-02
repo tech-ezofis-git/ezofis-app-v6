@@ -118,10 +118,9 @@ msgstr "{0} medan dikonfigurasi"
 #~ msgid "{0} fields ready"
 #~ msgstr "{0} medan sedia"
 
-#. placeholder {0}: visibleQueue.length
 #: src/pages/folders/components/Upload/Upload.tsx:2687
-msgid "{0} files"
-msgstr ""
+#~ msgid "{0} files"
+#~ msgstr ""
 
 #. placeholder {0}: stage || t`Approval`
 #: src/pages/requests/components/request/components/sections/history/History.tsx:188
@@ -165,7 +164,7 @@ msgid "{0} remaining"
 msgstr "{0} yang tinggal"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1717
+#: src/pages/requests/components/GridView.tsx:1721
 msgid "{0} Selected"
 msgstr "{0} Dipilih"
 
@@ -179,8 +178,8 @@ msgstr "{0} dipilih. Klik Sambungkan __XPH1X__ untuk memautkan akaun anda."
 #~ msgid "{0} selected. How should documents be organized? Choose Recommend fields to generate a starter set."
 #~ msgstr "{0} dipilih. Bagaimana dokumen patut disusun? Pilih Syor medan untuk jana set permulaan."
 
-#. placeholder {0}: fileIds.length
-#: src/pages/folders/components/FolderExplorer.tsx:282
+#. placeholder {0}: entries.length
+#: src/pages/folders/components/Upload/Upload.tsx:2822
 msgid "{0} staged files deleted."
 msgstr ""
 
@@ -281,7 +280,7 @@ msgstr "{filesCount} dokumen dalam baris gilir"
 msgid "{filesPct}% file capacity"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3186
+#: src/pages/folders/components/DocumentDetailsView.tsx:3189
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "Pemapar {fileType}"
@@ -292,7 +291,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} daripada __XPH1X__ medan sedia"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:3209
+#: src/pages/folders/components/Upload/Upload.tsx:3541
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} daripada __XPH1X__ medan sedia"
 
@@ -361,16 +360,24 @@ msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1170
 #: src/pages/folders/components/FolderTable.tsx:1697
-msgid "{selectedStagedCount} staged files selected"
+#~ msgid "{selectedStagedCount} staged files selected"
+#~ msgstr ""
+
+#: src/pages/folders/components/Upload/Upload.tsx:2964
+msgid "{selectedVisibleCount} selected"
 msgstr ""
 
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:80
 msgid "{storageUsedGb} GB used"
 msgstr "{storageUsedGb} GB digunakan"
 
-#: src/pages/folders/components/FolderExplorer.tsx:403
-msgid "{successCount} staged files exported successfully."
+#: src/pages/folders/components/Upload/Upload.tsx:2857
+msgid "{successCount} files exported successfully."
 msgstr ""
+
+#: src/pages/folders/components/FolderExplorer.tsx:403
+#~ msgid "{successCount} staged files exported successfully."
+#~ msgstr ""
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:861
 msgid "{uploadedCount} indexed"
@@ -475,8 +482,8 @@ msgid "1 document in queue"
 msgstr "1 dokumen dalam baris gilir"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2686
-msgid "1 file"
-msgstr "1 fail"
+#~ msgid "1 file"
+#~ msgstr "1 fail"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:647
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1292
@@ -485,8 +492,8 @@ msgstr "1 helaian"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1169
 #: src/pages/folders/components/FolderTable.tsx:1696
-msgid "1 staged file selected"
-msgstr ""
+#~ msgid "1 staged file selected"
+#~ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2516
 msgid "1. Received"
@@ -496,7 +503,7 @@ msgstr "1. Diterima"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr "10 daripada 24 pembekal kini mencatat skor melebihi 80% penghantaran tepat pada masa, mencerminkan prestasi vendor yang lebih stabil."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2866
+#: src/pages/folders/components/Upload/Upload.tsx:3207
 msgid "100% Accuracy"
 msgstr "100% Ketepatan"
 
@@ -641,7 +648,7 @@ msgstr "Tindakan Diperlukan"
 #: src/pages/forms/FormEntriesPage.tsx:1815
 #: src/pages/forms/FormsPage.tsx:265
 #: src/pages/reports/components/ReportsListView.tsx:228
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1953
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1961
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:187
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:599
 #: src/pages/requests/components/Table.tsx:96
@@ -850,7 +857,7 @@ msgstr "Tambah Item Baris"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1037
-#: src/pages/requests/components/request/components/Header.tsx:1473
+#: src/pages/requests/components/request/components/Header.tsx:1510
 msgid "Add message (optional)"
 msgstr "Tambah mesej (pilihan)"
 
@@ -860,13 +867,13 @@ msgstr "Tambah fail lagi"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:614
-#: src/pages/requests/components/request/components/Header.tsx:1121
+#: src/pages/requests/components/request/components/Header.tsx:1158
 msgid "Add more people..."
 msgstr "Tambah lagi orang..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:615
-#: src/pages/requests/components/request/components/Header.tsx:1122
+#: src/pages/requests/components/request/components/Header.tsx:1159
 msgid "Add names or emails"
 msgstr "Tambah nama atau e-mel"
 
@@ -902,7 +909,7 @@ msgstr "Tambah peraturan"
 msgid "Add Signature Box"
 msgstr ""
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:120
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:213
 msgid "Add tab"
 msgstr "Tambah tab"
 
@@ -1019,8 +1026,8 @@ msgstr "AI Insight"
 msgid "AI Insight & Verification Summary"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:595
-#: src/pages/requests/components/request/components/Header.tsx:996
+#: src/pages/requests/components/request/components/Header.tsx:606
+#: src/pages/requests/components/request/components/Header.tsx:1033
 msgid "AI Insights"
 msgstr "AI Insights"
 
@@ -1059,8 +1066,8 @@ msgstr "Cadangan AI"
 #: src/pages/folders/components/AiSummaryView.tsx:285
 #: src/pages/folders/components/DocumentDetailsView.tsx:2008
 #: src/pages/folders/components/DocumentDetailsView.tsx:2015
-#: src/pages/folders/components/DocumentsListView.tsx:1304
-#: src/pages/folders/components/FolderTable.tsx:1573
+#: src/pages/folders/components/DocumentsListView.tsx:1110
+#: src/pages/folders/components/FolderTable.tsx:1467
 msgid "AI Summary"
 msgstr "Ringkasan AI"
 
@@ -1158,7 +1165,7 @@ msgstr "Semua syarat mesti sepadan"
 msgid "All Files"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2966
+#: src/pages/folders/components/Upload/Upload.tsx:3307
 msgid "All files indexed"
 msgstr ""
 
@@ -1255,11 +1262,11 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2081
+#: src/pages/requests/components/request/Request.tsx:2154
 msgid "An error occurred: {0}"
 msgstr "Ralat berlaku: {0}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:826
+#: src/pages/folders/components/Upload/Upload.tsx:864
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:45
 msgid "Analysis"
 msgstr "Analisis"
@@ -1286,7 +1293,7 @@ msgstr "Menganalisis konteks & kata kunci"
 #~ msgstr "Menganalisis struktur data untuk {repositoryName}..."
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:113
-#: src/pages/folders/components/Upload/Upload.tsx:3057
+#: src/pages/folders/components/Upload/Upload.tsx:3398
 msgid "Analyzing document..."
 msgstr "Menganalisis dokumen..."
 
@@ -1314,7 +1321,7 @@ msgstr "Menganalisis susun atur ruang"
 msgid "Analyzing Supplier..."
 msgstr "Menganalisis Pembekal..."
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:166
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:209
 msgid "Analyzing..."
 msgstr ""
 
@@ -1340,7 +1347,7 @@ msgstr "Apa-apa syarat boleh sepadan"
 msgid "Any file type"
 msgstr "Sebarang jenis fail"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2872
+#: src/pages/folders/components/Upload/Upload.tsx:3213
 msgid "Any Format"
 msgstr "Sebarang Format"
 
@@ -1504,16 +1511,19 @@ msgstr "Adakah anda pasti mahu memadamkan \"{0}\"? Tindakan ini tidak boleh dibu
 
 #: src/pages/folders/components/DocumentsListView.tsx:1374
 #: src/pages/folders/components/FolderTable.tsx:1795
-msgid "Are you sure you want to delete {selectedStagedCount} selected staged files?"
+#~ msgid "Are you sure you want to delete {selectedStagedCount} selected staged files?"
+#~ msgstr ""
+
+#: src/pages/folders/components/Upload/Upload.tsx:3730
+msgid "Are you sure you want to delete {selectedVisibleCount} selected staged files?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1373
-#: src/pages/folders/components/FolderTable.tsx:1794
+#: src/pages/folders/components/Upload/Upload.tsx:3729
 msgid "Are you sure you want to delete 1 selected staged file?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1342
-#: src/pages/folders/components/FolderTable.tsx:1817
+#: src/pages/folders/components/DocumentsListView.tsx:1148
+#: src/pages/folders/components/FolderTable.tsx:1594
 msgid "Are you sure you want to delete this document? This action cannot be undone."
 msgstr ""
 
@@ -1533,7 +1543,7 @@ msgstr "Adakah anda pasti mahu memadamkan portal ini? Tindakan ini tidak boleh d
 msgid "Are you sure you want to delete this role? This action cannot be undone."
 msgstr "Adakah anda pasti mahu memadamkan peranan ini? Tindakan ini tidak boleh dibuat asal."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3376
+#: src/pages/folders/components/Upload/Upload.tsx:3708
 msgid "Are you sure you want to delete this staged file?"
 msgstr ""
 
@@ -1543,17 +1553,20 @@ msgstr "Adakah anda pasti mahu memadamkan pengguna ini? Tindakan ini tidak boleh
 
 #: src/pages/folders/components/DocumentsListView.tsx:1405
 #: src/pages/folders/components/FolderTable.tsx:1766
-msgid "Are you sure you want to export {selectedStagedCount} selected staged files?"
+#~ msgid "Are you sure you want to export {selectedStagedCount} selected staged files?"
+#~ msgstr ""
+
+#: src/pages/folders/components/Upload/Upload.tsx:3749
+msgid "Are you sure you want to export {selectedVisibleCount} selected staged files?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1404
-#: src/pages/folders/components/FolderTable.tsx:1765
+#: src/pages/folders/components/Upload/Upload.tsx:3748
 msgid "Are you sure you want to export 1 selected staged file?"
 msgstr ""
 
 #: src/pages/folders/components/Upload/Upload.tsx:3391
-msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
-msgstr ""
+#~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
+#~ msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:2497
 msgid "Are you sure you want to move"
@@ -1650,7 +1663,7 @@ msgstr "Lampiran"
 #: src/pages/portal/components/PortalWizard.tsx:1063
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:480
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:512
-#: src/pages/requests/components/request/components/Header.tsx:474
+#: src/pages/requests/components/request/components/Header.tsx:485
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4393
@@ -1804,9 +1817,9 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/folders/components/StartWorkflowView.tsx:330
 #: src/pages/folders/components/StartWorkflowView.tsx:412
 #: src/pages/folders/components/StartWorkflowView.tsx:586
-#: src/pages/folders/components/Upload/Upload.tsx:2714
-#: src/pages/folders/components/Upload/Upload.tsx:2943
-#: src/pages/folders/components/Upload/Upload.tsx:2994
+#: src/pages/folders/components/Upload/Upload.tsx:3055
+#: src/pages/folders/components/Upload/Upload.tsx:3284
+#: src/pages/folders/components/Upload/Upload.tsx:3335
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:103
@@ -1866,7 +1879,7 @@ msgstr "Kembali ke Entri"
 msgid "Back to Explorer"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2969
+#: src/pages/folders/components/Upload/Upload.tsx:3310
 msgid "Back to folder"
 msgstr ""
 
@@ -1988,7 +2001,7 @@ msgid "Breadcrumb"
 msgstr "Serbuk roti"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:115
-#: src/pages/folders/components/Upload/Upload.tsx:2783
+#: src/pages/folders/components/Upload/Upload.tsx:3124
 #: src/pages/forms/components/GenericFormImportModal.tsx:441
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:322
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1020
@@ -2055,7 +2068,7 @@ msgstr "Storan selamat terbina dalam"
 
 #. placeholder {0}: actionValidation.action.label
 #. placeholder {1}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1749
+#: src/pages/requests/components/GridView.tsx:1753
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Tindakan pukal \"{0}\" digunakan pada permintaan __XPH1X__ berjaya!"
 
@@ -2069,7 +2082,7 @@ msgid "Bulk Import Entries"
 msgstr "Penyertaan Import Pukal"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1726
+#: src/pages/requests/components/GridView.tsx:1730
 msgid "Bulk marked {0} requests as Paid successfully!"
 msgstr "Pukal menandakan {0} permintaan sebagai Dibayar dengan jayanya!"
 
@@ -2160,16 +2173,14 @@ msgstr "Boleh Lihat"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
-#: src/pages/folders/components/DocumentsListView.tsx:1340
-#: src/pages/folders/components/DocumentsListView.tsx:1365
-#: src/pages/folders/components/DocumentsListView.tsx:1396
-#: src/pages/folders/components/FolderTable.tsx:1757
-#: src/pages/folders/components/FolderTable.tsx:1786
-#: src/pages/folders/components/FolderTable.tsx:1815
+#: src/pages/folders/components/DocumentsListView.tsx:1146
+#: src/pages/folders/components/FolderTable.tsx:1592
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:985
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:111
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:169
-#: src/pages/folders/components/Upload/Upload.tsx:3374
+#: src/pages/folders/components/Upload/Upload.tsx:3706
+#: src/pages/folders/components/Upload/Upload.tsx:3721
+#: src/pages/folders/components/Upload/Upload.tsx:3740
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
 #: src/pages/forms/FormEntriesPage.tsx:859
 #: src/pages/forms/FormEntriesPage.tsx:2423
@@ -2339,7 +2350,7 @@ msgstr "Kotak semak/OMR"
 #~ msgid "Checking for duplicates..."
 #~ msgstr "Menyemak pendua..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2702
+#: src/pages/folders/components/Upload/Upload.tsx:3043
 msgid "Checking for previously staged files..."
 msgstr ""
 
@@ -2580,8 +2591,8 @@ msgstr "Nombor Pelanggan"
 msgid "Close"
 msgstr "Tutup"
 
-#: src/pages/requests/components/request/components/Header.tsx:627
-#: src/pages/requests/components/request/components/Header.tsx:1028
+#: src/pages/requests/components/request/components/Header.tsx:638
+#: src/pages/requests/components/request/components/Header.tsx:1065
 msgid "Close AI Insights"
 msgstr "Tutup Cerapan AI"
 
@@ -2673,7 +2684,7 @@ msgstr "Akan Datang"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1603
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:486
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:518
-#: src/pages/requests/components/request/components/Header.tsx:480
+#: src/pages/requests/components/request/components/Header.tsx:491
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4398
@@ -2714,7 +2725,7 @@ msgstr "Lengkapkan tetapan untuk memulakan automasi AP anda."
 #: src/pages/forms/components/GenericFormImportModal.tsx:760
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1421
 #: src/pages/requests/RequestsPage.tsx:150
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Completed"
 msgstr "Selesai"
 
@@ -3024,8 +3035,8 @@ msgstr "Disalin ke papan keratan"
 #~ msgid "Copy"
 #~ msgstr "Salin"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3350
-#: src/pages/folders/components/Upload/Upload.tsx:3352
+#: src/pages/folders/components/Upload/Upload.tsx:3682
+#: src/pages/folders/components/Upload/Upload.tsx:3684
 msgid "Copy JSON"
 msgstr "Salin JSON"
 
@@ -3082,10 +3093,10 @@ msgid "Could not read that file."
 msgstr "Tidak dapat membaca fail itu."
 
 #: src/pages/folders/components/FolderExplorer.tsx:260
-msgid "Couldn't delete selected staged files."
-msgstr ""
+#~ msgid "Couldn't delete selected staged files."
+#~ msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:428
+#: src/pages/folders/components/FolderExplorer.tsx:336
 msgid "Couldn't delete this document. Missing document or repository ID."
 msgstr ""
 
@@ -3093,7 +3104,7 @@ msgstr ""
 msgid "Couldn't delete this staged file."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:346
+#: src/pages/folders/components/FolderExplorer.tsx:300
 msgid "Couldn't export this staged file. Missing ID."
 msgstr ""
 
@@ -3242,7 +3253,7 @@ msgstr "Dicipta Pada"
 msgid "Created by"
 msgstr "Dicipta oleh"
 
-#: src/pages/folders/components/FolderTable.tsx:503
+#: src/pages/folders/components/FolderTable.tsx:506
 #: src/pages/forms/FormEntriesPage.tsx:1801
 #: src/pages/forms/FormEntriesPage.tsx:2593
 #: src/pages/forms/FormsPage.tsx:231
@@ -3366,8 +3377,8 @@ msgstr ""
 msgid "Current Role"
 msgstr "Peranan Semasa"
 
-#: src/pages/folders/components/DocumentsListView.tsx:535
-#: src/pages/folders/components/FolderTable.tsx:1346
+#: src/pages/folders/components/DocumentsListView.tsx:534
+#: src/pages/folders/components/FolderTable.tsx:1312
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1499
 msgid "Current Stage"
 msgstr "Peringkat Semasa"
@@ -3519,7 +3530,7 @@ msgstr "Tarikh & Masa"
 msgid "Date From"
 msgstr "Tarikh Dari"
 
-#: src/pages/folders/components/FolderTable.tsx:491
+#: src/pages/folders/components/FolderTable.tsx:494
 msgid "Date Modified"
 msgstr "Tarikh Diubah Suai"
 
@@ -3559,8 +3570,8 @@ msgstr "Disember"
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Tentukan cara semakan dokumen dijejaki apabila fail dikemas kini."
 
-#: src/pages/requests/components/request/components/Header.tsx:623
-#: src/pages/requests/components/request/components/Header.tsx:1024
+#: src/pages/requests/components/request/components/Header.tsx:634
+#: src/pages/requests/components/request/components/Header.tsx:1061
 msgid "Decision Details"
 msgstr ""
 
@@ -3617,17 +3628,16 @@ msgstr "Tentukan Peraturan"
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr "Tentukan nama peranan, tetapkan pengguna dan terangkan skopnya."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1325
-#: src/pages/folders/components/DocumentsListView.tsx:1341
-#: src/pages/folders/components/DocumentsListView.tsx:1366
-#: src/pages/folders/components/FolderTable.tsx:553
-#: src/pages/folders/components/FolderTable.tsx:1595
-#: src/pages/folders/components/FolderTable.tsx:1787
-#: src/pages/folders/components/FolderTable.tsx:1816
+#: src/pages/folders/components/DocumentsListView.tsx:1131
+#: src/pages/folders/components/DocumentsListView.tsx:1147
+#: src/pages/folders/components/FolderTable.tsx:556
+#: src/pages/folders/components/FolderTable.tsx:1489
+#: src/pages/folders/components/FolderTable.tsx:1593
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:98
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:112
-#: src/pages/folders/components/Upload/Upload.tsx:3375
-#: src/pages/folders/components/Upload/Upload.tsx:3390
+#: src/pages/folders/components/Upload/Upload.tsx:3707
+#: src/pages/folders/components/Upload/Upload.tsx:3722
+#: src/pages/folders/components/Upload/Upload.tsx:3760
 #: src/pages/forms/FormsPage.tsx:294
 #: src/pages/reports/components/RowActionsMenu.tsx:40
 #: src/pages/requests/components/Table.tsx:119
@@ -3661,8 +3671,8 @@ msgstr "Padam kad"
 msgid "Delete column \"{col}\""
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1345
-#: src/pages/folders/components/FolderTable.tsx:1820
+#: src/pages/folders/components/DocumentsListView.tsx:1151
+#: src/pages/folders/components/FolderTable.tsx:1597
 msgid "Delete Document"
 msgstr ""
 
@@ -3716,15 +3726,19 @@ msgstr "Padam Baris"
 msgid "Delete Rule"
 msgstr "Padamkan Peraturan"
 
+#: src/pages/folders/components/Upload/Upload.tsx:2985
+msgid "Delete selected"
+msgstr ""
+
 #: src/pages/folders/components/DocumentsListView.tsx:1214
 #: src/pages/folders/components/FolderTable.tsx:1732
-msgid "Delete Selected ({selectedStagedCount})"
-msgstr ""
+#~ msgid "Delete Selected ({selectedStagedCount})"
+#~ msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1203
 #: src/pages/folders/components/FolderTable.tsx:1723
-msgid "Delete selected staged files"
-msgstr ""
+#~ msgid "Delete selected staged files"
+#~ msgstr ""
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:424
 msgid "Delete signature box"
@@ -3732,17 +3746,16 @@ msgstr ""
 
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:96
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:116
-#: src/pages/folders/components/Upload/Upload.tsx:3242
-#: src/pages/folders/components/Upload/Upload.tsx:3244
+#: src/pages/folders/components/Upload/Upload.tsx:3574
+#: src/pages/folders/components/Upload/Upload.tsx:3576
 msgid "Delete staged file"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:3379
+#: src/pages/folders/components/Upload/Upload.tsx:3711
 msgid "Delete Staged File"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1369
-#: src/pages/folders/components/FolderTable.tsx:1790
+#: src/pages/folders/components/Upload/Upload.tsx:3725
 msgid "Delete staged files"
 msgstr ""
 
@@ -3903,8 +3916,8 @@ msgstr "Penerangan belum selesai"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1177
 #: src/pages/folders/components/FolderTable.tsx:1704
-msgid "Deselect all"
-msgstr ""
+#~ msgid "Deselect all"
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:807
 msgid "Deselect All"
@@ -4015,7 +4028,7 @@ msgstr "Tarikh Dokumen"
 msgid "Document Date in Document"
 msgstr "Tarikh Dokumen dalam Dokumen"
 
-#: src/pages/folders/components/FolderExplorer.tsx:448
+#: src/pages/folders/components/FolderExplorer.tsx:356
 msgid "Document deleted successfully."
 msgstr ""
 
@@ -4050,7 +4063,7 @@ msgid "Document owners are notified beforehand."
 msgstr "Pemilik dokumen dimaklumkan terlebih dahulu."
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:303
-#: src/pages/folders/components/Upload/Upload.tsx:3098
+#: src/pages/folders/components/Upload/Upload.tsx:3439
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:276
 msgid "Document Preview"
@@ -4164,7 +4177,7 @@ msgstr "Belum ada akaun?"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:993
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:559
-#: src/pages/folders/components/Upload/Upload.tsx:827
+#: src/pages/folders/components/Upload/Upload.tsx:865
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1717
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2038
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2080
@@ -4185,8 +4198,8 @@ msgstr "Pembayaran dua kali dibenderakan oleh algoritma lejar"
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2895
-#: src/pages/folders/components/DocumentDetailsView.tsx:2899
+#: src/pages/folders/components/DocumentDetailsView.tsx:2898
+#: src/pages/folders/components/DocumentDetailsView.tsx:2902
 #: src/pages/folders/components/DocumentSigningPage.tsx:2725
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:876
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:88
@@ -4250,8 +4263,8 @@ msgstr "Draf"
 #~ msgid "Draft · Last saved 2m ago"
 #~ msgstr "Draf · Terakhir disimpan 2m lalu"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2821
-#: src/pages/folders/components/Upload/Upload.tsx:2947
+#: src/pages/folders/components/Upload/Upload.tsx:3162
+#: src/pages/folders/components/Upload/Upload.tsx:3288
 msgid "Draft Files"
 msgstr ""
 
@@ -4321,7 +4334,7 @@ msgstr ""
 msgid "Drop your file here, or"
 msgstr "Lepaskan fail anda di sini, atau"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2782
+#: src/pages/folders/components/Upload/Upload.tsx:3123
 msgid "Drop your files here, or"
 msgstr ""
 
@@ -4345,7 +4358,7 @@ msgstr ""
 #~ msgid "Dual axis spending trend comparison"
 #~ msgstr "Perbandingan trend perbelanjaan paksi berganda"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1783
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1791
 msgid "Due & Terms"
 msgstr "Tempoh & Terma"
 
@@ -4593,9 +4606,9 @@ msgstr "Edit Menu"
 msgid "Edit Menu Setup"
 msgstr "Edit Persediaan Menu"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1298
+#: src/pages/folders/components/DocumentsListView.tsx:1104
 #: src/pages/folders/components/EditMetadataView.tsx:402
-#: src/pages/folders/components/FolderTable.tsx:1567
+#: src/pages/folders/components/FolderTable.tsx:1461
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:106
 msgid "Edit Metadata"
 msgstr "Edit Metadata"
@@ -4747,8 +4760,8 @@ msgstr ""
 #~ msgstr "Pastikan semua fail mempunyai repositori sasaran yang diperuntukkan."
 
 #: src/pages/folders/components/EditMetadataView.tsx:367
-#: src/pages/folders/components/Upload/Upload.tsx:2440
-#: src/pages/folders/components/Upload/Upload.tsx:2459
+#: src/pages/folders/components/Upload/Upload.tsx:2648
+#: src/pages/folders/components/Upload/Upload.tsx:2667
 msgid "Enter {label}"
 msgstr "Masukkan {label}"
 
@@ -4921,7 +4934,7 @@ msgstr "Ralat semasa mengemas kini dokumen: {detail}"
 msgid "Error uploading file"
 msgstr "Ralat memuat naik fail"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2061
+#: src/pages/folders/components/Upload/Upload.tsx:2267
 msgid "Error uploading file: {error}"
 msgstr "Ralat semasa memuat naik fail: {error}"
 
@@ -4967,14 +4980,14 @@ msgstr "Medan Excel"
 msgid "Excel Spreadsheet"
 msgstr "Hamparan Excel"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2096
+#: src/pages/folders/components/Upload/Upload.tsx:2304
 msgid "Exception uploading file: {detail}"
 msgstr "Pengecualian memuat naik fail: {detail}"
 
 #: src/pages/requests/components/InboxList.tsx:2110
 #: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:23
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Exceptions"
 msgstr "Pengecualian"
 
@@ -5022,11 +5035,10 @@ msgstr "Tarikh Luput / Tamat Tempoh"
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Terokai, uji dan nyahpepijat titik akhir API dengan permintaan langsung dan sampel respons."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1397
-#: src/pages/folders/components/FolderTable.tsx:1758
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:156
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:170
-#: src/pages/folders/components/Upload/Upload.tsx:3268
+#: src/pages/folders/components/Upload/Upload.tsx:3600
+#: src/pages/folders/components/Upload/Upload.tsx:3741
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1978
@@ -5045,23 +5057,26 @@ msgstr "Eksport CSV"
 msgid "Export PDF"
 msgstr "Eksport PDF"
 
+#: src/pages/folders/components/Upload/Upload.tsx:2975
+msgid "Export selected"
+msgstr ""
+
 #: src/pages/folders/components/DocumentsListView.tsx:1197
 #: src/pages/folders/components/FolderTable.tsx:1718
-msgid "Export Selected ({selectedStagedCount})"
-msgstr ""
+#~ msgid "Export Selected ({selectedStagedCount})"
+#~ msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1183
 #: src/pages/folders/components/FolderTable.tsx:1709
-msgid "Export selected staged files"
-msgstr ""
+#~ msgid "Export selected staged files"
+#~ msgstr ""
 
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:154
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:174
 msgid "Export staged file"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1400
-#: src/pages/folders/components/FolderTable.tsx:1761
+#: src/pages/folders/components/Upload/Upload.tsx:3744
 msgid "Export staged files"
 msgstr ""
 
@@ -5070,8 +5085,8 @@ msgid "Export to Excel"
 msgstr "Eksport ke Excel"
 
 #: src/pages/folders/components/AiSummaryView.tsx:257
-#: src/pages/folders/components/Upload/Upload.tsx:3069
-#: src/pages/folders/components/Upload/Upload.tsx:3268
+#: src/pages/folders/components/Upload/Upload.tsx:3410
+#: src/pages/folders/components/Upload/Upload.tsx:3600
 msgid "Exporting..."
 msgstr "Mengeksport..."
 
@@ -5087,7 +5102,7 @@ msgstr "Diekstrak"
 msgid "EXTRACTED"
 msgstr "DIEKSTRAK"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3205
+#: src/pages/folders/components/Upload/Upload.tsx:3537
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:468
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
 #: src/pages/requests/components/RequestSummary.tsx:194
@@ -5113,11 +5128,11 @@ msgstr "Mengekstrak data daripada dokumen..."
 msgid "Extracting data from the document…"
 msgstr "Mengekstrak data daripada dokumen…"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3281
+#: src/pages/folders/components/Upload/Upload.tsx:3613
 msgid "Extracting fields from document..."
 msgstr "Mengekstrak medan daripada dokumen..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3208
+#: src/pages/folders/components/Upload/Upload.tsx:3540
 msgid "Extracting fields..."
 msgstr "Mengekstrak medan..."
 
@@ -5138,8 +5153,8 @@ msgstr "Mengekstrak metadata, menyemak pendua, mengesahkan pematuhan"
 msgid "Extracting textual metadata"
 msgstr "Mengekstrak metadata teks"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2440
-#: src/pages/folders/components/Upload/Upload.tsx:2459
+#: src/pages/folders/components/Upload/Upload.tsx:2648
+#: src/pages/folders/components/Upload/Upload.tsx:2667
 msgid "Extracting..."
 msgstr "Mengekstrak..."
 
@@ -5172,7 +5187,7 @@ msgstr "Medan EZOFIS"
 #~ msgid "EZOFIS V6"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:193
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:236
 msgid "Failed"
 msgstr ""
 
@@ -5184,7 +5199,7 @@ msgstr "Gagal menambah pada dokumen berkaitan."
 msgid "Failed to attach document."
 msgstr "Gagal melampirkan dokumen."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3234
+#: src/pages/folders/components/Upload/Upload.tsx:3566
 msgid "Failed to auto-save to stage table"
 msgstr ""
 
@@ -5347,7 +5362,7 @@ msgid "Failed to proceed request:"
 msgstr "Gagal meneruskan permintaan:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1893
+#: src/pages/requests/components/request/Request.tsx:1963
 msgid "Failed to proceed request: {0}"
 msgstr "Gagal meneruskan permintaan: {0}"
 
@@ -5373,7 +5388,7 @@ msgid "Failed to save report"
 msgstr "Gagal menyimpan laporan"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2017
+#: src/pages/requests/components/request/Request.tsx:2090
 msgid "Failed to save request: {0}"
 msgstr "Gagal menyimpan permintaan: {0}"
 
@@ -5389,7 +5404,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2323
+#: src/pages/requests/components/request/Request.tsx:2401
 msgid "Failed to share request"
 msgstr "Gagal berkongsi permintaan"
 
@@ -5397,11 +5412,11 @@ msgstr "Gagal berkongsi permintaan"
 msgid "Failed to stage file for indexing"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1336
+#: src/pages/folders/components/Upload/Upload.tsx:1471
 msgid "Failed to stage file for upload."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1419
+#: src/pages/folders/components/Upload/Upload.tsx:1589
 msgid "Failed to stage files for upload."
 msgstr ""
 
@@ -5414,7 +5429,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2018
+#: src/pages/requests/components/request/Request.tsx:2091
 msgid "Failed to submit request: {0}"
 msgstr "Gagal menyerahkan permintaan: {0}"
 
@@ -5502,7 +5517,7 @@ msgstr "Jenis medan"
 msgid "fields"
 msgstr "medan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:828
+#: src/pages/folders/components/Upload/Upload.tsx:866
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:74
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:951
@@ -5546,7 +5561,8 @@ msgstr "Kandungan fail tidak dapat diambil semula."
 msgid "File exceeds 50MB limit: {fileName}"
 msgstr "Fail melebihi had 50MB: {fileName}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2071
+#: src/pages/folders/components/Upload/Upload.tsx:2278
+#: src/pages/folders/components/Upload/Upload.tsx:2856
 msgid "File exported successfully."
 msgstr "Fail berjaya dieksport."
 
@@ -5560,7 +5576,7 @@ msgstr "Pengambilan & Penghuraian Fail"
 #~ msgstr "Fail terlalu besar. Saiz maksimum ialah 4MB."
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:54
-#: src/pages/folders/components/Upload/Upload.tsx:1687
+#: src/pages/folders/components/Upload/Upload.tsx:1888
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:562
 msgid "File is too large. Max size is 50MB."
 msgstr "Fail terlalu besar. Saiz maksimum ialah 50MB."
@@ -5600,10 +5616,10 @@ msgstr "Fail berjaya dimuat naik"
 #~ msgid "File uploaded."
 #~ msgstr "Fail dimuat naik."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1248
-#: src/pages/folders/components/FolderTable.tsx:479
-#: src/pages/folders/components/FolderTable.tsx:1844
-#: src/pages/folders/components/Upload/Upload.tsx:2737
+#: src/pages/folders/components/DocumentsListView.tsx:1054
+#: src/pages/folders/components/FolderTable.tsx:482
+#: src/pages/folders/components/FolderTable.tsx:1621
+#: src/pages/folders/components/Upload/Upload.tsx:3078
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
 msgstr "Fail"
@@ -5613,7 +5629,7 @@ msgstr "Fail"
 msgid "Files & Storage"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:955
+#: src/pages/folders/components/FolderTable.tsx:954
 msgid "FILES IN THIS FOLDER"
 msgstr "FAIL DALAM FOLDER INI"
 
@@ -5621,7 +5637,8 @@ msgstr "FAIL DALAM FOLDER INI"
 #~ msgid "Files must be under 5MB"
 #~ msgstr "Fail mestilah di bawah 5MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1450
+#: src/pages/folders/components/Upload/Upload.tsx:1563
+#: src/pages/folders/components/Upload/Upload.tsx:1636
 msgid "Files uploaded successfully."
 msgstr ""
 
@@ -5829,7 +5846,7 @@ msgstr "Folder berjaya dikemas kini."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:31
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
-#: src/pages/folders/components/FolderExplorer.tsx:703
+#: src/pages/folders/components/FolderExplorer.tsx:611
 #: src/pages/search/SearchPage.tsx:328
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:74
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
@@ -5837,7 +5854,7 @@ msgstr "Folder berjaya dikemas kini."
 msgid "Folders"
 msgstr "Folder"
 
-#: src/pages/folders/components/FolderTable.tsx:944
+#: src/pages/folders/components/FolderTable.tsx:943
 msgid "FOLDERS"
 msgstr "FOLDER"
 
@@ -6062,9 +6079,13 @@ msgstr "Laporan Padanan Akaun GL"
 msgid "Gmail selected. Click Connect Gmail to link your account."
 msgstr "Gmail dipilih. Klik Sambung Gmail untuk memautkan akaun anda."
 
+#: src/pages/folders/components/Upload/Upload.tsx:3759
+#: src/pages/folders/components/Upload/Upload.tsx:3764
+msgid "Go back"
+msgstr ""
+
 #: src/layouts/auth/components/AuthHeader.tsx:42
 #: src/layouts/auth/components/AuthHeader.tsx:48
-#: src/pages/folders/components/Upload/Upload.tsx:3394
 msgid "Go Back"
 msgstr "Pergi Balik"
 
@@ -6076,6 +6097,10 @@ msgstr "Pergi ke {0}"
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:645
 msgid "Go to Inbox"
 msgstr "Pergi ke Peti Masuk"
+
+#: src/pages/folders/components/Upload/Upload.tsx:3761
+msgid "Going back keeps this file in Draft Files. Delete removes it."
+msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:174
 #: src/pages/settings/components/ManageUser.tsx:358
@@ -6309,8 +6334,8 @@ msgstr ""
 msgid "Hide Documents"
 msgstr "Sembunyikan Dokumen"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2630
-#: src/pages/folders/components/Upload/Upload.tsx:2638
+#: src/pages/folders/components/Upload/Upload.tsx:2924
+#: src/pages/folders/components/Upload/Upload.tsx:2932
 msgid "Hide file list"
 msgstr ""
 
@@ -6375,7 +6400,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:488
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:520
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1460
-#: src/pages/requests/components/request/components/Header.tsx:482
+#: src/pages/requests/components/request/components/Header.tsx:493
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4403
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:347
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:383
@@ -6484,7 +6509,8 @@ msgstr "Strategi Import"
 msgid "Import your records via CSV or Excel."
 msgstr "Import rekod anda melalui CSV atau Excel."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2602
+#: src/pages/folders/components/Upload/Upload.tsx:2893
+#: src/pages/folders/components/Upload/Upload.tsx:3184
 #: src/pages/forms/components/GenericFormImportModal.tsx:613
 #: src/pages/forms/components/GenericFormImportModal.tsx:695
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1257
@@ -6493,7 +6519,6 @@ msgstr "Import rekod anda melalui CSV atau Excel."
 msgid "In progress"
 msgstr "Sedang berlangsung"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2843
 #: src/pages/requests/components/KanbanView.tsx:233
 msgid "In Progress"
 msgstr "Sedang Berjalan"
@@ -6513,7 +6538,7 @@ msgstr "Tidak Aktif"
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
 #: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/requests/utils/localizeRequestUi.ts:26
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Inbox"
 msgstr "Peti Masuk"
 
@@ -6556,7 +6581,7 @@ msgstr ""
 msgid "Index this file"
 msgstr ""
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:182
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:225
 msgid "Indexed"
 msgstr ""
 
@@ -6566,7 +6591,7 @@ msgstr ""
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:155
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:190
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:175
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:218
 msgid "Indexing..."
 msgstr ""
 
@@ -6578,7 +6603,7 @@ msgstr ""
 #~ msgid "Industry-leading extraction accuracy"
 #~ msgstr "Ketepatan pengekstrakan terkemuka industri"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2865
+#: src/pages/folders/components/Upload/Upload.tsx:3206
 msgid "Industry-leading extraction accuracy and field precision"
 msgstr ""
 
@@ -6688,7 +6713,7 @@ msgstr "Pintar"
 msgid "Intelligent Upload"
 msgstr "Muat Naik Pintar"
 
-#: src/pages/folders/components/FolderExplorer.tsx:712
+#: src/pages/folders/components/FolderExplorer.tsx:620
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:746
 msgid "Intelligent Upload & Classify"
 msgstr "Muat Naik & Klasifikasi Pintar"
@@ -6713,7 +6738,7 @@ msgstr ""
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Jenis fail tidak sah. Sila muat naik PDF atau Imej."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1689
+#: src/pages/folders/components/Upload/Upload.tsx:1890
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:565
 msgid "Invalid file type. Please upload a supported document."
 msgstr "Jenis fail tidak sah. Sila muat naik dokumen yang disokong."
@@ -6741,7 +6766,7 @@ msgid "Invite sent"
 msgstr "Jemputan dihantar"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1370
+#: src/pages/requests/components/request/components/Header.tsx:1407
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Dijemput"
@@ -6775,7 +6800,7 @@ msgstr "Invois #"
 msgid "Invoice Amount"
 msgstr "Jumlah Invois"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1833
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1841
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5396
@@ -6843,7 +6868,7 @@ msgstr ""
 msgid "Invoice Summary"
 msgstr "Ringkasan Invois"
 
-#: src/pages/requests/components/request/components/Header.tsx:942
+#: src/pages/requests/components/request/components/Header.tsx:979
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4894
 msgid "Invoice Value"
 msgstr "Nilai Invois"
@@ -6857,7 +6882,7 @@ msgid "invoices"
 msgstr "invois"
 
 #: src/pages/requests/RequestsPage.tsx:149
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
 msgstr "Invois"
 
@@ -6960,7 +6985,7 @@ msgstr "Jawatan"
 #~ msgid "JSON"
 #~ msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2518
+#: src/pages/folders/components/Upload/Upload.tsx:2726
 msgid "JSON copied to clipboard."
 msgstr "JSON disalin ke papan keratan."
 
@@ -7163,7 +7188,7 @@ msgstr "Lesen & Langganan"
 msgid "Light"
 msgstr "Cerah"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2860
+#: src/pages/folders/components/Upload/Upload.tsx:3201
 msgid "Lightning Fast"
 msgstr "Pantas Seperti Kilat"
 
@@ -7601,7 +7626,7 @@ msgstr "Mandatori — klik untuk membuat pilihan"
 msgid "Mandatory column"
 msgstr ""
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:104
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:139
 msgid "Mandatory fields are missing"
 msgstr ""
 
@@ -7697,7 +7722,7 @@ msgstr "Tandakan sebagai wajib"
 msgid "Mark as optional"
 msgstr "Tandai sebagai pilihan"
 
-#: src/pages/requests/components/GridView.tsx:1736
+#: src/pages/requests/components/GridView.tsx:1740
 msgid "Mark as Paid"
 msgstr "Tandai sebagai Berbayar"
 
@@ -7763,7 +7788,7 @@ msgstr "Penyegerakan Borang Induk"
 msgid "Master Login"
 msgstr "Log Masuk Sarjana"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2218
+#: src/pages/folders/components/Upload/Upload.tsx:2426
 msgid "Master Sync Data"
 msgstr "Data Penyegerakan Induk"
 
@@ -8132,7 +8157,7 @@ msgstr "Lebih daripada"
 msgid "More than one line price differs from the purchase order. Compare each line before you approve."
 msgstr ""
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:83
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:153
 msgid "Move down"
 msgstr "Alih ke bawah"
 
@@ -8158,7 +8183,7 @@ msgstr "Pindahan tidak tersedia"
 msgid "Move unsuccessful"
 msgstr "Pindahan tidak berjaya"
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:74
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:144
 msgid "Move up"
 msgstr "Alih ke atas"
 
@@ -8194,8 +8219,8 @@ msgstr "Penyerahan Saya"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:107
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1742
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1824
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1832
 msgid "N/A"
 msgstr "T/B"
 
@@ -8203,9 +8228,9 @@ msgstr "T/B"
 msgid "N/A (No value needed)"
 msgstr "N/A (Tiada nilai diperlukan)"
 
-#: src/pages/folders/components/DocumentsListView.tsx:536
-#: src/pages/folders/components/FolderTable.tsx:463
-#: src/pages/folders/components/FolderTable.tsx:1340
+#: src/pages/folders/components/DocumentsListView.tsx:535
+#: src/pages/folders/components/FolderTable.tsx:466
+#: src/pages/folders/components/FolderTable.tsx:1306
 #: src/pages/forms/FormEntriesPage.tsx:2584
 #: src/pages/forms/FormsPage.tsx:171
 #: src/pages/forms/FormsPage.tsx:590
@@ -8235,8 +8260,12 @@ msgid "Name and describe this policy"
 msgstr "Namakan dan huraikan dasar ini"
 
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:63
-msgid "Name and order the tabs shown on the Requests page for this workflow. Only the first 3 (in order) are backed by real data - any tab beyond that will always show empty."
-msgstr "Namakan dan susun tab yang ditunjukkan pada halaman Permintaan untuk aliran kerja ini. Hanya 3 yang pertama (mengikut urutan) disokong oleh data sebenar - sebarang tab seterusnya akan sentiasa dipaparkan kosong."
+#~ msgid "Name and order the tabs shown on the Requests page for this workflow. Only the first 3 (in order) are backed by real data - any tab beyond that will always show empty."
+#~ msgstr "Namakan dan susun tab yang ditunjukkan pada halaman Permintaan untuk aliran kerja ini. Hanya 3 yang pertama (mengikut urutan) disokong oleh data sebenar - sebarang tab seterusnya akan sentiasa dipaparkan kosong."
+
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:123
+msgid "Name the tabs shown on the Requests page for this workflow and select the stages that belong to each tab."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:321
 msgid "Name this policy and describe what it governs for folder \"{folderName}\"."
@@ -8276,8 +8305,8 @@ msgid "Net Value"
 msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
-#: src/pages/requests/components/request/components/Header.tsx:1503
-#: src/pages/requests/RequestsPage.tsx:947
+#: src/pages/requests/components/request/components/Header.tsx:1540
+#: src/pages/requests/RequestsPage.tsx:1004
 msgid "New"
 msgstr "baru"
 
@@ -8338,7 +8367,7 @@ msgstr "Permintaan Baharu"
 msgid "New Submission"
 msgstr "Penyerahan Baru"
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:55
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:114
 msgid "New Tab"
 msgstr "Tab Baharu"
 
@@ -8375,8 +8404,8 @@ msgstr "Tindakan Seterusnya"
 msgid "Next page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:511
-#: src/pages/requests/components/request/components/Header.tsx:748
+#: src/pages/requests/components/request/components/Header.tsx:522
+#: src/pages/requests/components/request/components/Header.tsx:777
 msgid "Next Request"
 msgstr "Permintaan Seterusnya"
 
@@ -8388,7 +8417,6 @@ msgstr "Langkah seterusnya"
 #~ msgid "Next-gen AI workspace, dynamic forms & automation."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:3389
 #: src/pages/reports/components/ReportsListView.tsx:207
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5513
 msgid "No"
@@ -8398,8 +8426,8 @@ msgstr "Tidak"
 msgid "No account found for this username."
 msgstr "Tiada akaun ditemui untuk nama pengguna ini."
 
-#: src/pages/requests/components/GridView.tsx:1429
 #: src/pages/requests/components/GridView.tsx:1433
+#: src/pages/requests/components/GridView.tsx:1437
 msgid "No action"
 msgstr "Tiada tindakan"
 
@@ -8489,8 +8517,8 @@ msgstr "Tiada Data Dijumpai"
 msgid "No data loss, no rework — just choose how your trial carries over."
 msgstr "Tiada kehilangan data, tiada kerja semula — cuma pilih cara percubaan anda dipindahkan."
 
-#: src/pages/requests/components/request/components/Header.tsx:637
-#: src/pages/requests/components/request/components/Header.tsx:1038
+#: src/pages/requests/components/request/components/Header.tsx:648
+#: src/pages/requests/components/request/components/Header.tsx:1075
 msgid "No decision details available for this request."
 msgstr "Tiada butiran keputusan tersedia untuk permintaan ini."
 
@@ -8527,12 +8555,12 @@ msgstr "Tiada ringkasan dokumen tersedia."
 msgid "No documents currently match this rule."
 msgstr "Tiada dokumen yang sepadan dengan peraturan ini pada masa ini."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1115
-#: src/pages/folders/components/DocumentsListView.tsx:1137
+#: src/pages/folders/components/DocumentsListView.tsx:984
+#: src/pages/folders/components/DocumentsListView.tsx:1006
 msgid "No documents found"
 msgstr "Tiada dokumen dijumpai"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2541
+#: src/pages/folders/components/Upload/Upload.tsx:1399
 msgid "No draft files to review."
 msgstr ""
 
@@ -8577,11 +8605,11 @@ msgstr "Tiada medan dipilih lagi."
 msgid "No files added yet"
 msgstr "Tiada fail ditambah lagi"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2659
+#: src/pages/folders/components/Upload/Upload.tsx:3005
 msgid "No files are processing, and none are missing required fields."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2660
+#: src/pages/folders/components/Upload/Upload.tsx:3006
 msgid "No files are ready to export yet. Files missing required fields are listed under In progress."
 msgstr ""
 
@@ -8643,7 +8671,7 @@ msgstr "Tiada kumpulan lagi"
 msgid "No history found"
 msgstr "Tiada sejarah ditemui"
 
-#: src/pages/requests/components/request/Request.tsx:2299
+#: src/pages/requests/components/request/Request.tsx:2377
 msgid "No instance ID available to share"
 msgstr "Tiada ID contoh tersedia untuk dikongsi"
 
@@ -8768,7 +8796,7 @@ msgstr "Tiada aliran kerja yang diterbitkan ditemui."
 msgid "No recommendations available."
 msgstr "Tiada cadangan tersedia."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2992
+#: src/pages/folders/components/DocumentDetailsView.tsx:2995
 msgid "No related documents are linked with this file yet."
 msgstr "Tiada dokumen berkaitan dipautkan dengan fail ini lagi."
 
@@ -8780,11 +8808,11 @@ msgstr "Tiada dokumen berkaitan ditemui."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr "Tiada dokumen berkaitan ditemui. Cuba kata kunci atau folder lain."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3339
+#: src/pages/folders/components/Upload/Upload.tsx:3671
 msgid "No repository fields configured."
 msgstr "Tiada medan repositori dikonfigurasi."
 
-#: src/pages/folders/components/FolderTable.tsx:1114
+#: src/pages/folders/components/FolderTable.tsx:1111
 msgid "No repository items found"
 msgstr "Tiada item repositori dijumpai"
 
@@ -8941,7 +8969,7 @@ msgstr "Tiada pengguna atau kumpulan dipilih"
 msgid "No users yet"
 msgstr "Tiada pengguna lagi"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1690
+#: src/pages/folders/components/Upload/Upload.tsx:1891
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
 msgid "No valid files selected."
 msgstr "Tiada fail yang sah dipilih."
@@ -9037,7 +9065,7 @@ msgid "Notify document owner beforehand"
 msgstr "Beritahu pemilik dokumen terlebih dahulu"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:1500
+#: src/pages/requests/components/request/components/Header.tsx:1537
 msgid "Notify me when accessed"
 msgstr "Beritahu saya apabila diakses"
 
@@ -9065,7 +9093,7 @@ msgstr "ejen OCR"
 msgid "OCR Agent"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2230
+#: src/pages/folders/components/Upload/Upload.tsx:2438
 msgid "OCR Extracted Data"
 msgstr "Data Diekstrak OCR"
 
@@ -9081,7 +9109,7 @@ msgstr "Pengekstrakan OCR selesai{confidenceText}"
 #~ msgid "OCR extraction failed: {error}"
 #~ msgstr "Pengesanan OCR gagal: {error}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1530
+#: src/pages/folders/components/Upload/Upload.tsx:1731
 msgid "OCR failed for this file."
 msgstr ""
 
@@ -9137,13 +9165,13 @@ msgstr "sekali diaktifkan."
 msgid "OneDrive"
 msgstr "OneDrive"
 
-#: src/pages/folders/components/FolderTable.tsx:543
+#: src/pages/folders/components/FolderTable.tsx:546
 #: src/pages/portal/components/PortalHome.tsx:355
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
 msgstr "Buka"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2828
+#: src/pages/folders/components/Upload/Upload.tsx:3169
 msgid "Open a saved file to review it and finish it."
 msgstr ""
 
@@ -9356,7 +9384,7 @@ msgstr "pemilik"
 #: src/pages/folders/components/FolderSharePopover.tsx:791
 #: src/pages/folders/components/FolderSharePopover.tsx:851
 #: src/pages/reports/components/ReportsListView.tsx:212
-#: src/pages/requests/components/request/components/Header.tsx:1362
+#: src/pages/requests/components/request/components/Header.tsx:1399
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -9698,7 +9726,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Sila lampirkan fail untuk meneruskan."
 
-#: src/pages/requests/components/request/Request.tsx:1757
+#: src/pages/requests/components/request/Request.tsx:1825
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -9711,12 +9739,12 @@ msgid "Please click 'Verify' to check if this supplier is legitimate and prevent
 msgstr "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mengelakkan penipuan."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:1747
+#: src/pages/requests/components/request/Request.tsx:1814
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:834
-#: src/pages/requests/components/request/Request.tsx:1782
+#: src/pages/requests/components/request/Request.tsx:1852
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -9746,7 +9774,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1764
+#: src/pages/requests/components/request/Request.tsx:1833
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -9775,7 +9803,7 @@ msgstr ""
 msgid "Please draw your signature before continuing."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1998
+#: src/pages/folders/components/Upload/Upload.tsx:2198
 msgid "Please enter {fieldName}."
 msgstr ""
 
@@ -9967,7 +9995,7 @@ msgstr ""
 #~ msgid "Please select a file first."
 #~ msgstr "Sila pilih fail dahulu."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2020
+#: src/pages/folders/components/Upload/Upload.tsx:2223
 msgid "Please select a file to upload."
 msgstr ""
 
@@ -10161,7 +10189,7 @@ msgid "PO Matching Analysis"
 msgstr "Analisis Pemadanan PO"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1471
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1769
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1777
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4622
@@ -10190,7 +10218,7 @@ msgstr "Rujukan PO"
 msgid "PO Setup"
 msgstr "Persediaan PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:961
+#: src/pages/requests/components/request/components/Header.tsx:998
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4895
 msgid "PO Value"
@@ -10383,8 +10411,8 @@ msgstr "Pratonton: dokumen di mana"
 msgid "Previous page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:497
-#: src/pages/requests/components/request/components/Header.tsx:731
+#: src/pages/requests/components/request/components/Header.tsx:508
+#: src/pages/requests/components/request/components/Header.tsx:760
 msgid "Previous Request"
 msgstr "Permintaan Sebelumnya"
 
@@ -10441,7 +10469,7 @@ msgstr "Peribadi kepada saya"
 msgid "Proceed to Indexing"
 msgstr "Teruskan ke Pengindeksan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2859
+#: src/pages/folders/components/Upload/Upload.tsx:3200
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Proses dokumen lebih pantas dengan saluran ejen kami"
 
@@ -10456,7 +10484,7 @@ msgstr "Gambaran Keseluruhan Proses"
 #: src/pages/requests/components/InboxList.tsx:2112
 #: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/requests/utils/localizeRequestUi.ts:38
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Processed"
 msgstr "Diproses"
 
@@ -10715,13 +10743,21 @@ msgstr "Sedia untuk mengesahkan"
 msgid "Ready to create folder?"
 msgstr ""
 
+#: src/pages/folders/components/Upload/Upload.tsx:2888
+#: src/pages/folders/components/Upload/Upload.tsx:3175
+#: src/pages/folders/components/Upload/Upload.tsx:3460
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:144
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:213
+msgid "Ready to export"
+msgstr ""
+
 #: src/pages/settings/components/license/LicenseSettings.tsx:235
 msgid "Ready to go live? Upgrade to Production."
 msgstr "Bersedia untuk bersiaran langsung? Naik taraf ke Pengeluaran."
 
 #: src/pages/folders/components/Upload/Upload.tsx:2597
-msgid "Ready to review"
-msgstr ""
+#~ msgid "Ready to review"
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:390
 msgid "Ready to use"
@@ -10739,7 +10775,7 @@ msgstr ""
 #~ msgid "Receive transparent confidence rankings for top candidate repository matches."
 #~ msgstr "Terima kedudukan keyakinan yang telus untuk padanan repositori calon teratas."
 
-#: src/pages/folders/components/Upload/Upload.tsx:829
+#: src/pages/folders/components/Upload/Upload.tsx:867
 msgid "Received"
 msgstr "Diterima"
 
@@ -10866,7 +10902,7 @@ msgstr "ditolak"
 msgid "Related Docs"
 msgstr "Dok Berkaitan"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2994
+#: src/pages/folders/components/DocumentDetailsView.tsx:2997
 msgid "Related documents not found"
 msgstr "Dokumen berkaitan tidak ditemui"
 
@@ -10904,16 +10940,16 @@ msgstr "Keluarkan keadaan"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:683
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:220
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:222
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:115
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:117
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1115
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1250
 msgid "Remove file"
 msgstr "Buang fail"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2956
-#: src/pages/folders/components/DocumentDetailsView.tsx:2960
+#: src/pages/folders/components/DocumentDetailsView.tsx:2959
+#: src/pages/folders/components/DocumentDetailsView.tsx:2963
 msgid "Remove from related"
 msgstr "Alih keluar daripada berkaitan"
 
@@ -10925,7 +10961,7 @@ msgstr "Keluarkan Item"
 msgid "Remove signer"
 msgstr "Buang penandatangan"
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:101
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:172
 msgid "Remove tab"
 msgstr "Alih keluar tab"
 
@@ -10933,7 +10969,7 @@ msgstr "Alih keluar tab"
 msgid "Removed from related"
 msgstr "Dialih keluar daripada berkaitan"
 
-#: src/pages/folders/components/FolderTable.tsx:546
+#: src/pages/folders/components/FolderTable.tsx:549
 msgid "Rename"
 msgstr "Namakan semula"
 
@@ -11013,7 +11049,7 @@ msgstr "Baris subjek laporan"
 msgid "Reports"
 msgstr "Laporan"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1029
+#: src/pages/folders/components/DocumentsListView.tsx:898
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:980
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:833
 msgid "Repository"
@@ -11031,8 +11067,8 @@ msgstr "Konteks repositori dan skop perniagaan."
 msgid "Repository Fields"
 msgstr "Medan Repositori"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1718
-#: src/pages/folders/components/Upload/Upload.tsx:2529
+#: src/pages/folders/components/Upload/Upload.tsx:1361
+#: src/pages/folders/components/Upload/Upload.tsx:1919
 msgid "Repository ID is missing. Cannot run OCR."
 msgstr "ID Repositori hilang. Tidak boleh jalankan OCR."
 
@@ -11062,15 +11098,15 @@ msgstr "Permintaan {requestNo} telah berjaya dipindahkan."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Permintaan {requestNo} berjaya dipindahkan"
 
-#: src/pages/requests/components/request/Request.tsx:1954
+#: src/pages/requests/components/request/Request.tsx:2024
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Tindakan \"{action}\" bagi permintaan {resolvedRequestNo} berjaya diselesaikan"
 
-#: src/pages/requests/components/request/Request.tsx:1932
+#: src/pages/requests/components/request/Request.tsx:2002
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1953
+#: src/pages/requests/components/request/Request.tsx:2023
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
@@ -11089,7 +11125,7 @@ msgstr "Minta Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Permintaan dibuat. Anda boleh menjejakinya daripada Penyerahan Saya."
 
-#: src/pages/requests/components/request/Request.tsx:2044
+#: src/pages/requests/components/request/Request.tsx:2117
 msgid "Request is being processed."
 msgstr ""
 
@@ -11102,16 +11138,16 @@ msgstr "Permintaan dipindahkan"
 msgid "Request No"
 msgstr "Permintaan No"
 
-#: src/pages/requests/components/request/components/Header.tsx:1299
+#: src/pages/requests/components/request/components/Header.tsx:1336
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/Request.tsx:2063
+#: src/pages/requests/components/request/Request.tsx:2136
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
-#: src/pages/requests/components/request/components/Header.tsx:392
-#: src/pages/requests/components/request/Request.tsx:2319
+#: src/pages/requests/components/request/components/Header.tsx:403
+#: src/pages/requests/components/request/Request.tsx:2397
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
@@ -11122,7 +11158,7 @@ msgid "Request Status"
 msgstr "Permintaan Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2064
+#: src/pages/requests/components/request/Request.tsx:2137
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
@@ -11199,11 +11235,11 @@ msgstr "Tetapkan semula pemetaan kepada cadangan yang sepadan."
 msgid "Reset Password"
 msgstr "Tetapkan Semula Kata Laluan"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1124
+#: src/pages/folders/components/DocumentsListView.tsx:993
 msgid "Reset Search"
 msgstr "Tetapkan Semula Carian"
 
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:130
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:223
 msgid "Reset to default"
 msgstr "Tetapkan semula kepada lalai"
 
@@ -11269,7 +11305,7 @@ msgstr "Pencetus pengekalan"
 
 #: src/pages/folders/components/AiSummaryView.tsx:500
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:252
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:153
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:196
 msgid "Retry"
 msgstr "Cuba semula"
 
@@ -11358,7 +11394,7 @@ msgstr "Semak dan simpan peraturan"
 msgid "Review Column Mapping"
 msgstr "Semak Pemetaan Lajur"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3063
+#: src/pages/folders/components/Upload/Upload.tsx:3404
 msgid "Review fields before export..."
 msgstr "Semak medan sebelum eksport..."
 
@@ -11590,7 +11626,7 @@ msgstr "Pemetaan Medan Jadual SAP"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2197
 #: src/pages/folders/components/DocumentDetailsView.tsx:2219
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1546
+#: src/pages/requests/components/request/components/Header.tsx:1587
 #: src/pages/settings/components/SettingsWizardLayout.tsx:81
 msgid "Save"
 msgstr "Simpan"
@@ -11642,7 +11678,7 @@ msgstr "Simpan Papan Pemuka"
 msgid "Save Entry"
 msgstr "Simpan Entri"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3237
+#: src/pages/folders/components/Upload/Upload.tsx:3569
 msgid "Save failed"
 msgstr ""
 
@@ -11710,13 +11746,13 @@ msgstr "Disimpan ({0})"
 msgid "Saved signature removed."
 msgstr "Tandatangan yang disimpan dialih keluar."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3228
+#: src/pages/folders/components/Upload/Upload.tsx:3560
 msgid "Saved to stage"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2216
 #: src/pages/folders/components/EditMetadataView.tsx:427
-#: src/pages/folders/components/Upload/Upload.tsx:3222
+#: src/pages/folders/components/Upload/Upload.tsx:3554
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1220
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:991
 #: src/pages/settings/components/SettingsWizardLayout.tsx:219
@@ -11844,7 +11880,7 @@ msgstr "Cari unit perniagaan..."
 msgid "Search by document name, reference number, or keywords..."
 msgstr "Cari mengikut nama dokumen, nombor rujukan atau kata kunci..."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1023
+#: src/pages/folders/components/DocumentsListView.tsx:892
 #: src/pages/folders/components/ExplorerToolbar.tsx:269
 #: src/pages/folders/components/FolderFilterBar.tsx:400
 msgid "Search by name or metadata..."
@@ -12122,7 +12158,7 @@ msgstr "Pilih medan..."
 msgid "Select a folder"
 msgstr "Pilih folder"
 
-#: src/pages/folders/components/FolderExplorer.tsx:751
+#: src/pages/folders/components/FolderExplorer.tsx:659
 msgid "Select a folder before uploading."
 msgstr ""
 
@@ -12130,8 +12166,8 @@ msgstr ""
 #~ msgid "Select a form"
 #~ msgstr "Pilih borang"
 
-#: src/pages/folders/components/FolderExplorer.tsx:762
-#: src/pages/folders/components/FolderExplorer.tsx:776
+#: src/pages/folders/components/FolderExplorer.tsx:670
+#: src/pages/folders/components/FolderExplorer.tsx:684
 msgid "Select a repository before uploading."
 msgstr "Pilih repositori sebelum memuat naik."
 
@@ -12192,12 +12228,15 @@ msgstr "Pilih aliran kerja"
 msgid "Select account"
 msgstr ""
 
+#: src/pages/folders/components/Upload/Upload.tsx:2965
+msgid "Select all"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:808
 msgid "Select All"
 msgstr "Pilih Semua"
 
-#: src/pages/folders/components/DocumentsListView.tsx:755
-#: src/pages/folders/components/FolderTable.tsx:1471
+#: src/pages/folders/components/Upload/Upload.tsx:2950
 msgid "Select all files"
 msgstr ""
 
@@ -12252,8 +12291,7 @@ msgstr ""
 msgid "Select field..."
 msgstr "Pilih medan..."
 
-#: src/pages/folders/components/DocumentsListView.tsx:736
-#: src/pages/folders/components/FolderTable.tsx:1443
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:92
 msgid "Select file"
 msgstr ""
 
@@ -12318,6 +12356,7 @@ msgstr "Pilih medan sepadan..."
 #~ msgstr "Pilih salah satu cip pengesyoran di atas atau masukkan gesaan tersuai dalam kotak input. AI akan menjana pilihan susun atur berdasarkan pilihan anda."
 
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:253
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:187
 msgid "Select one or more stages"
 msgstr "Pilih satu atau lebih peringkat"
 
@@ -12522,7 +12561,7 @@ msgstr "Hantar untuk Tandatangan"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1031
-#: src/pages/requests/components/request/components/Header.tsx:1467
+#: src/pages/requests/components/request/components/Header.tsx:1504
 msgid "Send notification"
 msgstr "Hantar pemberitahuan"
 
@@ -12555,7 +12594,7 @@ msgid "Sends OTP to the Email"
 msgstr "Menghantar OTP ke E-mel"
 
 #: src/pages/requests/RequestsPage.tsx:150
-#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Sent"
 msgstr "Dihantar"
 
@@ -12669,18 +12708,18 @@ msgstr "Keterukan"
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/dashboard/DashboardPage.tsx:353
 #: src/pages/folders/components/DocumentDetailsView.tsx:2046
-#: src/pages/folders/components/DocumentsListView.tsx:1309
+#: src/pages/folders/components/DocumentsListView.tsx:1115
 #: src/pages/folders/components/FolderFilterBar.tsx:808
 #: src/pages/folders/components/FolderSharePopover.tsx:539
 #: src/pages/folders/components/FolderSharePopover.tsx:555
 #: src/pages/folders/components/FolderSharePopover.tsx:588
 #: src/pages/folders/components/FolderSharePopover.tsx:1058
-#: src/pages/folders/components/FolderTable.tsx:547
-#: src/pages/folders/components/FolderTable.tsx:1578
+#: src/pages/folders/components/FolderTable.tsx:550
+#: src/pages/folders/components/FolderTable.tsx:1472
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1065
-#: src/pages/requests/components/request/components/Header.tsx:1490
+#: src/pages/requests/components/request/components/Header.tsx:1102
+#: src/pages/requests/components/request/components/Header.tsx:1527
 msgid "Share"
 msgstr "Kongsi"
 
@@ -12692,7 +12731,7 @@ msgstr ""
 msgid "Share Report"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1090
+#: src/pages/requests/components/request/components/Header.tsx:1127
 msgid "Share Request"
 msgstr "Permintaan Kongsi"
 
@@ -12728,7 +12767,7 @@ msgstr "Perkongsian"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1055
-#: src/pages/requests/components/request/components/Header.tsx:1490
+#: src/pages/requests/components/request/components/Header.tsx:1527
 msgid "Sharing..."
 msgstr "Berkongsi..."
 
@@ -12762,7 +12801,7 @@ msgstr "Tunjukkan {0} dalam Tetapan"
 #~ msgid "Show all {matchCount} matches"
 #~ msgstr "Tunjukkan semua {matchCount} padanan"
 
-#: src/pages/folders/components/FolderTable.tsx:895
+#: src/pages/folders/components/FolderTable.tsx:894
 msgid "Show both folders and files"
 msgstr "Tunjukkan kedua-dua folder dan fail"
 
@@ -12782,12 +12821,12 @@ msgstr "Tunjukkan Dokumen"
 msgid "Show fewer suggestions"
 msgstr "Tunjukkan cadangan yang kurang"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2630
-#: src/pages/folders/components/Upload/Upload.tsx:2638
+#: src/pages/folders/components/Upload/Upload.tsx:2924
+#: src/pages/folders/components/Upload/Upload.tsx:2932
 msgid "Show file list"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:892
+#: src/pages/folders/components/FolderTable.tsx:891
 msgid "Show files only"
 msgstr "Tunjukkan fail sahaja"
 
@@ -12795,8 +12834,8 @@ msgstr "Tunjukkan fail sahaja"
 msgid "Show Folder Configuration in Settings"
 msgstr "Tunjukkan Konfigurasi Folder dalam Tetapan"
 
-#: src/pages/folders/components/FolderTable.tsx:892
-#: src/pages/folders/components/FolderTable.tsx:894
+#: src/pages/folders/components/FolderTable.tsx:891
+#: src/pages/folders/components/FolderTable.tsx:893
 msgid "Show folders only"
 msgstr "Tunjukkan folder sahaja"
 
@@ -13067,7 +13106,7 @@ msgstr "Padam Lembut"
 msgid "Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1753
+#: src/pages/folders/components/Upload/Upload.tsx:1957
 msgid "Some files were already in the queue and were skipped."
 msgstr ""
 
@@ -13075,7 +13114,7 @@ msgstr ""
 msgid "Some files were skipped (unsupported type or too large)."
 msgstr ""
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:142
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:185
 msgid "Something went wrong for this file."
 msgstr ""
 
@@ -13135,7 +13174,7 @@ msgstr ""
 msgid "Source: Manual Entry"
 msgstr "Sumber: Kemasukan Manual"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3131
+#: src/pages/folders/components/DocumentDetailsView.tsx:3134
 msgid "Source: OCR Document"
 msgstr "Sumber: Dokumen OCR"
 
@@ -13160,17 +13199,16 @@ msgid "Staged"
 msgstr ""
 
 #: src/pages/folders/components/FolderExplorer.tsx:236
-#: src/pages/folders/components/FolderExplorer.tsx:281
-#: src/pages/folders/components/Upload/Upload.tsx:1603
+#: src/pages/folders/components/Upload/Upload.tsx:1804
+#: src/pages/folders/components/Upload/Upload.tsx:2821
 msgid "Staged file deleted."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:364
-#: src/pages/folders/components/FolderExplorer.tsx:402
+#: src/pages/folders/components/FolderExplorer.tsx:318
 msgid "Staged file exported successfully."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1432
+#: src/pages/folders/components/Upload/Upload.tsx:1604
 msgid "Staging failed."
 msgstr ""
 
@@ -13199,8 +13237,8 @@ msgstr "Mula menaip untuk mencari"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1998
 #: src/pages/folders/components/DocumentDetailsView.tsx:2004
-#: src/pages/folders/components/DocumentsListView.tsx:1315
-#: src/pages/folders/components/FolderTable.tsx:1584
+#: src/pages/folders/components/DocumentsListView.tsx:1121
+#: src/pages/folders/components/FolderTable.tsx:1478
 msgid "Start Workflow"
 msgstr "Mulakan Aliran Kerja"
 
@@ -13561,7 +13599,7 @@ msgstr "Pembekal"
 msgid "Suppliers to Chase"
 msgstr "Pembekal untuk Diikuti"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2871
+#: src/pages/folders/components/Upload/Upload.tsx:3212
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Sokongan untuk PDF, imej, dan dokumen imbasan"
 
@@ -13601,7 +13639,7 @@ msgstr ""
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2786
+#: src/pages/folders/components/Upload/Upload.tsx:3127
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 msgstr ""
 
@@ -13610,13 +13648,13 @@ msgstr ""
 #~ msgid "Switch to Dummy Data"
 #~ msgstr "Tukar kepada Data Dummy"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3177
-#: src/pages/folders/components/Upload/Upload.tsx:3186
+#: src/pages/folders/components/Upload/Upload.tsx:3509
+#: src/pages/folders/components/Upload/Upload.tsx:3518
 msgid "Switch to Fields view"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:3176
-#: src/pages/folders/components/Upload/Upload.tsx:3185
+#: src/pages/folders/components/Upload/Upload.tsx:3508
+#: src/pages/folders/components/Upload/Upload.tsx:3517
 msgid "Switch to JSON view"
 msgstr ""
 
@@ -13625,14 +13663,14 @@ msgstr ""
 #~ msgid "Switch to Original Data"
 #~ msgstr "Tukar kepada Data Asal"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2253
+#: src/pages/folders/components/Upload/Upload.tsx:2461
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:172
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3446
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3759
 msgid "Sync"
 msgstr "Segerakkan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2286
+#: src/pages/folders/components/Upload/Upload.tsx:2494
 msgid "SYNC"
 msgstr "SYNC"
 
@@ -13644,7 +13682,7 @@ msgstr "Segerakkan medan dokumen, induk PO dan rekod vendor melalui SAP NetWeave
 msgid "Sync folder documents and metadata with SAP ERP."
 msgstr "Segerakkan dokumen folder dan metadata dengan SAP ERP."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2247
+#: src/pages/folders/components/Upload/Upload.tsx:2455
 msgid "Sync Master Data"
 msgstr "Segerakkan Data Induk"
 
@@ -13682,6 +13720,10 @@ msgstr "Menu sistem tidak boleh dipadamkan"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
 #~ msgid "System Response"
 #~ msgstr "Respons Sistem"
+
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:165
+msgid "Tab name"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:17
 msgid "Table"
@@ -13910,19 +13952,20 @@ msgstr "Medan ini diperlukan."
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr "Jenis medan ini ({fieldType}) belum disokong dalam paparan ini lagi."
 
-#: src/pages/folders/components/DocumentsListView.tsx:901
-#: src/pages/folders/components/DocumentsListView.tsx:908
-#: src/pages/folders/components/FolderTable.tsx:1522
-#: src/pages/folders/components/FolderTable.tsx:1531
+#: src/pages/folders/components/DocumentsListView.tsx:779
+#: src/pages/folders/components/DocumentsListView.tsx:786
+#: src/pages/folders/components/FolderTable.tsx:1416
+#: src/pages/folders/components/FolderTable.tsx:1425
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:152
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1089
 msgid "this file"
 msgstr "fail ini"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1648
+#: src/pages/folders/components/Upload/Upload.tsx:1849
 msgid "This file can't be retried automatically — remove it and add it again."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2040
+#: src/pages/folders/components/Upload/Upload.tsx:2243
 msgid "This file hasn't finished staging yet. Please wait a moment and try again."
 msgstr ""
 
@@ -13938,8 +13981,8 @@ msgstr ""
 msgid "This file was deleted. Kindly try a new file."
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1139
-#: src/pages/folders/components/FolderTable.tsx:1118
+#: src/pages/folders/components/DocumentsListView.tsx:1008
+#: src/pages/folders/components/FolderTable.tsx:1115
 msgid "This folder does not contain any folders or files yet."
 msgstr "Folder ini belum lagi mengandungi sebarang folder atau fail."
 
@@ -14204,7 +14247,7 @@ msgstr "Jumlah larian"
 msgid "Total Submitted"
 msgstr "Jumlah Dihantar"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1810
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1818
 msgid "Total Value"
 msgstr "Jumlah Nilai"
 
@@ -14274,7 +14317,7 @@ msgstr "Cuba kata kunci lain, folder lain atau matikan salah satu syarat invois.
 msgid "Try Again"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1117
+#: src/pages/folders/components/DocumentsListView.tsx:986
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "Cuba ubah carian fail atau tetapkan semula penapis yang dipilih."
 
@@ -14362,8 +14405,8 @@ msgstr "Tidak dapat membuat permintaan ini."
 #: src/pages/folders/components/DocumentDetailsView.tsx:1261
 #: src/pages/folders/components/DocumentDetailsView.tsx:1268
 #: src/pages/folders/components/DocumentDetailsView.tsx:1284
-#: src/pages/folders/components/DocumentDetailsView.tsx:2919
-#: src/pages/folders/components/DocumentDetailsView.tsx:2941
+#: src/pages/folders/components/DocumentDetailsView.tsx:2922
+#: src/pages/folders/components/DocumentDetailsView.tsx:2944
 msgid "Unable to download file"
 msgstr "Tidak dapat muat turun fail"
 
@@ -14387,7 +14430,7 @@ msgstr "Tidak dapat memuatkan ringkasan AI"
 msgid "Unable to load document details"
 msgstr "Tidak dapat memuatkan butiran dokumen"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2558
+#: src/pages/folders/components/Upload/Upload.tsx:1427
 msgid "Unable to load draft files."
 msgstr ""
 
@@ -14652,9 +14695,9 @@ msgid "Upgrading…"
 msgstr "Menaik taraf…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1963
-#: src/pages/folders/components/FolderExplorer.tsx:709
+#: src/pages/folders/components/FolderExplorer.tsx:617
 #: src/pages/folders/components/FolderFilterBar.tsx:772
-#: src/pages/folders/components/Upload/Upload.tsx:2736
+#: src/pages/folders/components/Upload/Upload.tsx:3077
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:229
@@ -14691,8 +14734,8 @@ msgstr "Muat naik fail PO; kami akan ekstrak pengepala untuk pemetaan."
 msgid "Upload document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1149
-#: src/pages/folders/components/FolderTable.tsx:1129
+#: src/pages/folders/components/DocumentsListView.tsx:1018
+#: src/pages/folders/components/FolderTable.tsx:1126
 msgid "Upload Documents"
 msgstr "Muat Naik Dokumen"
 
@@ -14700,8 +14743,8 @@ msgstr "Muat Naik Dokumen"
 msgid "Upload Documents for AI Classification"
 msgstr "Muat Naik Dokumen untuk Klasifikasi AI"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2727
-#: src/pages/folders/components/Upload/Upload.tsx:2740
+#: src/pages/folders/components/Upload/Upload.tsx:3068
+#: src/pages/folders/components/Upload/Upload.tsx:3081
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dalam repositori anda untuk carian dan pengurusan yang cekap."
 
@@ -14718,7 +14761,7 @@ msgstr ""
 msgid "Upload favicon"
 msgstr "Muat naik favicon"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2723
+#: src/pages/folders/components/Upload/Upload.tsx:3064
 msgid "Upload Files"
 msgstr "Muat Naik Fail"
 
@@ -15202,8 +15245,8 @@ msgstr ""
 msgid "View all attachments ({moreCount} more)"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1292
-#: src/pages/folders/components/FolderTable.tsx:1561
+#: src/pages/folders/components/DocumentsListView.tsx:1098
+#: src/pages/folders/components/FolderTable.tsx:1455
 msgid "View Details"
 msgstr "Lihat Butiran"
 
@@ -15267,13 +15310,13 @@ msgstr "Menunggu semakan ejen"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2834
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:170
-msgid "Waiting for Export"
-msgstr ""
+#~ msgid "Waiting for Export"
+#~ msgstr ""
 
 #: src/pages/folders/components/Upload/Upload.tsx:3128
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:109
-msgid "Waiting For Export"
-msgstr ""
+#~ msgid "Waiting For Export"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1628
 msgid "Waiting for field verification"
@@ -15296,7 +15339,7 @@ msgstr "Menunggu untuk menjana skema papan pemuka"
 msgid "Waiting to start"
 msgstr "Menunggu untuk bermula"
 
-#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:189
+#: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:232
 msgid "Waiting..."
 msgstr ""
 
@@ -15358,7 +15401,7 @@ msgstr ""
 msgid "We couldn't sign you in with Microsoft. Please try again."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2030
+#: src/pages/folders/components/Upload/Upload.tsx:2233
 msgid "We couldn't upload your file. Please try again."
 msgstr ""
 
@@ -15473,6 +15516,7 @@ msgid "Workflow Name"
 msgstr ""
 
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:251
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:185
 msgid "Workflow stages"
 msgstr "Peringkat aliran kerja"
 

@@ -274,7 +274,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
             <div className='flex flex-col gap-1.5'>
               <div className='flex items-center justify-between gap-2'>
                 <div className='flex min-w-0 items-center gap-2'>
-                  <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-green-9 bg-white text-green-9'>
+                  <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-green-9 bg-surface text-green-9'>
                     <Icon className='h-3 w-3' name='tabler:check' />
                   </div>
                   <div className='flex min-w-0 flex-col gap-0.5'>
@@ -282,7 +282,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                     {/* <span
                       className={cn(
                         TEXT_STATUS,
-                        'inline-flex w-fit items-center rounded border border-green-9 bg-white px-1.5 py-0.5 text-green-9',
+                        'inline-flex w-fit items-center rounded border border-green-9 bg-surface px-1.5 py-0.5 text-green-9',
                       )}
                     >
                       Setup completed
@@ -304,7 +304,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
             <div className='flex items-start gap-2.5'>
               <div
                 className={cn(
-                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white font-medium',
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-surface font-medium',
                   isKeyGenerated
                     ? 'border-green-9 text-green-9'
                     : 'border-orange-9 text-orange-9',
@@ -326,7 +326,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                     <span
                       className={cn(
                         TEXT_STATUS,
-                        'inline-flex items-center gap-1 rounded border border-green-9 bg-white px-1.5 py-0.5 text-green-9',
+                        'inline-flex items-center gap-1 rounded border border-green-9 bg-surface px-1.5 py-0.5 text-green-9',
                       )}
                     >
                       <Icon className='h-3 w-3' name='tabler:check' />
@@ -404,7 +404,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                         <span
                           className={cn(
                             TEXT_METHOD,
-                            'shrink-0 rounded border bg-white px-1.5 py-0.5',
+                            'shrink-0 rounded border bg-surface px-1.5 py-0.5',
                             endpoint.method === 'GET'
                               ? 'border-blue-9 text-blue-9'
                               : endpoint.method === 'POST'
@@ -428,7 +428,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                         </span>
                       )}
                     </div>
-                    <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-border-default'>
+                    <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface ring-1 ring-border-default'>
                       <Icon
                         name='tabler:chevron-down'
                         className={cn(

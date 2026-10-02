@@ -15,6 +15,7 @@ interface Props extends Option {
   /** Shown on the trailing edge of the option row (e.g. folder / workflow). */
   rightIconKey?: string
   variant?: SelectVariant
+  wrapLabel?: boolean
 }
 
 const ComboboxOption = ({
@@ -26,10 +27,12 @@ const ComboboxOption = ({
   name,
   rightIconKey,
   variant = 'single',
+  wrapLabel = false,
 }: Props) => {
   const _className = cn(
     'group flex min-h-9 cursor-pointer gap-2.5 rounded px-1.5 py-1 transition-colors hover:bg-gray-4 data-[combobox-selected]:bg-gray-4',
-    !description && 'items-center',
+    !description && !wrapLabel && 'items-center',
+    wrapLabel && 'items-start',
     disabled && 'cursor-not-allowed',
   )
 
@@ -66,7 +69,7 @@ const ComboboxOption = ({
 
       <div className='min-w-0 flex-1'>
         <MantineTooltip
-          disabled={!name || name.length < 24}
+          disabled={wrapLabel || !name || name.length < 24}
           label={name}
           openDelay={250}
           position='top'
@@ -79,7 +82,12 @@ const ComboboxOption = ({
               'rounded-md bg-gray-13 px-2.5 py-1.5 font-sans text-xs leading-relaxed font-normal break-words whitespace-normal text-white shadow-lg',
           }}
         >
-          <div className='truncate text-13 font-normal text-gray-12'>
+          <div
+            className={cn(
+              'text-13 font-normal text-gray-12',
+              wrapLabel ? 'break-words whitespace-normal' : 'truncate',
+            )}
+          >
             {name}
           </div>
         </MantineTooltip>

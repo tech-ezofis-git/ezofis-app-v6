@@ -249,6 +249,7 @@
   --surface: var(--gray-1);
   --surface-raised: var(--gray-2);
   --surface-muted: var(--gray-2);
+  --surface-contrast: var(--gray-5);
   --surface-hover: var(--gray-3);
   --surface-overlay: var(--gray-2);
 

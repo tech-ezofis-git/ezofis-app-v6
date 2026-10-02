@@ -133,7 +133,7 @@ const VerifyEmailForm = ({ onBack }: Props) => {
       />
 
       {error && (
-        <div className='text-red-500 mt-2 text-center text-sm'>{error}</div>
+        <div className='text-red-9 mt-2 text-center text-sm'>{error}</div>
       )}
 
       <Button

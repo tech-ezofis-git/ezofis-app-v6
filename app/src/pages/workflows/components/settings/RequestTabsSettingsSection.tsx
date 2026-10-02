@@ -135,7 +135,7 @@ export default function RequestTabsSettingsSection({
 
           return (
             <div
-              className='space-y-2 rounded-xl border border-gray-3 bg-white p-3 shadow-xs'
+              className='space-y-2 rounded-xl border border-gray-3 bg-surface p-3 shadow-xs'
               key={tab.id}
             >
               <div className='flex items-center gap-2'>

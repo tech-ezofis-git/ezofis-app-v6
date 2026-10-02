@@ -160,7 +160,7 @@ export default function KanbanViewSettingsSection({
             .filter(Boolean)
           return (
             <div
-              className='animate-in fade-in slide-in-from-top-1 rounded-xl border border-gray-3 bg-white p-3 duration-200'
+              className='animate-in fade-in slide-in-from-top-1 rounded-xl border border-gray-3 bg-surface p-3 duration-200'
               key={card.id}
             >
               <div className='flex items-start gap-2'>
@@ -208,7 +208,7 @@ export default function KanbanViewSettingsSection({
       </div>
 
       {draft ? (
-        <div className='animate-in fade-in slide-in-from-top-2 space-y-3 rounded-xl border border-primary-4 bg-white p-3 duration-300'>
+        <div className='animate-in fade-in slide-in-from-top-2 space-y-3 rounded-xl border border-primary-4 bg-surface p-3 duration-300'>
           <Input
             label={t`Card name`}
             placeholder={t`e.g. PDA Preparation`}

@@ -282,6 +282,7 @@ export const resolveAssigneeEmails = (
 
 const AGENT_TYPES = new Set([
   'AP_AGENT',
+  'CLASSIFICATION_AGENT',
   'DOCUMENT_GENERATE_AGENT',
   'FTP_AGENT',
   'KYC_AGENT',
@@ -293,6 +294,7 @@ const AGENT_TYPES = new Set([
 ])
 const AGENT_TOOLS = new Set([
   'ap_agent',
+  'classification_agent',
   'document_generate_agent',
   'ftp_agent',
   'kyc_agent',

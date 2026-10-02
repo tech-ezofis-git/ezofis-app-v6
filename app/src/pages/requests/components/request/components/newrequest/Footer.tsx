@@ -20,7 +20,7 @@ const Footer = ({
   // isSecondaryDisabled = false,
 }: Props) => {
   return (
-    <div className='bg-slate-50 flex items-center justify-between border-t border-gray-3 px-4 py-3'>
+    <div className='bg-surface-muted flex items-center justify-between border-t border-gray-3 px-4 py-3'>
       {/* Right: actions */}
       <div className='ml-auto flex items-center gap-2'>
         {/* <Button

@@ -781,7 +781,7 @@ export default function FolderSecurityPolicyWizard({
                               >
                                 <span
                                   className={cn(
-                                    'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition',
+                                    'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--control-thumb)] shadow transition',
                                     p.enabled ? 'left-4.5' : 'left-0.5',
                                   )}
                                 />
@@ -877,7 +877,7 @@ export default function FolderSecurityPolicyWizard({
                         className='inline-flex h-8 items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs'
                         key={p.id}
                       >
-                        <span className='flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
+                        <span className='flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-surface text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                           {initials}
                         </span>
                         {p.name}

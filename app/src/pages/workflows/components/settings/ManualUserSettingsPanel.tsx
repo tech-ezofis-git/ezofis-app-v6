@@ -306,7 +306,7 @@ export default function ManualUserSettingsPanel({
   }
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <GeneralTab
           actorNodeOptions={actorNodeOptions}
@@ -357,7 +357,7 @@ export default function ManualUserSettingsPanel({
             variant='premium'
             onToggle={() => setOpenGeneratePdf(!openGeneratePdf)}
           >
-            <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2.5'>
                   <Icon

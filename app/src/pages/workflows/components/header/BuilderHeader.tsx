@@ -132,7 +132,7 @@ const BuilderHeader = () => {
   const isPublished = String(workflowStatus).toLowerCase() === 'published'
 
   return (
-    <header className='flex h-16 items-center justify-between border-b border-gray-3 bg-white px-4'>
+    <header className='flex h-16 items-center justify-between border-b border-gray-3 bg-surface px-4'>
       <div className='flex items-center gap-4'>
         <IconButton
           color='gray'

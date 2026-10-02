@@ -110,12 +110,12 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
+          <span className='text-purple-11 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='text-gray-500 italic'>null</span>
-        {!isLast && <span className='text-gray-400'>,</span>}
+        <span className='text-gray-9 italic'>null</span>
+        {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
   }
@@ -125,14 +125,14 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
+          <span className='text-purple-11 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='text-blue-600 dark:text-blue-400 font-semibold'>
+        <span className='text-blue-11 font-semibold'>
           {String(data)}
         </span>
-        {!isLast && <span className='text-gray-400'>,</span>}
+        {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
   }
@@ -142,14 +142,14 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
+          <span className='text-purple-11 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='text-amber-600 dark:text-amber-400 font-medium'>
+        <span className='text-yellow-11 font-medium'>
           {data}
         </span>
-        {!isLast && <span className='text-gray-400'>,</span>}
+        {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
   }
@@ -159,12 +159,12 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
+          <span className='text-purple-11 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='text-emerald-700 dark:text-emerald-400'>"{data}"</span>
-        {!isLast && <span className='text-gray-400'>,</span>}
+        <span className='text-green-11'>"{data}"</span>
+        {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
   }
@@ -193,7 +193,7 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
         </button>
 
         {name !== undefined && (
-          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
+          <span className='text-purple-11 font-semibold'>
             "{name}":{' '}
           </span>
         )}
@@ -241,7 +241,7 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
           <span className='font-bold text-[var(--gray-12)]'>
             {closeBracket}
           </span>
-          {!isLast && <span className='text-gray-400'>,</span>}
+          {!isLast && <span className='text-gray-8'>,</span>}
         </div>
       )}
     </div>
@@ -836,10 +836,10 @@ const mergeDraftWithLocalUpload = (
     ...(serverSettled
       ? {}
       : {
-          backendStatus: local.backendStatus ?? base.backendStatus,
-          jobId: local.jobId ?? base.jobId,
-          status: local.jobId ? local.status : base.status,
-        }),
+        backendStatus: local.backendStatus ?? base.backendStatus,
+        jobId: local.jobId ?? base.jobId,
+        status: local.jobId ? local.status : base.status,
+      }),
   }
 }
 
@@ -3361,7 +3361,7 @@ export default function Upload({
                           className={[
                             'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-colors',
                             isComplete
-                              ? 'bg-[#10B981]'
+                              ? 'bg-green-9'
                               : isActive
                                 ? 'bg-[var(--primary-9)]'
                                 : 'bg-[var(--gray-4)] text-[var(--gray-9)]',
@@ -3417,7 +3417,7 @@ export default function Upload({
                         <div
                           className={[
                             'h-[2px] min-w-[60px] flex-1 rounded-full transition-colors',
-                            isComplete ? 'bg-[#10B981]' : 'bg-[var(--gray-4)]',
+                            isComplete ? 'bg-green-9' : 'bg-[var(--gray-4)]',
                           ].join(' ')}
                         />
                       ) : null}

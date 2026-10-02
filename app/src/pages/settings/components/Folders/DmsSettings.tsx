@@ -5401,7 +5401,7 @@ function WizardContent({
                           className={cn(
                             'flex size-9 shrink-0 items-center justify-center rounded-md p-1.5',
                             masterFormSetupMode === 'existing'
-                              ? 'bg-white shadow-sm'
+                              ? 'bg-surface shadow-sm'
                               : 'bg-gray-2 group-hover:bg-gray-3',
                           )}
                         >
@@ -5458,7 +5458,7 @@ function WizardContent({
                           className={cn(
                             'flex size-9 shrink-0 items-center justify-center rounded-md p-1.5',
                             masterFormSetupMode === 'create'
-                              ? 'bg-white shadow-sm'
+                              ? 'bg-surface shadow-sm'
                               : 'bg-gray-2 group-hover:bg-gray-3',
                           )}
                         >

@@ -105,7 +105,7 @@ export default function PortalShell({
                   {wizard.title}
                 </h1>
                 {wizard.stageLabel ? (
-                  <span className='dark:bg-purple-950/40 dark:text-purple-400 inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-9 dark:border-purple-9/30'>
+                  <span className='inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-11'>
                     <span className='size-1.5 rounded-full bg-purple-6' />
                     {wizard.stageLabel}
                   </span>

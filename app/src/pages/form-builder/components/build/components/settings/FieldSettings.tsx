@@ -105,7 +105,7 @@ const FieldSettings = () => {
   if (selectionType === 'question' && !activeQuestion) return null
 
   return (
-    <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white font-inter shadow-xl transition-all duration-300'>
+    <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface font-inter shadow-xl transition-all duration-300'>
       <SettingsHeader
         activeQuestion={activeQuestion}
         handleLabelSave={handleLabelSave}
@@ -144,7 +144,7 @@ const SettingsHeader = ({
       : icon
 
   return (
-    <div className='flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
+    <div className='flex items-center justify-between border-b border-gray-2 bg-surface px-4 py-3'>
       <div className='flex min-w-0 flex-1 items-center gap-2.5'>
         <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
           <Icon height={16} name={headerIcon} width={16} />
@@ -153,7 +153,7 @@ const SettingsHeader = ({
         {selectionType === 'question' && activeQuestion ? (
           isEditingLabel ? (
             <input
-              className='min-w-0 flex-1 border-b-2 border-primary-9 bg-white px-1 py-0.5 text-15/5 font-semibold text-gray-13 focus:outline-none'
+              className='min-w-0 flex-1 border-b-2 border-primary-9 bg-surface px-1 py-0.5 text-15/5 font-semibold text-gray-13 focus:outline-none'
               ref={inputRef}
               type='text'
               value={headerLabel}

@@ -1253,7 +1253,7 @@ const renderCellByType = (type: string, rawVal: any, row: any) => {
       return (
         <WrapOnHoverCell
           value={
-            <span className='text-gray-900 font-medium'>{String(rawVal)}</span>
+            <span className='text-gray-12 font-medium'>{String(rawVal)}</span>
           }
         />
       )

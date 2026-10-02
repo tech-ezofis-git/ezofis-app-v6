@@ -288,7 +288,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   if (!isSettingsOpen) return null
 
   return (
-    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
       {/* Header */}
       <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3'>
         <h2 className='text-15/5 font-semibold text-gray-13'>Settings</h2>
@@ -352,7 +352,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             <label className='mb-2 block text-13 font-medium text-gray-11'>
               Status
             </label>
-            <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
+            <div className='bg-surface-muted flex rounded-lg border border-gray-3 p-1'>
               {[
                 { id: 'draft', label: 'Draft' },
                 { id: 'published', label: 'Published' },
@@ -365,7 +365,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                     className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
                       active
                         ? 'bg-primary-9 text-white shadow-sm'
-                        : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                        : 'text-gray-9 hover:bg-surface/50 hover:text-gray-12'
                     }`}
                     onClick={() => setWorkflowStatus(opt.id as any)}
                   >
@@ -547,14 +547,14 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
           )}
 
           {/* Token list */}
-          <div className='space-y-2 rounded-xl bg-white p-3 shadow-sm'>
+          <div className='space-y-2 rounded-xl bg-surface p-3 shadow-sm'>
             <span className='text-13 font-medium text-gray-11'>
               Number Parts
             </span>
             <div className='space-y-2'>
               {tokenSegments.map((segment) => (
                 <div
-                  className='flex items-start gap-2 rounded-xl border border-gray-2 bg-[#F8FAFC] p-2'
+                  className='flex items-start gap-2 rounded-xl border border-gray-2 bg-surface-muted p-2'
                   key={segment.id}
                 >
                   <div className='w-[120px] shrink-0'>
@@ -664,7 +664,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   </div>
 
                   <button
-                    className='text-gray-400 hover:text-red-500 shrink-0 p-1.5 transition-colors'
+                    className='text-gray-8 hover:text-red-9 shrink-0 p-1.5 transition-colors'
                     title='Remove part'
                     onClick={() => removeToken(segment.id)}
                   >
@@ -675,7 +675,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             </div>
 
             <button
-              className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-13 font-medium transition-all hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+              className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-13 font-medium transition-all hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
               onClick={addToken}
             >
               <Icon className='h-4 w-4' name='lucide:plus' />
@@ -684,7 +684,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
           </div>
 
           {/* Live preview */}
-          <div className='rounded-xl bg-white p-3 text-13 font-medium text-gray-11 shadow-sm'>
+          <div className='rounded-xl bg-surface p-3 text-13 font-medium text-gray-11 shadow-sm'>
             Format : <span className='text-primary-9'>{formatPreview}</span>
           </div>
         </SettingsSection>

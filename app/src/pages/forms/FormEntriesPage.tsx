@@ -194,7 +194,7 @@ const FormEntriesChoiceInput = ({
                 'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
                 isSelected
                   ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                  : 'border-gray-2 bg-white text-gray-12',
+                  : 'border-gray-2 bg-surface text-gray-12',
               )}
               onClick={() => toggleOpt(opt)}
             >
@@ -226,7 +226,7 @@ const FormEntriesChoiceInput = ({
               'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
               isSelected
                 ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                : 'border-gray-2 bg-white text-gray-12',
+                : 'border-gray-2 bg-surface text-gray-12',
             )}
             onClick={() => onChange(opt)}
           >
@@ -1044,7 +1044,7 @@ const FormLineItemsEditor = ({
       />
 
       {rows.length === 0 ? (
-        <div className='flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-3 bg-white py-8 text-center'>
+        <div className='flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-3 bg-surface py-8 text-center'>
           <div className='mb-2 flex size-10 items-center justify-center rounded-full bg-gray-2 text-gray-7'>
             <Icon className='size-5' name='lucide:shopping-bag' />
           </div>
@@ -1057,11 +1057,11 @@ const FormLineItemsEditor = ({
           </p>
         </div>
       ) : (
-        <div className='overflow-hidden rounded-xl border border-gray-2 bg-white shadow-xs'>
+        <div className='overflow-hidden rounded-xl border border-gray-2 bg-surface shadow-xs'>
           <div className='custom-scrollbar max-h-[340px] overflow-x-auto overflow-y-auto'>
             <table className='w-full border-collapse text-left text-xs'>
               <thead>
-                <tr className='bg-gray-50/95 sticky top-0 z-10 border-b border-gray-2 backdrop-blur-xs'>
+                <tr className='bg-surface-muted/95 sticky top-0 z-10 border-b border-gray-2 backdrop-blur-xs'>
                   {columns.map((col) => (
                     <th
                       className='p-2.5 font-bold whitespace-nowrap text-gray-11'
@@ -1082,7 +1082,7 @@ const FormLineItemsEditor = ({
                     <tr
                       key={rIdx}
                       className={cn(
-                        'hover:bg-gray-50/60 border-b border-gray-1 transition-colors last:border-0',
+                        'hover:bg-surface-hover/60 border-b border-gray-1 transition-colors last:border-0',
                         isHighlighted ? 'animate-pulse bg-accent-soft/20' : '',
                       )}
                     >
@@ -1128,7 +1128,7 @@ const FormLineItemsEditor = ({
           </div>
 
           {/* Table Footer */}
-          <div className='bg-gray-50/60 flex items-center justify-between border-t border-gray-2 px-4 py-3 text-xs'>
+          <div className='bg-surface-muted/60 flex items-center justify-between border-t border-gray-2 px-4 py-3 text-xs'>
             <span className='text-[11px] font-medium text-gray-7'>
               Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
             </span>
@@ -1988,7 +1988,7 @@ const FormEntriesPage = () => {
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
-      <div className='bg-gray-50/20 flex h-full flex-col p-8'>
+      <div className='bg-surface-muted/20 flex h-full flex-col p-8'>
         <div className='mb-6 flex items-center justify-between border-b border-gray-2 pb-4'>
           <Stack gap='xs'>
             <Skeleton height={14} width={120} />
@@ -2004,7 +2004,7 @@ const FormEntriesPage = () => {
 
   if (isPageError) {
     return (
-      <div className='bg-gray-50/20 flex h-full flex-col items-center justify-center p-8'>
+      <div className='bg-surface-muted/20 flex h-full flex-col items-center justify-center p-8'>
         <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-red-3 bg-red-2 text-red-11'>
           <Icon className='size-7 animate-bounce' name='lucide:alert-circle' />
         </div>
@@ -2028,7 +2028,7 @@ const FormEntriesPage = () => {
 
   if (isImportOpen) {
     return (
-      <div className='flex h-full flex-col bg-white font-inter'>
+      <div className='flex h-full flex-col bg-surface font-inter'>
         {isPoMasterForm ? (
           <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
         ) : (
@@ -2050,9 +2050,9 @@ const FormEntriesPage = () => {
     const evaluatedFieldStates = evaluateFormRules(panels, editValues)
 
     return (
-      <div className='bg-gray-50/20 flex h-full flex-col font-inter'>
+      <div className='bg-surface-muted/20 flex h-full flex-col font-inter'>
         {/* Compact Enterprise Form Banner Header */}
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-white px-8 py-3.5 shadow-xs'>
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-surface px-8 py-3.5 shadow-xs'>
           <div className='flex min-w-0 items-center gap-3.5'>
             <IconButton
               color='gray'
@@ -2084,7 +2084,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Scrollable Form Body with ~80% Width Container */}
-        <div className='custom-scrollbar bg-gray-50/40 flex-1 overflow-y-auto px-6 py-6'>
+        <div className='custom-scrollbar bg-surface-muted/40 flex-1 overflow-y-auto px-6 py-6'>
           <div className='mx-auto w-full max-w-[1200px] space-y-6'>
             {panels.map((panel: any, pIdx: number) => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
@@ -2103,7 +2103,7 @@ const FormEntriesPage = () => {
 
               return (
                 <div
-                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                  className='rounded-2xl border border-gray-2 bg-surface p-6 shadow-xs transition-shadow hover:shadow-md'
                   key={panel.id || `panel_${pIdx}`}
                 >
                   {/* Block Card Header */}
@@ -2186,7 +2186,7 @@ const FormEntriesPage = () => {
 
                           {/* Form Input Control */}
                           {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
-                            <div className='bg-gray-50/50 flex max-w-xs items-center justify-between rounded-xl border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
+                            <div className='bg-surface-muted/50 flex max-w-xs items-center justify-between rounded-xl border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
                               <span className='text-xs font-semibold text-gray-11'>
                                 Consent / Enable
                               </span>
@@ -2264,7 +2264,7 @@ const FormEntriesPage = () => {
                                       'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
                                       isSelected
                                         ? 'border-accent-primary bg-accent-primary text-white'
-                                        : 'border-gray-3 bg-white text-gray-12',
+                                        : 'border-gray-3 bg-surface text-gray-12',
                                     )}
                                     onClick={() =>
                                       handleFieldChange(field.id, i)
@@ -2325,7 +2325,7 @@ const FormEntriesPage = () => {
                             </FormEntriesSearchableInput>
                           ) : type === 'FILE_UPLOAD' ||
                             type === 'IMAGE_UPLOAD' ? (
-                            <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
+                            <div className='bg-surface-muted/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
                               <div className='flex items-center gap-3'>
                                 <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
                                   <Icon
@@ -2407,7 +2407,7 @@ const FormEntriesPage = () => {
             })}
 
             {panels.length === 0 && (
-              <div className='rounded-2xl border border-dashed border-gray-3 bg-white py-16 text-center text-xs text-gray-7 shadow-xs'>
+              <div className='rounded-2xl border border-dashed border-gray-3 bg-surface py-16 text-center text-xs text-gray-7 shadow-xs'>
                 This form currently has no input fields defined.
               </div>
             )}
@@ -2415,7 +2415,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 shadow-lg backdrop-blur-md'>
+        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-surface/95 px-8 py-3.5 shadow-lg backdrop-blur-md'>
           {/* Action Buttons */}
           <div className='flex items-center gap-3'>
             <Button
@@ -2440,7 +2440,7 @@ const FormEntriesPage = () => {
   }
 
   return (
-    <div className='relative flex h-full flex-col bg-white'>
+    <div className='relative flex h-full flex-col bg-surface'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
       <div className='flex items-center justify-between border-b border-gray-2 px-6'>
         <div className='flex items-center gap-4'>
@@ -2545,7 +2545,7 @@ const FormEntriesPage = () => {
 
       {/* 2. MAIN LAYOUT (Table view) */}
       <div className='relative flex flex-1 overflow-hidden'>
-        <div className='bg-gray-50/50 flex flex-1 flex-col overflow-hidden p-6'>
+        <div className='bg-surface-muted/50 flex flex-1 flex-col overflow-hidden p-6'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={table as any} />}
@@ -2657,7 +2657,7 @@ const FormEntriesPage = () => {
         onClose={() => setActiveLineItems(null)}
       >
         {activeLineItems && (
-          <div className='flex flex-col rounded-lg bg-white p-6 font-inter'>
+          <div className='flex flex-col rounded-lg bg-surface p-6 font-inter'>
             <div className='mb-4 flex items-center justify-between border-b border-gray-2 pb-2'>
               <div className='flex items-center gap-2'>
                 <Icon
@@ -2677,10 +2677,10 @@ const FormEntriesPage = () => {
               />
             </div>
 
-            <div className='custom-scrollbar max-h-[400px] overflow-x-auto overflow-y-auto rounded-lg border border-gray-2 bg-white'>
+            <div className='custom-scrollbar max-h-[400px] overflow-x-auto overflow-y-auto rounded-lg border border-gray-2 bg-surface'>
               <table className='w-full border-collapse text-left text-xs'>
                 <thead>
-                  <tr className='bg-gray-50 border-b border-gray-2'>
+                  <tr className='bg-surface-muted border-b border-gray-2'>
                     {activeLineItems.data.length > 0 &&
                       Object.keys(activeLineItems.data[0]).map((k) => (
                         <th
@@ -2695,7 +2695,7 @@ const FormEntriesPage = () => {
                 <tbody>
                   {activeLineItems.data.map((item: any, idx: number) => (
                     <tr
-                      className='hover:bg-gray-50/50 border-b border-gray-1 last:border-0'
+                      className='hover:bg-surface-hover/50 border-b border-gray-1 last:border-0'
                       key={idx}
                     >
                       {Object.keys(item).map((k) => (

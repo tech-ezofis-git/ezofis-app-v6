@@ -486,7 +486,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
           return (
             <span
               className={cn(
-                'inline-flex max-w-full items-center truncate rounded border bg-white px-1.5 py-0.5 text-11 font-medium',
+                'inline-flex max-w-full items-center truncate rounded border bg-surface px-1.5 py-0.5 text-11 font-medium',
                 getAgentBadgeTone(value),
               )}
             >
@@ -1032,7 +1032,7 @@ function ChartCard({
         {badge ? (
           <span
             className={cn(
-              'inline-flex shrink-0 items-center rounded border bg-white px-1.5 py-0.5 text-11 font-medium whitespace-nowrap',
+              'inline-flex shrink-0 items-center rounded border bg-surface px-1.5 py-0.5 text-11 font-medium whitespace-nowrap',
               badgeToneClass,
             )}
           >
@@ -1126,7 +1126,7 @@ function FilterPill({
         'rounded-full border px-3 py-1 text-12 font-medium transition-all active:scale-95',
         active
           ? 'border-primary-9 bg-primary-9 text-white shadow-sm'
-          : 'border-gray-3 bg-white text-gray-11 shadow-sm hover:bg-gray-1',
+          : 'border-gray-3 bg-surface text-gray-11 shadow-sm hover:bg-gray-1',
       )}
       onClick={onClick}
     >

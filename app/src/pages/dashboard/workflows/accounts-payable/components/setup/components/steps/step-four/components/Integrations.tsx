@@ -159,8 +159,8 @@ const Integrations = () => {
               {index < integrations.length - 1 && (
                 <div className='flex shrink-0 flex-col items-center justify-center lg:flex-row'>
                   <div className='relative mx-2 hidden w-16 items-center justify-center lg:flex'>
-                    <div className='bg-gray-200 absolute inset-0 top-1/2 h-[2px] w-full -translate-y-1/2' />
-                    <div className='bg-gray-50 text-gray-400 relative z-10 rounded-full p-1.5 shadow-sm'>
+                    <div className='bg-gray-4 absolute inset-0 top-1/2 h-[2px] w-full -translate-y-1/2' />
+                    <div className='bg-surface-muted text-gray-8 relative z-10 rounded-full p-1.5 shadow-sm'>
                       <Icon
                         className='size-8'
                         name='tabler:arrow-narrow-right-dashed'
@@ -169,8 +169,8 @@ const Integrations = () => {
                   </div>
 
                   <div className='relative my-2 flex h-16 flex-col items-center justify-center lg:hidden'>
-                    <div className='bg-gray-200 absolute inset-0 left-1/2 h-full w-[2px] -translate-x-1/2' />
-                    <div className='bg-gray-50 border-gray-200 text-gray-400 relative z-10 rounded-full border p-1.5 shadow-sm'>
+                    <div className='bg-gray-4 absolute inset-0 left-1/2 h-full w-[2px] -translate-x-1/2' />
+                    <div className='bg-surface-muted border-gray-4 text-gray-8 relative z-10 rounded-full border p-1.5 shadow-sm'>
                       <Icon
                         className='size-8'
                         name='tabler:arrow-narrow-down-dashed'

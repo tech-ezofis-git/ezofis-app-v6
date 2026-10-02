@@ -566,7 +566,7 @@ const FormsPage = () => {
         </div>
       )}
 
-      <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+      <div className='bg-surface-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={table as any} />}

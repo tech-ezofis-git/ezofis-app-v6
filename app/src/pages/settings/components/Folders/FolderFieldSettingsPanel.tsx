@@ -98,7 +98,7 @@ export default function FolderFieldSettingsPanel({
           <div className='space-y-2'>
             {columns.map((col, idx) => (
               <div
-                className='flex items-center gap-2 rounded-md border border-gray-3 bg-white p-2'
+                className='flex items-center gap-2 rounded-md border border-gray-3 bg-surface p-2'
                 key={col.id}
               >
                 <span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-2 text-[10px] font-semibold text-gray-9'>

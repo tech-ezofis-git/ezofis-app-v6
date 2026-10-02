@@ -209,7 +209,7 @@ export default function OCRAgentSettingsPanel({
   }, [assistantInputOptions, nodeData.assistantInput, assistantInput?.name])
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <SettingsSection
           icon='lucide:settings-2'
@@ -221,7 +221,7 @@ export default function OCRAgentSettingsPanel({
           <div className='flex flex-col gap-2.5 py-1'>
             <div className='flex items-center gap-2.5 px-1 pb-1'>
               <Icon
-                className='text-indigo-600 h-4 w-4'
+                className='text-indigo-10 h-4 w-4'
                 name='lucide:settings'
               />
               <div className='flex flex-col space-y-1'>
@@ -235,11 +235,11 @@ export default function OCRAgentSettingsPanel({
             </div>
 
             {/* Region & Doc Type Card */}
-            <div className='space-y-4 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'>
               {/* Region */}
               <div className='flex flex-col gap-1.5'>
                 <InputLabel label='Region' required />
-                <div className='bg-gray-50/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'>
+                <div className='bg-surface-muted/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'>
                   {regionOptions.map((opt) => {
                     const isActive = region === opt
                     return (
@@ -250,7 +250,7 @@ export default function OCRAgentSettingsPanel({
                           'flex-1 rounded-md border border-transparent py-1.5 text-[11px] font-bold transition-all duration-300 outline-none',
                           isActive
                             ? 'bg-purple-9 text-white shadow-md active:scale-95'
-                            : 'hover:bg-purple-50 text-gray-9 hover:text-purple-11',
+                            : 'hover:bg-purple-2 text-gray-9 hover:text-purple-11',
                         )}
                         onClick={() => handleRegionChange(opt)}
                       >
@@ -264,7 +264,7 @@ export default function OCRAgentSettingsPanel({
               {/* Document Type Dropdown */}
               <div className='flex flex-col gap-1'>
                 <InputSelect
-                  className='bg-white'
+                  className='bg-surface'
                   label='Document Type'
                   options={assistantInputOptions}
                   value={assistantInput}
@@ -287,10 +287,10 @@ export default function OCRAgentSettingsPanel({
         >
           <div className='flex flex-col gap-2.5 py-1'>
             {/* Schema & JSON Card */}
-            <div className='space-y-4 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
-                  className='text-amber-600 h-4 w-4 stroke-[2]'
+                  className='text-yellow-10 h-4 w-4 stroke-[2]'
                   name='lucide:file-json-2'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -309,7 +309,7 @@ export default function OCRAgentSettingsPanel({
                 <div
                   className={cn(
                     'flex items-center gap-1.5 text-[11px] font-bold',
-                    jsonValid ? 'text-[#16a34a]' : 'text-red-500',
+                    jsonValid ? 'text-green-11' : 'text-red-11',
                   )}
                 >
                   <Icon
@@ -319,8 +319,8 @@ export default function OCRAgentSettingsPanel({
                   {jsonValid ? 'VALID JSON' : 'INVALID JSON'}
                 </div>
 
-                <div className='border-slate-100 bg-slate-50/30 relative overflow-hidden rounded-lg border font-mono text-[12px]'>
-                  <div className='bg-slate-50 border-slate-100 text-gray-400 pointer-events-none absolute top-0 bottom-0 left-0 flex w-8 flex-col items-center border-r py-3 select-none'>
+                <div className='border-gray-3 bg-surface-muted/30 relative overflow-hidden rounded-lg border font-mono text-[12px]'>
+                  <div className='bg-surface-muted border-gray-3 text-gray-8 pointer-events-none absolute top-0 bottom-0 left-0 flex w-8 flex-col items-center border-r py-3 select-none'>
                     {fieldExtraction.split('\n').map((_: string, i: number) => (
                       <div className='h-5 leading-5' key={i}>
                         {i + 1}
@@ -338,11 +338,11 @@ export default function OCRAgentSettingsPanel({
             </div>
 
             {/* Specific Instructions Card */}
-            <div className='space-y-4 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2.5'>
                   <Icon
-                    className='text-purple-600 h-4 w-4 stroke-[2]'
+                    className='text-purple-10 h-4 w-4 stroke-[2]'
                     name='lucide:pencil-line'
                   />
                   <div className='flex flex-col space-y-1'>
@@ -365,12 +365,12 @@ export default function OCRAgentSettingsPanel({
 
               {showInstructions && (
                 <div className='animate-in fade-in slide-in-from-top-1 duration-200'>
-                  <div className='border-slate-100 bg-slate-50/20 overflow-hidden rounded-lg border'>
+                  <div className='border-gray-3 bg-surface-muted/20 overflow-hidden rounded-lg border'>
                     {/* Toolbar Simulation */}
-                    <div className='border-slate-100 flex items-center gap-2 border-b bg-white/50 p-2'>
+                    <div className='border-gray-3 flex items-center gap-2 border-b bg-surface/50 p-2'>
                       {['B', 'I', 'U', 'list'].map((tool) => (
                         <button
-                          className='flex h-6 w-6 items-center justify-center rounded border border-gray-2 bg-white text-gray-12 shadow-sm transition-colors hover:bg-gray-1'
+                          className='flex h-6 w-6 items-center justify-center rounded border border-gray-2 bg-surface text-gray-12 shadow-sm transition-colors hover:bg-gray-1'
                           key={tool}
                           type='button'
                         >
@@ -405,10 +405,10 @@ export default function OCRAgentSettingsPanel({
             </div>
 
             {/* Output Method Card */}
-            <div className='space-y-4 rounded-xl bg-white p-4 shadow-sm'>
+            <div className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
-                  className='text-emerald-600 h-4 w-4 stroke-[2]'
+                  className='text-green-10 h-4 w-4 stroke-[2]'
                   name='lucide:layout'
                 />
                 <div className='flex flex-col space-y-1'>

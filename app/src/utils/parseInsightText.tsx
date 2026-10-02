@@ -22,7 +22,7 @@ export function parseInsightText(text: React.ReactNode): React.ReactNode {
     if (match[1] !== undefined) {
       parts.push(
         <mark
-          className='bg-amber-500/15 text-amber-950 dark:bg-amber-950/50 dark:text-amber-200 rounded px-1 py-0.5 font-medium'
+          className='bg-yellow-3 text-yellow-11 rounded px-1 py-0.5 font-medium'
           key={match.index}
         >
           {match[1]}

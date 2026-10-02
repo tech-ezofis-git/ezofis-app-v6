@@ -55,7 +55,7 @@ export default function DynamicTableModal({
 
         {/* Safety fallback: if payload is object but rows not detected */}
         {!rows?.length && meta ? (
-          <div className='border-gray-200 mt-3 max-h-[40vh] overflow-auto rounded-md border p-3 text-xs break-words whitespace-pre-wrap text-gray-12'>
+          <div className='border-gray-4 mt-3 max-h-[40vh] overflow-auto rounded-md border p-3 text-xs break-words whitespace-pre-wrap text-gray-12'>
             {toDisplayString(meta)}
           </div>
         ) : null}

@@ -57,7 +57,7 @@ import { Accordion as Base } from '@mantine/core'`}
             The Accordion uses Mantine's primitive sub-components for child
             items.
           </p>
-          <div className='overflow-hidden rounded-xl border border-gray-3 bg-white dark:bg-gray-1'>
+          <div className='overflow-hidden rounded-xl border border-gray-3 bg-surface'>
             <Accordion>
               {items.map((item) => (
                 <Base.Item key={item.value} value={item.value}>

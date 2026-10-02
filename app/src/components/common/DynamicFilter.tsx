@@ -370,7 +370,7 @@ export default function DynamicFilter({
                       ? FILTER_CHIP_ACTIVE
                       : FILTER_CHIP_INACTIVE,
                     !(isActive || isOpen) &&
-                      'hover:bg-gray-3 dark:hover:bg-gray-10',
+                      'hover:bg-gray-3',
                   )}
                   ref={(el) => {
                     buttonRefs.current[`quick_${qf.id}`] = el

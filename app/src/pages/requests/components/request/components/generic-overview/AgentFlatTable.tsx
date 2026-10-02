@@ -9,7 +9,7 @@ import {
 import cn from '@/utils/cn'
 
 const cellInputClass =
-  'w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-white'
+  'w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-surface'
 
 const META_ROW_KEYS = new Set(['_rowId', '_approved', '_hideNote'])
 

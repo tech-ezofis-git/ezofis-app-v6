@@ -38,6 +38,11 @@ const mapToolTypeToLegacyType = (
     return 'QUALIFY_AGENT'
   if (t === NODE_TOOL_TYPE.QUOTE_AGENT || t.includes('quote'))
     return 'QUOTE_AGENT'
+  if (
+    t === NODE_TOOL_TYPE.CLASSIFICATION_AGENT ||
+    t.includes('classification')
+  )
+    return 'CLASSIFICATION_AGENT'
   if (t === NODE_TOOL_TYPE.FTP_AGENT || t.includes('ftp')) return 'FTP_AGENT'
   if (t === NODE_TOOL_TYPE.GOOGLE_DRIVE || t.includes('drive'))
     return 'GOOGLE_DRIVE'

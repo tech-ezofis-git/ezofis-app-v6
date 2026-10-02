@@ -100,12 +100,12 @@ export default function GeneralTab({
             checked={!!nodeData.isUserEnabled}
             description='Assign specific users manually'
             icon='lucide:user'
-            iconClassName='text-purple-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-purple-10 h-4 w-4 stroke-[2]'
             title='Users'
             onChange={(checked) => updateNodeData('isUserEnabled', checked)}
           >
             <InputSelectMultiple
-              className='bg-white'
+              className='bg-surface'
               options={userOptions}
               placeholder='Select users...'
               value={selectedUsers}
@@ -119,12 +119,12 @@ export default function GeneralTab({
             checked={!!nodeData.isGroupEnabled}
             description='Assign specific user groups'
             icon='lucide:users-2'
-            iconClassName='text-blue-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-blue-10 h-4 w-4 stroke-[2]'
             title='Groups'
             onChange={(checked) => updateNodeData('isGroupEnabled', checked)}
           >
             <InputSelectMultiple
-              className='bg-white'
+              className='bg-surface'
               options={groupOptions}
               placeholder='Select groups...'
               value={selectedGroups}
@@ -138,7 +138,7 @@ export default function GeneralTab({
             checked={!!nodeData.isManagerEnabled}
             description="Route to the requester's direct manager"
             icon='lucide:user-check'
-            iconClassName='text-emerald-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-green-10 h-4 w-4 stroke-[2]'
             title='Manager'
             onChange={(checked) => updateNodeData('isManagerEnabled', checked)}
           />
@@ -147,7 +147,7 @@ export default function GeneralTab({
             checked={!!nodeData.isToRequesterEnabled}
             description='Route back to the workflow initiator'
             icon='lucide:corner-up-left'
-            iconClassName='text-orange-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-orange-10 h-4 w-4 stroke-[2]'
             title='To Requester'
             onChange={(checked) =>
               updateNodeData('isToRequesterEnabled', checked)
@@ -158,14 +158,14 @@ export default function GeneralTab({
             checked={!!nodeData.isDynamicUserEnabled}
             description='Assignee is read from a form field at runtime'
             icon='lucide:zap'
-            iconClassName='text-amber-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-yellow-10 h-4 w-4 stroke-[2]'
             title='Dynamic User (Form Input)'
             onChange={(checked) =>
               updateNodeData('isDynamicUserEnabled', checked)
             }
           >
             <InputSelect
-              className='bg-white'
+              className='bg-surface'
               options={fieldOptions}
               placeholder='Select form field...'
               value={dynamicUserField}
@@ -199,14 +199,14 @@ export default function GeneralTab({
             checked={!!nodeData.isActedActivityEnabled}
             description='Route to whoever acted on a prior step'
             icon='lucide:history'
-            iconClassName='text-pink-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-pink-10 h-4 w-4 stroke-[2]'
             title='Acted Activity'
             onChange={(checked) =>
               updateNodeData('isActedActivityEnabled', checked)
             }
           >
             <InputSelect
-              className='bg-white'
+              className='bg-surface'
               options={actorNodeOptions}
               placeholder='Select a prior step...'
               searchable
@@ -225,7 +225,7 @@ export default function GeneralTab({
             checked={!!nodeData.isCoordinatorEnabled}
             description='Assign to designated workflow coordinators'
             icon='lucide:shield'
-            iconClassName='text-indigo-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-indigo-10 h-4 w-4 stroke-[2]'
             title='Coordinator'
             onChange={(checked) =>
               updateNodeData('isCoordinatorEnabled', checked)
@@ -246,7 +246,7 @@ export default function GeneralTab({
             checked={!!nodeData.internalForward}
             description='Let the assigned user forward this task to others'
             icon='lucide:share-2'
-            iconClassName='text-violet-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-violet-10 h-4 w-4 stroke-[2]'
             title='Internal Forward'
             onChange={(checked) => updateNodeData('internalForward', checked)}
           >
@@ -256,7 +256,7 @@ export default function GeneralTab({
                   Forwarded user action
                 </div>
                 <InputSelect
-                  className='bg-white'
+                  className='bg-surface'
                   options={forwardActionOptions}
                   value={
                     forwardActionOptions.find(
@@ -273,7 +273,7 @@ export default function GeneralTab({
                   Forwardable to users
                 </div>
                 <InputSelectMultiple
-                  className='bg-white'
+                  className='bg-surface'
                   options={userOptions}
                   placeholder='Select users...'
                   value={internalForwardUser}
@@ -292,7 +292,7 @@ export default function GeneralTab({
                   Forwardable to groups
                 </div>
                 <InputSelectMultiple
-                  className='bg-white'
+                  className='bg-surface'
                   options={groupOptions}
                   placeholder='Select groups...'
                   value={internalForwardGroup}
@@ -318,13 +318,13 @@ export default function GeneralTab({
         variant='premium'
         onToggle={() => onToggleSection('multiApprover')}
       >
-        <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+        <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
           <div className='space-y-1.5'>
             <div className='text-12 font-medium text-gray-12'>
               Multiple actors' approval
             </div>
             <InputSelect
-              className='bg-white'
+              className='bg-surface'
               options={partialApproveOptions}
               value={
                 partialApproveOptions.find(
@@ -341,7 +341,7 @@ export default function GeneralTab({
               Full approval fallback action
             </div>
             <InputSelect
-              className='bg-white'
+              className='bg-surface'
               options={fullApprovalActionOptions}
               value={
                 fullApprovalActionOptions.find(
@@ -368,7 +368,7 @@ export default function GeneralTab({
             checked={!!nodeData.documentRequired}
             description='At least one attachment is required to act'
             icon='lucide:paperclip'
-            iconClassName='text-rose-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-red-10 h-4 w-4 stroke-[2]'
             title='Document Required'
             onChange={(checked) => updateNodeData('documentRequired', checked)}
           />
@@ -384,13 +384,13 @@ export default function GeneralTab({
             checked={!!nodeData.generatePDF}
             description='Generate a PDF of selected form fields on completion'
             icon='lucide:file-text'
-            iconClassName='text-red-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-red-10 h-4 w-4 stroke-[2]'
             title='Save Form as PDF'
             onChange={(checked) => updateNodeData('generatePDF', checked)}
           >
             <div className='space-y-3'>
               <InputSelectMultiple
-                className='bg-white'
+                className='bg-surface'
                 options={fieldOptions}
                 placeholder='Select fields to include...'
                 value={generatePDFFields}
@@ -423,12 +423,12 @@ export default function GeneralTab({
             checked={!!nodeData.generateCSV}
             description='Export selected fields to Excel/CSV on completion'
             icon='lucide:sheet'
-            iconClassName='text-green-600 h-4 w-4 stroke-[2]'
+            iconClassName='text-green-10 h-4 w-4 stroke-[2]'
             title='Save Form as Excel'
             onChange={(checked) => updateNodeData('generateCSV', checked)}
           >
             <InputSelectMultiple
-              className='bg-white'
+              className='bg-surface'
               options={fieldOptions}
               placeholder='Select fields to include...'
               value={generateCSVFields}
@@ -458,7 +458,7 @@ function AssigneeRow({
   onChange,
 }: RowProps) {
   return (
-    <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+    <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2.5'>
           <Icon className={iconClassName} name={icon} />

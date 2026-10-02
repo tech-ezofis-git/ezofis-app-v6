@@ -113,7 +113,7 @@ export default function SuccessCelebration({
             }}
           >
             <svg
-              className='size-10 text-green-9 dark:text-green-4'
+              className='size-10 text-green-11'
               fill='none'
               height='40'
               strokeLinecap='round'

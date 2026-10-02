@@ -789,7 +789,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   ])
 
   return (
-    <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>
+    <div className='flex h-full flex-col overflow-hidden bg-surface font-inter text-gray-12'>
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         {/* BASIC SETUP */}
         <SettingsSection
@@ -800,10 +800,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           onToggle={() => setOpenBasic(!openBasic)}
         >
           {/* Processing Mode */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center gap-2.5 px-0.5'>
               <Icon
-                className='text-indigo-600 h-4 w-4 stroke-[2]'
+                className='text-indigo-10 h-4 w-4 stroke-[2]'
                 name='lucide:settings'
               />
               <div className='flex flex-col space-y-1'>
@@ -822,8 +822,8 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                   className={cn(
                     'group/btn flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3.5 text-center transition-all duration-300 active:scale-95',
                     invoiceType.id === opt.id
-                      ? 'bg-purple-50/20 border-purple-3 shadow-sm'
-                      : 'bg-slate-50/20 border-gray-5/40 shadow-sm',
+                      ? 'bg-purple-2/20 border-purple-3 shadow-sm'
+                      : 'bg-surface-muted/20 border-gray-5/40 shadow-sm',
                   )}
                   onClick={() => handleInvoiceTypeChange(opt)}
                 >
@@ -832,7 +832,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                       'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
                       invoiceType.id === opt.id
                         ? 'scale-110 text-purple-9'
-                        : 'group-hover/btn:text-gray-400 text-gray-9/40',
+                        : 'group-hover/btn:text-gray-8 text-gray-9/40',
                     )}
                   >
                     <Icon className='h-6 w-6' name={opt.icon} />
@@ -859,10 +859,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
           {/* Matching Strategy */}
           {isPO && (
-            <div className='animate-in fade-in slide-in-from-top-1 space-y-3 rounded-xl bg-white p-4 shadow-sm duration-300'>
+            <div className='animate-in fade-in slide-in-from-top-1 space-y-3 rounded-xl bg-surface p-4 shadow-sm duration-300'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
-                  className='text-rose-600 h-4 w-4 stroke-[2]'
+                  className='text-red-10 h-4 w-4 stroke-[2]'
                   name='lucide:git-pull-request'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -881,8 +881,8 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     className={cn(
                       'group/strategy flex w-full items-center justify-between rounded-xl border p-2.5 transition-all duration-300 active:scale-[0.99]',
                       poMatching.id === opt.id
-                        ? 'bg-purple-50/20 border-purple-3 shadow-sm'
-                        : 'bg-slate-50/20 border-gray-5/40 shadow-sm',
+                        ? 'bg-purple-2/20 border-purple-3 shadow-sm'
+                        : 'bg-surface-muted/20 border-gray-5/40 shadow-sm',
                     )}
                     onClick={() => handlePoMatchingChange(opt)}
                   >
@@ -894,8 +894,8 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                             className={cn(
                               'flex h-7 w-7 items-center justify-center rounded-full border ring-2 ring-white transition-all duration-300',
                               poMatching.id === opt.id
-                                ? 'bg-purple-50 border-purple-200 scale-105 text-purple-9'
-                                : 'bg-gray-50 border-gray-100 group-hover/strategy:text-gray-400 text-gray-9/40',
+                                ? 'bg-purple-2 border-purple-4 scale-105 text-purple-9'
+                                : 'bg-surface-muted border-gray-3 group-hover/strategy:text-gray-8 text-gray-9/40',
                             )}
                           >
                             <Icon className='h-3.5 w-3.5' name={icon} />
@@ -923,7 +923,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                         'flex h-4.5 w-4.5 items-center justify-center rounded-full border transition-all duration-300',
                         poMatching.id === opt.id
                           ? 'shadow-purple-200 scale-110 border-purple-9 bg-purple-9 shadow-sm'
-                          : 'border-gray-3 bg-white group-hover/strategy:border-gray-4',
+                          : 'border-gray-3 bg-surface group-hover/strategy:border-gray-4',
                       )}
                     >
                       {poMatching.id === opt.id && (
@@ -991,7 +991,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                         <button
                           type='button'
                           className={cn(
-                            'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                            'flex h-10 w-full items-center justify-between rounded-md border bg-surface px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                             isQbConnectionOpen
                               ? 'border-primary-9 ring-2 ring-primary-4'
                               : 'border-gray-3 hover:border-primary-5',
@@ -1039,7 +1039,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                                 setNewQbAccountName('')
                               }}
                             />
-                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
+                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-surface p-1 shadow-xl duration-100'>
                               {!isCreatingQbConnection ? (
                                 <>
                                   {qbAccountOptions.map((option) => (
@@ -1168,7 +1168,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                         <button
                           type='button'
                           className={cn(
-                            'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                            'flex h-10 w-full items-center justify-between rounded-md border bg-surface px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                             isSapConnectionOpen
                               ? 'border-primary-9 ring-2 ring-primary-4'
                               : 'border-gray-3 hover:border-primary-5',
@@ -1216,7 +1216,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                                 setNewSapHost('')
                               }}
                             />
-                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
+                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-surface p-1 shadow-xl duration-100'>
                               {!isCreatingSapConnection ? (
                                 <>
                                   {sapAccountOptions.map((option) => (
@@ -1340,10 +1340,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
           {/* Master Resources */}
           {isNonPO && (
-            <div className='animate-in fade-in slide-in-from-top-1 space-y-3 rounded-xl bg-white p-4 shadow-sm duration-300'>
+            <div className='animate-in fade-in slide-in-from-top-1 space-y-3 rounded-xl bg-surface p-4 shadow-sm duration-300'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
-                  className='text-blue-600 h-4 w-4 stroke-[2]'
+                  className='text-blue-10 h-4 w-4 stroke-[2]'
                   name='lucide:database'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1384,11 +1384,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           onToggle={() => setOpenValidation(!openValidation)}
         >
           {/* Vendor Verification */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2.5'>
                 <Icon
-                  className='text-blue-600 h-4 w-4 stroke-[2]'
+                  className='text-blue-10 h-4 w-4 stroke-[2]'
                   name='lucide:building-2'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1439,11 +1439,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           </div>
 
           {/* Duplicate Detection */}
-          <div className='rounded-xl bg-white p-4 shadow-sm'>
+          <div className='rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2.5'>
                 <Icon
-                  className='text-amber-600 h-4 w-4 stroke-[2]'
+                  className='text-yellow-10 h-4 w-4 stroke-[2]'
                   name='lucide:copy-check'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1466,11 +1466,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           </div>
 
           {/* Back Order Detection */}
-          <div className='rounded-xl bg-white p-4 shadow-sm'>
+          <div className='rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2.5'>
                 <Icon
-                  className='text-orange-600 h-4 w-4 stroke-[2]'
+                  className='text-orange-10 h-4 w-4 stroke-[2]'
                   name='lucide:package-x'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1493,11 +1493,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           </div>
 
           {/* GL Section */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2.5'>
                 <Icon
-                  className='text-emerald-600 h-4 w-4 stroke-[2]'
+                  className='text-green-10 h-4 w-4 stroke-[2]'
                   name='lucide:book-open-check'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1540,11 +1540,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           </div>
 
           {/* Matter Section */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2.5'>
                 <Icon
-                  className='text-slate-600 h-4 w-4 stroke-[2]'
+                  className='text-gray-10 h-4 w-4 stroke-[2]'
                   name='lucide:briefcase'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1596,11 +1596,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           onToggle={() => setOpenScoring(!openScoring)}
         >
           {/* Scoring Weights */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between pb-0.5'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
-                  className='text-purple-600 h-4 w-4 stroke-[2]'
+                  className='text-purple-10 h-4 w-4 stroke-[2]'
                   name='lucide:bar-chart-big'
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1683,7 +1683,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                   </div>
 
                   <button
-                    className='text-slate-400 hover:text-red-500 hover:bg-red-50 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors'
+                    className='text-gray-8 hover:text-red-9 hover:bg-red-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors'
                     title='Remove weight'
                     onClick={() => removeWeight(w.rowId)}
                   >
@@ -1695,7 +1695,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
             <div className='pt-1'>
               <button
-                className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all duration-300 hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+                className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-13 font-medium transition-all duration-300 hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
                 onClick={addWeight}
               >
                 <Icon className='h-4 w-4' name='lucide:plus' />
@@ -1705,14 +1705,14 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           </div>
 
           {/* Decision Thresholds */}
-          <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+          <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
             <div className='flex items-center justify-between pb-0.5'>
               <div className='flex items-center gap-2.5 px-0.5'>
                 <Icon
                   name='lucide:shield-check'
                   className={cn(
                     'h-4 w-4 stroke-[2]',
-                    isThresholdInvalid ? 'text-red-11' : 'text-blue-600',
+                    isThresholdInvalid ? 'text-red-11' : 'text-blue-10',
                   )}
                 />
                 <div className='flex flex-col space-y-1'>
@@ -1732,12 +1732,12 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
             </div>
 
             <div className='grid grid-cols-2 gap-2'>
-              <div className='space-y-1.5 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-2 shadow-sm transition-colors hover:border-[#86efac]'>
+              <div className='space-y-1.5 rounded-lg border border-green-6 bg-green-2 p-2 shadow-sm transition-colors hover:border-green-8'>
                 <div className='flex items-center justify-between px-0.5'>
-                  <span className='text-13 font-bold tracking-tight text-[#16a34a]'>
+                  <span className='text-13 font-bold tracking-tight text-green-11'>
                     Approved
                   </span>
-                  <span className='text-12 font-semibold text-[#16a34a]'>
+                  <span className='text-12 font-semibold text-green-11'>
                     {thresholds.approved}%
                   </span>
                 </div>
@@ -1766,7 +1766,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     style={{ width: `${thresholds.approved}%` }}
                     className={cn(
                       'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
-                      isThresholdInvalid ? 'bg-red-9' : 'bg-[#16a34a]',
+                      isThresholdInvalid ? 'bg-red-9' : 'bg-green-9',
                     )}
                   />
                   <div
@@ -1774,7 +1774,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                       'pointer-events-none absolute z-20 h-4 w-4 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
                       isThresholdInvalid
                         ? 'bg-red-11 group-hover/slider:ring-4 group-hover/slider:ring-red-11/20'
-                        : 'bg-[#16a34a] group-hover/slider:ring-4 group-hover/slider:ring-[#16a34a]/20',
+                        : 'bg-green-9 group-hover/slider:ring-4 group-hover/slider:ring-green-9/20',
                     )}
                     style={{
                       left: `${thresholds.approved}%`,
@@ -1800,12 +1800,12 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                 </div>
               </div>
 
-              <div className='space-y-1.5 rounded-lg border border-[#fef3c7] bg-[#fffbeb] p-2 shadow-sm transition-colors hover:border-[#fcd34d]'>
+              <div className='space-y-1.5 rounded-lg border border-yellow-5 bg-yellow-2 p-2 shadow-sm transition-colors hover:border-yellow-8'>
                 <div className='flex items-center justify-between px-0.5'>
-                  <span className='text-13 font-bold tracking-tight text-[#d97706]'>
+                  <span className='text-13 font-bold tracking-tight text-orange-11'>
                     Partial Match
                   </span>
-                  <span className='text-12 font-semibold text-[#d97706]'>
+                  <span className='text-12 font-semibold text-orange-11'>
                     {thresholds.partial}%
                   </span>
                 </div>
@@ -1834,7 +1834,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     style={{ width: `${thresholds.partial}%` }}
                     className={cn(
                       'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
-                      isThresholdInvalid ? 'bg-red-9' : 'bg-[#d97706]',
+                      isThresholdInvalid ? 'bg-red-9' : 'bg-orange-9',
                     )}
                   />
                   <div
@@ -1842,7 +1842,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                       'pointer-events-none absolute z-20 h-4 w-4 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
                       isThresholdInvalid
                         ? 'bg-red-11 group-hover/slider:ring-4 group-hover/slider:ring-red-11/20'
-                        : 'bg-[#d97706] group-hover/slider:ring-4 group-hover/slider:ring-[#d97706]/20',
+                        : 'bg-orange-9 group-hover/slider:ring-4 group-hover/slider:ring-orange-9/20',
                     )}
                     style={{
                       left: `${thresholds.partial}%`,

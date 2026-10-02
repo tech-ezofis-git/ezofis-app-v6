@@ -814,7 +814,7 @@ const StepFour = () => {
             <ProtocolCard
               icon='tabler:database'
               iconBg='bg-blue-1 dark:bg-blue-9/20'
-              iconColor='text-blue-9 dark:text-blue-4'
+              iconColor='text-blue-11'
               label={t`Data Destination`}
               subtitle='Connected & Verified'
               title={getErpName()}
@@ -822,7 +822,7 @@ const StepFour = () => {
             <ProtocolCard
               icon='tabler:brain'
               iconBg='bg-purple-1 dark:bg-purple-9/20'
-              iconColor='text-purple-9 dark:text-purple-4'
+              iconColor='text-purple-11'
               label={t`Intelligence Profile`}
               subtitle='99.8% Extraction Goal'
               title={t`High Precision`}
@@ -830,7 +830,7 @@ const StepFour = () => {
             <ProtocolCard
               icon='tabler:shield-check'
               iconBg='bg-green-1 dark:bg-green-9/20'
-              iconColor='text-green-9 dark:text-green-4'
+              iconColor='text-green-11'
               label={t`Security Protocol`}
               subtitle='AES-256 Encrypted'
               title={t`SOC2 Compliant`}

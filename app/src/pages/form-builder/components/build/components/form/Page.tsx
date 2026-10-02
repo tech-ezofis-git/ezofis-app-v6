@@ -76,14 +76,14 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-200 focus-within:z-30 hover:shadow-lg'
+      className='group/page relative rounded-xl border border-gray-3 bg-surface font-inter shadow-md transition-all duration-200 focus-within:z-30 hover:shadow-lg'
       id={panel.id}
       ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
     >
       {/* 0. Floating Canva Actions */}
       <div className='absolute -top-9 right-0 z-20 flex items-center gap-2 transition-all'>
-        <div className='flex items-center gap-1 rounded-lg border border-gray-3 bg-white/90 px-1.5 py-1 opacity-0 shadow-xs backdrop-blur-md transition-all duration-200 group-hover/page:opacity-100'>
+        <div className='flex items-center gap-1 rounded-lg border border-gray-3 bg-surface/90 px-1.5 py-1 opacity-0 shadow-xs backdrop-blur-md transition-all duration-200 group-hover/page:opacity-100'>
           {/* Section Reordering */}
           <div className='flex items-center gap-0.5'>
             {panelIndex > 0 && (

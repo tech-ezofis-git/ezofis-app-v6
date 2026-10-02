@@ -47,7 +47,7 @@ const SidebarCTA = () => {
           'flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold shadow-sm transition-all duration-200 active:scale-95',
           isDemoFormOpen
             ? 'bg-primary-1 text-primary-11 ring-2 ring-primary-8'
-            : 'bg-white text-primary-11 hover:bg-primary-1',
+            : 'bg-surface text-primary-11 hover:bg-primary-1',
         )}
         onClick={handleRequestDemo}
       >

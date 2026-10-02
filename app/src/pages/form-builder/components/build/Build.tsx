@@ -22,7 +22,7 @@ const Build = () => {
   }, [panels.length, addPanel])
 
   return (
-    <div className='flex h-full w-full overflow-hidden bg-white'>
+    <div className='flex h-full w-full overflow-hidden bg-surface'>
       <LeftSidebar />
       <div className='flex-1 overflow-auto bg-surface-secondary px-4 pt-14 pb-12 shadow-inner'>
         <div className='animate-in fade-in slide-in-from-left-4 mx-auto w-full max-w-[1200px] duration-500'>
@@ -31,7 +31,7 @@ const Build = () => {
       </div>
 
       {(isSidebarOpen || isPublishOpen || isAskAIOpen) && (
-        <div className='animate-in slide-in-from-right relative z-20 h-full w-[400px] shrink-0 border-l border-gray-2 bg-white shadow-xl duration-300'>
+        <div className='animate-in slide-in-from-right relative z-20 h-full w-[400px] shrink-0 border-l border-gray-2 bg-surface shadow-xl duration-300'>
           {isPublishOpen ? (
             <div
               className='animate-in fade-in slide-in-from-right-4 h-full duration-500'

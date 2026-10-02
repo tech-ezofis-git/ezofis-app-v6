@@ -92,7 +92,7 @@ const BarcodeScannerPanel = ({ onClose, onScan }: Props) => {
         />
       </div>
       {error ? (
-        <div className='flex items-center gap-2 rounded-md border border-dashed border-gray-3 bg-white p-3 text-12 text-gray-9'>
+        <div className='flex items-center gap-2 rounded-md border border-dashed border-gray-3 bg-surface p-3 text-12 text-gray-9'>
           <Icon height={14} name='lucide:camera-off' width={14} />
           {error}
         </div>
