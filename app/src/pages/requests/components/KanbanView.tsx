@@ -738,29 +738,39 @@ function KanbanCard({
   const [blockCardDrag, setBlockCardDrag] = useState(false)
   const [isCardHovered, setIsCardHovered] = useState(false)
   const isDocumentApproval = workflow?.name === 'Document Approval'
+  const activeJobId = String(item?.apAgentJobId || item?.jobId || '').trim()
+  const isJobProcessing = Boolean(item?.isProcessing && activeJobId)
   const configuredTitle = resolveConfiguredTitle(
     item,
     workflow,
     isDocumentApproval,
     rawWorkflowData,
   )
-  const requestNo =
-    configuredTitle ||
-    (isDocumentApproval
-      ? item?.repositoryItem?.fileName || extractGenericRequestNumber(item)
-      : extractGenericRequestNumber(item))
+  const requestNo = isJobProcessing
+    ? `JOB-${activeJobId}`
+    : configuredTitle ||
+      (isDocumentApproval
+        ? item?.repositoryItem?.fileName || extractGenericRequestNumber(item)
+        : extractGenericRequestNumber(item))
   const { currentLabel, isTerminal } = getGenericStageInfo(workflow, item)
-  const pillLabel = currentLabel || stageName
+  const pillLabel = isJobProcessing
+    ? `JOB-${activeJobId}`
+    : currentLabel || stageName
   const cardRole: KanbanColumnRole = isTerminal || locked ? 'success' : role
-  const accentColor =
-    cardRole === 'success' ? 'green' : color || undefined
+  const accentColor = isJobProcessing
+    ? 'orange'
+    : cardRole === 'success'
+      ? 'green'
+      : color || undefined
   const pillClass =
     (accentColor && colorPillClass[accentColor]) || rolePillClass[cardRole]
-  const iconWrapClass =
-    (accentColor && colorIconWrapClass[accentColor]) ||
-    roleIconWrapClass[cardRole]
+  const iconWrapClass = isJobProcessing
+    ? 'bg-orange-2 text-orange-9'
+    : (accentColor && colorIconWrapClass[accentColor]) ||
+      roleIconWrapClass[cardRole]
   const itemKey = String(item.id || item.processId || columnId)
-  const canDrag = !locked && !isMoving && item._canMove === true
+  const canDrag =
+    !isJobProcessing && !locked && !isMoving && item._canMove === true
 
   const raisedBy =
     item?.activityUserEmail ||
@@ -901,8 +911,17 @@ function KanbanCard({
             )}
           >
             <Icon
-              className='size-3.5'
-              name={cardRole === 'success' ? 'tabler:check' : 'tabler:clock'}
+              className={cn(
+                'size-3.5',
+                isJobProcessing && 'animate-spin',
+              )}
+              name={
+                isJobProcessing
+                  ? 'tabler:loader-2'
+                  : cardRole === 'success'
+                    ? 'tabler:check'
+                    : 'tabler:clock'
+              }
             />
           </span>
         )}
@@ -921,14 +940,16 @@ function KanbanCard({
             hoverAccent
           />
         </span>
-        <span
-          className={cn(
-            'max-w-[150px] shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
-            pillClass,
-          )}
-        >
-          {pillLabel}
-        </span>
+        {!isJobProcessing ? (
+          <span
+            className={cn(
+              'max-w-[150px] shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
+              pillClass,
+            )}
+          >
+            {pillLabel}
+          </span>
+        ) : null}
       </div>
 
       {fieldLines.length > 0 && (

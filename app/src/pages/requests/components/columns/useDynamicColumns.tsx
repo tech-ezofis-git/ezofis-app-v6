@@ -1532,6 +1532,12 @@ const getBaseColumns = (
                   }}
                 >
                   {(() => {
+                    const jobId = String(
+                      row?.apAgentJobId || row?.jobId || '',
+                    ).trim()
+                    if (row?.isProcessing && jobId) {
+                      return `JOB-${jobId}`
+                    }
                     const configuredTitle = resolveConfiguredTitle(
                       row,
                       workflow,
@@ -1598,6 +1604,14 @@ const getBaseColumns = (
         label: t`Current Stage`,
         size: 220,
         renderCell: (row: any) => {
+          const jobId = String(row?.apAgentJobId || row?.jobId || '').trim()
+          if (row?.isProcessing && jobId) {
+            return (
+              <span className='rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-[10px] font-semibold text-orange-10'>
+                {`JOB-${jobId}`}
+              </span>
+            )
+          }
           const { currentLabel, isTerminal, previousLabel } =
             getGenericStageInfo(workflow, row)
           return (
