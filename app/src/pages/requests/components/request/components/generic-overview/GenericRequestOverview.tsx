@@ -16,7 +16,9 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { collectRedactValues } from '@/components/common/document-preview/pii'
 import folderApi from '@/pages/folders/api/folderApi'
+import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import {
   buildMergedOcrFieldHints,
@@ -198,6 +200,14 @@ const DocumentApprovalSplitLayout = ({
     previewUrl,
   } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
 
+  const previewFileName =
+    previewAttachment?.fileName ||
+    previewAttachment?.name ||
+    (previewAttachment?.fileExtension
+      ? `file.${previewAttachment.fileExtension}`
+      : undefined)
+  const previewKind = resolveDocumentPreviewKind(mimeType, previewFileName)
+
   useEffect(() => {
     if (!targetItemId || !targetRepoId) return
     let cancelled = false
@@ -217,15 +227,12 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            fileName={
-              previewAttachment.fileName ||
-              previewAttachment.name ||
-              (previewAttachment.fileExtension
-                ? `file.${previewAttachment.fileExtension}`
-                : undefined)
-            }
+            enablePiiRedaction
+            fileName={previewFileName}
             fileUrl={previewUrl || null}
+            isImage={previewKind === 'image' || previewKind === 'tiff'}
             isLoading={previewLoading}
+            isPdf={previewKind === 'pdf'}
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -360,6 +367,11 @@ const DocumentFormSplitLayout = ({
       getLatestAttachment(attachments) ||
       attachments[0],
     [attachments],
+  )
+
+  const piiRedactValues = useMemo(
+    () => collectRedactValues(formModel),
+    [formModel],
   )
 
   const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
@@ -636,10 +648,19 @@ const DocumentFormSplitLayout = ({
         }
       : null
 
-  const { isLoading: previewLoading, previewUrl } = useAttachmentPreviewUrl(
-    previewAttachment as any,
-    targetRepoId,
-  )
+  const {
+    isLoading: previewLoading,
+    mimeType: previewMimeType,
+    previewUrl,
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+
+  const viewerFileName =
+    previewAttachment?.fileName ||
+    previewAttachment?.name ||
+    (previewAttachment?.fileExtension
+      ? `file.${previewAttachment.fileExtension}`
+      : undefined)
+  const viewerKind = resolveDocumentPreviewKind(previewMimeType, viewerFileName)
 
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
@@ -655,15 +676,14 @@ const DocumentFormSplitLayout = ({
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
             {previewAttachment ? (
               <DocumentPreviewViewer
-                fileName={
-                  previewAttachment.fileName ||
-                  previewAttachment.name ||
-                  (previewAttachment.fileExtension
-                    ? `file.${previewAttachment.fileExtension}`
-                    : undefined)
-                }
+                enablePiiNer
+                enablePiiRedaction
+                fileName={viewerFileName}
                 fileUrl={previewUrl || null}
+                isImage={viewerKind === 'image' || viewerKind === 'tiff'}
                 isLoading={previewLoading}
+                isPdf={viewerKind === 'pdf'}
+                redactValues={piiRedactValues}
               />
             ) : (
               <div className='flex h-full items-center justify-center text-13 text-gray-9'>

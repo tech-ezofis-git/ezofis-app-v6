@@ -41,7 +41,6 @@ import {
   shareFilter,
   shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
-import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
 import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
 import { splitFilterValues } from '../utils/multiFilterValues'
 
@@ -288,12 +287,17 @@ const isBrowseLeafNode = (
   structure?: BrowseStructureDto | null,
 ) => {
   if (payload.kind !== 'browse') return false
-  if (payload.isLeaf) return true
 
   const folderFieldCount = getBrowseFolderFieldCount(structure)
-  if (!folderFieldCount) return false
+  const filterCount = Object.keys(payload.parentFilters || {}).length
 
-  return Object.keys(payload.parentFilters).length >= folderFieldCount
+  // Grid /items only at the deepest browse folder (all folder fields present).
+  // Do not trust premature isLeaf flags from intermediate browse levels.
+  if (folderFieldCount > 0) {
+    return filterCount >= folderFieldCount
+  }
+
+  return Boolean(payload.isLeaf)
 }
 
 const nodePrefix = 'repo-node:'
@@ -798,7 +802,10 @@ const normalizeChildren = (
       groupField,
       groupValue: String(group.name),
       hasChildren: !isLeaf,
-      iconKey: fieldIconMap.get(groupField) || 'folder',
+      // Last browse stage: file icon (not folder) in tree + list.
+      iconKey: isLeaf
+        ? 'fileText'
+        : fieldIconMap.get(groupField) || 'folder',
       isLeaf,
       itemCount: group.itemCount,
       level: response.level ?? Object.keys(currentFilters).length + 1,
@@ -842,14 +849,21 @@ const getDecodedRepositoryInfo = (payload: FolderNodePayload) => {
 }
 
 export const foldersToTreeNodes = (folders: FolderItem[]): TreeNode[] =>
-  folders.map((folder) => ({
-    children: folder.hasChildren === false ? undefined : [],
-    hasChildren: folder.hasChildren !== false,
-    iconKey: folder.iconKey || 'folder',
-    id: folder.id,
-    isLoaded: false,
-    title: folder.title,
-  }))
+  folders.map((folder) => {
+    const isLeaf = folder.hasChildren === false
+    return {
+      children: isLeaf ? undefined : [],
+      hasChildren: !isLeaf,
+      iconKey: isLeaf
+        ? folder.iconKey === 'folder' || !folder.iconKey
+          ? 'fileText'
+          : folder.iconKey
+        : folder.iconKey || 'folder',
+      id: folder.id,
+      isLoaded: false,
+      title: folder.title,
+    }
+  })
 
 export const folderApi = {
   async addDocumentComment(
@@ -1282,15 +1296,8 @@ export const folderApi = {
         totalCount: folders.length,
         totalPages: 1,
       }
-
-      if (includeFiles) {
-        const fileResult = await fetchRepositoryFiles(
-          fileUiFilters,
-          fileSearchText,
-        )
-        files = fileResult.files
-        filePageResult = fileResult.filePage
-      }
+      // Grid at repository root: show browse paths only.
+      // Unscoped /items would return every file in the repository.
     } else if (isBrowseLeafNode(decoded, structure)) {
       const fileResult = await fetchRepositoryFiles(
         fileItemFilters,
@@ -1330,22 +1337,12 @@ export const folderApi = {
       )
       folderPage = toPage(childrenResult.data?.groups)
 
+      // Subfolder (browse with parentFilters): load scoped /items.
+      // Skip for repository root and browsePath roots (empty filters).
       if (
         includeFiles &&
-        (decoded.kind === 'browse' || decoded.kind === 'browsePath') &&
-        folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
-      ) {
-        const fileResult = await fetchRepositoryFiles(
-          fileItemFilters,
-          fileSearchText,
-        )
-        files = fileResult.files
-        filePageResult = fileResult.filePage
-      } else if (
         decoded.kind === 'browse' &&
-        !folders.length &&
-        Object.keys(folderParentFilters).length >=
-          getBrowseFolderFieldCount(structure)
+        Object.keys(filters).length > 0
       ) {
         const fileResult = await fetchRepositoryFiles(
           fileItemFilters,

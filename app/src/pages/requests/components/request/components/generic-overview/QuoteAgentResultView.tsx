@@ -1034,13 +1034,14 @@ const QuoteAgentResultView = ({
               {canPreviewDocument ? (
                 <Button
                   aria-label={t`Quote Preview`}
+                  className='!bg-secondary-9 !text-surface hover:!bg-secondary-10'
                   color='secondary'
                   icon='lucide:eye'
                   label={t`Quote Preview`}
                   size='sm'
                   title={t`Quote Preview`}
                   type='button'
-                  variant='ghost'
+                  variant='solid'
                   onClick={() => selectPaneMode('preview')}
                 />
               ) : null}

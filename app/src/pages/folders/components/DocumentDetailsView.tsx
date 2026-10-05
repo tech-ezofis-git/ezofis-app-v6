@@ -30,9 +30,15 @@ import {
 } from '@/api/v6/folder/signRequest'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputText from '@/components/base/inputs/InputText'
+import Menu from '@/components/base/menu/Menu'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import {
+  buildRedactedFileBlob,
+  collectRedactValues,
+} from '@/components/common/document-preview/pii'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
@@ -69,6 +75,13 @@ import {
   resolvePreviewMimeType,
   sniffBlobMimeType,
 } from '../utils/documentDetailsUtils'
+import {
+  emptyFolderPiiSettings,
+  type FolderPiiSettings,
+  resolveFolderPiiSettings,
+  userCanToggleFolderPii,
+  verifyFolderPiiPassword,
+} from '../utils/folderPiiSettings'
 import {
   getFieldDisplayValue,
   getFieldSearchVariantStrings,
@@ -629,10 +642,58 @@ export function DocumentDetailsView({
   const currentUserEmail = String(session?.email || '')
     .trim()
     .toLowerCase()
+  const currentUserId = String(session?.id || '').trim()
   const signerName =
     [session?.firstName, session?.lastName].filter(Boolean).join(' ').trim() ||
     session?.name ||
     ''
+
+  const [folderPiiSettings, setFolderPiiSettings] = useState<FolderPiiSettings>(
+    emptyFolderPiiSettings,
+  )
+  const [showUnredactedPreview, setShowUnredactedPreview] = useState(false)
+  const [piiPasswordMenuOpen, setPiiPasswordMenuOpen] = useState(false)
+  const [piiPasswordInput, setPiiPasswordInput] = useState('')
+  const [piiPasswordError, setPiiPasswordError] = useState('')
+
+  useEffect(() => {
+    setShowUnredactedPreview(false)
+    setPiiPasswordMenuOpen(false)
+    setPiiPasswordInput('')
+    setPiiPasswordError('')
+    let cancelled = false
+    const loadFolderPii = async () => {
+      if (!repositoryId) {
+        setFolderPiiSettings(emptyFolderPiiSettings())
+        return
+      }
+      try {
+        const response = await getRepositoryById(repositoryId)
+        if (cancelled) return
+        const details =
+          response.data && typeof response.data === 'object'
+            ? (response.data as Record<string, unknown>)
+            : null
+        setFolderPiiSettings(resolveFolderPiiSettings(repositoryId, details))
+      } catch {
+        if (!cancelled) {
+          setFolderPiiSettings(resolveFolderPiiSettings(repositoryId, null))
+        }
+      }
+    }
+    void loadFolderPii()
+    return () => {
+      cancelled = true
+    }
+  }, [repositoryId])
+
+  const folderPiiEnabled = folderPiiSettings.enabled
+  const canToggleUnredacted = userCanToggleFolderPii(
+    folderPiiSettings,
+    currentUserId,
+  )
+  const enablePiiRedaction =
+    folderPiiEnabled && !(canToggleUnredacted && showUnredactedPreview)
 
   useEffect(() => {
     setSavedSignatures([])
@@ -1229,89 +1290,6 @@ export function DocumentDetailsView({
     }
   }
 
-  const handleDownload = async () => {
-    if (!repositoryId || !id || isDownloading || !canDownload) return
-
-    setIsDownloading(true)
-    setDownloadError('')
-    try {
-      let blob: Blob | null = null
-
-      if (inviteToken) {
-        const inviteFile = await getSignRequestInviteFile({
-          accessToken: authUserStore.getState().identity?.accessToken,
-          disposition: 'attachment',
-          inviteToken,
-          tenantId: invitePreview?.tenantId,
-        })
-        if (inviteFile.error || !(inviteFile.data instanceof Blob)) {
-          throw new Error(
-            toUiErrorMessage(inviteFile.error, t`Unable to download file`),
-          )
-        }
-        blob = inviteFile.data
-      } else {
-        const response = await fileApi.viewBinaryV6(
-          repositoryId,
-          id,
-          'attachment',
-        )
-        if (!(response?.data instanceof Blob)) {
-          throw new Error(
-            toUiErrorMessage(response?.error, t`Unable to download file`),
-          )
-        }
-        blob = response.data
-      }
-
-      if (!blob) {
-        throw new Error(t`Unable to download file`)
-      }
-
-      const downloadUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = data?.fileName || 'document'
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(downloadUrl)
-    } catch (exception: any) {
-      console.error(exception)
-      setDownloadError(
-        toUiErrorMessage(
-          exception?.message || exception,
-          t`Unable to download file`,
-        ),
-      )
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
-  const handlePrint = () => {
-    if (!previewUrl) return
-
-    const printWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer')
-    if (!printWindow) return
-
-    const triggerPrint = () => {
-      try {
-        printWindow.focus()
-        printWindow.print()
-      } catch (exception) {
-        console.error(exception)
-      }
-    }
-
-    if (printWindow.document.readyState === 'complete') {
-      triggerPrint()
-      return
-    }
-
-    printWindow.addEventListener('load', triggerPrint, { once: true })
-  }
-
   const isEditableDocType = useMemo(() => {
     const ext =
       getFileExtension(data?.fileName) || getFileExtension(data?.fileType)
@@ -1570,6 +1548,12 @@ export function DocumentDetailsView({
     }
     return map
   }, [activeHighlightTerm])
+
+  const piiRedactValues = useMemo(
+    () => collectRedactValues(fieldProbeTerms),
+    [fieldProbeTerms],
+  )
+
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
   const lineItemColumns = useMemo(
@@ -1586,6 +1570,147 @@ export function DocumentDetailsView({
   const isPdfPreview = resolvedPreviewKind === 'pdf'
   const isImagePreview =
     resolvedPreviewKind === 'image' || resolvedPreviewKind === 'tiff'
+
+  const openBlobForPrint = (blobUrl: string) => {
+    const printWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+    if (!printWindow) return
+
+    const triggerPrint = () => {
+      try {
+        printWindow.focus()
+        printWindow.print()
+      } catch (exception) {
+        console.error(exception)
+      }
+    }
+
+    if (printWindow.document.readyState === 'complete') {
+      triggerPrint()
+      return
+    }
+
+    printWindow.addEventListener('load', triggerPrint, { once: true })
+  }
+
+  const handleDownload = async () => {
+    if (!repositoryId || !id || isDownloading || !canDownload) return
+
+    setIsDownloading(true)
+    setDownloadError('')
+    try {
+      // Redacted preview → burn covers into a local file (no original API blob).
+      if (enablePiiRedaction && previewUrl && (isPdfPreview || isImagePreview)) {
+        const redacted = await buildRedactedFileBlob({
+          enableNer: enablePiiRedaction,
+          fileName: data?.fileName || 'document',
+          fileUrl: previewUrl,
+          knownValues: piiRedactValues,
+          mode: isPdfPreview ? 'pdf' : 'image',
+        })
+        const downloadUrl = URL.createObjectURL(redacted.blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = redacted.fileName
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(downloadUrl)
+        return
+      }
+
+      let blob: Blob | null = null
+
+      if (inviteToken) {
+        const inviteFile = await getSignRequestInviteFile({
+          accessToken: authUserStore.getState().identity?.accessToken,
+          disposition: 'attachment',
+          inviteToken,
+          tenantId: invitePreview?.tenantId,
+        })
+        if (inviteFile.error || !(inviteFile.data instanceof Blob)) {
+          throw new Error(
+            toUiErrorMessage(inviteFile.error, t`Unable to download file`),
+          )
+        }
+        blob = inviteFile.data
+      } else {
+        const response = await fileApi.viewBinaryV6(
+          repositoryId,
+          id,
+          'attachment',
+        )
+        if (!(response?.data instanceof Blob)) {
+          throw new Error(
+            toUiErrorMessage(response?.error, t`Unable to download file`),
+          )
+        }
+        blob = response.data
+      }
+
+      if (!blob) {
+        throw new Error(t`Unable to download file`)
+      }
+
+      const downloadUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = data?.fileName || 'document'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(downloadUrl)
+    } catch (exception: any) {
+      console.error(exception)
+      setDownloadError(
+        toUiErrorMessage(
+          exception?.message || exception,
+          t`Unable to download file`,
+        ),
+      )
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const handlePrint = async () => {
+    if (!previewUrl || isDownloading) return
+
+    // Unredacted → open the original preview URL and print.
+    if (!enablePiiRedaction || !(isPdfPreview || isImagePreview)) {
+      openBlobForPrint(previewUrl)
+      return
+    }
+
+    setIsDownloading(true)
+    setDownloadError('')
+    let objectUrl: string | null = null
+    try {
+      const redacted = await buildRedactedFileBlob({
+        enableNer: enablePiiRedaction,
+        fileName: data?.fileName || 'document',
+        fileUrl: previewUrl,
+        knownValues: piiRedactValues,
+        mode: isPdfPreview ? 'pdf' : 'image',
+      })
+      objectUrl = URL.createObjectURL(redacted.blob)
+      openBlobForPrint(objectUrl)
+      // Keep the blob alive long enough for the print dialog to load.
+      window.setTimeout(() => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl)
+      }, 60_000)
+    } catch (exception: any) {
+      console.error(exception)
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      setDownloadError(
+        toUiErrorMessage(
+          exception?.message || exception,
+          t`Unable to print file`,
+        ),
+      )
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   const tabs = useMemo(
     () =>
@@ -1946,6 +2071,117 @@ export function DocumentDetailsView({
         <div className='flex shrink-0 items-center gap-1 sm:gap-1.5'>
           {!compactActions ? (
             <>
+              {canToggleUnredacted ? (
+                showUnredactedPreview ? (
+                  <Tooltip content={t`Show redacted file`} position='bottom'>
+                    <button
+                      aria-label={t`Show redacted file`}
+                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
+                      type='button'
+                      onClick={() => {
+                        setShowUnredactedPreview(false)
+                        setPiiPasswordInput('')
+                        setPiiPasswordError('')
+                      }}
+                    >
+                      <DynamicIcon className='h-4 w-4' name='eyeOff' />
+                    </button>
+                  </Tooltip>
+                ) : (
+                  <Menu
+                    closeOnClickOutside
+                    closeOnItemClick={false}
+                    opened={piiPasswordMenuOpen}
+                    position='bottom-end'
+                    width={280}
+                    withinPortal
+                    onChange={(opened) => {
+                      setPiiPasswordMenuOpen(opened)
+                      if (!opened) {
+                        setPiiPasswordInput('')
+                        setPiiPasswordError('')
+                      }
+                    }}
+                    target={
+                      <Tooltip content={t`Show original file`} position='bottom'>
+                        <button
+                          aria-label={t`Show original file`}
+                          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
+                          type='button'
+                        >
+                          <DynamicIcon className='h-4 w-4' name='eye' />
+                        </button>
+                      </Tooltip>
+                    }
+                  >
+                    <div
+                      className='flex flex-col gap-2.5 p-2.5'
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
+                      <div className='text-13 font-semibold text-gray-12'>
+                        {t`Enter password`}
+                      </div>
+                      <p className='text-12 text-gray-11'>
+                        {t`Enter your PII access password to view the original file.`}
+                      </p>
+                      <InputText
+                        autoComplete='current-password'
+                        autoFocus
+                        error={piiPasswordError || undefined}
+                        placeholder={t`Password`}
+                        type='password'
+                        value={piiPasswordInput}
+                        onChange={(value) => {
+                          setPiiPasswordInput(value)
+                          if (piiPasswordError) setPiiPasswordError('')
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter') return
+                          event.preventDefault()
+                          if (
+                            verifyFolderPiiPassword(
+                              folderPiiSettings,
+                              currentUserId,
+                              piiPasswordInput,
+                            )
+                          ) {
+                            setShowUnredactedPreview(true)
+                            setPiiPasswordMenuOpen(false)
+                            setPiiPasswordInput('')
+                            setPiiPasswordError('')
+                          } else {
+                            setPiiPasswordError(t`Incorrect password`)
+                          }
+                        }}
+                      />
+                      <Buttons
+                        className='w-full'
+                        label={t`Reveal original`}
+                        size='sm'
+                        type='button'
+                        onClick={() => {
+                          if (
+                            verifyFolderPiiPassword(
+                              folderPiiSettings,
+                              currentUserId,
+                              piiPasswordInput,
+                            )
+                          ) {
+                            setShowUnredactedPreview(true)
+                            setPiiPasswordMenuOpen(false)
+                            setPiiPasswordInput('')
+                            setPiiPasswordError('')
+                          } else {
+                            setPiiPasswordError(t`Incorrect password`)
+                          }
+                        }}
+                      />
+                    </div>
+                  </Menu>
+                )
+              ) : null}
+
               {isEditableDocType && canEditDocument ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
                   <button
@@ -1963,13 +2199,20 @@ export function DocumentDetailsView({
               ) : null}
 
               {canPrint ? (
-                <Tooltip content={t`Print file`} position='bottom'>
+                <Tooltip
+                  content={
+                    isDownloading && enablePiiRedaction
+                      ? t`Preparing redacted file...`
+                      : t`Print file`
+                  }
+                  position='bottom'
+                >
                   <button
                     aria-label={t`Print file`}
                     className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                    disabled={!previewUrl || isPreviewLoading}
+                    disabled={!previewUrl || isPreviewLoading || isDownloading}
                     type='button'
-                    onClick={handlePrint}
+                    onClick={() => void handlePrint()}
                   >
                     <DynamicIcon className='h-4 w-4' name='printer' />
                   </button>
@@ -2279,6 +2522,8 @@ export function DocumentDetailsView({
                       activeHighlightColor={activeHighlightColor}
                       activeHighlightTerm={activeHighlightTerm}
                       className='h-full min-h-full'
+                      enablePiiNer={enablePiiRedaction}
+                      enablePiiRedaction={enablePiiRedaction}
                       fileBlob={previewBlobRef.current}
                       fileName={data.fileName}
                       fileUrl={previewUrl}
@@ -2289,8 +2534,10 @@ export function DocumentDetailsView({
                       isLoading={isPreviewLoading}
                       isPdf={isPdfPreview}
                       isSigningMode={isSigning}
+                      key={`pii-${enablePiiRedaction ? 'on' : 'off'}`}
                       permission={isEditingDoc ? 'edit' : 'readonly'}
                       probeTerms={fieldProbeTerms}
+                      redactValues={piiRedactValues}
                       signerEmail={currentUserEmail}
                       signerName={signerName}
                       signRequestId={activeSignRequestId}

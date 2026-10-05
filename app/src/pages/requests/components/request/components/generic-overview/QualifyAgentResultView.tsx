@@ -753,7 +753,7 @@ const QualifyAgentResultView = ({
                     className='inline-flex size-5 items-center justify-center rounded-md transition-colors hover:bg-gray-3 hover:text-gray-12 active:scale-95'
                     type='button'
                   >
-                    <Icon className='h-3.5 w-3.5' icon='tabler:eye' />
+                    <Icon className='h-3.5 w-3.5' icon='tabler:info-circle' />
                   </button>
                 }
               >

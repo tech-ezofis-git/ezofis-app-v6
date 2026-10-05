@@ -70,6 +70,14 @@ import BrandCard from '@/pages/dashboard/workflows/accounts-payable/components/s
 import SectionHeader from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/SectionHeader'
 import { OrDivider } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
 import { DynamicIcon } from '@/pages/folders/components/icons'
+import {
+  emptyFolderPiiSettings,
+  folderPiiHasValidAccessUsers,
+  folderPiiSettingsToApiPayload,
+  type FolderPiiSettings,
+  resolveFolderPiiSettings,
+  writeCachedFolderPiiSettings,
+} from '@/pages/folders/utils/folderPiiSettings'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
@@ -98,6 +106,7 @@ import SettingsWizardLayout from '../SettingsWizardLayout'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
 import DmsColumnMapping from './DmsColumnMapping'
+import PiiRedactionWizardStep from './PiiRedactionWizardStep'
 import FolderFieldSettingsPanel from './FolderFieldSettingsPanel'
 import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
@@ -153,7 +162,7 @@ type SelectOption = {
   value?: string
 }
 
-type WizardStep = 1 | 2 | 3 | 4 | 5
+type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 
 type WizardStepItem = {
   description: string
@@ -348,8 +357,13 @@ const wizardSteps: WizardStepItem[] = [
   { description: staticT`Storage provider`, id: 3, title: staticT`Storage` },
   { description: staticT`Version strategy`, id: 4, title: staticT`Versioning` },
   {
-    description: staticT`ERP & sync mapping`,
+    description: staticT`Mask sensitive data`,
     id: 5,
+    title: staticT`PII Redaction`,
+  },
+  {
+    description: staticT`ERP & sync mapping`,
+    id: 6,
     title: staticT`Integrations`,
   },
 ]
@@ -815,6 +829,20 @@ export default function DmsFolderConfiguration({
   const [displayMode, setDisplayMode] = useState(
     storedState?.displayMode ?? 'Show Latest Version Only',
   )
+  const [piiSettings, setPiiSettings] = useState<FolderPiiSettings>(() => {
+    if (
+      storedState?.piiRedactionEnabled != null ||
+      storedState?.piiRedactionUsers != null ||
+      storedState?.piiRedactionUserIds != null
+    ) {
+      return resolveFolderPiiSettings(null, {
+        piiRedactionEnabled: storedState.piiRedactionEnabled,
+        piiRedactionUserIds: storedState.piiRedactionUserIds,
+        piiRedactionUsers: storedState.piiRedactionUsers,
+      })
+    }
+    return emptyFolderPiiSettings()
+  })
   const [folderName, setFolderName] = useState(storedState?.folderName ?? '')
   const [description, setDescription] = useState(storedState?.description ?? '')
   const [storageDrive, setStorageDrive] = useState<string | null>(
@@ -903,6 +931,19 @@ export default function DmsFolderConfiguration({
       }
       if (hydrated.versioning) setVersioning(hydrated.versioning)
       if (hydrated.displayMode) setDisplayMode(hydrated.displayMode)
+      if (
+        hydrated.piiRedactionEnabled != null ||
+        hydrated.piiRedactionUserIds != null ||
+        hydrated.piiRedactionUsers != null
+      ) {
+        setPiiSettings(
+          resolveFolderPiiSettings(null, {
+            piiRedactionEnabled: hydrated.piiRedactionEnabled,
+            piiRedactionUserIds: hydrated.piiRedactionUserIds,
+            piiRedactionUsers: hydrated.piiRedactionUsers,
+          }),
+        )
+      }
       if (hydrated.fields?.length) {
         setFields(
           hydrated.fields.map((field, index) => ({
@@ -943,6 +984,9 @@ export default function DmsFolderConfiguration({
           storageConnectorLabel,
           storageDrive,
           versioning,
+          piiRedactionEnabled: piiSettings.enabled,
+          piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
+          piiRedactionUsers: piiSettings.users,
         }),
       )
     } catch {
@@ -961,6 +1005,7 @@ export default function DmsFolderConfiguration({
     storageConnectorLabel,
     versioning,
     displayMode,
+    piiSettings,
     folderName,
     description,
     storageDrive,
@@ -1196,6 +1241,12 @@ export default function DmsFolderConfiguration({
         setStorageDrive(
           details.storageDrive ? String(details.storageDrive) : null,
         )
+        setPiiSettings(
+          resolveFolderPiiSettings(
+            String(details.id || repository.id),
+            details,
+          ),
+        )
         setStep(1)
         setShowWizard(true)
 
@@ -1390,6 +1441,7 @@ export default function DmsFolderConfiguration({
     setStorageConnectorLabel(null)
     setShowConnectorError(false)
     setStorageDrive(null)
+    setPiiSettings(emptyFolderPiiSettings())
   }
 
   const closeWizard = () => {
@@ -1413,6 +1465,7 @@ export default function DmsFolderConfiguration({
     setStorageDrive(null)
     setVersioning('Incremental Version')
     setDisplayMode('Show Latest Version Only')
+    setPiiSettings(emptyFolderPiiSettings())
     setStep(1)
 
     const { data, notFound } = await getActiveWizardDraft('folder')
@@ -1572,6 +1625,9 @@ export default function DmsFolderConfiguration({
     editingRepositoryId,
     fields,
     folderName,
+    piiRedactionEnabled: piiSettings.enabled,
+    piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
+    piiRedactionUsers: piiSettings.users,
     source: 'manual',
     storage,
     storageConnectorId,
@@ -1591,8 +1647,16 @@ export default function DmsFolderConfiguration({
       }
     }
 
+    if (step === 5 && piiSettings.enabled && !folderPiiHasValidAccessUsers(piiSettings)) {
+      showToast({
+        message: t`Add at least one user with a password who can view unredacted files, or turn PII redaction off.`,
+        variant: 'info',
+      })
+      return
+    }
+
     void persistFolderWizardDraft(step, buildManualFolderSnapshot())
-    setStep((prev) => Math.min(5, prev + 1) as WizardStep)
+    setStep((prev) => Math.min(6, prev + 1) as WizardStep)
   }
   const goBack = () => setStep((prev) => Math.max(1, prev - 1) as WizardStep)
 
@@ -1615,12 +1679,24 @@ export default function DmsFolderConfiguration({
 
     const isEditing = Boolean(editingRepositoryId)
 
-    await persistFolderWizardDraft(5, {
+    if (piiSettings.enabled && !folderPiiHasValidAccessUsers(piiSettings)) {
+      showToast({
+        message: t`Add at least one user with a password who can view unredacted files, or turn PII redaction off.`,
+        variant: 'info',
+      })
+      setStep(5)
+      return
+    }
+
+    await persistFolderWizardDraft(6, {
       description,
       displayMode,
       editingRepositoryId,
       fields,
       folderName,
+      piiRedactionEnabled: piiSettings.enabled,
+      piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
+      piiRedactionUsers: piiSettings.users,
       source: 'manual',
       storage,
       storageConnectorId,
@@ -1652,6 +1728,7 @@ export default function DmsFolderConfiguration({
         }
       }),
       name: trimmedName,
+      ...folderPiiSettingsToApiPayload(piiSettings),
       storageDrive: storageDrive || '',
       storageProviderCode: selectedStorageOption.storageProviderCode,
       storageProviderId:
@@ -1974,6 +2051,23 @@ export default function DmsFolderConfiguration({
         return
       }
 
+      const responseData = response.data as
+        | string
+        | { id?: string }
+        | null
+        | undefined
+      const savedId =
+        String(
+          (typeof responseData === 'string'
+            ? responseData
+            : responseData?.id) ||
+            editingRepositoryId ||
+            '',
+        ).trim() || null
+      if (savedId) {
+        writeCachedFolderPiiSettings(savedId, piiSettings)
+      }
+
       showToast({
         message: isEditing
           ? t`Folder updated successfully.`
@@ -2009,20 +2103,19 @@ export default function DmsFolderConfiguration({
 
   const formattedWizardSteps = useMemo(() => {
     const isEditMode = editingRepositoryId !== null
+    const icons: Record<WizardStep, string> = {
+      1: 'tabler:folder',
+      2: 'tabler:list-details',
+      3: 'tabler:cloud',
+      4: 'tabler:git-branch',
+      5: 'tabler:eye-off',
+      6: 'tabler:api',
+    }
     return wizardSteps.map((item) => ({
       clickable: isEditMode ? true : undefined,
       description: item.description,
       disabled: isEditMode ? false : undefined,
-      icon:
-        item.id === 1
-          ? 'tabler:folder'
-          : item.id === 2
-            ? 'tabler:list-details'
-            : item.id === 3
-              ? 'tabler:cloud'
-              : item.id === 4
-                ? 'tabler:git-branch'
-                : 'tabler:api',
+      icon: icons[item.id],
       id: item.id - 1,
       label: item.title,
     }))
@@ -2087,6 +2180,7 @@ export default function DmsFolderConfiguration({
               editingRepositoryId={editingRepositoryId}
               fields={fields}
               folderName={folderName}
+              piiSettings={piiSettings}
               showConnectorError={showConnectorError}
               step={step}
               storage={storage}
@@ -2099,6 +2193,7 @@ export default function DmsFolderConfiguration({
               setDisplayMode={setDisplayMode}
               setFields={setFields}
               setFolderName={setFolderName}
+              setPiiSettings={setPiiSettings}
               setStep={setStep}
               setStorage={handleStorageChange}
               setStorageDrive={setStorageDrive}
@@ -4138,6 +4233,7 @@ function WizardContent({
   editingRepositoryId,
   fields,
   folderName,
+  piiSettings,
   showConnectorError,
   step,
   storage,
@@ -4150,6 +4246,7 @@ function WizardContent({
   setDisplayMode,
   setFields,
   setFolderName,
+  setPiiSettings,
   setStep,
   setStorage,
   setStorageDrive,
@@ -4162,10 +4259,12 @@ function WizardContent({
   editingRepositoryId?: string | null
   fields: FieldRow[]
   folderName: string
+  piiSettings: FolderPiiSettings
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>
   setFolderName: Dispatch<SetStateAction<string>>
+  setPiiSettings: Dispatch<SetStateAction<FolderPiiSettings>>
   setStorageDrive: Dispatch<SetStateAction<string | null>>
   setVersioning: Dispatch<SetStateAction<string>>
   showConnectorError?: boolean
@@ -4559,7 +4658,7 @@ function WizardContent({
   const hasFetchedFormsRef = useRef(false)
 
   useEffect(() => {
-    if (step === 5 && selectedIntegration === 'MasterForm') {
+    if (step === 6 && selectedIntegration === 'MasterForm') {
       if ((formsList ?? []).length > 0 || hasFetchedFormsRef.current) return
       hasFetchedFormsRef.current = true
       void formApi.listAllForms().then((res) => {
@@ -5201,6 +5300,15 @@ function WizardContent({
   }
 
   if (step === 5) {
+    return (
+      <PiiRedactionWizardStep
+        settings={piiSettings}
+        onChange={setPiiSettings}
+      />
+    )
+  }
+
+  if (step === 6) {
     return (
       <SettingsFormSection>
         <div>

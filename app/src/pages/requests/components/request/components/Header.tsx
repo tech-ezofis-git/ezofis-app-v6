@@ -571,10 +571,20 @@ const Header: React.FC<HeaderProps> = ({
                 maximumFractionDigits: 2,
                 minimumFractionDigits: 2,
               })
+              const code = String(currency || '')
+                .trim()
+                .toUpperCase()
+              const currencyLabel =
+                code.length === 3 ? `${code} - $` : '$'
               return (
-                <span className='mr-0.5 text-[13px] font-semibold whitespace-nowrap text-gray-13'>
-                  ${formatted}
-                </span>
+                <div className='mr-1 flex flex-col border-r border-[var(--gray-3)] pr-2 text-right sm:mr-1.5 sm:pr-3'>
+                  <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
+                    {t`Quote Total`}
+                  </span>
+                  <span className='text-[12px] leading-tight font-semibold whitespace-nowrap text-[var(--primary-9)] sm:text-[13px]'>
+                    {currencyLabel} {formatted}
+                  </span>
+                </div>
               )
             })()}
             {rightViewTabs.map((tab) => (

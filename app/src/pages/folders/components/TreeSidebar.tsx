@@ -54,6 +54,12 @@ function TreeItem({
   const isActive = activeId === node.id
   const canExpand = Boolean(node.hasChildren || node.children?.length)
   const children = node.children || []
+  // Last stage (no further folders): show file icon instead of folder.
+  const iconName = canExpand
+    ? node.iconKey || 'folder'
+    : node.iconKey && node.iconKey !== 'folder'
+      ? node.iconKey
+      : 'fileText'
 
   const handleNodeClick = () => {
     onSelect(node.id)
@@ -96,7 +102,7 @@ function TreeItem({
 
         <DynamicIcon
           className={`block size-4 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
-          name={node.iconKey || node.title || 'folder'}
+          name={iconName}
         />
 
         <span className='line-clamp-1 min-w-0 flex-1 leading-tight [overflow-wrap:anywhere] break-words transition-all group-hover:line-clamp-none'>
