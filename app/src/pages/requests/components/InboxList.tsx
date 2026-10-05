@@ -1613,8 +1613,16 @@ const InboxList: React.FC<InboxListProps> = ({
       .filter((group: any) => !group.items || group.items.length > 0)
   }, [data, searchState, activeQuickFilters, filtersState, columnFilteredRows])
 
-  // Inject processing processes from store
+  // Inject processing processes from store (scoped to the open workflow).
   const processingProcesses = requestStore((state) => state.processingProcesses)
+  const currentWorkflowId = String(workflow?.id || '').trim()
+  const workflowProcessingProcesses = useMemo(() => {
+    return (processingProcesses || []).filter((p) => {
+      const processWorkflowId = String(p?.workflowId || '').trim()
+      if (!currentWorkflowId || !processWorkflowId) return false
+      return processWorkflowId === currentWorkflowId
+    })
+  }, [currentWorkflowId, processingProcesses])
 
   const finalData = useMemo(() => {
     const existingIds = new Set()
@@ -1627,7 +1635,7 @@ const InboxList: React.FC<InboxListProps> = ({
         // Only mark processing when a job id is present — do not use
         // agent-stage-without-response as a loading signal.
         let apAgentJobId = i.apAgentJobId ?? null
-        if (!apAgentJobId && (processingProcesses || []).length > 0) {
+        if (!apAgentJobId && workflowProcessingProcesses.length > 0) {
           const itemIds = new Set(
             [
               i.id,
@@ -1640,7 +1648,7 @@ const InboxList: React.FC<InboxListProps> = ({
               .filter(Boolean)
               .map(String),
           )
-          const matched = (processingProcesses || []).find((p) =>
+          const matched = workflowProcessingProcesses.find((p) =>
             [
               p.apAgentJobId,
               p.jobId,
@@ -1669,7 +1677,7 @@ const InboxList: React.FC<InboxListProps> = ({
           if (jobStatus) {
             isProcessing = !jobStatus.isCompleted
           } else {
-            isProcessing = (processingProcesses || []).some(
+            isProcessing = workflowProcessingProcesses.some(
               (p) =>
                 String(p.apAgentJobId || p.jobId || '') ===
                 String(apAgentJobId),
@@ -1691,7 +1699,7 @@ const InboxList: React.FC<InboxListProps> = ({
       return outData
     }
 
-    const newProcessingItems = (processingProcesses || [])
+    const newProcessingItems = workflowProcessingProcesses
       .filter((p) => !existingIds.has(String(p.processId || p.id)))
       .map((p) => {
         const rowId = p.processId || p.id
@@ -1775,7 +1783,10 @@ const InboxList: React.FC<InboxListProps> = ({
         const status = isCompleted
           ? parsedAgentResponse?.decision || p.status || 'Matched'
           : 'Progressing'
-        const stage = matchedJobStatus?.stage || p.stage || 'Start'
+        const jobId = String(p.apAgentJobId || p.jobId || '').trim()
+        const stage = jobId
+          ? `JOB-${jobId}`
+          : matchedJobStatus?.stage || p.stage || 'Start'
 
         return {
           ...p,
@@ -1786,7 +1797,9 @@ const InboxList: React.FC<InboxListProps> = ({
           '_listTab': 'Inbox',
           'Currency': currency,
           'documentNumber':
-            invoiceNo || p.requestNo || p.name || 'Processing...',
+            jobId
+              ? `JOB-${jobId}`
+              : invoiceNo || p.requestNo || p.name || 'Processing...',
           'id': rowId,
           'Invoice Number': invoiceNo,
           // Merge extracted values
@@ -1795,9 +1808,11 @@ const InboxList: React.FC<InboxListProps> = ({
           'PO Value': poValue,
           'processId': rowId,
           'raisedAt': p.raisedAt || new Date().toISOString(),
+          'requestNo': jobId ? `JOB-${jobId}` : p.requestNo,
           'stage': stage,
           'status': status,
           'Supplier Name': supplierName,
+          'workflowId': p.workflowId || currentWorkflowId || null,
         }
       })
 
@@ -1818,7 +1833,13 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     return outData
-  }, [filteredData, processingProcesses, activeTab, viewMode])
+  }, [
+    activeTab,
+    currentWorkflowId,
+    filteredData,
+    viewMode,
+    workflowProcessingProcesses,
+  ])
 
   // ✅ Flatten final data to render flat table rows when viewMode is 'table'
   const flatFinalRows = useMemo(() => {
@@ -2091,7 +2112,7 @@ const InboxList: React.FC<InboxListProps> = ({
           {!selectedItem && viewMode === 'kanban' && (
             <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4'>
               <KanbanView
-                isLoading={isLoading || isRefetching}
+                isLoading={isLoading}
                 items={flatFinalRows}
                 table={table as any}
                 workflow={workflow}

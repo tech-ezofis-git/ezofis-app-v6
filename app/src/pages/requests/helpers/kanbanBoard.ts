@@ -10,6 +10,8 @@ import {
 } from '@/pages/requests/utils/workflow.utils'
 import {
   hasKanbanCardSettings,
+  KANBAN_CARD_COLORS,
+  type KanbanCardColor,
   type KanbanCardSetting,
   parseKanbanSettings,
 } from '@/pages/workflows/utils/kanbanSettings'
@@ -27,7 +29,7 @@ const SKIP_BLOCK_TYPES = new Set([
 ])
 
 export type KanbanColumnDef = {
-  color?: string
+  color?: KanbanCardColor | string
   id: string
   name: string
   role: KanbanColumnRole
@@ -253,8 +255,14 @@ export const buildKanbanColumns = (
 
   const defaults = [...start, ...middle, ...end]
   const cards = extractKanbanSettings(workflow)
-  if (!hasKanbanCardSettings(cards)) return defaults
-
+  if (!hasKanbanCardSettings(cards)) {
+    // No kanban stage colors configured — cycle project color codes so
+    // columns are visually distinct instead of all primary.
+    return defaults.map((column, index) => ({
+      ...column,
+      color: KANBAN_CARD_COLORS[index % KANBAN_CARD_COLORS.length].id,
+    }))
+  }
   const resolveBlock = (token: string) => {
     if (byId.has(token)) return byId.get(token)
     const wanted = normalizeKanbanLabel(token)

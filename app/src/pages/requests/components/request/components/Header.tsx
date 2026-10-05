@@ -559,7 +559,24 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
-          <div className='flex shrink-0 items-center gap-1'>
+          <div className='flex shrink-0 items-center gap-1.5'>
+            {(() => {
+              const amountNum = Number(
+                String(totalAmount ?? '')
+                  .replace(/[^0-9.-]/g, '')
+                  .trim(),
+              )
+              if (!Number.isFinite(amountNum) || amountNum === 0) return null
+              const formatted = amountNum.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })
+              return (
+                <span className='mr-0.5 text-[13px] font-semibold whitespace-nowrap text-gray-13'>
+                  ${formatted}
+                </span>
+              )
+            })()}
             {rightViewTabs.map((tab) => (
               <Tooltip content={tab.label} key={tab.id} position='bottom'>
                 <button

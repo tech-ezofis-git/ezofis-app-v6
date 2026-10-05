@@ -29,7 +29,9 @@ interface Props {
   exceptionsCount?: number
   hideListTabs?: boolean
   metaData?: IRequestMeta
+  stageCounts?: Record<string, number>
   tabs?: RequestTabDescriptor[]
+  totalStageCount?: number | null
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
 }
@@ -42,7 +44,9 @@ const Header = ({
   hideListTabs = false,
   isLoading,
   metaData,
+  stageCounts,
   tabs = [],
+  totalStageCount,
   workflow,
   setActiveTab,
   setWorkflow,
@@ -55,11 +59,12 @@ const Header = ({
   const completedCount = Number(metaData?.completedCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
 
-  // Only the first 3 tabs (by position) are wired to real data - Inbox/Sent
-  // /Closed (or Exceptions/Processed for AP workflows). Anything past that
-  // has no data source yet, so it always shows a 0 count.
-  const countFor = (value: string) => {
-    switch (value) {
+  const countFor = (tab: RequestTabDescriptor) => {
+    if (stageCounts) {
+      if (tab.value in stageCounts) return stageCounts[tab.value]
+      if (tab.label in stageCounts) return stageCounts[tab.label]
+    }
+    switch (tab.value) {
       case 'Closed':
         return completedCount
       case 'Exceptions':
@@ -74,8 +79,6 @@ const Header = ({
         return 0
     }
   }
-
-  console.log(allWorkflows)
 
   return (
     <div
@@ -98,7 +101,7 @@ const Header = ({
               key={tab.value}
               value={tab.value}
               label={
-                isLoading ? tab.label : `${tab.label} (${countFor(tab.value)})`
+                isLoading ? tab.label : `${tab.label} (${countFor(tab)})`
               }
             />
           ))}

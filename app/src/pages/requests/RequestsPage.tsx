@@ -419,6 +419,9 @@ const RequestsPage = () => {
     }
   }, [])
 
+  const [stageTabCounts, setStageTabCounts] = useState<Record<string, number>>({})
+  const [totalStageCount, setTotalStageCount] = useState<number | null>(null)
+
   const applyInstanceCount = useCallback((raw?: any) => {
     const data =
       raw && typeof raw === 'object' && raw.inboxCount == null && raw.data
@@ -432,12 +435,95 @@ const RequestsPage = () => {
     })
   }, [])
 
+  const fetchStageCounts = useCallback(
+    async (workflowId: string, wfDetailOverride?: any) => {
+      const wfDetail = wfDetailOverride || rawWorkflowData
+      const general = wfDetail?.workflowJson?.settings?.general
+      const configuredTabs = Array.isArray(general?.requestTabs)
+        ? general.requestTabs
+        : []
+
+      const isStageBased =
+        general?.isStageBased === 1 ||
+        general?.isStageBased === true ||
+        configuredTabs.some(
+          (t: any) => Array.isArray(t?.nodeIds) && t.nodeIds.length > 0,
+        )
+
+      if (!isStageBased || configuredTabs.length === 0) {
+        setStageTabCounts({})
+        setTotalStageCount(null)
+        return
+      }
+
+      const allActivityIds: string[] = []
+      configuredTabs.forEach((t: any) => {
+        if (Array.isArray(t?.nodeIds)) {
+          t.nodeIds.forEach((id: any) => {
+            const strId = String(id).trim()
+            if (strId && !allActivityIds.includes(strId)) {
+              allActivityIds.push(strId)
+            }
+          })
+        }
+      })
+
+      if (allActivityIds.length === 0) {
+        setStageTabCounts({})
+        setTotalStageCount(0)
+        return
+      }
+
+      try {
+        const countRes = await workflowsApiV6.getWorkflowsByActivityCounts(
+          workflowId,
+          allActivityIds,
+        )
+        if (countRes.data) {
+          const itemsMap: Record<string, number> = {}
+          ;(countRes.data.items || []).forEach((item) => {
+            itemsMap[item.activityId] = item.count || 0
+          })
+
+          const bucketKeys = isAccountsPayable
+            ? ['Inbox', 'Exceptions', 'Processed']
+            : ['Inbox', 'Sent', 'Closed']
+
+          const newCounts: Record<string, number> = {}
+          configuredTabs.forEach((tabConfig: any, index: number) => {
+            const nodeIds = Array.isArray(tabConfig?.nodeIds)
+              ? tabConfig.nodeIds.map(String).filter(Boolean)
+              : []
+            const sum = nodeIds.reduce(
+              (acc: number, id: string) => acc + (itemsMap[id] || 0),
+              0,
+            )
+
+            if (tabConfig?.id) newCounts[tabConfig.id] = sum
+            if (tabConfig?.label) newCounts[tabConfig.label] = sum
+
+            if (index < bucketKeys.length) {
+              newCounts[bucketKeys[index]] = sum
+            }
+          })
+
+          setStageTabCounts(newCounts)
+          setTotalStageCount(countRes.data.fullCount ?? 0)
+        }
+      } catch (err) {
+        console.error('Error fetching stage activity counts', err)
+      }
+    },
+    [rawWorkflowData, isAccountsPayable],
+  )
+
   const refreshInstanceCounts = useCallback(
-    async (workflowId: string) => {
+    async (workflowId: string, wfDetailOverride?: any) => {
       const countRes = await workflowsApiV6.getInstanceCount(workflowId)
       if (countRes?.data) applyInstanceCount(countRes.data)
+      await fetchStageCounts(workflowId, wfDetailOverride)
     },
-    [applyInstanceCount],
+    [applyInstanceCount, fetchStageCounts],
   )
 
   const loadSelectedWorkflow = useCallback(
@@ -501,6 +587,7 @@ const RequestsPage = () => {
         }
 
         setRawWorflow({ ...wf, formJson, id: workflowId })
+        void fetchStageCounts(workflowId, wf)
 
         let flowJson = ''
         if (typeof wf.flowJson === 'string') {
@@ -992,7 +1079,9 @@ const RequestsPage = () => {
               exceptionsCount={inboxResult?.exceptionsCount}
               isLoading={isLoading}
               metaData={metaData}
+              stageCounts={stageTabCounts}
               tabs={requestTabs}
+              totalStageCount={totalStageCount}
               workflow={workflow}
               actionButtons={
                 canCreateNewRequest
@@ -1062,7 +1151,13 @@ const RequestsPage = () => {
                 setViewMode={setViewMode}
                 onFilterClausesChange={setFilterClauses}
                 onGroupByChange={setGroupBy}
-                onRefresh={refetch}
+                onRefresh={() => {
+                  refetch()
+                  const wfId = selectedWorkflow?.id || workflow?.id
+                  if (wfId) {
+                    void refreshInstanceCounts(String(wfId))
+                  }
+                }}
                 onRowClick={handleRowClick}
               />
             ))}

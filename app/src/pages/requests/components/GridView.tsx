@@ -1006,15 +1006,67 @@ const GridRowItem = memo(
     ).trim()
     const aiInsight = rawAiInsight.replace(/^[✨\u2728\u2729\u2730\s]+/, '').trim()
 
-    const isAgentStage = Boolean(
-      row?.stageType?.toUpperCase().includes('AGENT'),
-    )
+    const activeJobId = String(row?.apAgentJobId || row?.jobId || '').trim()
+    const isJobProcessing =
+      Boolean(activeJobId) &&
+      !matchedJobStatus?.isCompleted &&
+      (Boolean(row.isProcessing) ||
+        Boolean(matchedJobStatus) ||
+        Boolean(statusText?.trim()))
 
     const { iconColorClass, iconName } = getRowIconAndColor(
-      !!row.isProcessing || isAgentStage,
+      isJobProcessing,
       rawDecision,
       !!row?.isDuplicateInvoice,
     )
+
+    // Job-driven loading: spinner + job id only (never stageType / supplier).
+    if (isJobProcessing) {
+      return (
+        <motion.div
+          animate='show'
+          exit='exit'
+          initial='hidden'
+          key={rowId}
+          transition={{ damping: 30, stiffness: 400, type: 'spring' }}
+          variants={itemVariantSet() as any}
+          className={cn(
+            'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
+            'cursor-pointer',
+            isSelected
+              ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
+              : 'bg-[var(--surface)] hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+          )}
+          onClick={() => {
+            onRowClick(row, 'Overview')
+          }}
+        >
+          <div className='flex shrink-0 items-center'>
+            <div
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
+                iconColorClass,
+              )}
+            >
+              <Icon className='size-5 animate-spin' name='tabler:loader-2' />
+            </div>
+          </div>
+          <div className='flex min-w-0 flex-1 items-center gap-3'>
+            <h3
+              className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)]'
+              style={{ fontWeight: 500 }}
+            >
+              {`JOB-${activeJobId}`}
+            </h3>
+            {statusText?.trim() ? (
+              <span className='ml-auto animate-pulse truncate text-right text-[12px] font-semibold text-[var(--orange-9)]'>
+                {statusText}
+              </span>
+            ) : null}
+          </div>
+        </motion.div>
+      )
+    }
 
     return (
       <motion.div
@@ -1031,11 +1083,7 @@ const GridRowItem = memo(
             ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
             : 'bg-[var(--surface)]',
           !isSelected &&
-            !row.isProcessing &&
             'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
-          !isSelected &&
-            row.isProcessing &&
-            'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
         )}
         onClick={() => {
           onRowClick(row, 'Overview')
@@ -1043,55 +1091,47 @@ const GridRowItem = memo(
       >
         {/* Checkbox & Status Icon */}
         <div className='flex shrink-0 items-center'>
-          {!row.isProcessing && (
+          <div
+            className={cn(
+              'relative flex items-center overflow-hidden transition-all duration-200',
+              isSelected || hasSelectionActive
+                ? 'mr-4 w-5 opacity-100'
+                : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
+            )}
+          >
+            <input
+              checked={isSelected}
+              className='absolute inset-0 z-10 cursor-pointer opacity-0'
+              type='checkbox'
+              onChange={() => {}}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleRowSelection(rowId, e)
+              }}
+            />
             <div
               className={cn(
-                'relative flex items-center overflow-hidden transition-all duration-200',
-                isSelected || hasSelectionActive
-                  ? 'mr-4 w-5 opacity-100'
-                  : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
+                'flex size-5 items-center justify-center rounded-md border-2 transition-all',
+                isSelected
+                  ? 'border-[var(--primary-9)] bg-surface'
+                  : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
               )}
             >
-              <input
-                checked={isSelected}
-                className='absolute inset-0 z-10 cursor-pointer opacity-0'
-                type='checkbox'
-                onChange={() => {}}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleRowSelection(rowId, e)
-                }}
-              />
-              <div
-                className={cn(
-                  'flex size-5 items-center justify-center rounded-md border-2 transition-all',
-                  isSelected
-                    ? 'border-[var(--primary-9)] bg-surface'
-                    : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
-                )}
-              >
-                {isSelected && (
-                  <Icon
-                    className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
-                    name='tabler:check'
-                  />
-                )}
-              </div>
+              {isSelected && (
+                <Icon
+                  className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
+                  name='tabler:check'
+                />
+              )}
             </div>
-          )}
+          </div>
           <div
             className={cn(
               'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
               iconColorClass,
             )}
           >
-            <Icon
-              name={iconName}
-              className={cn(
-                'size-5',
-                (row.isProcessing || isAgentStage) && 'animate-spin',
-              )}
-            />
+            <Icon className='size-5' name={iconName} />
           </div>
         </div>
 
@@ -1104,22 +1144,20 @@ const GridRowItem = memo(
             >
               {invoiceNo}
             </h3>
-            {!row.isProcessing && (
-              <HoverExpandableText
-                className='text-[12px] font-medium text-[var(--gray-10)]'
-                fallbackText='Unknown Supplier'
-                text={supplierName}
-                normalMaxWidthClass={
-                  isSidebarOpen
-                    ? 'max-w-[100px]'
-                    : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]'
-                }
-              />
-            )}
+            <HoverExpandableText
+              className='text-[12px] font-medium text-[var(--gray-10)]'
+              fallbackText='Unknown Supplier'
+              text={supplierName}
+              normalMaxWidthClass={
+                isSidebarOpen
+                  ? 'max-w-[100px]'
+                  : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]'
+              }
+            />
             <div className='shrink-0'>
               <RowStatusBadge
                 activeTab={activeTab}
-                isProcessing={row.isProcessing}
+                isProcessing={false}
                 originalIndex={originalIndex}
                 row={row}
               />
@@ -1128,154 +1166,130 @@ const GridRowItem = memo(
 
           {/* Sub-metadata row — PO / GL / category stay on line 2 */}
           <div className='flex min-w-0 flex-nowrap items-center gap-x-4 overflow-hidden text-[12px] font-medium text-[var(--gray-10)]'>
-            {!row.isProcessing && (
-              <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
-                <Icon className='size-3.5 shrink-0' name='tabler:hash' />
-                <HoverExpandableText
-                  className='text-[12px] font-medium text-[var(--gray-10)]'
-                  normalMaxWidthClass='max-w-[100px]'
-                  text={extractPONumber(row)}
-                />
-              </div>
-            )}
-            {!row.isProcessing &&
-              (() => {
-                const glNumber = findGLNumber(row)
-                const category = findCategory(row)
-                return (
-                  <>
-                    {glNumber && (
-                      <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
-                        <Icon
-                          className='size-3.5 shrink-0'
-                          name='tabler:stack'
-                        />
-                        <HoverExpandableText
-                          className='text-[12px] font-medium text-[var(--gray-8)]'
-                          normalMaxWidthClass='max-w-[90px]'
-                          text={glNumber}
-                        />
-                      </div>
-                    )}
-                    {category && (
-                      <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
-                        <Icon className='size-3.5 shrink-0' name='tabler:tag' />
-                        <HoverExpandableText
-                          className='text-[12px] font-medium text-[var(--gray-8)]'
-                          normalMaxWidthClass='max-w-[100px]'
-                          text={category}
-                        />
-                      </div>
-                    )}
-                  </>
-                )
-              })()}
+            <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
+              <Icon className='size-3.5 shrink-0' name='tabler:hash' />
+              <HoverExpandableText
+                className='text-[12px] font-medium text-[var(--gray-10)]'
+                normalMaxWidthClass='max-w-[100px]'
+                text={extractPONumber(row)}
+              />
+            </div>
+            {(() => {
+              const glNumber = findGLNumber(row)
+              const category = findCategory(row)
+              return (
+                <>
+                  {glNumber && (
+                    <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
+                      <Icon className='size-3.5 shrink-0' name='tabler:stack' />
+                      <HoverExpandableText
+                        className='text-[12px] font-medium text-[var(--gray-8)]'
+                        normalMaxWidthClass='max-w-[90px]'
+                        text={glNumber}
+                      />
+                    </div>
+                  )}
+                  {category && (
+                    <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
+                      <Icon className='size-3.5 shrink-0' name='tabler:tag' />
+                      <HoverExpandableText
+                        className='text-[12px] font-medium text-[var(--gray-8)]'
+                        normalMaxWidthClass='max-w-[100px]'
+                        text={category}
+                      />
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
 
           {/* AI Insight inside Column 2 (stacked, visible ONLY when playground/chat/sidebar is open) */}
-          {!row.isProcessing &&
-            activeTab !== 'Processed' &&
-            aiInsight &&
-            isSidebarOpen && (
-              <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
-                <AiBrandIcon
-                  className='size-3.5 shrink-0'
-                  variant='outline-purple'
-                />
-                <HoverExpandableText
-                  className='text-[12px] font-medium text-[var(--primary-9)]'
-                  expandStyle='inline'
-                  maxLines={2}
-                  normalMaxWidthClass='max-w-[180px]'
-                  text={aiInsight}
-                />
-              </div>
-            )}
+          {activeTab !== 'Processed' && aiInsight && isSidebarOpen && (
+            <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
+              <AiBrandIcon
+                className='size-3.5 shrink-0'
+                variant='outline-purple'
+              />
+              <HoverExpandableText
+                className='text-[12px] font-medium text-[var(--primary-9)]'
+                expandStyle='inline'
+                maxLines={2}
+                normalMaxWidthClass='max-w-[180px]'
+                text={aiInsight}
+              />
+            </div>
+          )}
         </div>
 
         {/* AI Insight Line - Centered in middle of row (visible ONLY when playground/chat/sidebar is closed) */}
-        {!row.isProcessing &&
-          activeTab !== 'Processed' &&
-          aiInsight &&
-          !isSidebarOpen && (
-            <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
-              <div className='flex min-w-0 items-center gap-1.5'>
-                <AiBrandIcon
-                  className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                  variant='outline-purple'
-                />
-                <HoverExpandableText
-                  className='text-[13px] font-medium text-[var(--gray-11)]'
-                  expandStyle='inline'
-                  maxLines={2}
-                  normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
-                  text={aiInsight}
-                />
-              </div>
+        {activeTab !== 'Processed' && aiInsight && !isSidebarOpen && (
+          <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
+            <div className='flex min-w-0 items-center gap-1.5'>
+              <AiBrandIcon
+                className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                variant='outline-purple'
+              />
+              <HoverExpandableText
+                className='text-[13px] font-medium text-[var(--gray-11)]'
+                expandStyle='inline'
+                maxLines={2}
+                normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+                text={aiInsight}
+              />
             </div>
-          )}
+          </div>
+        )}
 
         {/* Columns 1-4 perfectly aligned across all rows */}
         <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
-          {row.isProcessing ? (
-            <div className='relative flex w-[196px] items-center justify-end gap-2 pr-4'>
-              <span className='animate-pulse text-[12px] font-semibold whitespace-nowrap text-[var(--orange-9)]'>
-                {statusText}
-              </span>
-            </div>
-          ) : (
-            <>
-              {/* Column 3: Terms & Due Calculation */}
-              <div className='flex w-[84px] shrink-0 flex-col items-center justify-center text-center'>
-                <TermsColumn activeTab={activeTab} row={row} />
-              </div>
+          {/* Column 3: Terms & Due Calculation */}
+          <div className='flex w-[84px] shrink-0 flex-col items-center justify-center text-center'>
+            <TermsColumn activeTab={activeTab} row={row} />
+          </div>
 
-              {/* Column 4: Invoice Value & Date */}
-              <div className='flex w-[88px] shrink-0 flex-col items-end'>
-                <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
-                  {amount !== null && !Number.isNaN(amount) ? (
-                    `$${amount.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 2,
-                    })}`
-                  ) : (
-                    <span className='text-[14px] font-semibold text-[var(--gray-9)]'>
-                      N/A
-                    </span>
-                  )}
+          {/* Column 4: Invoice Value & Date */}
+          <div className='flex w-[88px] shrink-0 flex-col items-end'>
+            <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
+              {amount !== null && !Number.isNaN(amount) ? (
+                `$${amount.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 2,
+                })}`
+              ) : (
+                <span className='text-[14px] font-semibold text-[var(--gray-9)]'>
+                  N/A
                 </span>
-                <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
-                  {(() => {
-                    const rawDate =
-                      extractInvoiceDate(row) ||
-                      row.invoiceDate ||
-                      row.invoice_date ||
-                      row.date ||
-                      row.createdAtUtc ||
-                      row.createdAt
+              )}
+            </span>
+            <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
+              {(() => {
+                const rawDate =
+                  extractInvoiceDate(row) ||
+                  row.invoiceDate ||
+                  row.invoice_date ||
+                  row.date ||
+                  row.createdAtUtc ||
+                  row.createdAt
 
-                    if (rawDate && rawDate !== '-') {
-                      const parsed = parseUtcDate(rawDate) || new Date(rawDate)
-                      if (parsed && !Number.isNaN(parsed.getTime())) {
-                        return dayjs(parsed).format('MMM DD, YYYY')
-                      }
-                    }
-                    return 'Aug 20, 2026'
-                  })()}
-                </span>
-              </div>
-            </>
-          )}
+                if (rawDate && rawDate !== '-') {
+                  const parsed = parseUtcDate(rawDate) || new Date(rawDate)
+                  if (parsed && !Number.isNaN(parsed.getTime())) {
+                    return dayjs(parsed).format('MMM DD, YYYY')
+                  }
+                }
+                return 'Aug 20, 2026'
+              })()}
+            </span>
+          </div>
         </div>
 
         {/* Navigation Arrow */}
         <div className='flex w-6 shrink-0 items-center justify-end select-none'>
-          {!row.isProcessing && (
-            <Icon
-              className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-[var(--gray-8)] group-hover:opacity-100'
-              name='tabler:arrow-right'
-            />
-          )}
+          <Icon
+            className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-[var(--gray-8)] group-hover:opacity-100'
+            name='tabler:arrow-right'
+          />
         </div>
       </motion.div>
     )
