@@ -10,6 +10,7 @@ export interface DocumentIntelligentCandidate {
   repository_name: string
   score: number
   rationale?: string
+  keywords?: string[]
 }
 
 export interface DocumentIntelligentResult {
@@ -20,6 +21,7 @@ export interface DocumentIntelligentResult {
   repository_name: string | null
   ocr_text?: string
   source_reference?: string
+  keywords?: string[]
 }
 
 export interface OcrFieldResult {
