@@ -81,7 +81,7 @@ export async function classifyDocument(
 
         suggestions.push({
           confidence: normalizeScore(cand.score),
-          keywords: [],
+          keywords: cand.keywords || [],
           reason: candidateReason,
           repositoryId: targetId,
           repositoryName:
@@ -104,7 +104,7 @@ export async function classifyDocument(
         const topScore = res.confidence_score ?? suggestions[0]?.score ?? 0
         suggestions.unshift({
           confidence: normalizeScore(topScore),
-          keywords: [],
+          keywords: res.keywords || [],
           reason:
             res.rationale ||
             (topScore !== undefined && topScore !== null
@@ -122,7 +122,7 @@ export async function classifyDocument(
 
     return {
       documentType: res.repository_name || '',
-      keywords: [],
+      keywords: res.keywords || [],
       ocrText: res.ocr_text,
       rationale: res.rationale,
       sourceReference: res.source_reference || file.name,
