@@ -14,12 +14,13 @@ import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workf
 import {
   getConfiguredFieldOptions,
   getFieldOptions,
-  isFieldHidden,
-  isFieldReadOnly,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import type { AgentBlock } from './AgentSummaryBoxes'
+import {
+  canEditAgentFormField,
+  canViewAgentFormField,
+} from './agentFormFieldAccess'
 import {
   collectFormFields,
   collectFormTableFields,
@@ -61,13 +62,6 @@ const ensureOnDemandTable = (field: any) => {
   }
 }
 
-const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
-  const access = String(value ?? 'ALL').toUpperCase()
-  if (access === 'NONE') return 'NONE'
-  if (access === 'CUSTOM') return 'CUSTOM'
-  return 'ALL'
-}
-
 const controlLabel = (field: any | null, fallback?: string) =>
   field ? getFieldHeading(field) : fallback
 
@@ -100,6 +94,8 @@ interface HoverEditProps {
   editor: ReactNode
   fieldId: string
   className?: string
+  /** When set, pencil sits top-right on the same row as this heading. */
+  heading?: ReactNode
   inline?: boolean
   label?: string
   onActivate: (id: string | null) => void
@@ -112,6 +108,7 @@ const HoverEditShell = ({
   className,
   editor,
   fieldId,
+  heading,
   inline = false,
   onActivate,
 }: HoverEditProps) => {
@@ -144,6 +141,21 @@ const HoverEditShell = ({
     }
   }, [isActive, onActivate])
 
+  const editButton = (
+    <button
+      aria-label='Edit'
+      className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+      type='button'
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onActivate(fieldId)
+      }}
+    >
+      <Icon className='size-3.5' icon='lucide:pencil' />
+    </button>
+  )
+
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
@@ -156,9 +168,34 @@ const HoverEditShell = ({
   )
 
   if (!canEdit) {
+    if (heading) {
+      return wrapLabel(
+        <span className='flex w-full min-w-0 flex-col gap-1'>
+          <span className='flex min-w-0 items-center justify-between gap-2'>
+            {heading}
+          </span>
+          <span className='block min-w-0'>{children}</span>
+        </span>,
+      )
+    }
     return wrapLabel(
       <span className={cn(inline ? 'inline' : 'block', className)}>
         {children}
+      </span>,
+    )
+  }
+
+  if (heading) {
+    return wrapLabel(
+      <span
+        ref={rootRef}
+        className='group flex w-full min-w-0 flex-col gap-1 rounded px-0.5 transition-colors'
+      >
+        <span className='flex min-w-0 items-center justify-between gap-2'>
+          {heading}
+          {!isActive ? editButton : <span className='size-6 shrink-0' />}
+        </span>
+        {isActive ? editor : <span className='block min-w-0'>{children}</span>}
       </span>,
     )
   }
@@ -189,7 +226,7 @@ const HoverEditShell = ({
             aria-label='Edit'
             className={cn(
               'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-              !inline && 'absolute top-1/2 right-0 -translate-y-1/2',
+              !inline && 'absolute top-0 right-0',
             )}
             type='button'
             onClick={(event) => {
@@ -330,10 +367,15 @@ interface Props {
   result: Record<string, any>
   agentBlock?: AgentBlock | null
   formModel?: Record<string, any>
+  /** From current activity block — same Sets as the request form page. */
+  hiddenFieldIds?: Set<string>
   readOnly?: boolean
+  readOnlyFieldIds?: Set<string>
   requestData?: any
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
+  /** Live grand total for the agent-tab header (before Attachments). */
+  onQuoteTotalChange?: (total: number | null) => void
 }
 
 /** True when request is on a stage that rules route to directly from Quote Agent. */
@@ -437,11 +479,14 @@ const resolveStoredProduct = (row: Record<string, any>, columns: any[]) => {
 const QuoteAgentResultView = ({
   agentBlock,
   formModel = {},
+  hiddenFieldIds,
   readOnly = false,
+  readOnlyFieldIds,
   requestData,
   result,
   workflow,
   onFieldChange,
+  onQuoteTotalChange,
 }: Props) => {
   const { t } = useLingui()
   const formFields = useMemo(() => collectFormFields(workflow), [workflow])
@@ -631,38 +676,16 @@ const QuoteAgentResultView = ({
     setComputedTotals(initialTotals)
   }, [initialTotals])
 
-  const blockSettings = agentBlock?.settings || {}
-  const editAccess = formAccessMode(blockSettings.formEditAccess)
-  const visibilityAccess = formAccessMode(blockSettings.formVisibilityAccess)
-  const currentUserId = String(authUserStore.getState().session?.id || '')
+  const canEditField = (field: any | null) =>
+    canEditAgentFormField(field, {
+      hiddenFieldIds,
+      onFieldChange,
+      readOnly,
+      readOnlyFieldIds,
+    })
 
-  const canEditField = (field: any | null) => {
-    if (readOnly || !onFieldChange || !field) return false
-    if (isFieldHidden(field) || isFieldReadOnly(field)) return false
-    const id = getFieldId(field)
-    if (visibilityAccess === 'NONE') return false
-    if (visibilityAccess === 'CUSTOM') {
-      const rules = Array.isArray(blockSettings.formSecureControls)
-        ? blockSettings.formSecureControls
-        : []
-      const rule = rules.find((r: any) => String(r.userId) === currentUserId)
-      if (rule) {
-        const visible = new Set((rule.formFields || []).map(String))
-        if (!visible.has(id)) return false
-      }
-    }
-    if (editAccess === 'NONE') return false
-    if (editAccess === 'CUSTOM') {
-      const rules = Array.isArray(blockSettings.formEditControls)
-        ? blockSettings.formEditControls
-        : []
-      const rule = rules.find((r: any) => String(r.userId) === currentUserId)
-      if (!rule) return true
-      const editable = new Set((rule.formFields || []).map(String))
-      if (!editable.has(id)) return false
-    }
-    return true
-  }
+  const canViewField = (field: any | null) =>
+    canViewAgentFormField(field, hiddenFieldIds)
 
   const resolveDisplayValue = (
     field: any | null,
@@ -726,9 +749,7 @@ const QuoteAgentResultView = ({
     const raw = stringifyScalar(
       resolveDisplayValue(entry.field, entry.value, entry.resultKey),
     )
-    const canEdit = entry.field
-      ? canEditField(entry.field)
-      : Boolean(!readOnly && onFieldChange)
+    const canEdit = entry.field ? canEditField(entry.field) : false
     return {
       canEdit,
       display: formatFieldDisplay(raw),
@@ -816,8 +837,7 @@ const QuoteAgentResultView = ({
     // Subtotal/Total are driven by line items + freight/tax.
     if (entry.kind === 'subtotal' || entry.kind === 'total') return false
     if (entry.field) return canEditField(entry.field)
-    // Result-only keys (no form field) are still editable via resultKey.
-    return true
+    return false
   }
 
   const commitTotalEntry = (entry: QuoteTotalEntry, raw: unknown) => {
@@ -858,17 +878,29 @@ const QuoteAgentResultView = ({
     return resolveDisplayValue(entry.field, entry.value, entry.resultKey)
   }
 
-  const grandTotalLabel =
-    viewModel.grandTotal?.label ||
-    viewModel.totals.find((entry) => entry.kind === 'total')?.label ||
-    'Total'
-
   const breakdownTotals = viewModel.totals.filter(
     (entry) => entry.kind !== 'total',
   )
 
+  const lineItemField = viewModel.lineItemTable?.field || null
+  const lineItemsVisible = canViewField(lineItemField)
+  const lineItemsEditable =
+    Boolean(viewModel.lineItemTable) &&
+    (lineItemField ? canEditField(lineItemField) : false)
+
+  useEffect(() => {
+    if (!onQuoteTotalChange) return
+    const total = computedTotals?.total
+    onQuoteTotalChange(
+      total !== undefined && total !== null && Number.isFinite(Number(total))
+        ? Number(total)
+        : null,
+    )
+  }, [computedTotals.total, onQuoteTotalChange])
+
   const headerEntries = [viewModel.titleEntry, ...viewModel.metaEntries].filter(
-    (entry): entry is QuoteScalarEntry => !!entry,
+    (entry): entry is QuoteScalarEntry =>
+      !!entry && (!entry.field || canViewField(entry.field)),
   )
 
   const scalarLabel = (entry: QuoteScalarEntry) => {
@@ -1013,17 +1045,19 @@ const QuoteAgentResultView = ({
                 />
               ) : null}
               <div className='text-sm leading-5 font-normal text-gray-12'>
-                <span className='mr-1.5 font-bold'>{grandTotalLabel}:</span>$
+                <span className='mr-1.5 font-bold'>{t`Total`}:</span>$
                 {toMoney(computedTotals.total)}
               </div>
             </div>
           </div>
 
-          {viewModel.lineItemTable && (lineItems.length > 0 || !readOnly) && (
+          {viewModel.lineItemTable &&
+            lineItemsVisible &&
+            (lineItems.length > 0 || lineItemsEditable) && (
             <QuoteLineItemsTable
               freight={freight}
               items={lineItems}
-              readOnly={readOnly}
+              readOnly={!lineItemsEditable}
               taxRate={taxRate}
               title={viewModel.lineItemTable.label}
               workflow={workflow}
@@ -1054,16 +1088,38 @@ const QuoteAgentResultView = ({
             </div>
           )}
 
-          {viewModel.longTextEntries.map((entry) => (
-            <div className='flex flex-col gap-1.5' key={entry.resultKey}>
-              <h4 className='text-sm font-semibold text-gray-12'>
-                {entry.label}
-              </h4>
-              {renderScalarHover(entry)}
-            </div>
-          ))}
+          {viewModel.longTextEntries
+            .filter((entry) => !entry.field || canViewField(entry.field))
+            .map((entry) => {
+              const { canEdit, display, raw } = resolveScalarEntry(entry)
+              const fieldId = entry.field
+                ? getFieldId(entry.field)
+                : entry.resultKey
+              return (
+                <div className='flex flex-col gap-1.5' key={entry.resultKey}>
+                  <HoverEditShell
+                    activeEditId={activeEditId}
+                    canEdit={canEdit}
+                    editor={renderScalarEditor(entry, raw)}
+                    fieldId={fieldId}
+                    heading={
+                      <h4 className='text-sm font-semibold text-gray-12'>
+                        {entry.label}
+                      </h4>
+                    }
+                    label={controlLabel(entry.field, entry.label)}
+                    onActivate={setActiveEditId}
+                  >
+                    <span className='leading-relaxed text-sm text-gray-12'>
+                      {display || raw}
+                    </span>
+                  </HoverEditShell>
+                </div>
+              )
+            })}
 
           {viewModel.listEntries.map((entry) => {
+            if (entry.field && !canViewField(entry.field)) return null
             const items = Array.isArray(entry.value)
               ? entry.value.map(String)
               : String(entry.value || '')
@@ -1094,11 +1150,12 @@ const QuoteAgentResultView = ({
 
           {viewModel.otherTables.map((table) => {
             const field = ensureOnDemandTable(table.field)
+            if (field && !canViewField(field)) return null
             const rows = resolveTableRows(table)
             const editable =
               !readOnly &&
               Boolean(onFieldChange) &&
-              (table.field ? canEditField(table.field) : true)
+              (table.field ? canEditField(table.field) : false)
 
             if (!rows.length && !editable) return null
 

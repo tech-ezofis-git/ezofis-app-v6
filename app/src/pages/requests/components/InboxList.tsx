@@ -2091,7 +2091,7 @@ const InboxList: React.FC<InboxListProps> = ({
           {!selectedItem && viewMode === 'kanban' && (
             <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4'>
               <KanbanView
-                isLoading={isLoading || isRefetching}
+                isLoading={isLoading}
                 items={flatFinalRows}
                 table={table as any}
                 workflow={workflow}

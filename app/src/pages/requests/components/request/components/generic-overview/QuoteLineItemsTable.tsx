@@ -714,54 +714,51 @@ function HoverValue({
 
   if (!canEdit) return <>{display}</>
 
+  if (open) {
+    return (
+      <div ref={rootRef} className={cn('min-w-0', fill && 'w-full')}>
+        {input(close)}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={rootRef}
       className={cn(
-        'group relative min-w-0',
-        open ? 'block w-full' : 'inline-flex max-w-full items-center',
-        !open && fill && 'min-w-0 flex-1',
-        !open && align === 'right' && 'w-full justify-end',
-        !open && align === 'center' && 'w-full justify-center',
+        'group flex min-w-0 gap-1',
+        fill || align === 'left' ? 'items-start' : 'items-center',
+        fill && 'w-full flex-1',
+        align === 'right' && 'w-full justify-end',
+        align === 'center' && 'w-full justify-center',
       )}
     >
-      {open ? (
-        input(close)
-      ) : (
-        <>
-          <button
-            type='button'
-            className={cn(
-              'min-w-0 cursor-text border-0 bg-transparent p-0 text-inherit',
-              align === 'right' && 'text-right',
-              align === 'center' && 'text-center',
-              className,
-            )}
-            onClick={() => setOpen(true)}
-          >
-            {display}
-          </button>
-          <button
-            aria-label='Edit'
-            type='button'
-            className={cn(
-              'absolute top-1/2 z-10 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-              align === 'right'
-                ? 'right-full mr-1'
-                : fill
-                  ? 'right-0'
-                  : 'left-full ml-1',
-            )}
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              setOpen(true)
-            }}
-          >
-            <Icon className='size-3.5' icon='lucide:pencil' />
-          </button>
-        </>
-      )}
+      <button
+        type='button'
+        className={cn(
+          'min-w-0 cursor-text border-0 bg-transparent p-0 text-inherit',
+          fill && 'flex-1 text-left',
+          align === 'right' && 'text-right',
+          align === 'center' && 'text-center',
+          className,
+        )}
+        onClick={() => setOpen(true)}
+      >
+        {display}
+      </button>
+      {/* Fixed trailing slot so the pencil never overlaps value / Accept. */}
+      <button
+        aria-label='Edit'
+        type='button'
+        className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          setOpen(true)
+        }}
+      >
+        <Icon className='size-3.5' icon='lucide:pencil' />
+      </button>
     </div>
   )
 }

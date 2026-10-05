@@ -1441,9 +1441,13 @@ export const resolveConfiguredTitle = (
   row: any,
   workflow: WorkflowOption | null,
   isDocumentApproval: boolean,
+  rawWorkflowData?: any,
 ): string | null => {
   const titleField =
+    rawWorkflowData?.settings?.general?.requestTitleField ||
+    rawWorkflowData?.workflowJson?.settings?.general?.requestTitleField ||
     workflow?.workflowJson?.settings?.general?.requestTitleField ||
+    (workflow as any)?.settings?.general?.requestTitleField ||
     (workflow as any)?.wSettings?.general?.requestTitleField
   if (!titleField && !isDocumentApproval) return null
   if (isDocumentApproval) {
@@ -1451,7 +1455,9 @@ export const resolveConfiguredTitle = (
     if (val !== undefined && val !== null && val !== '') return String(val)
   }
 
-  const actualFieldKey = getFieldKeyByLabel(workflow, titleField) || titleField
+  const fieldSource = rawWorkflowData || workflow
+  const actualFieldKey =
+    getFieldKeyByLabel(fieldSource, titleField) || titleField
 
   // If we found the actual field key, look it up in formData
   if (actualFieldKey) {

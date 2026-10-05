@@ -60,6 +60,11 @@ import {
 } from '../workflow-request/utils/gmailFormAttachment'
 import { isDocumentGenerateBlock } from './components/generic-overview/documentGenerateTemplate'
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
+import {
+  collectFormFields,
+  collectFormTableFields,
+} from './components/generic-overview/AgentEditableTables'
+import { summarizeQuoteResult } from './components/generic-overview/quoteResultUtils'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 import ForwardPopover from './ForwardPopover'
@@ -2315,7 +2320,53 @@ const Request = ({
     [selectedItem],
   )
 
-  const totalAmount =
+  const quoteAgentTotal = useMemo(() => {
+    if (!isGenericWorkflow) return null
+    const result = selectedItem?.quoteAgentResponse?.quote_result
+    if (!result || typeof result !== 'object') return null
+
+    const fields = collectFormFields(rawWorkflowData)
+    const tables = collectFormTableFields(rawWorkflowData)
+    const summary = summarizeQuoteResult(result, fields, tables)
+
+    // Prefer live form values written by Quote Agent edits.
+    for (const field of fields) {
+      const heading = String(
+        field?.settings?.general?.heading ||
+          field?.settings?.general?.label ||
+          field?.label ||
+          '',
+      )
+        .trim()
+        .toLowerCase()
+      if (heading !== 'total' && heading !== 'grand total') continue
+      const id = String(field?.id || '')
+      const fromGeneric = genericFormModel?.[id]
+      const fromForm = formModel?.[id]
+      const raw =
+        fromGeneric !== undefined && fromGeneric !== null && fromGeneric !== ''
+          ? fromGeneric
+          : fromForm
+      if (raw === undefined || raw === null || raw === '') continue
+      const num = Number(raw)
+      if (Number.isFinite(num)) return num
+    }
+
+    const fromSummary = summary.total
+    if (fromSummary !== null && fromSummary !== undefined) {
+      const num = Number(fromSummary)
+      if (Number.isFinite(num)) return num
+    }
+    return null
+  }, [
+    formModel,
+    genericFormModel,
+    isGenericWorkflow,
+    rawWorkflowData,
+    selectedItem?.quoteAgentResponse?.quote_result,
+  ])
+
+  const invoiceTotalAmount =
     formModel?.['Invoice Amount'] ||
     formModel?.['Total Due'] ||
     formModel?.['Total'] ||
@@ -2332,6 +2383,11 @@ const Request = ({
     invoiceHeader?.['invoice_amount'] ||
     invoiceHeader?.['total_amount'] ||
     selectedItem?.totalAmount
+
+  const totalAmount =
+    isGenericWorkflow && quoteAgentTotal != null
+      ? quoteAgentTotal
+      : invoiceTotalAmount
   // Robust check for PO Value
   const poValueFromMatching = (() => {
     const fieldMatching =

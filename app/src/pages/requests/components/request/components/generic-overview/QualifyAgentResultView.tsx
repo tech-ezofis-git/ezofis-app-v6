@@ -1,20 +1,24 @@
+import { useLingui } from '@lingui/react/macro'
 import { Icon } from '@iconify/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import Popover from '@/components/base/Popover'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
   getConfiguredFieldOptions,
   getFieldOptions,
-  isFieldHidden,
-  isFieldReadOnly,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import type { AgentBlock } from './AgentSummaryBoxes'
+import {
+  canEditAgentFormField,
+  canViewAgentFormField,
+} from './agentFormFieldAccess'
 import {
   collectFormFields,
   collectFormTableFields,
@@ -61,13 +65,6 @@ const resolveTableValue = (
     }
   }
   return agentRows || []
-}
-
-const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
-  const access = String(value ?? 'ALL').toUpperCase()
-  if (access === 'NONE') return 'NONE'
-  if (access === 'CUSTOM') return 'CUSTOM'
-  return 'ALL'
 }
 
 const controlLabel = (field: any | null, fallback?: string) =>
@@ -179,6 +176,49 @@ const isAiInsightEntry = (entry: { label: string; resultKey: string }) => {
   )
 }
 
+/** Same priority as header AI Insights for generic qualify responses. */
+const resolveAiInsightSummary = (
+  result: Record<string, any> | null | undefined,
+  longTextEntries: QualifierScalarEntry[],
+) => {
+  const insightEntry = longTextEntries.find(isAiInsightEntry)
+  if (insightEntry) {
+    const fromEntry = stringifyScalar(insightEntry.value).trim()
+    if (fromEntry) return fromEntry
+  }
+
+  const preferredKeys = [
+    'Ai Insight',
+    'AI Insight',
+    'aiInsight',
+    'ai_insight',
+    'Detailed Reasoning',
+    'Reasoning',
+    'Decision',
+  ]
+  for (const key of preferredKeys) {
+    const value = result?.[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+
+  if (result && typeof result === 'object') {
+    for (const [key, value] of Object.entries(result)) {
+      const normalized = key.toLowerCase().replace(/[_\-\s]+/g, '')
+      if (
+        (normalized === 'aiinsight' ||
+          normalized === 'detailedreasoning' ||
+          normalized === 'reasoning') &&
+        typeof value === 'string' &&
+        value.trim()
+      ) {
+        return value.trim()
+      }
+    }
+  }
+
+  return ''
+}
+
 const stringifyScalar = (value: unknown) => {
   if (value === null || value === undefined) return ''
   if (Array.isArray(value)) return value.map(String).join(', ')
@@ -193,6 +233,8 @@ interface HoverEditProps {
   editor: ReactNode
   fieldId: string
   className?: string
+  /** When set, pencil sits top-right on the same row as this heading. */
+  heading?: ReactNode
   inline?: boolean
   label?: string
   onActivate: (id: string | null) => void
@@ -205,6 +247,7 @@ const HoverEditShell = ({
   className,
   editor,
   fieldId,
+  heading,
   inline = false,
   onActivate,
 }: HoverEditProps) => {
@@ -237,6 +280,21 @@ const HoverEditShell = ({
     }
   }, [isActive, onActivate])
 
+  const editButton = (
+    <button
+      aria-label='Edit'
+      className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+      type='button'
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onActivate(fieldId)
+      }}
+    >
+      <Icon className='size-3.5' icon='lucide:pencil' />
+    </button>
+  )
+
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
@@ -249,9 +307,34 @@ const HoverEditShell = ({
   )
 
   if (!canEdit) {
+    if (heading) {
+      return wrapLabel(
+        <span className='flex w-full min-w-0 flex-col gap-1'>
+          <span className='flex min-w-0 items-center justify-between gap-2'>
+            {heading}
+          </span>
+          <span className='block min-w-0'>{children}</span>
+        </span>,
+      )
+    }
     return wrapLabel(
       <span className={cn(inline ? 'inline' : 'block', className)}>
         {children}
+      </span>,
+    )
+  }
+
+  if (heading) {
+    return wrapLabel(
+      <span
+        ref={rootRef}
+        className='group flex w-full min-w-0 flex-col gap-1 rounded px-0.5 transition-colors'
+      >
+        <span className='flex min-w-0 items-center justify-between gap-2'>
+          {heading}
+          {!isActive ? editButton : <span className='size-6 shrink-0' />}
+        </span>
+        {isActive ? editor : <span className='block min-w-0'>{children}</span>}
       </span>,
     )
   }
@@ -282,7 +365,7 @@ const HoverEditShell = ({
             aria-label='Edit'
             className={cn(
               'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-              !inline && 'absolute top-1/2 right-0 -translate-y-1/2',
+              !inline && 'absolute top-0 right-0',
             )}
             type='button'
             onClick={(event) => {
@@ -423,7 +506,10 @@ interface Props {
   result: Record<string, any>
   agentBlock?: AgentBlock | null
   formModel?: Record<string, any>
+  /** From current activity block — same Sets as the request form page. */
+  hiddenFieldIds?: Set<string>
   readOnly?: boolean
+  readOnlyFieldIds?: Set<string>
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
 }
@@ -431,11 +517,14 @@ interface Props {
 const QualifyAgentResultView = ({
   agentBlock,
   formModel = {},
+  hiddenFieldIds,
   readOnly = false,
+  readOnlyFieldIds,
   result,
   workflow,
   onFieldChange,
 }: Props) => {
+  const { t } = useLingui()
   const formFields = useMemo(() => collectFormFields(workflow), [workflow])
   const tableFields = useMemo(
     () => collectFormTableFields(workflow),
@@ -447,10 +536,10 @@ const QualifyAgentResultView = ({
     [formFields, result, tableFields],
   )
 
-  const blockSettings = agentBlock?.settings || {}
-  const editAccess = formAccessMode(blockSettings.formEditAccess)
-  const visibilityAccess = formAccessMode(blockSettings.formVisibilityAccess)
-  const currentUserId = String(authUserStore.getState().session?.id || '')
+  const aiInsightSummary = useMemo(
+    () => resolveAiInsightSummary(result, viewModel.longTextEntries),
+    [result, viewModel.longTextEntries],
+  )
 
   const [draftTables, setDraftTables] = useState<
     Record<string, Record<string, any>[]>
@@ -459,33 +548,16 @@ const QualifyAgentResultView = ({
 
   const qualifyStatus = qualifyDecisionStyle(viewModel.qualify)
 
-  const canEditField = (field: any | null) => {
-    if (readOnly || !onFieldChange || !field) return false
-    if (isFieldHidden(field) || isFieldReadOnly(field)) return false
-    const id = getFieldId(field)
-    if (visibilityAccess === 'NONE') return false
-    if (visibilityAccess === 'CUSTOM') {
-      const rules = Array.isArray(blockSettings.formSecureControls)
-        ? blockSettings.formSecureControls
-        : []
-      const rule = rules.find((r: any) => String(r.userId) === currentUserId)
-      if (rule) {
-        const visible = new Set((rule.formFields || []).map(String))
-        if (!visible.has(id)) return false
-      }
-    }
-    if (editAccess === 'NONE') return false
-    if (editAccess === 'CUSTOM') {
-      const rules = Array.isArray(blockSettings.formEditControls)
-        ? blockSettings.formEditControls
-        : []
-      const rule = rules.find((r: any) => String(r.userId) === currentUserId)
-      if (!rule) return true
-      const editable = new Set((rule.formFields || []).map(String))
-      if (!editable.has(id)) return false
-    }
-    return true
-  }
+  const canEditField = (field: any | null) =>
+    canEditAgentFormField(field, {
+      hiddenFieldIds,
+      onFieldChange,
+      readOnly,
+      readOnlyFieldIds,
+    })
+
+  const canViewField = (field: any | null) =>
+    canViewAgentFormField(field, hiddenFieldIds)
 
   const resolveDisplayValue = (
     field: any | null,
@@ -615,7 +687,9 @@ const QualifyAgentResultView = ({
 
   const headerEntries = [viewModel.titleEntry, ...viewModel.metaEntries].filter(
     (entry): entry is QualifierScalarEntry =>
-      !!entry && !isAiInsightEntry(entry),
+      !!entry &&
+      !isAiInsightEntry(entry) &&
+      (!entry.field || canViewField(entry.field)),
   )
 
   const renderHeaderField = (entry: QualifierScalarEntry) => {
@@ -670,7 +744,32 @@ const QualifyAgentResultView = ({
                 confidenceToneClass(viewModel.confidence),
               )}
             >
-              <Icon className='h-3.5 w-3.5' icon='tabler:target' />
+              <Popover
+                position='bottom-end'
+                width={380}
+                target={
+                  <button
+                    aria-label={t`AI Insights`}
+                    className='inline-flex size-5 items-center justify-center rounded-md transition-colors hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                    type='button'
+                  >
+                    <Icon className='h-3.5 w-3.5' icon='tabler:eye' />
+                  </button>
+                }
+              >
+                <div className='flex max-h-[min(22rem,70vh)] flex-col gap-2.5 overflow-y-auto p-3.5'>
+                  <div className='flex items-center gap-2 border-b border-gray-3 pb-2'>
+                    <AiBrandIcon className='size-4 text-primary-9' />
+                    <span className='text-sm font-semibold text-gray-12'>
+                      {t`AI Insights`}
+                    </span>
+                  </div>
+                  <p className='text-justify text-[13px] leading-relaxed font-medium text-gray-12'>
+                    {aiInsightSummary ||
+                      t`No decision details available for this request.`}
+                  </p>
+                </div>
+              </Popover>
               {String(viewModel.confidence)}% {viewModel.confidenceLabel}
             </div>
           ) : null}
@@ -678,24 +777,50 @@ const QualifyAgentResultView = ({
       </div>
 
       {viewModel.longTextEntries
-        .filter((entry) => !isAiInsightEntry(entry))
-        .map((entry) => (
-          <div
-            className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-3 text-primary-11'
-            key={entry.resultKey}
-          >
-            <Icon
-              className='mt-0.5 h-5 w-5 shrink-0 text-primary-9'
-              icon='tabler:sparkles'
-            />
-            <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
-              <span className='font-bold text-primary-12'>{entry.label}</span>
-              {renderScalarHover(entry)}
+        .filter(
+          (entry) =>
+            !isAiInsightEntry(entry) &&
+            (!entry.field || canViewField(entry.field)),
+        )
+        .map((entry) => {
+          const { canEdit, display, raw } = resolveScalarEntry(entry)
+          const fieldId = entry.field
+            ? getFieldId(entry.field)
+            : entry.resultKey
+          return (
+            <div
+              className='flex items-start gap-3 rounded-lg border border-primary-3 bg-primary-1 p-3 text-primary-11'
+              key={entry.resultKey}
+            >
+              <Icon
+                className='mt-0.5 h-5 w-5 shrink-0 text-primary-9'
+                icon='tabler:sparkles'
+              />
+              <div className='min-w-0 flex-1 text-sm'>
+                <HoverEditShell
+                  activeEditId={activeEditId}
+                  canEdit={canEdit}
+                  editor={renderScalarEditor(entry, raw)}
+                  fieldId={fieldId}
+                  heading={
+                    <span className='font-bold text-primary-12'>
+                      {entry.label}
+                    </span>
+                  }
+                  label={controlLabel(entry.field, entry.label)}
+                  onActivate={setActiveEditId}
+                >
+                  <span className='block w-full text-justify leading-relaxed'>
+                    {display || raw}
+                  </span>
+                </HoverEditShell>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
       {viewModel.flagEntries.map((entry) => {
+        if (entry.field && !canViewField(entry.field)) return null
         const flags = Array.isArray(entry.value)
           ? entry.value.map(String)
           : String(entry.value || '')
@@ -706,14 +831,16 @@ const QualifyAgentResultView = ({
 
         return (
           <div className='flex flex-col gap-1.5' key={entry.resultKey}>
-            <h4 className='text-sm font-semibold text-gray-12'>
-              {entry.label}
-            </h4>
             <HoverEditShell
               activeEditId={activeEditId}
               canEdit={entry.field ? canEditField(entry.field) : false}
               editor={renderScalarEditor(entry, flags.join(', '))}
               fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
+              heading={
+                <h4 className='text-sm font-semibold text-gray-12'>
+                  {entry.label}
+                </h4>
+              }
               label={controlLabel(entry.field, entry.label)}
               onActivate={setActiveEditId}
             >
@@ -739,7 +866,8 @@ const QualifyAgentResultView = ({
         const editable =
           !readOnly &&
           Boolean(onFieldChange) &&
-          (table.field ? canEditField(table.field) : true)
+          (table.field ? canEditField(table.field) : false)
+        if (table.field && !canViewField(table.field)) return null
         const kind = qualifierTableKind(table.label)
         const matchedTable =
           kind === 'excluded'

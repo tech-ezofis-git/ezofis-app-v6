@@ -826,6 +826,9 @@ export const useInboxData = (
     },
 
     refetchInterval: (query: any) => {
+      // Kanban board keeps itself fresh while open.
+      if (activeTab === 'Kanban') return 20_000
+
       // Prefer selected/observer data; fall back to raw cache payload.
       const selected = query.state?.data
       const raw = query.state?.data?.data ?? query.state?.data

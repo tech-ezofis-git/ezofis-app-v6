@@ -165,6 +165,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row,
     workflow,
     isDocumentApproval,
+    rawWorkflowData,
   )
 
   const requestNo =
