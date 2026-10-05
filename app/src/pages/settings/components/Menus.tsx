@@ -35,7 +35,6 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import { isDemoAppOrigin } from '@/utils/origin'
 import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import {
   getFieldRequiredError,
@@ -650,17 +649,15 @@ function MenuSetup({
   }
 
   const handleNext = () => {
-    if (!isDemoAppOrigin()) {
-      const missingLabels = getMissingLabels(activeStep)
+    const missingLabels = getMissingLabels(activeStep)
 
-      if (missingLabels.length) {
-        setShowErrors(true)
-        showToast({
-          message: t`Please complete all required menu details before continuing.`,
-          variant: 'info',
-        })
-        return
-      }
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: t`Please complete all required menu details before continuing.`,
+        variant: 'info',
+      })
+      return
     }
 
     setShowErrors(false)
@@ -695,7 +692,7 @@ function MenuSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (!isDemoAppOrigin() && step > activeStep) {
+    if (step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -721,11 +718,10 @@ function MenuSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    const allowAnyStep = isDemoAppOrigin()
     return menuSteps.map((s, idx) => ({
-      clickable: allowAnyStep ? true : undefined,
+      clickable: undefined,
       description: s.description,
-      disabled: allowAnyStep ? false : undefined,
+      disabled: undefined,
       icon:
         s.key === 'details'
           ? 'tabler:menu-2'

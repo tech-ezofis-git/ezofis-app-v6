@@ -14,7 +14,6 @@ import CustomFilter, {
   type FilterOption,
 } from '@/components/common/CustomFilter'
 import authUserStore from '@/stores/authUserStore'
-import { isDemoAppOrigin } from '@/utils/origin'
 import type {
   DynamicRepositoryColumn,
   RepositoryItemFilterField,
@@ -775,8 +774,7 @@ export function FolderFilterBar({
             ]
           : []),
         ...(onIntelligentUpload &&
-        String(repositoryId || '').trim() &&
-        !isDemoAppOrigin()
+        String(repositoryId || '').trim()
           ? [
               {
                 color: 'primary' as const,

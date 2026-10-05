@@ -70,7 +70,7 @@ export type AskAiField = {
   value: string | number
 }
 
-/** demo.ezofis.com filter groups, or cloud.ezofis.com flat key→value map */
+/** cloud.ezofis.com filter groups or flat key→value map */
 export type AskAiFilterBy =
   | AskAiBrowseFilterGroup[]
   | Record<string, string | number | boolean | null | undefined>

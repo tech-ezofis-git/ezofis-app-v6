@@ -5,7 +5,6 @@ import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWiz
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayout'
-import { isDemoAppOrigin } from '@/utils/origin'
 import type { Report, ReportStatus } from '../types'
 import {
   usePublishReportBuilderReportMutation,
@@ -79,11 +78,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   )
 
   const steps: SettingsWizardStep[] = useMemo(() => {
-    const allowAnyStep = isDemoAppOrigin()
     return stepIds.map((stepId, index) => ({
-      clickable: allowAnyStep ? true : undefined,
+      clickable: undefined,
       description: stepDefinitions[stepId].description,
-      disabled: allowAnyStep ? false : undefined,
+      disabled: undefined,
       id: index,
       label: stepDefinitions[stepId].label,
     }))
@@ -103,7 +101,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   }
 
   const isNextDisabled = useMemo(() => {
-    if (isDemoAppOrigin()) return false
     if (stepIds[activeIndex] === 'details') {
       return (
         !draft.name.trim() ||
