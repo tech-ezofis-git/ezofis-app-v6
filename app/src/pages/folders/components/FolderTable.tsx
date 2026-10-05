@@ -705,10 +705,22 @@ export default function FolderTableDataTableSplit({
   const fetchArchivedFileList = useCallback(
     async (targetPage = 1, targetPageSize = 50) => {
       if (!repositoryId) return
+      // Only fetch when the left-tree selection is a scoped browse folder.
+      // Intermediate / repository nodes must not call /items.
+      const scopedFilters = {
+        ...(folderContextFilters || {}),
+        ...(fileFilters || {}),
+      }
+      if (Object.keys(folderContextFilters || {}).length === 0) {
+        setArchivedCount(0)
+        setArchivedFiles([])
+        setArchivedFilePage(undefined)
+        return
+      }
       setLoadingArchived(true)
       try {
         const response = await getRepositoryItems({
-          filters: {},
+          filters: scopedFilters,
           id: repositoryId,
           page: targetPage,
           pageSize: targetPageSize,
@@ -730,18 +742,18 @@ export default function FolderTableDataTableSplit({
         setLoadingArchived(false)
       }
     },
-    [repositoryId],
+    [fileFilters, folderContextFilters, repositoryId],
   )
 
+  // Do not auto-call /items on every sidebar click. Explorer loads leaf files;
+  // archived list is fetched only when the user opens that category (below).
   useEffect(() => {
-    if (repositoryId) {
-      void fetchArchivedFileList(1, 50)
-    } else {
+    if (!repositoryId || Object.keys(folderContextFilters || {}).length === 0) {
       setArchivedCount(0)
       setArchivedFiles([])
       setArchivedFilePage(undefined)
     }
-  }, [repositoryId, refreshing, fetchArchivedFileList])
+  }, [repositoryId, folderContextFilters, refreshing])
 
   const stagedCount = useMemo(
     () => files.filter(isUnarchivedStageFile).length,
@@ -755,7 +767,7 @@ export default function FolderTableDataTableSplit({
     return files.filter(isArchivedFile).length
   }, [archivedCount, filePage?.totalCount, files])
 
-  const allCount = effectiveArchivedCount
+  const allCount = filePage?.totalCount ?? files.length
 
   useEffect(() => {
     if (stagedCount <= 0 && fileCategory !== 'all') {
@@ -764,21 +776,23 @@ export default function FolderTableDataTableSplit({
   }, [stagedCount, fileCategory])
 
   const showingArchivedList =
-    fileCategory !== 'staged' &&
+    fileCategory === 'archived' &&
     (archivedFiles.length > 0 || Boolean(archivedFilePage))
 
   const activeDisplayFiles = useMemo(() => {
     if (fileCategory === 'staged') {
       return []
     }
-    if (archivedFiles.length > 0) {
-      return archivedFiles
+    // Archived tab: dedicated /items fetch. Otherwise use explorer leaf files.
+    if (fileCategory === 'archived') {
+      if (archivedFiles.length > 0) return archivedFiles
+      return files.filter(isArchivedFile)
     }
-    return files.filter(isArchivedFile)
+    return files
   }, [files, fileCategory, archivedFiles])
 
   const activeDisplayFilePage = useMemo(() => {
-    if (fileCategory !== 'staged' && archivedFilePage) {
+    if (fileCategory === 'archived' && archivedFilePage) {
       return archivedFilePage
     }
     return filePage
@@ -923,7 +937,8 @@ export default function FolderTableDataTableSplit({
               if (
                 cat === 'archived' &&
                 archivedFiles.length === 0 &&
-                repositoryId
+                repositoryId &&
+                Object.keys(folderContextFilters || {}).length > 0
               ) {
                 void fetchArchivedFileList(1, 50)
               }

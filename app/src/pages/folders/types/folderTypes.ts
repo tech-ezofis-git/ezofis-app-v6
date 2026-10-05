@@ -98,6 +98,8 @@ export interface RepositoryDetail {
   itemsTableName?: string
   modifiedBy?: any
   modifiedByName?: any
+  piiRedactionEnabled?: boolean
+  piiRedactionUserIds?: string[]
   stageTableName?: string
   storageDrive?: string
   storageProviderId?: string

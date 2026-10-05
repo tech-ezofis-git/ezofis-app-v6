@@ -13,6 +13,7 @@ export const FOLDER_DRAFT_STEP_KEYS = [
   'fields',
   'storage',
   'versioning',
+  'piiRedaction',
   'integrations',
 ] as const
 
@@ -197,6 +198,9 @@ export type FolderWizardSnapshot = {
   }>
   folderName: string
   integrations?: string
+  piiRedactionEnabled?: boolean
+  piiRedactionUserIds?: string[]
+  piiRedactionUsers?: Array<{ password?: string; userId?: string }>
   source?: 'ai' | 'manual'
   storage: string
   storageConnectorId?: string | null
@@ -261,6 +265,29 @@ export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
     storageOptionId: snapshot.storage,
     storageProviderCode: toStorageProviderCode(snapshot.storage),
   },
+  piiRedaction: {
+    enabled: Boolean(snapshot.piiRedactionEnabled),
+    userIds: Array.isArray(snapshot.piiRedactionUserIds)
+      ? snapshot.piiRedactionUserIds.map(String)
+      : Array.isArray(snapshot.piiRedactionUsers)
+        ? snapshot.piiRedactionUsers
+            .map((entry) => String(entry?.userId || '').trim())
+            .filter(Boolean)
+        : [],
+    users: Array.isArray(snapshot.piiRedactionUsers)
+      ? snapshot.piiRedactionUsers
+          .map((entry) => ({
+            password: String(entry?.password || ''),
+            userId: String(entry?.userId || '').trim(),
+          }))
+          .filter((entry) => entry.userId)
+      : Array.isArray(snapshot.piiRedactionUserIds)
+        ? snapshot.piiRedactionUserIds.map((userId) => ({
+            password: '',
+            userId: String(userId),
+          }))
+        : [],
+  },
   versioning: {
     displayMode: snapshot.displayMode,
     strategy: snapshot.versioning,
@@ -275,6 +302,7 @@ export const hydrateFolderFromDraft = (
   const details = (parsed.folderDetails || {}) as Record<string, unknown>
   const storage = (parsed.storage || {}) as Record<string, unknown>
   const versioning = (parsed.versioning || {}) as Record<string, unknown>
+  const piiRedaction = (parsed.piiRedaction || {}) as Record<string, unknown>
   const integrations = (parsed.integrations || {}) as Record<string, unknown>
   const fieldsRaw = Array.isArray(parsed.fields)
     ? parsed.fields
@@ -334,6 +362,43 @@ export const hydrateFolderFromDraft = (
     storageDrive:
       form.storageDrive ??
       (typeof storage.storageDrive === 'string' ? storage.storageDrive : null),
+    piiRedactionEnabled: Boolean(
+      form.piiRedactionEnabled ??
+        piiRedaction.enabled ??
+        false,
+    ),
+    piiRedactionUserIds: Array.isArray(form.piiRedactionUserIds)
+      ? form.piiRedactionUserIds.map(String)
+      : Array.isArray(piiRedaction.userIds)
+        ? piiRedaction.userIds.map(String)
+        : Array.isArray(piiRedaction.users)
+          ? (piiRedaction.users as Array<{ userId?: string }>)
+              .map((entry) => String(entry?.userId || '').trim())
+              .filter(Boolean)
+          : [],
+    piiRedactionUsers: Array.isArray(form.piiRedactionUsers)
+      ? form.piiRedactionUsers.map((entry) => ({
+          password: String(entry?.password || ''),
+          userId: String(entry?.userId || '').trim(),
+        }))
+      : Array.isArray(piiRedaction.users)
+        ? (piiRedaction.users as Array<{ password?: string; userId?: string }>).map(
+            (entry) => ({
+              password: String(entry?.password || ''),
+              userId: String(entry?.userId || '').trim(),
+            }),
+          )
+        : Array.isArray(form.piiRedactionUserIds)
+          ? form.piiRedactionUserIds.map((userId) => ({
+              password: '',
+              userId: String(userId),
+            }))
+          : Array.isArray(piiRedaction.userIds)
+            ? piiRedaction.userIds.map((userId) => ({
+                password: '',
+                userId: String(userId),
+              }))
+            : [],
     versioning: String(
       form.versioning || versioning.strategy || 'Incremental Version',
     ),
@@ -341,7 +406,9 @@ export const hydrateFolderFromDraft = (
 }
 
 export const folderStepKey = (step: number) =>
-  FOLDER_DRAFT_STEP_KEYS[Math.max(0, Math.min(step - 1, 4))]
+  FOLDER_DRAFT_STEP_KEYS[
+    Math.max(0, Math.min(step - 1, FOLDER_DRAFT_STEP_KEYS.length - 1))
+  ]
 
 export const userStepKey = (stepIndex: number) =>
   USER_DRAFT_STEP_KEYS[Math.max(0, Math.min(stepIndex, 4))]
@@ -368,15 +435,16 @@ export const folderStepFromDraft = (
   currentStep?: number,
   currentStepKey?: string,
 ) => {
+  const maxStep = FOLDER_DRAFT_STEP_KEYS.length
   if (currentStepKey) {
     const index = (FOLDER_DRAFT_STEP_KEYS as readonly string[]).indexOf(
       currentStepKey,
     )
-    if (index >= 0) return (index + 1) as 1 | 2 | 3 | 4 | 5
+    if (index >= 0) return (index + 1) as 1 | 2 | 3 | 4 | 5 | 6
   }
 
   if (typeof currentStep === 'number' && currentStep >= 1) {
-    return Math.min(currentStep, 5) as 1 | 2 | 3 | 4 | 5
+    return Math.min(currentStep, maxStep) as 1 | 2 | 3 | 4 | 5 | 6
   }
 
   return 1
