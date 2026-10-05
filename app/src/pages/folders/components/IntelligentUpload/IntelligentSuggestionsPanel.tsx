@@ -168,14 +168,14 @@ export default function IntelligentSuggestionsPanel({
                 </div>
 
                 {/* Bottom: Keywords pinned to baseline */}
-                <div className='mt-auto flex min-h-[20px] flex-wrap items-end gap-1'>
+                <div className='mt-auto flex min-h-[20px] flex-wrap items-end gap-1.5'>
                   {suggestion.keywords.map((kw) => (
-                    <span
-                      className='rounded bg-surface-secondary px-1.5 py-0.5 text-[10px] font-normal text-text-secondary'
+                    <Badge
+                      className='text-[10px]'
+                      color={isSelected ? 'purple' : 'gray'}
                       key={kw}
-                    >
-                      {kw}
-                    </span>
+                      label={kw}
+                    />
                   ))}
                 </div>
               </div>
