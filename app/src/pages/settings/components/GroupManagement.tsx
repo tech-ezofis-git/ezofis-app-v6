@@ -27,7 +27,6 @@ import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
-import { isDemoAppOrigin } from '@/utils/origin'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -736,17 +735,15 @@ function GroupSetup({
   }
 
   const handleNext = () => {
-    if (!isDemoAppOrigin()) {
-      const missingLabels = getMissingLabels(activeStep)
+    const missingLabels = getMissingLabels(activeStep)
 
-      if (missingLabels.length) {
-        setShowErrors(true)
-        showToast({
-          message: getRequiredFieldErrorMessage(missingLabels),
-          variant: 'info',
-        })
-        return
-      }
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'info',
+      })
+      return
     }
 
     setShowErrors(false)
@@ -775,7 +772,7 @@ function GroupSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (!isDemoAppOrigin() && step > activeStep) {
+    if (step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -801,7 +798,7 @@ function GroupSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingGroupId !== null || isDemoAppOrigin()
+    const isEditMode = editingGroupId !== null
     return GROUP_STEP_MSGS.map((step, idx) => ({
       clickable: isEditMode ? true : undefined,
       description: i18n._(step.description),

@@ -32,7 +32,6 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import { isDemoAppOrigin } from '@/utils/origin'
 import SettingsSelectedChips from '../SettingsSelectedChips'
 
 type Condition = {
@@ -547,7 +546,7 @@ export default function DocumentSecurityRuleWizard({
   )
 
   const goToStep = (nextStep: Step) => {
-    if (!isDemoAppOrigin() && nextStep > 0 && nextStep > step) {
+    if (nextStep > 0 && nextStep > step) {
       if (nextStep === 2 && selectedPrincipals.length === 0) {
         showToast({
           message: t`Please select at least one person or group to whom this rule should apply.`,
@@ -563,11 +562,10 @@ export default function DocumentSecurityRuleWizard({
   }
 
   const formattedSteps = useMemo(() => {
-    const allowAnyStep = isDemoAppOrigin()
     return STEPPER_ITEMS.map((s, idx) => ({
       ...s,
-      clickable: allowAnyStep || idx <= maxVisitedStep,
-      disabled: allowAnyStep ? false : idx > maxVisitedStep,
+      clickable: idx <= maxVisitedStep,
+      disabled: idx > maxVisitedStep,
     }))
   }, [maxVisitedStep])
 

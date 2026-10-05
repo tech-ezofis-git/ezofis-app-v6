@@ -7,7 +7,6 @@ import uploadAndIndexApi, {
 } from '@/api/v6/uploadAndIndex'
 import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import { isDemoAppOrigin } from '@/utils/origin'
 import type { AppView, FileItem } from '../types/folderTypes'
 import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import { useHasDocumentApprovalWorkflow } from '../hooks/useDocumentApprovalWorkflow'
@@ -430,7 +429,7 @@ export function FolderExplorer() {
   const canUpload = Boolean(
     activeFolder && resolvedRepositoryId && folderPermissions.upload,
   )
-  const canIntelligentUpload = Boolean(!isDemoAppOrigin())
+  const canIntelligentUpload = true
 
   useEffect(() => {
     if (
@@ -653,7 +652,6 @@ export function FolderExplorer() {
   )
 
   const handleIntelligentUpload = () => {
-    if (isDemoAppOrigin()) return
     if (!resolvedRepositoryId) {
       showToast({
         message: t`Select a folder before uploading.`,
@@ -787,10 +785,6 @@ export function FolderExplorer() {
   }
 
   if (appView === 'intelligentUpload') {
-    if (isDemoAppOrigin()) {
-      setAppView('explorer')
-      return null
-    }
 
     const candidateRepos = repositoryNodes.map((node) => ({
       id: String(getRepositoryIdFromFolder(node.id) || node.id),
