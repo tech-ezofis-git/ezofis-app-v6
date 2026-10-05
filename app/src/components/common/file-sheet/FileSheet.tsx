@@ -76,7 +76,6 @@ function buildPreviewUrl(args: {
   const originRaw = window.location.origin
   const replaceOriginTargets = [
     'http://localhost:3000',
-    'https://demoapp.ezofis.com',
     'https://cloud.ezofis.com',
   ]
   let origin = originRaw

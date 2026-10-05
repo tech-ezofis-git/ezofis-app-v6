@@ -28,7 +28,6 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import { isDemoAppOrigin } from '@/utils/origin'
 import SettingsSearchInput from '../SettingsSearchInput'
 import SettingsSelectedChips from '../SettingsSelectedChips'
 
@@ -456,7 +455,7 @@ export default function FolderSecurityPolicyWizard({
   }
 
   const goToStep = (nextStep: Step) => {
-    if (!isDemoAppOrigin() && nextStep > 0 && selectedPrincipals.length === 0) {
+    if (nextStep > 0 && selectedPrincipals.length === 0) {
       setStep(0)
       ensurePrincipalSelection()
       return
@@ -575,11 +574,10 @@ export default function FolderSecurityPolicyWizard({
   }
 
   const formattedSteps = useMemo(() => {
-    const allowAnyStep = isDemoAppOrigin()
     return STEPPER_ITEMS.map((s, idx) => ({
       ...s,
-      clickable: allowAnyStep || idx <= maxVisitedStep,
-      disabled: allowAnyStep ? false : idx > maxVisitedStep,
+      clickable: idx <= maxVisitedStep,
+      disabled: idx > maxVisitedStep,
     }))
   }, [maxVisitedStep])
 
@@ -1004,7 +1002,6 @@ export default function FolderSecurityPolicyWizard({
                   suffixIcon='tabler:arrow-right'
                   onClick={() => {
                     if (
-                      !isDemoAppOrigin() &&
                       step === 0 &&
                       !ensurePrincipalSelection()
                     )
