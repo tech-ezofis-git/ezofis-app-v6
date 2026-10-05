@@ -891,6 +891,48 @@ export const getWorkflowsByActivity = async (
   return response
 }
 
+export interface V6ActivityCountItem {
+  activityId: string
+  count: number
+}
+
+export interface V6WorkflowsByActivityCountsResponse {
+  fullCount: number
+  items: V6ActivityCountItem[]
+  workflowId: string
+}
+
+export const getWorkflowsByActivityCounts = async (
+  workflowId: string,
+  activityIds: string[],
+) => {
+  const response: {
+    data: V6WorkflowsByActivityCountsResponse | null
+    error: string
+  } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        activityIds,
+        workflowId,
+      },
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: '/Workflows/by-activity/counts',
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data as V6WorkflowsByActivityCountsResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data ||
+      err?.message ||
+      'error fetching workflows by activity counts'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   addInstanceAttachment,
   addInstanceComment,
@@ -917,6 +959,7 @@ export const workflowsApiV6 = {
   getWorkflowById,
   getWorkflows,
   getWorkflowsByActivity,
+  getWorkflowsByActivityCounts,
 }
 
 export default workflowsApiV6
