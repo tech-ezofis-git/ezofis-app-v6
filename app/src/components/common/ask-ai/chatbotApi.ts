@@ -286,7 +286,7 @@ export function hasBrowsableAction(answer: AskAiAnswer | null | undefined) {
 }
 
 /**
- * Normalize demo.ezofis.com + cloud.ezofis.com chatbot payloads into the
+ * Normalize cloud.ezofis.com chatbot payloads into the
  * shape Ask AI UI already renders (paragraph / bullets / cards + browse filters).
  */
 export function normalizeChatbotAnswer(raw: unknown): AskAiAnswer | null {
