@@ -1206,13 +1206,13 @@ const GridRowItem = memo(
 
           {/* AI Insight inside Column 2 (stacked, visible ONLY when playground/chat/sidebar is open) */}
           {activeTab !== 'Processed' && aiInsight && isSidebarOpen && (
-            <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
+            <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-[var(--primary-9)]'>
               <AiBrandIcon
                 className='size-3.5 shrink-0'
                 variant='outline-purple'
               />
               <HoverExpandableText
-                className='text-[12px] font-medium text-[var(--primary-9)]'
+                className='text-[10px] font-medium italic text-[var(--primary-9)]'
                 expandStyle='inline'
                 maxLines={2}
                 normalMaxWidthClass='max-w-[180px]'
@@ -1231,7 +1231,7 @@ const GridRowItem = memo(
                 variant='outline-purple'
               />
               <HoverExpandableText
-                className='text-[13px] font-medium text-[var(--gray-11)]'
+                className='text-[11px] font-medium italic text-[var(--gray-11)]'
                 expandStyle='inline'
                 maxLines={2}
                 normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
