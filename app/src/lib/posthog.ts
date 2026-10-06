@@ -1,12 +1,30 @@
 import posthog from 'posthog-js'
 import { env } from '../env'
 
-const key =
-  env.VITE_POSTHOG_KEY ||
-  (import.meta.env?.VITE_POSTHOG_KEY as string) ||
-  env.VITE_POSTHOG_PROJECT_TOKEN ||
-  (import.meta.env?.VITE_POSTHOG_PROJECT_TOKEN as string) ||
-  'phc_vpdrDKNugLVVgvtVLV5QSFCq8B5WvMqq5JbSqQu3uxdi'
+function getValidPostHogKey(): string {
+  const candidates = [
+    env.VITE_POSTHOG_KEY,
+    import.meta.env?.VITE_POSTHOG_KEY as string | undefined,
+    env.VITE_POSTHOG_PROJECT_TOKEN,
+    import.meta.env?.VITE_POSTHOG_PROJECT_TOKEN as string | undefined,
+  ]
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === 'string' &&
+      candidate.trim().length > 0 &&
+      !candidate.includes('disabled_placeholder')
+    ) {
+      return candidate.trim()
+    }
+  }
+
+  // Fallback to real active project key if environment contains a placeholder or missing value
+  return 'phc_vpdrDKNugLVVgvtVLV5QSFCq8B5WvMqq5JbSqQu3uxdi'
+}
+
+const key = getValidPostHogKey()
 
 const host =
   env.VITE_POSTHOG_HOST ||
@@ -14,7 +32,7 @@ const host =
   'https://us.i.posthog.com'
 
 if (typeof window !== 'undefined') {
-  console.log('[PostHog Debug] Resolved Key:', key ? `${key.substring(0, 8)}...` : 'EMPTY/UNDEFINED')
+  console.log('[PostHog Debug] Resolved Key:', key ? `${key.substring(0, 12)}...` : 'EMPTY/UNDEFINED')
   console.log('[PostHog Debug] Resolved Host:', host)
 
   if (key && !key.includes('disabled_placeholder')) {
