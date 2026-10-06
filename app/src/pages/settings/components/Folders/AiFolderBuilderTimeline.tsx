@@ -43,7 +43,7 @@ export function BuilderTimelineStep({
   const showBody = Boolean((isCompleted && summary) || (isActive && children))
   const hasBottomConnector = bottomConnectorState !== 'hidden'
   const isClickable = Boolean(
-    onSelectStep && (isCompleted || (!isActive && status !== 'upcoming')),
+    onSelectStep && (isCompleted || !isActive),
   )
 
   if (minimized) {
@@ -194,7 +194,7 @@ export function BuilderTimelineStep({
           <div
             className={cn(
               'flex shrink-0 items-center justify-between px-5 py-4 transition-colors',
-              isActive || isCompleted ? 'bg-primary-2' : 'bg-[var(--gray-1)]',
+              isActive || isCompleted ? 'bg-primary-2' : 'bg-surface',
               showBody ? 'border-b border-primary-4' : '',
               isClickable && 'cursor-pointer hover:bg-primary-3/70',
             )}
@@ -300,7 +300,7 @@ function StepCircle({
             ? 'border border-green-6 bg-green-6 text-white shadow-xs'
             : isActive
               ? 'bg-primary-9 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.25)]'
-              : 'bg-gray-4 border border-gray-3 text-gray-7',
+              : 'bg-surface border border-primary-4 text-primary-9',
         )}
       >
         {isCompleted ? (

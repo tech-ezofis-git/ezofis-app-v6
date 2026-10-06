@@ -856,9 +856,10 @@ export default function DmsFolderConfiguration({
 
   const persistFolderWizardDraft = useCallback(
     async (currentStep: number, snapshot: FolderWizardSnapshot) => {
+      const step = Math.min(Math.max(currentStep, 1), 5)
       const { data, error } = await saveWizardDraft('folder', {
-        currentStep,
-        currentStepKey: folderStepKey(currentStep),
+        currentStep: step,
+        currentStepKey: folderStepKey(step),
         draftId: folderDraftIdRef.current,
         draftJson: JSON.stringify(buildFolderDraftJson(snapshot)),
       })

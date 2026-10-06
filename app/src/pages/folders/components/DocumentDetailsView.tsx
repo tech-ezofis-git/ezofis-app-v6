@@ -32,6 +32,7 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
 import Menu from '@/components/base/menu/Menu'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
@@ -470,6 +471,7 @@ export function DocumentDetailsView({
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
+  const [confirmExitSigningOpen, setConfirmExitSigningOpen] = useState(false)
   const [savedSignatures, setSavedSignatures] = useState<SavedSignature[]>([])
   const [activeSignRequestId, setActiveSignRequestId] = useState(
     String(initialSignRequestId || ''),
@@ -1599,7 +1601,11 @@ export function DocumentDetailsView({
     setDownloadError('')
     try {
       // Redacted preview → burn covers into a local file (no original API blob).
-      if (enablePiiRedaction && previewUrl && (isPdfPreview || isImagePreview)) {
+      if (
+        enablePiiRedaction &&
+        previewUrl &&
+        (isPdfPreview || isImagePreview)
+      ) {
         const redacted = await buildRedactedFileBlob({
           enableNer: enablePiiRedaction,
           fileName: data?.fileName || 'document',
@@ -2103,7 +2109,10 @@ export function DocumentDetailsView({
                       }
                     }}
                     target={
-                      <Tooltip content={t`Show original file`} position='bottom'>
+                      <Tooltip
+                        content={t`Show original file`}
+                        position='bottom'
+                      >
                         <button
                           aria-label={t`Show original file`}
                           className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
@@ -2259,18 +2268,24 @@ export function DocumentDetailsView({
               </button>
               {canSendForSignature ? (
                 <button
-                  aria-label={t`Sign Document`}
+                  aria-label={isSigning ? t`Exit Signing` : t`Sign Document`}
                   disabled={isPreviewLoading}
                   type='button'
                   className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5 ${
                     isSigning
-                      ? 'border-accent-primary bg-accent-soft text-accent-primary'
+                      ? 'border-red-6 bg-red-1 text-red-9 hover:border-red-7 hover:bg-red-2'
                       : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
                   }`}
-                  onClick={() => setIsSigning((prev) => !prev)}
+                  onClick={() => {
+                    if (isSigning) {
+                      setConfirmExitSigningOpen(true)
+                    } else {
+                      setIsSigning(true)
+                    }
+                  }}
                 >
                   <DynamicIcon
-                    className='h-4 w-4 text-accent-primary'
+                    className={`h-4 w-4 ${isSigning ? 'text-red-9' : 'text-accent-primary'}`}
                     name='pen-tool'
                   />
                   <span className='hidden sm:inline'>
@@ -2714,6 +2729,12 @@ export function DocumentDetailsView({
                             const displayTime = isSameDate
                               ? formatTimeOnly(item.createdAtUtc)
                               : formatDateTime(item.createdAtUtc)
+                            const isCommentEvent =
+                              item.eventType?.toLowerCase() === 'comment' ||
+                              item.eventType
+                                ?.toLowerCase()
+                                .includes('comment') ||
+                              item.title?.toLowerCase().includes('comment')
 
                             return (
                               <div
@@ -2722,12 +2743,20 @@ export function DocumentDetailsView({
                               >
                                 {/* Icon + vertical line column */}
                                 <div className='flex flex-col items-center'>
-                                  <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
+                                  <span
+                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                      isCommentEvent
+                                        ? 'bg-amber-3 text-amber-11 dark:bg-amber-4/30 dark:text-amber-10'
+                                        : 'bg-blue-3 text-blue-11'
+                                    }`}
+                                  >
                                     <DynamicIcon
                                       className='h-4 w-4'
                                       name={
                                         eventIconMap[item.eventType || ''] ||
-                                        'clock'
+                                        (isCommentEvent
+                                          ? 'messageSquare'
+                                          : 'clock')
                                       }
                                     />
                                   </span>
@@ -2743,12 +2772,24 @@ export function DocumentDetailsView({
                                       {item.title}
                                     </b>
                                     {item.description ? (
-                                      <span className='text-gray-10'>
+                                      <span
+                                        className={
+                                          isCommentEvent
+                                            ? 'text-amber-11 dark:text-amber-10 font-medium'
+                                            : 'text-gray-10'
+                                        }
+                                      >
                                         {': '}
                                         <b className='font-semibold'>{'"'}</b>
-                                        <i className='italic not-italic'>
+                                        <span
+                                          className={
+                                            isCommentEvent
+                                              ? 'font-normal italic'
+                                              : 'font-normal not-italic'
+                                          }
+                                        >
                                           {item.description}
-                                        </i>
+                                        </span>
                                         <b className='font-semibold'>{'"'}</b>
                                       </span>
                                     ) : null}
@@ -2921,7 +2962,7 @@ export function DocumentDetailsView({
                                                 : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
                                             }`}
                                           >
-                                            <p className='pb-1 text-[13px] leading-5 break-words whitespace-pre-wrap'>
+                                            <p className='text-amber-11 dark:text-amber-10 pb-1 text-[13px] leading-5 font-normal break-words whitespace-pre-wrap italic'>
                                               {message}
                                             </p>
 
@@ -3411,6 +3452,19 @@ export function DocumentDetailsView({
           ) : null}
         </div>
       </div>
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Exit Signing`}
+        description={t`Are you sure you want to exit signing mode? Any unsaved signature placements will be lost.`}
+        opened={confirmExitSigningOpen}
+        title={t`Exit Signing`}
+        variant='danger'
+        onCancel={() => setConfirmExitSigningOpen(false)}
+        onConfirm={() => {
+          setConfirmExitSigningOpen(false)
+          setIsSigning(false)
+        }}
+      />
     </div>
   )
 }

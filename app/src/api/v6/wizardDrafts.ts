@@ -249,9 +249,14 @@ export const saveWizardDraft = async (
 
   try {
     const ids = resolveIds()
+    const currentStep =
+      kind === 'folder'
+        ? Math.min(Math.max(payload.currentStep, 1), 5)
+        : payload.currentStep
+
     const { data, status } = await axiosV6({
       data: {
-        currentStep: payload.currentStep,
+        currentStep,
         currentStepKey: payload.currentStepKey,
         draftId: payload.draftId || null,
         draftJson:
