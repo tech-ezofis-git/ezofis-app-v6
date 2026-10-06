@@ -9,7 +9,14 @@ const isLineItemAmountColumn = (key: string) => {
   return (
     normalizedKey === 'lineamount' ||
     normalizedKey === 'amount' ||
-    normalizedKey === 'totalamount'
+    normalizedKey === 'totalamount' ||
+    normalizedKey === 'total' ||
+    normalizedKey === 'netamount' ||
+    normalizedKey === 'grossamount' ||
+    normalizedKey === 'extended' ||
+    normalizedKey === 'extendedamount' ||
+    normalizedKey.includes('amount') ||
+    normalizedKey.includes('total')
   )
 }
 
@@ -183,30 +190,83 @@ export default function LineItemTable({
     })
   }
 
+  const isDescriptionCol = (col: ColumnConfig) => {
+    if (col.type === 'description') return true
+    if (col.type === 'dynamic' && col.key) {
+      const lower = col.key.toLowerCase()
+      return (
+        lower.includes('desc') ||
+        lower.includes('item') ||
+        lower.includes('product') ||
+        lower.includes('detail')
+      )
+    }
+    return false
+  }
+
   const getColWidth = (col: ColumnConfig, _idx: number): number => {
     if (col.type === 'action') return LINE_ITEM_ACTION_WIDTH
     if (col.type === 'score') return currentScoreWidth
-    if (col.type === 'amount') return 100
+    if (col.type === 'amount') return 110
     if (col.type === 'dynamic') {
       const dynIdx = col.dynamicIndex ?? 0
-      return dynamicWidths[dynIdx] || (col.isNumeric ? 100 : 80)
+      if (dynamicWidths[dynIdx]) return dynamicWidths[dynIdx]
+      return isDescriptionCol(col) ? 220 : col.isNumeric ? 90 : 140
     }
-    // Correct index mappings for static columns to match dynamicWidths computed in Overview.tsx
-    // (index 1 is description, index 2 is quantity, index 3 is rate)
-    if (col.type === 'description') return dynamicWidths[1] || 140
-    if (col.type === 'qty') return dynamicWidths[2] || 90
-    if (col.type === 'rate') return dynamicWidths[3] || 100
+    if (col.type === 'description') return dynamicWidths[1] || 220
+    if (col.type === 'qty') return dynamicWidths[2] || 70
+    if (col.type === 'rate') return dynamicWidths[3] || 90
     return 100
+  }
+
+  const getColLayoutStyle = (i: number) => {
+    const col = allColumns[i]
+    const width = getColWidth(col, i)
+    const isDesc = isDescriptionCol(col)
+
+    const isStickyLeft =
+      allColumns.length > 7 ? i < 2 : i === 0 && allColumns.length > 5
+    const isStickyRight =
+      allColumns.length > 7
+        ? i >= allColumns.length - 2
+        : col.type === 'action'
+
+    const style: CSSProperties = {}
+
+    if (isDesc) {
+      style.minWidth = width
+    } else {
+      style.width = width
+      style.minWidth = width
+      style.maxWidth = width
+    }
+
+    if (isStickyLeft) {
+      let left = 0
+      for (let j = 0; j < i; j++) {
+        left += getColWidth(allColumns[j], j)
+      }
+      style.left = left
+      style.position = 'sticky'
+    } else if (isStickyRight) {
+      let right = 0
+      for (let j = i + 1; j < allColumns.length; j++) {
+        right += getColWidth(allColumns[j], j)
+      }
+      style.right = right
+      style.position = 'sticky'
+    }
+
+    return { isStickyLeft, isStickyRight, style }
   }
 
   const getColStyleAndClass = (i: number, bgClass = 'bg-surface') => {
     const col = allColumns[i]
-    const isStickyLeft = i < 3
-    const isStickyRight = i >= 3 && i >= allColumns.length - 3
     const isLastCol = i === allColumns.length - 1
     const isAmount = col.type === 'amount' || col.isAmount
-
     const isAction = col.type === 'action'
+    const { isStickyLeft, isStickyRight, style } = getColLayoutStyle(i)
+
     const className = cn(
       isAction
         ? 'p-1 text-center'
@@ -218,46 +278,17 @@ export default function LineItemTable({
       (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass),
     )
 
-    const style: CSSProperties = {}
-
-    if (isStickyLeft || isStickyRight) {
-      const width = getColWidth(col, i)
-      const isGrowable = i === 2 || col.type === 'amount' || col.isAmount
-
-      style.width = width
-      style.minWidth = width
-      if (!isGrowable) {
-        style.maxWidth = width
-      }
-    }
-
-    if (isStickyLeft) {
-      let left = 0
-      for (let j = 0; j < i; j++) {
-        left += getColWidth(allColumns[j], j)
-      }
-      style.left = left
-    } else if (isStickyRight) {
-      let right = 0
-      for (let j = i + 1; j < allColumns.length; j++) {
-        right += getColWidth(allColumns[j], j)
-      }
-      style.right = right
-    }
-
     return { className, style }
   }
 
   const getColCellConfig = (i: number, bgClass: string, borderT = false) => {
     const col = allColumns[i]
-    const isStickyLeft = i < 3
-    const isStickyRight = i >= 3 && i >= allColumns.length - 3
     const isLastCol = i === allColumns.length - 1
     const isAmount = col.type === 'amount' || col.isAmount
-
     const isAction = col.type === 'action'
     const isScore = col.type === 'score'
     const isQtyOrRate = col.type === 'qty' || col.type === 'rate'
+    const { isStickyLeft, isStickyRight, style } = getColLayoutStyle(i)
 
     const className = cn(
       isAction
@@ -274,33 +305,6 @@ export default function LineItemTable({
       isAmount && !atEnd && 'border-l border-[var(--gray-3)]',
       (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass),
     )
-
-    const style: CSSProperties = {}
-
-    if (isStickyLeft || isStickyRight) {
-      const width = getColWidth(col, i)
-      const isGrowable = i === 2 || col.type === 'amount' || col.isAmount
-
-      style.width = width
-      style.minWidth = width
-      if (!isGrowable) {
-        style.maxWidth = width
-      }
-    }
-
-    if (isStickyLeft) {
-      let left = 0
-      for (let j = 0; j < i; j++) {
-        left += getColWidth(allColumns[j], j)
-      }
-      style.left = left
-    } else if (isStickyRight) {
-      let right = 0
-      for (let j = i + 1; j < allColumns.length; j++) {
-        right += getColWidth(allColumns[j], j)
-      }
-      style.right = right
-    }
 
     return { className, style }
   }
@@ -820,9 +824,12 @@ export default function LineItemTable({
                   <span className='block w-full overflow-hidden px-1.5 text-right text-xs font-bold text-ellipsis whitespace-nowrap text-[var(--gray-13)]'>
                     {lineItems
                       .reduce((sum: number, item: any) => {
+                        const rawDisplayedVal = getCellVal(item, col)
                         const val =
-                          col.type === 'dynamic' && col.key
-                            ? getRawVal(item, col.key)
+                          rawDisplayedVal !== undefined &&
+                          rawDisplayedVal !== null &&
+                          rawDisplayedVal !== ''
+                            ? rawDisplayedVal
                             : getLineItemAmount(item)
                         const num = Number.parseFloat(
                           String(val).replace(/[^0-9.-]+/g, ''),
