@@ -17,6 +17,7 @@ import {
   uploadForOcr,
 } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
+import authUserStore from '@/stores/authUserStore'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
@@ -506,7 +507,19 @@ const LivePreviewDropdown = ({
     queryKey: ['livePreviewUserList'],
     queryFn: async () => {
       const res = await getUsers()
-      return res.data.map((user) => ({ id: user.email, name: user.email }))
+      const session = authUserStore.getState().session
+      const currentUserEmail = session?.email?.trim().toLowerCase()
+      const currentUserId = session?.id ? String(session.id) : undefined
+
+      return res.data
+        .filter((user) => {
+          const userEmail = user.email?.trim().toLowerCase()
+          if (currentUserEmail && userEmail === currentUserEmail) return false
+          if (currentUserId && user.id && String(user.id) === currentUserId)
+            return false
+          return true
+        })
+        .map((user) => ({ id: user.email, name: user.email }))
     },
   })
 
