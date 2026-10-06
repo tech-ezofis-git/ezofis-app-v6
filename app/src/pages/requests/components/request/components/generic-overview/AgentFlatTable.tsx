@@ -11,8 +11,7 @@ import cn from '@/utils/cn'
 const cellInputClass =
   'w-full rounded-md border border-transparent bg-transparent px-0 py-0.5 text-left text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-surface'
 
-const wrappingTextClass =
-  'block min-w-0 break-words whitespace-pre-wrap'
+const wrappingTextClass = 'block min-w-0 break-words whitespace-pre-wrap'
 
 const AutoGrowTextarea = ({
   className,
@@ -28,8 +27,22 @@ const AutoGrowTextarea = ({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    el.style.height = '0px'
-    el.style.height = `${el.scrollHeight}px`
+    const fit = () => {
+      el.style.height = '0px'
+      el.style.height = `${el.scrollHeight}px`
+    }
+    fit()
+    const parent = el.parentElement
+    if (!parent || typeof ResizeObserver === 'undefined') return
+    let lastWidth = parent.clientWidth
+    const observer = new ResizeObserver(() => {
+      const width = parent.clientWidth
+      if (width === lastWidth) return
+      lastWidth = width
+      fit()
+    })
+    observer.observe(parent)
+    return () => observer.disconnect()
   }, [value])
 
   return (
@@ -82,6 +95,25 @@ const isNumericColumn = (col: AgentFlatTableColumn) => {
   return type === 'NUMBER' || type === 'COUNTER' || type === 'CURRENCY_AMOUNT'
 }
 
+/** Reason/note columns, and any cell with a long value, should take the spare width. */
+const isWideTextColumn = (
+  col: AgentFlatTableColumn,
+  rows: Record<string, any>[],
+) => {
+  if (columnType(col) === 'LONG_TEXT') return true
+  const name = normalizeKey(columnLabel(col)).replace(/\s+/g, '')
+  if (
+    name.includes('reason') ||
+    name.includes('note') ||
+    name.includes('description') ||
+    name.includes('comment') ||
+    name.includes('detail')
+  ) {
+    return true
+  }
+  return rows.some((row) => String(row[col.id] ?? '').trim().length > 80)
+}
+
 /** Form columns first; append any extra row keys not covered by the form schema. */
 export const resolveAgentTableColumns = (
   formColumns: AgentFlatTableColumn[],
@@ -99,10 +131,7 @@ export const resolveAgentTableColumns = (
       if (META_ROW_KEYS.has(key) || key.startsWith('_') || knownIds.has(key)) {
         return
       }
-      if (
-        base.length > 0 &&
-        /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(key)
-      ) {
+      if (base.length > 0 && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(key)) {
         return
       }
       const normalized = normalizeKey(key)
@@ -128,6 +157,7 @@ interface Props {
   rows: Record<string, any>[]
   title: string
   allowAddRow?: boolean
+  allowDelete?: boolean
   icon?: string
   iconClassName?: string
   readOnly?: boolean
@@ -135,7 +165,6 @@ interface Props {
   onChange: (rows: Record<string, any>[]) => void
   onMoveRow?: (row: Record<string, any>) => void
   onRemoveRow?: (row: Record<string, any>) => void
-  allowDelete?: boolean
 }
 
 const AgentFlatTable = ({
@@ -163,6 +192,19 @@ const AgentFlatTable = ({
     () => resolveAgentTableColumns(columnsProp, rows),
     [columnsProp, rows],
   )
+  const wideColumnIds = useMemo(() => {
+    const ids = new Set<string>()
+    columns.forEach((col) => {
+      if (!isNumericColumn(col) && isWideTextColumn(col, rows)) ids.add(col.id)
+    })
+    return ids
+  }, [columns, rows])
+
+  const columnWidthClass = (col: AgentFlatTableColumn) => {
+    if (isNumericColumn(col)) return 'w-28 whitespace-nowrap'
+    if (wideColumnIds.has(col.id)) return 'w-auto min-w-[16rem]'
+    return 'w-px whitespace-nowrap'
+  }
 
   const emptyRow = useMemo(() => {
     const row: Record<string, any> = { _rowId: generateRowId() }
@@ -241,18 +283,18 @@ const AgentFlatTable = ({
         )}
       </div>
       <div className='w-full overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full table-fixed border-collapse text-left text-sm'>
+        <table className='w-full border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
-              {columns.map((col, index) => (
+              {columns.map((col) => (
                 <th
                   key={col.id}
                   className={cn(
                     'border border-gray-3 px-3 py-2 text-left font-semibold',
-                    index === 0 && 'w-auto',
-                    index > 0 &&
-                      !isNumericColumn(col) &&
-                      'w-[12.5rem] whitespace-nowrap',
+                    columnWidthClass(col),
+                    wideColumnIds.has(col.id)
+                      ? 'break-words whitespace-normal'
+                      : 'whitespace-nowrap',
                     isNumericColumn(col) ? 'text-right' : 'text-left',
                   )}
                 >
@@ -272,16 +314,16 @@ const AgentFlatTable = ({
           </thead>
           <tbody className='bg-surface'>
             {rows.map((row, index) => (
-              <tr className='group' key={row._rowId || index}>
+              <tr className='group' key={`${index}-${row._rowId || 'row'}`}>
                 {columns.map((col, colIdx) => (
                   <td
                     key={col.id}
                     className={cn(
                       'border border-gray-3 px-3 py-2 text-left align-top text-gray-11',
-                      colIdx === 0 && 'w-auto',
-                      colIdx > 0 &&
-                        !isNumericColumn(col) &&
-                        'w-[12.5rem] whitespace-nowrap',
+                      columnWidthClass(col),
+                      wideColumnIds.has(col.id)
+                        ? 'break-words whitespace-normal'
+                        : 'whitespace-nowrap',
                       isNumericColumn(col)
                         ? 'text-right font-medium text-gray-12'
                         : 'text-left',
@@ -292,7 +334,7 @@ const AgentFlatTable = ({
                       row[col.id],
                       canEdit,
                       (value) => updateCell(index, col.id, value),
-                      colIdx > 0 && !isNumericColumn(col),
+                      !wideColumnIds.has(col.id) && !isNumericColumn(col),
                     )}
                   </td>
                 ))}
@@ -312,7 +354,10 @@ const AgentFlatTable = ({
                             type='button'
                             onClick={() => moveRow(index)}
                           >
-                            <Icon className='h-4 w-4' icon='tabler:arrow-right' />
+                            <Icon
+                              className='h-4 w-4'
+                              icon='tabler:arrow-right'
+                            />
                           </button>
                         </Tooltip>
                       ) : null}
@@ -323,7 +368,10 @@ const AgentFlatTable = ({
                               aria-label={t`Approved`}
                               className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
                             >
-                              <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                              <Icon
+                                className='h-3.5 w-3.5'
+                                icon='tabler:check'
+                              />
                             </span>
                           </Tooltip>
                         ) : (
@@ -334,7 +382,10 @@ const AgentFlatTable = ({
                               type='button'
                               onClick={() => approveRow(index)}
                             >
-                              <Icon className='h-3.5 w-3.5' icon='tabler:check' />
+                              <Icon
+                                className='h-3.5 w-3.5'
+                                icon='tabler:check'
+                              />
                             </button>
                           </Tooltip>
                         )
@@ -377,7 +428,10 @@ function renderCell(
     if (!label) return control
     return (
       <Tooltip
-        className='flex w-full min-w-0 items-start'
+        className={cn(
+          'flex min-w-0 items-start',
+          singleLine ? 'w-auto' : 'w-full',
+        )}
         content={label}
         openDelay={200}
         position='top'
@@ -410,8 +464,8 @@ function renderCell(
       <div className='max-w-[220px] min-w-0'>
         <ApiCatalogSelect
           col={{ ...col, name: col.name || col.id } as any}
-          compact
           value={value}
+          compact
           onSelectProduct={(code) => onChange(code)}
         />
       </div>,
@@ -427,9 +481,9 @@ function renderCell(
   if (isNumericColumn(col)) {
     return withLabel(
       <input
+        className={cn(cellInputClass, 'text-right')}
         type='number'
         value={value ?? ''}
-        className={cn(cellInputClass, 'text-right')}
         onChange={(event) => onChange(event.target.value)}
       />,
     )
@@ -455,7 +509,11 @@ function renderCell(
 
   return withLabel(
     <AutoGrowTextarea
-      className={singleLine ? 'whitespace-nowrap' : undefined}
+      className={
+        singleLine
+          ? '[field-sizing:content] w-auto whitespace-nowrap'
+          : undefined
+      }
       value={value ?? ''}
       onChange={onChange}
     />,
