@@ -1055,28 +1055,28 @@ const QuoteAgentResultView = ({
           {viewModel.lineItemTable &&
             lineItemsVisible &&
             (lineItems.length > 0 || lineItemsEditable) && (
-            <QuoteLineItemsTable
-              freight={freight}
-              items={lineItems}
-              readOnly={!lineItemsEditable}
-              taxRate={taxRate}
-              title={viewModel.lineItemTable.label}
-              workflow={workflow}
-              onFieldChange={onFieldChange}
-              onTotalsChange={(totals) => {
-                totalsFromEditRef.current = true
-                setComputedTotals((prev) =>
-                  prev.subtotal === totals.subtotal &&
-                  prev.freight === totals.freight &&
-                  prev.hst === totals.hst &&
-                  prev.total === totals.total
-                    ? prev
-                    : totals,
-                )
-                persistTotals(totals)
-              }}
-            />
-          )}
+              <QuoteLineItemsTable
+                freight={freight}
+                items={lineItems}
+                readOnly={!lineItemsEditable}
+                taxRate={taxRate}
+                title={viewModel.lineItemTable.label}
+                workflow={workflow}
+                onFieldChange={onFieldChange}
+                onTotalsChange={(totals) => {
+                  totalsFromEditRef.current = true
+                  setComputedTotals((prev) =>
+                    prev.subtotal === totals.subtotal &&
+                    prev.freight === totals.freight &&
+                    prev.hst === totals.hst &&
+                    prev.total === totals.total
+                      ? prev
+                      : totals,
+                  )
+                  persistTotals(totals)
+                }}
+              />
+            )}
 
           {breakdownTotals.length > 0 && (
             <div className='flex justify-end border-t border-gray-3 pt-3 pr-2'>
@@ -1111,7 +1111,7 @@ const QuoteAgentResultView = ({
                     label={controlLabel(entry.field, entry.label)}
                     onActivate={setActiveEditId}
                   >
-                    <span className='leading-relaxed text-sm text-gray-12'>
+                    <span className='text-sm leading-relaxed text-gray-12'>
                       {display || raw}
                     </span>
                   </HoverEditShell>
@@ -1162,6 +1162,11 @@ const QuoteAgentResultView = ({
 
             return (
               <AgentFlatTable
+                allowAddRow={
+                  !String(table.label || '')
+                    .toLowerCase()
+                    .includes('hold item')
+                }
                 columns={field.settings?.specific?.tableColumns || []}
                 icon='tabler:table'
                 key={table.resultKey}
