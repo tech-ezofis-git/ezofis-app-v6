@@ -1,5 +1,7 @@
 import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useState } from 'react'
+import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -7,6 +9,7 @@ import {
   getNodeToolType,
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
+import useWorkflowStore from '../../../stores/useWorkflowStore'
 import SettingsSection from './SettingsSection'
 
 interface ConnectionsRoutingProps {
@@ -41,6 +44,10 @@ export default function ConnectionsRouting({
   node,
 }: ConnectionsRoutingProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
+  const [isAddingRoute, setIsAddingRoute] = useState(false)
+  const [newAction, setNewAction] = useState('Submit')
+  const [newTargetId, setNewTargetId] = useState('')
+
   const edges = useEdges()
   const nodes = useNodes()
   const { setEdges } = useReactFlow()
@@ -51,8 +58,34 @@ export default function ConnectionsRouting({
     }
   }, [node.id, defaultOpen])
 
+const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
+  if (!sourceNode || !targetNode)
+    return { sourceHandle: 's-bottom', targetHandle: 't-top' }
+  const dx = targetNode.position.x - sourceNode.position.x
+  const dy = targetNode.position.y - sourceNode.position.y
+  const isHorizontal = Math.abs(dx) > Math.abs(dy) + 100
+  if (isHorizontal) {
+    return {
+      sourceHandle: dx > 0 ? 's-right' : 's-left',
+      targetHandle: dx > 0 ? 't-left' : 't-right',
+    }
+  }
+  return {
+    sourceHandle: dy > 0 ? 's-bottom' : 's-top',
+    targetHandle: dy > 0 ? 't-top' : 't-bottom',
+  }
+}
+
+  const updateEdgesAndStore = (updater: (eds: any[]) => any[]) => {
+    setEdges((eds) => {
+      const next = updater(eds)
+      useWorkflowStore.setState({ loadedEdges: next })
+      return next
+    })
+  }
+
   const onUpdateAction = (edgeId: string, action: string) => {
-    setEdges((eds) =>
+    updateEdgesAndStore((eds) =>
       eds.map((e) =>
         e.id === edgeId
           ? { ...e, data: { ...e.data, action, proceedAction: action } }
@@ -61,12 +94,33 @@ export default function ConnectionsRouting({
     )
   }
 
+  const onUpdateTarget = (edgeId: string, targetId: string) => {
+    const targetNode = nodes.find((n) => n.id === targetId)
+    const handles = computeHandlesForNodes(node, targetNode)
+    updateEdgesAndStore((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? {
+              ...e,
+              sourceHandle: handles.sourceHandle,
+              target: targetId,
+              targetHandle: handles.targetHandle,
+            }
+          : e,
+      ),
+    )
+  }
+
+  const onDeleteEdge = (edgeId: string) => {
+    updateEdgesAndStore((eds) => eds.filter((e) => e.id !== edgeId))
+  }
+
   const onUpdateFlag = (
     edgeId: string,
     key: 'remarks' | 'confirm' | 'passwordAccess' | 'signature',
     value: boolean,
   ) => {
-    setEdges((eds) =>
+    updateEdgesAndStore((eds) =>
       eds.map((e) =>
         e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e,
       ),
@@ -226,6 +280,15 @@ export default function ConnectionsRouting({
     return `Define behavior when routing to ${conn.targetLabel}`
   }
 
+  const targetNodeOptions = nodes
+    .filter((n) => n.id !== node.id)
+    .map((n) => ({
+      id: String(n.id),
+      name: String(
+        (n.data as any)?.label || (n.data as any)?.name || `Step (${n.id})`,
+      ),
+    }))
+
   return (
     <SettingsSection
       icon='lucide:git-branch'
@@ -238,52 +301,93 @@ export default function ConnectionsRouting({
         {connections.length > 0 ? (
           connections.map((conn) => (
             <div
-              className='space-y-4 rounded-xl bg-surface p-4 shadow-sm'
+              className='space-y-4 rounded-xl bg-surface p-4 shadow-sm border border-gray-4'
               key={conn.edgeId}
             >
-              <div className='flex items-start gap-2.5'>
-                <Icon
-                  className='text-purple-10 mt-0.5 h-4 w-4 stroke-[2]'
-                  name='lucide:link-2'
+              <div className='flex items-start justify-between gap-2.5'>
+                <div className='flex items-start gap-2.5'>
+                  <Icon
+                    className='mt-0.5 h-4 w-4 stroke-[2] text-purple-10'
+                    name='lucide:link-2'
+                  />
+                  <div className='flex flex-col space-y-0.5'>
+                    <span className='text-13 font-medium leading-none text-gray-12'>
+                      {conn.action
+                        ? `${conn.action} ➔ ${conn.targetLabel}`
+                        : conn.targetLabel}
+                    </span>
+                    <span className='text-11 leading-tight text-gray-9'>
+                      {getTargetDescription(conn)}
+                    </span>
+                  </div>
+                </div>
+                <IconButton
+                  ariaLabel='Delete connection route'
+                  color='gray'
+                  icon='lucide:trash-2'
+                  size='xs'
+                  tooltip='Remove this action route'
+                  type='button'
+                  variant='ghost'
+                  onClick={() => onDeleteEdge(conn.edgeId)}
                 />
-                <div className='flex flex-col space-y-0.5'>
-                  <span className='text-13 leading-none font-medium text-gray-12'>
-                    {conn.targetLabel}
-                  </span>
-                  <span className='text-11 leading-tight text-gray-9'>
-                    {getTargetDescription(conn)}
-                  </span>
+              </div>
+
+              <div className='animate-in fade-in slide-in-from-top-1 grid grid-cols-2 gap-3 pt-1 duration-300'>
+                <div className='space-y-1.5'>
+                  <div className='text-12 font-medium text-gray-12'>
+                    Action Button Label
+                  </div>
+                  <InputSelect
+                    className='bg-surface'
+                    creatable={
+                      !isQualifyAgent &&
+                      !isConditionNode &&
+                      !isApAgent &&
+                      !isFtpAgent
+                    }
+                    options={dynamicActions}
+                    placeholder='Select or type action...'
+                    rightSectionIcon='lucide:chevrons-up-down'
+                    searchable
+                    value={
+                      dynamicActions.find((o) => o.name === conn.action) ||
+                      (conn.action ? { id: -1, name: conn.action } : null)
+                    }
+                    onChange={(val) => {
+                      if (val) {
+                        onUpdateAction(conn.edgeId, val.name)
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className='space-y-1.5'>
+                  <div className='text-12 font-medium text-gray-12'>
+                    Target Destination Step
+                  </div>
+                  <InputSelect
+                    className='bg-surface'
+                    options={targetNodeOptions}
+                    placeholder='Select target step...'
+                    rightSectionIcon='lucide:chevrons-up-down'
+                    searchable
+                    value={
+                      targetNodeOptions.find(
+                        (o) => String(o.id) === String(conn.targetId),
+                      ) || null
+                    }
+                    onChange={(val) => {
+                      if (val) {
+                        onUpdateTarget(conn.edgeId, String(val.id))
+                      }
+                    }}
+                  />
                 </div>
               </div>
 
-              <div className='animate-in fade-in slide-in-from-top-1 space-y-1.5 pt-1 duration-300'>
-                <div className='text-12 font-medium text-gray-12'>Action</div>
-                <InputSelect
-                  className='bg-surface'
-                  options={dynamicActions}
-                  placeholder='Select Action Type'
-                  rightSectionIcon='lucide:chevrons-up-down'
-                  searchable
-                  creatable={
-                    !isQualifyAgent &&
-                    !isConditionNode &&
-                    !isApAgent &&
-                    !isFtpAgent
-                  }
-                  value={
-                    dynamicActions.find((o) => o.name === conn.action) ||
-                    (conn.action ? { id: -1, name: conn.action } : null)
-                  }
-                  onChange={(val) => {
-                    if (val) {
-                      onUpdateAction(conn.edgeId, val.name)
-                    }
-                  }}
-                />
-              </div>
-
               {isManualUser && (
-                <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
+                <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1 border-t border-gray-3'>
                   <div className='flex items-center justify-between'>
                     <span className='text-12 text-gray-11'>
                       Remarks required
@@ -334,12 +438,125 @@ export default function ConnectionsRouting({
           ))
         ) : (
           <div className='py-4 text-center'>
-            <p className='text-12 text-gray-8 italic'>
+            <p className='text-12 italic text-gray-8'>
               No outgoing connections from this node.
             </p>
           </div>
         )}
+
+        <div className='mt-2 border-t border-gray-4 pt-3'>
+          {!isAddingRoute ? (
+            <Button
+              className='w-full'
+              color='primary'
+              icon='lucide:plus'
+              size='sm'
+              variant='outline'
+              onClick={() => setIsAddingRoute(true)}
+            >
+              Add Action Route
+            </Button>
+          ) : (
+            <div className='animate-in fade-in space-y-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm duration-200'>
+              <div className='flex items-center justify-between text-13 font-medium text-gray-12'>
+                <span>New Action Route</span>
+                <IconButton
+                  ariaLabel='Cancel'
+                  color='gray'
+                  icon='lucide:x'
+                  size='xs'
+                  type='button'
+                  variant='ghost'
+                  onClick={() => setIsAddingRoute(false)}
+                />
+              </div>
+
+              <div className='space-y-1.5'>
+                <div className='text-12 font-medium text-gray-12'>
+                  Action Button Label
+                </div>
+                <InputSelect
+                  className='bg-surface'
+                  creatable
+                  options={dynamicActions}
+                  placeholder='Select or type action (e.g. Approve, Reject)...'
+                  rightSectionIcon='lucide:chevrons-up-down'
+                  searchable
+                  value={
+                    dynamicActions.find((o) => o.name === newAction) ||
+                    (newAction ? { id: -1, name: newAction } : null)
+                  }
+                  onChange={(val) => {
+                    if (val) setNewAction(val.name)
+                  }}
+                />
+              </div>
+
+              <div className='space-y-1.5'>
+                <div className='text-12 font-medium text-gray-12'>
+                  Target Step
+                </div>
+                <InputSelect
+                  className='bg-surface'
+                  options={targetNodeOptions}
+                  placeholder='Select target step...'
+                  rightSectionIcon='lucide:chevrons-up-down'
+                  searchable
+                  value={
+                    targetNodeOptions.find(
+                      (o) => String(o.id) === String(newTargetId),
+                    ) || null
+                  }
+                  onChange={(val) => {
+                    if (val) setNewTargetId(String(val.id))
+                  }}
+                />
+              </div>
+
+              <div className='flex items-center justify-end gap-2 pt-1'>
+                <Button
+                  color='gray'
+                  size='sm'
+                  variant='ghost'
+                  onClick={() => setIsAddingRoute(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color='primary'
+                  disabled={!newTargetId || !newAction}
+                  size='sm'
+                  variant='solid'
+                  onClick={() => {
+                    if (!newTargetId || !newAction) return
+                    const targetNode = nodes.find((n) => n.id === newTargetId)
+                    const handles = computeHandlesForNodes(node, targetNode)
+                    const edgeId = `e-${node.id}-${newTargetId}-${Date.now()}`
+                    updateEdgesAndStore((eds) => [
+                      ...eds,
+                      {
+                        data: { action: newAction, proceedAction: newAction },
+                        id: edgeId,
+                        source: node.id,
+                        sourceHandle: handles.sourceHandle,
+                        target: newTargetId,
+                        targetHandle: handles.targetHandle,
+                        type: 'custom',
+                      },
+                    ])
+                    setIsAddingRoute(false)
+                    setNewAction('Submit')
+                    setNewTargetId('')
+                  }}
+                >
+                  Create Action Route
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </SettingsSection>
   )
 }
+
