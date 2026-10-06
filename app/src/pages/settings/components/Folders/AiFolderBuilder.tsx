@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { Check } from 'lucide-react'
 import { motion } from 'motion/react'
 import {
   type ReactNode,
@@ -218,10 +219,12 @@ function SuggestionChipRow({
   chips,
   disabled,
   onSelect,
+  selectedValue,
 }: {
   chips: ChipOption[]
   disabled?: boolean
   onSelect: (value: string) => void
+  selectedValue?: string
 }) {
   const { t } = useLingui()
   const [expanded, setExpanded] = useState(false)
@@ -232,23 +235,41 @@ function SuggestionChipRow({
 
   return (
     <div className='flex max-w-full flex-wrap items-center gap-2'>
-      {visibleChips.map((chip) => (
-        <button
-          className='inline-flex items-center gap-2 rounded-full border border-primary-4 bg-primary-2 px-3.5 py-2 text-[12px] font-semibold whitespace-nowrap text-primary-11 transition hover:border-primary-9 hover:bg-primary-3 hover:text-primary-9 disabled:opacity-50'
-          disabled={disabled}
-          key={chip.value}
-          type='button'
-          onClick={() => onSelect(chip.value)}
-        >
-          {chip.logo ? (
-            <img alt='' className='size-3.5 object-contain' src={chip.logo} />
-          ) : null}
-          {chip.icon ? (
-            <Icon className='size-3.5 text-primary-9' name={chip.icon} />
-          ) : null}
-          {chip.label}
-        </button>
-      ))}
+      {visibleChips.map((chip) => {
+        const isSelected = Boolean(
+          selectedValue &&
+            (chip.value.toLowerCase() === selectedValue.toLowerCase() ||
+              chip.label.toLowerCase() === selectedValue.toLowerCase()),
+        )
+        return (
+          <button
+            className={cn(
+              'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px] font-semibold whitespace-nowrap transition disabled:opacity-50',
+              isSelected
+                ? 'border-2 border-primary-9 bg-primary-1 text-primary-9 shadow-xs'
+                : 'border border-primary-4 bg-surface text-primary-11 hover:border-primary-9 hover:bg-primary-2 hover:text-primary-9',
+            )}
+            disabled={disabled}
+            key={chip.value}
+            type='button'
+            onClick={() => onSelect(chip.value)}
+          >
+            {chip.logo ? (
+              <img alt='' className='size-3.5 object-contain' src={chip.logo} />
+            ) : null}
+            {chip.icon ? (
+              <Icon
+                className='size-3.5 text-primary-9'
+                name={chip.icon}
+              />
+            ) : null}
+            {isSelected ? (
+              <Check className='size-3.5 stroke-[3] text-primary-9' />
+            ) : null}
+            {chip.label}
+          </button>
+        )
+      })}
 
       {hasOverflow && !expanded ? (
         <button
@@ -1536,7 +1557,16 @@ export default function AiFolderBuilder({
   }
 
   const handleSelectStep = (stepId: BuilderStepId) => {
-    if (stepId > unlockedStep && phase !== 'ready') return
+    const isAllowed =
+      stepId <= unlockedStep ||
+      completedSteps.has(stepId) ||
+      phase === 'ready' ||
+      editingFromReview
+    if (!isAllowed) return
+
+    if (phase === 'ready' || completedSteps.has(stepId) || stepId < unlockedStep) {
+      setEditingFromReview(true)
+    }
 
     setActiveStep(stepId)
     setTypingId(null)
@@ -1901,11 +1931,22 @@ export default function AiFolderBuilder({
   }
 
   const renderActiveStepBody = (stepId: BuilderStepId) => {
-    if (phaseToStep(phase) !== stepId) return null
+    if (phaseToStep(phase) !== stepId && activeStep !== stepId) return null
 
     const questionMessage = getStepQuestionMessage(stepId)
 
     const iconGutter = 'pl-[28px]'
+
+    const selectedValue =
+      stepId === 2
+        ? draft.structure
+        : stepId === 3
+          ? draft.storage
+          : stepId === 4
+            ? draft.versioning
+            : stepId === 5
+              ? draft.integrations
+              : undefined
 
     return (
       <div className='space-y-4'>
@@ -2018,6 +2059,7 @@ export default function AiFolderBuilder({
             <SuggestionChipRow
               chips={questionMessage.chips}
               disabled={isSending}
+              selectedValue={selectedValue}
               onSelect={(value) => void handleGuidedAnswer(value)}
             />
           </div>
@@ -2051,7 +2093,7 @@ export default function AiFolderBuilder({
             )}
           >
             <Button
-              color='gray'
+              color='primary'
               icon='lucide:arrow-left'
               label={t`Back`}
               variant='subtle'
@@ -2059,7 +2101,7 @@ export default function AiFolderBuilder({
             />
             <div className='flex items-center gap-2'>
               <Button
-                color='gray'
+                color='primary'
                 icon='tabler:sparkles'
                 label={t`Regenerate`}
                 variant='subtle'
@@ -2092,7 +2134,7 @@ export default function AiFolderBuilder({
             )}
           >
             <Button
-              color='gray'
+              color='primary'
               icon='lucide:arrow-left'
               label={t`Back`}
               variant='subtle'
@@ -2109,7 +2151,7 @@ export default function AiFolderBuilder({
             )}
           >
             <Button
-              color='gray'
+              color='primary'
               icon='lucide:arrow-left'
               label={t`Back`}
               variant='subtle'
@@ -2126,7 +2168,7 @@ export default function AiFolderBuilder({
             )}
           >
             <Button
-              color='gray'
+              color='primary'
               icon='lucide:arrow-left'
               label={t`Back`}
               variant='subtle'
@@ -2147,7 +2189,7 @@ export default function AiFolderBuilder({
         !isSending ? (
           <div className={cn('flex justify-end', iconGutter)}>
             <Button
-              color='gray'
+              color='primary'
               label={t`Back to review`}
               variant='subtle'
               onClick={goToReview}
@@ -2193,7 +2235,7 @@ export default function AiFolderBuilder({
   const renderReviewStepBody = () => (
     <div className='space-y-4'>
       {/* Quick Summary Card */}
-      <div className='divide-y divide-[var(--gray-3)] rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-1)]'>
+      <div className='divide-y divide-primary-4 rounded-[12px] border border-primary-4 bg-surface'>
         {/* Row 1: Folder Details */}
         <div className='flex items-start justify-between gap-4 p-3.5'>
           <div className='min-w-0 flex-1'>
@@ -2215,6 +2257,7 @@ export default function AiFolderBuilder({
             label={t`Edit`}
             size='xs'
             variant='subtle'
+            className='bg-transparent'
             onClick={() => editFromReview(1)}
           />
         </div>
@@ -2266,12 +2309,13 @@ export default function AiFolderBuilder({
             label={t`Edit`}
             size='xs'
             variant='subtle'
+             className='bg-transparent'
             onClick={() => editFromReview(2)}
           />
         </div>
 
         {/* Row 3: Storage, Versioning, Integrations */}
-        <div className='grid grid-cols-1 divide-y divide-[var(--gray-3)] sm:grid-cols-3 sm:divide-x sm:divide-y-0'>
+        <div className='grid grid-cols-1 divide-y divide-primary-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0'>
           {/* Storage */}
           <div className='flex items-start justify-between gap-2 p-3.5'>
             <div className='min-w-0 flex-1'>
@@ -2284,6 +2328,7 @@ export default function AiFolderBuilder({
             </div>
             <Button
               color='gray'
+               className='bg-transparent'
               icon='lucide:pencil'
               size='xs'
               variant='subtle'
@@ -2304,6 +2349,7 @@ export default function AiFolderBuilder({
             <Button
               color='gray'
               icon='lucide:pencil'
+               className='bg-transparent'
               size='xs'
               variant='subtle'
               onClick={() => editFromReview(4)}
@@ -2324,6 +2370,7 @@ export default function AiFolderBuilder({
             </div>
             <Button
               color='gray'
+               className='bg-transparent'
               icon='lucide:pencil'
               size='xs'
               variant='subtle'
@@ -2520,17 +2567,11 @@ export default function AiFolderBuilder({
                         ? stepSummaries[item.id]
                         : undefined
                   }
-                  onSelectStep={(id) => {
-                    if (phase === 'ready' && id < 6) {
-                      editFromReview(id as BuilderStepId)
-                    } else {
-                      handleSelectStep(id as BuilderStepId)
-                    }
-                  }}
+                  onSelectStep={(id) => handleSelectStep(id as BuilderStepId)}
                 >
                   {item.id === 6 && phase === 'ready'
                     ? renderReviewStepBody()
-                    : status === 'active' || isEditingThis
+                    : status === 'active' || isEditingThis || activeStep === item.id
                       ? renderActiveStepBody(item.id)
                       : null}
                 </BuilderTimelineStep>
