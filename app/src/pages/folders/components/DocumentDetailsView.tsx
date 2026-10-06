@@ -32,6 +32,7 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
 import Menu from '@/components/base/menu/Menu'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
@@ -470,6 +471,7 @@ export function DocumentDetailsView({
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
+  const [confirmExitSigningOpen, setConfirmExitSigningOpen] = useState(false)
   const [savedSignatures, setSavedSignatures] = useState<SavedSignature[]>([])
   const [activeSignRequestId, setActiveSignRequestId] = useState(
     String(initialSignRequestId || ''),
@@ -2259,18 +2261,24 @@ export function DocumentDetailsView({
               </button>
               {canSendForSignature ? (
                 <button
-                  aria-label={t`Sign Document`}
+                  aria-label={isSigning ? t`Exit Signing` : t`Sign Document`}
                   disabled={isPreviewLoading}
                   type='button'
                   className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5 ${
                     isSigning
-                      ? 'border-accent-primary bg-accent-soft text-accent-primary'
+                      ? 'border-red-6 bg-red-1 text-red-9 hover:border-red-7 hover:bg-red-2'
                       : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
                   }`}
-                  onClick={() => setIsSigning((prev) => !prev)}
+                  onClick={() => {
+                    if (isSigning) {
+                      setConfirmExitSigningOpen(true)
+                    } else {
+                      setIsSigning(true)
+                    }
+                  }}
                 >
                   <DynamicIcon
-                    className='h-4 w-4 text-accent-primary'
+                    className={`h-4 w-4 ${isSigning ? 'text-red-9' : 'text-accent-primary'}`}
                     name='pen-tool'
                   />
                   <span className='hidden sm:inline'>
@@ -3411,6 +3419,19 @@ export function DocumentDetailsView({
           ) : null}
         </div>
       </div>
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Exit Signing`}
+        description={t`Are you sure you want to exit signing mode? Any unsaved signature placements will be lost.`}
+        opened={confirmExitSigningOpen}
+        title={t`Exit Signing`}
+        variant='danger'
+        onCancel={() => setConfirmExitSigningOpen(false)}
+        onConfirm={() => {
+          setConfirmExitSigningOpen(false)
+          setIsSigning(false)
+        }}
+      />
     </div>
   )
 }
