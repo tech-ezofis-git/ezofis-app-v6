@@ -6,7 +6,7 @@ import { DirectionProvider, MantineProvider } from '@mantine/core'
 // import '@/lib/react-scan/scan'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { PostHogErrorBoundary, PostHogProvider } from '@posthog/react'
-import posthog from 'posthog-js'
+import { posthog } from '@/lib/posthog'
 import { StrictMode } from 'react'
 import '@/lib/web-vitals/report'
 import ReactDOM from 'react-dom/client'
@@ -21,21 +21,6 @@ import LingUiProvider from './lib/lingui/LingUiProvider'
 
 const googleClientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID as string
 const microsoftClientId = import.meta.env?.VITE_MSAL_CLIENT_ID_DEFAULT as string
-
-const posthogProjectToken =
-  (import.meta.env?.VITE_POSTHOG_PROJECT_TOKEN as string) ||
-  (import.meta.env?.VITE_POSTHOG_KEY as string) ||
-  'phc_vpdrDKNugLVVgvtVLV5QSFCq8B5WvMqq5JbSqQu3uxdi'
-const posthogHost =
-  (import.meta.env?.VITE_POSTHOG_HOST as string) || 'https://us.i.posthog.com'
-
-if (posthogProjectToken) {
-  posthog.init(posthogProjectToken, {
-    api_host: posthogHost,
-    defaults: '2026-05-30',
-    enable_heatmaps: true,
-  })
-}
 
 function PostHogErrorFallback({ error }: { error?: any }) {
   return (

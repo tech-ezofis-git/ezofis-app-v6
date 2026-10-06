@@ -806,7 +806,9 @@ export function useFolderExplorer() {
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
 
-    if (filtersStateUpdated) {
+    // Always skip the filters effect once after this load so mount / folder
+    // changes do not immediately fire a second unscoped getFolderContent.
+    if (filtersStateUpdated || isInitialMount) {
       skipFilterReloadRef.current = true
     }
 

@@ -20,7 +20,10 @@ import {
   getGenericStageInfo,
   isAccountsPayableWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
-import { kanbanColorDotClass } from '@/pages/workflows/utils/kanbanSettings'
+import {
+  KANBAN_CARD_COLORS,
+  kanbanColorDotClass,
+} from '@/pages/workflows/utils/kanbanSettings'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -40,6 +43,7 @@ import {
 import {
   extractGenericRequestNumber,
   readPreviewChipText,
+  resolveConfiguredTitle,
   resolvePreviewFieldColumns,
 } from './columns/useDynamicColumns'
 import HoverExpandableText from './HoverExpandableText'
@@ -107,6 +111,26 @@ const roleIconWrapClass: Record<KanbanColumnRole, string> = {
   success: 'bg-green-2 text-green-9',
 }
 
+const colorPillClass: Record<string, string> = {
+  blue: 'border-blue-3 bg-blue-1 text-blue-9',
+  gray: 'border-gray-3 bg-gray-2 text-gray-11',
+  green: 'border-green-3 bg-green-1 text-green-9',
+  orange: 'border-orange-3 bg-orange-1 text-orange-9',
+  primary: 'border-purple-3 bg-purple-1 text-primary-9',
+  purple: 'border-purple-3 bg-purple-1 text-primary-9',
+  red: 'border-red-3 bg-red-1 text-red-9',
+}
+
+const colorIconWrapClass: Record<string, string> = {
+  blue: 'bg-blue-2 text-blue-9',
+  gray: 'bg-gray-2 text-gray-11',
+  green: 'bg-green-2 text-green-9',
+  orange: 'bg-orange-2 text-orange-9',
+  primary: 'bg-primary-3 text-primary-9',
+  purple: 'bg-primary-3 text-primary-9',
+  red: 'bg-red-2 text-red-9',
+}
+
 const getColumnThemeClasses = (color?: string, role?: KanbanColumnRole) => {
   const base =
     color ||
@@ -128,6 +152,9 @@ const getColumnThemeClasses = (color?: string, role?: KanbanColumnRole) => {
       return { bg: 'bg-gray-2', count: 'bg-gray-8 text-white' }
   }
 }
+
+const defaultColorAt = (index: number) =>
+  KANBAN_CARD_COLORS[index % KANBAN_CARD_COLORS.length].id
 
 const getInitials = (nameOrEmail: string): string => {
   if (!nameOrEmail) return ''
@@ -196,6 +223,7 @@ export default function KanbanView({
 
     if (leftover.length && columns.length) {
       result.push({
+        color: defaultColorAt(result.length),
         id: 'kanban-other',
         items: leftover,
         name: t`Other`,
@@ -219,6 +247,7 @@ export default function KanbanView({
       })
       byStage.forEach((stageItems, name) => {
         result.push({
+          color: defaultColorAt(result.length),
           id: name,
           items: stageItems,
           name,
@@ -483,6 +512,7 @@ export default function KanbanView({
                     }
                   >
                     <KanbanCard
+                      color={column.color}
                       columnId={column.id}
                       didDragRef={didDragRef}
                       dragItemRef={dragItemRef}
@@ -491,6 +521,7 @@ export default function KanbanView({
                       item={item}
                       locked={locked}
                       previewValues={previewValues}
+                      rawWorkflowData={rawWorkflowData}
                       role={column.role}
                       stageName={stageName}
                       workflow={workflow}
@@ -663,6 +694,7 @@ export default function KanbanView({
 }
 
 function KanbanCard({
+  color,
   columnId,
   didDragRef,
   dragItemRef,
@@ -672,6 +704,7 @@ function KanbanCard({
   isMoving,
   item,
   locked,
+  rawWorkflowData,
   role,
   stageName,
   workflow,
@@ -681,6 +714,7 @@ function KanbanCard({
   onRowClick,
   previewValues,
 }: {
+  color?: string
   columnId: string
   didDragRef: MutableRefObject<boolean>
   dragItemRef: MutableRefObject<any>
@@ -690,6 +724,7 @@ function KanbanCard({
   isMoving: boolean
   item: any
   locked: boolean
+  rawWorkflowData?: any
   role: KanbanColumnRole
   stageName: string
   workflow: WorkflowOption | null
@@ -702,12 +737,40 @@ function KanbanCard({
   const { t } = useLingui()
   const [blockCardDrag, setBlockCardDrag] = useState(false)
   const [isCardHovered, setIsCardHovered] = useState(false)
-  const requestNo = extractGenericRequestNumber(item)
+  const isDocumentApproval = workflow?.name === 'Document Approval'
+  const activeJobId = String(item?.apAgentJobId || item?.jobId || '').trim()
+  const isJobProcessing = Boolean(item?.isProcessing && activeJobId)
+  const configuredTitle = resolveConfiguredTitle(
+    item,
+    workflow,
+    isDocumentApproval,
+    rawWorkflowData,
+  )
+  const requestNo = isJobProcessing
+    ? `JOB-${activeJobId}`
+    : configuredTitle ||
+      (isDocumentApproval
+        ? item?.repositoryItem?.fileName || extractGenericRequestNumber(item)
+        : extractGenericRequestNumber(item))
   const { currentLabel, isTerminal } = getGenericStageInfo(workflow, item)
-  const pillLabel = currentLabel || stageName
+  const pillLabel = isJobProcessing
+    ? `JOB-${activeJobId}`
+    : currentLabel || stageName
   const cardRole: KanbanColumnRole = isTerminal || locked ? 'success' : role
+  const accentColor = isJobProcessing
+    ? 'orange'
+    : cardRole === 'success'
+      ? 'green'
+      : color || undefined
+  const pillClass =
+    (accentColor && colorPillClass[accentColor]) || rolePillClass[cardRole]
+  const iconWrapClass = isJobProcessing
+    ? 'bg-orange-2 text-orange-9'
+    : (accentColor && colorIconWrapClass[accentColor]) ||
+      roleIconWrapClass[cardRole]
   const itemKey = String(item.id || item.processId || columnId)
-  const canDrag = !locked && !isMoving && item._canMove === true
+  const canDrag =
+    !isJobProcessing && !locked && !isMoving && item._canMove === true
 
   const raisedBy =
     item?.activityUserEmail ||
@@ -830,7 +893,7 @@ function KanbanCard({
             <span
               className={cn(
                 'flex size-6 shrink-0 items-center justify-center rounded-full',
-                roleIconWrapClass[cardRole],
+                iconWrapClass,
               )}
             >
               <Avatar
@@ -844,12 +907,21 @@ function KanbanCard({
           <span
             className={cn(
               'flex size-6 shrink-0 items-center justify-center rounded-full',
-              roleIconWrapClass[cardRole],
+              iconWrapClass,
             )}
           >
             <Icon
-              className='size-3.5'
-              name={cardRole === 'success' ? 'tabler:check' : 'tabler:clock'}
+              className={cn(
+                'size-3.5',
+                isJobProcessing && 'animate-spin',
+              )}
+              name={
+                isJobProcessing
+                  ? 'tabler:loader-2'
+                  : cardRole === 'success'
+                    ? 'tabler:check'
+                    : 'tabler:clock'
+              }
             />
           </span>
         )}
@@ -868,14 +940,16 @@ function KanbanCard({
             hoverAccent
           />
         </span>
-        <span
-          className={cn(
-            'max-w-[150px] shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
-            rolePillClass[cardRole],
-          )}
-        >
-          {pillLabel}
-        </span>
+        {!isJobProcessing ? (
+          <span
+            className={cn(
+              'max-w-[150px] shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
+              pillClass,
+            )}
+          >
+            {pillLabel}
+          </span>
+        ) : null}
       </div>
 
       {fieldLines.length > 0 && (

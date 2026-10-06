@@ -22,6 +22,13 @@ import {
 } from '@/pages/folders/utils/fieldPdfSearch'
 import cn from '@/utils/cn'
 import EmlPreview from './EmlPreview'
+import {
+  PiiDomPageOverlay,
+  RedactionOverlay,
+  redactHtmlText,
+  redactPlainText,
+  usePiiRedaction,
+} from './pii'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
@@ -120,6 +127,10 @@ type DocumentPreviewViewerProps = {
   activeHighlightTerm?: string | null
   className?: string
   enableHighlight?: boolean
+  /** Scan the document and cover detected / known PII values. */
+  enablePiiRedaction?: boolean
+  /** Optional NER via @xenova/transformers (heavier; off by default). */
+  enablePiiNer?: boolean
   fileBlob?: Blob | null
   fileName?: string
   fileUrl: string | null
@@ -135,7 +146,11 @@ type DocumentPreviewViewerProps = {
   // Signature & edit permission props for Collabora / Office document signing
   permission?: 'edit' | 'readonly'
   permissions?: any
+  /** Keep this many trailing characters visible when masking (default 3). */
+  piiMaskVisibleChars?: number
   probeTerms?: string[]
+  /** Known sensitive values (form fields) to redact in addition to auto-detect. */
+  redactValues?: string[]
   restrictToFields?: boolean
   showScanOverlay?: boolean
   signatureFields?: any[]
@@ -149,11 +164,15 @@ type DocumentPreviewViewerProps = {
 type PdfViewerProps = {
   activeHighlightColor?: string
   activeHighlightTerm?: string | null
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileUrl: string
   focusRequestId?: number
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  piiMaskVisibleChars?: number
   probeTerms?: string[]
+  redactValues?: string[]
   onProbeComplete?: (matchedValues: string[]) => void
 }
 
@@ -345,6 +364,8 @@ export default function DocumentPreviewViewer({
   activeHighlightTerm,
   className = '',
   enableHighlight = false,
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileBlob,
   fileName,
   fileUrl,
@@ -357,7 +378,9 @@ export default function DocumentPreviewViewer({
   isSigningMode = false,
   permission = 'readonly',
   permissions,
+  piiMaskVisibleChars = 3,
   probeTerms = [],
+  redactValues = [],
   restrictToFields = false,
   showScanOverlay = false,
   signatureFields = [],
@@ -412,12 +435,16 @@ export default function DocumentPreviewViewer({
         <PdfViewer
           activeHighlightColor={activeHighlightColor}
           activeHighlightTerm={activeHighlightTerm}
+          enablePiiNer={enablePiiNer}
+          enablePiiRedaction={enablePiiRedaction}
           fileUrl={fileUrl}
           focusRequestId={focusRequestId}
           highlightColors={enableHighlight ? highlightColors : {}}
           highlightTerms={enableHighlight ? highlightTerms : []}
           key={fileUrl}
+          piiMaskVisibleChars={piiMaskVisibleChars}
           probeTerms={probeTerms}
+          redactValues={redactValues}
           onProbeComplete={onProbeComplete}
         />
       )
@@ -431,15 +458,51 @@ export default function DocumentPreviewViewer({
       />
     )
   } else if (mode === 'image' && fileUrl) {
-    content = <ImagePreview fileName={fileName} fileUrl={fileUrl} />
+    content = (
+      <ImagePreview
+        enablePiiNer={enablePiiNer}
+        enablePiiRedaction={enablePiiRedaction}
+        fileName={fileName}
+        fileUrl={fileUrl}
+        piiMaskVisibleChars={piiMaskVisibleChars}
+        redactValues={redactValues}
+      />
+    )
   } else if (mode === 'spreadsheet' && fileUrl) {
-    content = <SpreadsheetPreview fileName={fileName} fileUrl={fileUrl} />
+    content = (
+      <SpreadsheetPreview
+        enablePiiNer={enablePiiNer}
+        enablePiiRedaction={enablePiiRedaction}
+        fileName={fileName}
+        fileUrl={fileUrl}
+        piiMaskVisibleChars={piiMaskVisibleChars}
+        redactValues={redactValues}
+      />
+    )
   } else if (mode === 'word' && fileUrl) {
-    content = <WordPreview fileName={fileName} fileUrl={fileUrl} />
+    content = (
+      <WordPreview
+        enablePiiNer={enablePiiNer}
+        enablePiiRedaction={enablePiiRedaction}
+        fileName={fileName}
+        fileUrl={fileUrl}
+        piiMaskVisibleChars={piiMaskVisibleChars}
+        redactValues={redactValues}
+      />
+    )
   } else if (mode === 'eml' && fileUrl) {
     content = <EmlPreview fileName={fileName} fileUrl={fileUrl} />
   } else if (mode === 'text' && fileUrl) {
-    content = <TextFilePreview fileName={fileName} fileUrl={fileUrl} />
+    content = (
+      <TextFilePreview
+        enablePiiNer={enablePiiNer}
+        enablePiiRedaction={enablePiiRedaction}
+        fileName={fileName}
+        fileUrl={fileUrl}
+        piiMaskVisibleChars={piiMaskVisibleChars}
+        redactValues={redactValues}
+      />
+    )
   } else if (mode === 'office-remote' && fileUrl) {
     content = <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
   } else {
@@ -473,11 +536,19 @@ export default function DocumentPreviewViewer({
 }
 
 function SpreadsheetPreview({
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiMaskVisibleChars = 3,
+  redactValues = [],
 }: {
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiMaskVisibleChars?: number
+  redactValues?: string[]
 }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -485,6 +556,7 @@ function SpreadsheetPreview({
   const [sheetNames, setSheetNames] = useState<string[]>([])
   const [activeSheet, setActiveSheet] = useState('')
   const workbookRef = useRef<XLSX.WorkBook | null>(null)
+  const redactKey = redactValues.join('\u0001')
 
   useEffect(() => {
     let cancelled = false
@@ -524,6 +596,7 @@ function SpreadsheetPreview({
   }, [fileUrl])
 
   useEffect(() => {
+    let cancelled = false
     const workbook = workbookRef.current
     if (!workbook || !activeSheet) return
     const sheet = workbook.Sheets[activeSheet]
@@ -538,16 +611,43 @@ function SpreadsheetPreview({
       defval: '',
       header: 1,
     })
-    setRows(
-      matrix
-        .slice(0, 200)
-        .map((row) =>
-          (Array.isArray(row) ? row : []).map((cell) =>
-            cell == null ? '' : String(cell),
-          ),
+    const plain = matrix
+      .slice(0, 200)
+      .map((row) =>
+        (Array.isArray(row) ? row : []).map((cell) =>
+          cell == null ? '' : String(cell),
         ),
-    )
-  }, [activeSheet, loading, sheetNames])
+      )
+
+    const apply = async () => {
+      if (!enablePiiRedaction) {
+        if (!cancelled) setRows(plain)
+        return
+      }
+      const joined = plain.map((row) => row.join('\t')).join('\n')
+      const redacted = await redactPlainText(joined, {
+        enableNer: enablePiiNer,
+        knownValues: redactValues,
+        visibleChars: piiMaskVisibleChars,
+      })
+      if (cancelled) return
+      setRows(
+        redacted.split('\n').map((line) => line.split('\t')),
+      )
+    }
+    void apply()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    activeSheet,
+    enablePiiNer,
+    enablePiiRedaction,
+    loading,
+    piiMaskVisibleChars,
+    redactKey,
+    sheetNames,
+  ])
 
   if (loading) return <SkeletonDocumentPreview flush />
   if (error) {
@@ -660,17 +760,34 @@ function UnsupportedPreview({
 }
 
 function WordPreview({
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiMaskVisibleChars = 3,
+  redactValues = [],
 }: {
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiMaskVisibleChars?: number
+  redactValues?: string[]
 }) {
   const ext = getFileExtension(fileName)
 
   // Prefer in-browser DOCX rendering for uploaded / blob / fetchable files.
   if (ext === 'docx') {
-    return <DocxRenderedPreview fileName={fileName} fileUrl={fileUrl} />
+    return (
+      <DocxRenderedPreview
+        enablePiiNer={enablePiiNer}
+        enablePiiRedaction={enablePiiRedaction}
+        fileName={fileName}
+        fileUrl={fileUrl}
+        piiMaskVisibleChars={piiMaskVisibleChars}
+        redactValues={redactValues}
+      />
+    )
   }
 
   // Public URLs for other Office formats can use Microsoft Office Online.
@@ -766,11 +883,19 @@ function ZoomToolbar({
 const DEFAULT_DOCX_ZOOM = 0.7
 
 function DocxRenderedPreview({
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiMaskVisibleChars = 3,
+  redactValues = [],
 }: {
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiMaskVisibleChars?: number
+  redactValues?: string[]
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const styleRef = useRef<HTMLDivElement>(null)
@@ -778,6 +903,7 @@ function DocxRenderedPreview({
   const [loading, setLoading] = useState(true)
   const [scale, setScale] = useState(DEFAULT_DOCX_ZOOM)
   const [html, setHtml] = useState('')
+  const redactKey = redactValues.join('\u0001')
 
   useEffect(() => {
     let cancelled = false
@@ -812,6 +938,15 @@ function DocxRenderedPreview({
           .map((text) => text.replace(/\s+/g, ' ').trim())
           .filter(Boolean)
 
+        const applyRedaction = async (rawHtml: string) => {
+          if (!enablePiiRedaction) return rawHtml
+          return redactHtmlText(rawHtml, {
+            enableNer: enablePiiNer,
+            knownValues: redactValues,
+            visibleChars: piiMaskVisibleChars,
+          })
+        }
+
         if (!paragraphs.length) {
           // Tables / text boxes may still have content under <w:t>.
           const loose = [...xml.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)]
@@ -821,22 +956,20 @@ function DocxRenderedPreview({
             throw new Error('No readable text found in this Word document')
           }
           if (!cancelled) {
-            setHtml(
-              `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(loose.join(' '))}</p>`,
-            )
+            const raw = `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(loose.join(' '))}</p>`
+            setHtml(await applyRedaction(raw))
           }
           return
         }
 
         if (!cancelled) {
-          setHtml(
-            paragraphs
-              .map(
-                (paragraph) =>
-                  `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(paragraph)}</p>`,
-              )
-              .join(''),
-          )
+          const raw = paragraphs
+            .map(
+              (paragraph) =>
+                `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(paragraph)}</p>`,
+            )
+            .join('')
+          setHtml(await applyRedaction(raw))
         }
       } catch (err) {
         if (!cancelled) {
@@ -845,8 +978,9 @@ function DocxRenderedPreview({
               ? err.message
               : 'Unable to preview Word document',
           )
-          setLoading(false)
         }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -854,7 +988,13 @@ function DocxRenderedPreview({
     return () => {
       cancelled = true
     }
-  }, [fileUrl])
+  }, [
+    enablePiiNer,
+    enablePiiRedaction,
+    fileUrl,
+    piiMaskVisibleChars,
+    redactKey,
+  ])
 
   if (error) {
     return (
@@ -940,15 +1080,24 @@ function OfficeOnlinePreview({
 }
 
 function TextFilePreview({
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiMaskVisibleChars = 3,
+  redactValues = [],
 }: {
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiMaskVisibleChars?: number
+  redactValues?: string[]
 }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
+  const redactKey = redactValues.join('\u0001')
 
   useEffect(() => {
     let cancelled = false
@@ -959,7 +1108,17 @@ function TextFilePreview({
         const response = await fetch(fileUrl)
         if (!response.ok) throw new Error('Unable to load file')
         const content = await response.text()
-        if (!cancelled) setText(content.slice(0, 200_000))
+        const sliced = content.slice(0, 200_000)
+        if (!enablePiiRedaction) {
+          if (!cancelled) setText(sliced)
+          return
+        }
+        const redacted = await redactPlainText(sliced, {
+          enableNer: enablePiiNer,
+          knownValues: redactValues,
+          visibleChars: piiMaskVisibleChars,
+        })
+        if (!cancelled) setText(redacted)
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -974,7 +1133,13 @@ function TextFilePreview({
     return () => {
       cancelled = true
     }
-  }, [fileUrl])
+  }, [
+    enablePiiNer,
+    enablePiiRedaction,
+    fileUrl,
+    piiMaskVisibleChars,
+    redactKey,
+  ])
 
   if (loading) return <SkeletonDocumentPreview flush />
   if (error) {
@@ -1213,23 +1378,47 @@ async function extractDocxDocumentXmlFallback(
 }
 
 function ImagePreview({
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiMaskVisibleChars = 3,
+  redactValues = [],
 }: {
+  enablePiiNer?: boolean
+  enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiMaskVisibleChars?: number
+  redactValues?: string[]
 }) {
   const [scale, setScale] = useState(1)
+  const { areas } = usePiiRedaction({
+    enable: enablePiiRedaction,
+    enableNer: enablePiiNer,
+    fileUrl,
+    knownValues: redactValues,
+    mode: 'image',
+    visibleChars: piiMaskVisibleChars,
+  })
 
   return (
     <div className='relative h-full w-full overflow-auto bg-[var(--gray-1)]'>
       <div className='flex min-h-full min-w-full items-center justify-center p-4'>
-        <img
-          alt={fileName || 'Document Preview'}
-          className='max-h-full max-w-full origin-center object-contain transition-transform duration-200'
-          src={fileUrl}
+        {/* Scale the whole stack so OCR % boxes stay aligned with the image. */}
+        <div
+          className='relative inline-block max-h-full max-w-full origin-center transition-transform duration-200'
           style={{ transform: `scale(${scale})` }}
-        />
+        >
+          <img
+            alt={fileName || 'Document Preview'}
+            className='block max-h-full max-w-full object-contain'
+            src={fileUrl}
+          />
+          {enablePiiRedaction && areas.length > 0 ? (
+            <RedactionOverlay areas={areas} pageIndex={0} />
+          ) : null}
+        </div>
       </div>
       <ZoomToolbar scale={scale} onZoom={setScale} />
     </div>
@@ -1247,11 +1436,15 @@ async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
 function PdfViewer({
   activeHighlightColor,
   activeHighlightTerm,
+  enablePiiNer = false,
+  enablePiiRedaction = false,
   fileUrl,
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
+  piiMaskVisibleChars = 3,
   probeTerms = [],
+  redactValues = [],
   onProbeComplete,
 }: PdfViewerProps) {
   const colorsRef = useRef(highlightColors)
@@ -1262,6 +1455,15 @@ function PdfViewer({
 
   const onProbeCompleteRef = useRef(onProbeComplete)
   onProbeCompleteRef.current = onProbeComplete
+
+  const { areas: piiAreas, isScanning: isPiiScanning } = usePiiRedaction({
+    enable: enablePiiRedaction,
+    enableNer: enablePiiNer,
+    fileUrl,
+    knownValues: redactValues,
+    mode: 'pdf',
+    visibleChars: piiMaskVisibleChars,
+  })
 
   // searchPlugin uses React hooks internally — must run every render (not in useMemo).
   const currentSearchPluginInstance = searchPlugin({
@@ -1792,6 +1994,25 @@ function PdfViewer({
                   No document preview available
                 </p>
               </div>
+            )}
+            renderPage={(props) => (
+              <>
+                {props.canvasLayer.children}
+                {props.textLayer.children}
+                {props.annotationLayer.children}
+                {enablePiiRedaction ? (
+                  <PiiDomPageOverlay
+                    enableNer={enablePiiNer}
+                    fallbackAreas={piiAreas}
+                    isOcrScanning={isPiiScanning}
+                    knownValues={redactValues}
+                    pageIndex={props.pageIndex}
+                    scale={props.scale}
+                    textLayerRendered={props.textLayerRendered}
+                    visibleChars={piiMaskVisibleChars}
+                  />
+                ) : null}
+              </>
             )}
             onDocumentLoad={handleDocumentLoad}
           />

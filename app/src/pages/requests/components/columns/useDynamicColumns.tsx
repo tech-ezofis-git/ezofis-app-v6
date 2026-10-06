@@ -1441,9 +1441,13 @@ export const resolveConfiguredTitle = (
   row: any,
   workflow: WorkflowOption | null,
   isDocumentApproval: boolean,
+  rawWorkflowData?: any,
 ): string | null => {
   const titleField =
+    rawWorkflowData?.settings?.general?.requestTitleField ||
+    rawWorkflowData?.workflowJson?.settings?.general?.requestTitleField ||
     workflow?.workflowJson?.settings?.general?.requestTitleField ||
+    (workflow as any)?.settings?.general?.requestTitleField ||
     (workflow as any)?.wSettings?.general?.requestTitleField
   if (!titleField && !isDocumentApproval) return null
   if (isDocumentApproval) {
@@ -1451,7 +1455,9 @@ export const resolveConfiguredTitle = (
     if (val !== undefined && val !== null && val !== '') return String(val)
   }
 
-  const actualFieldKey = getFieldKeyByLabel(workflow, titleField) || titleField
+  const fieldSource = rawWorkflowData || workflow
+  const actualFieldKey =
+    getFieldKeyByLabel(fieldSource, titleField) || titleField
 
   // If we found the actual field key, look it up in formData
   if (actualFieldKey) {
@@ -1526,6 +1532,12 @@ const getBaseColumns = (
                   }}
                 >
                   {(() => {
+                    const jobId = String(
+                      row?.apAgentJobId || row?.jobId || '',
+                    ).trim()
+                    if (row?.isProcessing && jobId) {
+                      return `JOB-${jobId}`
+                    }
                     const configuredTitle = resolveConfiguredTitle(
                       row,
                       workflow,
@@ -1592,6 +1604,14 @@ const getBaseColumns = (
         label: t`Current Stage`,
         size: 220,
         renderCell: (row: any) => {
+          const jobId = String(row?.apAgentJobId || row?.jobId || '').trim()
+          if (row?.isProcessing && jobId) {
+            return (
+              <span className='rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-[10px] font-semibold text-orange-10'>
+                {`JOB-${jobId}`}
+              </span>
+            )
+          }
           const { currentLabel, isTerminal, previousLabel } =
             getGenericStageInfo(workflow, row)
           return (

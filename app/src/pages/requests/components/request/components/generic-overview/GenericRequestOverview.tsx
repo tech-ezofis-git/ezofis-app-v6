@@ -16,7 +16,9 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { collectRedactValues } from '@/components/common/document-preview/pii'
 import folderApi from '@/pages/folders/api/folderApi'
+import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import {
   buildMergedOcrFieldHints,
@@ -198,6 +200,14 @@ const DocumentApprovalSplitLayout = ({
     previewUrl,
   } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
 
+  const previewFileName =
+    previewAttachment?.fileName ||
+    previewAttachment?.name ||
+    (previewAttachment?.fileExtension
+      ? `file.${previewAttachment.fileExtension}`
+      : undefined)
+  const previewKind = resolveDocumentPreviewKind(mimeType, previewFileName)
+
   useEffect(() => {
     if (!targetItemId || !targetRepoId) return
     let cancelled = false
@@ -217,15 +227,12 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            fileName={
-              previewAttachment.fileName ||
-              previewAttachment.name ||
-              (previewAttachment.fileExtension
-                ? `file.${previewAttachment.fileExtension}`
-                : undefined)
-            }
+            enablePiiRedaction
+            fileName={previewFileName}
             fileUrl={previewUrl || null}
+            isImage={previewKind === 'image' || previewKind === 'tiff'}
             isLoading={previewLoading}
+            isPdf={previewKind === 'pdf'}
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -323,9 +330,11 @@ const DocumentFormSplitLayout = ({
   commentsNode,
   formModel,
   formNode,
+  hiddenFieldIds,
   historyNode,
   lineItemsNode,
   rawWorkflowData,
+  readOnlyFieldIds,
   repositoryId,
   selectedItem,
   taskNode,
@@ -339,9 +348,11 @@ const DocumentFormSplitLayout = ({
   commentsNode?: ReactNode
   formModel?: Record<string, any>
   formNode: ReactNode
+  hiddenFieldIds?: Set<string>
   historyNode?: ReactNode
   lineItemsNode?: ReactNode
   rawWorkflowData: any
+  readOnlyFieldIds?: Set<string>
   repositoryId: string | number | undefined
   selectedItem: any
   taskNode: ReactNode
@@ -358,16 +369,71 @@ const DocumentFormSplitLayout = ({
     [attachments],
   )
 
+  const piiRedactValues = useMemo(
+    () => collectRedactValues(formModel),
+    [formModel],
+  )
+
   const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
     attachmentKeyOf(recentDocument),
   )
+  const knownAttachmentKeysRef = useRef<Set<string>>(new Set())
+  const hasSeededAttachmentKeysRef = useRef(false)
+  const [newAttachmentKeys, setNewAttachmentKeys] = useState<Set<string>>(
+    () => new Set(),
+  )
 
+  const requestIdentity = String(
+    selectedItem?.itemId ||
+      selectedItem?.id ||
+      selectedItem?.requestId ||
+      selectedItem?.transactionId ||
+      '',
+  )
+
+  // Reset baseline when navigating to a different request.
   useEffect(() => {
-    const stillExists = attachments.some(
-      (file) => attachmentKeyOf(file) === viewerAttachmentKey,
-    )
-    if (stillExists) return
+    hasSeededAttachmentKeysRef.current = false
+    knownAttachmentKeysRef.current = new Set()
+    setNewAttachmentKeys(new Set())
     setViewerAttachmentKey(attachmentKeyOf(recentDocument))
+  }, [requestIdentity])
+
+  // Seed existing docs on first load; only mark later arrivals as New.
+  useEffect(() => {
+    const keys = (attachments || [])
+      .map(attachmentKeyOf)
+      .filter(Boolean)
+
+    if (!hasSeededAttachmentKeysRef.current) {
+      // Wait until the initial attachment list arrives so open-time docs
+      // are not falsely marked New.
+      if (keys.length === 0) return
+      knownAttachmentKeysRef.current = new Set(keys)
+      hasSeededAttachmentKeysRef.current = true
+      const stillExists = keys.includes(viewerAttachmentKey)
+      if (!stillExists) {
+        setViewerAttachmentKey(attachmentKeyOf(recentDocument))
+      }
+      return
+    }
+
+    const known = knownAttachmentKeysRef.current
+    const added = keys.filter((key) => !known.has(key))
+    // Keep previously known keys so removals/reordering do not re-flag New.
+    for (const key of keys) known.add(key)
+
+    if (added.length === 0) {
+      const stillExists = keys.includes(viewerAttachmentKey)
+      if (!stillExists) {
+        setViewerAttachmentKey(attachmentKeyOf(recentDocument))
+      }
+      return
+    }
+
+    setNewAttachmentKeys((prev) => new Set([...prev, ...added]))
+    const newestKey = attachmentKeyOf(recentDocument)
+    if (newestKey) setViewerAttachmentKey(newestKey)
   }, [attachments, recentDocument, viewerAttachmentKey])
 
   const viewerAttachment = useMemo(() => {
@@ -380,6 +446,18 @@ const DocumentFormSplitLayout = ({
       attachments[0]
     )
   }, [attachments, recentDocument, viewerAttachmentKey])
+
+  const handleSelectViewerAttachment = useCallback((file: AttachmentItem) => {
+    const key = attachmentKeyOf(file)
+    setViewerAttachmentKey(key)
+    if (!key) return
+    setNewAttachmentKeys((prev) => {
+      if (!prev.has(key)) return prev
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+  }, [])
 
   const agentBlocks: AgentBlock[] = useMemo(() => {
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
@@ -570,33 +648,42 @@ const DocumentFormSplitLayout = ({
         }
       : null
 
-  const { isLoading: previewLoading, previewUrl } = useAttachmentPreviewUrl(
-    previewAttachment as any,
-    targetRepoId,
-  )
+  const {
+    isLoading: previewLoading,
+    mimeType: previewMimeType,
+    previewUrl,
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+
+  const viewerFileName =
+    previewAttachment?.fileName ||
+    previewAttachment?.name ||
+    (previewAttachment?.fileExtension
+      ? `file.${previewAttachment.fileExtension}`
+      : undefined)
+  const viewerKind = resolveDocumentPreviewKind(previewMimeType, viewerFileName)
 
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1'>
         <LeftViewerAttachmentStrip
           attachments={attachments}
+          newAttachmentKeys={newAttachmentKeys}
           selectedKey={attachmentKeyOf(viewerAttachment)}
           onOpenAttachmentsTab={() => selectTab('attachments')}
-          onSelect={(file) => setViewerAttachmentKey(attachmentKeyOf(file))}
+          onSelect={handleSelectViewerAttachment}
         />
         <div className='min-h-0 flex-1 p-4'>
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
             {previewAttachment ? (
               <DocumentPreviewViewer
-                fileName={
-                  previewAttachment.fileName ||
-                  previewAttachment.name ||
-                  (previewAttachment.fileExtension
-                    ? `file.${previewAttachment.fileExtension}`
-                    : undefined)
-                }
+                enablePiiNer
+                enablePiiRedaction
+                fileName={viewerFileName}
                 fileUrl={previewUrl || null}
+                isImage={viewerKind === 'image' || viewerKind === 'tiff'}
                 isLoading={previewLoading}
+                isPdf={viewerKind === 'pdf'}
+                redactValues={piiRedactValues}
               />
             ) : (
               <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -652,7 +739,9 @@ const DocumentFormSplitLayout = ({
                 attachments={attachments}
                 formModel={formModel}
                 hideBack={hasAgentResponseTabs}
+                hiddenFieldIds={hiddenFieldIds}
                 rawWorkflowData={rawWorkflowData}
+                readOnlyFieldIds={readOnlyFieldIds}
                 repositoryId={repositoryId}
                 requestData={selectedItem}
                 viewOnly={viewOnly}
@@ -1270,7 +1359,9 @@ const GenericRequestOverview = ({
             attachmentsCount={attachments.length}
             commentsCount={comments.length}
             formModel={formModel}
+            hiddenFieldIds={hiddenFieldIds}
             rawWorkflowData={rawWorkflowData}
+            readOnlyFieldIds={readOnlyFieldIds}
             repositoryId={repositoryId}
             selectedItem={selectedItem || storeSelectedItem}
             viewOnly={viewOnly}
@@ -1401,7 +1492,9 @@ const GenericRequestOverview = ({
                     agentBlock={selectedAgentBlock}
                     attachments={attachments}
                     formModel={formModel}
+                    hiddenFieldIds={hiddenFieldIds}
                     rawWorkflowData={rawWorkflowData}
+                    readOnlyFieldIds={readOnlyFieldIds}
                     repositoryId={repositoryId}
                     requestData={selectedItem}
                     viewOnly={viewOnly}

@@ -31,12 +31,15 @@ interface AgentDetailPlaceholderProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formModel?: Record<string, any>
   hideBack?: boolean
+  hiddenFieldIds?: Set<string>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawWorkflowData?: any
+  readOnlyFieldIds?: Set<string>
   repositoryId?: string | number
   viewOnly?: boolean
   onBack: () => void
   onFieldChange?: (fieldId: string, value: any) => void
+  onQuoteTotalChange?: (total: number | null) => void
 }
 
 const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
@@ -49,12 +52,15 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   attachments = [],
   formModel,
   hideBack = false,
+  hiddenFieldIds,
   rawWorkflowData,
+  readOnlyFieldIds,
   repositoryId,
   requestData,
   viewOnly,
   onBack,
   onFieldChange,
+  onQuoteTotalChange,
 }) => {
   const { t } = useLingui()
   const jobStatuses = requestStore((state) => state.jobStatuses)
@@ -295,7 +301,9 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
           <QualifyAgentResultView
             agentBlock={agentBlock}
             formModel={formModel}
+            hiddenFieldIds={hiddenFieldIds}
             readOnly={Boolean(viewOnly) || !onFieldChange}
+            readOnlyFieldIds={readOnlyFieldIds}
             result={requestData.qualifyAgentResponse.qualifier_result}
             workflow={rawWorkflowData}
             onFieldChange={onFieldChange}
@@ -304,11 +312,14 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
           <QuoteAgentResultView
             agentBlock={agentBlock}
             formModel={formModel}
+            hiddenFieldIds={hiddenFieldIds}
             readOnly={Boolean(viewOnly) || !onFieldChange}
+            readOnlyFieldIds={readOnlyFieldIds}
             requestData={requestData}
             result={requestData.quoteAgentResponse.quote_result}
             workflow={rawWorkflowData}
             onFieldChange={onFieldChange}
+            onQuoteTotalChange={onQuoteTotalChange}
           />
         ) : (
           <div className='flex flex-col items-center justify-center gap-3 py-10 text-center'>

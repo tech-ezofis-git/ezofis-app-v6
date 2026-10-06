@@ -165,6 +165,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row,
     workflow,
     isDocumentApproval,
+    rawWorkflowData,
   )
 
   const requestNo =
@@ -248,7 +249,35 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     !jobStatusForActive?.isCompleted &&
     (Boolean(row?.isProcessing) ||
       Boolean(jobMessage) ||
-      Boolean(jobStatusForActive))
+      Boolean(jobStatusForActive) ||
+      Boolean(row?.apAgentJobId))
+
+  // Loading card: job id only — never stage / agent / request title.
+  if (isJobProcessing) {
+    return (
+      <div
+        className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
+        onClick={() => onRowClick(row, 'Overview')}
+      >
+        <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-2'>
+          <Icon
+            className='size-4 animate-spin text-orange-9'
+            name='tabler:loader-2'
+          />
+        </div>
+        <span className='shrink-0 text-13 font-bold text-gray-13'>
+          {`JOB-${activeJobId}`}
+        </span>
+        {jobMessage ? (
+          <div className='ml-auto flex min-w-0 max-w-[320px] shrink items-center justify-end pr-1'>
+            <span className='animate-pulse truncate text-right text-12 font-semibold text-[var(--orange-9)]'>
+              {jobMessage}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div
