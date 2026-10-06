@@ -116,6 +116,17 @@ const isLongTextValue = (field: any | null, value: unknown) => {
   return typeof value === 'string' && value.length > 160
 }
 
+/** Same loose match as findResultKeyForFormField, so alias keys collapse to one table. */
+const qualifierKeysMatch = (left: string, right: string) => {
+  const a = normalizeQualifierKey(left)
+  const b = normalizeQualifierKey(right)
+  if (!a || !b) return false
+  if (a === b || singularizeKey(left) === singularizeKey(right)) return true
+  if (a.length >= 6 && b.includes(a)) return true
+  if (b.length >= 6 && a.includes(b)) return true
+  return false
+}
+
 export type QualifierScalarEntry = {
   field: any | null
   isLongText: boolean
@@ -130,6 +141,57 @@ export type QualifierTableEntry = {
   label: string
   resultKey: string
   rows: Record<string, any>[]
+}
+
+const qualifierCellText = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+
+/** Drop repeated qualifier table rows that display the same cell values. */
+export const dedupeQualifierRows = (
+  rows: Record<string, any>[],
+  columns?: Array<{ id: string; name?: string }>,
+) => {
+  const seen = new Set<string>()
+  const next: Record<string, any>[] = []
+  const cellValue = (
+    col: { id: string; name?: string },
+    source: Record<string, any>,
+  ) => {
+    const byId = source[col.id]
+    if (byId != null && String(byId).trim() !== '') return byId
+    const byName = col.name ? source[col.name] : undefined
+    if (byName != null && String(byName).trim() !== '') return byName
+    return byId ?? ''
+  }
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue
+    const entries = columns?.length
+      ? columns.map(
+          (col) => [String(col.name || col.id), cellValue(col, row)] as const,
+        )
+      : Object.entries(row).filter(([key]) => !key.startsWith('_'))
+    const parts = entries.map(
+      ([key, value]) =>
+        `${normalizeQualifierKey(String(key))}:${qualifierCellText(value)}`,
+    )
+    const signature = columns?.length
+      ? parts.join('\u0001')
+      : parts.sort().join('\u0001')
+    const hasValue = entries.some(
+      ([, value]) => qualifierCellText(value).length > 0,
+    )
+    if (!hasValue) {
+      next.push(row)
+      continue
+    }
+    if (seen.has(signature)) continue
+    seen.add(signature)
+    next.push(row)
+  }
+  return next
 }
 
 export type QualifierViewModel = {
@@ -160,6 +222,11 @@ export const buildQualifierViewModel = (
   const usedKeys = new Set<string>(reservedKeys)
   const scalars: QualifierScalarEntry[] = []
   const tables: QualifierTableEntry[] = []
+  // One result array must not be bound to every form table that fuzzy-matches
+  // it (primary + secondary "Excluded Items", or "Excluded Items" / "excluded_items").
+  const claimedTableKeys: string[] = []
+  const tableKeyClaimed = (key: string) =>
+    claimedTableKeys.some((claimed) => qualifierKeysMatch(claimed, key))
 
   const pushScalar = (resultKey: string, value: unknown, field: any | null) => {
     if (value === null || value === undefined) return
@@ -181,30 +248,48 @@ export const buildQualifierViewModel = (
     pushScalar(resultKey, result[resultKey], field)
   }
 
-  for (const field of tableFields) {
+  const orderedTableFields = [...tableFields].sort((a, b) => {
+    const rank = (field: any) => {
+      const resultKey = findResultKeyForFormField(result, field)
+      if (!resultKey) return 2
+      const heading = getFieldHeading(field)
+      const exact =
+        normalizeQualifierKey(heading) === normalizeQualifierKey(resultKey) ||
+        singularizeKey(heading) === singularizeKey(resultKey)
+      return exact ? 0 : 1
+    }
+    return rank(a) - rank(b)
+  })
+
+  for (const field of orderedTableFields) {
     const resultKey = findResultKeyForFormField(result, field)
+    if (resultKey && tableKeyClaimed(resultKey)) continue
     const rows =
       resultKey && isObjectRowArray(result[resultKey]) ? result[resultKey] : []
-    if (resultKey) usedKeys.add(resultKey)
+    if (resultKey) {
+      usedKeys.add(resultKey)
+      claimedTableKeys.push(resultKey)
+    }
     if (rows.length > 0 || resultKey) {
       tables.push({
         field,
         label: getFieldHeading(field),
         resultKey: resultKey || getFieldId(field),
-        rows,
+        rows: dedupeQualifierRows(rows),
       })
     }
   }
 
   for (const [key, value] of Object.entries(result)) {
     if (usedKeys.has(key)) continue
+    if (isObjectRowArray(value) && tableKeyClaimed(key)) continue
 
     if (isObjectRowArray(value)) {
       tables.push({
         field: buildSyntheticTableField(key, value),
         label: key,
         resultKey: key,
-        rows: value,
+        rows: dedupeQualifierRows(value),
       })
       usedKeys.add(key)
       continue
