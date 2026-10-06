@@ -13,14 +13,28 @@ const host =
   (import.meta.env?.VITE_POSTHOG_HOST as string) ||
   'https://us.i.posthog.com'
 
-if (typeof window !== 'undefined' && key && !key.includes('disabled_placeholder')) {
-  if (!posthog.__loaded) {
-    posthog.init(key, {
-      api_host: host,
-      defaults: '2026-05-30',
-      enable_heatmaps: true,
-      capture_pageview: false, // We manually capture pageviews for SPA
-    })
+if (typeof window !== 'undefined') {
+  console.log('[PostHog Debug] Resolved Key:', key ? `${key.substring(0, 8)}...` : 'EMPTY/UNDEFINED')
+  console.log('[PostHog Debug] Resolved Host:', host)
+
+  if (key && !key.includes('disabled_placeholder')) {
+    if (!posthog.__loaded) {
+      console.log('[PostHog Debug] Calling posthog.init()...')
+      posthog.init(key, {
+        api_host: host,
+        defaults: '2026-05-30',
+        enable_heatmaps: true,
+        capture_pageview: true, // Automatically capture SPA pageviews
+        debug: true, // Print verbose PostHog SDK logs in browser console
+        loaded: (ph) => {
+          console.log('[PostHog Debug] SDK Successfully Loaded & Ready', ph)
+        },
+      })
+    } else {
+      console.log('[PostHog Debug] PostHog instance already loaded.')
+    }
+  } else {
+    console.warn('[PostHog Debug] Initialization skipped: Key is missing or placeholder.')
   }
 }
 
@@ -29,6 +43,7 @@ if (typeof window !== 'undefined' && key && !key.includes('disabled_placeholder'
  */
 export function captureException(error: unknown, additionalProperties?: Record<string, any>) {
   if (typeof window !== 'undefined' && posthog) {
+    console.log('[PostHog Debug] Capturing Exception:', error, additionalProperties)
     posthog.captureException(error, additionalProperties)
   }
 }
