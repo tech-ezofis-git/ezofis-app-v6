@@ -1376,6 +1376,8 @@ export default function AiFolderBuilder({
     promptDescription: string
   }>({ description: '', folderName: '', promptDescription: '' })
   const [editingFromReview, setEditingFromReview] = useState(false)
+  const [maxReachedStep, setMaxReachedStep] = useState<BuilderStepId>(1)
+  const [hasReachedReview, setHasReachedReview] = useState(false)
   const [aiDescriptionGenerated, setAiDescriptionGenerated] = useState(false)
   const [aiFieldsGenerated, setAiFieldsGenerated] = useState(false)
   const [isDraftReady, setIsDraftReady] = useState(false)
@@ -1472,9 +1474,12 @@ export default function AiFolderBuilder({
             Boolean(snap.integrations)
 
           if (hasAll) {
+            setHasReachedReview(true)
+            setMaxReachedStep(6)
             setPhase('ready')
             setActiveStep(6)
           } else {
+            setMaxReachedStep(restoredStep)
             setActiveStep(restoredStep)
             if (restoredStep === 1) setPhase('details_ready')
             else if (restoredStep === 2) {
@@ -1544,14 +1549,22 @@ export default function AiFolderBuilder({
 
   const completedSteps = useMemo(() => {
     const done = new Set<BuilderStepId>()
-    if (draft.folderName.trim() && draft.description.trim() && activeStep > 1) {
+    if (draft.folderName.trim() && (activeStep > 1 || maxReachedStep > 1)) {
       done.add(1)
     }
-    if (editableFields.length > 0 && activeStep > 2) done.add(2)
-    if (draft.storage.trim() && activeStep > 3) done.add(3)
-    if (draft.versioning.trim() && activeStep > 4) done.add(4)
-    if (draft.integrations.trim() && activeStep > 5) done.add(5)
-    if (phase === 'ready') {
+    if (editableFields.length > 0 && (activeStep > 2 || maxReachedStep > 2)) {
+      done.add(2)
+    }
+    if (draft.storage.trim() && (activeStep > 3 || maxReachedStep > 3)) {
+      done.add(3)
+    }
+    if (draft.versioning.trim() && (activeStep > 4 || maxReachedStep > 4)) {
+      done.add(4)
+    }
+    if (draft.integrations.trim() && (activeStep > 5 || maxReachedStep > 5)) {
+      done.add(5)
+    }
+    if (hasReachedReview || phase === 'ready') {
       done.add(1)
       done.add(2)
       done.add(3)
@@ -1559,12 +1572,12 @@ export default function AiFolderBuilder({
       done.add(5)
     }
     return done
-  }, [activeStep, draft, editableFields.length, phase])
+  }, [activeStep, maxReachedStep, draft, editableFields.length, hasReachedReview, phase])
 
   const unlockedStep =
-    phase === 'ready'
+    hasReachedReview || phase === 'ready'
       ? 6
-      : Math.max(activeStep, ...Array.from(completedSteps), 1)
+      : Math.max(activeStep, maxReachedStep, 1)
 
   const canApply =
     Boolean(draft.folderName.trim()) &&
@@ -1584,7 +1597,10 @@ export default function AiFolderBuilder({
     const stepId = nextStep ?? phaseToStep(nextPhase || phase)
     setTypingId(id)
     if (nextPhase) setPhase(nextPhase)
-    if (nextStep) setActiveStep(nextStep)
+    if (nextStep) {
+      setActiveStep(nextStep)
+      setMaxReachedStep((prev) => Math.max(prev, nextStep) as BuilderStepId)
+    }
     setMessages((prev) => [
       ...prev,
       {
@@ -1811,16 +1827,8 @@ export default function AiFolderBuilder({
       return
     }
 
-    if (editingFromReview) {
-      goToReview()
-      return
-    }
-    pushAssistant(
-      t`How should documents be organized? Choose Recommend fields or another option.`,
-      fieldChips,
-      'fields',
-      2,
-    )
+    setMaxReachedStep((prev) => Math.max(prev, 2) as BuilderStepId)
+    handleSelectStep(2)
   }
 
   const handleSelectStep = (stepId: BuilderStepId) => {
@@ -1828,11 +1836,13 @@ export default function AiFolderBuilder({
       stepId <= unlockedStep ||
       completedSteps.has(stepId) ||
       phase === 'ready' ||
-      editingFromReview
+      hasReachedReview
     if (!isAllowed) return
 
-    if (phase === 'ready' || completedSteps.has(stepId) || stepId < unlockedStep) {
+    if (hasReachedReview || phase === 'ready') {
       setEditingFromReview(true)
+    } else {
+      setEditingFromReview(false)
     }
 
     setActiveStep(stepId)
@@ -1869,8 +1879,9 @@ export default function AiFolderBuilder({
 
   const continueFromFields = () => {
     if (!editableFields.length) return
-    if (editingFromReview) {
-      goToReview()
+    setMaxReachedStep((prev) => Math.max(prev, 3) as BuilderStepId)
+    if (hasReachedReview || draft.storage) {
+      handleSelectStep(3)
       return
     }
     pushAssistant(
@@ -1879,6 +1890,40 @@ export default function AiFolderBuilder({
       'storage',
       3,
     )
+  }
+
+  const continueFromStorage = () => {
+    if (!draft.storage.trim()) return
+    setMaxReachedStep((prev) => Math.max(prev, 4) as BuilderStepId)
+    if (hasReachedReview || draft.versioning.trim()) {
+      handleSelectStep(4)
+      return
+    }
+    pushAssistant(
+      t`Which versioning strategy should apply when the same file is uploaded again?`,
+      versioningChips,
+      'versioning',
+      4,
+    )
+  }
+
+  const continueFromVersioning = () => {
+    if (!draft.versioning.trim()) return
+    setMaxReachedStep((prev) => Math.max(prev, 5) as BuilderStepId)
+    if (hasReachedReview || draft.integrations.trim()) {
+      handleSelectStep(5)
+      return
+    }
+    pushAssistant(
+      t`Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?`,
+      integrationChips,
+      'integrations',
+      5,
+    )
+  }
+
+  const continueFromIntegrations = () => {
+    goToReview()
   }
 
   const scrollToReview = useCallback(() => {
@@ -1896,6 +1941,8 @@ export default function AiFolderBuilder({
   }, [])
 
   const goToReview = () => {
+    setHasReachedReview(true)
+    setMaxReachedStep(6)
     setEditingFromReview(false)
     setTypingId(null)
     setPhase('ready')
@@ -1922,34 +1969,14 @@ export default function AiFolderBuilder({
       if (editableFields.length) {
         setPhase('fields_ready')
       } else {
-        pushAssistant(
-          t`How should documents be organized? Choose Recommend fields or another option.`,
-          fieldChips,
-          'fields',
-          2,
-        )
+        setPhase('fields')
       }
     } else if (stepId === 3) {
-      pushAssistant(
-        t`Update the storage provider for this folder.`,
-        storageChips,
-        'storage',
-        3,
-      )
+      setPhase('storage')
     } else if (stepId === 4) {
-      pushAssistant(
-        t`Update the versioning strategy for this folder.`,
-        versioningChips,
-        'versioning',
-        4,
-      )
+      setPhase('versioning')
     } else {
-      pushAssistant(
-        t`Update the integration preference for this folder.`,
-        integrationChips,
-        'integrations',
-        5,
-      )
+      setPhase('integrations')
     }
 
     window.requestAnimationFrame(() => {
@@ -2016,8 +2043,8 @@ export default function AiFolderBuilder({
       setDraft((prev) => ({ ...prev, storage }))
       setInput('')
       appendUser(storage)
-      if (editingFromReview) {
-        goToReview()
+      setMaxReachedStep((prev) => Math.max(prev, 4) as BuilderStepId)
+      if (hasReachedReview) {
         return
       }
       pushAssistant(
@@ -2057,8 +2084,8 @@ export default function AiFolderBuilder({
       setDraft((prev) => ({ ...prev, versioning }))
       setInput('')
       appendUser(versioning)
-      if (editingFromReview) {
-        goToReview()
+      setMaxReachedStep((prev) => Math.max(prev, 5) as BuilderStepId)
+      if (hasReachedReview) {
         return
       }
       pushAssistant(
@@ -2303,7 +2330,7 @@ export default function AiFolderBuilder({
                       className='mt-1.5 inline-flex shrink-0 text-primary-9'
                       title={t`Generated by AI`}
                     >
-                      <Icon className='size-3.5' name='tabler:sparkles' />
+                      <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
                     </span>
                   ) : null}
                 </div>
@@ -2336,18 +2363,24 @@ export default function AiFolderBuilder({
 
         {phase === 'details_ready' && !typingId && !isSending ? (
           <div className={cn('flex justify-end gap-2', iconGutter)}>
+            {hasReachedReview ? (
+              <Button
+                color='primary'
+                label={t`Back to review`}
+                variant='subtle'
+                onClick={goToReview}
+              />
+            ) : null}
             <Button
               color='primary'
-              icon={editingFromReview ? 'lucide:check' : 'lucide:arrow-right'}
+              icon='lucide:arrow-right'
               label={
                 lastGeneratedFolderDetails.current.folderName !==
                   draft.folderName.trim() ||
                 lastGeneratedFolderDetails.current.promptDescription !==
                   draft.promptDescription.trim()
                   ? t`Save & Regenerate Fields`
-                  : editingFromReview
-                    ? t`Done`
-                    : t`Continue`
+                  : t`Continue`
               }
               onClick={() => void continueFromDetails()}
             />
@@ -2392,11 +2425,19 @@ export default function AiFolderBuilder({
                     )
                   }}
                 />
+                {hasReachedReview ? (
+                  <Button
+                    color='primary'
+                    label={t`Back to review`}
+                    variant='subtle'
+                    onClick={goToReview}
+                  />
+                ) : null}
                 <Button
                   color='primary'
                   disabled={!editableFields.length}
-                  icon={editingFromReview ? 'lucide:check' : 'lucide:arrow-right'}
-                  label={editingFromReview ? t`Done` : t`Continue`}
+                  icon='lucide:arrow-right'
+                  label={t`Continue`}
                   onClick={continueFromFields}
                 />
               </div>
@@ -2418,6 +2459,23 @@ export default function AiFolderBuilder({
               variant='subtle'
               onClick={() => handleSelectStep(2)}
             />
+            <div className='flex items-center gap-2'>
+              {hasReachedReview ? (
+                <Button
+                  color='primary'
+                  label={t`Back to review`}
+                  variant='subtle'
+                  onClick={goToReview}
+                />
+              ) : null}
+              <Button
+                color='primary'
+                disabled={!draft.storage.trim()}
+                icon='lucide:arrow-right'
+                label={t`Continue`}
+                onClick={continueFromStorage}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -2435,6 +2493,23 @@ export default function AiFolderBuilder({
               variant='subtle'
               onClick={() => handleSelectStep(3)}
             />
+            <div className='flex items-center gap-2'>
+              {hasReachedReview ? (
+                <Button
+                  color='primary'
+                  label={t`Back to review`}
+                  variant='subtle'
+                  onClick={goToReview}
+                />
+              ) : null}
+              <Button
+                color='primary'
+                disabled={!draft.versioning.trim()}
+                icon='lucide:arrow-right'
+                label={t`Continue`}
+                onClick={continueFromVersioning}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -2452,27 +2527,27 @@ export default function AiFolderBuilder({
               variant='subtle'
               onClick={() => handleSelectStep(4)}
             />
+            <div className='flex items-center gap-2'>
+              {hasReachedReview ? (
+                <Button
+                  color='primary'
+                  label={t`Back to review`}
+                  variant='subtle'
+                  onClick={goToReview}
+                />
+              ) : null}
+              <Button
+                color='primary'
+                icon='lucide:arrow-right'
+                label={hasReachedReview ? t`Done` : t`Continue to Review`}
+                onClick={continueFromIntegrations}
+              />
+            </div>
           </div>
         ) : null}
 
         {(phase === 'name' || phase === 'fields') && !typingId && !isSending ? (
           <div className={iconGutter}>{renderComposer()}</div>
-        ) : null}
-
-        {editingFromReview &&
-        (phase === 'storage' ||
-          phase === 'versioning' ||
-          phase === 'integrations' ||
-          phase === 'fields') &&
-        !isSending ? (
-          <div className={cn('flex justify-end', iconGutter)}>
-            <Button
-              color='primary'
-              label={t`Back to review`}
-              variant='subtle'
-              onClick={goToReview}
-            />
-          </div>
         ) : null}
       </div>
     )
@@ -2697,7 +2772,7 @@ export default function AiFolderBuilder({
               className='mt-0.5 inline-flex shrink-0 text-primary-9'
               title={t`Generated by AI`}
             >
-              <Icon className='size-3.5' name='tabler:sparkles' />
+              <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
             </span>
           ) : null}
         </div>
@@ -2781,7 +2856,8 @@ export default function AiFolderBuilder({
           ) : null}
 
           {builderSteps.map((item, index) => {
-            const showAllFlow = phase === 'ready' || editingFromReview
+            const showAllFlow =
+              hasReachedReview || phase === 'ready' || maxReachedStep === 6
             const visible = showAllFlow ? true : item.id <= unlockedStep
             if (!visible) return null
 
