@@ -710,9 +710,10 @@ export function DocumentDetailsView({
   )
   const enablePiiRedaction =
     folderPiiEnabled && !(canToggleUnredacted && showUnredactedPreview)
-  // Scan full file (regex + NER + OCR) whenever folder PII is on — not only
-  // when no fields are selected. Selected fields still drive sidebar *****.
-  const usePiiNer = enablePiiRedaction
+  const piiLevel = folderPiiSettings.level
+  // low = selected values only; medium = + regex; high = + NER
+  const usePiiNer = enablePiiRedaction && piiLevel === 'high'
+  const piiKnownOnly = enablePiiRedaction && piiLevel === 'low'
 
   useEffect(() => {
     setSavedSignatures([])
@@ -1569,18 +1570,30 @@ export function DocumentDetailsView({
   }, [activeHighlightTerm])
 
   const piiFieldNameSet = useMemo(() => {
-    const selectedIds = new Set(
-      folderPiiSettings.fieldIds.map((id) => String(id)),
-    )
-    if (!folderPiiSettings.enabled || selectedIds.size === 0) {
-      return new Set<string>()
+    if (!folderPiiSettings.enabled) return new Set<string>()
+    const selected = folderPiiSettings.fieldIds
+      .map((raw) => String(raw || '').trim())
+      .filter(Boolean)
+    if (selected.length === 0) return new Set<string>()
+
+    const out = new Set<string>()
+    for (const entry of selected) {
+      // Saved values are field labels (not ids).
+      out.add(normalizeFieldKey(entry))
+      // Legacy: entry may still be a field id.
+      const byId = piiRepositoryFields.find(
+        (field) => String(field.id) === entry,
+      )
+      if (byId?.name) out.add(normalizeFieldKey(byId.name))
+      for (const field of piiRepositoryFields) {
+        const nameKey = normalizeFieldKey(field.name || '')
+        if (!nameKey) continue
+        if (fieldKeysMatch(normalizeFieldKey(entry), nameKey)) {
+          out.add(nameKey)
+        }
+      }
     }
-    return new Set(
-      piiRepositoryFields
-        .filter((field) => selectedIds.has(String(field.id)))
-        .map((field) => normalizeFieldKey(field.name || ''))
-        .filter(Boolean),
-    )
+    return new Set([...out].filter(Boolean))
   }, [folderPiiSettings, piiRepositoryFields])
 
   const isSelectedPiiLabel = useCallback(
@@ -1593,7 +1606,9 @@ export function DocumentDetailsView({
   )
 
   const piiBoostOrg =
-    enablePiiRedaction && selectedFieldsIncludeOrg(piiFieldNameSet)
+    enablePiiRedaction &&
+    (piiLevel === 'high' ||
+      (piiLevel === 'medium' && selectedFieldsIncludeOrg(piiFieldNameSet)))
 
   const piiRedactValues = useMemo(() => {
     // Folder fields not loaded yet — still redact from visible metadata / probes.
@@ -1674,7 +1689,7 @@ export function DocumentDetailsView({
           enableNer: usePiiNer,
           fileName: data?.fileName || 'document',
           fileUrl: previewUrl,
-          knownOnly: false,
+          knownOnly: piiKnownOnly,
           knownValues: piiRedactValues,
           mode: isPdfPreview ? 'pdf' : 'image',
         })
@@ -1761,7 +1776,7 @@ export function DocumentDetailsView({
         enableNer: usePiiNer,
         fileName: data?.fileName || 'document',
         fileUrl: previewUrl,
-        knownOnly: false,
+        knownOnly: piiKnownOnly,
         knownValues: piiRedactValues,
         mode: isPdfPreview ? 'pdf' : 'image',
       })
@@ -2616,10 +2631,10 @@ export function DocumentDetailsView({
                       isLoading={isPreviewLoading}
                       isPdf={isPdfPreview}
                       isSigningMode={isSigning}
-                      key={`pii-${enablePiiRedaction ? 'on' : 'off'}`}
+                      key={`pii-${enablePiiRedaction ? 'on' : 'off'}-${piiLevel}`}
                       permission={isEditingDoc ? 'edit' : 'readonly'}
                       piiBoostOrg={piiBoostOrg}
-                      piiKnownOnly={false}
+                      piiKnownOnly={piiKnownOnly}
                       probeTerms={fieldProbeTerms}
                       redactValues={piiRedactValues}
                       signerEmail={currentUserEmail}

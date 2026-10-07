@@ -833,11 +833,13 @@ export default function DmsFolderConfiguration({
       storedState?.piiRedactionEnabled != null ||
       storedState?.piiRedactionUsers != null ||
       storedState?.piiRedactionUserIds != null ||
-      storedState?.piiRedactionFieldIds != null
+      storedState?.piiRedactionFieldIds != null ||
+      storedState?.piiRedactionLevel != null
     ) {
       return resolveFolderPiiSettings(null, {
         piiRedactionEnabled: storedState.piiRedactionEnabled,
         piiRedactionFieldIds: storedState.piiRedactionFieldIds,
+        piiRedactionLevel: storedState.piiRedactionLevel,
         piiRedactionUserIds: storedState.piiRedactionUserIds,
         piiRedactionUsers: storedState.piiRedactionUsers,
       })
@@ -937,12 +939,14 @@ export default function DmsFolderConfiguration({
         hydrated.piiRedactionEnabled != null ||
         hydrated.piiRedactionUserIds != null ||
         hydrated.piiRedactionUsers != null ||
-        hydrated.piiRedactionFieldIds != null
+        hydrated.piiRedactionFieldIds != null ||
+        hydrated.piiRedactionLevel != null
       ) {
         setPiiSettings(
           resolveFolderPiiSettings(null, {
             piiRedactionEnabled: hydrated.piiRedactionEnabled,
             piiRedactionFieldIds: hydrated.piiRedactionFieldIds,
+            piiRedactionLevel: hydrated.piiRedactionLevel,
             piiRedactionUserIds: hydrated.piiRedactionUserIds,
             piiRedactionUsers: hydrated.piiRedactionUsers,
           }),
@@ -990,6 +994,7 @@ export default function DmsFolderConfiguration({
           versioning,
           piiRedactionEnabled: piiSettings.enabled,
           piiRedactionFieldIds: piiSettings.fieldIds,
+          piiRedactionLevel: piiSettings.level,
           piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
           piiRedactionUsers: piiSettings.users,
         }),
@@ -1632,6 +1637,7 @@ export default function DmsFolderConfiguration({
     folderName,
     piiRedactionEnabled: piiSettings.enabled,
     piiRedactionFieldIds: piiSettings.fieldIds,
+    piiRedactionLevel: piiSettings.level,
     piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
     piiRedactionUsers: piiSettings.users,
     source: 'manual',
@@ -1702,6 +1708,7 @@ export default function DmsFolderConfiguration({
       folderName,
       piiRedactionEnabled: piiSettings.enabled,
       piiRedactionFieldIds: piiSettings.fieldIds,
+      piiRedactionLevel: piiSettings.level,
       piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
       piiRedactionUsers: piiSettings.users,
       source: 'manual',

@@ -199,6 +199,7 @@ export type FolderWizardSnapshot = {
   integrations?: string
   piiRedactionEnabled?: boolean
   piiRedactionFieldIds?: string[]
+  piiRedactionLevel?: 'high' | 'low' | 'medium'
   piiRedactionUserIds?: string[]
   piiRedactionUsers?: Array<{ password?: string; userId?: string }>
   source?: 'ai' | 'manual'
@@ -262,6 +263,12 @@ export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
     fieldIds: Array.isArray(snapshot.piiRedactionFieldIds)
       ? snapshot.piiRedactionFieldIds.map(String)
       : [],
+    level: (() => {
+      const raw = String(snapshot.piiRedactionLevel || 'medium')
+        .trim()
+        .toLowerCase()
+      return raw === 'low' || raw === 'high' ? raw : 'medium'
+    })(),
     userIds: Array.isArray(snapshot.piiRedactionUserIds)
       ? snapshot.piiRedactionUserIds.map(String)
       : Array.isArray(snapshot.piiRedactionUsers)
@@ -351,6 +358,17 @@ export const hydrateFolderFromDraft = (
       : Array.isArray(piiRedaction.fieldIds)
         ? piiRedaction.fieldIds.map(String)
         : [],
+    piiRedactionLevel: (() => {
+      const raw = String(
+        form.piiRedactionLevel ?? piiRedaction.level ?? 'medium',
+      )
+        .trim()
+        .toLowerCase()
+      return (raw === 'low' || raw === 'high' ? raw : 'medium') as
+        | 'high'
+        | 'low'
+        | 'medium'
+    })(),
     piiRedactionUserIds: Array.isArray(form.piiRedactionUserIds)
       ? form.piiRedactionUserIds.map(String)
       : Array.isArray(piiRedaction.userIds)

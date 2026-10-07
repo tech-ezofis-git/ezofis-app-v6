@@ -17,6 +17,33 @@ type RepoField = { id?: string | number; name?: string }
 
 const toDisplay = (value: unknown) => String(value ?? '').trim()
 
+/** Resolve selected labels (or legacy ids) into normalized field-name keys. */
+const buildPiiFieldNameSet = (
+  settings: FolderPiiSettings,
+  repoFields: RepoField[],
+) => {
+  if (!settings.enabled) return new Set<string>()
+  const selected = settings.fieldIds
+    .map((raw) => String(raw || '').trim())
+    .filter(Boolean)
+  if (selected.length === 0) return new Set<string>()
+
+  const out = new Set<string>()
+  for (const entry of selected) {
+    out.add(normalizeFieldKey(entry))
+    const byId = repoFields.find((field) => String(field.id) === entry)
+    if (byId?.name) out.add(normalizeFieldKey(String(byId.name)))
+    for (const field of repoFields) {
+      const nameKey = normalizeFieldKey(String(field.name || ''))
+      if (!nameKey) continue
+      if (fieldKeysMatch(normalizeFieldKey(entry), nameKey)) {
+        out.add(nameKey)
+      }
+    }
+  }
+  return new Set([...out].filter(Boolean))
+}
+
 /**
  * Loads folder PII settings for a repository and builds viewer redact values
  * from a form/metadata model. Used by folder details and request viewers.
@@ -66,36 +93,27 @@ export const useFolderPiiRedaction = (
   }, [repositoryId])
 
   const enablePiiRedaction = folderPiiSettings.enabled
-  // When folder PII is on: always scan the file (regex + NER + OCR for
-  // image/JPG PDFs) in addition to selected field values. Sidebar still
-  // masks only configured field labels via shouldMaskFieldLabel.
-  const enablePiiNer = enablePiiRedaction
-  const piiKnownOnly = false
+  const level = folderPiiSettings.level
+  // low = selected field values only; medium = + regex; high = + NER
+  const piiKnownOnly = enablePiiRedaction && level === 'low'
+  const enablePiiNer = enablePiiRedaction && level === 'high'
 
-  const piiFieldNameSet = useMemo(() => {
-    const selectedIds = new Set(
-      folderPiiSettings.fieldIds.map((id) => String(id)),
-    )
-    if (!enablePiiRedaction || selectedIds.size === 0) {
-      return new Set<string>()
-    }
-    return new Set(
-      piiRepositoryFields
-        .filter((field) => selectedIds.has(String(field.id)))
-        .map((field) => normalizeFieldKey(String(field.name || '')))
-        .filter(Boolean),
-    )
-  }, [enablePiiRedaction, folderPiiSettings.fieldIds, piiRepositoryFields])
+  const piiFieldNameSet = useMemo(
+    () => buildPiiFieldNameSet(folderPiiSettings, piiRepositoryFields),
+    [folderPiiSettings, piiRepositoryFields],
+  )
 
   const piiBoostOrg =
-    enablePiiRedaction && selectedFieldsIncludeOrg(piiFieldNameSet)
+    enablePiiRedaction &&
+    (level === 'high' ||
+      (level === 'medium' && selectedFieldsIncludeOrg(piiFieldNameSet)))
 
   const piiRedactValues = useMemo(() => {
     if (!enablePiiRedaction) return []
-    const selectedIds = new Set(
-      folderPiiSettings.fieldIds.map((id) => String(id)),
+    const selectedLabels = new Set(
+      folderPiiSettings.fieldIds.map((label) => String(label).trim()).filter(Boolean),
     )
-    if (selectedIds.size === 0) {
+    if (selectedLabels.size === 0 && piiFieldNameSet.size === 0) {
       return collectRedactValues(valueSource)
     }
 
@@ -109,14 +127,13 @@ export const useFolderPiiRedaction = (
       piiFieldNameSet,
       toDisplay,
     )
-    // Also pick values keyed by selected field id directly.
     const seen = new Set(mentioned.map((value) => value.toLowerCase()))
     const merged = [...mentioned]
     for (const [key, value] of Object.entries(valueSource || {})) {
       const raw = toDisplay(value)
       if (!raw || raw === '-' || seen.has(raw.toLowerCase())) continue
       if (
-        selectedIds.has(String(key)) ||
+        selectedLabels.has(String(key).trim()) ||
         [...piiFieldNameSet].some((fieldKey) =>
           fieldKeysMatch(fieldKey, normalizeFieldKey(key)),
         )
@@ -125,15 +142,19 @@ export const useFolderPiiRedaction = (
         merged.push(raw)
       }
     }
-    for (const value of collectRedactValues(valueSource)) {
-      if (seen.has(value.toLowerCase())) continue
-      seen.add(value.toLowerCase())
-      merged.push(value)
+    // Medium/high still merge heuristic probes; low stays on mentioned values.
+    if (level !== 'low') {
+      for (const value of collectRedactValues(valueSource)) {
+        if (seen.has(value.toLowerCase())) continue
+        seen.add(value.toLowerCase())
+        merged.push(value)
+      }
     }
     return merged.length > 0 ? merged : collectRedactValues(valueSource)
   }, [
     enablePiiRedaction,
     folderPiiSettings.fieldIds,
+    level,
     piiFieldNameSet,
     valueSource,
   ])
