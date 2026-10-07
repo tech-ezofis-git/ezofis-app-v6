@@ -18,6 +18,7 @@ import {
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  updateStageFileFields,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
 import BaseButton from '@/components/base/button/Button'
@@ -2127,8 +2128,8 @@ export default function Upload({
     status: 'Indexing',
   })
 
-  // Auto-save to /uploadAndIndex/index/{id} is disabled for now per user instruction
-  const ENABLE_INDEXING_AUTOSAVE = false
+  // Auto-save to /uploadAndIndex/index/{id}/fields 3 seconds after user stops typing
+  const ENABLE_INDEXING_AUTOSAVE = true
 
   const [autoSaveStatus, setAutoSaveStatus] = useState<
     'idle' | 'saving' | 'saved' | 'error'
@@ -2166,10 +2167,10 @@ export default function Upload({
       try {
         setAutoSaveStatus('saving')
         const payload = buildIndexPayload(entry)
-        const { error } = await indexStageFile(stageId, payload)
+        const { error } = await updateStageFileFields(stageId, payload)
 
         if (error) {
-          console.warn('[AutoSave] Error saving stage file:', error)
+          console.warn('[AutoSave] Error auto-saving stage file fields:', error)
           setAutoSaveStatus('error')
         } else {
           lastSavedValuesRef.current.set(entry.id, currentSerialized)
@@ -2180,11 +2181,11 @@ export default function Upload({
           }, 3000)
         }
       } catch (err) {
-        console.warn('[AutoSave] Exception saving stage file:', err)
+        console.warn('[AutoSave] Exception auto-saving stage file fields:', err)
         setAutoSaveStatus('error')
       }
     },
-    800,
+    3000,
   )
 
   useEffect(() => {
@@ -3563,7 +3564,31 @@ export default function Upload({
                       </button>
                     </Tooltip>
                     <div>
-                      <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
+                      <div className='flex items-center gap-2'>
+                        <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
+                        {ENABLE_INDEXING_AUTOSAVE &&
+                          (autoSaveStatus === 'saving' ? (
+                            <span className='inline-flex animate-pulse items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11'>
+                              <Icon className='size-3 animate-spin text-primary-9' name='tabler:loader-2' />
+                              <span>{t`Saving...`}</span>
+                            </span>
+                          ) : autoSaveStatus === 'saved' ? (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-green-6 bg-green-2 px-2.5 py-0.5 text-[11px] font-medium text-green-11'>
+                              <Icon className='size-3 text-green-9' name='lucide:check' />
+                              <span>{t`Saved`}</span>
+                            </span>
+                          ) : autoSaveStatus === 'error' ? (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-red-6 bg-red-2 px-2.5 py-0.5 text-[11px] font-medium text-red-11'>
+                              <Icon className='size-3 text-red-9' name='lucide:alert-circle' />
+                              <span>{t`Save failed`}</span>
+                            </span>
+                          ) : (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11 transition-all'>
+                              <Icon className='size-3 text-primary-9' name='lucide:cloud' />
+                              <span>{t`Auto-save`}</span>
+                            </span>
+                          ))}
+                      </div>
                       <p className='text-xs font-medium text-[var(--gray-9)]'>
                         {isAnalyzing
                           ? t`Extracting fields...`
@@ -3573,32 +3598,6 @@ export default function Upload({
                   </div>
 
                   <div className='flex items-center gap-3'>
-                    {ENABLE_INDEXING_AUTOSAVE &&
-                      autoSaveStatus === 'saving' && (
-                        <span className='inline-flex animate-pulse items-center gap-1.5 text-xs text-[var(--primary-10)]'>
-                          <Icon
-                            className='size-3.5 animate-spin'
-                            name='tabler:loader-2'
-                          />
-                          <span>{t`Saving...`}</span>
-                        </span>
-                      )}
-                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saved' && (
-                      <span className='inline-flex items-center gap-1 text-xs text-[var(--green-10)]'>
-                        <Icon className='size-3.5' name='lucide:check' />
-                        <span>{t`Saved to stage`}</span>
-                      </span>
-                    )}
-                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'error' && (
-                      <span
-                        className='inline-flex items-center gap-1 text-xs text-[var(--red-10)]'
-                        title={t`Failed to auto-save to stage table`}
-                      >
-                        <Icon className='size-3.5' name='lucide:alert-circle' />
-                        <span>{t`Save failed`}</span>
-                      </span>
-                    )}
-
                     {!isExporting ? (
                       <Tooltip content={t`Delete staged file`} position='top'>
                         <button
