@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
@@ -58,6 +59,7 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from './../../../../components/common/animations'
+import DraftFilesMediaLibrary from './DraftFilesMediaLibrary'
 import TableFieldInput from './TableFieldInput'
 import UploadQueueFileCard, { formatCreatedAt } from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
@@ -362,7 +364,144 @@ const isStepComplete = (
 
 type OcrFieldItem = {
   name?: string
+  status?: unknown
   value?: unknown
+}
+
+type OcrFieldStatusTone = 'green' | 'orange' | 'red'
+
+const getOcrFieldStatusTone = (status: string): OcrFieldStatusTone => {
+  const normalized = status.toLowerCase()
+  if (
+    /(expired|invalid|error|fail|reject|overdue|revoke|denied|dead)/.test(
+      normalized,
+    )
+  ) {
+    return 'red'
+  }
+  if (
+    /(valid|active|current|ok|success|complete|pass|good|verified|ready)/.test(
+      normalized,
+    )
+  ) {
+    return 'green'
+  }
+  return 'orange'
+}
+
+const OCR_FIELD_STATUS_TONE_CLASS: Record<
+  OcrFieldStatusTone,
+  { capsule: string; control: string; label: string }
+> = {
+  green: {
+    capsule:
+      'border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-11)]',
+    control:
+      '[&_button]:bg-[var(--green-1)] [&_input]:border-[var(--green-4)] [&_input]:bg-[var(--green-1)] [&_textarea]:border-[var(--green-4)] [&_textarea]:bg-[var(--green-1)]',
+    label: 'text-[var(--green-11)]',
+  },
+  orange: {
+    capsule:
+      'border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-11)]',
+    control:
+      '[&_button]:bg-[var(--orange-1)] [&_input]:border-[var(--orange-4)] [&_input]:bg-[var(--orange-1)] [&_textarea]:border-[var(--orange-4)] [&_textarea]:bg-[var(--orange-1)]',
+    label: 'text-[var(--orange-11)]',
+  },
+  red: {
+    capsule: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
+    control:
+      '[&_button]:bg-[var(--red-1)] [&_input]:border-[var(--red-4)] [&_input]:bg-[var(--red-1)] [&_textarea]:border-[var(--red-4)] [&_textarea]:bg-[var(--red-1)]',
+    label: 'text-[var(--red-11)]',
+  },
+}
+
+const normalizeComparableFieldValue = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+const parseFieldDateValue = (value: unknown): Date | null => {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
+
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (iso) {
+    const date = new Date(
+      Number(iso[1]),
+      Number(iso[2]) - 1,
+      Number(iso[3]),
+    )
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) return null
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+}
+
+/** True when the field date is strictly after today's local calendar date. */
+const isFieldDateAfterToday = (value: unknown) => {
+  const date = parseFieldDateValue(value)
+  if (!date) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date.getTime() > today.getTime()
+}
+
+/**
+ * OCR status shown in the Fields UI:
+ * - date/datetime: hide when empty or when selected date is after today
+ * - other fields: show only while the value still matches the OCR response
+ */
+const resolveVisibleOcrFieldStatus = (
+  field: Pick<RepositoryField, 'dataType' | 'id' | 'name' | 'sqlColumnName'>,
+  entry: Pick<
+    QueuedUploadFile,
+    'fieldStatuses' | 'fieldValues' | 'ocrExtractedValues'
+  >,
+) => {
+  const fieldKey = getFieldKey(field)
+  const original = String(entry.fieldStatuses?.[fieldKey] ?? '').trim()
+  if (!original) return ''
+
+  const current = entry.fieldValues?.[fieldKey] ?? ''
+  const ocrValue = entry.ocrExtractedValues?.[fieldKey] ?? ''
+  const fieldType = normalizeType(field.dataType)
+
+  if (fieldType === 'date' || fieldType === 'datetime') {
+    if (isBlankFieldValue(current)) return ''
+    if (isFieldDateAfterToday(current)) return ''
+    return original
+  }
+
+  if (
+    normalizeComparableFieldValue(current) ===
+    normalizeComparableFieldValue(ocrValue)
+  ) {
+    return original
+  }
+
+  return ''
+}
+
+const collectVisibleBadOcrStatuses = (
+  entry: Pick<
+    QueuedUploadFile,
+    'fieldStatuses' | 'fieldValues' | 'ocrExtractedValues'
+  >,
+  repositoryFields: RepositoryField[],
+) => {
+  const items: Array<{ fieldName: string; status: string; value: string }> = []
+  for (const field of repositoryFields) {
+    const status = resolveVisibleOcrFieldStatus(field, entry)
+    if (!status || getOcrFieldStatusTone(status) !== 'red') continue
+    items.push({
+      fieldName: field.name,
+      status,
+      value: String(entry.fieldValues?.[getFieldKey(field)] ?? '').trim(),
+    })
+  }
+  return items
 }
 
 const normalizeFieldKey = (key: string) =>
@@ -468,6 +607,110 @@ const extractOcrFieldMap = (response: unknown) => {
   })
 
   return fieldMap
+}
+
+const appendOcrFieldStatuses = (
+  target: Map<string, string>,
+  items: unknown,
+) => {
+  if (!Array.isArray(items)) return
+
+  items.forEach((item) => {
+    if (!item || typeof item !== 'object') return
+    const field = item as OcrFieldItem
+    const name = field.name ? String(field.name).trim() : ''
+    if (!name) return
+
+    const status =
+      field.status === null || field.status === undefined
+        ? ''
+        : String(field.status).trim()
+    if (!status) return
+
+    target.set(normalizeFieldKey(name), status)
+  })
+}
+
+const extractOcrFieldStatusMap = (response: unknown) => {
+  const statusMap = new Map<string, string>()
+  if (!response || typeof response !== 'object') return statusMap
+
+  const payload = response as Record<string, unknown>
+  const dataObj = payload.data as Record<string, unknown> | undefined
+
+  appendOcrFieldStatuses(statusMap, payload.fields)
+  appendOcrFieldStatuses(statusMap, dataObj?.fields)
+
+  const sources = [
+    payload,
+    payload.data,
+    payload.result,
+    payload.fields,
+    payload.values,
+    payload.metadata,
+  ].filter(
+    (source): source is Record<string, unknown> =>
+      Boolean(source) && typeof source === 'object' && !Array.isArray(source),
+  )
+
+  sources.forEach((source) => {
+    appendOcrFieldStatuses(statusMap, source.ocrFieldList)
+    appendOcrFieldStatuses(statusMap, source.ocrResult)
+
+    const ocrJson = source.ocrJson
+    if (typeof ocrJson !== 'string' || !ocrJson.trim()) return
+
+    try {
+      const parsed = JSON.parse(ocrJson) as Record<string, unknown>
+      appendOcrFieldStatuses(statusMap, parsed.ocrResult)
+      appendOcrFieldStatuses(statusMap, parsed.fields)
+      appendOcrFieldStatuses(statusMap, parsed.ocrFieldList)
+    } catch {
+      // ignore invalid OCR JSON payload
+    }
+  })
+
+  return statusMap
+}
+
+const findOcrStatus = (
+  statusMap: Map<string, string>,
+  candidates: string[],
+) => {
+  for (const candidate of candidates) {
+    const direct = statusMap.get(normalizeFieldKey(candidate))
+    if (direct) return direct
+  }
+
+  const entries = Array.from(statusMap.entries())
+  for (const candidate of candidates) {
+    for (const [ocrKey, status] of entries) {
+      if (fieldKeysMatch(candidate, ocrKey)) return status
+    }
+  }
+
+  return ''
+}
+
+const mapOcrResponseToFieldStatuses = (
+  response: unknown,
+  repositoryFields: RepositoryField[],
+) => {
+  const result: Record<string, string> = {}
+  if (!response || typeof response !== 'object') return result
+
+  const statusMap = extractOcrFieldStatusMap(response)
+
+  repositoryFields.forEach((field) => {
+    const fieldKey = getFieldKey(field)
+    const candidates = [field.sqlColumnName, field.name, field.id].filter(
+      Boolean,
+    ) as string[]
+    const status = findOcrStatus(statusMap, candidates)
+    if (status) result[fieldKey] = status
+  })
+
+  return result
 }
 
 const extractOcrJsonAndText = (response: unknown) => {
@@ -650,6 +893,7 @@ const createQueueEntry = (
   backendStatus: null,
   createdAt: new Date().toISOString(),
   exportStatus: 'idle',
+  fieldStatuses: {},
   fieldValues: applyFilenamePreFill(
     getInitialValues(repositoryFields),
     repositoryFields,
@@ -740,6 +984,64 @@ const readStageCreatedAt = (record: {
   return new Date().toISOString()
 }
 
+/** Absolute / blob URLs can be used in the viewer; relative `/api/...` need auth fetch. */
+const isPlayablePreviewUrl = (url: string | null | undefined) => {
+  if (!url) return false
+  const value = url.trim()
+  return (
+    value.startsWith('blob:') ||
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('data:')
+  )
+}
+
+const isUsableFileBlob = (blob: Blob | null | undefined) => {
+  if (!blob || blob.size < 5) return false
+  const type = (blob.type || '').toLowerCase()
+  // Error payloads from axios often arrive as JSON/HTML blobs.
+  if (
+    type.includes('json') ||
+    type.includes('text/html') ||
+    type.includes('text/plain') ||
+    type.includes('xml')
+  ) {
+    return false
+  }
+  // Empty MIME / octet-stream is common — still usable when size looks real.
+  return blob.size >= 32
+}
+
+/** Prefer PDF/image MIME from the file name when the API returns octet-stream. */
+const typedPreviewBlob = (blob: Blob, fileName: string) => {
+  const lower = fileName.toLowerCase()
+  const mimeType = lower.endsWith('.pdf')
+    ? 'application/pdf'
+    : lower.endsWith('.png')
+      ? 'image/png'
+      : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+        ? 'image/jpeg'
+        : lower.endsWith('.webp')
+          ? 'image/webp'
+          : lower.endsWith('.gif')
+            ? 'image/gif'
+            : blob.type || 'application/octet-stream'
+  if (blob.type === mimeType) return { blob, mimeType }
+  return { blob: new Blob([blob], { type: mimeType }), mimeType }
+}
+
+const readStageFileUrl = (summary: StageFileSummary): string | null => {
+  const raw =
+    summary.fileUrl ??
+    summary.url ??
+    summary.previewUrl ??
+    summary.downloadUrl
+  if (typeof raw !== 'string' || !raw.trim()) return null
+  const value = raw.trim()
+  // API returns `/api/uploadAndIndex/files/{id}` — not usable without auth headers.
+  return isPlayablePreviewUrl(value) ? value : null
+}
+
 const draftSummaryToQueueEntry = (
   summary: StageFileSummary,
   repositoryFields: RepositoryField[],
@@ -750,11 +1052,13 @@ const draftSummaryToQueueEntry = (
     repositoryFields,
     summary.name,
   )
+  const fieldStatuses = mapOcrResponseToFieldStatuses(summary, repositoryFields)
   return {
     activeTab: 'fields',
     backendStatus: status,
     createdAt: readStageCreatedAt(summary),
     exportStatus: 'idle',
+    fieldStatuses,
     fieldValues,
     file: null,
     fileName: summary.name || 'Untitled',
@@ -766,7 +1070,7 @@ const draftSummaryToQueueEntry = (
     masterSyncedValues: fieldValues,
     ocrExtractedValues: fieldValues,
     ocrStatus: status === 'OCR' ? 'complete' : 'idle',
-    previewUrl: null,
+    previewUrl: readStageFileUrl(summary),
     rawOcrJson: Array.isArray(summary.fields) ? summary.fields : {},
     rawOcrText: '',
     restoredFromServer: true,
@@ -850,6 +1154,102 @@ const fileFingerprint = (file: File) =>
 const batchFingerprint = (files: File[]) =>
   files.map(fileFingerprint).sort().join('|')
 
+/** Cycles the three upload highlights in one card. */
+function UploadFeatureHighlight() {
+  const { t } = useLingui()
+  const items = useMemo(
+    () => [
+      {
+        color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
+        icon: 'tabler:bolt',
+        sub: t`Process documents faster with our agentic pipeline`,
+        title: t`Lightning Fast`,
+      },
+      {
+        color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
+        icon: 'tabler:sparkles',
+        sub: t`Industry-leading extraction accuracy and field precision`,
+        title: t`100% Accuracy`,
+      },
+      {
+        color: 'text-[var(--green-11)] bg-[var(--green-2)]',
+        icon: 'tabler:clock',
+        sub: t`Support for PDF, images, and scanned documents`,
+        title: t`Any Format`,
+      },
+    ],
+    [t],
+  )
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % items.length)
+    }, 3500)
+    return () => window.clearInterval(timer)
+  }, [items.length])
+
+  const item = items[index]
+
+  return (
+    <AnimateEntrancePop className='h-full' delay={0.3}>
+      <div className='group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-5 text-left shadow-sm transition-shadow duration-300 hover:shadow-md'>
+        <AnimatePresence mode='wait'>
+          <motion.div
+            key={item.icon}
+            animate={{ opacity: 1, y: 0 }}
+            className='flex flex-1 flex-col items-start'
+            exit={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            <div className='flex items-center gap-3'>
+              <div
+                className={cn(
+                  'flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10',
+                  item.color,
+                )}
+              >
+                {item.icon === 'tabler:sparkles' ? (
+                  <AiBrandIcon
+                    className='size-5'
+                    variant='outline-purple'
+                  />
+                ) : (
+                  <Icon className='size-5' name={item.icon} />
+                )}
+              </div>
+              <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
+                {item.title}
+              </h4>
+            </div>
+            <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
+              {item.sub}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className='mt-auto flex items-center justify-center gap-1.5 pt-4'>
+          {items.map((entry, dotIndex) => (
+            <button
+              key={entry.icon}
+              aria-label={entry.title}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300',
+                dotIndex === index
+                  ? 'w-5 bg-[var(--primary-9)]'
+                  : 'w-1.5 bg-[var(--gray-5)] hover:bg-[var(--gray-7)]',
+              )}
+              type='button'
+              onClick={() => setIndex(dotIndex)}
+            />
+          ))}
+        </div>
+      </div>
+    </AnimateEntrancePop>
+  )
+}
+
 export default function Upload({
   folderId,
   initialFiles,
@@ -897,10 +1297,18 @@ export default function Upload({
   const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
   const [backConfirmOpen, setBackConfirmOpen] = useState(false)
   const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([])
+  const [focusedDraftId, setFocusedDraftId] = useState<string | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkExportConfirmOpen, setBulkExportConfirmOpen] = useState(false)
+  const [expiredExportConfirmOpen, setExpiredExportConfirmOpen] =
+    useState(false)
+  const [expiredExportDescription, setExpiredExportDescription] = useState('')
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isBulkExporting, setIsBulkExporting] = useState(false)
+  const pendingExpiredExportRef = useRef<{
+    id: string
+    options?: { keepList?: boolean; quiet?: boolean }
+  } | null>(null)
 
   const repositoryFields = useMemo(() => {
     return [...(repositoryData?.fields ?? [])].sort((a, b) => {
@@ -963,6 +1371,163 @@ export default function Upload({
     },
     [],
   )
+
+  // Draft `fileUrl` from API is `/api/uploadAndIndex/files/{id}` (auth).
+  // Fetch the blob and set a playable previewUrl for grid + Document Preview.
+  const draftPreviewLoadIdsRef = useRef<Set<string>>(new Set())
+  const draftPreviewInFlightRef = useRef<Set<string>>(new Set())
+  const draftPreviewAttemptsRef = useRef<Map<string, number>>(new Map())
+  const draftPreviewHydratingLockRef = useRef(false)
+  const draftPreviewNeedsRerunRef = useRef(false)
+  const queueRef = useRef<QueuedUploadFile[]>(queue)
+  queueRef.current = queue
+  const focusedDraftIdRef = useRef(focusedDraftId)
+  focusedDraftIdRef.current = focusedDraftId
+  const openFileIdRef = useRef(openFileId)
+  openFileIdRef.current = openFileId
+  const viewingDraftsRef = useRef(viewingDrafts)
+  viewingDraftsRef.current = viewingDrafts
+  const [isHydratingDraftPreviews, setIsHydratingDraftPreviews] =
+    useState(false)
+
+  const draftPreviewLoadKey = useMemo(
+    () =>
+      queue
+        .filter(
+          (entry) =>
+            Boolean(entry.stageFileId) && !isPlayablePreviewUrl(entry.previewUrl),
+        )
+        .map((entry) => entry.id)
+        .sort()
+        .join('|'),
+    [queue],
+  )
+
+  useEffect(() => {
+    if (!viewingDrafts && !openFileId) {
+      setIsHydratingDraftPreviews(false)
+      return
+    }
+
+    const loadPreviews = async () => {
+      if (draftPreviewHydratingLockRef.current) {
+        draftPreviewNeedsRerunRef.current = true
+        return
+      }
+
+      draftPreviewHydratingLockRef.current = true
+      setIsHydratingDraftPreviews(true)
+
+      try {
+        do {
+          draftPreviewNeedsRerunRef.current = false
+          // Avoid tight-retrying the same failed id inside one drain pass.
+          const softFailedThisPass = new Set<string>()
+
+          for (;;) {
+            if (!viewingDraftsRef.current && !openFileIdRef.current) break
+
+            const focusId = focusedDraftIdRef.current
+            const openId = openFileIdRef.current
+            const missing = queueRef.current.filter(
+              (entry) =>
+                Boolean(entry.stageFileId) &&
+                !isPlayablePreviewUrl(entry.previewUrl) &&
+                !draftPreviewLoadIdsRef.current.has(entry.id) &&
+                !draftPreviewInFlightRef.current.has(entry.id) &&
+                !softFailedThisPass.has(entry.id),
+            )
+            if (missing.length === 0) break
+
+            const ordered = [...missing].sort((a, b) => {
+              if (a.id === openId) return -1
+              if (b.id === openId) return 1
+              if (a.id === focusId) return -1
+              if (b.id === focusId) return 1
+              return 0
+            })
+
+            for (const entry of ordered) {
+              if (
+                draftPreviewLoadIdsRef.current.has(entry.id) ||
+                draftPreviewInFlightRef.current.has(entry.id) ||
+                softFailedThisPass.has(entry.id)
+              ) {
+                continue
+              }
+
+              const stageId = String(
+                entry.stageFileId || entry.id.replace(/^staged-/, ''),
+              )
+              if (!stageId) {
+                draftPreviewLoadIdsRef.current.add(entry.id)
+                continue
+              }
+
+              const attempts =
+                draftPreviewAttemptsRef.current.get(entry.id) ?? 0
+              if (attempts >= 3) {
+                draftPreviewLoadIdsRef.current.add(entry.id)
+                continue
+              }
+
+              draftPreviewInFlightRef.current.add(entry.id)
+              draftPreviewAttemptsRef.current.set(entry.id, attempts + 1)
+              try {
+                const blob = await fetchStageFileBlob(stageId)
+                if (isUsableFileBlob(blob)) {
+                  const fileName = entry.fileName || 'file'
+                  const { blob: typedBlob, mimeType } = typedPreviewBlob(
+                    blob!,
+                    fileName,
+                  )
+                  const previewUrl = URL.createObjectURL(typedBlob)
+                  const latest = queueRef.current.find(
+                    (item) => item.id === entry.id,
+                  )
+                  updateEntry(entry.id, {
+                    file:
+                      latest?.file ||
+                      entry.file ||
+                      new File([typedBlob], fileName, { type: mimeType }),
+                    previewUrl,
+                  })
+                  draftPreviewLoadIdsRef.current.add(entry.id)
+                } else if (blob) {
+                  // Received a payload but it isn't a real file — stop retrying.
+                  draftPreviewLoadIdsRef.current.add(entry.id)
+                } else {
+                  softFailedThisPass.add(entry.id)
+                }
+              } catch {
+                softFailedThisPass.add(entry.id)
+              } finally {
+                draftPreviewInFlightRef.current.delete(entry.id)
+              }
+            }
+          }
+        } while (draftPreviewNeedsRerunRef.current)
+      } finally {
+        draftPreviewHydratingLockRef.current = false
+        setIsHydratingDraftPreviews(false)
+      }
+    }
+
+    void loadPreviews()
+  }, [
+    draftPreviewLoadKey,
+    focusedDraftId,
+    openFileId,
+    updateEntry,
+    viewingDrafts,
+  ])
+
+  // Re-attempt the focused draft if a prior hydration pass failed.
+  useEffect(() => {
+    if (!viewingDrafts || !focusedDraftId) return
+    draftPreviewLoadIdsRef.current.delete(focusedDraftId)
+    draftPreviewAttemptsRef.current.delete(focusedDraftId)
+  }, [focusedDraftId, viewingDrafts])
 
   const masterFormSyncData = useMemo(() => {
     if (
@@ -1278,10 +1843,6 @@ export default function Upload({
 
   // Revoke any outstanding preview URLs when the Upload screen unmounts
   // (per-file URLs are already revoked individually on removal/index).
-  const queueRef = useRef<QueuedUploadFile[]>(queue)
-  useEffect(() => {
-    queueRef.current = queue
-  }, [queue])
   useEffect(() => {
     return () => {
       queueRef.current.forEach((entry) => {
@@ -1399,6 +1960,20 @@ export default function Upload({
         }
 
         if (!entries.length) {
+          if (preferredLocal.length > 0) {
+            setDraftCounts(
+              countQueueDraftGroups(preferredLocal, repositoryFields),
+            )
+            setQueueListTab(tab === 'auto' ? 'uploading' : tab)
+            setViewingDrafts(true)
+            setOpenFileId(null)
+            draftPreviewLoadIdsRef.current.clear()
+            draftPreviewAttemptsRef.current.clear()
+            draftPreviewInFlightRef.current.clear()
+            setQueue(preferredLocal)
+            setFocusedDraftId(preferredLocal[0]?.id ?? null)
+            return
+          }
           showToast({
             message: t`No draft files to review.`,
             variant: 'info',
@@ -1415,7 +1990,17 @@ export default function Upload({
         )
         setViewingDrafts(true)
         setOpenFileId(null)
+        // Fresh draft list — allow preview hydration to run again.
+        draftPreviewLoadIdsRef.current.clear()
+        draftPreviewAttemptsRef.current.clear()
+        draftPreviewInFlightRef.current.clear()
         setQueue(entries)
+        setFocusedDraftId((current) => {
+          if (current && entries.some((entry) => entry.id === current)) {
+            return current
+          }
+          return entries[0]?.id ?? null
+        })
       } catch {
         if (preferredLocal.length && tab === 'uploading') {
           setDraftCounts(
@@ -1659,13 +2244,18 @@ export default function Upload({
           message: t`Files uploaded successfully.`,
           variant: 'success',
         })
-        if (onSuccess) await onSuccess()
-        if (options?.openDraftsOnSuccess) {
+        // Bulk uploads always stay on the Draft Files media library.
+        const stayOnDrafts =
+          Boolean(options?.openDraftsOnSuccess) || preferredLocal.length > 1
+        if (stayOnDrafts) {
           await openDraftFilesView({
             preferredLocal,
             tab: 'uploading',
           })
+          // Refresh folder data in the background; do not leave this page.
+          void onSuccess?.()
         } else {
+          if (onSuccess) await onSuccess()
           onBack()
         }
       }
@@ -1701,20 +2291,27 @@ export default function Upload({
         repositoryFields,
         entry.fileName,
       )
+      const fieldStatuses = mapOcrResponseToFieldStatuses(
+        data,
+        repositoryFields,
+      )
 
-      let previewUrl = entry.previewUrl
+      let previewUrl = isPlayablePreviewUrl(entry.previewUrl)
+        ? entry.previewUrl
+        : null
       let fileObj = entry.file
       if (!previewUrl && entry.stageFileId) {
         const blob = await fetchStageFileBlob(entry.stageFileId)
-        if (blob) {
-          fileObj = new File([blob], data.name || entry.fileName, {
-            type: blob.type,
+        if (isUsableFileBlob(blob)) {
+          fileObj = new File([blob!], data.name || entry.fileName, {
+            type: blob!.type || 'application/pdf',
           })
-          previewUrl = URL.createObjectURL(blob)
+          previewUrl = URL.createObjectURL(blob!)
         }
       }
 
       updateEntry(entry.id, {
+        fieldStatuses,
         fieldValues: mappedValues,
         file: fileObj,
         fileName: data.name || entry.fileName,
@@ -1974,12 +2571,17 @@ export default function Upload({
           return next
         })
 
+        const isBulkUpload = newEntries.length > 1
         const reviewSingleFile = newEntries.length === 1 && queue.length === 0
         if (reviewSingleFile) {
           setOpenFileId(newEntries[0].id)
-        } else if (newEntries.length > 1) {
+          setViewingDrafts(false)
+        } else if (isBulkUpload) {
+          // Multi-file: go straight to Draft Files media library (same as drafts).
           setQueueListTab('uploading')
           setOpenFileId(null)
+          setViewingDrafts(true)
+          setFocusedDraftId(newEntries[0]?.id ?? null)
         }
 
         if (newFiles.length < validFiles.length) {
@@ -1990,7 +2592,7 @@ export default function Upload({
         }
 
         void stageFilesForOcr(newEntries, activeRepositoryId, {
-          openDraftsOnSuccess: newEntries.length > 1,
+          openDraftsOnSuccess: isBulkUpload,
         })
       }
     }
@@ -2027,6 +2629,10 @@ export default function Upload({
           repositoryFields,
           data.name,
         )
+        const fieldStatuses = mapOcrResponseToFieldStatuses(
+          data,
+          repositoryFields,
+        )
 
         const blob = await fetchStageFileBlob(stageId)
         let previewUrl: string | null = null
@@ -2041,6 +2647,7 @@ export default function Upload({
           backendStatus: data.status || 'OCR',
           createdAt: readStageCreatedAt(data),
           exportStatus: 'idle',
+          fieldStatuses,
           fieldValues: mappedValues,
           file: fileObj,
           fileName: data.name,
@@ -2349,6 +2956,38 @@ export default function Upload({
     ],
   )
 
+  const requestIndexEntry = useCallback(
+    (id: string, options?: { keepList?: boolean; quiet?: boolean }) => {
+      const entry = queue.find((item) => item.id === id)
+      if (!entry) {
+        void indexEntry(id, options)
+        return
+      }
+
+      if (!validateMandatoryFieldsFor(entry)) return
+
+      const badStatuses = collectVisibleBadOcrStatuses(entry, repositoryFields)
+      if (badStatuses.length === 0) {
+        void indexEntry(id, options)
+        return
+      }
+
+      const primary = badStatuses[0]
+      const dateLabel = primary.value || primary.status
+      const description =
+        badStatuses.length === 1
+          ? t`This file has expired with date ${dateLabel}. Do you want to export?`
+          : t`This file still has expired or invalid fields (${badStatuses
+              .map((item) => `${item.fieldName}: ${item.status}`)
+              .join(', ')}). Do you want to export?`
+
+      pendingExpiredExportRef.current = { id, options }
+      setExpiredExportDescription(description)
+      setExpiredExportConfirmOpen(true)
+    },
+    [indexEntry, queue, repositoryFields, t, validateMandatoryFieldsFor],
+  )
+
   const indexedCount = queue.filter(
     (entry) => entry.status === 'indexed',
   ).length
@@ -2388,6 +3027,11 @@ export default function Upload({
   )
   const visibleQueue =
     queueListTab === 'uploading' ? uploadingQueue : exportQueue
+  /** Draft media library shows every non-indexed file (no Ready/In-progress tabs). */
+  const draftQueue = useMemo(
+    () => queue.filter((entry) => entry.status !== 'indexed'),
+    [queue],
+  )
 
   const isVerticalQueueLayout = true
 
@@ -2427,6 +3071,17 @@ export default function Upload({
     const label = field.name
     const required = Boolean(field.isMandatory)
     const options = getSelectOptions(column)
+    const fieldStatus = activeEntry
+      ? resolveVisibleOcrFieldStatus(field, activeEntry)
+      : ''
+    const statusTone = fieldStatus
+      ? getOcrFieldStatusTone(fieldStatus)
+      : null
+    const statusToneClass = statusTone
+      ? OCR_FIELD_STATUS_TONE_CLASS[statusTone]
+      : null
+    const inputLabel = fieldStatus ? undefined : label
+    const inputRequired = fieldStatus ? false : required
 
     const focusProps = {
       onFocus: () => handleFieldFocus(field),
@@ -2539,7 +3194,9 @@ export default function Upload({
     const fieldClassName = cn(
       'w-full',
       isSyncField &&
-      '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+        !statusToneClass &&
+        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+      statusToneClass?.control,
     )
 
     const renderSuggestionCapsule = () => {
@@ -2591,8 +3248,8 @@ export default function Upload({
           className={fieldClassName}
           disabled={disabled}
           field={field}
-          label={label}
-          required={required}
+          label={inputLabel ?? ''}
+          required={inputRequired}
           value={value}
           onChange={(jsonVal) => updateFieldValue(field, jsonVal)}
         />
@@ -2602,8 +3259,8 @@ export default function Upload({
         <InputDate
           className={fieldClassName}
           disabled={disabled}
-          label={label}
-          required={required}
+          label={inputLabel}
+          required={inputRequired}
           // @ts-ignore
           rightSection={renderRightSection()}
           rightSectionPointerEvents='auto'
@@ -2645,9 +3302,9 @@ export default function Upload({
         <InputSelect
           className={fieldClassName}
           disabled={disabled}
-          label={label}
+          label={inputLabel}
           options={effectiveOptions}
-          required={required}
+          required={inputRequired}
           // @ts-ignore
           rightSection={renderRightSection()}
           rightSectionPointerEvents='auto'
@@ -2674,9 +3331,9 @@ export default function Upload({
         <InputTextarea
           className={fieldClassName}
           disabled={disabled}
-          label={label}
+          label={inputLabel}
           placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
-          required={required}
+          required={inputRequired}
           // @ts-ignore
           rightSection={renderRightSection()}
           rightSectionPointerEvents='auto'
@@ -2693,9 +3350,9 @@ export default function Upload({
         <InputText
           className={fieldClassName}
           disabled={disabled}
-          label={label}
+          label={inputLabel}
           placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
-          required={required}
+          required={inputRequired}
           rightSection={renderRightSection()}
           rightSectionPointerEvents='auto'
           rightSectionWidth={90}
@@ -2717,6 +3374,29 @@ export default function Upload({
 
     return (
       <div className='flex w-full flex-col'>
+        {fieldStatus && statusToneClass ? (
+          <div className='mb-1 flex items-center justify-between gap-2'>
+            <div
+              className={cn(
+                'flex min-w-0 items-center gap-1 text-13 font-medium',
+                statusToneClass.label,
+              )}
+            >
+              <span className='truncate'>{label}</span>
+              {required ? (
+                <span className='text-[var(--red-9)]'>*</span>
+              ) : null}
+            </div>
+            <span
+              className={cn(
+                'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-tight',
+                statusToneClass.capsule,
+              )}
+            >
+              {fieldStatus}
+            </span>
+          </div>
+        ) : null}
         {InputComponent}
         {renderSuggestionCapsule()}
       </div>
@@ -2765,36 +3445,71 @@ export default function Upload({
     void openDraftFilesView()
   }
 
+  const ensureDraftFieldsLoaded = useCallback(
+    (id: string) => {
+      const entry = queueRef.current.find((item) => item.id === id)
+      if (!entry?.stageFileId) return
+
+      if (!isPlayablePreviewUrl(entry.previewUrl)) {
+        draftPreviewLoadIdsRef.current.delete(entry.id)
+      }
+
+      if (!entry.restoredFromServer) return
+      if (loadedStageFileIdsRef.current.has(entry.stageFileId)) {
+        if (!isPlayablePreviewUrl(entry.previewUrl)) {
+          void (async () => {
+            const blob = await fetchStageFileBlob(entry.stageFileId as string)
+            if (!isUsableFileBlob(blob)) return
+            const fileName = entry.fileName || 'file'
+            const { blob: typedBlob, mimeType } = typedPreviewBlob(
+              blob!,
+              fileName,
+            )
+            updateEntry(entry.id, {
+              file:
+                entry.file ||
+                new File([typedBlob], fileName, { type: mimeType }),
+              previewUrl: URL.createObjectURL(typedBlob),
+            })
+          })()
+        }
+        return
+      }
+      loadedStageFileIdsRef.current.add(entry.stageFileId)
+      void loadAndPopulateFields(entry)
+    },
+    [loadAndPopulateFields, updateEntry],
+  )
+
   const handleOpenQueuedFile = (id: string) => {
     if (listExportIdsRef.current.has(id)) return
     setOpenFileId(id)
-    const entry = queueRef.current.find((item) => item.id === id)
-    if (!entry?.restoredFromServer || !entry.stageFileId) return
-    if (loadedStageFileIdsRef.current.has(entry.stageFileId)) return
-    loadedStageFileIdsRef.current.add(entry.stageFileId)
-    void loadAndPopulateFields(entry)
+    ensureDraftFieldsLoaded(id)
   }
 
-  const handleExportQueuedFile = async (id: string) => {
-    listExportIdsRef.current.add(id)
-    setOpenFileId((current) => (current === id ? null : current))
-    try {
-      const result = await indexEntry(id, { keepList: true })
-      if (!result) throw new Error('export failed')
-    } finally {
-      listExportIdsRef.current.delete(id)
-      setOpenFileId((current) => (current === id ? null : current))
-    }
+  // When bulk upload lands on Draft Files, load OCR fields for the focused card.
+  useEffect(() => {
+    if (!viewingDrafts || !focusedDraftId) return
+    ensureDraftFieldsLoaded(focusedDraftId)
+  }, [ensureDraftFieldsLoaded, focusedDraftId, viewingDrafts])
+
+  const handleExportQueuedFile = (id: string) => {
+    requestIndexEntry(id, { keepList: true })
   }
 
-  const selectedVisibleEntries = visibleQueue.filter((entry) =>
+  const draftListForSelection = viewingDrafts ? draftQueue : visibleQueue
+  const selectedVisibleEntries = draftListForSelection.filter((entry) =>
     selectedDraftIds.includes(entry.id),
   )
   const selectedVisibleCount = selectedVisibleEntries.length
   const allVisibleSelected =
-    visibleQueue.length > 0 && selectedVisibleCount === visibleQueue.length
+    draftListForSelection.length > 0 &&
+    selectedVisibleCount === draftListForSelection.length
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected
+  const selectedExportableCount = selectedVisibleEntries.filter((entry) =>
+    isDraftReadyForExport(entry, repositoryFields),
+  ).length
 
   const toggleDraftSelection = (id: string, checked: boolean) => {
     setSelectedDraftIds((prev) =>
@@ -2899,130 +3614,130 @@ export default function Upload({
   // list itself fills the available screen height with its own scroll.
   const showQueueList = !(isVerticalQueueLayout && activeEntry)
   const isListOnlyPage = isVerticalQueueLayout && !activeEntry
-  const draftFileCount = exportQueue.length + uploadingQueue.length
+  const isDraftFullPage = viewingDrafts && isListOnlyPage
+  const draftFileCount = draftQueue.length
 
   const queueStrip = queue.length > 0 && showQueueList && (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-2xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm sm:p-4',
-        isListOnlyPage && 'min-h-0 flex-1',
+        'flex flex-col bg-surface',
+        isDraftFullPage
+          ? 'min-h-0 flex-1 gap-0'
+          : 'gap-2 rounded-2xl border border-[var(--gray-3)] p-3 shadow-sm sm:p-4',
+        isListOnlyPage && !isDraftFullPage && 'min-h-0 flex-1',
       )}
     >
-      <div className='relative flex items-center justify-between gap-4 border-b border-[var(--gray-3)] px-1 pt-1'>
-        <div className='flex min-w-0 flex-1 items-center gap-6 sm:gap-8'>
-          {(
-            [
-              {
-                count: exportQueue.length,
-                id: 'export' as const,
-                label: t`Ready to export`,
-              },
-              {
-                count: uploadingQueue.length,
-                id: 'uploading' as const,
-                label: t`In progress`,
-              },
-            ] as const
-          ).map((tab) => {
-            const isSelected = queueListTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                className={cn(
-                  'relative flex shrink-0 items-center pb-3 text-sm font-semibold whitespace-nowrap transition-colors',
-                  isSelected
-                    ? 'text-[var(--gray-13)]'
-                    : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
-                )}
-                type='button'
-                onClick={() => {
-                  setQueueListTab(tab.id)
-                  setSelectedDraftIds([])
-                }}
-              >
-                {tab.label} ({tab.count})
-                {isSelected ? (
-                  <span className='absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-[var(--primary-9)]' />
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className='mb-2 flex shrink-0 items-center'>
-          <Tooltip
-            content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
-            position='top'
-          >
-            <IconButton
-              color='gray'
-              size='xs'
-              variant='ghost'
-              ariaLabel={
-                isQueueCollapsed ? t`Show file list` : t`Hide file list`
-              }
-              icon={
-                isQueueCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
-              }
-              onClick={() => setIsQueueCollapsed((prev) => !prev)}
-            />
-          </Tooltip>
-        </div>
-      </div>
-
-      {!isQueueCollapsed && viewingDrafts && visibleQueue.length > 0 ? (
-        <div className='flex items-center justify-between gap-3 px-1'>
-          <div
-            className='flex min-w-0 items-center gap-2'
-            onClick={(event) => event.stopPropagation()}
-          >
-            <InputCheckbox
-              aria-label={t`Select all files`}
-              checked={allVisibleSelected}
-              indeterminate={someVisibleSelected}
-              onChange={(checked) => {
-                const visibleIds = visibleQueue.map((entry) => entry.id)
-                setSelectedDraftIds((prev) =>
-                  checked
-                    ? Array.from(new Set([...prev, ...visibleIds]))
-                    : prev.filter((id) => !visibleIds.includes(id)),
-                )
-              }}
-            />
-            <span className='text-xs font-medium text-[var(--gray-11)]'>
-              {selectedVisibleCount > 0
-                ? t`${selectedVisibleCount} selected`
-                : t`Select all`}
-            </span>
+      {!isDraftFullPage ? (
+        <div className='relative flex items-center justify-between gap-4 border-b border-[var(--gray-3)] px-1 pt-1'>
+          <div className='flex min-w-0 flex-1 items-center gap-6 sm:gap-8'>
+            {(
+              [
+                {
+                  count: exportQueue.length,
+                  id: 'export' as const,
+                  label: t`Ready to export`,
+                },
+                {
+                  count: uploadingQueue.length,
+                  id: 'uploading' as const,
+                  label: t`In progress`,
+                },
+              ] as const
+            ).map((tab) => {
+              const isSelected = queueListTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  className={cn(
+                    'relative flex shrink-0 items-center pb-3 text-sm font-semibold whitespace-nowrap transition-colors',
+                    isSelected
+                      ? 'text-[var(--gray-13)]'
+                      : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
+                  )}
+                  type='button'
+                  onClick={() => {
+                    setQueueListTab(tab.id)
+                    setSelectedDraftIds([])
+                    setFocusedDraftId(null)
+                  }}
+                >
+                  {tab.label} ({tab.count})
+                  {isSelected ? (
+                    <span className='absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-[var(--primary-9)]' />
+                  ) : null}
+                </button>
+              )
+            })}
           </div>
-          {selectedVisibleCount > 0 ? (
-            <div className='flex shrink-0 items-center gap-2'>
-              {queueListTab === 'export' && selectedVisibleCount > 1 ? (
-                <BaseButton
-                  color='primary'
-                  disabled={isBulkExporting || isBulkDeleting}
-                  icon='tabler:file-export'
-                  label={t`Export selected`}
-                  loading={isBulkExporting}
-                  size='xs'
-                  onClick={() => setBulkExportConfirmOpen(true)}
-                />
-              ) : null}
-              <BaseButton
-                color='red'
-                disabled={isBulkDeleting || isBulkExporting}
-                icon='lucide:trash-2'
-                label={t`Delete selected`}
-                loading={isBulkDeleting}
+
+          <div className='mb-2 flex shrink-0 items-center'>
+            <Tooltip
+              content={isQueueCollapsed ? t`Show file list` : t`Hide file list`}
+              position='top'
+            >
+              <IconButton
+                color='gray'
                 size='xs'
-                onClick={() => setBulkDeleteConfirmOpen(true)}
+                variant='ghost'
+                ariaLabel={
+                  isQueueCollapsed ? t`Show file list` : t`Hide file list`
+                }
+                icon={
+                  isQueueCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
+                }
+                onClick={() => setIsQueueCollapsed((prev) => !prev)}
               />
-            </div>
-          ) : null}
+            </Tooltip>
+          </div>
         </div>
       ) : null}
 
-      {!isQueueCollapsed && (
+      {(!isQueueCollapsed || isDraftFullPage) && viewingDrafts ? (
+        <DraftFilesMediaLibrary
+          allSelected={allVisibleSelected}
+          entries={draftQueue}
+          exportableSelectedCount={selectedExportableCount}
+          fullPage={isDraftFullPage}
+          isBulkDeleting={isBulkDeleting}
+          isBulkExporting={isBulkExporting}
+          selectedIds={selectedDraftIds}
+          someSelected={someVisibleSelected}
+          title={`${t`Draft Files`} (${draftFileCount})`}
+          missingMandatoryById={Object.fromEntries(
+            draftQueue.map((entry) => [
+              entry.id,
+              entry.status === 'ready'
+                ? hasMissingMandatoryFields(
+                    entry.fieldValues,
+                    repositoryFields,
+                  )
+                : entry.status !== 'indexed',
+            ]),
+          )}
+          onBack={() => {
+            setViewingDrafts(false)
+            setOpenFileId(null)
+            setFocusedDraftId(null)
+            setSelectedDraftIds([])
+            setQueue([])
+          }}
+          onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
+          onBulkExport={() => setBulkExportConfirmOpen(true)}
+          onOpen={handleOpenQueuedFile}
+          onRemove={handleRemoveFromQueue}
+          onToggleSelect={toggleDraftSelection}
+          onSelectAll={(checked) => {
+            const visibleIds = draftQueue.map((entry) => entry.id)
+            setSelectedDraftIds((prev) =>
+              checked
+                ? Array.from(new Set([...prev, ...visibleIds]))
+                : prev.filter((id) => !visibleIds.includes(id)),
+            )
+          }}
+        />
+      ) : null}
+
+      {!isQueueCollapsed && !viewingDrafts ? (
         <div
           className={cn(
             'ez-scrollbar flex flex-col gap-1.5 overflow-y-auto pr-1',
@@ -3047,8 +3762,8 @@ export default function Upload({
                   repositoryFields,
                 )}
                 selected={selectedDraftIds.includes(entry.id)}
-                showCheckbox={viewingDrafts}
-                showExport={viewingDrafts && queueListTab === 'export'}
+                showCheckbox={false}
+                showExport={false}
                 onExport={handleExportQueuedFile}
                 onOpen={handleOpenQueuedFile}
                 onRemove={handleRemoveFromQueue}
@@ -3058,7 +3773,7 @@ export default function Upload({
             ))
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 
@@ -3112,66 +3827,65 @@ export default function Upload({
               </p>
             </AnimateSlideUp>
 
-            <div className='grid w-full grid-cols-1 items-stretch gap-6 md:grid-cols-3'>
-              <AnimateSlideUp
-                className='relative z-10 h-full md:col-span-2'
-                delay={0.1}
-              >
-                <div className='group relative h-full overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
-                  <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
-                    <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
-                  </div>
-
-                  <div
-                    className={[
-                      'relative z-10 flex h-full min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out',
-                      isDragOver
-                        ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
-                        : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
-                    ].join(' ')}
-                    onClick={() => invoiceInputRef.current?.click()}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDragOver={(event) => {
-                      event.preventDefault()
-                      setIsDragOver(true)
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault()
-                      setIsDragOver(false)
-                      handleInvoiceFiles(event.dataTransfer.files)
-                    }}
-                  >
-                    <AnimateStagger className='flex flex-col items-center gap-3'>
-                      <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm transition-all duration-500 group-hover:scale-105'>
-                        <Icon
-                          className='size-7 text-[var(--primary-9)]'
-                          name='tabler:cloud-upload'
-                        />
-                      </div>
-                      <div className='text-center'>
-                        <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
-                          {t`Drop your files here, or`}{' '}
-                          <span className='text-[var(--primary-9)]'>{t`browse`}</span>
-                        </h2>
-                        <p className='text-xs font-medium text-[var(--gray-9)]'>
-                          {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each`}
-                        </p>
-                      </div>
-                    </AnimateStagger>
-
-                    <input
-                      accept={DOCUMENT_ACCEPT}
-                      className='hidden'
-                      ref={invoiceInputRef}
-                      type='file'
-                      multiple
-                      onChange={(event) =>
-                        handleInvoiceFiles(event.target.files)
-                      }
-                    />
-                  </div>
+            <AnimateSlideUp className='relative z-10 w-full' delay={0.1}>
+              <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
+                <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
+                  <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
                 </div>
-              </AnimateSlideUp>
+
+                <div
+                  className={[
+                    'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out',
+                    isDragOver
+                      ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
+                      : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
+                  ].join(' ')}
+                  onClick={() => invoiceInputRef.current?.click()}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setIsDragOver(true)
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    setIsDragOver(false)
+                    handleInvoiceFiles(event.dataTransfer.files)
+                  }}
+                >
+                  <AnimateStagger className='flex flex-col items-center gap-3'>
+                    <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm transition-all duration-500 group-hover:scale-105'>
+                      <Icon
+                        className='size-7 text-[var(--primary-9)]'
+                        name='tabler:cloud-upload'
+                      />
+                    </div>
+                    <div className='text-center'>
+                      <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
+                        {t`Drop your files here, or`}{' '}
+                        <span className='text-[var(--primary-9)]'>{t`browse`}</span>
+                      </h2>
+                      <p className='text-xs font-medium text-[var(--gray-9)]'>
+                        {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each`}
+                      </p>
+                    </div>
+                  </AnimateStagger>
+
+                  <input
+                    accept={DOCUMENT_ACCEPT}
+                    className='hidden'
+                    ref={invoiceInputRef}
+                    type='file'
+                    multiple
+                    onChange={(event) =>
+                      handleInvoiceFiles(event.target.files)
+                    }
+                  />
+                </div>
+              </div>
+            </AnimateSlideUp>
+
+            <div className='mx-auto grid w-full max-w-3xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2'>
+              <UploadFeatureHighlight />
 
               <AnimateEntrancePop className='h-full' delay={0.15}>
                 <button
@@ -3221,57 +3935,6 @@ export default function Upload({
                 </button>
               </AnimateEntrancePop>
             </div>
-
-            <div className='grid w-full grid-cols-1 gap-6 md:grid-cols-3'>
-              {[
-                {
-                  color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
-                  icon: 'tabler:bolt',
-                  sub: t`Process documents faster with our agentic pipeline`,
-                  title: t`Lightning Fast`,
-                },
-                {
-                  color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
-                  icon: 'tabler:sparkles',
-                  sub: t`Industry-leading extraction accuracy and field precision`,
-                  title: t`100% Accuracy`,
-                },
-                {
-                  color: 'text-[var(--green-11)] bg-[var(--green-2)]',
-                  icon: 'tabler:clock',
-                  sub: t`Support for PDF, images, and scanned documents`,
-                  title: t`Any Format`,
-                },
-              ].map((item, idx) => (
-                <AnimateEntrancePop delay={0.3 + idx * 0.1} key={item.icon}>
-                  <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-5 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
-                    <div className='flex items-center gap-3'>
-                      <div
-                        className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} transition-transform duration-300 group-hover:scale-110`}
-                      >
-                        {item.icon === 'tabler:sparkles' ? (
-                          <AiBrandIcon
-                            className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                            variant='outline-purple'
-                          />
-                        ) : (
-                          <Icon
-                            className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                            name={item.icon}
-                          />
-                        )}
-                      </div>
-                      <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
-                        {item.title}
-                      </h4>
-                    </div>
-                    <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
-                      {item.sub}
-                    </p>
-                  </div>
-                </AnimateEntrancePop>
-              ))}
-            </div>
             <style>{`
             @keyframes scan {
               0% { transform: translateY(-100%); }
@@ -3285,8 +3948,22 @@ export default function Upload({
   }
 
   return (
-    <AnimateFadeIn className='relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-surface-muted px-4 pt-2 pb-3'>
-      <div className='mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-3 overflow-hidden'>
+    <AnimateFadeIn
+      className={cn(
+        'relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden',
+        isDraftFullPage
+          ? 'bg-surface'
+          : 'bg-surface-muted px-4 pt-2 pb-3',
+      )}
+    >
+      <div
+        className={cn(
+          'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden',
+          isDraftFullPage
+            ? 'gap-0'
+            : 'mx-auto max-w-7xl gap-3',
+        )}
+      >
         <input
           accept={DOCUMENT_ACCEPT}
           className='hidden'
@@ -3296,14 +3973,16 @@ export default function Upload({
           onChange={(event) => handleInvoiceFiles(event.target.files)}
         />
 
-        {viewingDrafts && isListOnlyPage ? (
-          <div className='flex  shrink-0 items-center gap-3 rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-2.5 shadow-xs'>
+        {viewingDrafts && isListOnlyPage && !isDraftFullPage ? (
+          <div className='flex shrink-0 items-center gap-3 rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-2.5 shadow-xs'>
             <button
               className='flex items-center gap-1.5 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:text-[var(--primary-11)] active:scale-95'
               type='button'
               onClick={() => {
                 setViewingDrafts(false)
                 setOpenFileId(null)
+                setFocusedDraftId(null)
+                setSelectedDraftIds([])
                 setQueue([])
               }}
             >
@@ -3513,13 +4192,29 @@ export default function Upload({
                   <DocumentPreviewViewer
                     fileBlob={activeEntry.file}
                     fileName={activeEntry.fileName}
-                    fileUrl={activeEntry.previewUrl}
+                    fileUrl={
+                      isPlayablePreviewUrl(activeEntry.previewUrl)
+                        ? activeEntry.previewUrl
+                        : null
+                    }
                     highlightTerms={highlightTerms}
-                    isPdf={activeEntry.file ? isPdf(activeEntry.file) : false}
+                    isPdf={
+                      activeEntry.file
+                        ? isPdf(activeEntry.file)
+                        : /\.pdf$/i.test(activeEntry.fileName || '')
+                    }
                     showScanOverlay={isAnalyzing}
                     enableHighlight
                     isImage={
-                      activeEntry.file ? isImage(activeEntry.file) : false
+                      activeEntry.file
+                        ? isImage(activeEntry.file)
+                        : /\.(bmp|jpeg|jpg|png|svg|tif|tiff|webp)$/i.test(
+                            activeEntry.fileName || '',
+                          )
+                    }
+                    isLoading={
+                      !isPlayablePreviewUrl(activeEntry.previewUrl) &&
+                      Boolean(activeEntry.stageFileId)
                     }
                   />
                 </div>
@@ -3615,7 +4310,7 @@ export default function Upload({
                     <Button
                       className='!h-9 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-4 !text-xs !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50'
                       disabled={isExporting || isAnalyzing}
-                      onClick={() => indexEntry(activeEntry.id)}
+                      onClick={() => requestIndexEntry(activeEntry.id)}
                     >
                       {isExporting ? (
                         <Icon
@@ -3743,6 +4438,26 @@ export default function Upload({
         }}
         onConfirm={() => {
           if (activeEntry) void handleDeleteStageFile(activeEntry.id)
+        }}
+      />
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Export`}
+        description={expiredExportDescription}
+        isConfirming={isExporting}
+        opened={expiredExportConfirmOpen}
+        title={t`Export file`}
+        variant='danger'
+        onCancel={() => {
+          if (isExporting) return
+          pendingExpiredExportRef.current = null
+          setExpiredExportConfirmOpen(false)
+        }}
+        onConfirm={() => {
+          const pending = pendingExpiredExportRef.current
+          pendingExpiredExportRef.current = null
+          setExpiredExportConfirmOpen(false)
+          if (pending) void indexEntry(pending.id, pending.options)
         }}
       />
       <ConfirmDialog

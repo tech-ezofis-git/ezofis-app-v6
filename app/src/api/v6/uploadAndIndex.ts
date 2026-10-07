@@ -28,6 +28,7 @@ export interface OcrFieldResult {
   name: string
   type: string
   value: string
+  status?: string
 }
 
 export interface UploadWithOcrResult {
@@ -268,6 +269,11 @@ export interface StageFileSummary {
   name: string
   status: StageFileStatus
   createdAt?: string
+  downloadUrl?: string | null
+  fileId?: string
+  filePath?: string
+  fileType?: string
+  fileUrl?: string | null
   promotedItemId?: string | null
   repositoryId?: string
   repositoryName?: string
@@ -554,15 +560,46 @@ const deleteStagedFiles = async (payload: {
   return response
 }
 
-const fetchStageFileBlob = async (fileId: string) => {
+const looksLikeErrorPayload = async (blob: Blob) => {
+  const type = (blob.type || '').toLowerCase()
+  if (
+    type.includes('json') ||
+    type.includes('text/html') ||
+    type.includes('text/plain') ||
+    type.includes('xml')
+  ) {
+    return true
+  }
   try {
-    const { data } = await axiosV6({
-      headers: { ...getTenantHeaders() },
+    const head = (await blob.slice(0, 64).text()).trimStart()
+    return head.startsWith('{') || head.startsWith('<') || head.startsWith('[')
+  } catch {
+    return false
+  }
+}
+
+const fetchStageFileBlob = async (fileId: string) => {
+  if (!fileId) return null
+  try {
+    const { data, status } = await axiosV6({
+      headers: {
+        ...getTenantHeaders(),
+        Accept: '*/*',
+        // Instance default is application/json; omit it for binary GETs.
+        'Content-Type': undefined,
+      },
       method: 'GET',
       responseType: 'blob',
-      url: `/uploadAndIndex/files/${fileId}`,
+      // Same URL can be requested from grid + sidebar + open-file; do not
+      // abort in-flight downloads when a second caller starts.
+      skipCancellation: true,
+      url: `/uploadAndIndex/files/${encodeURIComponent(fileId)}`,
     })
-    return data as Blob
+    if (status < 200 || status >= 300) return null
+    const blob = data as Blob
+    if (!blob || blob.size < 5) return null
+    if (await looksLikeErrorPayload(blob)) return null
+    return blob
   } catch (e) {
     console.error('Error fetching stage file blob:', e)
     return null
