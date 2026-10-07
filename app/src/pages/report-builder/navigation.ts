@@ -4,6 +4,7 @@ import { markOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcr
 const SETTINGS_STATE_KEY = 'ezofis_settings_state'
 
 export type ReportBuilderStep =
+  | 'source'
   | 'ask-ai'
   | 'details'
   | 'fields'

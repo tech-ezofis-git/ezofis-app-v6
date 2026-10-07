@@ -37,6 +37,7 @@ export type SettingsWizardLayoutProps = {
   isBackDisabled?: boolean
   isLoading?: boolean
   isNextDisabled?: boolean
+  isNextHidden?: boolean
   isSaving?: boolean
   moduleTitle?: Translatable
   nextLabel?: string
@@ -64,6 +65,7 @@ export default function SettingsWizardLayout({
   isBackDisabled = false,
   isLoading = false,
   isNextDisabled = false,
+  isNextHidden = false,
   isSaving = false,
   moduleTitle,
   nextLabel,
@@ -220,22 +222,23 @@ export default function SettingsWizardLayout({
                     />
                   ) : null}
 
-                  {isLastStep ? (
-                    <Button
-                      disabled={isNextDisabled || isSaving || isLoading}
-                      label={isSaving ? t`Saving...` : resolvedSaveLabel}
-                      loading={isSaving}
-                      suffixIcon='tabler:arrow-right'
-                      onClick={onSave}
-                    />
-                  ) : (
-                    <Button
-                      disabled={isNextDisabled || isLoading || isSaving}
-                      label={resolvedNextLabel}
-                      suffixIcon='tabler:arrow-right'
-                      onClick={onNext}
-                    />
-                  )}
+                  {!isNextHidden &&
+                    (isLastStep ? (
+                      <Button
+                        disabled={isNextDisabled || isSaving || isLoading}
+                        label={isSaving ? t`Saving...` : resolvedSaveLabel}
+                        loading={isSaving}
+                        suffixIcon='tabler:arrow-right'
+                        onClick={onSave}
+                      />
+                    ) : (
+                      <Button
+                        disabled={isNextDisabled || isLoading || isSaving}
+                        label={resolvedNextLabel}
+                        suffixIcon='tabler:arrow-right'
+                        onClick={onNext}
+                      />
+                    ))}
                 </div>
               </div>
             </div>
