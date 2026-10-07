@@ -55,22 +55,6 @@ const DetailsStep = () => {
         </p>
       </div>
 
-      {/* Selected Source Summary Banner */}
-      {draft.domain && (
-        <div className='flex items-center gap-2.5 rounded-xl border border-gray-3 bg-gray-1/50 px-4 py-3'>
-          <Icon className='size-4 text-primary-10' name='lucide:database' />
-          <div className='flex flex-wrap items-center gap-2 text-13'>
-            <span className='font-medium text-gray-11'>{t`Selected Source:`}</span>
-            <span className='font-semibold text-gray-13'>{draft.domain}</span>
-            {draft.sourceType && (
-              <span className='rounded-md border border-gray-3 bg-surface px-2 py-0.5 text-11 font-medium text-gray-10'>
-                {draft.sourceType}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
       <form.Field
         name='name'
         children={(field) => (

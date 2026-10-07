@@ -12,7 +12,15 @@ import type {
 } from '../types'
 import { DEFAULT_SCHEDULE } from '../types'
 
+export interface ReportDraftAiSuggestion {
+  fieldIds: string[]
+  name: string
+  summary: string
+}
+
 export interface ReportDraft {
+  aiPrompt?: string
+  aiSuggestion?: ReportDraftAiSuggestion | null
   customFields: Question[]
   description: string
   domain: string
@@ -25,6 +33,7 @@ export interface ReportDraft {
   scheduled: boolean
   sharedGroups: string[]
   sharedUsers: string[]
+  showAiBuilder?: boolean
   sourceFormId: string
   sourceId: string
   sourceType: ReportSourceType
@@ -33,6 +42,8 @@ export interface ReportDraft {
 }
 
 export const EMPTY_DRAFT: ReportDraft = {
+  aiPrompt: '',
+  aiSuggestion: null,
   customFields: [],
   description: '',
   domain: '',
@@ -45,6 +56,7 @@ export const EMPTY_DRAFT: ReportDraft = {
   scheduled: false,
   sharedGroups: [],
   sharedUsers: [],
+  showAiBuilder: false,
   sourceFormId: '',
   sourceId: '',
   sourceType: 'Workflow',
@@ -67,6 +79,8 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
       loadFromReport: (report) =>
         set({
           draft: {
+            aiPrompt: '',
+            aiSuggestion: null,
             customFields: report.customFields ?? [],
             description: report.description,
             domain: report.domain,
@@ -79,6 +93,7 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
             scheduled: report.scheduled,
             sharedGroups: report.sharedGroups,
             sharedUsers: report.sharedUsers,
+            showAiBuilder: false,
             sourceFormId: report.sourceFormId ?? '',
             sourceId: report.sourceId ?? '',
             sourceType: report.sourceType ?? '',

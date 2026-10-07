@@ -19,12 +19,12 @@ import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 
 interface HeaderProps {
-  activeAction?: string | null
   isLoading: boolean
   raisedAt: any
   requestNo: string
   rightView: 'overview' | 'history' | 'attachments' | 'comments'
   actions?: any[]
+  activeAction?: string | null
   agentData?: any
   approveLoading?: boolean
   assigneeLabel?: string
@@ -185,7 +185,9 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
-  const [localActiveAction, setLocalActiveAction] = React.useState<string | null>(null)
+  const [localActiveAction, setLocalActiveAction] = React.useState<
+    string | null
+  >(null)
 
   React.useEffect(() => {
     if (!approveLoading) {
@@ -479,24 +481,24 @@ const Header: React.FC<HeaderProps> = ({
       id: 'overview' | 'history' | 'attachments' | 'comments'
       label: string
     }[] = [
-        {
-          count: attachmentCount,
-          icon: 'tabler:paperclip',
-          id: 'attachments',
-          label: t`Attachments`,
-        },
-        {
-          count: commentsCount,
-          icon: 'tabler:message-circle',
-          id: 'comments',
-          label: t`Comments`,
-        },
-        { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
-      ]
+      {
+        count: attachmentCount,
+        icon: 'tabler:paperclip',
+        id: 'attachments',
+        label: t`Attachments`,
+      },
+      {
+        count: commentsCount,
+        icon: 'tabler:message-circle',
+        id: 'comments',
+        label: t`Comments`,
+      },
+      { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
+    ]
 
     return (
-      <OverlayHeaderWrapper className='min-h-14 w-full flex-wrap items-center justify-between gap-3 px-4 py-2'>
-        <div className='flex min-w-0 flex-wrap items-center gap-2'>
+      <OverlayHeaderWrapper className='min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
+        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2'>
           <IconButton
             className='shrink-0 cursor-pointer hover:bg-gray-2'
             color='gray'
@@ -505,7 +507,7 @@ const Header: React.FC<HeaderProps> = ({
             variant='ghost'
             onClick={onBack}
           />
-          <div className='flex min-w-0 flex-wrap items-center gap-2'>
+          <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-hidden'>
             <Tooltip content={t`Previous Request`} position='bottom'>
               <IconButton
                 className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -519,9 +521,9 @@ const Header: React.FC<HeaderProps> = ({
             </Tooltip>
             <TruncatedExpandText
               as='h1'
-              className='shrink-0 text-[15px] font-semibold tracking-tight text-gray-13'
-              maxChars={10}
+              className='text-[15px] font-semibold tracking-tight text-gray-13'
               value={requestNo}
+              fit
             />
             <Tooltip content={t`Next Request`} position='bottom'>
               <IconButton
@@ -536,15 +538,15 @@ const Header: React.FC<HeaderProps> = ({
             </Tooltip>
 
             {stage && (
-              <span className='inline-flex shrink-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-                <TruncatedExpandText maxChars={10} value={String(stage)} />
+              <span className='inline-flex min-w-0 shrink items-center overflow-hidden rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                <TruncatedExpandText value={String(stage)} fit />
               </span>
             )}
 
             {assigneeLabel && (
-              <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+              <span className='inline-flex min-w-0 shrink items-center gap-1 overflow-hidden rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
                 <Icon className='size-3 shrink-0' name='lucide:user' />
-                <TruncatedExpandText truncateAfter='@' value={assigneeLabel} />
+                <TruncatedExpandText value={assigneeLabel} fit />
               </span>
             )}
           </div>
@@ -566,8 +568,7 @@ const Header: React.FC<HeaderProps> = ({
               const code = String(currency || '')
                 .trim()
                 .toUpperCase()
-              const currencyLabel =
-                code.length === 3 ? `${code} - $` : '$'
+              const currencyLabel = code.length === 3 ? `${code} - $` : '$'
               return (
                 <div className='mr-1 flex flex-col border-r border-[var(--gray-3)] pr-2 text-right sm:mr-1.5 sm:pr-3'>
                   <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
@@ -704,17 +705,19 @@ const Header: React.FC<HeaderProps> = ({
 
                 const actionVal = String(action?.value || action?.label || '')
                 const isThisAction = effectiveActiveAction
-                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  ? actionVal.toLowerCase() ===
+                    String(effectiveActiveAction).toLowerCase()
                   : true
                 const isThisActionLoading = Boolean(
-                  (action?.loading !== undefined ? action.loading : approveLoading) &&
-                    isThisAction,
+                  (action?.loading !== undefined
+                    ? action.loading
+                    : approveLoading) && isThisAction,
                 )
-                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isOtherActionLoading = Boolean(
+                  approveLoading && !isThisAction,
+                )
                 const isDisabled = Boolean(
-                  isProcessing ||
-                    action?.disabled ||
-                    isOtherActionLoading,
+                  isProcessing || action?.disabled || isOtherActionLoading,
                 )
 
                 const btn = (
@@ -730,7 +733,8 @@ const Header: React.FC<HeaderProps> = ({
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
+                      isDisabled &&
+                        'pointer-events-none cursor-not-allowed opacity-50',
                     )}
                     onClick={(e: any) => {
                       if (isDisabled || approveLoading) return
@@ -749,9 +753,7 @@ const Header: React.FC<HeaderProps> = ({
                     className='flex items-center gap-1.5'
                     key={action?.value || action?.label}
                   >
-                    {action.renderWrapper
-                      ? action.renderWrapper(btn)
-                      : btn}
+                    {action.renderWrapper ? action.renderWrapper(btn) : btn}
                   </div>
                 )
               })}
@@ -763,9 +765,9 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2'>
+    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-nowrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-3'>
+      <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3'>
         <IconButton
           className='shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
@@ -775,7 +777,7 @@ const Header: React.FC<HeaderProps> = ({
           onClick={onBack}
         />
 
-        <div className='flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2'>
+        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden sm:gap-2'>
           <Tooltip content={t`Previous Request`} position='bottom'>
             <IconButton
               className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -789,9 +791,9 @@ const Header: React.FC<HeaderProps> = ({
           </Tooltip>
           <TruncatedExpandText
             as='h1'
-            className='shrink-0 text-[13px] font-semibold tracking-tight text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
-            maxChars={10}
+            className='text-[13px] font-semibold tracking-tight text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
             value={requestNo}
+            fit
           />
           <Tooltip content={t`Next Request`} position='bottom'>
             <IconButton
@@ -805,14 +807,14 @@ const Header: React.FC<HeaderProps> = ({
             />
           </Tooltip>
           {stage && (
-            <span className='inline-flex shrink-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-              <TruncatedExpandText maxChars={10} value={String(stage)} />
+            <span className='inline-flex min-w-0 shrink items-center overflow-hidden rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+              <TruncatedExpandText value={String(stage)} fit />
             </span>
           )}
           {assigneeLabel && (
-            <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+            <span className='inline-flex min-w-0 shrink items-center gap-1 overflow-hidden rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
               <Icon className='size-3 shrink-0' name='lucide:user' />
-              <TruncatedExpandText truncateAfter='@' value={assigneeLabel} />
+              <TruncatedExpandText value={assigneeLabel} fit />
             </span>
           )}
           <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
@@ -928,7 +930,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Side Group: Total Amount + Actions */}
-      <div className='ml-auto flex flex-wrap items-center gap-2 sm:gap-3'>
+      <div className='ml-auto flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
         {(() => {
           const getCurrencyDisplay = (curr: string) => {
             if (!curr) return '$'
@@ -1386,13 +1388,19 @@ const Header: React.FC<HeaderProps> = ({
 
                                   {/* Name & Email */}
                                   <div className='min-w-0 flex-1'>
-                                    <Tooltip className='max-w-full' content={name}>
+                                    <Tooltip
+                                      className='max-w-full'
+                                      content={name}
+                                    >
                                       <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
                                         {name}
                                       </p>
                                     </Tooltip>
                                     {email && (
-                                      <Tooltip className='max-w-full' content={email}>
+                                      <Tooltip
+                                        className='max-w-full'
+                                        content={email}
+                                      >
                                         <p className='truncate text-[11px] text-[var(--gray-9)]'>
                                           {email}
                                         </p>
@@ -1592,18 +1600,27 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex items-center gap-2'>
               {isEditing && (
                 <Button
-                  className={cn(
-                    'h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md',
-                    approveLoading && effectiveActiveAction !== 'Save' && 'pointer-events-none opacity-50 cursor-not-allowed',
-                  )}
                   color='primary'
-                  disabled={Boolean(isProcessing || (approveLoading && effectiveActiveAction !== 'Save'))}
                   icon='lucide:save'
                   iconClass='size-4'
                   label={t`Save`}
-                  loading={Boolean(approveLoading && (effectiveActiveAction === 'Save' || !effectiveActiveAction))}
                   size='md'
                   variant='solid'
+                  className={cn(
+                    'h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md',
+                    approveLoading &&
+                      effectiveActiveAction !== 'Save' &&
+                      'pointer-events-none cursor-not-allowed opacity-50',
+                  )}
+                  disabled={Boolean(
+                    isProcessing ||
+                    (approveLoading && effectiveActiveAction !== 'Save'),
+                  )}
+                  loading={Boolean(
+                    approveLoading &&
+                    (effectiveActiveAction === 'Save' ||
+                      !effectiveActiveAction),
+                  )}
                   onClick={() => {
                     setLocalActiveAction('Save')
                     onApprove?.('Save')
@@ -1663,17 +1680,19 @@ const Header: React.FC<HeaderProps> = ({
 
                 const actionVal = String(action?.value || action?.label || '')
                 const isThisAction = effectiveActiveAction
-                  ? actionVal.toLowerCase() === String(effectiveActiveAction).toLowerCase()
+                  ? actionVal.toLowerCase() ===
+                    String(effectiveActiveAction).toLowerCase()
                   : true
                 const isThisActionLoading = Boolean(
-                  (action?.loading !== undefined ? action.loading : approveLoading) &&
-                    isThisAction,
+                  (action?.loading !== undefined
+                    ? action.loading
+                    : approveLoading) && isThisAction,
                 )
-                const isOtherActionLoading = Boolean(approveLoading && !isThisAction)
+                const isOtherActionLoading = Boolean(
+                  approveLoading && !isThisAction,
+                )
                 const isDisabled = Boolean(
-                  isProcessing ||
-                    action?.disabled ||
-                    isOtherActionLoading,
+                  isProcessing || action?.disabled || isOtherActionLoading,
                 )
 
                 const btn = (
@@ -1689,7 +1708,8 @@ const Header: React.FC<HeaderProps> = ({
                     className={cn(
                       borderClass,
                       'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                      isDisabled && 'pointer-events-none opacity-50 cursor-not-allowed',
+                      isDisabled &&
+                        'pointer-events-none cursor-not-allowed opacity-50',
                     )}
                     onClick={(e: any) => {
                       if (isDisabled || approveLoading) return
@@ -1708,9 +1728,7 @@ const Header: React.FC<HeaderProps> = ({
                     className='flex items-center gap-1.5'
                     key={action?.value || action?.label}
                   >
-                    {action.renderWrapper
-                      ? action.renderWrapper(btn)
-                      : btn}
+                    {action.renderWrapper ? action.renderWrapper(btn) : btn}
                   </div>
                 )
               })}

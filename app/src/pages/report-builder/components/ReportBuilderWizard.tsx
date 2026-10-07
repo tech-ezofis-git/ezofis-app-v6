@@ -12,14 +12,14 @@ import {
   useSaveReportBuilderReportMutation,
 } from '../hooks/useReportBuilderApi'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
-import AskAiStep from './steps/AskAiStep'
+import SourceStep from './steps/SourceStep'
 import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
 import FiltersStep from './steps/FiltersStep'
 import ScheduleStep from './steps/ScheduleStep'
 
 const STEP_IDS = [
-  'ask-ai',
+  'source',
   'details',
   'fields',
   'filters',
@@ -42,21 +42,31 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const saveReportMutation = useSaveReportBuilderReportMutation()
   const publishReportMutation = usePublishReportBuilderReportMutation()
 
+  const rawStep = search.step as string
+  const normalizedStep = rawStep === 'ask-ai' ? 'source' : (rawStep as StepId)
   const initialIndex = Math.max(
     0,
-    STEP_IDS.indexOf((search.step as StepId) || 'ask-ai'),
+    STEP_IDS.indexOf(normalizedStep || 'source'),
   )
   const [activeIndex, setActiveIndex] = useState(initialIndex)
   const [isSaving, setIsSaving] = useState(false)
+  const [hasAiPlanGenerated, setHasAiPlanGenerated] = useState(false)
+
+  const isNextHidden = useMemo(() => {
+    if (STEP_IDS[activeIndex] === 'source') {
+      return !hasAiPlanGenerated && !draft.aiSuggestion
+    }
+    return false
+  }, [activeIndex, hasAiPlanGenerated, draft.aiSuggestion])
 
   const stepDefinitions: Record<
     StepId,
     { description: string; label: string }
   > = useMemo(
     () => ({
-      'ask-ai': {
-        description: t`Choose source & build mode`,
-        label: t`Source & AI`,
+      'source': {
+        description: t`Choose data source`,
+        label: t`Source`,
       },
       'details': { description: t`Name, description & sharing`, label: t`Details` },
       'fields': { description: t`Choose columns`, label: t`Fields` },
@@ -85,7 +95,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   }
 
   const isNextDisabled = useMemo(() => {
-    if (STEP_IDS[activeIndex] === 'ask-ai') {
+    if (STEP_IDS[activeIndex] === 'source') {
       return (
         !draft.sourceType ||
         (!draft.sourceId && !draft.domain.trim())
@@ -97,11 +107,15 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     if (STEP_IDS[activeIndex] === 'fields') {
       return draft.fields.length === 0
     }
+    if (STEP_IDS[activeIndex] === 'filters') {
+      return draft.filters.length === 0
+    }
     return false
   }, [
     activeIndex,
     draft.domain,
     draft.fields.length,
+    draft.filters.length,
     draft.name,
     draft.sourceId,
     draft.sourceType,
@@ -175,8 +189,13 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const renderStep = () => {
     let content: React.ReactNode = null
     switch (STEP_IDS[activeIndex]) {
-      case 'ask-ai':
-        content = <AskAiStep onProceedManual={() => goToStep(1)} />
+      case 'source':
+        content = (
+          <SourceStep
+            onPlanGenerated={setHasAiPlanGenerated}
+            onProceedManual={() => goToStep(1)}
+          />
+        )
         break
       case 'details':
         content = <DetailsStep />
@@ -207,27 +226,14 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   return (
     <SettingsWizardLayout
       activeStep={activeIndex}
-      headerAction={
-        STEP_IDS[activeIndex] === 'ask-ai' ? (
-          <Button
-            color='gray'
-            disabled={
-              !draft.sourceType || (!draft.sourceId && !draft.domain.trim())
-            }
-            icon='lucide:arrow-right'
-            label={t`Build Manually`}
-            size='sm'
-            variant='outline'
-            onClick={() => goToStep(1)}
-          />
-        ) : null
-      }
       headerDescription={t`Build a custom report from any of your organization's data domains.`}
       headerTitle={draft.editingReportId ? t`Edit Report` : t`Report Builder`}
       isNextDisabled={isNextDisabled}
+      isNextHidden={isNextHidden}
       isSaving={isSaving}
       moduleTitle={t`Reports`}
       saveLabel={t`Save as Draft`}
+      skipLabel={t`Skip for now`}
       steps={steps}
       setupTitle={t`Report Builder`}
       onBack={() => goToStep(Math.max(0, activeIndex - 1))}
@@ -235,6 +241,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       onCancel={handleCancel}
       onNext={() => goToStep(Math.min(steps.length - 1, activeIndex + 1))}
       onSave={() => void persistAndExit('Draft')}
+      onSkip={
+        STEP_IDS[activeIndex] === 'filters' && draft.filters.length === 0
+          ? () => goToStep(activeIndex + 1)
+          : undefined
+      }
       onStepChange={goToStep}
     >
       {renderStep()}
