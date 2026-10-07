@@ -38,7 +38,11 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   buildRedactedFileBlob,
+  collectMentionedFieldValues,
   collectRedactValues,
+  fieldKeysMatch,
+  normalizeFieldKey,
+  selectedFieldsIncludeOrg,
 } from '@/components/common/document-preview/pii'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
@@ -706,8 +710,9 @@ export function DocumentDetailsView({
   )
   const enablePiiRedaction =
     folderPiiEnabled && !(canToggleUnredacted && showUnredactedPreview)
-  const usePiiNer =
-    enablePiiRedaction && folderPiiSettings.fieldIds.length === 0
+  // Scan full file (regex + NER + OCR) whenever folder PII is on — not only
+  // when no fields are selected. Selected fields still drive sidebar *****.
+  const usePiiNer = enablePiiRedaction
 
   useEffect(() => {
     setSavedSignatures([])
@@ -1570,39 +1575,48 @@ export function DocumentDetailsView({
     if (!folderPiiSettings.enabled || selectedIds.size === 0) {
       return new Set<string>()
     }
-    const normalize = (value: string) =>
-      value.trim().toLowerCase().replace(/\s+/g, '')
     return new Set(
       piiRepositoryFields
         .filter((field) => selectedIds.has(String(field.id)))
-        .map((field) => normalize(field.name || ''))
+        .map((field) => normalizeFieldKey(field.name || ''))
         .filter(Boolean),
     )
   }, [folderPiiSettings, piiRepositoryFields])
+
+  const isSelectedPiiLabel = useCallback(
+    (label: string) => {
+      if (!enablePiiRedaction || piiFieldNameSet.size === 0) return false
+      const labelKey = normalizeFieldKey(label)
+      return [...piiFieldNameSet].some((key) => fieldKeysMatch(key, labelKey))
+    },
+    [enablePiiRedaction, piiFieldNameSet],
+  )
+
+  const piiBoostOrg =
+    enablePiiRedaction && selectedFieldsIncludeOrg(piiFieldNameSet)
 
   const piiRedactValues = useMemo(() => {
     // Folder fields not loaded yet — still redact from visible metadata / probes.
     if (piiFieldNameSet.size === 0) {
       return collectRedactValues(fieldProbeTerms)
     }
-    const normalize = (value: string) =>
-      value.trim().toLowerCase().replace(/\s+/g, '')
-    const terms: string[] = []
-    const seen = new Set<string>()
-    for (const card of infoCards) {
-      for (const row of card.rows) {
-        if (!piiFieldNameSet.has(normalize(row.label))) continue
-        const value = getFieldDisplayValue(row.value)
-        if (!value || seen.has(value)) continue
-        seen.add(value)
-        terms.push(value)
-      }
+    const rows = infoCards.flatMap((card) => card.rows)
+    // Mentioned fields: full values + expanded company-name tokens so the
+    // PDF greys "APEX INDUSTRIAL…" even when the sidebar stores a short code.
+    const mentioned = collectMentionedFieldValues(
+      rows,
+      piiFieldNameSet,
+      getFieldDisplayValue,
+    )
+    const seen = new Set(mentioned.map((value) => value.toLowerCase()))
+    const merged = [...mentioned]
+    // Also keep heuristic hits from all probes (auto path still uses detectPii).
+    for (const value of collectRedactValues(fieldProbeTerms)) {
+      if (seen.has(value.toLowerCase())) continue
+      seen.add(value.toLowerCase())
+      merged.push(value)
     }
-    const fromFields = collectRedactValues(terms)
-    // If selected fields have no values yet, fall back so viewer still greys PII.
-    return fromFields.length > 0
-      ? fromFields
-      : collectRedactValues(fieldProbeTerms)
+    return merged.length > 0 ? merged : collectRedactValues(fieldProbeTerms)
   }, [fieldProbeTerms, infoCards, piiFieldNameSet])
 
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
@@ -1656,9 +1670,11 @@ export function DocumentDetailsView({
         (isPdfPreview || isImagePreview)
       ) {
         const redacted = await buildRedactedFileBlob({
+          boostOrg: piiBoostOrg,
           enableNer: usePiiNer,
           fileName: data?.fileName || 'document',
           fileUrl: previewUrl,
+          knownOnly: false,
           knownValues: piiRedactValues,
           mode: isPdfPreview ? 'pdf' : 'image',
         })
@@ -1741,9 +1757,11 @@ export function DocumentDetailsView({
     let objectUrl: string | null = null
     try {
       const redacted = await buildRedactedFileBlob({
+        boostOrg: piiBoostOrg,
         enableNer: usePiiNer,
         fileName: data?.fileName || 'document',
         fileUrl: previewUrl,
+        knownOnly: false,
         knownValues: piiRedactValues,
         mode: isPdfPreview ? 'pdf' : 'image',
       })
@@ -2600,6 +2618,8 @@ export function DocumentDetailsView({
                       isSigningMode={isSigning}
                       key={`pii-${enablePiiRedaction ? 'on' : 'off'}`}
                       permission={isEditingDoc ? 'edit' : 'readonly'}
+                      piiBoostOrg={piiBoostOrg}
+                      piiKnownOnly={false}
                       probeTerms={fieldProbeTerms}
                       redactValues={piiRedactValues}
                       signerEmail={currentUserEmail}
@@ -3444,11 +3464,7 @@ export function DocumentDetailsView({
                     {card.rows.map((row) => {
                       const rowKey = `${card.id}:${row.label}`
                       const fieldValue = getFieldDisplayValue(row.value)
-                      const maskField =
-                        enablePiiRedaction &&
-                        piiFieldNameSet.has(
-                          row.label.trim().toLowerCase().replace(/\s+/g, ''),
-                        )
+                      const maskField = isSelectedPiiLabel(row.label)
                       const hasPdfMatch =
                         !maskField &&
                         Boolean(

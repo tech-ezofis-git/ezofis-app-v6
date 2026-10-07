@@ -6,6 +6,7 @@ import { measureTextLayerBoxes } from './measureTextLayerBoxes'
 import RedactionOverlay from './RedactionOverlay'
 
 type PiiDomPageOverlayProps = {
+  boostOrg?: boolean
   enableNer?: boolean
   /** OCR / precomputed fallback areas when the text layer is empty (scans). */
   fallbackAreas?: RedactionArea[]
@@ -56,9 +57,19 @@ const dedupeAreas = (areas: RedactionArea[]): RedactionArea[] => {
     const value = String(area.sourceValue || '')
     const isMrz =
       /P</i.test(value) || (value.match(/</g) || []).length >= 3
-    // Allow wide MRZ lines; reject wide non-MRZ paints.
-    if (area.width > 55 && !isMrz) continue
-    if (area.width > 32 && !isMrz && !isPassportIdValue(value)) continue
+    const isLongFieldValue =
+      value.trim().length >= 12 ||
+      value.includes(',') ||
+      value.trim().split(/\s+/).length >= 3
+    // Allow wide MRZ / long field covers; reject accidental wide paints.
+    if (area.width > 55 && !isMrz && !isLongFieldValue) continue
+    if (
+      area.width > 32 &&
+      !isMrz &&
+      !isPassportIdValue(value) &&
+      !isLongFieldValue
+    )
+      continue
     const duplicate = kept.some(
       (existing) =>
         overlapRatio(existing, area) > 0.25 ||
@@ -78,6 +89,7 @@ const dedupeAreas = (areas: RedactionArea[]): RedactionArea[] => {
  * has them but the text layer does not.
  */
 const PiiDomPageOverlay = ({
+  boostOrg = false,
   enableNer = false,
   fallbackAreas = [],
   isOcrScanning = false,
@@ -128,6 +140,7 @@ const PiiDomPageOverlay = ({
           boxCount = measured.boxes.length
           if (boxCount >= 3 && pageText.trim().length >= 12) {
             const piiValues = await detectPiiValues(pageText, {
+              boostOrg,
               enableNer,
               knownOnly,
               knownValues,
@@ -160,9 +173,21 @@ const PiiDomPageOverlay = ({
         isMrzOrPassportArea(area),
       )
 
-      // Bank statements / digital PDFs: DOM text layer only.
+      // Bank statements / digital PDFs: prefer DOM text layer.
+      // If known folder-field values didn't match in the text layer, fall
+      // back to OCR boxes so invoice addresses / supplier names still grey.
       if (textLayerDense && !textHasMrz && !looksLikePassport) {
-        applyAreas(textMatched)
+        if (textMatched.length > 0) {
+          applyAreas(textMatched)
+          return
+        }
+        if (pageFallback.length > 0) {
+          applyAreas(pageFallback)
+          return
+        }
+        // Wait for OCR — clearing here left invoices unredacted on the PDF.
+        if (isOcrScanning) return
+        applyAreas([])
         return
       }
 
@@ -224,6 +249,7 @@ const PiiDomPageOverlay = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    boostOrg,
     enableNer,
     fallbackKey,
     isOcrScanning,

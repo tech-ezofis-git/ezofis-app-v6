@@ -27,6 +27,7 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -3917,102 +3918,56 @@ const Overview = (props: any) => {
     return FileText
   }
 
+  const previewFileName =
+    selectedFile?.fileName ||
+    selectedFile?.name ||
+    selectedItem?.repositoryItem?.fileName ||
+    selectedItem?.name ||
+    'document.pdf'
+
   let previewContent = null
   if (previewUrl) {
-    if (fileType === 'application/pdf') {
-      previewContent = (
-        <Worker workerUrl='https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'>
-          <div
-            className='group relative h-full w-full overflow-hidden'
-            ref={pdfViewerWrapperRef}
-          >
-            <Viewer
-              defaultScale={SpecialZoomLevel.PageWidth}
-              fileUrl={previewUrl}
-              key={`${requestFileKey}-${previewUrl}`}
-              plugins={[toolbarPluginInstance, searchPluginInstance]}
-              renderError={() => (
-                <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
-                  <Icon
-                    className='mb-4 size-12 text-[var(--gray-4)]'
-                    name='tabler:file-off'
-                  />
-                  <p className='text-[15px] font-semibold text-[var(--gray-11)]'>
-                    No document preview available
-                  </p>
-                </div>
-              )}
-            />
-            <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
-              <button
-                className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
-                disabled={scale <= 0.75}
-                onClick={() => {
-                  const step = scale <= 1 ? 0.05 : 0.1
-                  zoomTo(scale - step)
-                }}
-              >
-                <Icon className='size-5' name='lucide:zoom-out' />
-              </button>
-              <span className='min-w-[40px] text-center text-[12px] font-semibold'>
-                {Math.round(scale * 100)}%
-              </span>
-              <button
-                className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
-                disabled={scale >= 1.5}
-                onClick={() => {
-                  const step = scale < 1 ? 0.05 : 0.1
-                  zoomTo(scale + step)
-                }}
-              >
-                <Icon className='size-5' name='lucide:zoom-in' />
-              </button>
-            </div>
+    const isPdfPreview =
+      fileType === 'application/pdf' ||
+      String(previewFileName).toLowerCase().endsWith('.pdf')
+    const isImagePreview =
+      Boolean(fileType?.startsWith('image/')) ||
+      /\.(png|jpe?g|gif|webp|bmp)$/i.test(String(previewFileName))
 
-            {/* Scanner overlay — constrained to actual PDF page width via measured bounds */}
-            {isScanning && (
-              <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
-                <div
-                  className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-y-0'
-                  style={{
-                    left: scannerBounds.left,
-                    right: scannerBounds.right,
-                  }}
-                />
-                <div
-                  className='animate-scan absolute h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
-                  style={{
-                    animationDuration: '8s',
-                    left: scannerBounds.left,
-                    right: scannerBounds.right,
-                  }}
-                />
-              </div>
-            )}
+    previewContent = (
+      <div
+        className='relative h-full w-full overflow-hidden'
+        ref={pdfViewerWrapperRef}
+      >
+        <DocumentPreviewViewer
+          fileName={previewFileName}
+          fileUrl={previewUrl}
+          isImage={isImagePreview}
+          isLoading={isViewerLoading}
+          isPdf={isPdfPreview}
+          key={`${requestFileKey}-${previewUrl}`}
+        />
+        {isScanning && (
+          <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
+            <div
+              className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-y-0'
+              style={{
+                left: scannerBounds.left,
+                right: scannerBounds.right,
+              }}
+            />
+            <div
+              className='animate-scan absolute h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
+              style={{
+                animationDuration: '8s',
+                left: scannerBounds.left,
+                right: scannerBounds.right,
+              }}
+            />
           </div>
-        </Worker>
-      )
-    } else {
-      previewContent = (
-        <div className='relative flex h-full w-full items-center justify-center p-4'>
-          <img
-            alt='Preview'
-            className='max-h-full max-w-full rounded-xl border object-contain shadow-2xl'
-            src={previewUrl}
-          />
-          {/* Scanner overlay (restricted to Image) */}
-          {isScanning && (
-            <div className='pointer-events-none absolute inset-x-4 top-12 bottom-4 z-10 overflow-hidden rounded-xl'>
-              <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
-              <div
-                className='animate-scan absolute right-0 left-0 h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
-                style={{ animationDuration: '8s' }}
-              />
-            </div>
-          )}
-        </div>
-      )
-    }
+        )}
+      </div>
+    )
   } else if (!isViewerLoading) {
     previewContent = (
       <div className='flex h-full flex-col items-center justify-center p-6 text-center'>

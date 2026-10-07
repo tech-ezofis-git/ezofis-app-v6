@@ -29,6 +29,14 @@ const normalizeHeading = (value: string) =>
 const compactHeading = (value: string) =>
   normalizeHeading(value).replace(/\s+/g, '')
 
+/** Light-orange for Accept all / Accept. */
+const lineItemAcceptBtnClass =
+  'inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-1 text-[11px] font-semibold text-[var(--orange-11)] transition-all hover:bg-[var(--orange-3)] active:scale-95'
+
+/** Purple outline for + Add Row (white fill, primary border/text). */
+const lineItemAddRowBtnClass =
+  'inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
+
 const columnTitle = (col: any) =>
   String(
     col?.name ||
@@ -591,7 +599,7 @@ const QuoteLineItemsTable = ({
           <div className='flex items-center gap-2'>
             {hasUnaccepted ? (
               <button
-                className='inline-flex cursor-pointer items-center rounded-md border border-orange-7 bg-orange-2 px-2 py-1 text-[11px] font-semibold text-orange-11 transition-all hover:bg-orange-3 active:scale-95'
+                className={lineItemAcceptBtnClass}
                 type='button'
                 onClick={acceptAll}
               >
@@ -599,11 +607,11 @@ const QuoteLineItemsTable = ({
               </button>
             ) : null}
             <button
-              className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-1 text-[11px] font-bold text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)] active:scale-95'
+              className={lineItemAddRowBtnClass}
               type='button'
               onClick={addRow}
             >
-              <Icon className='h-3.5 w-3.5' icon='tabler:plus' />
+              <Icon className='h-3.5 w-3.5 text-current' icon='tabler:plus' />
               {t`Add Row`}
             </button>
           </div>
@@ -613,7 +621,7 @@ const QuoteLineItemsTable = ({
         <table className='w-full border-collapse text-left text-sm'>
           <thead className='bg-gray-1 text-xs text-gray-11'>
             <tr>
-              <th className='min-w-[220px] border border-gray-3 p-3 text-center font-semibold'>
+              <th className='min-w-[220px] border border-gray-3 p-3 text-left font-semibold'>
                 Product
               </th>
               <th className='w-24 border border-gray-3 p-3 text-center font-semibold'>
@@ -712,11 +720,33 @@ function HoverValue({
     }
   }, [keepOpenOnPortal, open])
 
-  if (!canEdit) return <>{display}</>
+  if (!canEdit) {
+    return (
+      <div
+        className={cn(
+          'w-full min-w-0',
+          align === 'center' && 'text-center',
+          align === 'right' && 'text-right',
+          align === 'left' && 'text-left',
+          className,
+        )}
+      >
+        {display}
+      </div>
+    )
+  }
 
   if (open) {
     return (
-      <div ref={rootRef} className={cn('min-w-0', fill && 'w-full')}>
+      <div
+        ref={rootRef}
+        className={cn(
+          'min-w-0',
+          fill && 'w-full',
+          align === 'center' && 'mx-auto w-full text-center',
+          align === 'right' && 'w-full text-right',
+        )}
+      >
         {input(close)}
       </div>
     )
@@ -726,11 +756,12 @@ function HoverValue({
     <div
       ref={rootRef}
       className={cn(
-        'group flex min-w-0 gap-1',
+        'group relative flex min-w-0 gap-1',
         fill || align === 'left' ? 'items-start' : 'items-center',
         fill && 'w-full flex-1',
-        align === 'right' && 'w-full justify-end',
+        align === 'right' && 'w-full justify-end pr-6',
         align === 'center' && 'w-full justify-center',
+        align === 'left' && !fill && 'w-full',
       )}
     >
       <button
@@ -746,11 +777,16 @@ function HoverValue({
       >
         {display}
       </button>
-      {/* Fixed trailing slot so the pencil never overlaps value / Accept. */}
+      {/* Absolute pencil keeps centered/right values visually aligned. */}
       <button
         aria-label='Edit'
         type='button'
-        className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+        className={cn(
+          'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
+          align === 'center' || align === 'right'
+            ? 'absolute top-1/2 right-0 -translate-y-1/2'
+            : '',
+        )}
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -860,7 +896,7 @@ function QuoteLineRow({
                   </Tooltip>
                 ) : (
                   <button
-                    className='inline-flex shrink-0 cursor-pointer items-center rounded-md border border-orange-7 bg-orange-2 px-2 py-0.5 text-[11px] font-semibold text-orange-11 transition-all hover:bg-orange-3 active:scale-95'
+                    className={cn(lineItemAcceptBtnClass, 'shrink-0 px-2 py-0.5')}
                     type='button'
                     onClick={onApprove}
                   >
@@ -936,8 +972,10 @@ function QuoteLineRow({
         <HoverValue
           align='center'
           canEdit={canEdit}
-          className='text-center'
-          display={<span>{formatQty(item.Qty)}</span>}
+          className='w-full text-center'
+          display={
+            <span className='inline-block tabular-nums'>{formatQty(item.Qty)}</span>
+          }
           input={() => (
             <input
               aria-label={t`Qty`}
@@ -952,18 +990,20 @@ function QuoteLineRow({
           )}
         />
       </td>
-      <td className='w-28 border border-gray-3 p-3 text-right align-top text-gray-12'>
+      <td className='w-28 border border-gray-3 p-3 text-center align-top text-gray-12'>
         <HoverValue
-          align='right'
+          align='center'
           canEdit={canEdit}
-          className='block w-full text-right'
+          className='w-full text-center'
           display={
-            <span className='block text-right'>${toMoney(item.Price)}</span>
+            <span className='inline-block tabular-nums'>
+              ${toMoney(item.Price)}
+            </span>
           }
           input={() => (
             <input
               aria-label={t`Price`}
-              className={cn(cellInputClass, 'text-right')}
+              className={cn(cellInputClass, 'text-center')}
               inputMode='decimal'
               value={item.Price ?? ''}
               autoFocus
@@ -972,8 +1012,8 @@ function QuoteLineRow({
           )}
         />
       </td>
-      <td className='w-28 border border-gray-3 p-3 text-right align-top'>
-        <span className='font-semibold text-gray-12'>
+      <td className='w-28 border border-gray-3 p-3 text-center align-top'>
+        <span className='inline-block font-semibold tabular-nums text-gray-12'>
           ${toMoney(lineSubtotal)}
         </span>
       </td>

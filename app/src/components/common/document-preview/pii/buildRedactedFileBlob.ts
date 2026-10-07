@@ -2,6 +2,7 @@ import type { RedactionArea } from './types'
 import { computePiiAreas } from './computePiiAreas'
 
 type BuildRedactedFileArgs = {
+  boostOrg?: boolean
   enableNer?: boolean
   fileName?: string
   fileUrl: string
@@ -20,17 +21,21 @@ const PDF_WORKER_URL = new URL(
 const padArea = (area: RedactionArea) => {
   const fillers = (String(area.sourceValue || '').match(/</g) || []).length
   const isMrz = fillers >= 3 || /^P</i.test(String(area.sourceValue || ''))
-  const padX = isMrz ? 0.25 : Math.min(0.12, area.width * 0.02)
-  const padY = isMrz ? 0.12 : Math.min(0.08, area.height * 0.08)
+  const padX = isMrz
+    ? 0.35
+    : Math.max(0.45, Math.min(1.4, area.width * 0.1 + 0.25))
+  const padY = isMrz
+    ? 0.15
+    : Math.max(0.12, Math.min(0.4, area.height * 0.18))
   const left = Math.max(0, area.left - padX)
   const top = Math.max(0, area.top - padY)
   const right = Math.min(100, area.left + area.width + padX)
   const bottom = Math.min(100, area.top + area.height + padY)
   return {
-    height: Math.max(0.35, bottom - top),
+    height: Math.max(0.45, bottom - top),
     left,
     top,
-    width: Math.max(0.35, right - left),
+    width: Math.max(0.45, right - left),
   }
 }
 
@@ -74,6 +79,7 @@ const blobFromDataUrl = async (
  * PDFs become a flattened redacted PDF; images become a redacted PNG.
  */
 export const buildRedactedFileBlob = async ({
+  boostOrg = false,
   enableNer = false,
   fileName = 'document',
   fileUrl,
@@ -83,6 +89,7 @@ export const buildRedactedFileBlob = async ({
   visibleChars = 3,
 }: BuildRedactedFileArgs): Promise<{ blob: Blob; fileName: string }> => {
   const areas = await computePiiAreas({
+    boostOrg,
     enableNer,
     fileUrl,
     knownOnly,

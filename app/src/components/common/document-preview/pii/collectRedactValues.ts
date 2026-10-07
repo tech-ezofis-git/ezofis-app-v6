@@ -53,7 +53,8 @@ const SKIP_LABELS = new Set([
 export const isLikelyPiiValue = (value: unknown): value is string => {
   if (value == null) return false
   const raw = String(value).trim()
-  if (raw.length < 4 || raw.length > 128) return false
+  // Allow long addresses / multi-line PII chosen from folder field settings.
+  if (raw.length < 4 || raw.length > 400) return false
   const lower = raw.toLowerCase()
   if (SKIP_LABELS.has(lower)) return false
 
@@ -78,11 +79,28 @@ export const isLikelyPiiValue = (value: unknown): value is string => {
     return true
   }
 
-  // Person names: multi-word alpha only. Skip if any word is a known label.
-  if (/^[A-Za-z][A-Za-z.'\-\s]{2,60}$/.test(raw)) {
+  // Person / company names (allow Ltd/Inc/LLC suffixes on the full string).
+  if (/^[A-Za-z][A-Za-z0-9.'\-\s&,]{2,80}$/.test(raw)) {
     const words = raw.split(/\s+/).filter(Boolean)
-    if (words.some((w) => SKIP_LABELS.has(w.toLowerCase()))) return false
-    if (words.length >= 2 && words.every((w) => w.length >= 2)) return true
+    const companySuffix = new Set([
+      'co',
+      'company',
+      'corp',
+      'corporation',
+      'inc',
+      'incorporated',
+      'limited',
+      'llc',
+      'llp',
+      'ltd',
+      'plc',
+      'pvt',
+    ])
+    const coreWords = words.filter((w) => !companySuffix.has(w.toLowerCase()))
+    if (coreWords.some((w) => SKIP_LABELS.has(w.toLowerCase()))) return false
+    if (coreWords.length >= 2 && coreWords.every((w) => w.length >= 2)) {
+      return true
+    }
     // Single all-caps token (e.g. SCHNUR) — not a document label.
     if (
       words.length === 1 &&

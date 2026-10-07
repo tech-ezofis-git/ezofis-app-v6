@@ -6,12 +6,17 @@ const sameLine = (a: TextBox, b: TextBox) =>
   Math.max(a.height, b.height) * 0.45
 
 /** Tight gap only — loose adjacency was joining description→amount columns. */
-const adjacent = (left: TextBox, right: TextBox) => {
+const adjacent = (left: TextBox, right: TextBox, loose = false) => {
   const gap = right.left - (left.left + left.width)
-  const maxGap = Math.min(
-    0.9,
-    Math.max(0.12, Math.min(left.height, right.height) * 0.35),
-  )
+  const maxGap = loose
+    ? Math.min(
+        2.4,
+        Math.max(0.35, Math.min(left.height, right.height) * 0.9),
+      )
+    : Math.min(
+        0.9,
+        Math.max(0.12, Math.min(left.height, right.height) * 0.35),
+      )
   return gap >= -0.2 && gap <= maxGap
 }
 
@@ -153,36 +158,108 @@ const coverMrzLineGroups = (
   return areas
 }
 
-/** Drop full-page / full-row paints that are not real MRZ lines. */
+const COMPANY_TRAIL_RE =
+  /^(ltd|llc|inc|corp|co|limited|group|plc|pvt|corporation|incorporated)\.?$/i
+
+/** Grow a cover rightward over LTD / GROUP / INC so suffixes aren't left visible. */
+const expandCoverOverCompanyTrail = (
+  area: RedactionArea,
+  ordered: TextBox[],
+): RedactionArea => {
+  const right = area.left + area.width
+  const midY = area.top + area.height / 2
+  const trail: TextBox[] = []
+  for (const box of ordered) {
+    if (box.pageIndex !== area.pageIndex) continue
+    const boxMid = box.top + box.height / 2
+    if (Math.abs(boxMid - midY) > Math.max(area.height, box.height) * 0.55) {
+      continue
+    }
+    const gap = box.left - right
+    if (gap < -0.3 || gap > 2.8) continue
+    const word = String(box.text || '').trim()
+    if (!COMPANY_TRAIL_RE.test(word)) continue
+    trail.push(box)
+  }
+  if (!trail.length) return area
+  const merged = mergeBoxes([
+    {
+      height: area.height,
+      left: area.left,
+      pageIndex: area.pageIndex,
+      text: area.sourceValue,
+      top: area.top,
+      width: area.width,
+    },
+    ...trail,
+  ])
+  return {
+    ...area,
+    height: merged.height,
+    left: merged.left,
+    top: merged.top,
+    width: Math.min(100 - merged.left, merged.width * 1.06 + 0.4),
+  }
+}
+
+/** Drop full-page / full-row paints that are not real MRZ / field values. */
 const isOversizedNonMrzArea = (area: RedactionArea) => {
   const value = String(area.sourceValue || '')
   const fillers = (value.match(/</g) || []).length
   if (fillers >= 3 || /^P</i.test(value)) return false
+  // Folder field values (names, addresses) are often wide — keep them.
+  const isLongFieldValue =
+    value.trim().length >= 12 ||
+    value.includes(',') ||
+    value.trim().split(/\s+/).length >= 3
+  if (isLongFieldValue) return area.height > 6
   // Bank statement rows / bad text-layer widths — keep covers compact.
   return area.width > 28 || area.height > 3.2
 }
 
 /**
  * PDF text items often report a box as wide as the whole column/row.
- * Clamp width from the matched string length + font height.
+ * Clamp only huge row-wide boxes; otherwise keep/expand so trailing ink
+ * is fully covered (short estimates left last letters visible).
  */
 const tightenBoxToContent = (box: TextBox, matchedText: string): TextBox => {
   const text = String(matchedText || box.text || '').trim()
   if (!text) return box
   const compactLen = Math.max(1, text.replace(/\s+/g, '').length)
-  const estCharW = Math.max(0.32, Math.min(1.1, box.height * 0.52))
-  const estWidth = Math.min(100 - box.left, compactLen * estCharW * 1.2)
-  const perChar = box.width / compactLen
-
-  // Reported box much wider than the glyphs → clamp to estimate.
-  if (box.width > estWidth * 1.25 && (box.width > 6 || perChar > 1.4)) {
+  const boxTextLen = Math.max(
+    1,
+    String(box.text || text).replace(/\s+/g, '').length,
+  )
+  const perChar = box.width / boxTextLen
+  // Trust normal text-layer widths — grow slightly so last glyphs stay under grey.
+  if (box.width <= 42 && perChar > 0.12 && perChar < 2.8) {
     return {
       ...box,
       text,
-      width: Math.max(1.2, Math.min(box.width, estWidth)),
+      width: Math.min(100 - box.left, box.width * 1.12 + 0.55),
     }
   }
-  return { ...box, text }
+  const estCharW = Math.max(0.5, Math.min(1.45, box.height * 0.72))
+  const estWidth = Math.min(
+    100 - box.left,
+    compactLen * estCharW * 1.5 + 0.6,
+  )
+  // Only clamp clearly oversized row/column boxes.
+  if (box.width > estWidth * 1.6 && box.width > 10) {
+    return {
+      ...box,
+      text,
+      width: Math.max(1.6, estWidth),
+    }
+  }
+  return {
+    ...box,
+    text,
+    width: Math.min(
+      100 - box.left,
+      Math.max(box.width, estWidth) * 1.08 + 0.4,
+    ),
+  }
 }
 
 /** Slice a box to cover only a digit-run match inside mixed text. */
@@ -316,11 +393,18 @@ export const matchPiiToBoxes = (
         !passportStyle &&
         needleDigits.length >= 6 &&
         needleDigits.length >= Math.floor(needleCompact.length * 0.6)
+      // INV-2026-6001 / PO-60081 — letters + digits; PDF often splits on hyphens.
+      const needleIsMixedId =
+        !passportStyle &&
+        /[a-z]/i.test(needleCompact) &&
+        needleDigits.length >= 4 &&
+        /[-_/]/.test(needleCompact)
       if (!needle && !needleDigits) continue
       // Short alpha fragments from OCR cause false grey boxes on labels.
       if (
         !passportStyle &&
         !needle.includes('<') &&
+        !needleIsMixedId &&
         needleDigits.length < 6 &&
         needleCompact.length < 5
       ) {
@@ -337,9 +421,10 @@ export const matchPiiToBoxes = (
         if (LABEL_BOX_RE.test(hayCompact)) continue
 
         // Alphabetic / mixed IDs: whole token only (never INV inside INVOICE).
+        // Mixed invoice/PO ids still use whole-token even when digit-heavy.
         const textHit =
           Boolean(needle) &&
-          !needleIsMostlyDigits &&
+          (!needleIsMostlyDigits || needleIsMixedId) &&
           !passportStyle &&
           needleCompact.length >= 5 &&
           isWholeTokenMatch(hay, needle)
@@ -367,15 +452,15 @@ export const matchPiiToBoxes = (
                 hay.length >= 8)),
         )
 
-        // Digit IDs: exact or contained digit-run (account numbers).
+        // Digit IDs: exact or contained digit-run (account / PO / invoice nos).
         const digitHit = Boolean(
           !passportStyle &&
-            needleDigits.length >= 6 &&
+            needleDigits.length >= 5 &&
             (hayDigits === needleDigits ||
-              (needleIsMostlyDigits &&
+              ((needleIsMostlyDigits || /[a-z]/i.test(needleCompact)) &&
                 hayDigits.includes(needleDigits) &&
                 (hayDigits === needleDigits ||
-                  needleDigits.length >= 7 ||
+                  needleDigits.length >= 5 ||
                   hayDigits.length === needleDigits.length))),
         )
 
@@ -393,8 +478,21 @@ export const matchPiiToBoxes = (
           continue
         }
 
+        // Cover the whole text item when the match is most of the box —
+        // slicing phones/ids left prefixes like "1-519-555-" visible.
+        const coversMostOfBox =
+          hayCompact === needleCompact ||
+          isWholeTokenMatch(hay, needle) ||
+          (needleCompact.length >= 4 &&
+            hayCompact.includes(needleCompact) &&
+            needleCompact.length >= hayCompact.length * 0.5) ||
+          (needleDigits.length >= 7 &&
+            (hayDigits === needleDigits ||
+              (hayDigits.includes(needleDigits) &&
+                needleDigits.length >= hayDigits.length * 0.7)))
+
         let sliced = box
-        if (passportHit) {
+        if (passportHit && !coversMostOfBox) {
           // Whole MRZ / data line → cover the full line; short field → full box;
           // otherwise slice to the AG######## span (keeps letter prefix).
           sliced = looksLikeMrz(hayRaw)
@@ -403,21 +501,36 @@ export const matchPiiToBoxes = (
               ? box
               : sliceBoxToPassportId(box, hayRaw, needleCompact)
         } else if (
+          !coversMostOfBox &&
           digitHit &&
-          (hayDigits !== needleDigits || box.width > 36) &&
+          hayDigits !== needleDigits &&
+          box.width > 36 &&
           hayDigits.includes(needleDigits)
         ) {
           sliced = sliceBoxToDigits(box, hayRaw, needleDigits)
         }
 
+        const coverText = coversMostOfBox
+          ? hayRaw || value
+          : String(sliced.text || value)
         const tightened = looksLikeMrz(String(sliced.text || hayRaw))
           ? sliced
-          : tightenBoxToContent(sliced, value)
+          : tightenBoxToContent(
+              coversMostOfBox ? { ...box, text: hayRaw || box.text } : sliced,
+              coverText,
+            )
+
+        const isLongFieldValue =
+          String(value).trim().length >= 12 ||
+          String(value).includes(',') ||
+          String(value).trim().split(/\s+/).length >= 3
 
         // Reject full-row paints from bad PDF text-layer widths.
+        // Keep long folder-field values (supplier names / addresses).
         if (
           tightened.width > 28 &&
-          !looksLikeMrz(String(tightened.text || hayRaw))
+          !looksLikeMrz(String(tightened.text || hayRaw)) &&
+          !isLongFieldValue
         ) {
           continue
         }
@@ -430,8 +543,9 @@ export const matchPiiToBoxes = (
         })
       }
 
-      // Multi-box contiguous match for passport ids (AG + 8148412) and digit runs.
-      if (passportStyle || needleDigits.length >= 6) {
+      // Multi-box contiguous match for passport ids (AG + 8148412), digit runs,
+      // and mixed invoice/PO ids (INV- + 2026- + 6001).
+      if (passportStyle || needleDigits.length >= 5 || needleIsMixedId) {
         for (let start = 0; start < ordered.length; start++) {
           let joinedDigits = ''
           let joinedCompact = ''
@@ -440,16 +554,20 @@ export const matchPiiToBoxes = (
             const next = ordered[end]
             if (run.length) {
               const prev = run[run.length - 1]
-              if (!sameLine(prev, next) || !adjacent(prev, next)) break
+              if (
+                !sameLine(prev, next) ||
+                !adjacent(prev, next, needleIsMixedId)
+              )
+                break
             }
             const chunk = String(next.text || '').replace(/\s+/g, '')
             const chunkDigits = digitsOnly(next.text)
-            if (passportStyle) {
+            if (passportStyle || needleIsMixedId) {
               if (!chunk) {
                 if (run.length) break
                 continue
               }
-              // Allow letter-only prefix chunks (AG) then digits.
+              // Allow letter-only prefix chunks (AG / INV) then digits.
               if (!/[a-z0-9]/i.test(chunk)) {
                 if (run.length) break
                 continue
@@ -457,12 +575,20 @@ export const matchPiiToBoxes = (
               run.push(next)
               joinedCompact += chunk.toLowerCase()
               joinedDigits += chunkDigits
-              if (
+              const compactHit =
                 joinedCompact === needleCompact ||
+                joinedCompact.replace(/[-_/]/g, '') ===
+                  needleCompact.replace(/[-_/]/g, '') ||
                 joinedCompact.includes(needleCompact)
-              ) {
+              const digitHit =
+                needleDigits.length >= 5 && joinedDigits === needleDigits
+              if (compactHit || (needleIsMixedId && digitHit && run.length > 1)) {
                 const merged = tightenBoxToContent(mergeBoxes(run), value)
-                if (merged.width <= 28 || looksLikeMrz(merged.text)) {
+                if (
+                  merged.width <= 36 ||
+                  looksLikeMrz(merged.text) ||
+                  needleIsMixedId
+                ) {
                   areas.push({
                     ...merged,
                     maskedLabel: maskPiiValue(value, visibleChars),
@@ -506,14 +632,21 @@ export const matchPiiToBoxes = (
         }
       }
 
-      // Multi-box exact text join for person names and MRZ fragments.
+      // Multi-box exact text join for names, addresses, mixed ids, and MRZ.
       if (
         needle.length >= 4 &&
-        needle.length <= 80 &&
-        !needleIsMostlyDigits &&
+        needle.length <= 220 &&
+        (!needleIsMostlyDigits || needleIsMixedId) &&
         /[a-z]/i.test(needle)
       ) {
-        const maxParts = needle.includes('<') ? 12 : 6
+        const wordCount = needle.split(/\s+/).filter(Boolean).length
+        const maxParts = needle.includes('<')
+          ? 12
+          : needleIsMixedId
+            ? Math.min(16, Math.max(6, needleCompact.length))
+            : Math.min(24, Math.max(8, wordCount + 4))
+        const looseAdjacent =
+          wordCount >= 3 || needle.length >= 20 || needleIsMixedId
         for (let start = 0; start < ordered.length; start++) {
           const run: TextBox[] = []
           for (
@@ -524,7 +657,11 @@ export const matchPiiToBoxes = (
             const next = ordered[end]
             if (run.length) {
               const prev = run[run.length - 1]
-              if (!sameLine(prev, next) || !adjacent(prev, next)) break
+              if (
+                !sameLine(prev, next) ||
+                !adjacent(prev, next, looseAdjacent)
+              )
+                break
             }
             run.push(next)
             const joinedSpaced = normalizePiiToken(
@@ -533,9 +670,26 @@ export const matchPiiToBoxes = (
             const joinedTight = normalizePiiToken(
               run.map((item) => item.text).join(''),
             )
+            const joinedAlnum = joinedTight.replace(/[^a-z0-9]/g, '')
+            const needleAlnum = needleCompact.replace(/[^a-z0-9]/g, '')
+            const needleWords = needle
+              .split(/\s+/)
+              .filter((word) => word.length >= 3)
+            const joinedWords = joinedSpaced
+              .split(/\s+/)
+              .filter((word) => word.length >= 3)
+            const phraseHit =
+              needleWords.length >= 2 &&
+              joinedWords.length >= 2 &&
+              needleWords.every((word) => joinedSpaced.includes(word))
             if (
               joinedSpaced === needle ||
               joinedTight === needle ||
+              isWholeTokenMatch(joinedSpaced, needle) ||
+              phraseHit ||
+              (needleIsMixedId &&
+                needleAlnum.length >= 6 &&
+                joinedAlnum === needleAlnum) ||
               (needle.includes('<') &&
                 (joinedTight.includes(needle) || needle.includes(joinedTight)))
             ) {
@@ -548,7 +702,7 @@ export const matchPiiToBoxes = (
               })
               break
             }
-            if (joinedTight.length > needle.length + 4) break
+            if (joinedTight.length > needle.length + 8) break
           }
         }
       }
@@ -589,6 +743,12 @@ export const matchPiiToBoxes = (
         pageIndex,
         sourceValue: raw,
       })
+    }
+
+    // Extend covers over trailing LTD / GROUP so last words aren't left bare.
+    for (let i = 0; i < areas.length; i++) {
+      if (areas[i].pageIndex !== pageIndex) continue
+      areas[i] = expandCoverOverCompanyTrail(areas[i], ordered)
     }
   }
 

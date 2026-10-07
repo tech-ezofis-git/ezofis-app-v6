@@ -7,6 +7,7 @@ import { extractOcrTextBoxes, extractPdfPageOcrBoxes } from './ocrBoxes'
 const DEFAULT_BG = '#ffffff'
 
 type ComputePiiAreasArgs = {
+  boostOrg?: boolean
   enableNer?: boolean
   fileUrl: string
   knownOnly?: boolean
@@ -59,9 +60,15 @@ const dedupeAreas = (areas: RedactionArea[]): RedactionArea[] => {
     const isPassportId =
       /^[A-Z]{1,2}\d{6,9}$/i.test(value.replace(/\s+/g, '')) ||
       /^\d{8,9}$/.test(value.replace(/\s+/g, ''))
-    // Keep wide MRZ lines; drop wide non-MRZ paints. Passport nos stay.
-    if (area.width > 55 && !isMrz) continue
-    if (area.width > 32 && !isMrz && !isPassportId) continue
+    // Folder-selected values (names, addresses) are often wide — keep them.
+    const isLongFieldValue =
+      value.trim().length >= 12 ||
+      value.includes(',') ||
+      value.trim().split(/\s+/).length >= 3
+    // Keep wide MRZ / long field covers; drop accidental wide paints.
+    if (area.width > 55 && !isMrz && !isLongFieldValue) continue
+    if (area.width > 32 && !isMrz && !isPassportId && !isLongFieldValue)
+      continue
     if (kept.some((existing) => overlapRatio(existing, area) > 0.25)) continue
     kept.push(area)
   }
@@ -76,6 +83,7 @@ const throwIfAborted = (signal?: AbortSignal) => {
  * Shared PII box detection used by the live overlay and redacted download/print.
  */
 export const computePiiAreas = async ({
+  boostOrg = false,
   enableNer = false,
   fileUrl,
   knownOnly = false,
@@ -90,6 +98,7 @@ export const computePiiAreas = async ({
     const page = await extractOcrTextBoxes(fileUrl, 0)
     throwIfAborted(signal)
     const piiValues = await detectPiiValues(page.pageText, {
+      boostOrg,
       enableNer,
       knownOnly,
       knownValues,
@@ -118,7 +127,8 @@ export const computePiiAreas = async ({
   let textMatched: RedactionArea[] = []
   if (!sparse) {
     const textLayerPii = await detectPiiValues(joinedText, {
-      enableNer: false,
+      boostOrg,
+      enableNer,
       knownOnly,
       knownValues,
     })
@@ -165,7 +175,8 @@ export const computePiiAreas = async ({
       '\n',
     )
     const piiValues = await detectPiiValues(pageText, {
-      enableNer: false,
+      boostOrg,
+      enableNer,
       knownOnly,
       knownValues,
     })
