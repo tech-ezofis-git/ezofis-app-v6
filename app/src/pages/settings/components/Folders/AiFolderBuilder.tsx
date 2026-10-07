@@ -15,6 +15,9 @@ import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import InputSelect from '@/components/base/inputs/InputSelect'
+import InputText from '@/components/base/inputs/InputText'
 import SortableContainer, {
   type SortableReorderInfo,
 } from '@/components/base/sortable/SortableContainer'
@@ -401,11 +404,21 @@ function sortFieldsByType(fields: EditableField[]): EditableField[] {
 
 const FOLDER_TREE_STEP = 22
 
+type EditFieldForm = {
+  dataType: string
+  fieldName: string
+  iconKey?: string
+  id: string
+  includeInFolderStructure: boolean
+  isMandatory: boolean
+  settings?: Record<string, any>
+}
+
 function FieldsEditor({
   fields,
   onChange,
   onUserToggledRequired,
-  hasToggledRequired = false,
+  hasToggledRequired: _hasToggledRequired = false,
 }: {
   fields: EditableField[]
   onChange: (fields: EditableField[]) => void
@@ -417,19 +430,20 @@ function FieldsEditor({
   const [newDataType, setNewDataType] = useState('SHORT_TEXT')
   const [newIsMandatory, setNewIsMandatory] = useState(false)
   const [newIsFolder, setNewIsFolder] = useState(false)
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
-  const [settingsFieldId, setSettingsFieldId] = useState<string | null>(null)
-  const [dismissedCoachmark, setDismissedCoachmark] = useState(false)
-  const nameInputRef = useRef<HTMLInputElement>(null)
+  const [newFieldSettings, setNewFieldSettings] = useState<Record<string, any>>({})
+  const [isAddingField, setIsAddingField] = useState(false)
 
-  useEffect(() => {
-    if (!editingFieldId) return
-    const frame = requestAnimationFrame(() => {
-      nameInputRef.current?.focus()
-      nameInputRef.current?.select()
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [editingFieldId])
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<EditFieldForm | null>(null)
+
+  const fieldTypeOptions = useMemo(
+    () =>
+      FIELD_DATA_TYPES.map((type) => ({
+        id: type.id,
+        name: type.name,
+      })),
+    [],
+  )
 
   const folderFields = fields.filter((field) => field.includeInFolderStructure)
   const metadataFields = fields.filter(
@@ -498,7 +512,6 @@ function FieldsEditor({
   const updateField = (id: string, patch: Partial<EditableField>) => {
     if ('isMandatory' in patch) {
       onUserToggledRequired?.()
-      setDismissedCoachmark(true)
     }
     const next = fields.map((field) => {
       if (field.id !== id) return field
@@ -519,13 +532,65 @@ function FieldsEditor({
   }
 
   const removeField = (id: string) => {
-    if (editingFieldId === id) setEditingFieldId(null)
+    if (editingFieldId === id) {
+      setEditingFieldId(null)
+      setEditForm(null)
+    }
     onChange(fields.filter((field) => field.id !== id))
   }
 
+  const startEditingField = (field: EditableField) => {
+    setIsAddingField(false)
+    setEditingFieldId(field.id)
+    setEditForm({
+      dataType: field.dataType,
+      fieldName: field.fieldName,
+      iconKey:
+        field.iconKey ||
+        (field.includeInFolderStructure ? 'folder' : 'document'),
+      id: field.id,
+      includeInFolderStructure: Boolean(field.includeInFolderStructure),
+      isMandatory: Boolean(
+        field.includeInFolderStructure || field.isMandatory,
+      ),
+      settings: field.settings ? { ...field.settings } : {},
+    })
+  }
+
+  const cancelEditingField = () => {
+    setEditingFieldId(null)
+    setEditForm(null)
+  }
+
+  const saveEditingField = () => {
+    if (!editForm) return
+    const trimmed = editForm.fieldName.trim()
+    if (!trimmed) {
+      showToast({ message: t`Please enter a field name.`, variant: 'info' })
+      return
+    }
+
+    updateField(editForm.id, {
+      dataType: editForm.dataType,
+      fieldName: trimmed,
+      iconKey: editForm.iconKey,
+      includeInFolderStructure: editForm.includeInFolderStructure,
+      isMandatory: editForm.includeInFolderStructure
+        ? true
+        : editForm.isMandatory,
+      settings: editForm.settings,
+    })
+
+    cancelEditingField()
+  }
+
   const addField = () => {
-    const name = newFieldName.trim().slice(0, 20)
-    if (!name) return
+    const name = newFieldName.trim()
+    if (!name) {
+      showToast({ message: t`Please enter a field name.`, variant: 'info' })
+      return
+    }
+
     onChange(
       sortFieldsByType([
         ...fields,
@@ -537,148 +602,349 @@ function FieldsEditor({
           id: crypto.randomUUID(),
           includeInFolderStructure: newIsFolder,
           isMandatory: newIsFolder || newIsMandatory,
+          settings: newFieldSettings,
         },
       ]),
     )
+
     setNewFieldName('')
     setNewDataType('SHORT_TEXT')
     setNewIsMandatory(false)
     setNewIsFolder(false)
+    setNewFieldSettings({})
+    setIsAddingField(false)
   }
 
-  const addFieldVisual = fieldVisual(newIsFolder)
+  const renderEditFieldCard = () => {
+    if (!editForm) return null
 
-  const renderAddFieldRow = (key: string) => (
-    <div
-      className='flex w-full items-center gap-2 rounded-[12px] border border-dashed border-gray-4 bg-gray-1 py-1 pr-1.5 pl-1.5'
-      key={key}
-    >
-      <Tooltip
-        content={
-          newIsFolder
-            ? t`Folder field (creates hierarchy) — Click for normal field`
-            : t`Normal field — Click to make a folder field`
-        }
-        position='top'
-      >
+    return (
+      <div className='animate-in fade-in slide-in-from-top-1 rounded-xl border border-primary-5/80 bg-surface p-4 shadow-sm duration-200'>
+        <div className='flex flex-col gap-3.5'>
+          {/* Header */}
+          <div className='flex items-center justify-between border-b border-gray-3 pb-2.5'>
+            <div className='flex items-center gap-2'>
+              <span className='flex size-6 items-center justify-center rounded-md bg-primary-3 text-primary-11'>
+                <Icon className='size-3.5' name='lucide:edit-3' />
+              </span>
+              <span className='text-13 font-semibold text-gray-12'>
+                {t`Edit Field`}
+              </span>
+            </div>
+            <button
+              aria-label={t`Cancel edit`}
+              className='flex size-6 items-center justify-center rounded-md text-gray-8 transition hover:bg-gray-3 hover:text-gray-12'
+              type='button'
+              onClick={cancelEditingField}
+            >
+              <Icon className='size-3.5' name='lucide:x' />
+            </button>
+          </div>
+
+          {/* 2 Inputs: Field Name & Type */}
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_180px]'>
+            <div>
+              <InputText
+                autoFocus
+                label={t`Field Name`}
+                placeholder={t`e.g. Cost Center`}
+                value={editForm.fieldName}
+                onChange={(val) =>
+                  setEditForm((prev) =>
+                    prev ? { ...prev, fieldName: val } : null,
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    saveEditingField()
+                  } else if (e.key === 'Escape') {
+                    cancelEditingField()
+                  }
+                }}
+              />
+            </div>
+
+            <div>
+              <InputSelect
+                label={t`Type`}
+                options={fieldTypeOptions}
+                searchPlaceholder={t`Search type`}
+                searchable
+                width='target'
+                value={
+                  fieldTypeOptions.find(
+                    (opt) => opt.id === editForm.dataType,
+                  ) || fieldTypeOptions[0]
+                }
+                onChange={(selected) => {
+                  if (!selected) return
+                  setEditForm((prev) =>
+                    prev ? { ...prev, dataType: String(selected.id) } : null,
+                  )
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Advanced Settings if Table, Dropdown, Link, Barcode, etc. */}
+          {[
+            'TABLE',
+            'SINGLE_SELECT',
+            'MULTI_SELECT',
+            'MULTIPLE_CHOICE',
+            'SINGLE_CHOICE',
+            'LINK',
+            'URL',
+            'OMR',
+            'BARCODE',
+          ].includes(editForm.dataType) && (
+            <div className='w-full'>
+              <FolderFieldSettingsPanel
+                field={
+                  {
+                    dataType: editForm.dataType,
+                    fieldName: editForm.fieldName || t`Field`,
+                    id: editForm.id,
+                    settings: editForm.settings || {},
+                  } as any
+                }
+                onClose={() => {}}
+                onUpdate={(patch) => {
+                  if (patch.settings) {
+                    setEditForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            settings: { ...prev.settings, ...patch.settings },
+                          }
+                        : null,
+                    )
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* 2 Checkboxes & Save Field Button */}
+          <div className='flex flex-wrap items-center justify-between gap-3 pt-1'>
+            <div className='flex items-center gap-5'>
+              <label className='flex cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                <InputCheckbox
+                  checked={editForm.includeInFolderStructure}
+                  onChange={(checked) => {
+                    const isFolder = Boolean(checked)
+                    setEditForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            iconKey: isFolder ? 'folder' : 'document',
+                            includeInFolderStructure: isFolder,
+                            isMandatory: isFolder ? true : prev.isMandatory,
+                          }
+                        : null,
+                    )
+                  }}
+                />
+                {t`Folder`}
+              </label>
+
+              <label className='flex cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                <InputCheckbox
+                  checked={
+                    editForm.includeInFolderStructure || editForm.isMandatory
+                  }
+                  disabled={editForm.includeInFolderStructure}
+                  onChange={(checked) => {
+                    setEditForm((prev) =>
+                      prev ? { ...prev, isMandatory: Boolean(checked) } : null,
+                    )
+                  }}
+                />
+                {t`Mandatory`}
+              </label>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <Button
+                size='sm'
+                variant='ghost'
+                label={t`Cancel`}
+                onClick={cancelEditingField}
+              />
+              <Button
+                color='primary'
+                size='sm'
+                icon='lucide:check'
+                label={t`Save Field`}
+                onClick={saveEditingField}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderAddFieldSection = () => {
+    if (!isAddingField) {
+      return (
         <button
           type='button'
-          aria-label={
-            newIsFolder ? t`Change to normal field` : t`Change to folder field`
-          }
-          className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-[7px] transition hover:opacity-90',
-            addFieldVisual.bg,
-            addFieldVisual.color,
-          )}
+          className='flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-4 bg-gray-1/60 py-2.5 text-13 font-medium text-gray-11 transition hover:border-primary-6 hover:bg-primary-1/30 hover:text-primary-11'
           onClick={() => {
-            setNewIsFolder((prev) => {
-              const next = !prev
-              if (next) setNewIsMandatory(true)
-              return next
-            })
+            setIsAddingField(true)
+            cancelEditingField()
           }}
         >
-          <Icon className='size-3.5' name={addFieldVisual.icon} />
+          <Icon className='size-4' name='lucide:plus' />
+          {t`Add Field`}
         </button>
-      </Tooltip>
+      )
+    }
 
-      <input
-        className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 py-1 text-13 font-semibold text-gray-13 outline-none placeholder:font-medium placeholder:text-gray-8 hover:border-gray-4 focus:border-primary-7 focus:bg-surface'
-        maxLength={20}
-        placeholder={t`Field name`}
-        value={newFieldName}
-        onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            addField()
-          }
-        }}
-      />
+    return (
+      <div className='animate-in fade-in slide-in-from-top-1 rounded-xl border border-gray-3 bg-surface p-4 shadow-sm duration-200'>
+        <div className='flex flex-col gap-3.5'>
+          {/* Header */}
+          <div className='flex items-center justify-between border-b border-gray-3 pb-2.5'>
+            <div className='flex items-center gap-2'>
+              <span className='flex size-6 items-center justify-center rounded-md bg-primary-3 text-primary-11'>
+                <Icon className='size-3.5' name='lucide:plus' />
+              </span>
+              <span className='text-13 font-semibold text-gray-12'>
+                {t`New Field`}
+              </span>
+            </div>
+            <button
+              aria-label={t`Cancel`}
+              className='flex size-6 items-center justify-center rounded-md text-gray-8 transition hover:bg-gray-3 hover:text-gray-12'
+              type='button'
+              onClick={() => setIsAddingField(false)}
+            >
+              <Icon className='size-3.5' name='lucide:x' />
+            </button>
+          </div>
 
-      {/* Field type dropdown */}
-      <FieldTypeInlineSelect value={newDataType} onChange={setNewDataType} />
+          {/* 2 Inputs: Field Name & Type */}
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_180px]'>
+            <div>
+              <InputText
+                autoFocus
+                label={t`Field Name`}
+                placeholder={t`e.g. Cost Center`}
+                value={newFieldName}
+                onChange={setNewFieldName}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addField()
+                  } else if (e.key === 'Escape') {
+                    setIsAddingField(false)
+                  }
+                }}
+              />
+            </div>
 
-      {/* Required toggle in Add Field Row (default Off) */}
-      <Tooltip
-        content={
-          newIsFolder
-            ? t`Folder fields are required for the folder hierarchy.`
-            : t`Required fields must be filled in before a document can be saved.`
-        }
-        position='top'
-      >
-        <button
-          aria-checked={newIsFolder || newIsMandatory}
-          aria-label={t`Required`}
-          disabled={newIsFolder}
-          role='switch'
-          type='button'
-          className={cn(
-            'group flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 outline-none transition select-none focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:ring-offset-1',
-            newIsFolder
-              ? 'cursor-not-allowed opacity-80'
-              : 'cursor-pointer hover:ring-2 hover:ring-primary-4',
+            <div>
+              <InputSelect
+                label={t`Type`}
+                options={fieldTypeOptions}
+                searchPlaceholder={t`Search type`}
+                searchable
+                width='target'
+                value={
+                  fieldTypeOptions.find((opt) => opt.id === newDataType) ||
+                  fieldTypeOptions[0]
+                }
+                onChange={(selected) => {
+                  if (!selected) return
+                  setNewDataType(String(selected.id))
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Advanced Settings if Table, Dropdown, Link, Barcode, etc. */}
+          {[
+            'TABLE',
+            'SINGLE_SELECT',
+            'MULTI_SELECT',
+            'MULTIPLE_CHOICE',
+            'SINGLE_CHOICE',
+            'LINK',
+            'URL',
+            'OMR',
+            'BARCODE',
+          ].includes(newDataType) && (
+            <div className='w-full'>
+              <FolderFieldSettingsPanel
+                field={
+                  {
+                    dataType: newDataType,
+                    fieldName: newFieldName || t`Field`,
+                    id: 'new-field',
+                    settings: newFieldSettings,
+                  } as any
+                }
+                onClose={() => {}}
+                onUpdate={(patch) => {
+                  if (patch.settings) {
+                    setNewFieldSettings((prev) => ({
+                      ...prev,
+                      ...patch.settings,
+                    }))
+                  }
+                }}
+              />
+            </div>
           )}
-          onClick={() => {
-            if (!newIsFolder) setNewIsMandatory((prev) => !prev)
-          }}
-          onKeyDown={(event) => {
-            if (event.key === ' ' || event.key === 'Enter') {
-              event.preventDefault()
-              if (!newIsFolder) setNewIsMandatory((prev) => !prev)
-            }
-          }}
-        >
-          <span
-            className={cn(
-              'relative inline-flex h-[18px] w-[32px] shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out',
-              newIsFolder || newIsMandatory
-                ? 'bg-primary-9'
-                : 'bg-gray-4 group-hover:bg-gray-5',
-            )}
-          >
-            <span
-              className={cn(
-                'inline-block size-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out',
-                newIsFolder || newIsMandatory
-                  ? 'translate-x-[15px]'
-                  : 'translate-x-[2px]',
-              )}
-            />
-          </span>
-          <span
-            className={cn(
-              'text-[12px] font-medium transition-colors select-none',
-              newIsFolder || newIsMandatory
-                ? 'font-semibold text-gray-13'
-                : 'text-gray-9',
-            )}
-          >
-            {newIsFolder || newIsMandatory ? t`Required` : t`Optional`}
-          </span>
-        </button>
-      </Tooltip>
 
-      <Tooltip content={t`Add field`} position='top'>
-        <button
-          aria-label={t`Add field`}
-          disabled={!newFieldName.trim()}
-          type='button'
-          className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-[7px] transition',
-            newFieldName.trim()
-              ? 'bg-primary-9 text-white hover:bg-primary-10'
-              : 'bg-gray-3 text-gray-8 cursor-not-allowed',
-          )}
-          onClick={addField}
-        >
-          <Icon className='size-3.5' name='lucide:plus' />
-        </button>
-      </Tooltip>
-    </div>
-  )
+          {/* 2 Checkboxes & Add Field Button */}
+          <div className='flex flex-wrap items-center justify-between gap-3 pt-1'>
+            <div className='flex items-center gap-5'>
+              <label className='flex cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                <InputCheckbox
+                  checked={newIsFolder}
+                  onChange={(checked) => {
+                    const isFolder = Boolean(checked)
+                    setNewIsFolder(isFolder)
+                    if (isFolder) setNewIsMandatory(true)
+                  }}
+                />
+                {t`Folder`}
+              </label>
+
+              <label className='flex cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                <InputCheckbox
+                  checked={newIsFolder || newIsMandatory}
+                  disabled={newIsFolder}
+                  onChange={(checked) => setNewIsMandatory(Boolean(checked))}
+                />
+                {t`Mandatory`}
+              </label>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <Button
+                size='sm'
+                variant='ghost'
+                label={t`Cancel`}
+                onClick={() => setIsAddingField(false)}
+              />
+              <Button
+                color='primary'
+                size='sm'
+                icon='lucide:plus'
+                label={t`Add Field`}
+                onClick={addField}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const renderFieldRow = (
     field: EditableField,
@@ -692,13 +958,25 @@ function FieldsEditor({
     const visual = fieldVisual(field.includeInFolderStructure)
     const showTree = options?.showTree ?? false
     const depth = options?.depth ?? 0
-    const isFirstField = options?.isFirstField ?? false
-    const isEditingName = editingFieldId === field.id
-    const showCoachmark =
-      isFirstField &&
-      !hasToggledRequired &&
-      !dismissedCoachmark &&
-      !field.includeInFolderStructure
+    const isEditingThisField = editingFieldId === field.id
+
+    if (isEditingThisField) {
+      return (
+        <div
+          className={cn('flex items-stretch', showTree ? 'gap-0' : undefined)}
+          key={field.id}
+        >
+          {showTree ? (
+            <FolderTreeLines depth={depth} isLast={options?.isLast ?? true} />
+          ) : null}
+          <div className='min-w-0 flex-1'>{renderEditFieldCard()}</div>
+        </div>
+      )
+    }
+
+    const isMandatory = Boolean(
+      field.includeInFolderStructure || field.isMandatory,
+    )
 
     return (
       <div
@@ -710,144 +988,34 @@ function FieldsEditor({
         ) : null}
         <div className='flex min-w-0 flex-1 flex-col gap-1'>
           <SortableItem
-            className='relative flex w-full items-center gap-1.5 rounded-[12px] border border-gray-3 bg-gray-1 py-1 pr-2 pl-1'
-            handlerClassName='size-7 text-gray-9'
+            className='relative flex w-full items-center gap-2 rounded-[10px] border border-gray-3 bg-surface-primary py-1.5 pr-2.5 pl-1.5 transition-colors hover:border-gray-4'
+            handlerClassName='size-6 text-gray-8 hover:text-gray-11'
             handlerPosition='before'
             id={field.id}
             trailing={
-              <div className='flex items-center gap-1.5'>
-                {/* 1. Field Type Inline Dropdown */}
-                <FieldTypeInlineSelect
-                  value={field.dataType}
-                  onChange={(dataType) => updateField(field.id, { dataType })}
-                />
+              <div className='ml-auto flex shrink-0 items-center gap-1.5'>
+                {/* Type Badge */}
+                <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[11px] font-medium text-gray-10 select-none whitespace-nowrap'>
+                  {formatDataTypeLabel(field.dataType)}
+                </span>
 
-                {/* Advanced DataType settings if applicable */}
-                {[
-                  'TABLE',
-                  'SINGLE_SELECT',
-                  'MULTI_SELECT',
-                  'MULTIPLE_CHOICE',
-                  'SINGLE_CHOICE',
-                  'LINK',
-                  'URL',
-                  'OMR',
-                  'BARCODE',
-                ].includes(field.dataType) && (
-                  <Tooltip content={t`Advanced settings`} position='top'>
-                    <button
-                      aria-label={t`Settings for ${field.fieldName}`}
-                      className='flex size-7 shrink-0 items-center justify-center rounded text-gray-9 transition hover:bg-gray-3 hover:text-gray-12'
-                      type='button'
-                      onClick={() =>
-                        setSettingsFieldId(
-                          settingsFieldId === field.id ? null : field.id,
-                        )
-                      }
-                    >
-                      <Icon className='size-3.5' name='lucide:settings-2' />
-                    </button>
-                  </Tooltip>
-                )}
-
-                {/* 2. Required Toggle with Coachmark on first field */}
-                <div className='relative flex items-center'>
-                  <Tooltip
-                    content={
-                      field.includeInFolderStructure
-                        ? t`Folder hierarchy fields are required for the folder directory path.`
-                        : t`Required fields must be filled in before a document can be saved.`
-                    }
-                    position='top'
+                {/* Edit Button */}
+                <Tooltip content={t`Edit field`} position='top'>
+                  <button
+                    aria-label={t`Edit ${field.fieldName}`}
+                    className='flex size-6.5 shrink-0 items-center justify-center rounded text-gray-9 transition hover:bg-gray-3 hover:text-gray-12'
+                    type='button'
+                    onClick={() => startEditingField(field)}
                   >
-                    <button
-                      aria-checked={field.isMandatory}
-                      aria-label={t`Required`}
-                      disabled={field.includeInFolderStructure}
-                      role='switch'
-                      type='button'
-                      className={cn(
-                        'group flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 outline-none transition select-none focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:ring-offset-1',
-                        field.includeInFolderStructure
-                          ? 'cursor-not-allowed opacity-80'
-                          : 'cursor-pointer hover:ring-2 hover:ring-primary-4',
-                      )}
-                      onClick={() => {
-                        if (!field.includeInFolderStructure) {
-                          updateField(field.id, {
-                            isMandatory: !field.isMandatory,
-                          })
-                        }
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === ' ' || event.key === 'Enter') {
-                          event.preventDefault()
-                          if (!field.includeInFolderStructure) {
-                            updateField(field.id, {
-                              isMandatory: !field.isMandatory,
-                            })
-                          }
-                        }
-                      }}
-                    >
-                      <span
-                        className={cn(
-                          'relative inline-flex h-[18px] w-[32px] shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out',
-                          field.isMandatory
-                            ? 'bg-primary-9'
-                            : 'bg-gray-4 group-hover:bg-gray-5',
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'inline-block size-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out',
-                            field.isMandatory
-                              ? 'translate-x-[15px]'
-                              : 'translate-x-[2px]',
-                          )}
-                        />
-                      </span>
-                      <span
-                        className={cn(
-                          'text-[12px] font-medium transition-colors select-none',
-                          field.isMandatory
-                            ? 'font-semibold text-gray-13'
-                            : 'text-gray-9',
-                        )}
-                      >
-                        {field.isMandatory ? t`Required` : t`Optional`}
-                      </span>
-                    </button>
-                  </Tooltip>
+                    <Icon className='size-3.5' name='lucide:pencil' />
+                  </button>
+                </Tooltip>
 
-                  {/* First-use Coachmark Tooltip */}
-                  {showCoachmark && (
-                    <div
-                      className='animate-in fade-in slide-in-from-top-1 absolute -top-10 right-0 z-40 flex items-center gap-1.5 rounded-lg border border-primary-5 bg-surface-primary px-2.5 py-1 text-[11px] font-medium text-gray-13 shadow-lg duration-200 whitespace-nowrap'
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className='size-1.5 rounded-full bg-primary-9' />
-                      <span>{t`Tip: switch this on to make the field mandatory.`}</span>
-                      <button
-                        aria-label={t`Dismiss tip`}
-                        className='ml-1 flex size-4 items-center justify-center rounded text-gray-8 hover:bg-gray-3 hover:text-gray-13'
-                        type='button'
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDismissedCoachmark(true)
-                        }}
-                      >
-                        <Icon className='size-3' name='lucide:x' />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Delete field icon */}
+                {/* Delete Button */}
                 <Tooltip content={t`Remove field`} position='top'>
                   <button
                     aria-label={t`Remove ${field.fieldName}`}
-                    className='flex size-7 shrink-0 items-center justify-center rounded text-gray-9 transition hover:bg-red-3 hover:text-red-11'
+                    className='flex size-6.5 shrink-0 items-center justify-center rounded text-gray-9 transition hover:bg-red-3 hover:text-red-11'
                     type='button'
                     onClick={() => removeField(field.id)}
                   >
@@ -859,113 +1027,66 @@ function FieldsEditor({
           >
             {field.aiGenerated ? (
               <span
-                className='absolute -top-1.5 -right-1.5 z-10 flex size-5 items-center justify-center rounded-full border border-primary-4 bg-primary-2 text-primary-9 shadow-xs'
+                className='absolute -top-1.5 -right-1.5 z-10 flex size-4.5 items-center justify-center rounded-full border border-primary-4 bg-primary-2 text-primary-9 shadow-xs'
                 title={t`Generated by AI`}
               >
-                <Icon className='size-3' name='tabler:sparkles' />
+                <AiBrandIcon
+                  className='size-2.5 shrink-0'
+                  variant='outline-purple'
+                />
               </span>
             ) : null}
+
+            {/* Folder vs Document Icon Indicator */}
             <Tooltip
               content={
                 field.includeInFolderStructure
-                  ? t`Folder level — Click to convert to normal field, or drag to Free Section`
-                  : t`Document field — Click to convert to folder, or drag to Folder Structure`
+                  ? t`Folder hierarchy field`
+                  : t`Document field`
               }
               position='top'
             >
-              <button
-                type='button'
-                aria-label={
-                  field.includeInFolderStructure
-                    ? t`Change to normal field`
-                    : t`Change to folder field`
-                }
+              <div
                 className={cn(
-                  'flex size-7 shrink-0 items-center justify-center rounded-[7px] transition hover:opacity-90',
+                  'flex size-6.5 shrink-0 items-center justify-center rounded-[6px] transition',
                   visual.bg,
                   visual.color,
                 )}
-                onClick={() =>
-                  updateField(field.id, {
-                    includeInFolderStructure: !field.includeInFolderStructure,
-                    ...(field.includeInFolderStructure
-                      ? { iconKey: 'document' }
-                      : { iconKey: 'folder', isMandatory: true }),
-                  })
-                }
               >
                 <Icon className='size-3.5' name={visual.icon} />
-              </button>
+              </div>
             </Tooltip>
 
-            <div className='flex min-w-0 flex-1 items-center gap-1.5'>
-              {isEditingName ? (
-                <div className='flex items-center gap-1'>
-                  <input
-                    className='w-auto max-w-[180px] min-w-[6ch] rounded border border-primary-7 bg-surface px-1.5 py-0.5 text-13 font-semibold text-gray-13 outline-none focus:ring-1 focus:ring-primary-7'
-                    maxLength={20}
-                    ref={nameInputRef}
-                    size={Math.max(field.fieldName.length, 1)}
-                    value={field.fieldName}
-                    onBlur={() => setEditingFieldId(null)}
-                    onChange={(event) =>
-                      updateField(field.id, {
-                        fieldName: event.target.value.slice(0, 20),
-                      })
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === 'Escape') {
-                        event.preventDefault()
-                        setEditingFieldId(null)
-                      }
-                    }}
-                  />
-                  <Tooltip content={t`Save`} position='top'>
-                    <button
-                      type='button'
-                      className='flex size-5 shrink-0 items-center justify-center rounded text-primary-10 transition hover:bg-primary-3'
-                      onClick={() => setEditingFieldId(null)}
-                      title={t`Done editing`}
-                    >
-                      <Icon name='lucide:check' className='size-3.5' />
-                    </button>
-                  </Tooltip>
-                </div>
-              ) : (
-                <div className='group/edit flex min-w-0 items-center gap-1'>
-                  <button
-                    className='max-w-full truncate rounded px-1 py-0.5 text-left text-13 font-semibold text-gray-13 transition hover:bg-gray-3'
-                    type='button'
-                    title={t`Click to rename`}
-                    onClick={() => setEditingFieldId(field.id)}
-                  >
-                    {field.fieldName || t`Untitled`}
-                  </button>
-                  <Tooltip content={t`Rename field`} position='top'>
-                    <button
-                      type='button'
-                      aria-label={t`Rename field`}
-                      className='flex size-5 shrink-0 items-center justify-center rounded text-gray-8 transition hover:bg-gray-3 hover:text-gray-12'
-                      onClick={() => setEditingFieldId(field.id)}
-                    >
-                      <Icon className='size-3' name='lucide:pencil' />
-                    </button>
-                  </Tooltip>
-                </div>
-              )}
+            {/* Field Name button & Mandatory Icon next to text */}
+            <div className='flex min-w-0 items-center gap-1'>
+              <button
+                className='truncate text-left text-13 font-semibold text-gray-12 transition-colors hover:text-primary-10'
+                type='button'
+                title={t`Click to edit field`}
+                onClick={() => startEditingField(field)}
+              >
+                {field.fieldName || t`Untitled`}
+              </button>
 
-              <div className='min-w-0 flex-1' />
+              {isMandatory ? (
+                <Tooltip
+                  content={
+                    field.includeInFolderStructure
+                      ? t`Required for folder hierarchy`
+                      : t`Required field`
+                  }
+                  position='top'
+                >
+                  <span
+                    aria-label={t`Required`}
+                    className='flex size-4 shrink-0 items-center justify-center text-[15px] leading-none font-bold text-red-10 select-none'
+                  >
+                    *
+                  </span>
+                </Tooltip>
+              ) : null}
             </div>
           </SortableItem>
-          {settingsFieldId === field.id && (
-            <div className='w-full'>
-              <FolderFieldSettingsPanel
-                field={field}
-                onClose={() => setSettingsFieldId(null)}
-                onUpdate={(patch) => updateField(field.id, patch)}
-              />
-            </div>
-          )}
         </div>
       </div>
     )
@@ -979,16 +1100,12 @@ function FieldsEditor({
   }, [folderFields, metadataFields])
 
   return (
-    <div className='space-y-3.5'>
-      {renderAddFieldRow('add-field-top')}
-
-      {/* Column header for first-time clarity: Type · Required */}
-      {!hasToggledRequired && (
-        <div className='flex items-center justify-between px-3 text-[11px] font-medium text-gray-9'>
-          <span>{t`Field name`}</span>
-          <span className='mr-7 text-right'>{t`Type · Required`}</span>
-        </div>
-      )}
+    <div className='space-y-3'>
+      {/* Column header */}
+      <div className='flex items-center justify-between px-2.5 text-[11px] font-medium text-gray-9'>
+        <span>{t`Field name`}</span>
+        <span className='text-right'>{t`Type · Actions`}</span>
+      </div>
 
       <SortableContainer
         constrainToParent={false}
@@ -1012,123 +1129,8 @@ function FieldsEditor({
         </div>
       </SortableContainer>
 
-      {renderAddFieldRow('add-field-bottom')}
-    </div>
-  )
-}
-
-function FieldTypeInlineSelect({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (dataType: string) => void
-}) {
-  const { t } = useLingui()
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const rootRef = useRef<HTMLDivElement>(null)
-  const active =
-    FIELD_DATA_TYPES.find((type) => type.id === value) || FIELD_DATA_TYPES[0]
-
-  const filteredTypes = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (!query) return FIELD_DATA_TYPES
-    return FIELD_DATA_TYPES.filter(
-      (type) =>
-        type.name.toLowerCase().includes(query) ||
-        type.id.toLowerCase().includes(query),
-    )
-  }, [search])
-
-  useEffect(() => {
-    if (!open) {
-      setSearch('')
-      return
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    return () => document.removeEventListener('mousedown', handlePointerDown)
-  }, [open])
-
-  return (
-    <div className='relative shrink-0' ref={rootRef}>
-      <Tooltip content={active.name} position='top'>
-        <button
-          aria-expanded={open}
-          aria-label={t`Field type`}
-          title={active.name}
-          type='button'
-          className={cn(
-            'flex size-8 items-center justify-center rounded-[8px] border transition-colors hover:bg-[var(--gray-2)]',
-            open
-              ? 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-12)]'
-              : 'border-transparent text-[var(--gray-9)] hover:text-[var(--gray-11)]',
-          )}
-          onClick={(event) => {
-            event.stopPropagation()
-            setOpen((prev) => !prev)
-          }}
-        >
-          <Icon className='size-3.5 shrink-0' name={active.icon} />
-        </button>
-      </Tooltip>
-
-      {open ? (
-        <div
-          className='animate-in fade-in zoom-in-95 absolute top-9 right-0 z-50 w-48 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] py-1.5 shadow-xl duration-150'
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className='mb-1 border-b border-[var(--border-default)]/60 px-2.5 pb-1.5'>
-            <div className='relative'>
-              <Icon
-                className='pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-[var(--gray-8)]'
-                name='lucide:search'
-              />
-              <input
-                className='h-8 w-full rounded-md border border-[var(--gray-3)] bg-[var(--gray-1)] pr-2 pl-7 text-[12px] text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)] focus:border-[var(--primary-7)]'
-                placeholder={t`Search type`}
-                value={search}
-                autoFocus
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-          </div>
-          <div className='custom-scrollbar max-h-56 overflow-y-auto'>
-            {filteredTypes.length === 0 ? (
-              <p className='px-3 py-2 text-[12px] text-[var(--gray-9)]'>
-                {t`No types found`}
-              </p>
-            ) : (
-              filteredTypes.map((type) => (
-                <button
-                  key={type.id}
-                  type='button'
-                  className={cn(
-                    'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]',
-                    value === type.id
-                      ? 'bg-[var(--gray-2)] text-[var(--gray-13)]'
-                      : 'text-[var(--gray-12)] hover:text-[var(--gray-13)]',
-                  )}
-                  onClick={() => {
-                    onChange(type.id)
-                    setOpen(false)
-                  }}
-                >
-                  <Icon className='size-3.5 shrink-0' name={type.icon} />
-                  <span className='truncate'>{type.name}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      ) : null}
+      {/* Add Field Section */}
+      {renderAddFieldSection()}
     </div>
   )
 }
@@ -1227,7 +1229,7 @@ export default function AiFolderBuilder({
             <div className='flex items-center gap-1.5 text-[11px] text-gray-9'>
               <Icon className='size-3 shrink-0 text-gray-8' name='lucide:info' />
               <span>
-                {t`Use the Required toggle to make a field mandatory. Required fields must be filled in before saving.`}
+                {t`Fields marked with an asterisk (*) are mandatory. Edit a field to configure mandatory or folder hierarchy.`}
               </span>
             </div>
           </div>
