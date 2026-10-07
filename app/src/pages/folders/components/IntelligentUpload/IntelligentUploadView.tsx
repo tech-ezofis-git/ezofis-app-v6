@@ -100,6 +100,9 @@ export default function IntelligentUploadView({
 
   // Track processing concurrency
   const activeProcessingCount = useRef(0)
+  const uploadAbortControllersRef = useRef<Map<string, AbortController>>(
+    new Map(),
+  )
 
   const handleFilesAdded = useCallback(
     (fileList: FileList | null) => {
@@ -278,6 +281,12 @@ export default function IntelligentUploadView({
 
   const handleRemoveFile = useCallback(
     (fileId: string) => {
+      const inFlightController = uploadAbortControllersRef.current.get(fileId)
+      if (inFlightController) {
+        inFlightController.abort()
+        uploadAbortControllersRef.current.delete(fileId)
+      }
+
       const targetFile = files.find((f) => f.id === fileId)
       setFiles((prev) => prev.filter((f) => f.id !== fileId))
 
@@ -314,6 +323,8 @@ export default function IntelligentUploadView({
     }
 
     setIndexingFileId(fileId)
+    const controller = new AbortController()
+    uploadAbortControllersRef.current.set(fileId, controller)
 
     try {
       let stageId = targetFile.stagedFileId
@@ -326,7 +337,25 @@ export default function IntelligentUploadView({
           targetFile.selectedRepositoryId,
           targetFile.file,
           ocrDescriptors,
+          controller.signal,
         )
+
+        if (controller.signal.aborted) {
+          if (ocrData?.fileId) {
+            void deleteStagedFiles({
+              fileIds: [ocrData.fileId],
+              repositoryId: targetFile.selectedRepositoryId,
+            })
+          }
+          return
+        }
+
+        if (ocrError || !ocrData) {
+          console.warn(
+            '[IntelligentUpload] uploadForOcr failed or returned empty data, proceeding with uploadWithOcr to obtain fileId:',
+            ocrError || 'No OCR data',
+          )
+        }
 
         const ocrFieldList = ocrData?.ocrFieldList
         const ocrJson =
@@ -337,17 +366,32 @@ export default function IntelligentUploadView({
               : undefined
         const ocrText = ocrData?.ocrText || targetFile.ocrText
 
-        // Step 2: Call uploadWithOcr carrying forward the extracted OCR data
+        // Step 2: Call uploadWithOcr carrying forward the extracted OCR data or field descriptors
         const { data: stageData, error: stageError } = await uploadWithOcr({
+          fields: ocrDescriptors,
           file: targetFile.file,
+          filename: targetFile.file.name,
           ocrFieldList,
           ocrJson,
           ocrText,
           repositoryId: targetFile.selectedRepositoryId,
+          signal: controller.signal,
         })
+
+        if (controller.signal.aborted) {
+          const orphanStageId = stageData?.fileId || ocrData?.fileId
+          if (orphanStageId) {
+            void deleteStagedFiles({
+              fileIds: [orphanStageId],
+              repositoryId: targetFile.selectedRepositoryId,
+            })
+          }
+          return
+        }
+
         if (stageError || !stageData?.fileId) {
           throw new Error(
-            stageError || ocrError || t`Failed to stage file for indexing`,
+            stageError || t`Failed to stage file for indexing`,
           )
         }
         stageId = stageData.fileId
@@ -405,6 +449,7 @@ export default function IntelligentUploadView({
         err instanceof Error ? err.message : t`Failed to index document`
       showToast({ message: msg, variant: 'error' })
     } finally {
+      uploadAbortControllersRef.current.delete(fileId)
       setIndexingFileId(null)
     }
   }
@@ -566,6 +611,13 @@ export default function IntelligentUploadView({
               ocrDescriptors,
             )
 
+            if (ocrError || !ocrData) {
+              console.warn(
+                '[IntelligentUpload] uploadForOcr failed or returned empty data, proceeding with uploadWithOcr to obtain fileId:',
+                ocrError || 'No OCR data',
+              )
+            }
+
             const ocrFieldList = ocrData?.ocrFieldList
             const ocrJson =
               typeof ocrData?.ocrJson === 'string'
@@ -575,9 +627,11 @@ export default function IntelligentUploadView({
                   : undefined
             const ocrText = ocrData?.ocrText || item.ocrText
 
-            // Step 2: Call uploadWithOcr carrying forward OCR data
+            // Step 2: Call uploadWithOcr carrying forward OCR data or field descriptors
             const { data: stageData, error: stageError } = await uploadWithOcr({
+              fields: ocrDescriptors,
               file: item.file,
+              filename: item.file.name,
               ocrFieldList,
               ocrJson,
               ocrText,
@@ -588,7 +642,7 @@ export default function IntelligentUploadView({
               const itemName = item.file.name
               showToast({
                 message:
-                  stageError || ocrError || t`Upload failed for ${itemName}`,
+                  stageError || t`Upload failed for ${itemName}`,
                 variant: 'error',
               })
               setFiles((prev) =>
@@ -598,7 +652,6 @@ export default function IntelligentUploadView({
                         ...f,
                         error:
                           stageError ||
-                          ocrError ||
                           t`Upload failed for ${itemName}`,
                         status: 'error',
                       }

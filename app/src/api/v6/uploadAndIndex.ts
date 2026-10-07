@@ -80,6 +80,7 @@ interface UploadWithOcrParams {
   ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
   ocrJson?: string
   ocrText?: string
+  signal?: AbortSignal
 }
 
 // Pre-ticket upload for the normal (non-AP-Agent) workflow flow — see the
@@ -95,6 +96,7 @@ const uploadWithOcr = async ({
   ocrJson,
   ocrText,
   repositoryId,
+  signal,
 }: UploadWithOcrParams) => {
   const response: { data: UploadWithOcrResult | null; error: string } = {
     data: null,
@@ -121,15 +123,20 @@ const uploadWithOcr = async ({
         'Content-Type': 'multipart/form-data',
       },
       method: 'POST',
+      signal,
       url: '/uploadAndIndex/uploadWithOcr',
     })
     if (status !== 200 && status !== 201) throw new Error('invalid status code')
     response.data = data as UploadWithOcrResult
   } catch (e: unknown) {
-    console.error(e)
-    const err = e as { message?: string; response?: { data?: string } }
+    const err = e as { message?: string; name?: string; response?: { data?: string } }
+    if (err?.name !== 'CanceledError' && !signal?.aborted) {
+      console.error(e)
+    }
     response.error =
-      err?.response?.data || err?.message || 'error uploading file'
+      err?.name === 'CanceledError' || signal?.aborted
+        ? 'Upload cancelled'
+        : err?.response?.data || err?.message || 'error uploading file'
   }
   return response
 }

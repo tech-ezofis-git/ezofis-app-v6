@@ -873,6 +873,9 @@ export default function Upload({
     fingerprint: string
   } | null>(null)
   const listExportIdsRef = useRef<Set<string>>(new Set())
+  const uploadAbortControllersRef = useRef<Map<string, AbortController>>(
+    new Map(),
+  )
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
@@ -1456,95 +1459,129 @@ export default function Upload({
 
       if (filesToStage.length === 1) {
         const singleEntry = filesToStage[0]
-        const { data, error } = await uploadForOcr(
-          activeRepositoryId,
-          singleEntry.file,
-          ocrFields,
-        )
+        const controller = new AbortController()
+        uploadAbortControllersRef.current.set(singleEntry.id, controller)
 
-        if (error || !data) {
-          updateEntry(singleEntry.id, {
-            errorMessage: String(error || 'Upload failed'),
-            status: 'error',
-          })
-          showToast({
-            message: t`Failed to stage file for upload.`,
-            variant: 'error',
-          })
-          return
-        }
+        try {
+          const { data, error } = await uploadForOcr(
+            activeRepositoryId,
+            singleEntry.file,
+            ocrFields,
+            controller.signal,
+          )
 
-        const ocrExtractedValues: Record<string, string> = {}
-        const fieldValues: Record<string, string> = {}
-        if (data.ocrFieldList && Array.isArray(data.ocrFieldList)) {
-          data.ocrFieldList.forEach((field: OcrFieldResult) => {
-            const matchedRepoField = repositoryFields.find(
-              (f) =>
-                f.name === field.name ||
-                f.sqlColumnName === field.name ||
-                f.name?.toLowerCase() === field.name?.toLowerCase(),
-            )
-            if (matchedRepoField) {
-              const key = getFieldKey(matchedRepoField)
-              const nextValue = isBlankFieldValue(field.value)
-                ? ''
-                : String(field.value ?? '')
-              ocrExtractedValues[key] = nextValue
-              fieldValues[key] = nextValue
+          if (controller.signal.aborted) {
+            uploadAbortControllersRef.current.delete(singleEntry.id)
+            if (data?.fileId) {
+              void deleteStagedFiles({
+                fileIds: [data.fileId],
+                repositoryId: activeRepositoryId,
+              })
             }
+            return
+          }
+
+          if (error || !data) {
+            console.warn(
+              '[uploadForOcr] OCR extraction failed or returned empty data, proceeding with uploadWithOcr to obtain fileId:',
+              error || 'No data',
+            )
+          }
+
+          const ocrExtractedValues: Record<string, string> = {}
+          const fieldValues: Record<string, string> = {}
+          if (data?.ocrFieldList && Array.isArray(data.ocrFieldList)) {
+            data.ocrFieldList.forEach((field: OcrFieldResult) => {
+              const matchedRepoField = repositoryFields.find(
+                (f) =>
+                  f.name === field.name ||
+                  f.sqlColumnName === field.name ||
+                  f.name?.toLowerCase() === field.name?.toLowerCase(),
+              )
+              if (matchedRepoField) {
+                const key = getFieldKey(matchedRepoField)
+                const nextValue = isBlankFieldValue(field.value)
+                  ? ''
+                  : String(field.value ?? '')
+                ocrExtractedValues[key] = nextValue
+                fieldValues[key] = nextValue
+              }
+            })
+          }
+
+          // Stage the file using uploadWithOcr carrying forward any extracted OCR data,
+          // or the raw field hints if OCR extraction was empty / failed.
+          const { data: stageData, error: stageError } = await uploadWithOcr({
+            fields: ocrFields,
+            file: singleEntry.file,
+            filename: singleEntry.file.name,
+            ocrFieldList: data?.ocrFieldList,
+            ocrJson:
+              typeof data?.ocrJson === 'string'
+                ? data.ocrJson
+                : data?.ocrJson
+                  ? JSON.stringify(data.ocrJson || {})
+                  : undefined,
+            ocrText: data?.ocrText || '',
+            repositoryId: activeRepositoryId,
+            signal: controller.signal,
           })
-        }
 
-        updateEntry(singleEntry.id, {
-          backendStatus: 'OCR',
-          errorMessage: undefined,
-          fieldValues,
-          masterSyncedValues: fieldValues,
-          ocrExtractedValues,
-          ocrStatus: 'complete',
-          rawOcrJson: data.ocrJson || data.ocrResult,
-          rawOcrText: data.ocrText || '',
-          stageFileId: data.fileId || data.id,
-          status: 'ready',
-        })
-        lastSavedValuesRef.current.set(
-          singleEntry.id,
-          JSON.stringify(fieldValues),
-        )
-        if (!options?.openDraftsOnSuccess) {
-          setOpenFileId(singleEntry.id)
-        }
+          if (controller.signal.aborted) {
+            uploadAbortControllersRef.current.delete(singleEntry.id)
+            const orphanStageId = stageData?.fileId || data?.fileId || data?.id
+            if (orphanStageId) {
+              void deleteStagedFiles({
+                fileIds: [orphanStageId],
+                repositoryId: activeRepositoryId,
+              })
+            }
+            return
+          }
 
-        // Stage the file using uploadWithOcr carrying forward the extracted OCR data
-        const { data: stageData, error: stageError } = await uploadWithOcr({
-          file: singleEntry.file,
-          filename: singleEntry.file.name,
-          ocrFieldList: data.ocrFieldList,
-          ocrJson:
-            typeof data.ocrJson === 'string'
-              ? data.ocrJson
-              : JSON.stringify(data.ocrJson || {}),
-          ocrText: data.ocrText || '',
-          repositoryId: activeRepositoryId,
-        })
+          const effectiveStageFileId =
+            stageData?.fileId || data?.fileId || data?.id
 
-        const stagedEntry: QueuedUploadFile = {
-          ...singleEntry,
-          backendStatus: 'OCR',
-          errorMessage: undefined,
-          fieldValues,
-          masterSyncedValues: fieldValues,
-          ocrExtractedValues,
-          ocrStatus: 'complete',
-          rawOcrJson: data.ocrJson || data.ocrResult,
-          rawOcrText: data.ocrText || '',
-          stageFileId: stageData?.fileId || data.fileId || data.id,
-          status: 'ready',
-        }
+          if (stageError || !effectiveStageFileId) {
+            console.warn('[uploadWithOcr] Staging failed:', stageError)
+            updateEntry(singleEntry.id, {
+              errorMessage: String(stageError || error || 'Upload failed'),
+              status: 'error',
+            })
+            showToast({
+              message: t`Failed to stage file for upload.`,
+              variant: 'error',
+            })
+            return
+          }
 
-        if (stageError || !stageData?.fileId) {
-          console.warn('[uploadWithOcr] Staging warning:', stageError)
-          if (options?.openDraftsOnSuccess && stagedEntry.stageFileId) {
+          const stagedEntry: QueuedUploadFile = {
+            ...singleEntry,
+            backendStatus: 'OCR',
+            errorMessage: undefined,
+            fieldValues,
+            masterSyncedValues: fieldValues,
+            ocrExtractedValues,
+            ocrStatus: error || !data ? 'idle' : 'complete',
+            rawOcrJson: data?.ocrJson || data?.ocrResult || null,
+            rawOcrText: data?.ocrText || '',
+            stageFileId: effectiveStageFileId,
+            status: 'ready',
+          }
+
+          updateEntry(singleEntry.id, stagedEntry)
+          lastSavedValuesRef.current.set(
+            singleEntry.id,
+            JSON.stringify(fieldValues),
+          )
+
+          if (!options?.openDraftsOnSuccess) {
+            setOpenFileId(singleEntry.id)
+          } else {
+            showToast({
+              message: t`Files uploaded successfully.`,
+              variant: 'success',
+            })
             if (onSuccess) await onSuccess()
             await openDraftFilesView({
               preferredLocal: [stagedEntry],
@@ -1552,24 +1589,9 @@ export default function Upload({
             })
           }
           return
+        } finally {
+          uploadAbortControllersRef.current.delete(singleEntry.id)
         }
-
-        updateEntry(singleEntry.id, {
-          stageFileId: stageData.fileId,
-        })
-
-        if (options?.openDraftsOnSuccess) {
-          showToast({
-            message: t`Files uploaded successfully.`,
-            variant: 'success',
-          })
-          if (onSuccess) await onSuccess()
-          await openDraftFilesView({
-            preferredLocal: [{ ...stagedEntry, stageFileId: stageData.fileId }],
-            tab: 'uploading',
-          })
-        }
-        return
       }
 
       const { data, error } = await bulkUpload({
@@ -1780,6 +1802,13 @@ export default function Upload({
   const handleDeleteStageFile = async (id: string) => {
     const entry = queue.find((item) => item.id === id)
     if (!entry || entry.status === 'indexing') return
+
+    // Immediately abort any active in-flight upload request for this file
+    const inFlightController = uploadAbortControllersRef.current.get(id)
+    if (inFlightController) {
+      inFlightController.abort()
+      uploadAbortControllersRef.current.delete(id)
+    }
 
     setIsDeletingStageFile(true)
     try {
