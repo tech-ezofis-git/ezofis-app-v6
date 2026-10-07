@@ -27,7 +27,7 @@ export function BuilderTimelineStep({
 }: {
   bottomConnectorState: TimelineConnectorState
   children?: ReactNode
-  description: string
+  description: ReactNode
   minimized?: boolean
   showTopConnector?: boolean
   status: TimelineStepStatus

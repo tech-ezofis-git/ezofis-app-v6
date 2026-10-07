@@ -483,6 +483,7 @@ Return a practical folder setup for this use case.
 - fields should cover documents and metadata needed for this folder
 - includeInFolderStructure=true for hierarchy levels (e.g. Employee, Document Type)
 - includeInFolderStructure=false for document metadata fields (e.g. Employee ID, Payslip Month)
+- isMandatory should only be true when essential (e.g., Invoice Number, Amount Due, or folder hierarchy levels). Leave the rest as false (optional) so users see both Required and Optional states side by side.
 - Prefer these dataType values: ${FOLDER_DATA_TYPES.join(', ')}
 - Prefer iconKey values like: building, document, folder, user, calendar, dollar
 - reply should be 1-2 short sentences explaining the folder purpose and how fields are organized (e.g. by customer/document type). Do not list every field.`,
