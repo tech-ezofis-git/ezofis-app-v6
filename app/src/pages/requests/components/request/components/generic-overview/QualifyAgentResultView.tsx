@@ -305,7 +305,9 @@ const HoverEditShell = ({
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
-        inline ? 'inline-flex max-w-full min-w-0' : 'flex w-full min-w-0',
+        inline
+          ? 'inline-flex max-w-full min-w-0 items-baseline align-baseline'
+          : 'flex w-full min-w-0 items-baseline',
         className,
       )}
     >
@@ -325,7 +327,12 @@ const HoverEditShell = ({
       )
     }
     return wrapLabel(
-      <span className={cn(inline ? 'inline min-w-0' : 'block min-w-0 w-full')}>
+      <span
+        className={cn(
+          'min-w-0 overflow-hidden',
+          inline ? 'inline align-baseline' : 'block w-full',
+        )}
+      >
         {children}
       </span>,
     )
@@ -354,30 +361,27 @@ const HoverEditShell = ({
     <span
       ref={rootRef}
       className={cn(
-        'rounded px-0.5 transition-colors',
+        'group relative min-w-0 rounded px-0.5 transition-colors',
         isActive
           ? inline
-            ? 'inline-flex min-w-0 align-middle'
-            : 'block w-full min-w-0'
+            ? 'inline-flex items-baseline align-baseline'
+            : 'block w-full'
           : inline
-            ? 'group inline-flex max-w-full min-w-0 items-start gap-1'
-            : 'group relative flex w-full min-w-0 items-start',
+            ? 'inline-flex max-w-full items-baseline pr-5 align-baseline'
+            : 'flex w-full items-baseline pr-5',
       )}
     >
       {isActive ? (
         editor
       ) : (
         <>
-          <span className={cn('min-w-0', inline ? '' : 'block w-full pr-7')}>
+          <span className='min-w-0 flex-1 overflow-hidden align-baseline'>
             {children}
           </span>
           <button
             aria-label='Edit'
             type='button'
-            className={cn(
-              'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-              !inline && 'absolute top-0 right-0',
-            )}
+            className='absolute top-1/2 right-0 inline-flex size-5 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -707,20 +711,23 @@ const QualifyAgentResultView = ({
     const label = controlLabel(entry.field, entry.label) || entry.label
     return (
       <div
-        className='flex min-w-0 items-start gap-1.5 text-left text-sm leading-5 font-normal text-gray-12'
+        className='flex min-w-0 flex-nowrap items-baseline gap-1.5 text-left text-sm leading-5 font-normal text-gray-12'
         key={entry.resultKey}
       >
-        <span className='shrink-0 pt-0.5 font-bold'>{label}:</span>
+        <span className='shrink-0 whitespace-nowrap font-bold'>{label}:</span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
-          className='min-w-0 flex-1 justify-start text-left'
+          className='min-w-0 flex-1 overflow-hidden'
           editor={renderScalarEditor(entry, resolved.raw, true)}
           fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
           label={label}
           onActivate={setActiveEditId}
         >
-          <TruncatedExpandText value={resolved.display || 'NA'} />
+          <TruncatedExpandText
+            className='w-full'
+            value={resolved.display || 'NA'}
+          />
         </HoverEditShell>
       </div>
     )

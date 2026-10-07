@@ -15,6 +15,11 @@ const LONG_DIGIT_RE = /\b\d{7,}\b/g
 const AADHAAR_RE = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g
 /** Indian PAN. */
 const PAN_RE = /\b[A-Z]{5}\d{4}[A-Z]\b/g
+/** Currency amounts with code or symbol (avoid bare decimals — too noisy). */
+const CURRENCY_AMOUNT_RE =
+  /\b(?:USD|CAD|EUR|GBP|INR|AED|MYR|SGD|AUD|NZD)\s*\$?\s*[\d,]+\.?\d{0,2}\b/gi
+const CURRENCY_SYMBOL_AMOUNT_RE =
+  /(?:[$€£₹])\s*[\d,]{1,3}(?:,\d{3})*(?:\.\d{2})?\b/g
 /** Capture values that sit next to common bank / ID document labels. */
 const LABELED_VALUE_PATTERNS: RegExp[] = [
   /ACCOUNT\s*NO\.?\s*[:.]?\s*([0-9]{6,})/gi,
@@ -29,6 +34,11 @@ const LABELED_VALUE_PATTERNS: RegExp[] = [
   /(?:AADHAAR|AADHAR|UIDAI|UID)\s*(?:NO\.?|NUMBER|#)?\s*[:.]?\s*([0-9\s-]{12,})/gi,
   /(?:PAN)\s*(?:NO\.?|NUMBER|#|CARD)?\s*[:.]?\s*([A-Z]{5}\d{4}[A-Z])/gi,
   /(?:DATE\s*OF\s*BIRTH|DOB|DATE\s*DE\s*NAISSANCE)\s*[/:]?\s*([0-9]{1,2}\s*[A-Z]{3,9}\s*[/A-Z\s]*[0-9]{2,4})/gi,
+  /(?:INVOICE\s*AMOUNT|AMOUNT\s*DUE|TOTAL\s*AMOUNT|GRAND\s*TOTAL|BALANCE\s*DUE|NET\s*AMOUNT)\s*[:.]?\s*((?:USD|CAD|EUR|GBP|INR|AED|MYR|SGD)?\s*[$€£₹]?\s*[\d,]+\.?\d{0,2})/gi,
+  /(?:EMAIL|E-MAIL)\s*[:.]?\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi,
+  /(?:ADDRESS)\s*[:.]?\s*([A-Z0-9][A-Z0-9 .,#'\-\/]{12,80})/gi,
+  /(?:SUPPLIER|VENDOR|SELLER|BILL\s*FROM|SOLD\s*BY|REMIT\s*TO|PAYEE)\s*[:.]?\s*([A-Z][A-Z0-9 &.,'\/\-]{2,72})/gi,
+  /(?:CUSTOMER|CLIENT|BUYER|BILL\s*TO|SHIP\s*TO|SOLD\s*TO)\s*[:.]?\s*([A-Z][A-Z0-9 &.,'\/\-]{2,72})/gi,
 ]
 
 /**
@@ -45,6 +55,10 @@ const PASSPORT_NUMBER_RE = /\b(?:[A-Z]{1,2}\d{6,9}|\d{9})\b/g
 /** Honorific + name lines common on Indian statements. */
 const HONORIFIC_NAME_RE =
   /\b(?:MR|MRS|MS|MISS|DR|SHRI|SMT)\.?\s+([A-Z][A-Z.'\-\s]{2,48})/g
+
+/** Invoice letterheads: APEX INDUSTRIAL COMPONENTS LTD */
+const COMPANY_SUFFIX_NAME_RE =
+  /\b([A-Z][A-Z0-9&.'\-]+(?:\s+[A-Z][A-Z0-9&.'\-]+){1,6}\s+(?:LTD|LLC|INC|CORP|LIMITED|PLC)\.?)\b/g
 
 const MIN_KNOWN_LENGTH = 4
 
@@ -161,10 +175,28 @@ const collectLabeledHits = (text: string): string[] => {
   return hits
 }
 
-const collectRegexHits = (text: string): string[] => {
+const collectCompanySuffixNames = (text: string): string[] => {
+  if (!text) return []
+  const hits: string[] = []
+  COMPANY_SUFFIX_NAME_RE.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = COMPANY_SUFFIX_NAME_RE.exec(text)) !== null) {
+    const raw = String(match[1] || match[0] || '').trim()
+    if (raw.length >= 8) hits.push(raw)
+  }
+  return hits
+}
+
+const collectRegexHits = (
+  text: string,
+  options: { boostOrg?: boolean } = {},
+): string[] => {
   if (!text) return []
   const hits: string[] = [...collectLabeledHits(text)]
-  // Do not auto-match bare amounts — they paint wrong/shifted boxes on ledgers.
+  if (options.boostOrg) {
+    hits.push(...collectCompanySuffixNames(text))
+  }
+  // Currency/code amounts only — bare decimals paint wrong boxes on ledgers.
   const patterns = [
     EMAIL_RE,
     UPI_RE,
@@ -176,6 +208,8 @@ const collectRegexHits = (text: string): string[] => {
     PAN_RE,
     PASSPORT_NUMBER_RE,
     LONG_DIGIT_RE,
+    CURRENCY_AMOUNT_RE,
+    CURRENCY_SYMBOL_AMOUNT_RE,
   ]
   for (const pattern of patterns) {
     pattern.lastIndex = 0
@@ -254,32 +288,62 @@ const collectNerHits = async (text: string): Promise<string[]> => {
   }
 }
 
+/** Folder-selected values always win — never drop via SKIP_PII_TOKENS. */
+const preserveKnownValues = (values: string[]) => {
+  const seen = new Set<string>()
+  const kept: string[] = []
+  for (const value of values) {
+    const key = normalizePiiToken(value)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    kept.push(value)
+  }
+  return kept
+}
+
+const mergeKnownWithDetected = (known: string[], detected: string[]) => {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of [...known, ...detected]) {
+    const key = normalizePiiToken(value)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(value)
+  }
+  return out.sort((a, b) => b.length - a.length)
+}
+
 /**
  * Build the list of strings that should be redacted from page text.
- * Known values + regex run first (fast). NER is optional and must not
- * block redaction of form/OCR hits — transformers model download is slow.
+ * Known (mentioned) field values are always kept. Regex + optional NER
+ * add auto-detected PII on top.
  */
 export const detectPiiValues = async (
   pageText: string,
   options: {
+    /** When Supplier/Vendor/Company fields are selected — also hide letterhead ORGs. */
+    boostOrg?: boolean
     enableNer?: boolean
     /** When set, only the supplied field values are redacted. */
     knownOnly?: boolean
     knownValues?: string[]
   } = {},
 ): Promise<string[]> => {
-  const known = (options.knownValues || [])
-    .map((value) => String(value || '').trim())
-    .filter((value) => value.length >= MIN_KNOWN_LENGTH)
+  // Keep short codes from selected fields (e.g. SUP001) — MIN was dropping them.
+  const known = preserveKnownValues(
+    (options.knownValues || [])
+      .map((value) => String(value || '').trim())
+      .filter((value) => value.length >= 2),
+  )
 
   if (options.knownOnly) {
-    return uniquePreserve(known).sort((a, b) => b.length - a.length)
+    return known.sort((a, b) => b.length - a.length)
   }
 
-  const regexHits = collectRegexHits(pageText)
-  const fast = uniquePreserve([...known, ...regexHits]).sort(
-    (a, b) => b.length - a.length,
+  const regexHits = uniquePreserve(
+    collectRegexHits(pageText, { boostOrg: options.boostOrg }),
   )
+  const fast = mergeKnownWithDetected(known, regexHits)
 
   if (!options.enableNer) return fast
 
@@ -291,9 +355,7 @@ export const detectPiiValues = async (
         window.setTimeout(() => resolve([]), 2500)
       }),
     ])
-    return uniquePreserve([...fast, ...nerHits]).sort(
-      (a, b) => b.length - a.length,
-    )
+    return mergeKnownWithDetected(fast, uniquePreserve(nerHits))
   } catch {
     return fast
   }

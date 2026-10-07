@@ -46,19 +46,19 @@ const TruncatedExpandText = ({
     }
   }
 
-  // Width-based mode (agent columns)
+  // Width-based mode: stay on one line next to "Label :" (truncate, don't wrap).
   if (shortValue == null && maxChars == null && !truncateAfter) {
     return (
       <Tag
         className={cn(
-          'group block min-w-0 w-full cursor-pointer text-left',
+          'group block min-w-0 max-w-full cursor-pointer text-left',
           className,
         )}
       >
         <span className='block min-w-0 truncate whitespace-nowrap group-hover:hidden'>
           {fullValue}
         </span>
-        <span className='hidden w-full break-words whitespace-normal group-hover:block'>
+        <span className='hidden min-w-0 break-words whitespace-normal group-hover:block'>
           {fullValue}
         </span>
       </Tag>

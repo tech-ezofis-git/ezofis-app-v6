@@ -273,11 +273,11 @@ const AgentFlatTable = ({
         </h4>
         {canEdit && allowAddRow && (
           <button
-            className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-1 text-[11px] font-bold text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)] active:scale-95'
+            className='inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
             type='button'
             onClick={addRow}
           >
-            <Icon className='h-3.5 w-3.5' icon='tabler:plus' />
+            <Icon className='h-3.5 w-3.5 text-current' icon='tabler:plus' />
             {t`Add Row`}
           </button>
         )}

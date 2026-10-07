@@ -3,6 +3,7 @@ import type { RedactionArea } from './types'
 import { computePiiAreas } from './computePiiAreas'
 
 type UsePiiRedactionArgs = {
+  boostOrg?: boolean
   enable?: boolean
   enableNer?: boolean
   fileUrl?: string | null
@@ -17,6 +18,7 @@ type UsePiiRedactionArgs = {
  * Digital PDFs with a dense text layer are refined by PiiDomPageOverlay.
  */
 export const usePiiRedaction = ({
+  boostOrg = false,
   enable = false,
   enableNer = false,
   fileUrl,
@@ -46,6 +48,7 @@ export const usePiiRedaction = ({
       // Keep prior covers while OCR runs so passports don't flash unredacted.
       try {
         const matched = await computePiiAreas({
+          boostOrg,
           enableNer,
           fileUrl,
           knownOnly,
@@ -69,7 +72,16 @@ export const usePiiRedaction = ({
       controller.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enable, enableNer, fileUrl, knownKey, knownOnly, mode, visibleChars])
+  }, [
+    boostOrg,
+    enable,
+    enableNer,
+    fileUrl,
+    knownKey,
+    knownOnly,
+    mode,
+    visibleChars,
+  ])
 
   return { areas, isScanning }
 }

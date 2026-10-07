@@ -17,6 +17,14 @@ export {
 export { maskPiiValue, normalizePiiToken } from './maskPii'
 export { matchPiiToBoxes } from './matchBoxes'
 export { extractOcrTextBoxes, extractPdfPageOcrBoxes } from './ocrBoxes'
+export {
+  collectMentionedFieldValues,
+  expandKnownValueTokens,
+  fieldKeysMatch,
+  isOrgLikeFieldKey,
+  normalizeFieldKey,
+  selectedFieldsIncludeOrg,
+} from './selectedFieldPii'
 export { measureTextLayerBoxes } from './measureTextLayerBoxes'
 export { default as PiiDomPageOverlay } from './PiiDomPageOverlay'
 export { default as PiiPrivacyVeil } from './PiiPrivacyVeil'
