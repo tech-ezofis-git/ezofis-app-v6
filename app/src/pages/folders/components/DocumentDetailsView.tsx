@@ -3046,7 +3046,7 @@ export function DocumentDetailsView({
                                                 : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
                                             }`}
                                           >
-                                            <p className='text-amber-11 dark:text-amber-10 pb-1 text-[13px] leading-5 font-normal break-words whitespace-pre-wrap italic'>
+                                            <p className='text-amber-11 dark:text-amber-10 pb-1 text-[13px] leading-5 font-normal break-words whitespace-pre-wrap '>
                                               {message}
                                             </p>
 

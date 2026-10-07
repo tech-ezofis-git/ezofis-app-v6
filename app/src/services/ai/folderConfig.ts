@@ -161,6 +161,7 @@ Guidelines:
 - "fields": cover essential metadata for this folder
 - includeInFolderStructure=true for hierarchy levels (e.g. Employee, Document Type)
 - includeInFolderStructure=false for document metadata fields (e.g. Employee ID, Payslip Month)
+- "isMandatory": only mark fields as true when essential (e.g., Invoice Number, Amount Due, or folder structure levels). Leave the rest as false (optional) so users see both Required and Optional states side by side.
 - Prefer dataType values: ${FOLDER_DATA_TYPES.join(', ')}
 - reply: 1 short sentence summarizing folder purpose.
 
