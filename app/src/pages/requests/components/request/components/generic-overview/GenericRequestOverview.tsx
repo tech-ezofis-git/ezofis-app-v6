@@ -18,6 +18,11 @@ import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { collectRedactValues } from '@/components/common/document-preview/pii'
 import folderApi from '@/pages/folders/api/folderApi'
+import {
+  emptyFolderPiiSettings,
+  type FolderPiiSettings,
+  resolveFolderPiiSettings,
+} from '@/pages/folders/utils/folderPiiSettings'
 import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import {
@@ -117,6 +122,102 @@ const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
   return 'ALL'
 }
 
+/** Apply folder PII redaction in the request viewer only when that folder has it on. */
+const useRequestFolderPii = (
+  repositoryId: string | number | undefined,
+  formModel?: Record<string, any> | null,
+) => {
+  const [folderPiiSettings, setFolderPiiSettings] = useState<FolderPiiSettings>(
+    emptyFolderPiiSettings,
+  )
+  const [piiRepositoryFields, setPiiRepositoryFields] = useState<
+    Array<{ id?: string | number; name?: string }>
+  >([])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      const id = String(repositoryId || '').trim()
+      if (!id) {
+        setFolderPiiSettings(emptyFolderPiiSettings())
+        setPiiRepositoryFields([])
+        return
+      }
+      try {
+        const response = await getRepositoryById(id)
+        if (cancelled) return
+        const details =
+          response.data && typeof response.data === 'object'
+            ? (response.data as Record<string, unknown>)
+            : null
+        setFolderPiiSettings(resolveFolderPiiSettings(id, details))
+        setPiiRepositoryFields(
+          Array.isArray(details?.fields)
+            ? (details.fields as Array<{ id?: string | number; name?: string }>)
+            : [],
+        )
+      } catch {
+        if (!cancelled) {
+          setFolderPiiSettings(resolveFolderPiiSettings(id, null))
+          setPiiRepositoryFields([])
+        }
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [repositoryId])
+
+  const enablePiiRedaction = folderPiiSettings.enabled
+  const enablePiiNer =
+    enablePiiRedaction && folderPiiSettings.fieldIds.length === 0
+  const piiKnownOnly =
+    enablePiiRedaction && folderPiiSettings.fieldIds.length > 0
+
+  const piiRedactValues = useMemo(() => {
+    if (!enablePiiRedaction) return []
+    const selectedIds = new Set(
+      folderPiiSettings.fieldIds.map((id) => String(id)),
+    )
+    if (selectedIds.size === 0) {
+      return collectRedactValues(formModel)
+    }
+
+    const normalize = (value: string) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+    const selectedNames = new Set(
+      piiRepositoryFields
+        .filter((field) => selectedIds.has(String(field.id)))
+        .map((field) => normalize(String(field.name || '')))
+        .filter(Boolean),
+    )
+
+    const picked: unknown[] = []
+    for (const [key, value] of Object.entries(formModel || {})) {
+      if (selectedIds.has(String(key))) {
+        picked.push(value)
+        continue
+      }
+      if (selectedNames.has(normalize(String(key)))) {
+        picked.push(value)
+      }
+    }
+
+    const fromSelected = collectRedactValues(picked)
+    return fromSelected.length > 0
+      ? fromSelected
+      : collectRedactValues(formModel)
+  }, [enablePiiRedaction, folderPiiSettings.fieldIds, formModel, piiRepositoryFields])
+
+  return {
+    enablePiiNer,
+    enablePiiRedaction,
+    piiKnownOnly,
+    piiRedactValues,
+  }
+}
+
 interface Props {
   // Fetched once at the Request level (so the header's attachment count and
   // this view's file-field display and Attachments panel all agree on the
@@ -151,12 +252,14 @@ interface Props {
 // Split layout tailored specifically for "Document Approval"
 const DocumentApprovalSplitLayout = ({
   attachments,
+  formModel,
   formNode,
   repositoryId,
   selectedItem,
   taskNode,
 }: {
   attachments: AttachmentItem[]
+  formModel?: Record<string, any>
   formNode: ReactNode
   repositoryId: string | number | undefined
   selectedItem: any
@@ -207,6 +310,8 @@ const DocumentApprovalSplitLayout = ({
       ? `file.${previewAttachment.fileExtension}`
       : undefined)
   const previewKind = resolveDocumentPreviewKind(mimeType, previewFileName)
+  const { enablePiiNer, enablePiiRedaction, piiKnownOnly, piiRedactValues } =
+    useRequestFolderPii(targetRepoId, formModel)
 
   useEffect(() => {
     if (!targetItemId || !targetRepoId) return
@@ -227,12 +332,16 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            enablePiiRedaction
+            enablePiiNer={enablePiiNer}
+            enablePiiRedaction={enablePiiRedaction}
             fileName={previewFileName}
             fileUrl={previewUrl || null}
             isImage={previewKind === 'image' || previewKind === 'tiff'}
             isLoading={previewLoading}
             isPdf={previewKind === 'pdf'}
+            key={`pii-${enablePiiRedaction ? 'on' : 'off'}`}
+            piiKnownOnly={piiKnownOnly}
+            redactValues={piiRedactValues}
           />
         ) : (
           <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -367,11 +476,6 @@ const DocumentFormSplitLayout = ({
       getLatestAttachment(attachments) ||
       attachments[0],
     [attachments],
-  )
-
-  const piiRedactValues = useMemo(
-    () => collectRedactValues(formModel),
-    [formModel],
   )
 
   const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
@@ -661,6 +765,8 @@ const DocumentFormSplitLayout = ({
       ? `file.${previewAttachment.fileExtension}`
       : undefined)
   const viewerKind = resolveDocumentPreviewKind(previewMimeType, viewerFileName)
+  const { enablePiiNer, enablePiiRedaction, piiKnownOnly, piiRedactValues } =
+    useRequestFolderPii(targetRepoId, formModel)
 
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
@@ -676,13 +782,15 @@ const DocumentFormSplitLayout = ({
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
             {previewAttachment ? (
               <DocumentPreviewViewer
-                enablePiiNer
-                enablePiiRedaction
+                enablePiiNer={enablePiiNer}
+                enablePiiRedaction={enablePiiRedaction}
                 fileName={viewerFileName}
                 fileUrl={previewUrl || null}
                 isImage={viewerKind === 'image' || viewerKind === 'tiff'}
                 isLoading={previewLoading}
                 isPdf={viewerKind === 'pdf'}
+                key={`pii-${enablePiiRedaction ? 'on' : 'off'}`}
+                piiKnownOnly={piiKnownOnly}
                 redactValues={piiRedactValues}
               />
             ) : (
@@ -733,7 +841,7 @@ const DocumentFormSplitLayout = ({
 
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3'>
+            <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-scroll p-3 [scrollbar-gutter:stable]'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
                 attachments={attachments}
@@ -1310,6 +1418,7 @@ const GenericRequestOverview = ({
         {rawWorkflowData?.name === 'Document Approval' ? (
           <DocumentApprovalSplitLayout
             attachments={attachments}
+            formModel={formModel}
             repositoryId={repositoryId}
             selectedItem={selectedItem || storeSelectedItem}
             formNode={

@@ -76,16 +76,16 @@ import {
   sniffBlobMimeType,
 } from '../utils/documentDetailsUtils'
 import {
+  getFieldDisplayValue,
+  getFieldSearchVariantStrings,
+} from '../utils/fieldPdfSearch'
+import {
   emptyFolderPiiSettings,
   type FolderPiiSettings,
   resolveFolderPiiSettings,
   userCanToggleFolderPii,
   verifyFolderPiiPassword,
 } from '../utils/folderPiiSettings'
-import {
-  getFieldDisplayValue,
-  getFieldSearchVariantStrings,
-} from '../utils/fieldPdfSearch'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import {
   loadSignRequestFields,
@@ -651,6 +651,9 @@ export function DocumentDetailsView({
   const [folderPiiSettings, setFolderPiiSettings] = useState<FolderPiiSettings>(
     emptyFolderPiiSettings,
   )
+  const [piiRepositoryFields, setPiiRepositoryFields] = useState<
+    RepositoryFieldDto[]
+  >([])
   const [showUnredactedPreview, setShowUnredactedPreview] = useState(false)
   const [piiPasswordMenuOpen, setPiiPasswordMenuOpen] = useState(false)
   const [piiPasswordInput, setPiiPasswordInput] = useState('')
@@ -665,6 +668,7 @@ export function DocumentDetailsView({
     const loadFolderPii = async () => {
       if (!repositoryId) {
         setFolderPiiSettings(emptyFolderPiiSettings())
+        setPiiRepositoryFields([])
         return
       }
       try {
@@ -675,9 +679,15 @@ export function DocumentDetailsView({
             ? (response.data as Record<string, unknown>)
             : null
         setFolderPiiSettings(resolveFolderPiiSettings(repositoryId, details))
+        setPiiRepositoryFields(
+          Array.isArray(details?.fields)
+            ? (details.fields as RepositoryFieldDto[])
+            : [],
+        )
       } catch {
         if (!cancelled) {
           setFolderPiiSettings(resolveFolderPiiSettings(repositoryId, null))
+          setPiiRepositoryFields([])
         }
       }
     }
@@ -694,6 +704,8 @@ export function DocumentDetailsView({
   )
   const enablePiiRedaction =
     folderPiiEnabled && !(canToggleUnredacted && showUnredactedPreview)
+  const usePiiNer =
+    enablePiiRedaction && folderPiiSettings.fieldIds.length === 0
 
   useEffect(() => {
     setSavedSignatures([])
@@ -1549,10 +1561,47 @@ export function DocumentDetailsView({
     return map
   }, [activeHighlightTerm])
 
-  const piiRedactValues = useMemo(
-    () => collectRedactValues(fieldProbeTerms),
-    [fieldProbeTerms],
-  )
+  const piiFieldNameSet = useMemo(() => {
+    const selectedIds = new Set(
+      folderPiiSettings.fieldIds.map((id) => String(id)),
+    )
+    if (!folderPiiSettings.enabled || selectedIds.size === 0) {
+      return new Set<string>()
+    }
+    const normalize = (value: string) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+    return new Set(
+      piiRepositoryFields
+        .filter((field) => selectedIds.has(String(field.id)))
+        .map((field) => normalize(field.name || ''))
+        .filter(Boolean),
+    )
+  }, [folderPiiSettings, piiRepositoryFields])
+
+  const piiRedactValues = useMemo(() => {
+    // Folder fields not loaded yet — still redact from visible metadata / probes.
+    if (piiFieldNameSet.size === 0) {
+      return collectRedactValues(fieldProbeTerms)
+    }
+    const normalize = (value: string) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+    const terms: string[] = []
+    const seen = new Set<string>()
+    for (const card of infoCards) {
+      for (const row of card.rows) {
+        if (!piiFieldNameSet.has(normalize(row.label))) continue
+        const value = getFieldDisplayValue(row.value)
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        terms.push(value)
+      }
+    }
+    const fromFields = collectRedactValues(terms)
+    // If selected fields have no values yet, fall back so viewer still greys PII.
+    return fromFields.length > 0
+      ? fromFields
+      : collectRedactValues(fieldProbeTerms)
+  }, [fieldProbeTerms, infoCards, piiFieldNameSet])
 
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
@@ -1599,9 +1648,13 @@ export function DocumentDetailsView({
     setDownloadError('')
     try {
       // Redacted preview → burn covers into a local file (no original API blob).
-      if (enablePiiRedaction && previewUrl && (isPdfPreview || isImagePreview)) {
+      if (
+        enablePiiRedaction &&
+        previewUrl &&
+        (isPdfPreview || isImagePreview)
+      ) {
         const redacted = await buildRedactedFileBlob({
-          enableNer: enablePiiRedaction,
+          enableNer: usePiiNer,
           fileName: data?.fileName || 'document',
           fileUrl: previewUrl,
           knownValues: piiRedactValues,
@@ -1686,7 +1739,7 @@ export function DocumentDetailsView({
     let objectUrl: string | null = null
     try {
       const redacted = await buildRedactedFileBlob({
-        enableNer: enablePiiRedaction,
+        enableNer: usePiiNer,
         fileName: data?.fileName || 'document',
         fileUrl: previewUrl,
         knownValues: piiRedactValues,
@@ -2089,21 +2142,17 @@ export function DocumentDetailsView({
                   </Tooltip>
                 ) : (
                   <Menu
-                    closeOnClickOutside
                     closeOnItemClick={false}
                     opened={piiPasswordMenuOpen}
                     position='bottom-end'
                     width={280}
+                    closeOnClickOutside
                     withinPortal
-                    onChange={(opened) => {
-                      setPiiPasswordMenuOpen(opened)
-                      if (!opened) {
-                        setPiiPasswordInput('')
-                        setPiiPasswordError('')
-                      }
-                    }}
                     target={
-                      <Tooltip content={t`Show original file`} position='bottom'>
+                      <Tooltip
+                        content={t`Show original file`}
+                        position='bottom'
+                      >
                         <button
                           aria-label={t`Show original file`}
                           className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
@@ -2113,6 +2162,13 @@ export function DocumentDetailsView({
                         </button>
                       </Tooltip>
                     }
+                    onChange={(opened) => {
+                      setPiiPasswordMenuOpen(opened)
+                      if (!opened) {
+                        setPiiPasswordInput('')
+                        setPiiPasswordError('')
+                      }
+                    }}
                   >
                     <div
                       className='flex flex-col gap-2.5 p-2.5'
@@ -2127,11 +2183,11 @@ export function DocumentDetailsView({
                       </p>
                       <InputText
                         autoComplete='current-password'
-                        autoFocus
                         error={piiPasswordError || undefined}
                         placeholder={t`Password`}
                         type='password'
                         value={piiPasswordInput}
+                        autoFocus
                         onChange={(value) => {
                           setPiiPasswordInput(value)
                           if (piiPasswordError) setPiiPasswordError('')
@@ -2200,12 +2256,12 @@ export function DocumentDetailsView({
 
               {canPrint ? (
                 <Tooltip
+                  position='bottom'
                   content={
                     isDownloading && enablePiiRedaction
                       ? t`Preparing redacted file...`
                       : t`Print file`
                   }
-                  position='bottom'
                 >
                   <button
                     aria-label={t`Print file`}
@@ -2522,7 +2578,7 @@ export function DocumentDetailsView({
                       activeHighlightColor={activeHighlightColor}
                       activeHighlightTerm={activeHighlightTerm}
                       className='h-full min-h-full'
-                      enablePiiNer={enablePiiRedaction}
+                      enablePiiNer={usePiiNer}
                       enablePiiRedaction={enablePiiRedaction}
                       fileBlob={previewBlobRef.current}
                       fileName={data.fileName}
@@ -2714,6 +2770,14 @@ export function DocumentDetailsView({
                             const displayTime = isSameDate
                               ? formatTimeOnly(item.createdAtUtc)
                               : formatDateTime(item.createdAtUtc)
+                            const isCommentEvent =
+                              String(item.eventType || '')
+                                .trim()
+                                .toLowerCase() === 'comment' ||
+                              String(item.title || '')
+                                .trim()
+                                .toLowerCase()
+                                .includes('comment')
 
                             return (
                               <div
@@ -2743,14 +2807,19 @@ export function DocumentDetailsView({
                                       {item.title}
                                     </b>
                                     {item.description ? (
-                                      <span className='text-gray-10'>
-                                        {': '}
-                                        <b className='font-semibold'>{'"'}</b>
-                                        <i className='italic not-italic'>
+                                      isCommentEvent ? (
+                                        <span>
+                                          {': '}
+                                          <span className='font-normal italic text-primary-11'>
+                                            &ldquo;{item.description}&rdquo;
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        <span className='text-gray-10'>
+                                          {': '}
                                           {item.description}
-                                        </i>
-                                        <b className='font-semibold'>{'"'}</b>
-                                      </span>
+                                        </span>
+                                      )
                                     ) : null}
                                   </p>
                                   <p className='mt-0.5 text-[12px] text-gray-9'>
@@ -3354,11 +3423,20 @@ export function DocumentDetailsView({
                     {card.rows.map((row) => {
                       const rowKey = `${card.id}:${row.label}`
                       const fieldValue = getFieldDisplayValue(row.value)
-                      const hasPdfMatch = Boolean(
-                        fieldValue && matchedFieldValues.has(fieldValue),
-                      )
+                      const maskField =
+                        enablePiiRedaction &&
+                        piiFieldNameSet.has(
+                          row.label.trim().toLowerCase().replace(/\s+/g, ''),
+                        )
+                      const hasPdfMatch =
+                        !maskField &&
+                        Boolean(
+                          fieldValue && matchedFieldValues.has(fieldValue),
+                        )
                       const isActive = activeFieldKey === rowKey
-                      const displayVal = toDisplayValue(row.value)
+                      const plainVal = toDisplayValue(row.value)
+                      const maskedTail =
+                        plainVal.length <= 3 ? plainVal : plainVal.slice(-3)
                       return (
                         <button
                           key={rowKey}
@@ -3397,9 +3475,18 @@ export function DocumentDetailsView({
 
                           {/* 3. Value — truncated on one line; hover wraps in this column only */}
                           <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
-                            <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'>
-                              {displayVal}
-                            </b>
+                            {maskField ? (
+                              <b
+                                aria-label={t`Redacted`}
+                                className='block whitespace-nowrap font-mono text-[13px] font-semibold text-gray-13'
+                              >
+                                {`*****${maskedTail}`}
+                              </b>
+                            ) : (
+                              <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'>
+                                {plainVal}
+                              </b>
+                            )}
                           </div>
                         </button>
                       )

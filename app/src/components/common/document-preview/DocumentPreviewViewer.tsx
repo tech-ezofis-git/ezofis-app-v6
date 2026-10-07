@@ -24,8 +24,8 @@ import cn from '@/utils/cn'
 import EmlPreview from './EmlPreview'
 import {
   PiiDomPageOverlay,
-  RedactionOverlay,
   redactHtmlText,
+  RedactionOverlay,
   redactPlainText,
   usePiiRedaction,
 } from './pii'
@@ -127,10 +127,10 @@ type DocumentPreviewViewerProps = {
   activeHighlightTerm?: string | null
   className?: string
   enableHighlight?: boolean
-  /** Scan the document and cover detected / known PII values. */
-  enablePiiRedaction?: boolean
   /** Optional NER via @xenova/transformers (heavier; off by default). */
   enablePiiNer?: boolean
+  /** Scan the document and cover detected / known PII values. */
+  enablePiiRedaction?: boolean
   fileBlob?: Blob | null
   fileName?: string
   fileUrl: string | null
@@ -146,6 +146,8 @@ type DocumentPreviewViewerProps = {
   // Signature & edit permission props for Collabora / Office document signing
   permission?: 'edit' | 'readonly'
   permissions?: any
+  /** Redact only `redactValues`, not every detected account or phone. */
+  piiKnownOnly?: boolean
   /** Keep this many trailing characters visible when masking (default 3). */
   piiMaskVisibleChars?: number
   probeTerms?: string[]
@@ -170,6 +172,7 @@ type PdfViewerProps = {
   focusRequestId?: number
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
   probeTerms?: string[]
   redactValues?: string[]
@@ -378,6 +381,7 @@ export default function DocumentPreviewViewer({
   isSigningMode = false,
   permission = 'readonly',
   permissions,
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
@@ -442,6 +446,7 @@ export default function DocumentPreviewViewer({
           highlightColors={enableHighlight ? highlightColors : {}}
           highlightTerms={enableHighlight ? highlightTerms : []}
           key={fileUrl}
+          piiKnownOnly={piiKnownOnly}
           piiMaskVisibleChars={piiMaskVisibleChars}
           probeTerms={probeTerms}
           redactValues={redactValues}
@@ -464,6 +469,7 @@ export default function DocumentPreviewViewer({
         enablePiiRedaction={enablePiiRedaction}
         fileName={fileName}
         fileUrl={fileUrl}
+        piiKnownOnly={piiKnownOnly}
         piiMaskVisibleChars={piiMaskVisibleChars}
         redactValues={redactValues}
       />
@@ -631,9 +637,7 @@ function SpreadsheetPreview({
         visibleChars: piiMaskVisibleChars,
       })
       if (cancelled) return
-      setRows(
-        redacted.split('\n').map((line) => line.split('\t')),
-      )
+      setRows(redacted.split('\n').map((line) => line.split('\t')))
     }
     void apply()
     return () => {
@@ -1382,6 +1386,7 @@ function ImagePreview({
   enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   redactValues = [],
 }: {
@@ -1389,6 +1394,7 @@ function ImagePreview({
   enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
   redactValues?: string[]
 }) {
@@ -1397,6 +1403,7 @@ function ImagePreview({
     enable: enablePiiRedaction,
     enableNer: enablePiiNer,
     fileUrl,
+    knownOnly: piiKnownOnly,
     knownValues: redactValues,
     mode: 'image',
     visibleChars: piiMaskVisibleChars,
@@ -1442,6 +1449,7 @@ function PdfViewer({
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
@@ -1460,6 +1468,7 @@ function PdfViewer({
     enable: enablePiiRedaction,
     enableNer: enablePiiNer,
     fileUrl,
+    knownOnly: piiKnownOnly,
     knownValues: redactValues,
     mode: 'pdf',
     visibleChars: piiMaskVisibleChars,
@@ -2005,6 +2014,7 @@ function PdfViewer({
                     enableNer={enablePiiNer}
                     fallbackAreas={piiAreas}
                     isOcrScanning={isPiiScanning}
+                    knownOnly={piiKnownOnly}
                     knownValues={redactValues}
                     pageIndex={props.pageIndex}
                     scale={props.scale}

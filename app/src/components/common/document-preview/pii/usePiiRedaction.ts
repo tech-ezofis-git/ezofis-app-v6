@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { computePiiAreas } from './computePiiAreas'
 import type { RedactionArea } from './types'
+import { computePiiAreas } from './computePiiAreas'
 
 type UsePiiRedactionArgs = {
   enable?: boolean
   enableNer?: boolean
   fileUrl?: string | null
+  knownOnly?: boolean
   knownValues?: string[]
   mode?: 'pdf' | 'image' | 'word' | string
   visibleChars?: number
@@ -19,6 +20,7 @@ export const usePiiRedaction = ({
   enable = false,
   enableNer = false,
   fileUrl,
+  knownOnly = false,
   knownValues = [],
   mode,
   visibleChars = 3,
@@ -41,11 +43,12 @@ export const usePiiRedaction = ({
 
     const run = async () => {
       setIsScanning(true)
-      setAreas([])
+      // Keep prior covers while OCR runs so passports don't flash unredacted.
       try {
         const matched = await computePiiAreas({
           enableNer,
           fileUrl,
+          knownOnly,
           knownValues,
           mode,
           signal: controller.signal,
@@ -56,7 +59,6 @@ export const usePiiRedaction = ({
       } catch (error) {
         if ((error as Error)?.name === 'AbortError') return
         console.warn('[pii] redaction scan failed', error)
-        if (runId === runIdRef.current) setAreas([])
       } finally {
         if (runId === runIdRef.current) setIsScanning(false)
       }
@@ -67,7 +69,7 @@ export const usePiiRedaction = ({
       controller.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enable, enableNer, fileUrl, knownKey, mode, visibleChars])
+  }, [enable, enableNer, fileUrl, knownKey, knownOnly, mode, visibleChars])
 
   return { areas, isScanning }
 }

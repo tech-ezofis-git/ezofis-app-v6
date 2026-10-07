@@ -1,11 +1,13 @@
+export type FolderPiiSettings = {
+  enabled: boolean
+  /** Folder field ids from the Fields step. Only these values are redacted. */
+  fieldIds: string[]
+  users: FolderPiiUserAccess[]
+}
+
 export type FolderPiiUserAccess = {
   password: string
   userId: string
-}
-
-export type FolderPiiSettings = {
-  enabled: boolean
-  users: FolderPiiUserAccess[]
 }
 
 const STORAGE_PREFIX = 'ezofis_folder_pii_'
@@ -51,8 +53,30 @@ const toAccessUsers = (value: unknown): FolderPiiUserAccess[] => {
   return out
 }
 
+const toFieldIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const entry of value) {
+    const id =
+      typeof entry === 'string' || typeof entry === 'number'
+        ? String(entry).trim()
+        : String(
+            (entry as { fieldId?: string | number; id?: string | number })
+              ?.fieldId ??
+              (entry as { id?: string | number })?.id ??
+              '',
+          ).trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}
+
 export const emptyFolderPiiSettings = (): FolderPiiSettings => ({
   enabled: false,
+  fieldIds: [],
   users: [],
 })
 
@@ -101,30 +125,36 @@ export const parseFolderPiiSettings = (
   const users =
     usersFromNestedOrSource.length > 0 ? usersFromNestedOrSource : legacyIds
 
+  const fieldIds = toFieldIds(
+    nested?.fieldIds ??
+      nested?.fields ??
+      source.piiRedactionFieldIds ??
+      source.piiFieldIds,
+  )
+
   const enabled =
     enabledRaw === true ||
     enabledRaw === 1 ||
     String(enabledRaw || '').toLowerCase() === 'true' ||
     String(enabledRaw || '').toLowerCase() === 'yes'
 
-  return { enabled, users }
+  return { enabled, fieldIds, users }
 }
 
 export const folderPiiSettingsToApiPayload = (settings: FolderPiiSettings) => {
-  const users = settings.enabled
-    ? settings.users
-        .filter(
-          (entry) =>
-            Boolean(entry.userId?.trim()) && Boolean(entry.password?.trim()),
-        )
-        .map((entry) => ({
-          password: entry.password,
-          userId: entry.userId,
-        }))
-    : []
+  const users = settings.users
+    .filter(
+      (entry) =>
+        Boolean(entry.userId?.trim()) && Boolean(entry.password?.trim()),
+    )
+    .map((entry) => ({
+      password: entry.password,
+      userId: entry.userId,
+    }))
 
   return {
     piiRedactionEnabled: Boolean(settings.enabled),
+    piiRedactionFieldIds: settings.enabled ? settings.fieldIds : [],
     piiRedactionUserIds: users.map((entry) => entry.userId),
     piiRedactionUsers: users,
   }
@@ -171,6 +201,8 @@ export const resolveFolderPiiSettings = (
     ('piiRedactionEnabled' in apiSource ||
       'piiEnabled' in apiSource ||
       'enablePiiRedaction' in apiSource ||
+      'piiRedactionFieldIds' in apiSource ||
+      'piiFieldIds' in apiSource ||
       'piiRedactionUserIds' in apiSource ||
       'piiRedactionUsers' in apiSource ||
       'piiUserIds' in apiSource ||
@@ -190,7 +222,8 @@ export const userCanToggleFolderPii = (
   if (!id) return false
   return settings.users.some(
     (entry) =>
-      String(entry.userId) === id && Boolean(String(entry.password || '').trim()),
+      String(entry.userId) === id &&
+      Boolean(String(entry.password || '').trim()),
   )
 }
 

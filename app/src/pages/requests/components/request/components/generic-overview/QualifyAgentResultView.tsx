@@ -33,6 +33,7 @@ import {
   type QualifierTableEntry,
   qualifyDecisionStyle,
 } from './qualifierResultUtils'
+import TruncatedExpandText from './TruncatedExpandText'
 
 export { getQualifierValue } from './qualifierResultUtils'
 
@@ -298,7 +299,7 @@ const HoverEditShell = ({
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
-        inline ? 'inline-flex max-w-full' : 'flex w-full min-w-0',
+        inline ? 'inline-flex max-w-full min-w-0' : 'flex w-full min-w-0',
         className,
       )}
     >
@@ -318,7 +319,7 @@ const HoverEditShell = ({
       )
     }
     return wrapLabel(
-      <span className={cn(inline ? 'inline' : 'block', className)}>
+      <span className={cn(inline ? 'inline min-w-0' : 'block min-w-0 w-full')}>
         {children}
       </span>,
     )
@@ -334,7 +335,11 @@ const HoverEditShell = ({
           {heading}
           {!isActive ? editButton : <span className='size-6 shrink-0' />}
         </span>
-        {isActive ? editor : <span className='block min-w-0'>{children}</span>}
+        {isActive ? (
+          editor
+        ) : (
+          <span className='block min-w-0 w-full'>{children}</span>
+        )}
       </span>,
     )
   }
@@ -347,11 +352,10 @@ const HoverEditShell = ({
         isActive
           ? inline
             ? 'inline-flex min-w-0 align-middle'
-            : 'block w-full'
+            : 'block w-full min-w-0'
           : inline
-            ? 'group inline-flex max-w-full min-w-0 items-center gap-1'
-            : 'group relative flex w-full min-w-0 items-center',
-        className,
+            ? 'group inline-flex max-w-full min-w-0 items-start gap-1'
+            : 'group relative flex w-full min-w-0 items-start',
       )}
     >
       {isActive ? (
@@ -695,41 +699,39 @@ const QualifyAgentResultView = ({
   const renderHeaderField = (entry: QualifierScalarEntry) => {
     const resolved = resolveScalarEntry(entry)
     const label = controlLabel(entry.field, entry.label) || entry.label
-
     return (
-      <span
-        className='inline-flex max-w-full items-center gap-1.5 pr-1 text-left text-sm leading-5 font-normal text-gray-12'
+      <div
+        className='flex min-w-0 items-start gap-1.5 text-left text-sm leading-5 font-normal text-gray-12'
         key={entry.resultKey}
       >
-        <span className='shrink-0 font-bold'>{label}:</span>
+        <span className='shrink-0 pt-0.5 font-bold'>{label}:</span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
-          className='max-w-full justify-start text-left'
+          className='min-w-0 flex-1 justify-start text-left'
           editor={renderScalarEditor(entry, resolved.raw, true)}
           fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
           label={label}
-          inline
           onActivate={setActiveEditId}
         >
-          <span>{resolved.display || 'NA'}</span>
+          <TruncatedExpandText value={resolved.display || 'NA'} />
         </HoverEditShell>
-      </span>
+      </div>
     )
   }
 
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between gap-4'>
-        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
+    <div className='flex min-w-0 flex-col gap-4'>
+      <div className='grid min-w-0 grid-cols-1 items-start gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
+        <div className='grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-2.5 text-left sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'>
           {headerEntries.map(renderHeaderField)}
         </div>
 
-        <div className='flex shrink-0 flex-col items-end gap-1'>
+        <div className='flex shrink-0 flex-col items-start gap-1 sm:items-end'>
           {viewModel.qualify ? (
             <div
               className={cn(
-                'flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm leading-5 font-bold',
+                'mb-2 flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm leading-5 font-bold',
                 qualifyStatus.className,
               )}
             >

@@ -13,6 +13,7 @@ import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 // import InputSelect from '@/components/base/inputs/InputSelect'
+import TruncatedExpandText from '@/pages/requests/components/request/components/generic-overview/TruncatedExpandText'
 import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -494,7 +495,7 @@ const Header: React.FC<HeaderProps> = ({
       ]
 
     return (
-      <OverlayHeaderWrapper className='min-h-14 w-full flex-wrap justify-between gap-3 px-4 py-2'>
+      <OverlayHeaderWrapper className='min-h-14 w-full flex-wrap items-center justify-between gap-3 px-4 py-2'>
         <div className='flex min-w-0 flex-wrap items-center gap-2'>
           <IconButton
             className='shrink-0 cursor-pointer hover:bg-gray-2'
@@ -516,9 +517,12 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onPrev}
               />
             </Tooltip>
-            <h1 className='shrink-0 text-[15px] font-semibold tracking-tight whitespace-nowrap text-gray-13'>
-              {requestNo}
-            </h1>
+            <TruncatedExpandText
+              as='h1'
+              className='shrink-0 text-[15px] font-semibold tracking-tight text-gray-13'
+              maxChars={10}
+              value={requestNo}
+            />
             <Tooltip content={t`Next Request`} position='bottom'>
               <IconButton
                 className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -532,28 +536,16 @@ const Header: React.FC<HeaderProps> = ({
             </Tooltip>
 
             {stage && (
-              <Tooltip
-                className='max-w-[11rem] min-w-0'
-                content={String(stage)}
-                position='bottom'
-              >
-                <span className='inline-flex max-w-full min-w-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-                  <span className='truncate'>{stage}</span>
-                </span>
-              </Tooltip>
+              <span className='inline-flex shrink-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                <TruncatedExpandText maxChars={10} value={String(stage)} />
+              </span>
             )}
 
             {assigneeLabel && (
-              <Tooltip
-                className='max-w-[16rem] min-w-0'
-                content={assigneeLabel}
-                position='bottom'
-              >
-                <span className='inline-flex max-w-full min-w-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
-                  <Icon className='size-3 shrink-0' name='lucide:user' />
-                  <span className='min-w-0 truncate'>{assigneeLabel}</span>
-                </span>
-              </Tooltip>
+              <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                <Icon className='size-3 shrink-0' name='lucide:user' />
+                <TruncatedExpandText truncateAfter='@' value={assigneeLabel} />
+              </span>
             )}
           </div>
         </div>
@@ -771,7 +763,7 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap justify-between gap-x-3 gap-y-2 px-4 py-2'>
+    <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
       <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-3'>
         <IconButton
@@ -795,11 +787,12 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onPrev}
             />
           </Tooltip>
-          <Tooltip content={requestNo || ''}>
-            <h1 className='text-[13px] font-semibold tracking-tight whitespace-nowrap text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'>
-              {requestNo}
-            </h1>
-          </Tooltip>
+          <TruncatedExpandText
+            as='h1'
+            className='shrink-0 text-[13px] font-semibold tracking-tight text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
+            maxChars={10}
+            value={requestNo}
+          />
           <Tooltip content={t`Next Request`} position='bottom'>
             <IconButton
               className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -812,15 +805,15 @@ const Header: React.FC<HeaderProps> = ({
             />
           </Tooltip>
           {stage && (
-            <Tooltip
-              className='max-w-[11rem] min-w-0'
-              content={String(stage)}
-              position='bottom'
-            >
-              <span className='inline-flex max-w-full min-w-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-                <span className='truncate'>{stage}</span>
-              </span>
-            </Tooltip>
+            <span className='inline-flex shrink-0 items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+              <TruncatedExpandText maxChars={10} value={String(stage)} />
+            </span>
+          )}
+          {assigneeLabel && (
+            <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+              <Icon className='size-3 shrink-0' name='lucide:user' />
+              <TruncatedExpandText truncateAfter='@' value={assigneeLabel} />
+            </span>
           )}
           <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
             {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (

@@ -74,6 +74,7 @@ export interface RepositoryDto {
   modifiedBy?: any
   modifiedByName?: any
   piiRedactionEnabled?: boolean
+  piiRedactionFieldIds?: string[]
   piiRedactionUserIds?: string[]
   stageTableName?: string
   storageDrive?: string

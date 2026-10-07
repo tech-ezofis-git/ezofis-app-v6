@@ -199,6 +199,7 @@ export type FolderWizardSnapshot = {
   folderName: string
   integrations?: string
   piiRedactionEnabled?: boolean
+  piiRedactionFieldIds?: string[]
   piiRedactionUserIds?: string[]
   piiRedactionUsers?: Array<{ password?: string; userId?: string }>
   source?: 'ai' | 'manual'
@@ -257,16 +258,11 @@ export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
         : snapshot.integrations,
     syncMapping: [],
   },
-  source: snapshot.source || 'manual',
-  storage: {
-    storageConnectorId: snapshot.storageConnectorId ?? null,
-    storageConnectorLabel: snapshot.storageConnectorLabel ?? null,
-    storageDrive: snapshot.storageDrive ?? null,
-    storageOptionId: snapshot.storage,
-    storageProviderCode: toStorageProviderCode(snapshot.storage),
-  },
   piiRedaction: {
     enabled: Boolean(snapshot.piiRedactionEnabled),
+    fieldIds: Array.isArray(snapshot.piiRedactionFieldIds)
+      ? snapshot.piiRedactionFieldIds.map(String)
+      : [],
     userIds: Array.isArray(snapshot.piiRedactionUserIds)
       ? snapshot.piiRedactionUserIds.map(String)
       : Array.isArray(snapshot.piiRedactionUsers)
@@ -287,6 +283,14 @@ export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
             userId: String(userId),
           }))
         : [],
+  },
+  source: snapshot.source || 'manual',
+  storage: {
+    storageConnectorId: snapshot.storageConnectorId ?? null,
+    storageConnectorLabel: snapshot.storageConnectorLabel ?? null,
+    storageDrive: snapshot.storageDrive ?? null,
+    storageOptionId: snapshot.storage,
+    storageProviderCode: toStorageProviderCode(snapshot.storage),
   },
   versioning: {
     displayMode: snapshot.displayMode,
@@ -340,6 +344,46 @@ export const hydrateFolderFromDraft = (
     integrations: String(
       form.integrations || integrations.label || integrations.erp || '',
     ),
+    piiRedactionEnabled: Boolean(
+      form.piiRedactionEnabled ?? piiRedaction.enabled ?? false,
+    ),
+    piiRedactionFieldIds: Array.isArray(form.piiRedactionFieldIds)
+      ? form.piiRedactionFieldIds.map(String)
+      : Array.isArray(piiRedaction.fieldIds)
+        ? piiRedaction.fieldIds.map(String)
+        : [],
+    piiRedactionUserIds: Array.isArray(form.piiRedactionUserIds)
+      ? form.piiRedactionUserIds.map(String)
+      : Array.isArray(piiRedaction.userIds)
+        ? piiRedaction.userIds.map(String)
+        : Array.isArray(piiRedaction.users)
+          ? (piiRedaction.users as Array<{ userId?: string }>)
+              .map((entry) => String(entry?.userId || '').trim())
+              .filter(Boolean)
+          : [],
+    piiRedactionUsers: Array.isArray(form.piiRedactionUsers)
+      ? form.piiRedactionUsers.map((entry) => ({
+          password: String(entry?.password || ''),
+          userId: String(entry?.userId || '').trim(),
+        }))
+      : Array.isArray(piiRedaction.users)
+        ? (
+            piiRedaction.users as Array<{ password?: string; userId?: string }>
+          ).map((entry) => ({
+            password: String(entry?.password || ''),
+            userId: String(entry?.userId || '').trim(),
+          }))
+        : Array.isArray(form.piiRedactionUserIds)
+          ? form.piiRedactionUserIds.map((userId) => ({
+              password: '',
+              userId: String(userId),
+            }))
+          : Array.isArray(piiRedaction.userIds)
+            ? piiRedaction.userIds.map((userId) => ({
+                password: '',
+                userId: String(userId),
+              }))
+            : [],
     source: form.source || (parsed.source as FolderWizardSnapshot['source']),
     storage: toStorageOptionId(
       String(
@@ -362,43 +406,6 @@ export const hydrateFolderFromDraft = (
     storageDrive:
       form.storageDrive ??
       (typeof storage.storageDrive === 'string' ? storage.storageDrive : null),
-    piiRedactionEnabled: Boolean(
-      form.piiRedactionEnabled ??
-        piiRedaction.enabled ??
-        false,
-    ),
-    piiRedactionUserIds: Array.isArray(form.piiRedactionUserIds)
-      ? form.piiRedactionUserIds.map(String)
-      : Array.isArray(piiRedaction.userIds)
-        ? piiRedaction.userIds.map(String)
-        : Array.isArray(piiRedaction.users)
-          ? (piiRedaction.users as Array<{ userId?: string }>)
-              .map((entry) => String(entry?.userId || '').trim())
-              .filter(Boolean)
-          : [],
-    piiRedactionUsers: Array.isArray(form.piiRedactionUsers)
-      ? form.piiRedactionUsers.map((entry) => ({
-          password: String(entry?.password || ''),
-          userId: String(entry?.userId || '').trim(),
-        }))
-      : Array.isArray(piiRedaction.users)
-        ? (piiRedaction.users as Array<{ password?: string; userId?: string }>).map(
-            (entry) => ({
-              password: String(entry?.password || ''),
-              userId: String(entry?.userId || '').trim(),
-            }),
-          )
-        : Array.isArray(form.piiRedactionUserIds)
-          ? form.piiRedactionUserIds.map((userId) => ({
-              password: '',
-              userId: String(userId),
-            }))
-          : Array.isArray(piiRedaction.userIds)
-            ? piiRedaction.userIds.map((userId) => ({
-                password: '',
-                userId: String(userId),
-              }))
-            : [],
     versioning: String(
       form.versioning || versioning.strategy || 'Incremental Version',
     ),

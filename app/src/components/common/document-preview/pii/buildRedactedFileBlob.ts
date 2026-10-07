@@ -1,10 +1,11 @@
-import { computePiiAreas } from './computePiiAreas'
 import type { RedactionArea } from './types'
+import { computePiiAreas } from './computePiiAreas'
 
 type BuildRedactedFileArgs = {
   enableNer?: boolean
   fileName?: string
   fileUrl: string
+  knownOnly?: boolean
   knownValues?: string[]
   mode: 'pdf' | 'image'
   visibleChars?: number
@@ -17,8 +18,10 @@ const PDF_WORKER_URL = new URL(
 
 /** Same pad math as RedactionOverlay so download/print matches the preview. */
 const padArea = (area: RedactionArea) => {
-  const padX = Math.min(0.15, Math.max(0.04, area.width * 0.02))
-  const padY = Math.min(0.12, Math.max(0.03, area.height * 0.12))
+  const fillers = (String(area.sourceValue || '').match(/</g) || []).length
+  const isMrz = fillers >= 3 || /^P</i.test(String(area.sourceValue || ''))
+  const padX = isMrz ? 0.25 : Math.min(0.12, area.width * 0.02)
+  const padY = isMrz ? 0.12 : Math.min(0.08, area.height * 0.08)
   const left = Math.max(0, area.left - padX)
   const top = Math.max(0, area.top - padY)
   const right = Math.min(100, area.left + area.width + padX)
@@ -45,14 +48,8 @@ const drawRedactions = (
     const h = (box.height / 100) * canvasHeight
 
     ctx.save()
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = '#e6e6ef'
     ctx.fillRect(x, y, w, h)
-    ctx.fillStyle = '#111827'
-    ctx.font = `700 ${Math.max(8, Math.min(14, h * 0.55))}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    const label = String(area.maskedLabel || '')
-    ctx.fillText(label, x + w / 2, y + h / 2, Math.max(4, w - 4))
     ctx.restore()
   }
 }
@@ -62,7 +59,10 @@ const withRedactedSuffix = (fileName: string, ext: string) => {
   return `${base}-redacted.${ext}`
 }
 
-const blobFromDataUrl = async (dataUrl: string, mime: string): Promise<Blob> => {
+const blobFromDataUrl = async (
+  dataUrl: string,
+  mime: string,
+): Promise<Blob> => {
   const response = await fetch(dataUrl)
   const blob = await response.blob()
   if (blob.type === mime) return blob
@@ -77,6 +77,7 @@ export const buildRedactedFileBlob = async ({
   enableNer = false,
   fileName = 'document',
   fileUrl,
+  knownOnly = false,
   knownValues = [],
   mode,
   visibleChars = 3,
@@ -84,6 +85,7 @@ export const buildRedactedFileBlob = async ({
   const areas = await computePiiAreas({
     enableNer,
     fileUrl,
+    knownOnly,
     knownValues,
     mode,
     visibleChars,
