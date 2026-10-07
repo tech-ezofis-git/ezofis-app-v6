@@ -13,6 +13,8 @@ export interface QueuedUploadFile {
   backendStatus: StageFileStatus | null
   exportStatus: 'idle' | 'exporting' | 'success' | 'error'
   fieldValues: Record<string, string>
+  /** Per-field OCR status labels keyed like `fieldValues` (e.g. "Expired · 11 years"). */
+  fieldStatuses: Record<string, string>
   // Local binary, present only for files added in this session. Restored
   // entries (from a prior staged session, via listStagedFiles) have none.
   file: File | null
