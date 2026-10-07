@@ -99,6 +99,8 @@ export interface RepositoryDetail {
   modifiedBy?: any
   modifiedByName?: any
   piiRedactionEnabled?: boolean
+  piiRedactionFieldIds?: string[]
+  piiRedactionLevel?: 'high' | 'low' | 'medium'
   piiRedactionUserIds?: string[]
   stageTableName?: string
   storageDrive?: string

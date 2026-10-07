@@ -19,11 +19,18 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 
+export interface SortableReorderInfo {
+  activeId: string
+  newIndex: number
+  oldIndex: number
+  overId: string
+}
+
 interface Props {
   items: string[]
   children?: ReactNode
   constrainToParent?: boolean
-  onItemsChange: (items: string[]) => void
+  onItemsChange: (items: string[], info?: SortableReorderInfo) => void
 }
 
 const SortableContainer = ({
@@ -50,7 +57,12 @@ const SortableContainer = ({
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const newState = arrayMove(items, oldIndex, newIndex)
-        onItemsChange(newState)
+        onItemsChange(newState, {
+          activeId: String(active.id),
+          newIndex,
+          oldIndex,
+          overId: String(over.id),
+        })
       }
     }
   }

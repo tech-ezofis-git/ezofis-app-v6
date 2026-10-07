@@ -975,13 +975,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     )
 
     if (validationMessage) {
-      const nextStep =
-        validationMessage.includes('Role') &&
-        !validationMessage.includes('First Name') &&
-        !validationMessage.includes('Password')
-          ? 1
-          : 0
-      setActiveStep(nextStep)
+      let firstInvalidStep = 0
+      for (let s = 0; s <= 3; s++) {
+        if (getMissingRequiredUserLabels(normalizedUser, t, s).length > 0) {
+          firstInvalidStep = s
+          break
+        }
+      }
+      setActiveStep(firstInvalidStep)
       showToast({
         message: validationMessage,
         variant: 'error',
@@ -2781,11 +2782,20 @@ function UserSetup({
     }))
   }, [steps, editingUserId])
 
+  const isNextDisabled =
+    activeStep === 2 && !(draftUser.groups ?? []).length
+
+  const handleSkip = () => {
+    setShowErrors(false)
+    onNext()
+  }
+
   return (
     <SettingsWizardLayout
       activeStep={activeStep}
       headerDescription={USER_SETUP_STEP_MSGS[activeStep]?.description}
       headerTitle={USER_SETUP_STEP_MSGS[activeStep]?.title}
+      isNextDisabled={isNextDisabled}
       isSaving={isSaving}
       moduleTitle={msg`User Management`}
       saveLabel={editingUserId ? t`Update User` : t`Save User`}
@@ -2796,6 +2806,7 @@ function UserSetup({
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
+      onSkip={activeStep === 2 ? handleSkip : undefined}
       onStepChange={handleStepChange}
     >
       <AnimatePresence initial={false} mode='wait'>

@@ -24,16 +24,16 @@ import cn from '@/utils/cn'
 import EmlPreview from './EmlPreview'
 import {
   PiiDomPageOverlay,
-  RedactionOverlay,
   redactHtmlText,
+  RedactionOverlay,
   redactPlainText,
   usePiiRedaction,
 } from './pii'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
-/** Set to true to scan and mask PII again while the file viewer loads. */
-const FILE_VIEWER_PII_REDACTION_ENABLED = false
+/** File viewer greys selected/detected PII when the parent enables redaction. */
+const FILE_VIEWER_PII_REDACTION_ENABLED = true
 
 type ViewerMode =
   | 'pdf'
@@ -130,10 +130,10 @@ type DocumentPreviewViewerProps = {
   activeHighlightTerm?: string | null
   className?: string
   enableHighlight?: boolean
-  /** Scan the document and cover detected / known PII values. */
-  enablePiiRedaction?: boolean
   /** Optional NER via @xenova/transformers (heavier; off by default). */
   enablePiiNer?: boolean
+  /** Scan the document and cover detected / known PII values. */
+  enablePiiRedaction?: boolean
   fileBlob?: Blob | null
   fileName?: string
   fileUrl: string | null
@@ -149,6 +149,10 @@ type DocumentPreviewViewerProps = {
   // Signature & edit permission props for Collabora / Office document signing
   permission?: 'edit' | 'readonly'
   permissions?: any
+  /** When Supplier/Vendor fields are selected — also hide company letterheads. */
+  piiBoostOrg?: boolean
+  /** Redact only `redactValues`, not every detected account or phone. */
+  piiKnownOnly?: boolean
   /** Keep this many trailing characters visible when masking (default 3). */
   piiMaskVisibleChars?: number
   probeTerms?: string[]
@@ -173,6 +177,8 @@ type PdfViewerProps = {
   focusRequestId?: number
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  piiBoostOrg?: boolean
+  piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
   probeTerms?: string[]
   redactValues?: string[]
@@ -381,6 +387,8 @@ export default function DocumentPreviewViewer({
   isSigningMode = false,
   permission = 'readonly',
   permissions,
+  piiBoostOrg = false,
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
@@ -448,6 +456,8 @@ export default function DocumentPreviewViewer({
           highlightColors={enableHighlight ? highlightColors : {}}
           highlightTerms={enableHighlight ? highlightTerms : []}
           key={fileUrl}
+          piiBoostOrg={piiBoostOrg}
+          piiKnownOnly={piiKnownOnly}
           piiMaskVisibleChars={piiMaskVisibleChars}
           probeTerms={probeTerms}
           redactValues={redactValues}
@@ -470,6 +480,8 @@ export default function DocumentPreviewViewer({
         enablePiiRedaction={piiRedactionOn}
         fileName={fileName}
         fileUrl={fileUrl}
+        piiBoostOrg={piiBoostOrg}
+        piiKnownOnly={piiKnownOnly}
         piiMaskVisibleChars={piiMaskVisibleChars}
         redactValues={redactValues}
       />
@@ -637,9 +649,7 @@ function SpreadsheetPreview({
         visibleChars: piiMaskVisibleChars,
       })
       if (cancelled) return
-      setRows(
-        redacted.split('\n').map((line) => line.split('\t')),
-      )
+      setRows(redacted.split('\n').map((line) => line.split('\t')))
     }
     void apply()
     return () => {
@@ -1388,6 +1398,8 @@ function ImagePreview({
   enablePiiRedaction = false,
   fileName,
   fileUrl,
+  piiBoostOrg = false,
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   redactValues = [],
 }: {
@@ -1395,14 +1407,18 @@ function ImagePreview({
   enablePiiRedaction?: boolean
   fileName?: string
   fileUrl: string
+  piiBoostOrg?: boolean
+  piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
   redactValues?: string[]
 }) {
   const [scale, setScale] = useState(1)
   const { areas } = usePiiRedaction({
+    boostOrg: piiBoostOrg,
     enable: enablePiiRedaction,
     enableNer: enablePiiNer,
     fileUrl,
+    knownOnly: piiKnownOnly,
     knownValues: redactValues,
     mode: 'image',
     visibleChars: piiMaskVisibleChars,
@@ -1448,6 +1464,8 @@ function PdfViewer({
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
+  piiBoostOrg = false,
+  piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
@@ -1463,9 +1481,11 @@ function PdfViewer({
   onProbeCompleteRef.current = onProbeComplete
 
   const { areas: piiAreas, isScanning: isPiiScanning } = usePiiRedaction({
+    boostOrg: piiBoostOrg,
     enable: enablePiiRedaction,
     enableNer: enablePiiNer,
     fileUrl,
+    knownOnly: piiKnownOnly,
     knownValues: redactValues,
     mode: 'pdf',
     visibleChars: piiMaskVisibleChars,
@@ -2008,9 +2028,11 @@ function PdfViewer({
                 {props.annotationLayer.children}
                 {enablePiiRedaction ? (
                   <PiiDomPageOverlay
+                    boostOrg={piiBoostOrg}
                     enableNer={enablePiiNer}
                     fallbackAreas={piiAreas}
                     isOcrScanning={isPiiScanning}
+                    knownOnly={piiKnownOnly}
                     knownValues={redactValues}
                     pageIndex={props.pageIndex}
                     scale={props.scale}

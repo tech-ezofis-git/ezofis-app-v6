@@ -16,7 +16,6 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
-import { collectRedactValues } from '@/components/common/document-preview/pii'
 import folderApi from '@/pages/folders/api/folderApi'
 import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import { DynamicIcon } from '@/pages/folders/components/icons'
@@ -151,12 +150,14 @@ interface Props {
 // Split layout tailored specifically for "Document Approval"
 const DocumentApprovalSplitLayout = ({
   attachments,
+  formModel,
   formNode,
   repositoryId,
   selectedItem,
   taskNode,
 }: {
   attachments: AttachmentItem[]
+  formModel?: Record<string, any>
   formNode: ReactNode
   repositoryId: string | number | undefined
   selectedItem: any
@@ -207,7 +208,6 @@ const DocumentApprovalSplitLayout = ({
       ? `file.${previewAttachment.fileExtension}`
       : undefined)
   const previewKind = resolveDocumentPreviewKind(mimeType, previewFileName)
-
   useEffect(() => {
     if (!targetItemId || !targetRepoId) return
     let cancelled = false
@@ -227,7 +227,6 @@ const DocumentApprovalSplitLayout = ({
       <div className='relative flex h-full w-[50%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
         {previewAttachment ? (
           <DocumentPreviewViewer
-            enablePiiRedaction
             fileName={previewFileName}
             fileUrl={previewUrl || null}
             isImage={previewKind === 'image' || previewKind === 'tiff'}
@@ -367,11 +366,6 @@ const DocumentFormSplitLayout = ({
       getLatestAttachment(attachments) ||
       attachments[0],
     [attachments],
-  )
-
-  const piiRedactValues = useMemo(
-    () => collectRedactValues(formModel),
-    [formModel],
   )
 
   const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
@@ -661,7 +655,6 @@ const DocumentFormSplitLayout = ({
       ? `file.${previewAttachment.fileExtension}`
       : undefined)
   const viewerKind = resolveDocumentPreviewKind(previewMimeType, viewerFileName)
-
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1'>
@@ -676,14 +669,11 @@ const DocumentFormSplitLayout = ({
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
             {previewAttachment ? (
               <DocumentPreviewViewer
-                enablePiiNer
-                enablePiiRedaction
                 fileName={viewerFileName}
                 fileUrl={previewUrl || null}
                 isImage={viewerKind === 'image' || viewerKind === 'tiff'}
                 isLoading={previewLoading}
                 isPdf={viewerKind === 'pdf'}
-                redactValues={piiRedactValues}
               />
             ) : (
               <div className='flex h-full items-center justify-center text-13 text-gray-9'>
@@ -733,7 +723,7 @@ const DocumentFormSplitLayout = ({
 
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-            <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3'>
+            <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-scroll p-3 [scrollbar-gutter:stable]'>
               <AgentDetailPlaceholder
                 agentBlock={selectedAgentBlock}
                 attachments={attachments}
@@ -1310,6 +1300,7 @@ const GenericRequestOverview = ({
         {rawWorkflowData?.name === 'Document Approval' ? (
           <DocumentApprovalSplitLayout
             attachments={attachments}
+            formModel={formModel}
             repositoryId={repositoryId}
             selectedItem={selectedItem || storeSelectedItem}
             formNode={

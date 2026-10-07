@@ -194,8 +194,8 @@ export const extractPdfPageOcrBoxes = async (
     url: fileUrl,
   }).promise
   const page = await pdf.getPage(pageIndex + 1)
-  // Scale 2.5 balances OCR accuracy vs canvas memory on large scans.
-  const viewport = page.getViewport({ scale: 2.5 })
+  // Scale 3 helps small passport fields (Passport No.) stay readable to OCR.
+  const viewport = page.getViewport({ scale: 3 })
   const canvas = document.createElement('canvas')
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)

@@ -1,11 +1,20 @@
-export type FolderPiiUserAccess = {
-  password: string
-  userId: string
-}
+export type FolderPiiLevel = 'low' | 'medium' | 'high'
 
 export type FolderPiiSettings = {
   enabled: boolean
+  /**
+   * Field labels to redact (not ids). Persisted in `piiRedactionFieldIds`
+   * for API compatibility with the existing key.
+   */
+  fieldIds: string[]
+  /** Redaction strength — persisted as `piiRedactionLevel`. */
+  level: FolderPiiLevel
   users: FolderPiiUserAccess[]
+}
+
+export type FolderPiiUserAccess = {
+  password: string
+  userId: string
 }
 
 const STORAGE_PREFIX = 'ezofis_folder_pii_'
@@ -51,8 +60,47 @@ const toAccessUsers = (value: unknown): FolderPiiUserAccess[] => {
   return out
 }
 
+/** Accept labels (preferred) or legacy field ids / {id,name} objects. */
+const toFieldLabels = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const entry of value) {
+    let label = ''
+    if (typeof entry === 'string' || typeof entry === 'number') {
+      label = String(entry).trim()
+    } else if (entry && typeof entry === 'object') {
+      const row = entry as Record<string, unknown>
+      label = String(
+        row.name ??
+          row.label ??
+          row.fieldName ??
+          row.fieldId ??
+          row.id ??
+          '',
+      ).trim()
+    }
+    if (!label) continue
+    const key = label.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(label)
+  }
+  return out
+}
+
+const toLevel = (value: unknown): FolderPiiLevel => {
+  const raw = String(value || '')
+    .trim()
+    .toLowerCase()
+  if (raw === 'low' || raw === 'medium' || raw === 'high') return raw
+  return 'medium'
+}
+
 export const emptyFolderPiiSettings = (): FolderPiiSettings => ({
   enabled: false,
+  fieldIds: [],
+  level: 'medium',
   users: [],
 })
 
@@ -101,30 +149,52 @@ export const parseFolderPiiSettings = (
   const users =
     usersFromNestedOrSource.length > 0 ? usersFromNestedOrSource : legacyIds
 
+  // Existing API key `piiRedactionFieldIds` now stores field labels.
+  const fieldIds = toFieldLabels(
+    nested?.fieldLabels ??
+      nested?.fields ??
+      nested?.fieldIds ??
+      source.piiRedactionFieldLabels ??
+      source.piiRedactionFieldIds ??
+      source.piiFieldIds,
+  )
+
+  const level = toLevel(
+    nested?.level ??
+      nested?.sensitivity ??
+      source.piiRedactionLevel ??
+      source.piiLevel,
+  )
+
   const enabled =
     enabledRaw === true ||
     enabledRaw === 1 ||
     String(enabledRaw || '').toLowerCase() === 'true' ||
     String(enabledRaw || '').toLowerCase() === 'yes'
 
-  return { enabled, users }
+  return { enabled, fieldIds, level, users }
 }
 
 export const folderPiiSettingsToApiPayload = (settings: FolderPiiSettings) => {
-  const users = settings.enabled
-    ? settings.users
-        .filter(
-          (entry) =>
-            Boolean(entry.userId?.trim()) && Boolean(entry.password?.trim()),
-        )
-        .map((entry) => ({
-          password: entry.password,
-          userId: entry.userId,
-        }))
+  const users = settings.users
+    .filter(
+      (entry) =>
+        Boolean(entry.userId?.trim()) && Boolean(entry.password?.trim()),
+    )
+    .map((entry) => ({
+      password: entry.password,
+      userId: entry.userId,
+    }))
+
+  const labels = settings.enabled
+    ? settings.fieldIds.map((label) => String(label).trim()).filter(Boolean)
     : []
 
   return {
     piiRedactionEnabled: Boolean(settings.enabled),
+    // Existing key — stores labels (not numeric ids).
+    piiRedactionFieldIds: labels,
+    piiRedactionLevel: settings.enabled ? settings.level : 'medium',
     piiRedactionUserIds: users.map((entry) => entry.userId),
     piiRedactionUsers: users,
   }
@@ -171,6 +241,10 @@ export const resolveFolderPiiSettings = (
     ('piiRedactionEnabled' in apiSource ||
       'piiEnabled' in apiSource ||
       'enablePiiRedaction' in apiSource ||
+      'piiRedactionFieldIds' in apiSource ||
+      'piiFieldIds' in apiSource ||
+      'piiRedactionLevel' in apiSource ||
+      'piiLevel' in apiSource ||
       'piiRedactionUserIds' in apiSource ||
       'piiRedactionUsers' in apiSource ||
       'piiUserIds' in apiSource ||
@@ -190,7 +264,8 @@ export const userCanToggleFolderPii = (
   if (!id) return false
   return settings.users.some(
     (entry) =>
-      String(entry.userId) === id && Boolean(String(entry.password || '').trim()),
+      String(entry.userId) === id &&
+      Boolean(String(entry.password || '').trim()),
   )
 }
 

@@ -1,7 +1,7 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
 import { ArrowLeft } from 'lucide-react'
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
@@ -14,6 +14,7 @@ import {
   isApAgentJobCompleted,
   resolveApAgentJobMessage,
 } from '@/pages/requests/utils/resolveApAgentJobMessage'
+import cn from '@/utils/cn'
 import {
   type AgentBlock,
   documentGenerateIsComplete,
@@ -30,8 +31,8 @@ interface AgentDetailPlaceholderProps {
   attachments?: AttachmentItem[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formModel?: Record<string, any>
-  hideBack?: boolean
   hiddenFieldIds?: Set<string>
+  hideBack?: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawWorkflowData?: any
   readOnlyFieldIds?: Set<string>
@@ -40,6 +41,11 @@ interface AgentDetailPlaceholderProps {
   onBack: () => void
   onFieldChange?: (fieldId: string, value: any) => void
   onQuoteTotalChange?: (total: number | null) => void
+}
+
+type AgentLoadingStep = {
+  startedAt: number
+  text: string
 }
 
 const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
@@ -51,8 +57,8 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   agentBlock,
   attachments = [],
   formModel,
-  hideBack = false,
   hiddenFieldIds,
+  hideBack = false,
   rawWorkflowData,
   readOnlyFieldIds,
   repositoryId,
@@ -214,6 +220,50 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
       ? t`Preparing your request...`
       : t`Working on this request...`
 
+  const historyScope = [
+    agentBlock.id,
+    requestData?.id,
+    requestData?.processId,
+    requestData?.apAgentJobId,
+  ]
+    .filter(
+      (value) =>
+        value !== null && value !== undefined && String(value).trim() !== '',
+    )
+    .join(':')
+  const historyScopeRef = useRef(historyScope)
+  const [messageHistory, setMessageHistory] = useState<AgentLoadingStep[]>([])
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const scopeChanged = historyScopeRef.current !== historyScope
+    historyScopeRef.current = historyScope
+
+    if (!isProcessing) {
+      setMessageHistory((prev) => (prev.length === 0 ? prev : []))
+      return
+    }
+
+    const next = jobMessage.trim()
+    if (scopeChanged) {
+      setMessageHistory(next ? [{ startedAt: Date.now(), text: next }] : [])
+      return
+    }
+    if (!next) return
+
+    setMessageHistory((prev) =>
+      prev[prev.length - 1]?.text === next
+        ? prev
+        : [...prev, { startedAt: Date.now(), text: next }],
+    )
+  }, [historyScope, isProcessing, jobMessage])
+
+  useEffect(() => {
+    if (!isProcessing || messageHistory.length === 0) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [isProcessing, messageHistory.length])
+
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
   const docFileName =
@@ -284,19 +334,82 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             </div>
           </div>
         ) : isProcessing ? (
-          <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>
-            <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
-              <Icon
-                className='size-7 animate-spin text-[var(--primary-9)]'
-                icon='tabler:loader-2'
-              />
+          messageHistory.length > 0 ? (
+            <ol className='mx-auto flex w-full max-w-lg flex-col py-8'>
+              {messageHistory.map((step, index) => {
+                const isCurrent = index === messageHistory.length - 1
+                const endedAt = isCurrent
+                  ? now
+                  : messageHistory[index + 1].startedAt
+                const seconds = Math.max(
+                  1,
+                  Math.round((endedAt - step.startedAt) / 1000),
+                )
+                return (
+                  <li
+                    className='animate-in fade-in slide-in-from-bottom-2 flex gap-3 duration-300'
+                    key={`${index}-${step.text}`}
+                  >
+                    <div className='flex w-6 shrink-0 flex-col items-center'>
+                      <span
+                        className={cn(
+                          'flex size-6 items-center justify-center rounded-full',
+                          isCurrent
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)]'
+                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'size-3.5',
+                            isCurrent && 'animate-spin',
+                          )}
+                          icon={isCurrent ? 'tabler:loader-2' : 'tabler:check'}
+                        />
+                      </span>
+                      {!isCurrent && (
+                        <span className='my-1 w-px flex-1 bg-[var(--gray-5)]' />
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        'flex min-w-0 flex-1 items-start justify-between gap-4',
+                        !isCurrent && 'pb-4',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'min-w-0 pt-0.5 text-sm leading-5',
+                          isCurrent
+                            ? 'text-shade-loading font-medium'
+                            : 'text-[var(--gray-9)]',
+                        )}
+                      >
+                        {step.text}
+                      </span>
+                      <span className='shrink-0 pt-1 text-xs text-[var(--gray-9)] tabular-nums'>
+                        {seconds}s
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          ) : (
+            <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>
+              <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
+                <Icon
+                  className='size-7 animate-spin text-[var(--primary-9)]'
+                  icon='tabler:loader-2'
+                />
+              </div>
+              <div className='max-w-md px-4 text-center'>
+                <h3 className='text-shade-loading text-base font-semibold'>
+                  {processingTitle}
+                </h3>
+              </div>
             </div>
-            <div className='max-w-md px-4 text-center'>
-              <h3 className='text-base font-semibold text-[var(--gray-13)]'>
-                {processingTitle}
-              </h3>
-            </div>
-          </div>
+          )
         ) : isQualify && requestData?.qualifyAgentResponse?.qualifier_result ? (
           <QualifyAgentResultView
             agentBlock={agentBlock}

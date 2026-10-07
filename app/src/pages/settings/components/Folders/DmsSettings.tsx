@@ -72,7 +72,6 @@ import { OrDivider } from '@/pages/dashboard/workflows/accounts-payable/componen
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import {
   emptyFolderPiiSettings,
-  folderPiiHasValidAccessUsers,
   folderPiiSettingsToApiPayload,
   type FolderPiiSettings,
   resolveFolderPiiSettings,
@@ -833,10 +832,14 @@ export default function DmsFolderConfiguration({
     if (
       storedState?.piiRedactionEnabled != null ||
       storedState?.piiRedactionUsers != null ||
-      storedState?.piiRedactionUserIds != null
+      storedState?.piiRedactionUserIds != null ||
+      storedState?.piiRedactionFieldIds != null ||
+      storedState?.piiRedactionLevel != null
     ) {
       return resolveFolderPiiSettings(null, {
         piiRedactionEnabled: storedState.piiRedactionEnabled,
+        piiRedactionFieldIds: storedState.piiRedactionFieldIds,
+        piiRedactionLevel: storedState.piiRedactionLevel,
         piiRedactionUserIds: storedState.piiRedactionUserIds,
         piiRedactionUsers: storedState.piiRedactionUsers,
       })
@@ -935,11 +938,15 @@ export default function DmsFolderConfiguration({
       if (
         hydrated.piiRedactionEnabled != null ||
         hydrated.piiRedactionUserIds != null ||
-        hydrated.piiRedactionUsers != null
+        hydrated.piiRedactionUsers != null ||
+        hydrated.piiRedactionFieldIds != null ||
+        hydrated.piiRedactionLevel != null
       ) {
         setPiiSettings(
           resolveFolderPiiSettings(null, {
             piiRedactionEnabled: hydrated.piiRedactionEnabled,
+            piiRedactionFieldIds: hydrated.piiRedactionFieldIds,
+            piiRedactionLevel: hydrated.piiRedactionLevel,
             piiRedactionUserIds: hydrated.piiRedactionUserIds,
             piiRedactionUsers: hydrated.piiRedactionUsers,
           }),
@@ -986,6 +993,8 @@ export default function DmsFolderConfiguration({
           storageDrive,
           versioning,
           piiRedactionEnabled: piiSettings.enabled,
+          piiRedactionFieldIds: piiSettings.fieldIds,
+          piiRedactionLevel: piiSettings.level,
           piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
           piiRedactionUsers: piiSettings.users,
         }),
@@ -1627,6 +1636,8 @@ export default function DmsFolderConfiguration({
     fields,
     folderName,
     piiRedactionEnabled: piiSettings.enabled,
+    piiRedactionFieldIds: piiSettings.fieldIds,
+    piiRedactionLevel: piiSettings.level,
     piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
     piiRedactionUsers: piiSettings.users,
     source: 'manual',
@@ -1648,9 +1659,9 @@ export default function DmsFolderConfiguration({
       }
     }
 
-    if (step === 5 && piiSettings.enabled && !folderPiiHasValidAccessUsers(piiSettings)) {
+    if (step === 5 && piiSettings.enabled && piiSettings.fieldIds.length === 0) {
       showToast({
-        message: t`Add at least one user with a password who can view unredacted files, or turn PII redaction off.`,
+        message: t`Select at least one field to redact, or turn PII redaction off.`,
         variant: 'info',
       })
       return
@@ -1680,9 +1691,9 @@ export default function DmsFolderConfiguration({
 
     const isEditing = Boolean(editingRepositoryId)
 
-    if (piiSettings.enabled && !folderPiiHasValidAccessUsers(piiSettings)) {
+    if (piiSettings.enabled && piiSettings.fieldIds.length === 0) {
       showToast({
-        message: t`Add at least one user with a password who can view unredacted files, or turn PII redaction off.`,
+        message: t`Select at least one field to redact, or turn PII redaction off.`,
         variant: 'info',
       })
       setStep(5)
@@ -1696,6 +1707,8 @@ export default function DmsFolderConfiguration({
       fields,
       folderName,
       piiRedactionEnabled: piiSettings.enabled,
+      piiRedactionFieldIds: piiSettings.fieldIds,
+      piiRedactionLevel: piiSettings.level,
       piiRedactionUserIds: piiSettings.users.map((entry) => entry.userId),
       piiRedactionUsers: piiSettings.users,
       source: 'manual',
@@ -5303,6 +5316,7 @@ function WizardContent({
   if (step === 5) {
     return (
       <PiiRedactionWizardStep
+        fields={fields}
         settings={piiSettings}
         onChange={setPiiSettings}
       />

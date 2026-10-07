@@ -41,6 +41,7 @@ export type SettingsWizardLayoutProps = {
   moduleTitle?: Translatable
   nextLabel?: string
   saveLabel?: string
+  skipLabel?: string
   setupTitle?: Translatable
   steps: SettingsWizardStep[]
   onBack?: () => void
@@ -48,6 +49,7 @@ export type SettingsWizardLayoutProps = {
   onCancel?: () => void
   onNext?: () => void
   onSave?: () => void
+  onSkip?: () => void
   onStepChange: (step: number) => void
 }
 
@@ -66,6 +68,7 @@ export default function SettingsWizardLayout({
   moduleTitle,
   nextLabel,
   saveLabel,
+  skipLabel,
   steps,
   setupTitle,
   onBack,
@@ -73,6 +76,7 @@ export default function SettingsWizardLayout({
   onCancel,
   onNext,
   onSave,
+  onSkip,
   onStepChange,
 }: SettingsWizardLayoutProps) {
   const { i18n, t } = useLingui()
@@ -205,22 +209,34 @@ export default function SettingsWizardLayout({
                   />
                 ) : null}
 
-                {isLastStep ? (
-                  <Button
-                    disabled={isNextDisabled || isSaving || isLoading}
-                    label={isSaving ? t`Saving...` : resolvedSaveLabel}
-                    loading={isSaving}
-                    suffixIcon='tabler:arrow-right'
-                    onClick={onSave}
-                  />
-                ) : (
-                  <Button
-                    disabled={isNextDisabled || isLoading || isSaving}
-                    label={resolvedNextLabel}
-                    suffixIcon='tabler:arrow-right'
-                    onClick={onNext}
-                  />
-                )}
+                <div className='flex items-center gap-3'>
+                  {onSkip && !isLastStep ? (
+                    <Button
+                      color='gray'
+                      disabled={isLoading || isSaving}
+                      label={skipLabel ?? t`Skip for now`}
+                      variant='ghost'
+                      onClick={onSkip}
+                    />
+                  ) : null}
+
+                  {isLastStep ? (
+                    <Button
+                      disabled={isNextDisabled || isSaving || isLoading}
+                      label={isSaving ? t`Saving...` : resolvedSaveLabel}
+                      loading={isSaving}
+                      suffixIcon='tabler:arrow-right'
+                      onClick={onSave}
+                    />
+                  ) : (
+                    <Button
+                      disabled={isNextDisabled || isLoading || isSaving}
+                      label={resolvedNextLabel}
+                      suffixIcon='tabler:arrow-right'
+                      onClick={onNext}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

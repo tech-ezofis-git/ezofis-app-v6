@@ -41,6 +41,7 @@ import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 import FolderRetention from './FolderRetention'
 import FolderRetentionPolicyWizard from './FolderRetentionPolicyWizard'
 import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
+import PiiUnredactedAccessSection from './PiiUnredactedAccessSection'
 import { type RetentionPolicy, seedPolicies } from './retentionMockData'
 
 export type FolderSecurityProps = {
@@ -50,12 +51,13 @@ export type FolderSecurityProps = {
   onBackToSettings?: () => void
 }
 
-type TabKey = 'folder' | 'document' | 'retention'
+type TabKey = 'folder' | 'document' | 'retention' | 'pii'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'folder', label: staticT`Folder Security` },
   { key: 'document', label: staticT`Document Security` },
   { key: 'retention', label: staticT`Retention Policy` },
+  { key: 'pii', label: staticT`PII Redaction` },
 ]
 
 const getInitials = (name: string) => {
@@ -805,6 +807,19 @@ export default function FolderSecurity({
             onDeletePolicy={handleDeleteRetentionPolicy}
             onEditPolicy={handleEditRetentionPolicy}
           />
+        ) : activeTab === 'pii' ? (
+          <div className='flex min-h-0 flex-1 flex-col gap-4'>
+            {repositoryId ? (
+              <PiiUnredactedAccessSection
+                repositoryId={repositoryId}
+                users={users}
+              />
+            ) : (
+              <p className='text-sm text-gray-11'>
+                {t`Save the folder first to manage users who can view unredacted files.`}
+              </p>
+            )}
+          </div>
         ) : activeTab === 'folder' ? (
           <div className='flex min-h-0 flex-1 flex-col gap-4'>
             <div className='flex items-center justify-between'>

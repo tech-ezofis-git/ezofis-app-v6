@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWizardLayout'
+import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayout'
@@ -16,22 +17,20 @@ import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
 import FiltersStep from './steps/FiltersStep'
 import ScheduleStep from './steps/ScheduleStep'
-import SourceSelectionSection from './steps/SourceSelectionSection'
 
-const AI_STEP_IDS = [
+const STEP_IDS = [
   'ask-ai',
   'details',
   'fields',
   'filters',
   'schedule',
 ] as const
-const MANUAL_STEP_IDS = ['details', 'fields', 'filters', 'schedule'] as const
 
 interface Props {
   onBack: () => void
 }
 
-type StepId = (typeof AI_STEP_IDS)[number]
+type StepId = (typeof STEP_IDS)[number]
 
 const ReportBuilderWizard = ({ onBack }: Props) => {
   const { t } = useLingui()
@@ -43,19 +42,9 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const saveReportMutation = useSaveReportBuilderReportMutation()
   const publishReportMutation = usePublishReportBuilderReportMutation()
 
-  const isEditing = Boolean(draft.editingReportId)
-  const [isSourceConfirmed, setIsSourceConfirmed] = useState(
-    Boolean(isEditing || (draft.sourceId && draft.domain)),
-  )
-  const [isManualMode, setIsManualMode] = useState(isEditing)
-
-  const stepIds: readonly StepId[] = isManualMode
-    ? MANUAL_STEP_IDS
-    : AI_STEP_IDS
-
   const initialIndex = Math.max(
     0,
-    stepIds.indexOf((search.step as StepId) || 'ask-ai'),
+    STEP_IDS.indexOf((search.step as StepId) || 'ask-ai'),
   )
   const [activeIndex, setActiveIndex] = useState(initialIndex)
   const [isSaving, setIsSaving] = useState(false)
@@ -66,10 +55,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   > = useMemo(
     () => ({
       'ask-ai': {
-        description: t`Optional AI head start`,
-        label: t`Build with AI`,
+        description: t`Choose source & build mode`,
+        label: t`Source & AI`,
       },
-      'details': { description: t`Name, domain & sharing`, label: t`Details` },
+      'details': { description: t`Name, description & sharing`, label: t`Details` },
       'fields': { description: t`Choose columns`, label: t`Fields` },
       'filters': { description: t`Narrow down rows`, label: t`Filters` },
       'schedule': { description: t`Automated delivery`, label: t`Schedule` },
@@ -78,37 +67,34 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   )
 
   const steps: SettingsWizardStep[] = useMemo(() => {
-    return stepIds.map((stepId, index) => ({
+    return STEP_IDS.map((stepId, index) => ({
       clickable: undefined,
       description: stepDefinitions[stepId].description,
       disabled: undefined,
       id: index,
       label: stepDefinitions[stepId].label,
     }))
-  }, [stepIds, stepDefinitions])
+  }, [stepDefinitions])
 
   const goToStep = (index: number) => {
     setActiveIndex(index)
     void navigate({
       to: '/settings',
-      search: (prev: { step?: string }) => ({ ...prev, step: stepIds[index] }),
+      search: (prev: { step?: string }) => ({ ...prev, step: STEP_IDS[index] }),
     })
   }
 
-  const switchToManualMode = () => {
-    setIsManualMode(true)
-    goToStep(0)
-  }
-
   const isNextDisabled = useMemo(() => {
-    if (stepIds[activeIndex] === 'details') {
+    if (STEP_IDS[activeIndex] === 'ask-ai') {
       return (
-        !draft.name.trim() ||
         !draft.sourceType ||
         (!draft.sourceId && !draft.domain.trim())
       )
     }
-    if (stepIds[activeIndex] === 'fields') {
+    if (STEP_IDS[activeIndex] === 'details') {
+      return !draft.name.trim()
+    }
+    if (STEP_IDS[activeIndex] === 'fields') {
       return draft.fields.length === 0
     }
     return false
@@ -119,7 +105,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     draft.name,
     draft.sourceId,
     draft.sourceType,
-    stepIds,
   ])
 
   const buildReportFromDraft = (status: ReportStatus): Report => {
@@ -187,34 +172,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     onBack()
   }
 
-  // Render initial source selection section if source is not selected/confirmed
-  if (!isSourceConfirmed) {
-    return (
-      <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6'>
-        <SourceSelectionSection
-          onBack={handleCancel}
-          onProceed={(mode) => {
-            if (mode === 'manual') {
-              setIsManualMode(true)
-              setActiveIndex(0)
-            } else {
-              setIsManualMode(false)
-              setActiveIndex(0)
-            }
-            setIsSourceConfirmed(true)
-          }}
-        />
-      </AnimateFadeIn>
-    )
-  }
-
   const renderStep = () => {
     let content: React.ReactNode = null
-    switch (stepIds[activeIndex]) {
+    switch (STEP_IDS[activeIndex]) {
       case 'ask-ai':
-        content = (
-          <AskAiStep onChangeSource={() => setIsSourceConfirmed(false)} />
-        )
+        content = <AskAiStep onProceedManual={() => goToStep(1)} />
         break
       case 'details':
         content = <DetailsStep />
@@ -235,7 +197,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     return (
       <AnimateFadeIn
         className='flex flex-col gap-6 md:gap-7'
-        key={stepIds[activeIndex]}
+        key={STEP_IDS[activeIndex]}
       >
         {content}
       </AnimateFadeIn>
@@ -245,6 +207,21 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   return (
     <SettingsWizardLayout
       activeStep={activeIndex}
+      headerAction={
+        STEP_IDS[activeIndex] === 'ask-ai' ? (
+          <Button
+            color='gray'
+            disabled={
+              !draft.sourceType || (!draft.sourceId && !draft.domain.trim())
+            }
+            icon='lucide:arrow-right'
+            label={t`Build Manually`}
+            size='sm'
+            variant='outline'
+            onClick={() => goToStep(1)}
+          />
+        ) : null
+      }
       headerDescription={t`Build a custom report from any of your organization's data domains.`}
       headerTitle={draft.editingReportId ? t`Edit Report` : t`Report Builder`}
       isNextDisabled={isNextDisabled}
@@ -252,17 +229,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       moduleTitle={t`Reports`}
       saveLabel={t`Save as Draft`}
       steps={steps}
-      headerAction={
-        stepIds[activeIndex] === 'ask-ai' ? (
-          <button
-            className='text-13 font-medium text-primary-10 underline-offset-2 hover:underline'
-            type='button'
-            onClick={switchToManualMode}
-          >
-            {t`Build manually`}
-          </button>
-        ) : null
-      }
       setupTitle={t`Report Builder`}
       onBack={() => goToStep(Math.max(0, activeIndex - 1))}
       onBackToSettings={handleCancel}

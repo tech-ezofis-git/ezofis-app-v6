@@ -32,6 +32,7 @@ import {
   getWorkflowFormId,
 } from './documentGenerateTemplate'
 import { getFieldHeading, getFieldId } from './qualifierResultUtils'
+import TruncatedExpandText from './TruncatedExpandText'
 import QuoteLineItemsTable, {
   buildQuoteTotals,
   normalizeLineItemRows,
@@ -159,7 +160,9 @@ const HoverEditShell = ({
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
-        inline ? 'inline-flex max-w-full' : 'flex w-full min-w-0',
+        inline
+          ? 'inline-flex max-w-full min-w-0 items-baseline align-baseline'
+          : 'flex w-full min-w-0 items-baseline',
         className,
       )}
     >
@@ -179,7 +182,12 @@ const HoverEditShell = ({
       )
     }
     return wrapLabel(
-      <span className={cn(inline ? 'inline' : 'block', className)}>
+      <span
+        className={cn(
+          'min-w-0 overflow-hidden',
+          inline ? 'inline align-baseline' : 'block w-full',
+        )}
+      >
         {children}
       </span>,
     )
@@ -195,7 +203,11 @@ const HoverEditShell = ({
           {heading}
           {!isActive ? editButton : <span className='size-6 shrink-0' />}
         </span>
-        {isActive ? editor : <span className='block min-w-0'>{children}</span>}
+        {isActive ? (
+          editor
+        ) : (
+          <span className='block min-w-0 w-full'>{children}</span>
+        )}
       </span>,
     )
   }
@@ -204,30 +216,26 @@ const HoverEditShell = ({
     <span
       ref={rootRef}
       className={cn(
-        'rounded px-0.5 transition-colors',
+        'group relative min-w-0 rounded px-0.5 transition-colors',
         isActive
           ? inline
-            ? 'inline-flex min-w-0 align-middle'
+            ? 'inline-flex items-baseline align-baseline'
             : 'block w-full'
           : inline
-            ? 'group inline-flex max-w-full min-w-0 items-center gap-1'
-            : 'group relative flex w-full min-w-0 items-center',
-        className,
+            ? 'inline-flex max-w-full items-baseline pr-5 align-baseline'
+            : 'flex w-full items-baseline pr-5',
       )}
     >
       {isActive ? (
         editor
       ) : (
         <>
-          <span className={cn('min-w-0', inline ? '' : 'block w-full pr-7')}>
+          <span className='min-w-0 flex-1 overflow-hidden align-baseline'>
             {children}
           </span>
           <button
             aria-label='Edit'
-            className={cn(
-              'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-              !inline && 'absolute top-0 right-0',
-            )}
+            className='absolute top-1/2 right-0 inline-flex size-5 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
             type='button'
             onClick={(event) => {
               event.preventDefault()
@@ -919,25 +927,28 @@ const QuoteAgentResultView = ({
     const resolved = resolveScalarEntry(entry)
     const label = scalarLabel(entry)
 
+    // One row: "Label : Value" — label never wraps; value truncates in place.
     return (
-      <span
-        className='inline-flex max-w-full items-center gap-1.5 pr-1 text-left text-sm leading-5 font-normal text-gray-12'
+      <div
+        className='flex min-w-0 flex-nowrap items-baseline gap-1.5 text-left text-sm leading-5 font-normal text-gray-12'
         key={entry.resultKey}
       >
-        <span className='shrink-0 font-bold'>{label}:</span>
+        <span className='shrink-0 whitespace-nowrap font-bold'>{label}:</span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={resolved.canEdit}
-          className='max-w-full justify-start text-left'
+          className='min-w-0 flex-1 overflow-hidden'
           editor={renderScalarEditor(entry, resolved.raw, true)}
           fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
           label={label}
-          inline
           onActivate={setActiveEditId}
         >
-          <span>{resolved.display || 'NA'}</span>
+          <TruncatedExpandText
+            className='w-full'
+            value={resolved.display || 'NA'}
+          />
         </HoverEditShell>
-      </span>
+      </div>
     )
   }
 
@@ -1024,30 +1035,30 @@ const QuoteAgentResultView = ({
           </div>
         </div>
       ) : (
-        <div className='flex flex-col gap-4'>
-          <div className='flex flex-wrap items-start justify-between gap-x-4 gap-y-2'>
-            <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-left'>
+        <div className='flex min-w-0 flex-col gap-4'>
+          <div className='grid min-w-0 grid-cols-1 items-start gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
+            <div className='grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-2.5 text-left sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'>
               {headerEntries.map(renderHeaderField)}
             </div>
 
-            <div className='ml-auto flex shrink-0 flex-col items-end gap-1.5 text-right'>
+            <div className='flex shrink-0 flex-col items-start gap-1.5 text-left sm:items-end sm:text-right'>
               {canPreviewDocument ? (
                 <Button
                   aria-label={t`Quote Preview`}
-                  className='!bg-secondary-9 !text-surface hover:!bg-secondary-10'
+                  className='!border-secondary-5 mb-2 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3'
                   color='secondary'
                   icon='lucide:eye'
                   label={t`Quote Preview`}
                   size='sm'
                   title={t`Quote Preview`}
                   type='button'
-                  variant='solid'
+                  variant='outline'
                   onClick={() => selectPaneMode('preview')}
                 />
               ) : null}
               <div className='text-sm leading-5 font-normal text-gray-12'>
-                <span className='mr-1.5 font-bold'>{t`Total`}:</span>$
-                {toMoney(computedTotals.total)}
+                <span className='font-bold'>{t`Total`}:</span>{' '}
+                <span>${toMoney(computedTotals.total)}</span>
               </div>
             </div>
           </div>
