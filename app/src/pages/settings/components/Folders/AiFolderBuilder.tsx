@@ -129,8 +129,18 @@ function AiSparkleIcon({ size = 14 }: { size?: number }) {
   )
 }
 
-function fieldVisual(includeInFolderStructure: boolean) {
+function fieldVisual(
+  includeInFolderStructure: boolean,
+  isLastFolder: boolean = false,
+) {
   if (includeInFolderStructure) {
+    if (isLastFolder) {
+      return {
+        bg: 'bg-blue-3',
+        color: 'text-blue-11',
+        icon: 'lucide:file-text',
+      }
+    }
     return {
       bg: 'bg-primary-3',
       color: 'text-primary-11',
@@ -201,22 +211,36 @@ function StorageBadge({ storage }: { storage: string }) {
 }
 
 function stripEditableIds(fields: EditableField[]): FolderConfigField[] {
+  const folderFields = fields.filter((f) => f.includeInFolderStructure)
+  const lastFolderId = folderFields[folderFields.length - 1]?.id
+
   return fields.map(
     ({
       dataType,
       fieldName,
       iconKey,
+      id,
       includeInFolderStructure,
       isMandatory,
       settings,
-    }) => ({
-      dataType,
-      fieldName,
-      iconKey,
-      includeInFolderStructure,
-      isMandatory,
-      settings,
-    }),
+    }) => {
+      const isLastFolder =
+        Boolean(includeInFolderStructure) && id === lastFolderId
+      return {
+        dataType,
+        fieldName,
+        iconKey: isLastFolder
+          ? 'document'
+          : includeInFolderStructure
+            ? iconKey && iconKey !== 'document'
+              ? iconKey
+              : 'folder'
+            : iconKey || 'document',
+        includeInFolderStructure,
+        isMandatory,
+        settings,
+      }
+    },
   )
 }
 
@@ -955,7 +979,10 @@ function FieldsEditor({
       showTree?: boolean
     },
   ) => {
-    const visual = fieldVisual(field.includeInFolderStructure)
+    const isLastFolder = Boolean(
+      field.includeInFolderStructure && options?.isLast,
+    )
+    const visual = fieldVisual(field.includeInFolderStructure, isLastFolder)
     const showTree = options?.showTree ?? false
     const depth = options?.depth ?? 0
     const isEditingThisField = editingFieldId === field.id
@@ -1041,7 +1068,9 @@ function FieldsEditor({
             <Tooltip
               content={
                 field.includeInFolderStructure
-                  ? t`Folder hierarchy field`
+                  ? isLastFolder
+                    ? t`File name field`
+                    : t`Folder hierarchy field`
                   : t`Document field`
               }
               position='top'
@@ -1072,7 +1101,9 @@ function FieldsEditor({
                 <Tooltip
                   content={
                     field.includeInFolderStructure
-                      ? t`Required for folder hierarchy`
+                      ? isLastFolder
+                        ? t`Required for file name`
+                        : t`Required for folder hierarchy`
                       : t`Required field`
                   }
                   position='top'
@@ -2628,28 +2659,50 @@ export default function AiFolderBuilder({
               </span>
             </div>
             <div className='mt-1.5 flex flex-wrap gap-1.5'>
-              {editableFields.slice(0, 8).map((field) => (
-                <span
-                  key={field.id}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium',
-                    field.includeInFolderStructure
-                      ? 'border border-primary-4 bg-primary-1 font-semibold text-primary-10'
-                      : 'border border-[var(--gray-3)] bg-surface text-[var(--gray-12)]',
-                  )}
-                >
-                  {field.includeInFolderStructure ? (
-                    <Icon
-                      className='size-3 text-primary-9'
-                      name='lucide:folder-tree'
-                    />
-                  ) : null}
-                  {field.fieldName}
-                  {field.isMandatory ? (
-                    <span className='text-[var(--red-10)]'>*</span>
-                  ) : null}
-                </span>
-              ))}
+              {(() => {
+                const folderFields = editableFields.filter(
+                  (f) => f.includeInFolderStructure,
+                )
+                const lastFolderId = folderFields[folderFields.length - 1]?.id
+
+                return editableFields.slice(0, 8).map((field) => {
+                  const isLastFolder =
+                    Boolean(field.includeInFolderStructure) &&
+                    field.id === lastFolderId
+
+                  return (
+                    <span
+                      key={field.id}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium',
+                        field.includeInFolderStructure
+                          ? isLastFolder
+                            ? 'border border-blue-4 bg-blue-1 font-semibold text-blue-10'
+                            : 'border border-primary-4 bg-primary-1 font-semibold text-primary-10'
+                          : 'border border-[var(--gray-3)] bg-surface text-[var(--gray-12)]',
+                      )}
+                    >
+                      {field.includeInFolderStructure ? (
+                        <Icon
+                          className={cn(
+                            'size-3',
+                            isLastFolder ? 'text-blue-9' : 'text-primary-9',
+                          )}
+                          name={
+                            isLastFolder
+                              ? 'lucide:file-text'
+                              : 'lucide:folder-tree'
+                          }
+                        />
+                      ) : null}
+                      {field.fieldName}
+                      {field.isMandatory ? (
+                        <span className='text-[var(--red-10)]'>*</span>
+                      ) : null}
+                    </span>
+                  )
+                })
+              })()}
               {editableFields.length > 8 ? (
                 <span className='inline-flex items-center rounded-md border border-[var(--gray-3)] bg-surface px-2 py-0.5 text-[11px] text-[var(--gray-9)]'>
                   {t`+${editableFields.length - 8} more`}
