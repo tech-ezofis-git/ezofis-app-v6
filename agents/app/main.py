@@ -2911,6 +2911,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatRespo
         explicit_model = str(document_job.get("model") or explicit_model)
     if intent == Intent.CLASSIFICATION:
         explicit_model = model_id_from_display_name(explicit_model) or ""
+    agent_default_model = {
+        Intent.CLASSIFICATION: get_settings().classification_model,
+        Intent.RAMCO_OCR: get_settings().ramco_ocr_model,
+    }.get(intent, "")
+    agent_default_model = (agent_default_model or "").strip()
+    if agent_default_model and not preset_has_api_key(explicit_model.strip()):
+        explicit_model = agent_default_model
 
     # Resolve this request's tenant/agent model selection once, up front.
     # Document-job agents (AP, OCR, Summary) get a frozen override dict carried on
@@ -2958,11 +2965,19 @@ async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatRespo
         di_model = (get_settings().document_intelligent_model or "").strip()
         if di_model and preset_has_api_key(di_model):
             llm_overrides = preset_call_overrides(di_model)
+    if llm_overrides is None and intent == Intent.OCR:
+        ocr_model = (get_settings().ocr_agent_model or "").strip()
+        if ocr_model and preset_has_api_key(ocr_model):
+            llm_overrides = preset_call_overrides(ocr_model)
     if llm_overrides is None:
         # No explicit/tenant selection — freeze the adapter's current
         # process-wide default so a document-job request's LLM call(s) are
         # immune to a concurrent request changing that default mid-flight.
         llm_overrides = llm_adapter.snapshot_overrides()
+    if intent in {Intent.CLASSIFICATION, Intent.RAMCO_OCR, Intent.OCR}:
+        effort = (get_settings().agent_reasoning_effort or "").strip()
+        if effort:
+            llm_overrides = {**llm_overrides, "reasoning_effort": effort}
     if document_job is not None and payload.payload is not None:
         p = payload.payload
         if intent in {Intent.CLASSIFICATION, Intent.RAMCO_OCR, Intent.FTP, Intent.FILE_FETCHER}:
@@ -2973,14 +2988,14 @@ async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatRespo
             for key in ("tenant_id", "workflow_id", "instance_id"):
                 if not document_job.get(key):
                     document_job[key] = getattr(p, key, None)
+        if intent == Intent.FTP:
+            document_job["connector_id"] = p.connector_id
         if intent in {Intent.FTP, Intent.FOLDER_MOVER}:
             document_job["sftp"] = {
                 "host": p.sftp_host,
                 "port": p.sftp_port,
                 "username": p.sftp_username,
                 "password": p.sftp_password,
-                "processed_dir": p.sftp_processed_dir,
-                "unprocessed_dir": p.sftp_unprocessed_dir,
             }
     if document_job is not None:
         document_job["llm_overrides"] = llm_overrides
