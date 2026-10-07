@@ -219,7 +219,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
       const { changed, edges: newEdges } = computeEdgeHandles(eds, nodes)
       return changed ? newEdges : eds
     })
-  }, [nodes, setEdges])
+  }, [nodes, edges, setEdges])
 
   const { isRunningTest, stopTestRun, setActiveEdge, setActiveNode } =
     useWorkflowStore((state) => state)

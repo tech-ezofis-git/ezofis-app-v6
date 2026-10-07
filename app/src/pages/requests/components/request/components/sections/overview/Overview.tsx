@@ -2927,10 +2927,50 @@ const Overview = (props: any) => {
           maxChars = totalsByKey[colKey].length
       }
 
-      widths[index] = Math.min(
-        100,
-        Math.max(35, Math.ceil(maxChars * 8.0) + 24),
-      )
+      const lowerKey = colKey.toLowerCase()
+      if (lowerKey.includes('line') || lowerKey === 'no') {
+        widths[index] = Math.min(
+          70,
+          Math.max(45, Math.ceil(maxChars * 8.0) + 24),
+        )
+      } else if (
+        lowerKey.includes('desc') ||
+        lowerKey.includes('item') ||
+        lowerKey.includes('product') ||
+        lowerKey.includes('detail')
+      ) {
+        widths[index] = Math.max(
+          220,
+          Math.min(450, Math.ceil(maxChars * 8.0) + 24),
+        )
+      } else if (lowerKey.includes('qty') || lowerKey.includes('quantity')) {
+        widths[index] = Math.min(
+          80,
+          Math.max(60, Math.ceil(maxChars * 8.0) + 24),
+        )
+      } else if (
+        lowerKey.includes('price') ||
+        lowerKey.includes('rate') ||
+        lowerKey.includes('cost')
+      ) {
+        widths[index] = Math.min(
+          120,
+          Math.max(85, Math.ceil(maxChars * 8.0) + 24),
+        )
+      } else if (
+        lowerKey.includes('amount') ||
+        lowerKey.includes('total')
+      ) {
+        widths[index] = Math.min(
+          140,
+          Math.max(100, Math.ceil(maxChars * 8.0) + 24),
+        )
+      } else {
+        widths[index] = Math.min(
+          150,
+          Math.max(80, Math.ceil(maxChars * 8.0) + 24),
+        )
+      }
     })
 
     return widths
@@ -3395,15 +3435,48 @@ const Overview = (props: any) => {
             maxChars = totalsByKey[colKey].length
         }
 
-        if (colKey.toLowerCase().includes('line')) {
+        const lowerKey = colKey.toLowerCase()
+        if (lowerKey.includes('line') || lowerKey === 'no') {
+          widths[index] = Math.min(
+            70,
+            Math.max(45, Math.ceil(maxChars * 8.0) + 24),
+          )
+        } else if (
+          lowerKey.includes('desc') ||
+          lowerKey.includes('item') ||
+          lowerKey.includes('product') ||
+          lowerKey.includes('detail')
+        ) {
+          widths[index] = Math.max(
+            220,
+            Math.min(450, Math.ceil(maxChars * 8.0) + 24),
+          )
+        } else if (lowerKey.includes('qty') || lowerKey.includes('quantity')) {
           widths[index] = Math.min(
             80,
-            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+            Math.max(60, Math.ceil(maxChars * 8.0) + 24),
+          )
+        } else if (
+          lowerKey.includes('price') ||
+          lowerKey.includes('rate') ||
+          lowerKey.includes('cost')
+        ) {
+          widths[index] = Math.min(
+            120,
+            Math.max(85, Math.ceil(maxChars * 8.0) + 24),
+          )
+        } else if (
+          lowerKey.includes('amount') ||
+          lowerKey.includes('total')
+        ) {
+          widths[index] = Math.min(
+            140,
+            Math.max(100, Math.ceil(maxChars * 8.0) + 24),
           )
         } else {
           widths[index] = Math.min(
-            80,
-            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+            150,
+            Math.max(80, Math.ceil(maxChars * 8.0) + 24),
           )
         }
       })

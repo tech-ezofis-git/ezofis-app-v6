@@ -1,12 +1,12 @@
-import { useLingui } from '@lingui/react/macro'
 import { Icon } from '@iconify/react'
+import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import Popover from '@/components/base/Popover'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import Popover from '@/components/base/Popover'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
@@ -16,17 +16,18 @@ import {
 import cn from '@/utils/cn'
 import type { AgentBlock } from './AgentSummaryBoxes'
 import {
-  canEditAgentFormField,
-  canViewAgentFormField,
-} from './agentFormFieldAccess'
-import {
   collectFormFields,
   collectFormTableFields,
 } from './AgentEditableTables'
 import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
 import {
+  canEditAgentFormField,
+  canViewAgentFormField,
+} from './agentFormFieldAccess'
+import {
   buildQualifierViewModel,
   confidenceToneClass,
+  dedupeQualifierRows,
   getFieldHeading,
   getFieldId,
   type QualifierScalarEntry,
@@ -92,7 +93,8 @@ const compactName = (value: string) =>
 const isItemColumnName = (name: string) =>
   ['item', 'product', 'itemname', 'sku'].includes(compactName(name))
 
-const isReasonColumnName = (name: string) => compactName(name).includes('reason')
+const isReasonColumnName = (name: string) =>
+  compactName(name).includes('reason')
 
 const isCategoryColumnName = (name: string) =>
   compactName(name).includes('category')
@@ -124,6 +126,7 @@ const projectRowOntoColumns = (
   row: Record<string, any>,
   targetColumns: Array<{ id: string; name?: string }>,
   sourceColumns: Array<{ id: string; name?: string }>,
+  rowIndex = 0,
 ) => {
   const categoryValue =
     readColumnValue(row, sourceColumns, isCategoryColumnName) ||
@@ -131,7 +134,9 @@ const projectRowOntoColumns = (
     row[CATEGORY_META] ||
     ''
   const next: Record<string, any> = {
-    _rowId: row._rowId || `row-${Date.now()}`,
+    // Index keeps ids unique when several rows are projected in one pass.
+    // Date.now() alone collides and makes every excluded row share a React key.
+    _rowId: row._rowId || `row-${rowIndex}`,
   }
   if (String(categoryValue).trim() !== '') next[CATEGORY_META] = categoryValue
   targetColumns.forEach((col) => {
@@ -164,6 +169,7 @@ const projectRowOntoColumns = (
 const qualifierTableKind = (label: string) => {
   const text = label.toLowerCase()
   if (text.includes('exclud')) return 'excluded'
+  if (text.includes('hold item')) return 'hold'
   if (text.includes('match')) return 'matched'
   return 'other'
 }
@@ -328,8 +334,8 @@ const HoverEditShell = ({
   if (heading) {
     return wrapLabel(
       <span
-        ref={rootRef}
         className='group flex w-full min-w-0 flex-col gap-1 rounded px-0.5 transition-colors'
+        ref={rootRef}
       >
         <span className='flex min-w-0 items-center justify-between gap-2'>
           {heading}
@@ -367,11 +373,11 @@ const HoverEditShell = ({
           </span>
           <button
             aria-label='Edit'
+            type='button'
             className={cn(
               'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
               !inline && 'absolute top-0 right-0',
             )}
-            type='button'
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -555,9 +561,9 @@ const QualifyAgentResultView = ({
   const canEditField = (field: any | null) =>
     canEditAgentFormField(field, {
       hiddenFieldIds,
-      onFieldChange,
       readOnly,
       readOnlyFieldIds,
+      onFieldChange,
     })
 
   const canViewField = (field: any | null) =>
@@ -804,12 +810,12 @@ const QualifyAgentResultView = ({
                   canEdit={canEdit}
                   editor={renderScalarEditor(entry, raw)}
                   fieldId={fieldId}
+                  label={controlLabel(entry.field, entry.label)}
                   heading={
                     <span className='font-bold text-primary-12'>
                       {entry.label}
                     </span>
                   }
-                  label={controlLabel(entry.field, entry.label)}
                   onActivate={setActiveEditId}
                 >
                   <span className='block w-full text-justify leading-relaxed'>
@@ -838,12 +844,12 @@ const QualifyAgentResultView = ({
               canEdit={entry.field ? canEditField(entry.field) : false}
               editor={renderScalarEditor(entry, flags.join(', '))}
               fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
+              label={controlLabel(entry.field, entry.label)}
               heading={
                 <h4 className='text-sm font-semibold text-gray-12'>
                   {entry.label}
                 </h4>
               }
-              label={controlLabel(entry.field, entry.label)}
               onActivate={setActiveEditId}
             >
               <div className='flex flex-wrap gap-2'>
@@ -891,18 +897,29 @@ const QualifyAgentResultView = ({
             : columns
         const displayRows =
           kind === 'excluded' && columns.length
-            ? rows.map((row) =>
-                projectRowOntoColumns(row, columns, matchedColumns),
+            ? rows.map((row, rowIndex) =>
+                projectRowOntoColumns(row, columns, matchedColumns, rowIndex),
               )
             : rows
+        const visibleRows =
+          kind === 'excluded'
+            ? dedupeQualifierRows(
+                normalizeAgentTableRows(displayRows, columns),
+                columns,
+              )
+            : normalizeAgentTableRows(displayRows, columns)
 
         if (!rows.length && !editable) return null
 
         return (
           <AgentFlatTable
-            allowAddRow={kind !== 'excluded'}
+            allowAddRow={kind !== 'excluded' && kind !== 'hold'}
             allowDelete={kind !== 'excluded'}
             columns={columns}
+            key={table.resultKey}
+            readOnly={!editable}
+            rows={visibleRows}
+            title={table.label}
             icon={
               kind === 'matched'
                 ? 'tabler:circle-check'
@@ -917,10 +934,6 @@ const QualifyAgentResultView = ({
                   ? 'text-red-11'
                   : 'text-[var(--primary-9)]'
             }
-            key={table.resultKey}
-            readOnly={!editable}
-            title={table.label}
-            rows={normalizeAgentTableRows(displayRows, columns)}
             onChange={(nextRows) => writeTable(field, nextRows)}
             onMoveRow={
               editable && matchedTable

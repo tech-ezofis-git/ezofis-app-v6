@@ -700,7 +700,7 @@ export const importWorkflow = (
 
   const edges: Edge[] = Array.isArray(legacyJson.rules)
     ? (legacyJson.rules
-        .map((rule: any) => {
+        .map((rule: any, index: number) => {
           const sourceId = String(rule.fromBlockId || rule.from || '')
           const targetId = String(rule.toBlockId || rule.to || '')
           if (!sourceId || !targetId) return null
@@ -717,7 +717,7 @@ export const importWorkflow = (
               remarks: rule.remarks ?? false,
               signature: rule.signature ?? false,
             },
-            id: String(rule.id || `e_${sourceId}_${targetId}`),
+            id: String(rule.id || `e_${sourceId}_${targetId}_${index}`),
             source: sourceId,
             target: targetId,
             type: 'custom',

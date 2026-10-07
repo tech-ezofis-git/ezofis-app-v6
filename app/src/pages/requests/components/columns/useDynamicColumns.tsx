@@ -1871,7 +1871,7 @@ const getBaseColumns = (
               variant='outline-purple'
             />
             <HoverExpandableText
-              className='text-[13px] font-medium text-[var(--gray-11)]'
+              className='text-[11px] font-medium italic text-[var(--gray-11)]'
               expandStyle='inline'
               maxLines={2}
               normalMaxWidthClass='max-w-[220px]'

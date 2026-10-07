@@ -34,6 +34,8 @@ export const getRequiredFieldErrorMessage = (labels: string[]) => {
     if (lower === 'group name') return staticT`Please enter a group name.`
     if (lower === 'group members')
       return staticT`Please select at least one group member.`
+    if (lower === 'groups' || lower === 'group assignment' || lower === 'select groups')
+      return staticT`Please select at least one group.`
     return staticT`Please enter ${label}.`
   }
 
@@ -56,6 +58,8 @@ export const getFieldRequiredError = (
   if (lower === 'group name') return staticT`Please enter a group name.`
   if (lower === 'group members')
     return staticT`Please select at least one group member.`
+  if (lower === 'groups' || lower === 'group assignment' || lower === 'select groups')
+    return staticT`Please select at least one group.`
 
   return staticT`Please enter ${label}.`
 }

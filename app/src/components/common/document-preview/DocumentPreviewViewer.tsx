@@ -32,6 +32,9 @@ import {
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
+/** Set to true to scan and mask PII again while the file viewer loads. */
+const FILE_VIEWER_PII_REDACTION_ENABLED = false
+
 type ViewerMode =
   | 'pdf'
   | 'image'
@@ -400,6 +403,9 @@ export default function DocumentPreviewViewer({
     isImage,
     isPdf,
   })
+  const piiRedactionOn =
+    FILE_VIEWER_PII_REDACTION_ENABLED && enablePiiRedaction
+  const piiNerOn = FILE_VIEWER_PII_REDACTION_ENABLED && enablePiiNer
 
   let content = null
 
@@ -439,8 +445,8 @@ export default function DocumentPreviewViewer({
         <PdfViewer
           activeHighlightColor={activeHighlightColor}
           activeHighlightTerm={activeHighlightTerm}
-          enablePiiNer={enablePiiNer}
-          enablePiiRedaction={enablePiiRedaction}
+          enablePiiNer={piiNerOn}
+          enablePiiRedaction={piiRedactionOn}
           fileUrl={fileUrl}
           focusRequestId={focusRequestId}
           highlightColors={enableHighlight ? highlightColors : {}}
@@ -465,8 +471,8 @@ export default function DocumentPreviewViewer({
   } else if (mode === 'image' && fileUrl) {
     content = (
       <ImagePreview
-        enablePiiNer={enablePiiNer}
-        enablePiiRedaction={enablePiiRedaction}
+        enablePiiNer={piiNerOn}
+        enablePiiRedaction={piiRedactionOn}
         fileName={fileName}
         fileUrl={fileUrl}
         piiKnownOnly={piiKnownOnly}
@@ -477,8 +483,8 @@ export default function DocumentPreviewViewer({
   } else if (mode === 'spreadsheet' && fileUrl) {
     content = (
       <SpreadsheetPreview
-        enablePiiNer={enablePiiNer}
-        enablePiiRedaction={enablePiiRedaction}
+        enablePiiNer={piiNerOn}
+        enablePiiRedaction={piiRedactionOn}
         fileName={fileName}
         fileUrl={fileUrl}
         piiMaskVisibleChars={piiMaskVisibleChars}
@@ -488,8 +494,8 @@ export default function DocumentPreviewViewer({
   } else if (mode === 'word' && fileUrl) {
     content = (
       <WordPreview
-        enablePiiNer={enablePiiNer}
-        enablePiiRedaction={enablePiiRedaction}
+        enablePiiNer={piiNerOn}
+        enablePiiRedaction={piiRedactionOn}
         fileName={fileName}
         fileUrl={fileUrl}
         piiMaskVisibleChars={piiMaskVisibleChars}
@@ -501,8 +507,8 @@ export default function DocumentPreviewViewer({
   } else if (mode === 'text' && fileUrl) {
     content = (
       <TextFilePreview
-        enablePiiNer={enablePiiNer}
-        enablePiiRedaction={enablePiiRedaction}
+        enablePiiNer={piiNerOn}
+        enablePiiRedaction={piiRedactionOn}
         fileName={fileName}
         fileUrl={fileUrl}
         piiMaskVisibleChars={piiMaskVisibleChars}

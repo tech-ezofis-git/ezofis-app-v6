@@ -13,7 +13,6 @@ export const FOLDER_DRAFT_STEP_KEYS = [
   'fields',
   'storage',
   'versioning',
-  'piiRedaction',
   'integrations',
 ] as const
 
@@ -442,16 +441,15 @@ export const folderStepFromDraft = (
   currentStep?: number,
   currentStepKey?: string,
 ) => {
-  const maxStep = FOLDER_DRAFT_STEP_KEYS.length
+  if (typeof currentStep === 'number' && currentStep >= 1) {
+    return Math.min(currentStep, 6) as 1 | 2 | 3 | 4 | 5 | 6
+  }
+
   if (currentStepKey) {
     const index = (FOLDER_DRAFT_STEP_KEYS as readonly string[]).indexOf(
       currentStepKey,
     )
     if (index >= 0) return (index + 1) as 1 | 2 | 3 | 4 | 5 | 6
-  }
-
-  if (typeof currentStep === 'number' && currentStep >= 1) {
-    return Math.min(currentStep, maxStep) as 1 | 2 | 3 | 4 | 5 | 6
   }
 
   return 1
