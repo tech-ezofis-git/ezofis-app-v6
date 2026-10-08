@@ -500,7 +500,7 @@ const Header: React.FC<HeaderProps> = ({
       <OverlayHeaderWrapper className='min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
         <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2'>
           <IconButton
-            className='shrink-0 cursor-pointer hover:bg-gray-2'
+            className='-ml-2 shrink-0 cursor-pointer hover:bg-gray-2'
             color='gray'
             icon='tabler:arrow-left'
             size='sm'
@@ -769,7 +769,7 @@ const Header: React.FC<HeaderProps> = ({
       {/* Left Side Group: Request Number + Navigation Buttons */}
       <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3'>
         <IconButton
-          className='shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
+          className='-ml-2 shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
           icon='tabler:arrow-left'
           size='sm'
