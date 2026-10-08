@@ -5,6 +5,7 @@ import type {
   FolderPiiLevel,
   FolderPiiSettings,
 } from '@/pages/folders/utils/folderPiiSettings'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import { AnimateFadeIn } from '@/components/common/animations'
 import cn from '@/utils/cn'
 import SettingsFormSection from '../SettingsFormSection'
@@ -58,6 +59,9 @@ const levelToIndex = (level: FolderPiiLevel) =>
 
 const indexToLevel = (index: number): FolderPiiLevel =>
   LEVEL_STEPS[Math.min(LEVEL_STEPS.length - 1, Math.max(0, index))] || 'medium'
+
+/** Hidden until the redaction-level control is ready to ship. */
+const SHOW_REDACTION_LEVEL = false
 
 const PiiRedactionWizardStep = ({
   fields,
@@ -181,19 +185,6 @@ const PiiRedactionWizardStep = ({
     settings,
   ])
 
-  const yesNoOptions = [
-    {
-      id: 'yes',
-      subtitle: t`Scan documents in this folder and mask PII in the preview.`,
-      title: t`Yes`,
-    },
-    {
-      id: 'no',
-      subtitle: t`Show the original file without PII masking.`,
-      title: t`No`,
-    },
-  ] as const
-
   const levelIndex = levelToIndex(settings.level)
   const committedFillPercent = (levelIndex / (LEVEL_STEPS.length - 1)) * 100
   const [dragFillPercent, setDragFillPercent] = useState<number | null>(null)
@@ -270,60 +261,25 @@ const PiiRedactionWizardStep = ({
     <SettingsFormSection>
       <div className='flex flex-col gap-6'>
         <AnimateFadeIn delay={0.1}>
-          <div>
-            <h3 className='text-14/5 font-semibold text-gray-12'>
-              {t`Enable PII Redaction`}
-            </h3>
-            <p className='mt-1 text-13 text-gray-11'>
-              {t`Choose whether documents in this folder are scanned and redacted when opened.`}
-            </p>
-
-            <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              {yesNoOptions.map((item) => {
-                const isSelected =
-                  item.id === 'yes' ? settings.enabled : !settings.enabled
-                return (
-                  <button
-                    key={item.id}
-                    type='button'
-                    className={cn(
-                      'flex w-full items-start gap-3 rounded-[12px] border p-3.5 text-left transition',
-                      isSelected
-                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
-                        : 'border-gray-3 bg-surface hover:border-primary-5',
-                    )}
-                    onClick={() =>
-                      onChange({
-                        ...settings,
-                        enabled: item.id === 'yes',
-                        fieldIds: item.id === 'yes' ? settings.fieldIds : [],
-                      })
-                    }
-                  >
-                    <span
-                      className={cn(
-                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
-                        isSelected
-                          ? 'border-primary-9 bg-surface'
-                          : 'border-gray-7 bg-surface',
-                      )}
-                    >
-                      {isSelected ? (
-                        <span className='h-2 w-2 rounded-full bg-primary-9' />
-                      ) : null}
-                    </span>
-                    <div className='min-w-0 flex-1'>
-                      <div className='text-13 font-medium text-gray-12'>
-                        {item.title}
-                      </div>
-                      <div className='mt-0.5 text-13 text-gray-11'>
-                        {item.subtitle}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
+          <div className='flex items-center justify-between gap-4 rounded-[12px] border border-gray-3 bg-surface px-4 py-3.5'>
+            <div className='min-w-0'>
+              <h3 className='text-14/5 font-semibold text-gray-12'>
+                {t`Enable PII Redaction`}
+              </h3>
+              <p className='mt-1 text-13 text-gray-11'>
+                {t`Automatically detects and hides personally identifiable information (PII) in the document to help protect sensitive data.`}
+              </p>
             </div>
+            <InputSwitch
+              checked={settings.enabled}
+              onChange={(checked) =>
+                onChange({
+                  ...settings,
+                  enabled: Boolean(checked),
+                  fieldIds: checked ? settings.fieldIds : [],
+                })
+              }
+            />
           </div>
         </AnimateFadeIn>
 
@@ -332,11 +288,12 @@ const PiiRedactionWizardStep = ({
             <AnimateFadeIn delay={0.15}>
               <div className='rounded-[12px] border border-gray-3 bg-surface p-4'>
                 <h3 className='text-14/5 font-semibold text-gray-12'>
-                  {t`Fields to redact`}
+                  {t`Sensitive Values to Redact`}
                 </h3>
-
-
-                <div className='mt-3 max-w-xl'>
+                <p className='mt-1 text-13 text-gray-11'>
+                  {t`Specify the sensitive information that should be detected and hidden or masked to protect confidential and personal data.`}
+                </p>
+                                <div className='mt-3 '>
                   <div className='flex h-40 w-full flex-wrap content-start gap-1.5 overflow-y-auto rounded-[10px] border border-gray-3 bg-surface-primary p-2.5'>
                     {displayLabels.length === 0 ? (
                       <p className='self-center px-1 py-2 text-13 text-gray-9'>
@@ -405,6 +362,7 @@ const PiiRedactionWizardStep = ({
               </div>
             </AnimateFadeIn>
 
+            {SHOW_REDACTION_LEVEL ? (
             <AnimateFadeIn delay={0.2}>
               <div className='rounded-[12px] border border-gray-3 bg-surface p-4'>
                 <h3 className='text-14/5 font-semibold text-gray-12'>
@@ -512,6 +470,7 @@ const PiiRedactionWizardStep = ({
                 </div>
               </div>
             </AnimateFadeIn>
+            ) : null}
           </>
         ) : null}
       </div>

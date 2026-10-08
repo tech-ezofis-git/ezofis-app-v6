@@ -1,5 +1,5 @@
 import authUserStore from '../../stores/authUserStore'
-import { axiosV6 } from '../axios'
+import { axiosV6, getV6ApiBaseUrl } from '../axios'
 
 export interface DocumentIntelligentAgentResponse {
   document_intelligent_result: DocumentIntelligentResult
@@ -575,6 +575,24 @@ const looksLikeErrorPayload = async (blob: Blob) => {
     return head.startsWith('{') || head.startsWith('<') || head.startsWith('[')
   } catch {
     return false
+  }
+}
+
+/** Authenticated file URL for a first-page preview. pdf.js streams only the bytes it needs. */
+export function getStageFilePreviewSource(fileId: string) {
+  const base = getV6ApiBaseUrl().replace(/\/$/, '')
+  const store = authUserStore.getState()
+  const token = store.identity?.accessToken
+  const tenantId =
+    store.session?.tenantId ||
+    (store.identity as { tenantId?: string } | null)?.tenantId ||
+    ''
+  const httpHeaders: Record<string, string> = { Accept: '*/*' }
+  if (token) httpHeaders.Authorization = `Bearer ${token}`
+  if (tenantId) httpHeaders['X-Tenant-Id'] = String(tenantId)
+  return {
+    httpHeaders,
+    url: `${base}/uploadAndIndex/files/${encodeURIComponent(fileId)}`,
   }
 }
 

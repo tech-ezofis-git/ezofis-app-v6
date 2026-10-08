@@ -1,5 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import BaseButton from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
+import Tooltip from '@/components/base/Tooltip'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -55,6 +57,7 @@ type DraftAttachmentFieldsProps = {
   isAnalyzing?: boolean
   onExport: () => void
   onFieldChange: (fieldKey: string, value: string) => void
+  onRegenerate?: () => void
 }
 
 export default function DraftAttachmentFields({
@@ -66,6 +69,7 @@ export default function DraftAttachmentFields({
   isAnalyzing = false,
   onExport,
   onFieldChange,
+  onRegenerate,
 }: DraftAttachmentFieldsProps) {
   const { t } = useLingui()
 
@@ -82,15 +86,30 @@ export default function DraftAttachmentFields({
             {t`${filledCount} of ${fields.length} fields ready`}
           </p>
         </div>
-        <BaseButton
-          color='primary'
-          disabled={exportDisabled || exportLoading || isAnalyzing}
-          icon='lucide:arrow-up-from-line'
-          label={t`Export`}
-          loading={exportLoading}
-          size='xs'
-          onClick={onExport}
-        />
+        <div className='flex shrink-0 items-center gap-2'>
+          {onRegenerate ? (
+            <Tooltip content={t`Regenerate`} position='top'>
+              <IconButton
+                ariaLabel={t`Regenerate`}
+                color='secondary'
+                disabled={disabled || isAnalyzing || exportLoading}
+                icon='tabler:scan'
+                size='sm'
+                variant='subtle'
+                onClick={onRegenerate}
+              />
+            </Tooltip>
+          ) : null}
+          <BaseButton
+            color='primary'
+            disabled={exportDisabled || exportLoading || isAnalyzing}
+            icon='lucide:arrow-up-from-line'
+            label={t`Export`}
+            loading={exportLoading}
+            size='xs'
+            onClick={onExport}
+          />
+        </div>
       </div>
 
       <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3'>
