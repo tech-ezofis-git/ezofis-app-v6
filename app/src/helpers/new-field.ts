@@ -99,6 +99,23 @@ export const getField = (fieldType: string) => {
       s.iconType = 'STAR'
       s.iconCount = 10
       break
+    case 'SHORT_TEXT':
+      v.contentRule = 'TEXT'
+      v.answerIndicator = 'NO'
+      s.fillValueType = 'CUSTOM'
+      s.qrValue = false
+      s.isAddressField = false
+      s.addressMatchingFields = [
+        { addressColumn: 'CITY', id: generateId(), selectFieldColumn: [] },
+        { addressColumn: 'COUNTRY', id: generateId(), selectFieldColumn: [] },
+        { addressColumn: 'STATE', id: generateId(), selectFieldColumn: [] },
+        {
+          addressColumn: 'POSTALCODE',
+          id: generateId(),
+          selectFieldColumn: [],
+        },
+      ]
+      break
     case 'EMAIL':
       baseField.settings.validation.contentRule = 'EMAIL'
       break

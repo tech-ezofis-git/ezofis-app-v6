@@ -9,6 +9,7 @@ import {
   isFilenameField,
   sortIndexingFields,
 } from '@/pages/requests/utils/repoFolderMetadata'
+import authUserStore from '@/stores/authUserStore'
 
 export interface DateTimeLimits {
   maxDate?: string
@@ -64,6 +65,51 @@ export const getDateTimeLimits = (field: any): DateTimeLimits => {
   return limits
 }
 
+// Resolves a SHORT_TEXT field's "Fill value" strategy (settings.specific
+// .fillValueType, set in QuestionSettings.tsx's Specific tab) into the
+// literal string to seed the form model with. MASTER/ASSIGN_PARENT_FIELD/
+// REQUEST_NO need live form or workflow context this helper doesn't have,
+// so they're left unseeded here and handled where that context exists.
+export const resolveShortTextFillValue = (field: any): string | undefined => {
+  const specific = field?.settings?.specific || {}
+  const type = specific.fillValueType || 'CUSTOM'
+  const session = authUserStore.getState().session
+
+  switch (type) {
+    case 'CUSTOM':
+      return specific.customDefaultValue || undefined
+    case 'AUTO_GENERATE': {
+      const prefix = specific.autoGenerateValue?.prefix || 'Form'
+      const suffix = specific.autoGenerateValue?.suffix || 'DATE_TIME'
+      const now = dayjs()
+      const stamp =
+        suffix === 'DATE'
+          ? now.format('YYYYMMDD')
+          : suffix === 'TIME'
+            ? now.format('HHmmss')
+            : now.format('YYYYMMDDHHmmss')
+      return `${prefix}_${stamp}`
+    }
+    case 'USER_EMAIL':
+      return session?.email || undefined
+    case 'USER_NAME':
+      return session?.firstName || session?.name?.split(' ')[0] || undefined
+    case 'LOGIN_NAME':
+      return session?.name || undefined
+    case 'CURRENT_YEAR': {
+      const now = dayjs()
+      if (specific.yearType === 'FINANCIAL_YEAR') {
+        return now.month() >= 3
+          ? `${now.year()}-${now.year() + 1}`
+          : `${now.year() - 1}-${now.year()}`
+      }
+      return String(now.year())
+    }
+    default:
+      return undefined
+  }
+}
+
 // Seeds formModel with each DATE/TIME/DATE_TIME field's configured default
 // value (specific.dateDefaultValueType/timeDefaultValueType, set in
 // QuestionSettings.tsx's "Default Value Mode") when a new request form is
@@ -97,15 +143,28 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
-      } else if (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT' || field.type === 'SINGLE_CHOICE' || field.type === 'MULTIPLE_CHOICE') {
-        const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+      } else if (
+        field.type === 'SINGLE_SELECT' ||
+        field.type === 'MULTI_SELECT' ||
+        field.type === 'SINGLE_CHOICE' ||
+        field.type === 'MULTIPLE_CHOICE'
+      ) {
+        const optionsType = String(
+          specific.optionsType || 'CUSTOM',
+        ).toUpperCase()
         if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
           const opts = getFieldOptions(field)
           if (opts.length === 1) {
             const val = selectOptionStoredValue(opts[0], opts)
-            model[field.id] = (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') ? [val] : val
+            model[field.id] =
+              field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE'
+                ? [val]
+                : val
           }
         }
+      } else if (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') {
+        const resolved = resolveShortTextFillValue(field)
+        if (resolved) model[field.id] = resolved
       } else if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
         const rowsType = specific.rowsType || 'ON_DEMAND'
         const fixedRowCount = specific.fixedRowCount || 5
@@ -389,7 +448,8 @@ export const fetchMasterFormColumnOptions = async (
       (f: any) =>
         f.id === columnKeyOrLabel ||
         f.id?.trim() === columnKeyOrLabel?.trim() ||
-        f.label?.trim().toLowerCase() === columnKeyOrLabel?.trim().toLowerCase() ||
+        f.label?.trim().toLowerCase() ===
+          columnKeyOrLabel?.trim().toLowerCase() ||
         f.name?.trim().toLowerCase() === columnKeyOrLabel?.trim().toLowerCase(),
     )
 
@@ -421,8 +481,10 @@ export const fetchMasterFormColumnOptions = async (
         (f: any) =>
           f.id === parentMasterColumn ||
           f.id?.trim() === parentMasterColumn?.trim() ||
-          f.label?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase() ||
-          f.name?.trim().toLowerCase() === parentMasterColumn?.trim().toLowerCase(),
+          f.label?.trim().toLowerCase() ===
+            parentMasterColumn?.trim().toLowerCase() ||
+          f.name?.trim().toLowerCase() ===
+            parentMasterColumn?.trim().toLowerCase(),
       )
       if (matchedParentField) {
         if (matchedParentField.id) {
@@ -683,8 +745,8 @@ export const getDropdownFacetSource = (
     enabled:
       isSelect && optionsType !== 'DYNAMIC' && !!repositoryId && !!fieldName,
     fieldName,
-    repositoryId,
     repositoryFieldParent,
+    repositoryId,
   }
 }
 

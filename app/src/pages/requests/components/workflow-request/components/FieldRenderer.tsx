@@ -1,10 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
-import authUserStore from '@/stores/authUserStore'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
@@ -16,12 +15,14 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
+import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import authUserStore from '@/stores/authUserStore'
 import {
   buildMergedOcrFieldHints,
   extractScalarStrings,
@@ -493,6 +494,290 @@ const ChoiceCheckboxGroupField = ({
   )
 }
 
+interface ShortTextSmartInputProps {
+  common: Record<string, any>
+  field: any
+  value: any
+  isSearching?: boolean
+  readOnly?: boolean
+  onChange: (val: any) => void
+  onMultiFieldChange?: (patch: Record<string, any>) => void
+  onTriggerSearch: () => void
+}
+
+// Adds the "Specific Settings" behaviors configured for SHORT_TEXT/FULL_NAME
+// fields in QuestionSettings.tsx on top of the plain InputText: QR/barcode
+// scan-to-fill (specific.qrValue), Photon address-autocomplete that splits
+// the picked result into other fields (specific.isAddressField +
+// addressMatchingFields), and the existing search-and-sync button.
+const ShortTextSmartInput = ({
+  common,
+  field,
+  isSearching,
+  readOnly,
+  value,
+  onChange,
+  onMultiFieldChange,
+  onTriggerSearch,
+}: ShortTextSmartInputProps) => {
+  const specific = field.settings?.specific || {}
+  const isSearchField = specific.isSearchField === 'YES'
+  const qrEnabled = Boolean(specific.qrValue)
+  const addressEnabled = Boolean(specific.isAddressField)
+
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [addressSuggestions, setAddressSuggestions] = useState<
+    { label: string; raw: any }[]
+  >([])
+  const [isAddressLoading, setIsAddressLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+
+  const fillAddressMatches = (raw: any) => {
+    if (!onMultiFieldChange) return
+    const props = raw?.properties || {}
+    const patch: Record<string, any> = {}
+    const valueFor = (column: string) => {
+      switch (column) {
+        case 'CITY':
+          return props.city || props.county || ''
+        case 'STATE':
+          return props.state || ''
+        case 'COUNTRY':
+          return props.country || ''
+        case 'POSTALCODE':
+          return props.postcode || ''
+        default:
+          return ''
+      }
+    }
+    for (const row of specific.addressMatchingFields || []) {
+      const val = valueFor(row.addressColumn)
+      if (!val) continue
+      for (const fieldId of row.selectFieldColumn || []) {
+        patch[fieldId] = val
+      }
+    }
+    if (Object.keys(patch).length > 0) onMultiFieldChange(patch)
+  }
+
+  const handleAddressTyped = (val: string) => {
+    onChange(val)
+    if (!addressEnabled) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (val.trim().length < 3) {
+      setAddressSuggestions([])
+      return
+    }
+    debounceRef.current = setTimeout(async () => {
+      setIsAddressLoading(true)
+      try {
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&limit=5`,
+        )
+        const json = await res.json()
+        const features: any[] = json?.features || []
+        setAddressSuggestions(
+          features.map((f) => ({
+            label: [
+              f.properties?.name,
+              f.properties?.city,
+              f.properties?.state,
+              f.properties?.country,
+            ]
+              .filter(Boolean)
+              .join(', '),
+            raw: f,
+          })),
+        )
+      } catch {
+        setAddressSuggestions([])
+      } finally {
+        setIsAddressLoading(false)
+      }
+    }, 400)
+  }
+
+  return (
+    <div className='relative w-full'>
+      <div className='flex w-full items-end gap-1.5'>
+        <div className='min-w-0 flex-1'>
+          <InputText
+            {...common}
+            value={value || ''}
+            onChange={addressEnabled ? handleAddressTyped : onChange}
+            onKeyDown={(e: any) => {
+              if (e.key === 'Enter' && isSearchField) {
+                e.preventDefault()
+                onTriggerSearch()
+              }
+            }}
+          />
+        </div>
+
+        {qrEnabled && !readOnly && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+            title='Scan QR / Barcode'
+            type='button'
+            onClick={() => setIsScannerOpen((prev) => !prev)}
+          >
+            <Icon className='size-4' name='lucide:qr-code' />
+          </button>
+        )}
+
+        {isSearchField && !readOnly && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+            disabled={isSearching}
+            title='Search & Auto-Sync'
+            type='button'
+            onClick={() => onTriggerSearch()}
+          >
+            {isSearching ? (
+              <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+            ) : (
+              <Icon className='size-4' name='lucide:search' />
+            )}
+          </button>
+        )}
+      </div>
+
+      {isScannerOpen && (
+        <div className='absolute top-full z-20 mt-1.5 w-full'>
+          <BarcodeScannerPanel
+            onClose={() => setIsScannerOpen(false)}
+            onScan={(rawValue) => {
+              onChange(rawValue)
+              setIsScannerOpen(false)
+            }}
+          />
+        </div>
+      )}
+
+      {addressEnabled &&
+        (addressSuggestions.length > 0 || isAddressLoading) && (
+          <div className='absolute top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-3 bg-surface shadow-md'>
+            {isAddressLoading ? (
+              <div className='flex items-center gap-2 p-2.5 text-xs text-gray-9'>
+                <Icon
+                  className='size-3.5 animate-spin'
+                  name='lucide:loader-2'
+                />
+                Searching addresses...
+              </div>
+            ) : (
+              addressSuggestions.map((s, i) => (
+                <button
+                  className='block w-full cursor-pointer truncate px-2.5 py-2 text-left text-xs text-gray-12 hover:bg-gray-2'
+                  key={i}
+                  type='button'
+                  onClick={() => {
+                    onChange(s.label)
+                    fillAddressMatches(s.raw)
+                    setAddressSuggestions([])
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+    </div>
+  )
+}
+
+interface EmailOtpVerificationProps {
+  email: string
+  disabled?: boolean
+}
+
+// Front-end-only OTP widget for settings.validation.verificationRequired on
+// EMAIL fields. There is no backend email-send endpoint yet, so the "sent"
+// code is surfaced via a toast instead of silently pretending to email it.
+const EmailOtpVerification = ({
+  disabled,
+  email,
+}: EmailOtpVerificationProps) => {
+  const [state, setState] = useState({
+    code: '',
+    input: '',
+    sent: false,
+    verified: false,
+  })
+
+  if (state.verified) {
+    return (
+      <div className='flex items-center gap-1.5 text-xs font-semibold text-green-9'>
+        <Icon height={14} name='lucide:check-circle-2' width={14} />
+        Verified
+      </div>
+    )
+  }
+
+  if (!state.sent) {
+    return (
+      <button
+        className='flex cursor-pointer items-center gap-1 text-xs font-semibold text-green-9 hover:underline disabled:opacity-50'
+        disabled={disabled || !email}
+        type='button'
+        onClick={() => {
+          const code = String(Math.floor(100000 + Math.random() * 900000))
+          setState({ code, input: '', sent: true, verified: false })
+          showToast({
+            message: `Verification code sent to ${email}: ${code}`,
+            variant: 'info',
+          })
+        }}
+      >
+        Send Verification
+      </button>
+    )
+  }
+
+  return (
+    <div className='flex items-center gap-2'>
+      <input
+        className='w-24 rounded-md border border-gray-3 bg-surface px-2 py-1 text-xs tracking-widest outline-none focus:border-primary-9'
+        maxLength={6}
+        placeholder='Enter OTP'
+        value={state.input}
+        onChange={(e) =>
+          setState((prev) => ({ ...prev, input: e.target.value }))
+        }
+      />
+      <button
+        className='cursor-pointer text-xs font-semibold text-primary-9 hover:underline'
+        type='button'
+        onClick={() =>
+          setState((prev) => ({
+            ...prev,
+            verified: prev.input === prev.code,
+          }))
+        }
+      >
+        Verify OTP
+      </button>
+      <button
+        className='cursor-pointer text-[11px] text-gray-8 hover:underline'
+        type='button'
+        onClick={() => {
+          const code = String(Math.floor(100000 + Math.random() * 900000))
+          setState({ code, input: '', sent: true, verified: false })
+          showToast({
+            message: `Verification code sent to ${email}: ${code}`,
+            variant: 'info',
+          })
+        }}
+      >
+        Resend Code
+      </button>
+    </div>
+  )
+}
+
 // Renders a single form-builder field using the app's existing
 // @/components/base input components. Field types outside the MVP set
 // (TABLE, MATRIX, SIGNATURE, ADDRESS, RATING, ...) render a labeled
@@ -579,8 +864,8 @@ const FieldRenderer = ({
   const repoParentRawValue = repoParentField
     ? formModel?.[repoParentField.id]
     : facetSource.repositoryFieldParent && formModel
-    ? formModel[facetSource.repositoryFieldParent]
-    : undefined
+      ? formModel[facetSource.repositoryFieldParent]
+      : undefined
 
   const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
 
@@ -651,8 +936,8 @@ const FieldRenderer = ({
   const parentValue = parentField
     ? formModel?.[parentField.id]
     : masterInfo.masterFormParentColumn && formModel
-    ? formModel[masterInfo.masterFormParentColumn]
-    : undefined
+      ? formModel[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
@@ -735,12 +1020,17 @@ const FieldRenderer = ({
 
     case 'EMAIL':
       return (
-        <InputText
-          {...common}
-          type='email'
-          value={value || ''}
-          onChange={onChange}
-        />
+        <div className='w-full space-y-1.5'>
+          <InputText
+            {...common}
+            type='email'
+            value={value || ''}
+            onChange={onChange}
+          />
+          {field.settings?.validation?.verificationRequired && (
+            <EmailOtpVerification disabled={readOnly} email={value || ''} />
+          )}
+        </div>
       )
     case 'URL':
       return (
@@ -770,42 +1060,19 @@ const FieldRenderer = ({
         />
       )
     case 'FULL_NAME':
-    case 'SHORT_TEXT': {
-      const isSearchField = field.settings?.specific?.isSearchField === 'YES'
-      if (isSearchField) {
-        return (
-          <div className='flex items-end gap-1.5 w-full'>
-            <div className='flex-1 min-w-0'>
-              <InputText
-                {...common}
-                value={value || ''}
-                onChange={onChange}
-                onKeyDown={(e: any) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleTriggerSearch()
-                  }
-                }}
-              />
-            </div>
-            <button
-              className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
-              disabled={readOnly || isSearching}
-              title='Search & Auto-Sync'
-              type='button'
-              onClick={() => handleTriggerSearch()}
-            >
-              {isSearching ? (
-                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
-              ) : (
-                <Icon className='size-4' name='lucide:search' />
-              )}
-            </button>
-          </div>
-        )
-      }
-      return <InputText {...common} value={value || ''} onChange={onChange} />
-    }
+    case 'SHORT_TEXT':
+      return (
+        <ShortTextSmartInput
+          common={common}
+          field={field}
+          isSearching={isSearching}
+          readOnly={readOnly}
+          value={value}
+          onChange={onChange}
+          onMultiFieldChange={onMultiFieldChange}
+          onTriggerSearch={handleTriggerSearch}
+        />
+      )
 
     case 'TEXT_BUILDER':
     case 'LONG_TEXT':
@@ -824,8 +1091,8 @@ const FieldRenderer = ({
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
       if (isSearchField) {
         return (
-          <div className='flex items-end gap-1.5 w-full'>
-            <div className='flex-1 min-w-0'>
+          <div className='flex w-full items-end gap-1.5'>
+            <div className='min-w-0 flex-1'>
               <InputNumber
                 {...common}
                 value={value ?? ''}
@@ -929,8 +1196,8 @@ const FieldRenderer = ({
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
       if (isSearchField) {
         return (
-          <div className='flex items-end gap-1.5 w-full'>
-            <div className='flex-1 min-w-0'>
+          <div className='flex w-full items-end gap-1.5'>
+            <div className='min-w-0 flex-1'>
               <InputSelect
                 {...common}
                 createOptionLabel={(query) => t`Add "${query}"`}
@@ -956,7 +1223,9 @@ const FieldRenderer = ({
               type='button'
               onClick={() =>
                 handleTriggerSearch(
-                  selected ? selectOptionStoredValue(selected, selectOptions) : value,
+                  selected
+                    ? selectOptionStoredValue(selected, selectOptions)
+                    : value,
                 )
               }
             >

@@ -42,6 +42,12 @@ export interface RuleCondition {
     | 'IS_EMPTY'
     | 'IS_NOT_EMPTY'
     | 'IN'
+    | 'IS_ANY_OF'
+    | 'IS_NOT_ANY_OF'
+    | 'STARTS_WITH'
+    | 'NOT_STARTS_WITH'
+    | 'ENDS_WITH'
+    | 'NOT_ENDS_WITH'
   id?: string
   value?: any
 }
@@ -53,6 +59,10 @@ export const OPERATORS = {
       : String(fieldVal ?? '')
           .toLowerCase()
           .includes(String(targetVal ?? '').toLowerCase()),
+  ENDS_WITH: (fieldVal: any, targetVal: any) =>
+    String(fieldVal ?? '')
+      .toLowerCase()
+      .endsWith(String(targetVal ?? '').toLowerCase()),
   EQUALS: (fieldVal: any, targetVal: any) => {
     if (
       typeof fieldVal === 'number' ||
@@ -71,18 +81,38 @@ export const OPERATORS = {
     Number(fieldVal) > Number(targetVal),
   IN: (fieldVal: any, targetVal: any) =>
     Array.isArray(targetVal) && targetVal.includes(fieldVal),
+  IS_ANY_OF: (fieldVal: any, targetVal: any) => {
+    const list = Array.isArray(targetVal)
+      ? targetVal
+      : String(targetVal ?? '')
+          .split(',')
+          .map((v) => v.trim())
+    return list
+      .map((v) => String(v).toLowerCase())
+      .includes(String(fieldVal ?? '').toLowerCase())
+  },
   IS_EMPTY: (fieldVal: any) =>
     fieldVal === undefined ||
     fieldVal === null ||
     fieldVal === '' ||
     (Array.isArray(fieldVal) && fieldVal.length === 0),
+  IS_NOT_ANY_OF: (fieldVal: any, targetVal: any) =>
+    !OPERATORS.IS_ANY_OF(fieldVal, targetVal),
   IS_NOT_EMPTY: (fieldVal: any) => !OPERATORS.IS_EMPTY(fieldVal),
   LESS_THAN: (fieldVal: any, targetVal: any) =>
     Number(fieldVal) < Number(targetVal),
   NOT_CONTAINS: (fieldVal: any, targetVal: any) =>
     !OPERATORS.CONTAINS(fieldVal, targetVal),
+  NOT_ENDS_WITH: (fieldVal: any, targetVal: any) =>
+    !OPERATORS.ENDS_WITH(fieldVal, targetVal),
   NOT_EQUALS: (fieldVal: any, targetVal: any) =>
     !OPERATORS.EQUALS(fieldVal, targetVal),
+  NOT_STARTS_WITH: (fieldVal: any, targetVal: any) =>
+    !OPERATORS.STARTS_WITH(fieldVal, targetVal),
+  STARTS_WITH: (fieldVal: any, targetVal: any) =>
+    String(fieldVal ?? '')
+      .toLowerCase()
+      .startsWith(String(targetVal ?? '').toLowerCase()),
 }
 
 export class FormRuleEngine {
