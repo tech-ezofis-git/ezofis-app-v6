@@ -364,7 +364,7 @@ const WorkflowFormRenderer = ({
               )
             : cn(
                 'w-full max-w-full min-w-0 overflow-x-hidden',
-                presentation === 'extracted' ? 'px-4 py-4' : 'px-6 py-6',
+                presentation === 'extracted' ? 'px-4 pt-2 pb-4' : 'px-4 pt-3 pb-6',
               )
         }
       >
@@ -403,7 +403,7 @@ const WorkflowFormRenderer = ({
       className={
         disableOwnScroll
           ? 'w-full max-w-full min-w-0'
-          : 'w-full max-w-full min-w-0 overflow-x-hidden px-6 py-6'
+          : 'w-full max-w-full min-w-0 overflow-x-hidden px-4 pt-3 pb-6'
       }
     >
       <AnimateFadeIn delay={0.1}>
@@ -415,9 +415,9 @@ const WorkflowFormRenderer = ({
           classNames={{
             chevron: 'text-gray-10',
             content: 'p-0',
-            control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-            item: 'mb-3 min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
-            label: 'text-14 font-bold tracking-tight text-gray-13',
+            control: 'rounded-xl px-4 !py-1.5 transition-colors hover:bg-gray-1',
+            item: '!mt-0 !mb-2.5 min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            label: '!py-0 !my-0 text-14 font-bold tracking-tight text-gray-13',
             panel: 'min-w-0 overflow-hidden px-6 pt-2 pb-6',
           }}
           defaultValue={
@@ -467,7 +467,7 @@ const WorkflowFormRenderer = ({
                 <Accordion.Control>
                   <div className='flex items-center justify-between gap-3'>
                     <div className='flex items-center gap-3'>
-                      <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
+                      <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
                         <Icon
                           className='size-4 text-[var(--primary-9)]'
                           name='tabler:forms'

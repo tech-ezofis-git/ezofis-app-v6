@@ -994,7 +994,7 @@ const QuoteAgentResultView = ({
           <span
             className={cn(
               'block w-full text-right tabular-nums',
-              !canEdit && 'pr-7',
+              !canEdit && 'pr-5',
             )}
           >
             {display}
