@@ -3557,7 +3557,7 @@ export default function Upload({
     const targets = selectedVisibleEntries.filter((entry) =>
       isDraftReadyForExport(entry, repositoryFields),
     )
-    if (targets.length < 2) return
+    if (!targets.length) return
 
     setIsBulkExporting(true)
     try {

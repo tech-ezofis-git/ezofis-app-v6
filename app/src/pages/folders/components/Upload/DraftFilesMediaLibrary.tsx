@@ -10,6 +10,7 @@ import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import cn from '@/utils/cn'
 import PdfThumbnail from './PdfThumbnail'
+import WordThumbnail from './WordThumbnail'
 import type { QueuedUploadFile } from './uploadQueueTypes'
 import { formatCreatedAt } from './UploadQueueFileCard'
 
@@ -37,6 +38,8 @@ const isImageFile = (fileName: string) =>
   /\.(bmp|jpeg|jpg|png|svg|tif|tiff|webp)$/i.test(fileName)
 
 const isPdfFile = (fileName: string) => /\.pdf$/i.test(fileName)
+
+const isWordFile = (fileName: string) => /\.docx$/i.test(fileName)
 
 const FileTypeIcon = ({ fileName }: { fileName: string }) => {
   const pdf = isPdfFile(fileName)
@@ -140,7 +143,7 @@ export default function DraftFilesMediaLibrary({
       </span>
       {selectedCount > 0 ? (
         <div className='ml-1 flex items-center gap-2'>
-          {exportableSelectedCount > 1 ? (
+          {exportableSelectedCount === selectedCount ? (
             <BaseButton
               color='primary'
               disabled={isBulkExporting || isBulkDeleting}
@@ -236,6 +239,9 @@ export default function DraftFilesMediaLibrary({
               const showPdfThumb = Boolean(
                 fileUrl && isPdfFile(entry.fileName) && !previewFailed,
               )
+              const showWordThumb = Boolean(
+                fileUrl && isWordFile(entry.fileName) && !previewFailed,
+              )
               const canSelect =
                 entry.status !== 'indexing' && entry.status !== 'indexed'
               const isUploadInProgress =
@@ -254,10 +260,10 @@ export default function DraftFilesMediaLibrary({
                   role='button'
                   tabIndex={0}
                   className={cn(
-                    'group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-surface text-left transition-[border-color,box-shadow] duration-150',
+                    'group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-surface text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]',
                     selected
-                      ? 'border-[var(--primary-9)] shadow-[0_4px_16px_color-mix(in_srgb,var(--primary-9)_35%,transparent)]'
-                      : 'border-gray-3 hover:border-gray-5',
+                      ? 'border-[var(--primary-9)] shadow-[0_4px_16px_color-mix(in_srgb,var(--primary-9)_35%,transparent)] hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--primary-9)_32%,transparent)]'
+                      : 'border-gray-3 shadow-sm hover:border-gray-5 hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--gray-12)_16%,transparent)]',
                   )}
                   onClick={() => {
                     if (entry.status !== 'indexing') onOpen(entry.id)
@@ -317,6 +323,7 @@ export default function DraftFilesMediaLibrary({
                   </div>
 
                   <div className='relative aspect-square w-full overflow-hidden bg-gray-2'>
+                    <div className='h-full w-full origin-center transition-transform duration-300 ease-out group-hover:scale-105'>
                     {showImage ? (
                       <img
                         alt={entry.fileName}
@@ -330,9 +337,16 @@ export default function DraftFilesMediaLibrary({
                         fileUrl={fileUrl}
                         fallback={fileTypeFallback}
                       />
+                    ) : showWordThumb && fileUrl ? (
+                      <WordThumbnail
+                        fileName={entry.fileName}
+                        fileUrl={fileUrl}
+                        fallback={fileTypeFallback}
+                      />
                     ) : (
                       fileTypeFallback
                     )}
+                    </div>
                   </div>
 
                   <div className='border-t border-gray-3 px-3 py-2.5'>
