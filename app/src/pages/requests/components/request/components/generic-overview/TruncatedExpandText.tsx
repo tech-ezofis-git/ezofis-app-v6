@@ -43,7 +43,7 @@ const TruncatedExpandText = ({
   value,
 }: TruncatedExpandTextProps) => {
   const Tag = as
-  const textRef = useRef<HTMLElement>(null)
+  const textRef = useRef<any>(null)
   const [overflowing, setOverflowing] = useState(false)
   const fullValue = String(value ?? '').trim() || 'NA'
 
