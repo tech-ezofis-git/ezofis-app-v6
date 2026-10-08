@@ -4153,7 +4153,7 @@ const QuestionSettings = ({
             </div>
 
             {activeQuestion.settings.specific.isSearchField === 'YES' && (
-              <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-4 rounded-lg border p-3.5'>
+              <div className='space-y-4 rounded-lg border border-border-default bg-surface-muted/40 p-3.5'>
                 <div>
                   <label className='mb-1.5 block text-xs font-medium text-gray-11'>
                     Same Form
@@ -4273,7 +4273,7 @@ const QuestionSettings = ({
                       />
                     </div>
 
-                    <div className='space-y-2.5 border-t border-gray-1 pt-3'>
+                    <div className='space-y-2.5 border-t border-border-default pt-3'>
                       <div className='flex items-center justify-between'>
                         <label className='block text-xs font-bold text-gray-11'>
                           Form Fields Sync *
@@ -4307,92 +4307,109 @@ const QuestionSettings = ({
                           .masterFormSyncSettings || []
                       ).map((row: any, rIdx: number) => (
                         <div
-                          className='flex items-center gap-2'
+                          className='relative rounded-lg border border-border-default bg-surface p-3 space-y-2.5 shadow-2xs'
                           key={row.id || rIdx}
                         >
-                          <div className='flex-1'>
-                            <InputSelect
-                              placeholder='Form Field'
-                              options={allQuestions
-                                .filter(
-                                  (q) =>
-                                    q.id !== activeQuestion.id &&
-                                    ![
-                                      'DIVIDER',
-                                      'HEADING',
-                                      'LABEL',
-                                    ].includes(q.type),
-                                )
-                                .map((q) => ({
-                                  id: q.id,
-                                  name: q.label || 'Untitled',
-                                }))}
-                              value={
-                                allQuestions
-                                  .filter((q) => q.id !== activeQuestion.id)
+                          <div className='flex items-center justify-between border-b border-border-default/60 pb-1.5'>
+                            <span className='text-[11px] font-semibold text-gray-11'>
+                              Sync Field #{rIdx + 1}
+                            </span>
+                            <IconButton
+                              color='red'
+                              icon='lucide:trash-2'
+                              size='xs'
+                              variant='ghost'
+                              title='Delete sync mapping'
+                              onClick={() => {
+                                const current = (
+                                  activeQuestion.settings.specific
+                                    .masterFormSyncSettings || []
+                                ).filter((_: any, idx: number) => idx !== rIdx)
+                                updateNested('specific', {
+                                  masterFormSyncSettings: current,
+                                })
+                              }}
+                            />
+                          </div>
+
+                          <div className='space-y-2'>
+                            <div>
+                              <label className='mb-1 block text-[11px] font-medium text-gray-11'>
+                                Current Form Field
+                              </label>
+                              <InputSelect
+                                placeholder='Select Form Field'
+                                options={allQuestions
+                                  .filter(
+                                    (q) =>
+                                      q.id !== activeQuestion.id &&
+                                      ![
+                                        'DIVIDER',
+                                        'HEADING',
+                                        'LABEL',
+                                      ].includes(q.type),
+                                  )
                                   .map((q) => ({
                                     id: q.id,
                                     name: q.label || 'Untitled',
-                                  }))
-                                  .find((q) => q.id === row.formField) || null
-                              }
-                              onChange={(val) => {
-                                const current = [
-                                  ...(activeQuestion.settings.specific
-                                    .masterFormSyncSettings || []),
-                                ]
-                                current[rIdx] = {
-                                  ...current[rIdx],
-                                  formField: val?.id ? String(val.id) : '',
+                                  }))}
+                                value={
+                                  allQuestions
+                                    .filter((q) => q.id !== activeQuestion.id)
+                                    .map((q) => ({
+                                      id: q.id,
+                                      name: q.label || 'Untitled',
+                                    }))
+                                    .find((q) => q.id === row.formField) || null
                                 }
-                                updateNested('specific', {
-                                  masterFormSyncSettings: current,
-                                })
-                              }}
-                            />
-                          </div>
-                          <span className='text-xs font-bold text-gray-5'>
-                            &rarr;
-                          </span>
-                          <div className='flex-1'>
-                            <InputSelect
-                              placeholder='Master Field'
-                              options={searchMasterFields}
-                              value={
-                                searchMasterFields.find(
-                                  (col: any) => col.id === row.masterField,
-                                ) || null
-                              }
-                              onChange={(val) => {
-                                const current = [
-                                  ...(activeQuestion.settings.specific
-                                    .masterFormSyncSettings || []),
-                                ]
-                                current[rIdx] = {
-                                  ...current[rIdx],
-                                  masterField: val?.id ? String(val.id) : '',
+                                onChange={(val) => {
+                                  const current = [
+                                    ...(activeQuestion.settings.specific
+                                      .masterFormSyncSettings || []),
+                                  ]
+                                  current[rIdx] = {
+                                    ...current[rIdx],
+                                    formField: val?.id ? String(val.id) : '',
+                                  }
+                                  updateNested('specific', {
+                                    masterFormSyncSettings: current,
+                                  })
+                                }}
+                              />
+                            </div>
+
+                            <div className='flex items-center gap-1.5 py-0.5 text-accent-primary'>
+                              <Icon className='size-3.5 shrink-0' name='lucide:arrow-down' />
+                              <span className='text-[10px] font-medium text-gray-10'>
+                                Populates from Master Field
+                              </span>
+                            </div>
+
+                            <div>
+                              <InputSelect
+                                placeholder='Select Master Field'
+                                options={searchMasterFields}
+                                value={
+                                  searchMasterFields.find(
+                                    (col: any) => col.id === row.masterField,
+                                  ) || null
                                 }
-                                updateNested('specific', {
-                                  masterFormSyncSettings: current,
-                                })
-                              }}
-                            />
+                                onChange={(val) => {
+                                  const current = [
+                                    ...(activeQuestion.settings.specific
+                                      .masterFormSyncSettings || []),
+                                  ]
+                                  current[rIdx] = {
+                                    ...current[rIdx],
+                                    masterField: val?.id ? String(val.id) : '',
+                                  }
+                                  updateNested('specific', {
+                                    masterFormSyncSettings: current,
+                                  })
+                                }}
+                              />
+                            </div>
                           </div>
-                          <IconButton
-                            color='red'
-                            icon='lucide:trash-2'
-                            size='xs'
-                            variant='ghost'
-                            onClick={() => {
-                              const current = (
-                                activeQuestion.settings.specific
-                                  .masterFormSyncSettings || []
-                              ).filter((_: any, idx: number) => idx !== rIdx)
-                              updateNested('specific', {
-                                masterFormSyncSettings: current,
-                              })
-                            }}
-                          />
                         </div>
                       ))}
                     </div>
