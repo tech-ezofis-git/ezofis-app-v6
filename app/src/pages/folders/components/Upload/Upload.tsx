@@ -19,6 +19,7 @@ import {
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  updateStageFileFields,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
 import BaseButton from '@/components/base/button/Button'
@@ -1273,6 +1274,9 @@ export default function Upload({
     fingerprint: string
   } | null>(null)
   const listExportIdsRef = useRef<Set<string>>(new Set())
+  const uploadAbortControllersRef = useRef<Map<string, AbortController>>(
+    new Map(),
+  )
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
@@ -2041,102 +2045,129 @@ export default function Upload({
 
       if (filesToStage.length === 1) {
         const singleEntry = filesToStage[0]
-        const { data, error } = await uploadForOcr(
-          activeRepositoryId,
-          singleEntry.file,
-          ocrFields,
-        )
+        const controller = new AbortController()
+        uploadAbortControllersRef.current.set(singleEntry.id, controller)
 
-        if (error || !data) {
-          updateEntry(singleEntry.id, {
-            errorMessage: String(error || 'Upload failed'),
-            status: 'error',
-          })
-          showToast({
-            message: t`Failed to stage file for upload.`,
-            variant: 'error',
-          })
-          return
-        }
+        try {
+          const { data, error } = await uploadForOcr(
+            activeRepositoryId,
+            singleEntry.file,
+            ocrFields,
+            controller.signal,
+          )
 
-        const ocrExtractedValues: Record<string, string> = {}
-        const fieldValues: Record<string, string> = {}
-        if (data.ocrFieldList && Array.isArray(data.ocrFieldList)) {
-          data.ocrFieldList.forEach((field: OcrFieldResult) => {
-            const matchedRepoField = repositoryFields.find(
-              (f) =>
-                f.name === field.name ||
-                f.sqlColumnName === field.name ||
-                f.name?.toLowerCase() === field.name?.toLowerCase(),
-            )
-            if (matchedRepoField) {
-              const key = getFieldKey(matchedRepoField)
-              const nextValue = isBlankFieldValue(field.value)
-                ? ''
-                : String(field.value ?? '')
-              ocrExtractedValues[key] = nextValue
-              fieldValues[key] = nextValue
+          if (controller.signal.aborted) {
+            uploadAbortControllersRef.current.delete(singleEntry.id)
+            if (data?.fileId) {
+              void deleteStagedFiles({
+                fileIds: [data.fileId],
+                repositoryId: activeRepositoryId,
+              })
             }
+            return
+          }
+
+          if (error || !data) {
+            console.warn(
+              '[uploadForOcr] OCR extraction failed or returned empty data, proceeding with uploadWithOcr to obtain fileId:',
+              error || 'No data',
+            )
+          }
+
+          const ocrExtractedValues: Record<string, string> = {}
+          const fieldValues: Record<string, string> = {}
+          if (data?.ocrFieldList && Array.isArray(data.ocrFieldList)) {
+            data.ocrFieldList.forEach((field: OcrFieldResult) => {
+              const matchedRepoField = repositoryFields.find(
+                (f) =>
+                  f.name === field.name ||
+                  f.sqlColumnName === field.name ||
+                  f.name?.toLowerCase() === field.name?.toLowerCase(),
+              )
+              if (matchedRepoField) {
+                const key = getFieldKey(matchedRepoField)
+                const nextValue = isBlankFieldValue(field.value)
+                  ? ''
+                  : String(field.value ?? '')
+                ocrExtractedValues[key] = nextValue
+                fieldValues[key] = nextValue
+              }
+            })
+          }
+
+          // Stage the file using uploadWithOcr carrying forward any extracted OCR data,
+          // or the raw field hints if OCR extraction was empty / failed.
+          const { data: stageData, error: stageError } = await uploadWithOcr({
+            fields: ocrFields,
+            file: singleEntry.file,
+            filename: singleEntry.file.name,
+            ocrFieldList: data?.ocrFieldList,
+            ocrJson:
+              typeof data?.ocrJson === 'string'
+                ? data.ocrJson
+                : data?.ocrJson
+                  ? JSON.stringify(data.ocrJson || {})
+                  : undefined,
+            ocrText: data?.ocrText || '',
+            repositoryId: activeRepositoryId,
+            signal: controller.signal,
           })
-        }
 
-        const fieldStatuses = mapOcrResponseToFieldStatuses(
-          data,
-          repositoryFields,
-        )
+          if (controller.signal.aborted) {
+            uploadAbortControllersRef.current.delete(singleEntry.id)
+            const orphanStageId = stageData?.fileId || data?.fileId || data?.id
+            if (orphanStageId) {
+              void deleteStagedFiles({
+                fileIds: [orphanStageId],
+                repositoryId: activeRepositoryId,
+              })
+            }
+            return
+          }
 
-        updateEntry(singleEntry.id, {
-          backendStatus: 'OCR',
-          errorMessage: undefined,
-          fieldStatuses,
-          fieldValues,
-          masterSyncedValues: fieldValues,
-          ocrExtractedValues,
-          ocrStatus: 'complete',
-          rawOcrJson: data.ocrJson || data.ocrResult,
-          rawOcrText: data.ocrText || '',
-          stageFileId: data.fileId || data.id,
-          status: 'ready',
-        })
-        lastSavedValuesRef.current.set(
-          singleEntry.id,
-          JSON.stringify(fieldValues),
-        )
-        if (!options?.openDraftsOnSuccess) {
-          setOpenFileId(singleEntry.id)
-        }
+          const effectiveStageFileId =
+            stageData?.fileId || data?.fileId || data?.id
 
-        // Stage the file using uploadWithOcr carrying forward the extracted OCR data
-        const { data: stageData, error: stageError } = await uploadWithOcr({
-          file: singleEntry.file,
-          filename: singleEntry.file.name,
-          ocrFieldList: data.ocrFieldList,
-          ocrJson:
-            typeof data.ocrJson === 'string'
-              ? data.ocrJson
-              : JSON.stringify(data.ocrJson || {}),
-          ocrText: data.ocrText || '',
-          repositoryId: activeRepositoryId,
-        })
+          if (stageError || !effectiveStageFileId) {
+            console.warn('[uploadWithOcr] Staging failed:', stageError)
+            updateEntry(singleEntry.id, {
+              errorMessage: String(stageError || error || 'Upload failed'),
+              status: 'error',
+            })
+            showToast({
+              message: t`Failed to stage file for upload.`,
+              variant: 'error',
+            })
+            return
+          }
 
-        const stagedEntry: QueuedUploadFile = {
-          ...singleEntry,
-          backendStatus: 'OCR',
-          errorMessage: undefined,
-          fieldStatuses,
-          fieldValues,
-          masterSyncedValues: fieldValues,
-          ocrExtractedValues,
-          ocrStatus: 'complete',
-          rawOcrJson: data.ocrJson || data.ocrResult,
-          rawOcrText: data.ocrText || '',
-          stageFileId: stageData?.fileId || data.fileId || data.id,
-          status: 'ready',
-        }
+          const stagedEntry: QueuedUploadFile = {
+            ...singleEntry,
+            backendStatus: 'OCR',
+            errorMessage: undefined,
+            fieldValues,
+            masterSyncedValues: fieldValues,
+            ocrExtractedValues,
+            ocrStatus: error || !data ? 'idle' : 'complete',
+            rawOcrJson: data?.ocrJson || data?.ocrResult || null,
+            rawOcrText: data?.ocrText || '',
+            stageFileId: effectiveStageFileId,
+            status: 'ready',
+          }
 
-        if (stageError || !stageData?.fileId) {
-          console.warn('[uploadWithOcr] Staging warning:', stageError)
-          if (options?.openDraftsOnSuccess && stagedEntry.stageFileId) {
+          updateEntry(singleEntry.id, stagedEntry)
+          lastSavedValuesRef.current.set(
+            singleEntry.id,
+            JSON.stringify(fieldValues),
+          )
+
+          if (!options?.openDraftsOnSuccess) {
+            setOpenFileId(singleEntry.id)
+          } else {
+            showToast({
+              message: t`Files uploaded successfully.`,
+              variant: 'success',
+            })
             if (onSuccess) await onSuccess()
             await openDraftFilesView({
               preferredLocal: [stagedEntry],
@@ -2144,24 +2175,9 @@ export default function Upload({
             })
           }
           return
+        } finally {
+          uploadAbortControllersRef.current.delete(singleEntry.id)
         }
-
-        updateEntry(singleEntry.id, {
-          stageFileId: stageData.fileId,
-        })
-
-        if (options?.openDraftsOnSuccess) {
-          showToast({
-            message: t`Files uploaded successfully.`,
-            variant: 'success',
-          })
-          if (onSuccess) await onSuccess()
-          await openDraftFilesView({
-            preferredLocal: [{ ...stagedEntry, stageFileId: stageData.fileId }],
-            tab: 'uploading',
-          })
-        }
-        return
       }
 
       const { data, error } = await bulkUpload({
@@ -2384,6 +2400,13 @@ export default function Upload({
   const handleDeleteStageFile = async (id: string) => {
     const entry = queue.find((item) => item.id === id)
     if (!entry || entry.status === 'indexing') return
+
+    // Immediately abort any active in-flight upload request for this file
+    const inFlightController = uploadAbortControllersRef.current.get(id)
+    if (inFlightController) {
+      inFlightController.abort()
+      uploadAbortControllersRef.current.delete(id)
+    }
 
     setIsDeletingStageFile(true)
     try {
@@ -2712,8 +2735,8 @@ export default function Upload({
     status: 'Indexing',
   })
 
-  // Auto-save to /uploadAndIndex/index/{id} is disabled for now per user instruction
-  const ENABLE_INDEXING_AUTOSAVE = false
+  // Auto-save to /uploadAndIndex/index/{id}/fields 3 seconds after user stops typing
+  const ENABLE_INDEXING_AUTOSAVE = true
 
   const [autoSaveStatus, setAutoSaveStatus] = useState<
     'idle' | 'saving' | 'saved' | 'error'
@@ -2751,10 +2774,10 @@ export default function Upload({
       try {
         setAutoSaveStatus('saving')
         const payload = buildIndexPayload(entry)
-        const { error } = await indexStageFile(stageId, payload)
+        const { error } = await updateStageFileFields(stageId, payload)
 
         if (error) {
-          console.warn('[AutoSave] Error saving stage file:', error)
+          console.warn('[AutoSave] Error auto-saving stage file fields:', error)
           setAutoSaveStatus('error')
         } else {
           lastSavedValuesRef.current.set(entry.id, currentSerialized)
@@ -2765,11 +2788,11 @@ export default function Upload({
           }, 3000)
         }
       } catch (err) {
-        console.warn('[AutoSave] Exception saving stage file:', err)
+        console.warn('[AutoSave] Exception auto-saving stage file fields:', err)
         setAutoSaveStatus('error')
       }
     },
-    800,
+    3000,
   )
 
   useEffect(() => {
@@ -4236,7 +4259,31 @@ export default function Upload({
                       </button>
                     </Tooltip>
                     <div>
-                      <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
+                      <div className='flex items-center gap-2'>
+                        <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
+                        {ENABLE_INDEXING_AUTOSAVE &&
+                          (autoSaveStatus === 'saving' ? (
+                            <span className='inline-flex animate-pulse items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11'>
+                              <Icon className='size-3 animate-spin text-primary-9' name='tabler:loader-2' />
+                              <span>{t`Saving...`}</span>
+                            </span>
+                          ) : autoSaveStatus === 'saved' ? (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-green-6 bg-green-2 px-2.5 py-0.5 text-[11px] font-medium text-green-11'>
+                              <Icon className='size-3 text-green-9' name='lucide:check' />
+                              <span>{t`Saved`}</span>
+                            </span>
+                          ) : autoSaveStatus === 'error' ? (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-red-6 bg-red-2 px-2.5 py-0.5 text-[11px] font-medium text-red-11'>
+                              <Icon className='size-3 text-red-9' name='lucide:alert-circle' />
+                              <span>{t`Save failed`}</span>
+                            </span>
+                          ) : (
+                            <span className='inline-flex items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11 transition-all'>
+                              <Icon className='size-3 text-primary-9' name='lucide:cloud' />
+                              <span>{t`Auto-save`}</span>
+                            </span>
+                          ))}
+                      </div>
                       <p className='text-xs font-medium text-[var(--gray-9)]'>
                         {isAnalyzing
                           ? t`Extracting fields...`
@@ -4246,32 +4293,6 @@ export default function Upload({
                   </div>
 
                   <div className='flex items-center gap-3'>
-                    {ENABLE_INDEXING_AUTOSAVE &&
-                      autoSaveStatus === 'saving' && (
-                        <span className='inline-flex animate-pulse items-center gap-1.5 text-xs text-[var(--primary-10)]'>
-                          <Icon
-                            className='size-3.5 animate-spin'
-                            name='tabler:loader-2'
-                          />
-                          <span>{t`Saving...`}</span>
-                        </span>
-                      )}
-                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'saved' && (
-                      <span className='inline-flex items-center gap-1 text-xs text-[var(--green-10)]'>
-                        <Icon className='size-3.5' name='lucide:check' />
-                        <span>{t`Saved to stage`}</span>
-                      </span>
-                    )}
-                    {ENABLE_INDEXING_AUTOSAVE && autoSaveStatus === 'error' && (
-                      <span
-                        className='inline-flex items-center gap-1 text-xs text-[var(--red-10)]'
-                        title={t`Failed to auto-save to stage table`}
-                      >
-                        <Icon className='size-3.5' name='lucide:alert-circle' />
-                        <span>{t`Save failed`}</span>
-                      </span>
-                    )}
-
                     {!isExporting ? (
                       <Tooltip content={t`Delete staged file`} position='top'>
                         <button
