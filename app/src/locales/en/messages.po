@@ -148,7 +148,7 @@ msgstr "{0} of {1} matched"
 
 #. placeholder {0}: permissions.filter((p) => p.enabled).length
 #. placeholder {1}: permissions.length
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:796
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:917
 msgid "{0} of {1} permissions enabled"
 msgstr "{0} of {1} permissions enabled"
 
@@ -188,7 +188,7 @@ msgstr ""
 #~ msgstr "{0} selected. How should documents be organized? Choose Recommend fields to generate a starter set."
 
 #. placeholder {0}: entries.length
-#: src/pages/folders/components/Upload/Upload.tsx:3570
+#: src/pages/folders/components/Upload/Upload.tsx:3629
 msgid "{0} staged files deleted."
 msgstr "{0} staged files deleted."
 
@@ -218,7 +218,7 @@ msgid "{0} was {1} days ago — past the {2}-day threshold"
 msgstr "{0} was {1} days ago — past the {2}-day threshold"
 
 #. placeholder {0}: fileName.trim()
-#: src/pages/folders/components/DocumentDetailsView.tsx:1857
+#: src/pages/folders/components/DocumentDetailsView.tsx:1841
 msgid "{0} was deleted. Kindly try a new file."
 msgstr "{0} was deleted. Kindly try a new file."
 
@@ -289,13 +289,13 @@ msgstr "{filesCount} documents in queue"
 msgid "{filesPct}% file capacity"
 msgstr "{filesPct}% file capacity"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3588
+#: src/pages/folders/components/DocumentDetailsView.tsx:3458
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "{fileType} Viewer"
 
 #. placeholder {0}: fields.length
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:82
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:86
 msgid "{filledCount} of {0} fields ready"
 msgstr "{filledCount} of {0} fields ready"
 
@@ -305,7 +305,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} of {totalCount} fields ready"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:4293
+#: src/pages/folders/components/Upload/Upload.tsx:4395
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} of {0} fields ready"
 
@@ -364,15 +364,15 @@ msgstr "{progress}% Complete"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} Required Mapped"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1464
+#: src/pages/folders/components/DocumentDetailsView.tsx:1448
 msgid "{savedFileName} created as version {savedVersion}."
 msgstr "{savedFileName} created as version {savedVersion}."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1465
+#: src/pages/folders/components/DocumentDetailsView.tsx:1449
 msgid "{savedFileName} updated successfully."
 msgstr "{savedFileName} updated successfully."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:142
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:206
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} selected"
 
@@ -389,7 +389,7 @@ msgstr "{selectedCount} selected"
 msgid "{storageUsedGb} GB used"
 msgstr "{storageUsedGb} GB used"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3605
+#: src/pages/folders/components/Upload/Upload.tsx:3664
 msgid "{successCount} files exported successfully."
 msgstr "{successCount} files exported successfully."
 
@@ -453,8 +453,8 @@ msgstr "+ Add condition"
 msgid "+{0} more"
 msgstr "+{0} more"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:432
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:586
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:441
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:595
 msgid "+{extraCount} more"
 msgstr "+{extraCount} more"
 
@@ -521,7 +521,7 @@ msgstr "1. Received"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1168
+#: src/pages/folders/components/Upload/Upload.tsx:1175
 msgid "100% Accuracy"
 msgstr "100% Accuracy"
 
@@ -623,6 +623,10 @@ msgstr "Accepted formats: CSV, XLSX"
 msgid "Access"
 msgstr "Access"
 
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:163
+msgid "Access & Document Actions"
+msgstr "Access & Document Actions"
+
 #: src/pages/settings/SettingsMain.tsx:426
 msgid "Access Control"
 msgstr "Access Control"
@@ -633,7 +637,7 @@ msgid "Access Pages"
 msgstr "Access Pages"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:584
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:596
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:672
 msgid "Access Restricted"
 msgstr "Access Restricted"
 
@@ -765,7 +769,7 @@ msgstr "Add"
 msgid "Add \"{query}\""
 msgstr "Add \"{query}\""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3092
+#: src/pages/folders/components/DocumentDetailsView.tsx:2962
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:356
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:104
 msgid "Add a comment..."
@@ -837,7 +841,7 @@ msgid "Add custom option"
 msgstr "Add custom option"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:900
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:889
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:898
 msgid "Add Document Rule"
 msgstr "Add Document Rule"
 
@@ -863,8 +867,8 @@ msgstr "Add every row from this file as new entries. Matching PO numbers may be 
 msgid "Add Field"
 msgstr ""
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:384
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:395
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:341
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:352
 msgid "Add field label"
 msgstr "Add field label"
 
@@ -872,7 +876,7 @@ msgstr "Add field label"
 #~ msgid "Add fields in the Fields step first"
 #~ msgstr "Add fields in the Fields step first"
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:343
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:300
 msgid "Add fields in the Fields step first, or type a label below."
 msgstr "Add fields in the Fields step first, or type a label below."
 
@@ -936,7 +940,7 @@ msgstr "Add New Item"
 #~ msgid "Add New Page"
 #~ msgstr "Add New Page"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:836
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:845
 msgid "Add Policy"
 msgstr "Add Policy"
 
@@ -1123,8 +1127,8 @@ msgid "AI Suggestions"
 msgstr "AI Suggestions"
 
 #: src/pages/folders/components/AiSummaryView.tsx:285
-#: src/pages/folders/components/DocumentDetailsView.tsx:2342
-#: src/pages/folders/components/DocumentDetailsView.tsx:2349
+#: src/pages/folders/components/DocumentDetailsView.tsx:2212
+#: src/pages/folders/components/DocumentDetailsView.tsx:2219
 #: src/pages/folders/components/DocumentsListView.tsx:1110
 #: src/pages/folders/components/FolderTable.tsx:1482
 msgid "AI Summary"
@@ -1192,9 +1196,9 @@ msgstr "Aligning CSV/XLSX headers with database mapping schema."
 #: src/pages/search/SearchPage.tsx:309
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:738
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:562
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:623
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:642
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:679
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:632
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:718
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:755
 msgid "All"
 msgstr "All"
 
@@ -1224,7 +1228,7 @@ msgstr "All conditions must match"
 msgid "All Files"
 msgstr "All Files"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4019
+#: src/pages/folders/components/Upload/Upload.tsx:4103
 msgid "All files indexed"
 msgstr "All files indexed"
 
@@ -1325,7 +1329,7 @@ msgstr "An error occurred during indexing."
 msgid "An error occurred: {0}"
 msgstr "An error occurred: {0}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1261
+#: src/pages/folders/components/Upload/Upload.tsx:1268
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:45
 msgid "Analysis"
 msgstr "Analysis"
@@ -1352,7 +1356,7 @@ msgstr "Analyzing context & keywords"
 #~ msgstr "Analyzing data structures for {repositoryName}..."
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:113
-#: src/pages/folders/components/Upload/Upload.tsx:4110
+#: src/pages/folders/components/Upload/Upload.tsx:4194
 msgid "Analyzing document..."
 msgstr "Analyzing document..."
 
@@ -1384,7 +1388,7 @@ msgstr ""
 msgid "Analyzing..."
 msgstr "Analyzing..."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:368
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:471
 msgid "Analyzing…"
 msgstr "Analyzing…"
 
@@ -1398,7 +1402,7 @@ msgstr "And"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:756
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:583
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:623
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:632
 msgid "Any"
 msgstr ""
 
@@ -1410,7 +1414,7 @@ msgstr "Any condition can match"
 msgid "Any file type"
 msgstr "Any file type"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1174
+#: src/pages/folders/components/Upload/Upload.tsx:1181
 msgid "Any Format"
 msgstr "Any Format"
 
@@ -1577,11 +1581,11 @@ msgstr "Are you sure you want to delete \"{0}\"? This action cannot be undone."
 #~ msgid "Are you sure you want to delete {selectedStagedCount} selected staged files?"
 #~ msgstr "Are you sure you want to delete {selectedStagedCount} selected staged files?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4476
+#: src/pages/folders/components/Upload/Upload.tsx:4660
 msgid "Are you sure you want to delete {selectedVisibleCount} selected staged files?"
 msgstr "Are you sure you want to delete {selectedVisibleCount} selected staged files?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4475
+#: src/pages/folders/components/Upload/Upload.tsx:4659
 msgid "Are you sure you want to delete 1 selected staged file?"
 msgstr "Are you sure you want to delete 1 selected staged file?"
 
@@ -1606,7 +1610,7 @@ msgstr "Are you sure you want to delete this portal? This action cannot be undon
 msgid "Are you sure you want to delete this role? This action cannot be undone."
 msgstr "Are you sure you want to delete this role? This action cannot be undone."
 
-#: src/pages/folders/components/Upload/Upload.tsx:4434
+#: src/pages/folders/components/Upload/Upload.tsx:4618
 msgid "Are you sure you want to delete this staged file?"
 msgstr "Are you sure you want to delete this staged file?"
 
@@ -1614,7 +1618,7 @@ msgstr "Are you sure you want to delete this staged file?"
 msgid "Are you sure you want to delete this user? This action cannot be undone."
 msgstr "Are you sure you want to delete this user? This action cannot be undone."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3556
+#: src/pages/folders/components/DocumentDetailsView.tsx:3426
 msgid "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 msgstr "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 
@@ -1623,11 +1627,11 @@ msgstr "Are you sure you want to exit signing mode? Any unsaved signature placem
 #~ msgid "Are you sure you want to export {selectedStagedCount} selected staged files?"
 #~ msgstr "Are you sure you want to export {selectedStagedCount} selected staged files?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4495
+#: src/pages/folders/components/Upload/Upload.tsx:4679
 msgid "Are you sure you want to export {selectedVisibleCount} selected staged files?"
 msgstr "Are you sure you want to export {selectedVisibleCount} selected staged files?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4494
+#: src/pages/folders/components/Upload/Upload.tsx:4678
 msgid "Are you sure you want to export 1 selected staged file?"
 msgstr "Are you sure you want to export 1 selected staged file?"
 
@@ -1668,12 +1672,12 @@ msgstr "Assign user access groups"
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Assign users to roles once users are available in the platform."
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:388
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:397
 msgid "Assigned Users & Groups"
 msgstr "Assigned Users & Groups"
 
 #. placeholder {0}: selectedPrincipals.length
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:867
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:977
 msgid "Assigned Users & Groups ({0})"
 msgstr "Assigned Users & Groups ({0})"
 
@@ -1769,7 +1773,7 @@ msgid "Authentication Mode"
 msgstr "Authentication Mode"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:525
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:557
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:633
 msgid "Authentication required. Please log in again."
 msgstr "Authentication required. Please log in again."
 
@@ -1795,8 +1799,8 @@ msgid "Auto-increment version number"
 msgstr "Auto-increment version number"
 
 #: src/pages/folders/components/Upload/Upload.tsx:4286
-msgid "Auto-save"
-msgstr "Auto-save"
+#~ msgid "Auto-save"
+#~ msgstr "Auto-save"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1116
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1993
@@ -1826,6 +1830,10 @@ msgstr "Automatic backups and versioning support"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:433
 msgid "Automatic file metadata sync"
 msgstr "Automatic file metadata sync"
+
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:270
+msgid "Automatically detects and hides personally identifiable information (PII) in the document to help protect sensitive data."
+msgstr "Automatically detects and hides personally identifiable information (PII) in the document to help protect sensitive data."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:519
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1000
@@ -1877,8 +1885,8 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/folders/components/AiSummaryView.tsx:242
 #: src/pages/folders/components/AiSummaryView.tsx:495
 #: src/pages/folders/components/CollaboraEditor.tsx:265
-#: src/pages/folders/components/DocumentDetailsView.tsx:1851
-#: src/pages/folders/components/DocumentDetailsView.tsx:2135
+#: src/pages/folders/components/DocumentDetailsView.tsx:1835
+#: src/pages/folders/components/DocumentDetailsView.tsx:2119
 #: src/pages/folders/components/DocumentSigningPage.tsx:2765
 #: src/pages/folders/components/DocumentSigningPage.tsx:2771
 #: src/pages/folders/components/EditMetadataView.tsx:395
@@ -1888,10 +1896,10 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/folders/components/StartWorkflowView.tsx:330
 #: src/pages/folders/components/StartWorkflowView.tsx:412
 #: src/pages/folders/components/StartWorkflowView.tsx:586
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:189
-#: src/pages/folders/components/Upload/Upload.tsx:3803
-#: src/pages/folders/components/Upload/Upload.tsx:3996
-#: src/pages/folders/components/Upload/Upload.tsx:4047
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:253
+#: src/pages/folders/components/Upload/Upload.tsx:3887
+#: src/pages/folders/components/Upload/Upload.tsx:4080
+#: src/pages/folders/components/Upload/Upload.tsx:4131
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:103
@@ -1912,8 +1920,8 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1209
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:824
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:864
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:929
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:977
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1039
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1087
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:212
 #: src/pages/settings/components/SettingsSetupHeader.tsx:53
@@ -1951,7 +1959,7 @@ msgstr "Back to Entries"
 msgid "Back to Explorer"
 msgstr "Back to Explorer"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4022
+#: src/pages/folders/components/Upload/Upload.tsx:4106
 msgid "Back to folder"
 msgstr "Back to folder"
 
@@ -2082,7 +2090,7 @@ msgid "Breadcrumb"
 msgstr "Breadcrumb"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:115
-#: src/pages/folders/components/Upload/Upload.tsx:3868
+#: src/pages/folders/components/Upload/Upload.tsx:3952
 #: src/pages/forms/components/GenericFormImportModal.tsx:441
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:322
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:1020
@@ -2257,16 +2265,16 @@ msgstr "Can View"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
-#: src/pages/folders/components/DocumentDetailsView.tsx:3554
+#: src/pages/folders/components/DocumentDetailsView.tsx:3424
 #: src/pages/folders/components/DocumentsListView.tsx:1146
 #: src/pages/folders/components/FolderTable.tsx:1607
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1038
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:111
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:169
-#: src/pages/folders/components/Upload/Upload.tsx:4432
-#: src/pages/folders/components/Upload/Upload.tsx:4447
-#: src/pages/folders/components/Upload/Upload.tsx:4467
-#: src/pages/folders/components/Upload/Upload.tsx:4486
+#: src/pages/folders/components/Upload/Upload.tsx:4616
+#: src/pages/folders/components/Upload/Upload.tsx:4631
+#: src/pages/folders/components/Upload/Upload.tsx:4651
+#: src/pages/folders/components/Upload/Upload.tsx:4670
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
 #: src/pages/forms/FormEntriesPage.tsx:883
 #: src/pages/forms/FormEntriesPage.tsx:2447
@@ -2427,11 +2435,11 @@ msgstr "Charts"
 msgid "Check Again"
 msgstr "Check Again"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:123
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:128
 msgid "Check In"
 msgstr "Check In"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:117
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:122
 msgid "Check Out"
 msgstr "Check Out"
 
@@ -2443,7 +2451,7 @@ msgstr "Checkbox/OMR"
 #~ msgid "Checking for duplicates..."
 #~ msgstr "Checking for duplicates..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3791
+#: src/pages/folders/components/Upload/Upload.tsx:3875
 msgid "Checking for previously staged files..."
 msgstr "Checking for previously staged files..."
 
@@ -2562,8 +2570,8 @@ msgid "Choose where to store your invoice documents. Data is securely encrypted 
 msgstr "Choose where to store your invoice documents. Data is securely encrypted and accessible 24/7."
 
 #: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:278
-msgid "Choose whether documents in this folder are scanned and redacted when opened."
-msgstr "Choose whether documents in this folder are scanned and redacted when opened."
+#~ msgid "Choose whether documents in this folder are scanned and redacted when opened."
+#~ msgstr "Choose whether documents in this folder are scanned and redacted when opened."
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:289
 msgid "Choose whether to build your report from a Workflow process or a Folder."
@@ -2812,7 +2820,7 @@ msgstr "Coming soon"
 msgid "Coming Soon"
 msgstr "Coming Soon"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1816
+#: src/pages/folders/components/DocumentDetailsView.tsx:1800
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:566
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:598
 #: src/pages/requests/components/request/components/Header.tsx:494
@@ -2841,7 +2849,7 @@ msgstr "Complete document match."
 msgid "Complete each stage, then continue"
 msgstr "Complete each stage, then continue"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:120
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:125
 msgid "Complete editing session"
 msgstr "Complete editing session"
 
@@ -2894,7 +2902,7 @@ msgstr "Computed Status"
 #~ msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:134
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:629
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:638
 msgid "Conditions"
 msgstr "Conditions"
 
@@ -2933,7 +2941,7 @@ msgstr "Configuration for “{0}” is ready. Review each step and continue thro
 msgid "Configuration Summary"
 msgstr "Configuration Summary"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:944
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1054
 msgid "Configure access policies and privileges for folder \"{folderName}\""
 msgstr "Configure access policies and privileges for folder \"{folderName}\""
 
@@ -2962,7 +2970,7 @@ msgstr "Configure ERP or system integrations later."
 msgid "Configure metadata-based document security rules for folder \"{folderName}\""
 msgstr "Configure metadata-based document security rules for folder \"{folderName}\""
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:714
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:790
 msgid "Configure permissions"
 msgstr "Configure permissions"
 
@@ -3122,7 +3130,7 @@ msgstr "Contains"
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:789
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1229
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:881
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1000
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1110
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:85
 #: src/pages/sign-in/components/SignInForm.tsx:1048
@@ -3152,6 +3160,14 @@ msgstr "Continue to Review"
 msgid "Continue with Demo Data"
 msgstr "Continue with Demo Data"
 
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:178
+msgid "Control access to sensitive information and privacy-related features."
+msgstr "Control access to sensitive information and privacy-related features."
+
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:166
+msgid "Control document modification, version handling, and workflow-related actions."
+msgstr "Control document modification, version handling, and workflow-related actions."
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:602
 msgid "Control document-level access by evaluating metadata fields."
 msgstr "Control document-level access by evaluating metadata fields."
@@ -3172,8 +3188,8 @@ msgstr "Copied to clipboard"
 #~ msgid "Copy"
 #~ msgstr "Copy"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4408
-#: src/pages/folders/components/Upload/Upload.tsx:4410
+#: src/pages/folders/components/Upload/Upload.tsx:4592
+#: src/pages/folders/components/Upload/Upload.tsx:4594
 msgid "Copy JSON"
 msgstr "Copy JSON"
 
@@ -3360,7 +3376,7 @@ msgstr "Create requisitions and vendor purchase orders from this request."
 msgid "Create Role"
 msgstr "Create Role"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:126
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:131
 msgid "Create signature request"
 msgstr ""
 
@@ -3772,16 +3788,16 @@ msgstr "Define Rule"
 #: src/pages/folders/components/FolderTable.tsx:1608
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:98
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:112
-#: src/pages/folders/components/Upload/Upload.tsx:4433
-#: src/pages/folders/components/Upload/Upload.tsx:4468
-#: src/pages/folders/components/Upload/Upload.tsx:4506
+#: src/pages/folders/components/Upload/Upload.tsx:4617
+#: src/pages/folders/components/Upload/Upload.tsx:4652
+#: src/pages/folders/components/Upload/Upload.tsx:4690
 #: src/pages/forms/FormsPage.tsx:294
 #: src/pages/reports/components/RowActionsMenu.tsx:40
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:499
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:681
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:99
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:508
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:690
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:98
 #: src/pages/settings/components/GroupManagement.tsx:507
 #: src/pages/settings/components/GroupManagement.tsx:575
 #: src/pages/settings/components/ManageUser.tsx:1299
@@ -3813,7 +3829,7 @@ msgstr "Delete column \"{col}\""
 msgid "Delete Document"
 msgstr "Delete Document"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:96
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:95
 msgid "Delete files or folders"
 msgstr "Delete files or folders"
 
@@ -3863,7 +3879,7 @@ msgstr "Delete Row"
 msgid "Delete Rule"
 msgstr "Delete Rule"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:161
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:225
 msgid "Delete selected"
 msgstr "Delete selected"
 
@@ -3883,16 +3899,16 @@ msgstr "Delete signature box"
 
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:96
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:116
-#: src/pages/folders/components/Upload/Upload.tsx:4300
-#: src/pages/folders/components/Upload/Upload.tsx:4302
+#: src/pages/folders/components/Upload/Upload.tsx:4415
+#: src/pages/folders/components/Upload/Upload.tsx:4417
 msgid "Delete staged file"
 msgstr "Delete staged file"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4437
+#: src/pages/folders/components/Upload/Upload.tsx:4621
 msgid "Delete Staged File"
 msgstr "Delete Staged File"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4471
+#: src/pages/folders/components/Upload/Upload.tsx:4655
 msgid "Delete staged files"
 msgstr "Delete staged files"
 
@@ -4062,7 +4078,7 @@ msgstr "Description pending"
 #~ msgid "Deselect all"
 #~ msgstr "Deselect all"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:805
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:808
 msgid "Deselect All"
 msgstr "Deselect All"
 
@@ -4222,7 +4238,6 @@ msgid "Document owners are notified beforehand."
 msgstr "Document owners are notified beforehand."
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:303
-#: src/pages/folders/components/Upload/Upload.tsx:4151
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:276
 msgid "Document Preview"
@@ -4247,15 +4262,15 @@ msgstr "Document Rule {0}"
 msgid "Document Rules"
 msgstr "Document Rules"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:58
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:61
 msgid "Document Security"
 msgstr "Document Security"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:374
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:383
 msgid "Document security rule deleted."
 msgstr "Document security rule deleted."
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:881
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:890
 msgid "Document Security Rules"
 msgstr "Document Security Rules"
 
@@ -4336,7 +4351,7 @@ msgstr "Don't have an account?"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1046
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:559
-#: src/pages/folders/components/Upload/Upload.tsx:1262
+#: src/pages/folders/components/Upload/Upload.tsx:1269
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1717
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2573
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:778
@@ -4360,20 +4375,20 @@ msgstr ""
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr "Double-payment prevention checks analyze historical invoices by combining:"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3270
-#: src/pages/folders/components/DocumentDetailsView.tsx:3274
+#: src/pages/folders/components/DocumentDetailsView.tsx:3140
+#: src/pages/folders/components/DocumentDetailsView.tsx:3144
 #: src/pages/folders/components/DocumentSigningPage.tsx:2725
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:876
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:87
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:86
 msgid "Download"
 msgstr "Download"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:84
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:83
 msgid "Download documents"
 msgstr "Download documents"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2315
-#: src/pages/folders/components/DocumentDetailsView.tsx:2319
+#: src/pages/folders/components/DocumentDetailsView.tsx:2185
+#: src/pages/folders/components/DocumentDetailsView.tsx:2189
 msgid "Download file"
 msgstr "Download file"
 
@@ -4399,7 +4414,7 @@ msgstr "Download Template"
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2315
+#: src/pages/folders/components/DocumentDetailsView.tsx:2185
 #: src/pages/forms/components/GenericFormImportModal.tsx:464
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:910
 msgid "Downloading..."
@@ -4425,9 +4440,9 @@ msgstr "Draft"
 #~ msgid "Draft · Last saved 2m ago"
 #~ msgstr "Draft · Last saved 2m ago"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3708
-#: src/pages/folders/components/Upload/Upload.tsx:3909
-#: src/pages/folders/components/Upload/Upload.tsx:4000
+#: src/pages/folders/components/Upload/Upload.tsx:3776
+#: src/pages/folders/components/Upload/Upload.tsx:3993
+#: src/pages/folders/components/Upload/Upload.tsx:4084
 msgid "Draft Files"
 msgstr "Draft Files"
 
@@ -4497,7 +4512,7 @@ msgstr "Drop multiple files to automatically classify document types and route t
 msgid "Drop your file here, or"
 msgstr "Drop your file here, or"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3867
+#: src/pages/folders/components/Upload/Upload.tsx:3951
 msgid "Drop your files here, or"
 msgstr "Drop your files here, or"
 
@@ -4689,8 +4704,8 @@ msgstr "Each batch needs manual confirmation before it runs."
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:785
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4192
 #: src/pages/settings/components/Folders/FolderRetention.tsx:190
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:492
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:674
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:501
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:683
 #: src/pages/settings/components/GroupManagement.tsx:500
 #: src/pages/settings/components/ManageUser.tsx:1292
 #: src/pages/settings/components/Menus.tsx:444
@@ -4713,7 +4728,7 @@ msgstr "Edit card"
 msgid "Edit column \"{col}\""
 msgstr "Edit column \"{col}\""
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:111
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:116
 msgid "Edit Document"
 msgstr "Edit Document"
 
@@ -4741,8 +4756,8 @@ msgstr "Edit Field"
 msgid "Edit Field Mappings"
 msgstr "Edit Field Mappings"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2277
-#: src/pages/folders/components/DocumentDetailsView.tsx:2279
+#: src/pages/folders/components/DocumentDetailsView.tsx:2147
+#: src/pages/folders/components/DocumentDetailsView.tsx:2149
 msgid "Edit file"
 msgstr "Edit file"
 
@@ -4750,8 +4765,8 @@ msgstr "Edit file"
 #~ msgid "Edit Folder"
 #~ msgstr "Edit Folder"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:610
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:939
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:686
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1049
 msgid "Edit Folder Security Policy"
 msgstr "Edit Folder Security Policy"
 
@@ -4787,7 +4802,7 @@ msgstr "Edit Menu Setup"
 #: src/pages/folders/components/DocumentsListView.tsx:1104
 #: src/pages/folders/components/EditMetadataView.tsx:402
 #: src/pages/folders/components/FolderTable.tsx:1476
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:105
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:110
 msgid "Edit Metadata"
 msgstr "Edit Metadata"
 
@@ -4827,7 +4842,11 @@ msgstr "Edit User"
 #~ msgid "Edit User Setup"
 #~ msgstr "Edit User Setup"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:599
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:175
+msgid "Editing & Workflow Actions"
+msgstr "Editing & Workflow Actions"
+
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:608
 msgid "Effect Action"
 msgstr "Effect Action"
 
@@ -4907,11 +4926,11 @@ msgstr "Empty form field"
 msgid "Empty Rows Skipped"
 msgstr "Empty Rows Skipped"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:717
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:793
 msgid "Enable or disable granular action privileges for selected users and groups."
 msgstr "Enable or disable granular action privileges for selected users and groups."
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:275
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:267
 msgid "Enable PII Redaction"
 msgstr "Enable PII Redaction"
 
@@ -4942,9 +4961,9 @@ msgstr "Ensure all files have target folders assigned."
 #~ msgstr "Ensure all files have target repositories assigned."
 
 #: src/pages/folders/components/EditMetadataView.tsx:367
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:114
-#: src/pages/folders/components/Upload/Upload.tsx:3338
-#: src/pages/folders/components/Upload/Upload.tsx:3357
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:133
+#: src/pages/folders/components/Upload/Upload.tsx:3390
+#: src/pages/folders/components/Upload/Upload.tsx:3409
 msgid "Enter {label}"
 msgstr "Enter {label}"
 
@@ -4999,8 +5018,8 @@ msgid "Enter options separated by newlines or commas."
 msgstr "Enter options separated by newlines or commas."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2214
-msgid "Enter password"
-msgstr "Enter password"
+#~ msgid "Enter password"
+#~ msgstr "Enter password"
 
 #: src/pages/settings/components/ManageUser.tsx:2338
 msgid "Enter phone number"
@@ -5058,8 +5077,8 @@ msgid "Enter your mobile number"
 msgstr "Enter your mobile number"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2217
-msgid "Enter your PII access password to view the original file."
-msgstr "Enter your PII access password to view the original file."
+#~ msgid "Enter your PII access password to view the original file."
+#~ msgstr "Enter your PII access password to view the original file."
 
 #: src/pages/portal/components/PortalLogin.tsx:83
 msgid "Enter your username"
@@ -5121,7 +5140,7 @@ msgstr "Error Severity"
 msgid "Error starting workflow"
 msgstr "Error starting workflow"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1446
+#: src/pages/folders/components/DocumentDetailsView.tsx:1430
 msgid "Error updating document: {detail}"
 msgstr "Error updating document: {detail}"
 
@@ -5129,7 +5148,7 @@ msgstr "Error updating document: {detail}"
 msgid "Error uploading file"
 msgstr "Error uploading file"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2907
+#: src/pages/folders/components/Upload/Upload.tsx:2961
 msgid "Error uploading file: {error}"
 msgstr "Error uploading file: {error}"
 
@@ -5175,7 +5194,7 @@ msgstr "Excel Fields"
 msgid "Excel Spreadsheet"
 msgstr "Excel Spreadsheet"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2944
+#: src/pages/folders/components/Upload/Upload.tsx:2998
 msgid "Exception uploading file: {detail}"
 msgstr "Exception uploading file: {detail}"
 
@@ -5198,10 +5217,10 @@ msgstr "existing PO records"
 msgid "Existing requests"
 msgstr "Existing requests"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2353
-#: src/pages/folders/components/DocumentDetailsView.tsx:2374
-#: src/pages/folders/components/DocumentDetailsView.tsx:3555
-#: src/pages/folders/components/DocumentDetailsView.tsx:3558
+#: src/pages/folders/components/DocumentDetailsView.tsx:2223
+#: src/pages/folders/components/DocumentDetailsView.tsx:2244
+#: src/pages/folders/components/DocumentDetailsView.tsx:3425
+#: src/pages/folders/components/DocumentDetailsView.tsx:3428
 msgid "Exit Signing"
 msgstr "Exit Signing"
 
@@ -5235,10 +5254,10 @@ msgstr "Explore, test, and debug API endpoints with live requests and sample res
 
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:156
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:170
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:89
-#: src/pages/folders/components/Upload/Upload.tsx:4326
-#: src/pages/folders/components/Upload/Upload.tsx:4448
-#: src/pages/folders/components/Upload/Upload.tsx:4487
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:107
+#: src/pages/folders/components/Upload/Upload.tsx:4441
+#: src/pages/folders/components/Upload/Upload.tsx:4632
+#: src/pages/folders/components/Upload/Upload.tsx:4671
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:2011
@@ -5253,7 +5272,7 @@ msgstr "Export {fileName} to the repository?"
 msgid "Export CSV"
 msgstr "Export CSV"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4452
+#: src/pages/folders/components/Upload/Upload.tsx:4636
 msgid "Export file"
 msgstr "Export file"
 
@@ -5261,7 +5280,7 @@ msgstr "Export file"
 msgid "Export PDF"
 msgstr "Export PDF"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:151
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:215
 msgid "Export selected"
 msgstr "Export selected"
 
@@ -5280,7 +5299,7 @@ msgstr "Export selected"
 msgid "Export staged file"
 msgstr "Export staged file"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4490
+#: src/pages/folders/components/Upload/Upload.tsx:4674
 msgid "Export staged files"
 msgstr "Export staged files"
 
@@ -5289,8 +5308,8 @@ msgid "Export to Excel"
 msgstr "Export to Excel"
 
 #: src/pages/folders/components/AiSummaryView.tsx:257
-#: src/pages/folders/components/Upload/Upload.tsx:4122
-#: src/pages/folders/components/Upload/Upload.tsx:4326
+#: src/pages/folders/components/Upload/Upload.tsx:4206
+#: src/pages/folders/components/Upload/Upload.tsx:4441
 msgid "Exporting..."
 msgstr "Exporting..."
 
@@ -5306,8 +5325,8 @@ msgstr "Extracted"
 msgid "EXTRACTED"
 msgstr "EXTRACTED"
 
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:80
-#: src/pages/folders/components/Upload/Upload.tsx:4266
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:84
+#: src/pages/folders/components/Upload/Upload.tsx:4373
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:548
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4411
 #: src/pages/requests/components/RequestSummary.tsx:194
@@ -5333,11 +5352,11 @@ msgstr "Extracting data from document..."
 msgid "Extracting data from the document…"
 msgstr "Extracting data from the document…"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4339
+#: src/pages/folders/components/Upload/Upload.tsx:4454
 msgid "Extracting fields from document..."
 msgstr "Extracting fields from document..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:4292
+#: src/pages/folders/components/Upload/Upload.tsx:4394
 msgid "Extracting fields..."
 msgstr "Extracting fields..."
 
@@ -5358,9 +5377,9 @@ msgstr "Extracting metadata, checking duplicates, validating compliance"
 msgid "Extracting textual metadata"
 msgstr "Extracting textual metadata"
 
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:113
-#: src/pages/folders/components/Upload/Upload.tsx:3338
-#: src/pages/folders/components/Upload/Upload.tsx:3357
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:132
+#: src/pages/folders/components/Upload/Upload.tsx:3390
+#: src/pages/folders/components/Upload/Upload.tsx:3409
 msgid "Extracting..."
 msgstr ""
 
@@ -5482,7 +5501,7 @@ msgstr "Failed to index document"
 msgid "Failed to initialize document preview"
 msgstr "Failed to initialize document preview"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2490
+#: src/pages/folders/components/DocumentDetailsView.tsx:2360
 #: src/pages/folders/components/ShareView.tsx:198
 msgid "Failed to invite"
 msgstr "Failed to invite"
@@ -5582,7 +5601,7 @@ msgstr "Failed to process file"
 msgid "Failed to revoke"
 msgstr "Failed to revoke"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1444
+#: src/pages/folders/components/DocumentDetailsView.tsx:1428
 msgid "Failed to save document edits"
 msgstr "Failed to save document edits"
 
@@ -5623,11 +5642,11 @@ msgstr "Failed to share request"
 msgid "Failed to stage file for indexing"
 msgstr "Failed to stage file for indexing"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2134
+#: src/pages/folders/components/Upload/Upload.tsx:2185
 msgid "Failed to stage file for upload."
 msgstr "Failed to stage file for upload."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2199
+#: src/pages/folders/components/Upload/Upload.tsx:2250
 msgid "Failed to stage files for upload."
 msgstr "Failed to stage files for upload."
 
@@ -5731,7 +5750,7 @@ msgstr "Field type"
 msgid "fields"
 msgstr "fields"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1263
+#: src/pages/folders/components/Upload/Upload.tsx:1270
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1269
@@ -5764,8 +5783,8 @@ msgid "Fields pending"
 msgstr "Fields pending"
 
 #: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:335
-msgid "Fields to redact"
-msgstr "Fields to redact"
+#~ msgid "Fields to redact"
+#~ msgstr "Fields to redact"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:197
 msgid "File appears to be empty."
@@ -5783,8 +5802,8 @@ msgstr "File content could not be retrieved."
 msgid "File exceeds 50MB limit: {fileName}"
 msgstr "File exceeds 50MB limit: {fileName}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2918
-#: src/pages/folders/components/Upload/Upload.tsx:3604
+#: src/pages/folders/components/Upload/Upload.tsx:2972
+#: src/pages/folders/components/Upload/Upload.tsx:3663
 msgid "File exported successfully."
 msgstr "File exported successfully."
 
@@ -5798,7 +5817,7 @@ msgstr "File Ingestion & Parsing"
 #~ msgstr "File is too large. Max size is 4MB."
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:54
-#: src/pages/folders/components/Upload/Upload.tsx:2518
+#: src/pages/folders/components/Upload/Upload.tsx:2569
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:562
 msgid "File is too large. Max size is 50MB."
 msgstr "File is too large. Max size is 50MB."
@@ -5845,7 +5864,7 @@ msgstr "File uploaded successfully"
 #: src/pages/folders/components/DocumentsListView.tsx:1054
 #: src/pages/folders/components/FolderTable.tsx:482
 #: src/pages/folders/components/FolderTable.tsx:1636
-#: src/pages/folders/components/Upload/Upload.tsx:3826
+#: src/pages/folders/components/Upload/Upload.tsx:3910
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
 msgstr "Files"
@@ -5863,8 +5882,8 @@ msgstr "FILES IN THIS FOLDER"
 #~ msgid "Files must be under 5MB"
 #~ msgstr "Files must be under 5MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2170
-#: src/pages/folders/components/Upload/Upload.tsx:2246
+#: src/pages/folders/components/Upload/Upload.tsx:2221
+#: src/pages/folders/components/Upload/Upload.tsx:2297
 msgid "Files uploaded successfully."
 msgstr "Files uploaded successfully."
 
@@ -5949,7 +5968,7 @@ msgid "Folder / Repository"
 msgstr "Folder / Repository"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1227
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:165
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:172
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
 #: src/pages/settings/SettingsMain.tsx:290
 msgid "Folder Configuration"
@@ -6058,28 +6077,28 @@ msgstr "Folder name recorded as “{folderName}”. Generating details now…"
 #~ msgid "Folder Owner"
 #~ msgstr "Folder Owner"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:57
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:167
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:60
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:174
 msgid "Folder Security"
 msgstr "Folder Security"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:828
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:837
 msgid "Folder Security Policies"
 msgstr "Folder Security Policies"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:611
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:687
 msgid "Folder Security Policy"
 msgstr ""
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:348
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:357
 msgid "Folder security policy deleted."
 msgstr "Folder security policy deleted."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:569
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:645
 msgid "Folder security policy saved successfully."
 msgstr "Folder security policy saved successfully."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:940
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1050
 msgid "Folder Security Setup"
 msgstr "Folder Security Setup"
 
@@ -6334,8 +6353,8 @@ msgstr "GL Account Matching Report"
 msgid "Gmail selected. Click Connect Gmail to link your account."
 msgstr "Gmail selected. Click Connect Gmail to link your account."
 
-#: src/pages/folders/components/Upload/Upload.tsx:4505
-#: src/pages/folders/components/Upload/Upload.tsx:4510
+#: src/pages/folders/components/Upload/Upload.tsx:4689
+#: src/pages/folders/components/Upload/Upload.tsx:4694
 msgid "Go back"
 msgstr "Go back"
 
@@ -6353,7 +6372,7 @@ msgstr "Go to {0}"
 msgid "Go to Inbox"
 msgstr "Go to Inbox"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4507
+#: src/pages/folders/components/Upload/Upload.tsx:4691
 msgid "Going back keeps this file in Draft Files. Delete removes it."
 msgstr "Going back keeps this file in Draft Files. Delete removes it."
 
@@ -6395,12 +6414,12 @@ msgstr "Google Workspace sign-in"
 msgid "Grand Total and individual line-item value mapping."
 msgstr "Grand Total and individual line-item value mapping."
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:445
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:454
 msgid "Granted Permissions"
 msgstr "Granted Permissions"
 
 #. placeholder {0}: permissions.filter((p) => p.enabled).length
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:894
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1004
 msgid "Granted Permissions ({0})"
 msgstr "Granted Permissions ({0})"
 
@@ -6585,12 +6604,12 @@ msgstr "Hide details"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:914
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1011
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1067
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:606
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:615
 msgid "Hide Documents"
 msgstr "Hide Documents"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3678
-#: src/pages/folders/components/Upload/Upload.tsx:3686
+#: src/pages/folders/components/Upload/Upload.tsx:3744
+#: src/pages/folders/components/Upload/Upload.tsx:3752
 msgid "Hide file list"
 msgstr "Hide file list"
 
@@ -6763,8 +6782,8 @@ msgstr "Import Strategy"
 msgid "Import your records via CSV or Excel."
 msgstr "Import your records via CSV or Excel."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3646
-#: src/pages/folders/components/Upload/Upload.tsx:3931
+#: src/pages/folders/components/Upload/Upload.tsx:3712
+#: src/pages/folders/components/Upload/Upload.tsx:4015
 #: src/pages/forms/components/GenericFormImportModal.tsx:613
 #: src/pages/forms/components/GenericFormImportModal.tsx:695
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1257
@@ -6806,8 +6825,8 @@ msgstr "Incoming workload volumes over the last 6 months"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2245
 #: src/pages/folders/components/DocumentDetailsView.tsx:2267
-msgid "Incorrect password"
-msgstr "Incorrect password"
+#~ msgid "Incorrect password"
+#~ msgstr "Incorrect password"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1333
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2611
@@ -6854,7 +6873,7 @@ msgstr "Indexed {processedCount} of {totalPending} document(s). Please review fa
 msgid "Indexing..."
 msgstr "Indexing..."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:366
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:469
 msgid "Indexing…"
 msgstr "Indexing…"
 
@@ -6866,7 +6885,7 @@ msgstr "Indexing…"
 #~ msgid "Industry-leading extraction accuracy"
 #~ msgstr "Industry-leading extraction accuracy"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1167
+#: src/pages/folders/components/Upload/Upload.tsx:1174
 msgid "Industry-leading extraction accuracy and field precision"
 msgstr "Industry-leading extraction accuracy and field precision"
 
@@ -7001,7 +7020,7 @@ msgstr "Invalid file type or size."
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Invalid file type. Please upload a PDF or Image."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2520
+#: src/pages/folders/components/Upload/Upload.tsx:2571
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:565
 msgid "Invalid file type. Please upload a supported document."
 msgstr "Invalid file type. Please upload a supported document."
@@ -7023,7 +7042,7 @@ msgstr "Invite"
 msgid "Invite People"
 msgstr "Invite People"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2385
+#: src/pages/folders/components/DocumentDetailsView.tsx:2255
 #: src/pages/folders/components/ShareView.tsx:185
 msgid "Invite sent"
 msgstr "Invite sent"
@@ -7091,7 +7110,7 @@ msgstr "Invoice Error"
 msgid "Invoice exceeds PO value."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2732
+#: src/pages/folders/components/DocumentDetailsView.tsx:2602
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6171
 msgid "Invoice Line Items"
 msgstr "Invoice Line Items"
@@ -7248,7 +7267,7 @@ msgstr "Job Title"
 #~ msgid "JSON"
 #~ msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3439
+#: src/pages/folders/components/Upload/Upload.tsx:3498
 msgid "JSON copied to clipboard."
 msgstr "JSON copied to clipboard."
 
@@ -7451,7 +7470,7 @@ msgstr "License & Subscription"
 msgid "Light"
 msgstr "Light"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1162
+#: src/pages/folders/components/Upload/Upload.tsx:1169
 msgid "Lightning Fast"
 msgstr "Lightning Fast"
 
@@ -7592,8 +7611,8 @@ msgstr "Loading attachments..."
 msgid "Loading Attachments..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2918
-#: src/pages/folders/components/DocumentDetailsView.tsx:2924
+#: src/pages/folders/components/DocumentDetailsView.tsx:2788
+#: src/pages/folders/components/DocumentDetailsView.tsx:2794
 msgid "Loading comments..."
 msgstr "Loading comments..."
 
@@ -7633,7 +7652,7 @@ msgstr "Loading form…"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:146
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:154
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:673
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:749
 #: src/pages/settings/components/ManageUser.tsx:2163
 msgid "Loading groups..."
 msgstr "Loading groups..."
@@ -7659,7 +7678,7 @@ msgstr "Loading menus..."
 msgid "Loading notifications..."
 msgstr "Loading notifications..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2913
+#: src/pages/folders/components/DocumentDetailsView.tsx:2783
 msgid "Loading older comments..."
 msgstr "Loading older comments..."
 
@@ -7674,8 +7693,8 @@ msgstr "Loading portal"
 msgid "Loading preview..."
 msgstr "Loading preview..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3184
-#: src/pages/folders/components/DocumentDetailsView.tsx:3190
+#: src/pages/folders/components/DocumentDetailsView.tsx:3054
+#: src/pages/folders/components/DocumentDetailsView.tsx:3060
 msgid "Loading related documents..."
 msgstr "Loading related documents..."
 
@@ -7707,7 +7726,7 @@ msgstr "Loading share options..."
 msgid "Loading sign request..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2801
+#: src/pages/folders/components/DocumentDetailsView.tsx:2671
 msgid "Loading timeline..."
 msgstr "Loading timeline..."
 
@@ -7722,7 +7741,7 @@ msgstr "Loading users & groups..."
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:147
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:155
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:636
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:712
 msgid "Loading users..."
 msgstr "Loading users..."
 
@@ -7756,7 +7775,7 @@ msgstr "Loading..."
 msgid "Location"
 msgstr "Location"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:114
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:119
 msgid "Lock document for editing"
 msgstr "Lock document for editing"
 
@@ -7853,17 +7872,21 @@ msgstr "Low Match"
 msgid "Manage"
 msgstr "Manage"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:831
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:840
 msgid "Manage access policies and privileges for folder \"{folderName}\""
 msgstr "Manage access policies and privileges for folder \"{folderName}\""
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:884
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:893
 msgid "Manage document-level access rules evaluated against document metadata for folder \"{folderName}\""
 msgstr "Manage document-level access rules evaluated against document metadata for folder \"{folderName}\""
 
 #: src/pages/dashboard/DashboardPage.tsx:122
 msgid "Manage files and metadata in {label} repository"
 msgstr "Manage files and metadata in {label} repository"
+
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:153
+msgid "Manage how users can access and perform general actions on documents."
+msgstr "Manage how users can access and perform general actions on documents."
 
 #: src/pages/settings/components/Menus.tsx:542
 msgid "Manage navigation menus, routes, and display order across the platform."
@@ -7886,7 +7909,7 @@ msgstr ""
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:788
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:948
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:130
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:769
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:888
 msgid "Mandatory"
 msgstr ""
 
@@ -7903,7 +7926,7 @@ msgstr "Mandatory column"
 msgid "Mandatory fields are missing"
 msgstr "Mandatory fields are missing"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:294
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:369
 msgid "Mandatory Fields Missing"
 msgstr "Mandatory Fields Missing"
 
@@ -8015,6 +8038,10 @@ msgstr "Mark at least one signature place on the document before sending."
 msgid "Mask sensitive data"
 msgstr "Mask sensitive data"
 
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:137
+msgid "Mask sensitive values in the preview"
+msgstr "Mask sensitive values in the preview"
+
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:53
 #~ msgid "Master"
 #~ msgstr "Master"
@@ -8069,11 +8096,11 @@ msgstr "Master Form Sync"
 msgid "Master Login"
 msgstr "Master Login"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3114
+#: src/pages/folders/components/Upload/Upload.tsx:3168
 msgid "Master Sync Data"
 msgstr "Master Sync Data"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:617
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:626
 msgid "Match"
 msgstr "Match"
 
@@ -8324,7 +8351,7 @@ msgstr "Mismatches"
 msgid "Mismatches Found"
 msgstr "Mismatches Found"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2393
+#: src/pages/folders/components/DocumentDetailsView.tsx:2263
 #: src/pages/folders/components/ShareView.tsx:137
 msgid "Missing file context for share"
 msgstr "Missing file context for share"
@@ -8369,7 +8396,7 @@ msgstr "Modified By"
 msgid "Modified Date"
 msgstr "Modified Date"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:108
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:113
 msgid "Modify document content"
 msgstr "Modify document content"
 
@@ -8377,7 +8404,7 @@ msgstr "Modify document content"
 msgid "Modify existing form response answers and save changes."
 msgstr "Modify existing form response answers and save changes."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:102
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:107
 msgid "Modify metadata fields"
 msgstr "Modify metadata fields"
 
@@ -8494,8 +8521,8 @@ msgstr "Must contain:"
 msgid "My Account"
 msgstr "My Account"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2503
-#: src/pages/folders/components/DocumentDetailsView.tsx:2532
+#: src/pages/folders/components/DocumentDetailsView.tsx:2373
+#: src/pages/folders/components/DocumentDetailsView.tsx:2402
 msgid "My Sign"
 msgstr "My Sign"
 
@@ -8643,7 +8670,7 @@ msgstr "New Report"
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:718
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:821
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:74
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:75
 #: src/pages/requests/components/request/NewRequestSheet.tsx:105
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:197
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:198
@@ -8695,6 +8722,11 @@ msgstr "Next >>"
 msgid "Next Action"
 msgstr "Next Action"
 
+#: src/pages/folders/components/Upload/Upload.tsx:4239
+#: src/pages/folders/components/Upload/Upload.tsx:4241
+msgid "Next file"
+msgstr "Next file"
+
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:863
 msgid "Next page"
 msgstr "Next page"
@@ -8714,7 +8746,6 @@ msgstr "Next step"
 
 #: src/pages/reports/components/ReportsListView.tsx:207
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5541
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:193
 msgid "No"
 msgstr "No"
 
@@ -8735,7 +8766,7 @@ msgstr "No active agents"
 msgid "No activity recorded"
 msgstr "No activity recorded"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2896
+#: src/pages/folders/components/DocumentDetailsView.tsx:2766
 msgid "No activity timeline is available for this document."
 msgstr "No activity timeline is available for this document."
 
@@ -8779,11 +8810,11 @@ msgstr "No columns found"
 msgid "No columns match search"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3079
+#: src/pages/folders/components/DocumentDetailsView.tsx:2949
 msgid "No comments are available for this document. Add the first comment to start collaboration."
 msgstr "No comments are available for this document. Add the first comment to start collaboration."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3081
+#: src/pages/folders/components/DocumentDetailsView.tsx:2951
 msgid "No comments found"
 msgstr "No comments found"
 
@@ -8836,11 +8867,11 @@ msgstr "No document details available."
 msgid "No document provided for preview"
 msgstr "No document provided for preview"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:902
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:911
 msgid "No Document Rules"
 msgstr "No Document Rules"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:900
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:909
 msgid "No document security rules found. Click 'Add Document Rule' to set up metadata rules."
 msgstr "No document security rules found. Click 'Add Document Rule' to set up metadata rules."
 
@@ -8857,11 +8888,11 @@ msgstr "No documents currently match this rule."
 msgid "No documents found"
 msgstr "No documents found"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1974
+#: src/pages/folders/components/Upload/Upload.tsx:1999
 msgid "No draft files to review."
 msgstr "No draft files to review."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:226
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:291
 msgid "No draft files yet."
 msgstr "No draft files yet."
 
@@ -8906,15 +8937,15 @@ msgstr "No fields selected yet."
 msgid "No files added yet"
 msgstr "No files added yet"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3753
+#: src/pages/folders/components/Upload/Upload.tsx:3837
 msgid "No files are processing, and none are missing required fields."
 msgstr "No files are processing, and none are missing required fields."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3754
+#: src/pages/folders/components/Upload/Upload.tsx:3838
 msgid "No files are ready to export yet. Files missing required fields are listed under In progress."
 msgstr "No files are ready to export yet. Files missing required fields are listed under In progress."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:227
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:292
 msgid "No files match your search."
 msgstr "No files match your search."
 
@@ -8926,7 +8957,7 @@ msgstr "No filters added. This report will include all rows."
 #~ msgid "No folder by that name"
 #~ msgstr "No folder by that name"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:847
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:856
 msgid "No folder security policies found. Click 'Add Policy' to configure access rules."
 msgstr "No folder security policies found. Click 'Add Policy' to configure access rules."
 
@@ -9021,7 +9052,7 @@ msgstr "No matching keywords"
 msgid "No matching master fields"
 msgstr "No matching master fields"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:743
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:871
 msgid "No matching permissions found"
 msgstr "No matching permissions found"
 
@@ -9066,7 +9097,7 @@ msgstr "No notifications"
 msgid "No one has been invited yet."
 msgstr ""
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:912
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1022
 msgid "No permissions granted"
 msgstr "No permissions granted"
 
@@ -9099,7 +9130,7 @@ msgstr "No published workflows found."
 msgid "No recommendations available."
 msgstr "No recommendations available."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3367
+#: src/pages/folders/components/DocumentDetailsView.tsx:3237
 msgid "No related documents are linked with this file yet."
 msgstr "No related documents are linked with this file yet."
 
@@ -9111,8 +9142,8 @@ msgstr "No related documents found."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr "No related documents found. Try a different keyword or folder."
 
-#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:99
-#: src/pages/folders/components/Upload/Upload.tsx:4397
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:118
+#: src/pages/folders/components/Upload/Upload.tsx:4581
 msgid "No repository fields configured."
 msgstr "No repository fields configured."
 
@@ -9157,7 +9188,7 @@ msgstr "No rules yet. Values without a matching rule use the default color below
 msgid "No saved signatures"
 msgstr "No saved signatures"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:849
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:858
 msgid "No Security Policies"
 msgstr "No Security Policies"
 
@@ -9230,7 +9261,7 @@ msgstr "No third-party account required"
 msgid "No timeline data for this period."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2898
+#: src/pages/folders/components/DocumentDetailsView.tsx:2768
 msgid "No timeline found"
 msgstr "No timeline found"
 
@@ -9259,12 +9290,12 @@ msgstr "No users found"
 msgid "No users found."
 msgstr "No users found."
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:437
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:591
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:446
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:600
 msgid "No users or groups assigned"
 msgstr "No users or groups assigned"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:886
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:996
 msgid "No users or groups selected"
 msgstr "No users or groups selected"
 
@@ -9277,7 +9308,7 @@ msgstr "No users or groups selected"
 msgid "No users yet"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2521
+#: src/pages/folders/components/Upload/Upload.tsx:2572
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
 msgid "No valid files selected."
 msgstr "No valid files selected."
@@ -9404,7 +9435,7 @@ msgstr "OCR agent"
 msgid "OCR Agent"
 msgstr "OCR Agent"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3126
+#: src/pages/folders/components/Upload/Upload.tsx:3180
 msgid "OCR Extracted Data"
 msgstr "OCR Extracted Data"
 
@@ -9420,7 +9451,7 @@ msgstr "OCR extraction complete{confidenceText}"
 #~ msgid "OCR extraction failed: {error}"
 #~ msgstr "OCR extraction failed: {error}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2354
+#: src/pages/folders/components/Upload/Upload.tsx:2405
 msgid "OCR failed for this file."
 msgstr "OCR failed for this file."
 
@@ -9482,15 +9513,17 @@ msgstr "OneDrive"
 msgid "Open"
 msgstr "Open"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3916
+#: src/pages/folders/components/Upload/Upload.tsx:4000
 msgid "Open a saved file to review it and finish it."
 msgstr "Open a saved file to review it and finish it."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1475
+#: src/pages/folders/components/DocumentDetailsView.tsx:1459
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:436
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:441
 msgid "Open file"
 msgstr "Open file"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:71
 msgid "Open folder and files"
 msgstr "Open folder and files"
 
@@ -9734,7 +9767,6 @@ msgid "Partially Matched"
 msgstr "Partially Matched"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:31
-#: src/pages/folders/components/DocumentDetailsView.tsx:2222
 #: src/pages/portal/components/ClassicPortalLogin.tsx:427
 #: src/pages/portal/components/PortalLogin.tsx:347
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:227
@@ -9917,16 +9949,16 @@ msgstr "Permission"
 msgid "Permission Matrix"
 msgstr "Permission Matrix"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:60
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:853
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:59
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:963
 #: src/pages/settings/components/RolesPermissions.tsx:153
 #: src/pages/settings/components/RolesPermissions.tsx:1144
 msgid "Permissions"
 msgstr "Permissions"
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:725
-msgid "Permissions Matrix"
-msgstr "Permissions Matrix"
+#~ msgid "Permissions Matrix"
+#~ msgstr "Permissions Matrix"
 
 #: src/pages/settings/components/ManageUser.tsx:2508
 msgid "Phone"
@@ -9949,7 +9981,8 @@ msgid "Pick which fields appear in this report, then configure column labels, ca
 msgstr "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:361
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:60
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:63
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:140
 msgid "PII Redaction"
 msgstr "PII Redaction"
 
@@ -10117,7 +10150,7 @@ msgstr "Please describe the workflow you want to create."
 msgid "Please draw your signature before continuing."
 msgstr "Please draw your signature before continuing."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2838
+#: src/pages/folders/components/Upload/Upload.tsx:2892
 msgid "Please enter {fieldName}."
 msgstr "Please enter {fieldName}."
 
@@ -10292,13 +10325,13 @@ msgstr "Please login with the email address that the link was shared to."
 msgid "Please place at least one signature box before submitting."
 msgstr "Please place at least one signature box before submitting."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2433
+#: src/pages/folders/components/DocumentDetailsView.tsx:2303
 #: src/pages/folders/components/ShareView.tsx:153
 msgid "Please review this file"
 msgstr "Please review this file"
 
 #. placeholder {0}: data.fileName
-#: src/pages/folders/components/DocumentDetailsView.tsx:2432
+#: src/pages/folders/components/DocumentDetailsView.tsx:2302
 msgid "Please review this file: {0}"
 msgstr "Please review this file: {0}"
 
@@ -10314,7 +10347,7 @@ msgstr "Please select a field for this condition."
 #~ msgid "Please select a file first."
 #~ msgstr "Please select a file first."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2863
+#: src/pages/folders/components/Upload/Upload.tsx:2917
 msgid "Please select a file to upload."
 msgstr "Please select a file to upload."
 
@@ -10374,7 +10407,7 @@ msgstr "Please sign in with {loginType} to continue."
 msgid "Please sign this document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2445
+#: src/pages/folders/components/DocumentDetailsView.tsx:2315
 msgid "Please sign this document. You can place your signature anywhere."
 msgstr "Please sign this document. You can place your signature anywhere."
 
@@ -10557,7 +10590,7 @@ msgid "PO Verified"
 msgstr "PO Verified"
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:266
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:866
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:875
 msgid "Policies"
 msgstr "Policies"
 
@@ -10689,7 +10722,7 @@ msgstr "Preferences"
 msgid "Prepare your file"
 msgstr "Prepare your file"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2297
+#: src/pages/folders/components/DocumentDetailsView.tsx:2167
 msgid "Preparing redacted file..."
 msgstr "Preparing redacted file..."
 
@@ -10735,6 +10768,11 @@ msgstr "Preview:"
 msgid "Preview: documents where"
 msgstr "Preview: documents where"
 
+#: src/pages/folders/components/Upload/Upload.tsx:4226
+#: src/pages/folders/components/Upload/Upload.tsx:4228
+msgid "Previous file"
+msgstr "Previous file"
+
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:851
 msgid "Previous page"
 msgstr "Previous page"
@@ -10760,16 +10798,16 @@ msgstr ""
 msgid "Primary"
 msgstr "Primary"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:93
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:92
 msgid "Print"
 msgstr "Print"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:90
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:89
 msgid "Print documents"
 msgstr "Print documents"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2298
-#: src/pages/folders/components/DocumentDetailsView.tsx:2302
+#: src/pages/folders/components/DocumentDetailsView.tsx:2168
+#: src/pages/folders/components/DocumentDetailsView.tsx:2172
 msgid "Print file"
 msgstr "Print file"
 
@@ -10801,7 +10839,7 @@ msgstr "Private to me"
 msgid "Proceed to Indexing"
 msgstr "Proceed to Indexing"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1161
+#: src/pages/folders/components/Upload/Upload.tsx:1168
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Process documents faster with our agentic pipeline"
 
@@ -11097,15 +11135,15 @@ msgstr "Ready to confirm"
 msgid "Ready to create folder?"
 msgstr "Ready to create folder?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3641
-#: src/pages/folders/components/Upload/Upload.tsx:3922
-#: src/pages/folders/components/Upload/Upload.tsx:4172
+#: src/pages/folders/components/Upload/Upload.tsx:3707
+#: src/pages/folders/components/Upload/Upload.tsx:4006
+#: src/pages/folders/components/Upload/Upload.tsx:4279
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:144
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:213
 msgid "Ready to export"
 msgstr "Ready to export"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:303
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:378
 msgid "Ready To Export"
 msgstr "Ready To Export"
 
@@ -11133,7 +11171,7 @@ msgstr "Receive transparent confidence rankings for top candidate folder matches
 #~ msgid "Receive transparent confidence rankings for top candidate repository matches."
 #~ msgstr "Receive transparent confidence rankings for top candidate repository matches."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1264
+#: src/pages/folders/components/Upload/Upload.tsx:1271
 msgid "Received"
 msgstr "Received"
 
@@ -11180,12 +11218,12 @@ msgstr "Recurrence"
 msgid "Recv Qty"
 msgstr "Recv Qty"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3532
+#: src/pages/folders/components/DocumentDetailsView.tsx:3402
 msgid "Redacted"
 msgstr "Redacted"
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:411
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:418
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:369
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:376
 msgid "Redaction level"
 msgstr "Redaction level"
 
@@ -11239,6 +11277,10 @@ msgstr "Refreshing..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:939
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:607
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:91
+#: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:93
+#: src/pages/folders/components/Upload/Upload.tsx:4402
+#: src/pages/folders/components/Upload/Upload.tsx:4404
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2447
 msgid "Regenerate"
 msgstr "Regenerate"
@@ -11265,11 +11307,11 @@ msgstr "Reject Transaction"
 msgid "Rejected"
 msgstr "Rejected"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1822
+#: src/pages/folders/components/DocumentDetailsView.tsx:1806
 msgid "Related Docs"
 msgstr "Related Docs"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3369
+#: src/pages/folders/components/DocumentDetailsView.tsx:3239
 msgid "Related documents not found"
 msgstr "Related documents not found"
 
@@ -11292,7 +11334,7 @@ msgstr "Remove"
 msgid "Remove {0}"
 msgstr "Remove {0}"
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:354
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:311
 msgid "Remove {label}"
 msgstr "Remove {label}"
 
@@ -11315,7 +11357,7 @@ msgstr "Remove field"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:683
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:220
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:222
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:314
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:389
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
@@ -11324,8 +11366,8 @@ msgstr "Remove field"
 msgid "Remove file"
 msgstr "Remove file"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3331
-#: src/pages/folders/components/DocumentDetailsView.tsx:3335
+#: src/pages/folders/components/DocumentDetailsView.tsx:3201
+#: src/pages/folders/components/DocumentDetailsView.tsx:3205
 msgid "Remove from related"
 msgstr "Remove from related"
 
@@ -11341,7 +11383,7 @@ msgstr "Remove signer"
 msgid "Remove tab"
 msgstr "Remove tab"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:630
+#: src/pages/folders/components/DocumentDetailsView.tsx:627
 msgid "Removed from related"
 msgstr "Removed from related"
 
@@ -11436,7 +11478,7 @@ msgstr "Reports"
 
 #: src/pages/folders/components/DocumentsListView.tsx:898
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:978
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:831
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:941
 msgid "Repository"
 msgstr "Repository"
 
@@ -11452,8 +11494,8 @@ msgstr "Repository context and business scope."
 msgid "Repository Fields"
 msgstr "Repository Fields"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1922
-#: src/pages/folders/components/Upload/Upload.tsx:2549
+#: src/pages/folders/components/Upload/Upload.tsx:1945
+#: src/pages/folders/components/Upload/Upload.tsx:2600
 msgid "Repository ID is missing. Cannot run OCR."
 msgstr "Repository ID is missing. Cannot run OCR."
 
@@ -11683,7 +11725,7 @@ msgstr "Retained"
 msgid "Retention Policies"
 msgstr "Retention Policies"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:59
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:62
 msgid "Retention Policy"
 msgstr "Retention Policy"
 
@@ -11691,7 +11733,7 @@ msgstr "Retention Policy"
 msgid "Retention policy activated."
 msgstr "Retention policy activated."
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:117
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:124
 msgid "Retention policy deleted."
 msgstr "Retention policy deleted."
 
@@ -11718,8 +11760,8 @@ msgid "Retry Loading"
 msgstr "Retry Loading"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2251
-msgid "Reveal original"
-msgstr "Reveal original"
+#~ msgid "Reveal original"
+#~ msgstr "Reveal original"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1289
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
@@ -11749,7 +11791,7 @@ msgid "Review & Confirm"
 msgstr "Review & Confirm"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:75
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:66
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:65
 msgid "Review & Save"
 msgstr "Review & Save"
 
@@ -11765,7 +11807,7 @@ msgstr "Review & save group settings"
 msgid "Review & save menu settings"
 msgstr "Review & save menu settings"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:819
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:929
 msgid "Review & Save Policy"
 msgstr "Review & Save Policy"
 
@@ -11782,7 +11824,7 @@ msgstr "Review & save role configuration"
 #~ msgid "Review & Submit"
 #~ msgstr "Review & Submit"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:63
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:62
 msgid "Review and save policy"
 msgstr "Review and save policy"
 
@@ -11798,13 +11840,17 @@ msgstr "Review and save rules"
 msgid "Review Column Mapping"
 msgstr "Review Column Mapping"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4116
+#: src/pages/folders/components/Upload/Upload.tsx:4200
 msgid "Review fields before export..."
 msgstr "Review fields before export..."
 
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:22
 msgid "REVIEW REQUIRED"
 msgstr "REVIEW REQUIRED"
+
+#: src/pages/folders/components/Upload/Upload.tsx:4537
+msgid "Review these fields"
+msgstr "Review these fields"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:34
 msgid "Review your column mapping summary before finalizing the PO configuration."
@@ -11986,7 +12032,7 @@ msgstr "rows entered"
 msgid "Rule Action"
 msgstr "Rule Action"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:919
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:928
 msgid "Rules"
 msgstr "Rules"
 
@@ -12027,8 +12073,8 @@ msgid "SAP Table Field Mapping"
 msgstr "SAP Table Field Mapping"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:278
-#: src/pages/folders/components/DocumentDetailsView.tsx:2537
-#: src/pages/folders/components/DocumentDetailsView.tsx:2559
+#: src/pages/folders/components/DocumentDetailsView.tsx:2407
+#: src/pages/folders/components/DocumentDetailsView.tsx:2429
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1606
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
@@ -12083,7 +12129,7 @@ msgstr "Save Dashboard"
 msgid "Save Entry"
 msgstr "Save Entry"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4281
+#: src/pages/folders/components/Upload/Upload.tsx:4388
 msgid "Save failed"
 msgstr "Save failed"
 
@@ -12122,7 +12168,7 @@ msgstr "Save Mappings"
 msgid "Save Menu"
 msgstr "Save Menu"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:989
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1099
 msgid "Save Policy"
 msgstr "Save Policy"
 
@@ -12142,7 +12188,7 @@ msgstr "Save Role"
 msgid "Save Rules"
 msgstr "Save Rules"
 
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:819
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:828
 msgid "Save the folder first to manage users who can view unredacted files."
 msgstr "Save the folder first to manage users who can view unredacted files."
 
@@ -12150,7 +12196,7 @@ msgstr "Save the folder first to manage users who can view unredacted files."
 msgid "Save User"
 msgstr "Save User"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4276
+#: src/pages/folders/components/Upload/Upload.tsx:4383
 msgid "Saved"
 msgstr "Saved"
 
@@ -12159,7 +12205,7 @@ msgstr "Saved"
 msgid "Saved ({0})"
 msgstr "Saved ({0})"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2088
+#: src/pages/folders/components/DocumentDetailsView.tsx:2072
 msgid "Saved signature removed."
 msgstr "Saved signature removed."
 
@@ -12167,11 +12213,11 @@ msgstr "Saved signature removed."
 #~ msgid "Saved to stage"
 #~ msgstr "Saved to stage"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2556
+#: src/pages/folders/components/DocumentDetailsView.tsx:2426
 #: src/pages/folders/components/EditMetadataView.tsx:427
-#: src/pages/folders/components/Upload/Upload.tsx:4271
+#: src/pages/folders/components/Upload/Upload.tsx:4378
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1218
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:989
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1099
 #: src/pages/settings/components/SettingsWizardLayout.tsx:229
 msgid "Saving..."
 msgstr "Saving..."
@@ -12182,8 +12228,8 @@ msgid "Saving…"
 msgstr "Saving…"
 
 #: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:187
-msgid "Scan documents in this folder and mask PII in the preview."
-msgstr "Scan documents in this folder and mask PII in the preview."
+#~ msgid "Scan documents in this folder and mask PII in the preview."
+#~ msgstr "Scan documents in this folder and mask PII in the preview."
 
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:162
 msgid "Scan QR"
@@ -12279,12 +12325,12 @@ msgstr ""
 msgid "Search and link related documents, contracts, records or files associated with this document."
 msgstr "Search and link related documents, contracts, records or files associated with this document."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:674
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:750
 #: src/pages/settings/components/ManageUser.tsx:2164
 msgid "Search and select groups..."
 msgstr "Search and select groups..."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:637
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:713
 #: src/pages/settings/components/GroupManagement.tsx:875
 msgid "Search and select users..."
 msgstr ""
@@ -12412,7 +12458,7 @@ msgstr "Search location..."
 msgid "Search manager..."
 msgstr "Search manager..."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:175
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:239
 msgid "Search media"
 msgstr "Search media"
 
@@ -12435,8 +12481,8 @@ msgid "Search or enter custom name"
 msgstr "Search or enter custom name"
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:727
-msgid "Search permissions..."
-msgstr "Search permissions..."
+#~ msgid "Search permissions..."
+#~ msgstr "Search permissions..."
 
 #: src/pages/requests/components/QuickFilters.tsx:330
 msgid "Search PO range..."
@@ -12536,6 +12582,10 @@ msgstr "Security"
 msgid "Security & Auditing Policy"
 msgstr "Security & Auditing Policy"
 
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:181
+msgid "Security & Privacy"
+msgstr "Security & Privacy"
+
 #: src/pages/settings/components/ManageUser.tsx:146
 msgid "Security & verification"
 msgstr "Security & verification"
@@ -12587,6 +12637,10 @@ msgstr "Select a field..."
 #: src/pages/folders/components/Upload/Upload.tsx:2183
 #~ msgid "Select a file from the list above to review it."
 #~ msgstr "Select a file from the list above to review it."
+
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:538
+msgid "Select a file to view extracted data."
+msgstr "Select a file to view extracted data."
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:282
 #~ msgid "Select a folder"
@@ -12670,15 +12724,15 @@ msgstr "Select a user for each password."
 msgid "Select account"
 msgstr "Select account"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:142
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:206
 msgid "Select all"
 msgstr "Select all"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:806
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:809
 msgid "Select All"
 msgstr "Select All"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:136
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:200
 msgid "Select all files"
 msgstr "Select all files"
 
@@ -12705,16 +12759,16 @@ msgstr "Select at least one field to redact, or turn PII redaction off."
 #~ msgid "Select at least one user or group for target assignment."
 #~ msgstr "Select at least one user or group for target assignment."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:491
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:565
 msgid "Select at least one user or group for this policy."
 msgstr "Select at least one user or group for this policy."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:451
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:623
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:525
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:699
 msgid "Select at least one user or group to continue."
 msgstr "Select at least one user or group to continue."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:614
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:690
 msgid "Select at least one user or group who will receive access permissions for this folder."
 msgstr "Select at least one user or group who will receive access permissions for this folder."
 
@@ -12746,7 +12800,7 @@ msgstr ""
 #~ msgid "Select fields"
 #~ msgstr "Select fields"
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:284
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:358
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:92
 msgid "Select file"
 msgstr "Select file"
@@ -12788,7 +12842,7 @@ msgstr "Select forms..."
 msgid "Select groups"
 msgstr "Select groups"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:667
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:743
 msgid "Select Groups"
 msgstr "Select Groups"
 
@@ -12895,7 +12949,7 @@ msgstr "Select Storage"
 msgid "Select suggested KPIs and charts from your data."
 msgstr "Select suggested KPIs and charts from your data."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:51
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:50
 msgid "Select target access"
 msgstr "Select target access"
 
@@ -12916,7 +12970,7 @@ msgstr "Select username / email field"
 msgid "Select users"
 msgstr "Select users"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:630
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:706
 #: src/pages/settings/components/RolesPermissions.tsx:953
 #: src/pages/settings/components/RolesPermissions.tsx:1085
 msgid "Select Users"
@@ -13003,7 +13057,7 @@ msgstr "Selected Source:"
 msgid "Semantic Classification"
 msgstr "Semantic Classification"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2558
+#: src/pages/folders/components/DocumentDetailsView.tsx:2428
 #: src/pages/forms/components/AiFormBuilder.tsx:226
 #: src/pages/portal/components/PortalWizardChat.tsx:298
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2199
@@ -13021,7 +13075,7 @@ msgstr "Send comment"
 msgid "Send files out and bring files in through the FTP connection."
 msgstr "Send files out and bring files in through the FTP connection."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:129
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:134
 msgid "Send for Signature"
 msgstr "Send for Signature"
 
@@ -13059,6 +13113,10 @@ msgstr "Sends a heads-up to the owner listed on each document's metadata."
 msgid "Sends OTP to the Email"
 msgstr "Sends OTP to the Email"
 
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:291
+msgid "Sensitive Values to Redact"
+msgstr "Sensitive Values to Redact"
+
 #: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Sent"
@@ -13082,7 +13140,7 @@ msgstr "September"
 msgid "Sequential: mark place(s) for {0} first, then switch to the next signer."
 msgstr ""
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:57
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:56
 msgid "Set access privileges"
 msgstr "Set access privileges"
 
@@ -13127,7 +13185,7 @@ msgstr "Setting up..."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:86
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1226
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:262
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:164
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:171
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:19
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
@@ -13172,7 +13230,7 @@ msgstr "Severity"
 #: src/components/common/SharePopover.tsx:330
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/dashboard/DashboardPage.tsx:353
-#: src/pages/folders/components/DocumentDetailsView.tsx:2386
+#: src/pages/folders/components/DocumentDetailsView.tsx:2256
 #: src/pages/folders/components/DocumentsListView.tsx:1115
 #: src/pages/folders/components/FolderFilterBar.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:539
@@ -13278,7 +13336,7 @@ msgstr "Show details"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:914
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1012
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1075
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:611
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:620
 msgid "Show Documents"
 msgstr "Show Documents"
 
@@ -13286,8 +13344,8 @@ msgstr "Show Documents"
 msgid "Show fewer suggestions"
 msgstr "Show fewer suggestions"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3678
-#: src/pages/folders/components/Upload/Upload.tsx:3686
+#: src/pages/folders/components/Upload/Upload.tsx:3744
+#: src/pages/folders/components/Upload/Upload.tsx:3752
 msgid "Show file list"
 msgstr "Show file list"
 
@@ -13323,8 +13381,8 @@ msgstr "Show more ({0} more)"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2188
 #: src/pages/folders/components/DocumentDetailsView.tsx:2192
-msgid "Show original file"
-msgstr "Show original file"
+#~ msgid "Show original file"
+#~ msgstr "Show original file"
 
 #: src/pages/settings/components/RolesPermissions.tsx:873
 msgid "Show Portal Configuration in Settings"
@@ -13332,16 +13390,16 @@ msgstr "Show Portal Configuration in Settings"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2164
 #: src/pages/folders/components/DocumentDetailsView.tsx:2166
-msgid "Show redacted file"
-msgstr "Show redacted file"
+#~ msgid "Show redacted file"
+#~ msgstr "Show redacted file"
 
 #: src/pages/settings/components/RolesPermissions.tsx:875
 msgid "Show Report Builder in Settings → Configuration"
 msgstr "Show Report Builder in Settings → Configuration"
 
 #: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:192
-msgid "Show the original file without PII masking."
-msgstr "Show the original file without PII masking."
+#~ msgid "Show the original file without PII masking."
+#~ msgstr "Show the original file without PII masking."
 
 #: src/pages/settings/components/RolesPermissions.tsx:867
 msgid "Show Workflows in Settings → Configuration"
@@ -13386,8 +13444,8 @@ msgid "Sign"
 msgstr "Sign"
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:323
-#: src/pages/folders/components/DocumentDetailsView.tsx:2353
-#: src/pages/folders/components/DocumentDetailsView.tsx:2374
+#: src/pages/folders/components/DocumentDetailsView.tsx:2223
+#: src/pages/folders/components/DocumentDetailsView.tsx:2244
 msgid "Sign Document"
 msgstr "Sign Document"
 
@@ -13456,7 +13514,7 @@ msgstr "Sign Mode"
 msgid "Sign out"
 msgstr "Sign out"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2116
+#: src/pages/folders/components/DocumentDetailsView.tsx:2100
 msgid "Sign request sent. Assigned places stay visible on the document."
 msgstr "Sign request sent. Assigned places stay visible on the document."
 
@@ -13482,13 +13540,13 @@ msgstr ""
 msgid "Signature placed on document."
 msgstr "Signature placed on document."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2099
+#: src/pages/folders/components/DocumentDetailsView.tsx:2083
 msgid "Signature saved for reuse."
 msgstr "Signature saved for reuse."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1985
-#: src/pages/folders/components/DocumentDetailsView.tsx:2078
-#: src/pages/folders/components/DocumentDetailsView.tsx:2709
+#: src/pages/folders/components/DocumentDetailsView.tsx:1969
+#: src/pages/folders/components/DocumentDetailsView.tsx:2062
+#: src/pages/folders/components/DocumentDetailsView.tsx:2579
 msgid "Signature submitted successfully."
 msgstr "Signature submitted successfully."
 
@@ -13587,7 +13645,7 @@ msgstr "Soft Delete"
 msgid "Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment."
 msgstr "Some billed items have not been delivered yet. The invoice quantity is waiting on a later shipment."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2592
+#: src/pages/folders/components/Upload/Upload.tsx:2646
 msgid "Some files were already in the queue and were skipped."
 msgstr "Some files were already in the queue and were skipped."
 
@@ -13659,7 +13717,7 @@ msgstr "Source Type"
 msgid "Source: Manual Entry"
 msgstr "Source: Manual Entry"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3511
+#: src/pages/folders/components/DocumentDetailsView.tsx:3381
 msgid "Source: OCR Document"
 msgstr "Source: OCR Document"
 
@@ -13670,6 +13728,10 @@ msgstr "Source: PO Master (ERP/Excel Data)"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1444
 msgid "Source: SAP (HANA Cloud)"
 msgstr "Source: SAP (HANA Cloud)"
+
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:294
+msgid "Specify the sensitive information that should be detected and hidden or masked to protect confidential and personal data."
+msgstr "Specify the sensitive information that should be detected and hidden or masked to protect confidential and personal data."
 
 #: src/pages/requests/components/request/components/sections/history/History.tsx:217
 msgid "Stage processed"
@@ -13684,8 +13746,8 @@ msgid "Staged"
 msgstr "Staged"
 
 #: src/pages/folders/components/FolderExplorer.tsx:235
-#: src/pages/folders/components/Upload/Upload.tsx:2434
-#: src/pages/folders/components/Upload/Upload.tsx:3569
+#: src/pages/folders/components/Upload/Upload.tsx:2485
+#: src/pages/folders/components/Upload/Upload.tsx:3628
 msgid "Staged file deleted."
 msgstr "Staged file deleted."
 
@@ -13693,7 +13755,7 @@ msgstr "Staged file deleted."
 msgid "Staged file exported successfully."
 msgstr "Staged file exported successfully."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2214
+#: src/pages/folders/components/Upload/Upload.tsx:2265
 msgid "Staging failed."
 msgstr "Staging failed."
 
@@ -13720,8 +13782,8 @@ msgstr "Start search"
 msgid "Start typing to search"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2332
-#: src/pages/folders/components/DocumentDetailsView.tsx:2338
+#: src/pages/folders/components/DocumentDetailsView.tsx:2202
+#: src/pages/folders/components/DocumentDetailsView.tsx:2208
 #: src/pages/folders/components/DocumentsListView.tsx:1121
 #: src/pages/folders/components/FolderTable.tsx:1493
 msgid "Start Workflow"
@@ -13907,8 +13969,8 @@ msgstr "submissions"
 
 #: src/pages/portal/components/PortalShell.tsx:117
 #: src/pages/portal/components/PortalWizard.tsx:785
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:134
-#: src/pages/requests/components/request/components/newrequest/Header.tsx:147
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:135
+#: src/pages/requests/components/request/components/newrequest/Header.tsx:148
 msgid "Submit"
 msgstr "Submit"
 
@@ -14088,7 +14150,7 @@ msgstr "Suppliers"
 msgid "Suppliers to Chase"
 msgstr "Suppliers to Chase"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1173
+#: src/pages/folders/components/Upload/Upload.tsx:1180
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Support for PDF, images, and scanned documents"
 
@@ -14128,7 +14190,7 @@ msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB"
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3871
+#: src/pages/folders/components/Upload/Upload.tsx:3955
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 
@@ -14137,13 +14199,13 @@ msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB e
 #~ msgid "Switch to Dummy Data"
 #~ msgstr "Switch to Dummy Data"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4237
-#: src/pages/folders/components/Upload/Upload.tsx:4246
+#: src/pages/folders/components/Upload/Upload.tsx:4344
+#: src/pages/folders/components/Upload/Upload.tsx:4353
 msgid "Switch to Fields view"
 msgstr "Switch to Fields view"
 
-#: src/pages/folders/components/Upload/Upload.tsx:4236
-#: src/pages/folders/components/Upload/Upload.tsx:4245
+#: src/pages/folders/components/Upload/Upload.tsx:4343
+#: src/pages/folders/components/Upload/Upload.tsx:4352
 msgid "Switch to JSON view"
 msgstr "Switch to JSON view"
 
@@ -14152,14 +14214,14 @@ msgstr "Switch to JSON view"
 #~ msgid "Switch to Original Data"
 #~ msgstr "Switch to Original Data"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3149
+#: src/pages/folders/components/Upload/Upload.tsx:3203
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:172
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3554
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3867
 msgid "Sync"
 msgstr "Sync"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3182
+#: src/pages/folders/components/Upload/Upload.tsx:3236
 msgid "SYNC"
 msgstr "SYNC"
 
@@ -14171,7 +14233,7 @@ msgstr "Sync document fields, PO master, and vendor records via SAP NetWeaver RF
 msgid "Sync folder documents and metadata with SAP ERP."
 msgstr "Sync folder documents and metadata with SAP ERP."
 
-#: src/pages/folders/components/Upload/Upload.tsx:3143
+#: src/pages/folders/components/Upload/Upload.tsx:3197
 msgid "Sync Master Data"
 msgstr "Sync Master Data"
 
@@ -14266,7 +14328,7 @@ msgstr "Target Users ({0})"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:911
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:989
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:542
+#: src/pages/settings/components/Folders/FolderSecurity.tsx:551
 msgid "Target Users & Groups"
 msgstr ""
 
@@ -14454,15 +14516,15 @@ msgstr "This field type ({fieldType}) isn't supported in this view yet."
 msgid "this file"
 msgstr "this file"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2479
+#: src/pages/folders/components/Upload/Upload.tsx:2530
 msgid "This file can't be retried automatically — remove it and add it again."
 msgstr "This file can't be retried automatically — remove it and add it again."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2982
+#: src/pages/folders/components/Upload/Upload.tsx:3036
 msgid "This file has expired with date {dateLabel}. Do you want to export?"
 msgstr "This file has expired with date {dateLabel}. Do you want to export?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2883
+#: src/pages/folders/components/Upload/Upload.tsx:2937
 msgid "This file hasn't finished staging yet. Please wait a moment and try again."
 msgstr "This file hasn't finished staging yet. Please wait a moment and try again."
 
@@ -14475,11 +14537,11 @@ msgid "This file is too large. Please upload a file smaller than 5 MB."
 msgstr "This file is too large. Please upload a file smaller than 5 MB."
 
 #. placeholder {0}: badStatuses .map((item) => `${item.fieldName}: ${item.status}`) .join(', ')
-#: src/pages/folders/components/Upload/Upload.tsx:2983
+#: src/pages/folders/components/Upload/Upload.tsx:3037
 msgid "This file still has expired or invalid fields ({0}). Do you want to export?"
 msgstr "This file still has expired or invalid fields ({0}). Do you want to export?"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1858
+#: src/pages/folders/components/DocumentDetailsView.tsx:1842
 msgid "This file was deleted. Kindly try a new file."
 msgstr "This file was deleted. Kindly try a new file."
 
@@ -14523,7 +14585,7 @@ msgstr "This portal is missing a master form or username field."
 msgid "This portal link is invalid or has not been published yet."
 msgstr "This portal link is invalid or has not been published yet."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:608
+#: src/pages/folders/components/DocumentDetailsView.tsx:605
 msgid "This related document cannot be removed."
 msgstr "This related document cannot be removed."
 
@@ -14547,7 +14609,7 @@ msgstr "This request is missing a few required details to move forward."
 msgid "This request is missing an instance id."
 msgstr "This request is missing an instance id."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3147
+#: src/pages/folders/components/DocumentDetailsView.tsx:3017
 msgid "This result cannot be added to related documents."
 msgstr "This result cannot be added to related documents."
 
@@ -14623,7 +14685,7 @@ msgstr "Time Running"
 msgid "Timeframe"
 msgstr "Timeframe"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1810
+#: src/pages/folders/components/DocumentDetailsView.tsx:1794
 msgid "Timeline"
 msgstr "Timeline"
 
@@ -14652,7 +14714,7 @@ msgstr "to Trash?"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:655
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2387
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2401
-#: src/pages/folders/components/DocumentDetailsView.tsx:2984
+#: src/pages/folders/components/DocumentDetailsView.tsx:2854
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "Today"
@@ -14880,7 +14942,7 @@ msgstr "Type · Actions"
 msgid "Type custom option..."
 msgstr "Type custom option..."
 
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:369
+#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:326
 msgid "Type label, then press +"
 msgstr "Type label, then press +"
 
@@ -14930,12 +14992,12 @@ msgstr ""
 msgid "Unable to create this request."
 msgstr "Unable to create this request."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1718
-#: src/pages/folders/components/DocumentDetailsView.tsx:1730
+#: src/pages/folders/components/DocumentDetailsView.tsx:1702
+#: src/pages/folders/components/DocumentDetailsView.tsx:1714
+#: src/pages/folders/components/DocumentDetailsView.tsx:1721
 #: src/pages/folders/components/DocumentDetailsView.tsx:1737
-#: src/pages/folders/components/DocumentDetailsView.tsx:1753
-#: src/pages/folders/components/DocumentDetailsView.tsx:3294
-#: src/pages/folders/components/DocumentDetailsView.tsx:3316
+#: src/pages/folders/components/DocumentDetailsView.tsx:3164
+#: src/pages/folders/components/DocumentDetailsView.tsx:3186
 msgid "Unable to download file"
 msgstr "Unable to download file"
 
@@ -14955,11 +15017,11 @@ msgstr "Unable to load activity."
 msgid "Unable to load AI summary"
 msgstr "Unable to load AI summary"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:972
+#: src/pages/folders/components/DocumentDetailsView.tsx:956
 msgid "Unable to load document details"
 msgstr "Unable to load document details"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2012
+#: src/pages/folders/components/Upload/Upload.tsx:2063
 msgid "Unable to load draft files."
 msgstr "Unable to load draft files."
 
@@ -14995,7 +15057,7 @@ msgstr "Unable to open sign request"
 msgid "Unable to preview document"
 msgstr "Unable to preview document"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1795
+#: src/pages/folders/components/DocumentDetailsView.tsx:1779
 msgid "Unable to print file"
 msgstr "Unable to print file"
 
@@ -15010,7 +15072,7 @@ msgstr "Unable to process this document."
 #~ msgid "Unable to read the selected file."
 #~ msgstr "Unable to read the selected file."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:637
+#: src/pages/folders/components/DocumentDetailsView.tsx:634
 msgid "Unable to remove related document"
 msgstr "Unable to remove related document"
 
@@ -15132,7 +15194,7 @@ msgid "Unsupported file type. Please upload a CSV or XLSX file."
 msgstr "Unsupported file type. Please upload a CSV or XLSX file."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:118
-#: src/pages/folders/components/DocumentDetailsView.tsx:526
+#: src/pages/folders/components/DocumentDetailsView.tsx:523
 #: src/pages/folders/components/ShareView.tsx:263
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1097
 msgid "Untitled"
@@ -15234,7 +15296,7 @@ msgstr "Upgrading…"
 #: src/pages/folders/components/DocumentSigningPage.tsx:1963
 #: src/pages/folders/components/FolderExplorer.tsx:616
 #: src/pages/folders/components/FolderFilterBar.tsx:771
-#: src/pages/folders/components/Upload/Upload.tsx:3825
+#: src/pages/folders/components/Upload/Upload.tsx:3909
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:229
@@ -15242,7 +15304,7 @@ msgstr "Upgrading…"
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:714
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:764
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:713
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:81
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:80
 msgid "Upload"
 msgstr "Upload"
 
@@ -15280,8 +15342,8 @@ msgstr "Upload Documents"
 msgid "Upload Documents for AI Classification"
 msgstr "Upload Documents for AI Classification"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3816
-#: src/pages/folders/components/Upload/Upload.tsx:3829
+#: src/pages/folders/components/Upload/Upload.tsx:3900
+#: src/pages/folders/components/Upload/Upload.tsx:3913
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 
@@ -15298,7 +15360,7 @@ msgstr "Upload failed for {itemName}"
 msgid "Upload favicon"
 msgstr "Upload favicon"
 
-#: src/pages/folders/components/Upload/Upload.tsx:3812
+#: src/pages/folders/components/Upload/Upload.tsx:3896
 msgid "Upload Files"
 msgstr "Upload Files"
 
@@ -15306,7 +15368,7 @@ msgstr "Upload Files"
 msgid "Upload invoice"
 msgstr "Upload invoice"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:78
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:77
 msgid "Upload new files"
 msgstr "Upload new files"
 
@@ -15406,7 +15468,7 @@ msgstr "Uploading the document…"
 msgid "Uploading..."
 msgstr "Uploading..."
 
-#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:369
+#: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:472
 #: src/pages/requests/components/workflow-request/components/CompactDropzone.tsx:96
 msgid "Uploading…"
 msgstr "Uploading…"
@@ -15481,7 +15543,7 @@ msgstr "Use the login password field from the master for authentication"
 #~ msgid "Use this setup"
 #~ msgstr "Use this setup"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2936
+#: src/pages/folders/components/DocumentDetailsView.tsx:2806
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:240
 #: src/pages/settings/components/AuditMonitoring.tsx:331
 #: src/pages/settings/components/AuditMonitoring.tsx:332
@@ -15580,8 +15642,8 @@ msgstr "Username Field"
 msgid "Users"
 msgstr "Users"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:54
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:842
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:53
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:952
 msgid "Users & Groups"
 msgstr "Users & Groups"
 
@@ -15716,7 +15778,7 @@ msgstr "Verify identity details and the compliance documents on file."
 msgid "Verify OTP"
 msgstr "Verify OTP"
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:822
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:932
 msgid "Verify policy details before saving restrictions."
 msgstr "Verify policy details before saving restrictions."
 
@@ -15758,7 +15820,7 @@ msgstr "Versioning strategy saved. Do you require an ERP or system integration, 
 #: src/pages/folders/components/FolderSharePopover.tsx:158
 #: src/pages/folders/components/FolderSharePopover.tsx:868
 #: src/pages/reports/components/ReportShareButton.tsx:23
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:75
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:74
 msgid "View"
 msgstr "View"
 
@@ -15798,6 +15860,10 @@ msgstr "View all {0} workflows"
 msgid "View all attachments ({moreCount} more)"
 msgstr "View all attachments ({moreCount} more)"
 
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:104
+msgid "View All Versions"
+msgstr "View All Versions"
+
 #: src/pages/folders/components/DocumentsListView.tsx:1098
 #: src/pages/folders/components/FolderTable.tsx:1470
 msgid "View Details"
@@ -15806,6 +15872,10 @@ msgstr ""
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4531
 #~ msgid "View Document"
 #~ msgstr ""
+
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:101
+msgid "View every document version"
+msgstr "View every document version"
 
 #: src/pages/forms/FormEntriesPage.tsx:1771
 msgid "View Line Items Table"
@@ -15954,7 +16024,7 @@ msgstr "We couldn't sign you in with Google. Please try again."
 msgid "We couldn't sign you in with Microsoft. Please try again."
 msgstr "We couldn't sign you in with Microsoft. Please try again."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2873
+#: src/pages/folders/components/Upload/Upload.tsx:2927
 msgid "We couldn't upload your file. Please try again."
 msgstr "We couldn't upload your file. Please try again."
 
@@ -16128,7 +16198,6 @@ msgstr "years"
 
 #: src/pages/reports/components/ReportsListView.tsx:204
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5540
-#: src/pages/settings/components/Folders/PiiRedactionWizardStep.tsx:188
 msgid "Yes"
 msgstr "Yes"
 
@@ -16137,7 +16206,7 @@ msgstr "Yes"
 msgid "Yes, Delete"
 msgstr "Yes, Delete"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2986
+#: src/pages/folders/components/DocumentDetailsView.tsx:2856
 #: src/pages/settings/components/credits/Credits.tsx:59
 msgid "Yesterday"
 msgstr "Yesterday"
@@ -16151,11 +16220,11 @@ msgstr "You"
 msgid "You do not have access. Admin privileges are required to save document security rules."
 msgstr "You do not have access. Admin privileges are required to save document security rules."
 
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:549
+#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:625
 msgid "You do not have access. Admin privileges are required to save security policies."
 msgstr "You do not have access. Admin privileges are required to save security policies."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2418
+#: src/pages/folders/components/DocumentDetailsView.tsx:2288
 msgid "You do not have permission to send for signature."
 msgstr "You do not have permission to send for signature."
 
