@@ -22,7 +22,7 @@ interface UploadQueueFileCardProps {
   className?: string
   disabled?: boolean
   missingMandatoryFields?: boolean
-  onExport?: (id: string) => Promise<void>
+  onExport?: (id: string) => Promise<void> | void
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onRetryOcr: (id: string) => void
@@ -150,7 +150,7 @@ export default function UploadQueueFileCard({
             <StagedFileExportButton
               disabled={!canRemove}
               fileName={entry.fileName || t`this file`}
-              onExport={() => onExport(entry.id)}
+              onExport={async () => { await onExport(entry.id) }}
             />
           ) : null}
 
