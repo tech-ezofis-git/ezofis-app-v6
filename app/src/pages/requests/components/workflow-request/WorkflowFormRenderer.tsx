@@ -402,7 +402,7 @@ const WorkflowFormRenderer = ({
     <div
       className={
         disableOwnScroll
-          ? 'w-full max-w-full min-w-0'
+          ? 'w-full max-w-full min-w-0 px-4 pt-3 pb-6'
           : 'w-full max-w-full min-w-0 overflow-x-hidden px-4 pt-3 pb-6'
       }
     >
