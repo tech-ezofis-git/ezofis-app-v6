@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { getStageFilePreviewSource } from '@/api/v6/uploadAndIndex'
 import Skeleton from '@/components/base/Skeleton'
 import cn from '@/utils/cn'
+import { getCachedThumbnail, setCachedThumbnail } from './thumbnailCache'
 
 const PDF_WORKER_URL = new URL(
   'pdfjs-dist/build/pdf.worker.min.js',
@@ -10,6 +12,29 @@ const PDF_WORKER_URL = new URL(
 type PdfJsModule = typeof import('pdfjs-dist')
 
 let pdfjsPromise: Promise<PdfJsModule> | null = null
+
+const THUMB_CONCURRENCY = 4
+let activeThumbRenders = 0
+const thumbWaiters: Array<() => void> = []
+
+const acquireThumbSlot = () =>
+  new Promise<void>((resolve) => {
+    if (activeThumbRenders < THUMB_CONCURRENCY) {
+      activeThumbRenders += 1
+      resolve()
+      return
+    }
+    thumbWaiters.push(() => {
+      activeThumbRenders += 1
+      resolve()
+    })
+  })
+
+const releaseThumbSlot = () => {
+  activeThumbRenders = Math.max(0, activeThumbRenders - 1)
+  const next = thumbWaiters.shift()
+  if (next) next()
+}
 
 const loadPdfJs = async () => {
   if (!pdfjsPromise) {
@@ -25,47 +50,68 @@ const loadPdfJs = async () => {
 }
 
 type PdfThumbnailProps = {
+  cacheKey?: string
   className?: string
   fallback?: ReactNode
   fileName: string
-  fileUrl: string
+  fileUrl?: string
+  stageFileId?: string
 }
 
 /** Renders page 1 of a PDF as a compact card thumbnail. */
 export default function PdfThumbnail({
+  cacheKey,
   className,
   fallback = null,
   fileName,
   fileUrl,
+  stageFileId,
 }: PdfThumbnailProps) {
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null)
+  const key = cacheKey || stageFileId || fileUrl || fileName
+  const [thumbUrl, setThumbUrl] = useState<string | null>(() =>
+    getCachedThumbnail(key),
+  )
   const [failed, setFailed] = useState(false)
-  const thumbUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-
-    const revokeThumb = () => {
-      if (thumbUrlRef.current) {
-        URL.revokeObjectURL(thumbUrlRef.current)
-        thumbUrlRef.current = null
-      }
+    const cached = getCachedThumbnail(key)
+    if (cached) {
+      setThumbUrl(cached)
+      setFailed(false)
+      return
     }
 
+    let cancelled = false
+    setFailed(false)
+
     const render = async () => {
-      revokeThumb()
-      setThumbUrl(null)
-      setFailed(false)
+      await acquireThumbSlot()
+      if (cancelled) {
+        releaseThumbSlot()
+        return
+      }
+
+      let pdf: Awaited<
+        ReturnType<PdfJsModule['getDocument']>['promise']
+      > | null = null
       try {
         const pdfjs = await loadPdfJs()
-        const loadingTask = pdfjs.getDocument({
-          disableRange: true,
-          disableStream: true,
-          url: fileUrl,
+        const remote = stageFileId
+          ? getStageFilePreviewSource(stageFileId)
+          : null
+        const task = pdfjs.getDocument({
+          disableAutoFetch: Boolean(remote),
+          disableRange: !remote,
+          disableStream: !remote,
+          httpHeaders: remote?.httpHeaders,
+          rangeChunkSize: 65536,
+          url: remote?.url || fileUrl || '',
         })
-        const pdf = await loadingTask.promise
+        pdf = await task.promise
+        if (cancelled) return
+
         const page = await pdf.getPage(1)
-        const viewport = page.getViewport({ scale: 0.6 })
+        const viewport = page.getViewport({ scale: 0.45 })
         const canvas = document.createElement('canvas')
         canvas.width = Math.max(1, Math.floor(viewport.width))
         canvas.height = Math.max(1, Math.floor(viewport.height))
@@ -78,19 +124,21 @@ export default function PdfThumbnail({
             viewport,
           })
           .promise
+        if (cancelled) return
 
         const blob = await new Promise<Blob | null>((resolve) =>
-          canvas.toBlob(resolve, 'image/jpeg', 0.75),
+          canvas.toBlob(resolve, 'image/jpeg', 0.72),
         )
-        await pdf.destroy()
-        if (cancelled) return
         if (!blob) throw new Error('Thumbnail encode failed')
 
         const objectUrl = URL.createObjectURL(blob)
-        thumbUrlRef.current = objectUrl
-        setThumbUrl(objectUrl)
+        setCachedThumbnail(key, objectUrl)
+        if (!cancelled) setThumbUrl(objectUrl)
       } catch {
         if (!cancelled) setFailed(true)
+      } finally {
+        if (pdf) void pdf.destroy().catch(() => undefined)
+        releaseThumbSlot()
       }
     }
 
@@ -98,9 +146,8 @@ export default function PdfThumbnail({
 
     return () => {
       cancelled = true
-      revokeThumb()
     }
-  }, [fileUrl])
+  }, [fileUrl, key, stageFileId])
 
   if (failed) return <>{fallback}</>
   if (!thumbUrl) {

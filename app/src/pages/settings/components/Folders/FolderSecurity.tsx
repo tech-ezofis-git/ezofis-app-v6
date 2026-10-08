@@ -53,12 +53,19 @@ export type FolderSecurityProps = {
 
 type TabKey = 'folder' | 'document' | 'retention' | 'pii'
 
+/** The PII Redaction tab stays in the page; flip this to show it again. */
+const SHOW_PII_REDACTION_TAB = false
+
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'folder', label: staticT`Folder Security` },
   { key: 'document', label: staticT`Document Security` },
   { key: 'retention', label: staticT`Retention Policy` },
   { key: 'pii', label: staticT`PII Redaction` },
 ]
+
+const visibleTabs = tabs.filter(
+  (tab) => SHOW_PII_REDACTION_TAB || tab.key !== 'pii',
+)
 
 const getInitials = (name: string) => {
   if (!name) return '?'
@@ -201,12 +208,14 @@ export default function FolderSecurity({
 
       res.data.policies.forEach((policy: FolderSecurityPolicy) => {
         const pFlags = policy.permissions || {
+          allVersionDocuments: false,
           checkIn: false,
           checkOut: false,
           delete: false,
           download: false,
           editDocument: false,
           editMetadata: false,
+          piiRedaction: false,
           print: false,
           sendForSignature: false,
           upload: false,
@@ -771,7 +780,7 @@ export default function FolderSecurity({
       {/* Tab Header */}
       <div className='flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--surface)] px-4'>
         <div className='flex h-10 min-w-0 items-center'>
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key
 
             return (

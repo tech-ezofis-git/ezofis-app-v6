@@ -28,7 +28,6 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import SettingsSearchInput from '../SettingsSearchInput'
 import SettingsSelectedChips from '../SettingsSelectedChips'
 
 type Permission = {
@@ -99,6 +98,12 @@ const DEFAULT_PERMISSIONS: Permission[] = [
     name: staticT`Delete`,
   },
   {
+    description: staticT`View every document version`,
+    enabled: false,
+    id: 'allVersionDocuments',
+    name: staticT`View All Versions`,
+  },
+  {
     description: staticT`Modify metadata fields`,
     enabled: false,
     id: 'editMetadata',
@@ -128,15 +133,78 @@ const DEFAULT_PERMISSIONS: Permission[] = [
     id: 'sendForSignature',
     name: staticT`Send for Signature`,
   },
+  {
+    description: staticT`Mask sensitive values in the preview`,
+    enabled: false,
+    id: 'piiRedaction',
+    name: staticT`PII Redaction`,
+  },
 ]
 
+type PermissionGroupId = 'access' | 'editing' | 'security'
+
+const PERMISSION_GROUPS: {
+  description: string
+  id: PermissionGroupId
+  ids: Array<keyof FolderPermissionFlags>
+  name: string
+}[] = [
+  {
+    description: staticT`Manage how users can access and perform general actions on documents.`,
+    id: 'access',
+    ids: [
+      'view',
+      'upload',
+      'download',
+      'print',
+      'delete',
+      'allVersionDocuments',
+    ],
+    name: staticT`Access & Document Actions`,
+  },
+  {
+    description: staticT`Control document modification, version handling, and workflow-related actions.`,
+    id: 'editing',
+    ids: [
+      'editMetadata',
+      'editDocument',
+      'checkOut',
+      'checkIn',
+      'sendForSignature',
+    ],
+    name: staticT`Editing & Workflow Actions`,
+  },
+  {
+    description: staticT`Control access to sensitive information and privacy-related features.`,
+    id: 'security',
+    ids: ['piiRedaction'],
+    name: staticT`Security & Privacy`,
+  },
+]
+
+const visibleGroupPermissions = (
+  group: (typeof PERMISSION_GROUPS)[number],
+  permissions: Permission[],
+) =>
+  group.ids
+    .map((id) => permissions.find((permission) => permission.id === id))
+    .filter((permission): permission is Permission => Boolean(permission))
+
+const permissionCountCapsuleClass = (enabled: number, total: number) => {
+  if (enabled <= 0) return 'border-gray-4 bg-gray-2 text-gray-11'
+  if (enabled >= total) return 'border-green-4 bg-green-2 text-green-11'
+  return 'border-primary-4 bg-primary-2 text-primary-11'
+}
+
 const PERMISSION_ICON_MAP: Record<keyof FolderPermissionFlags, string> = {
+  allVersionDocuments: 'tabler:versions',
   checkIn: 'tabler:lock-open',
   checkOut: 'tabler:lock',
   delete: 'tabler:trash',
   download: 'tabler:download',
   editDocument: 'tabler:edit',
   editMetadata: 'tabler:file-text',
+  piiRedaction: 'tabler:eye-off',
   print: 'tabler:printer',
   sendForSignature: 'tabler:writing',
   upload: 'tabler:upload',
@@ -224,7 +292,13 @@ export default function FolderSecurityPolicyWizard({
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
   const [permissions, setPermissions] =
     useState<Permission[]>(DEFAULT_PERMISSIONS)
-  const [permissionSearch, setPermissionSearch] = useState('')
+  const [openPermissionGroups, setOpenPermissionGroups] = useState<
+    Record<PermissionGroupId, boolean>
+  >({
+    access: true,
+    editing: true,
+    security: true,
+  })
   const [showSelectionError, setShowSelectionError] = useState(false)
 
   const loadDataRequestIdRef = useRef(0)
@@ -496,12 +570,14 @@ export default function FolderSecurityPolicyWizard({
     }
 
     const permissionFlags: FolderPermissionFlags = {
+      allVersionDocuments: false,
       checkIn: false,
       checkOut: false,
       delete: false,
       download: false,
       editDocument: false,
       editMetadata: false,
+      piiRedaction: false,
       print: false,
       sendForSignature: false,
       upload: false,
@@ -720,81 +796,8 @@ export default function FolderSecurityPolicyWizard({
 
               <Divider />
 
-              <div className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
-                <div className='flex items-center justify-between border-b border-[var(--border-default)] bg-surface-muted px-4 py-2.5'>
-                  <span className='text-xs font-semibold text-gray-13'>{t`Permissions Matrix`}</span>
-                  <SettingsSearchInput
-                    placeholder={t`Search permissions...`}
-                    value={permissionSearch}
-                    onChange={setPermissionSearch}
-                  />
-                </div>
-
-                <div className='ez-scrollbar max-h-[360px] divide-y divide-[var(--border-default)] overflow-y-auto'>
-                  {permissions.filter(
-                    (p) =>
-                      p.name
-                        .toLowerCase()
-                        .includes(permissionSearch.toLowerCase()) ||
-                      p.description
-                        .toLowerCase()
-                        .includes(permissionSearch.toLowerCase()),
-                  ).length === 0 ? (
-                    <div className='p-4 text-center text-xs text-gray-10'>{t`No matching permissions found`}</div>
-                  ) : (
-                    permissions
-                      .filter(
-                        (p) =>
-                          p.name
-                            .toLowerCase()
-                            .includes(permissionSearch.toLowerCase()) ||
-                          p.description
-                            .toLowerCase()
-                            .includes(permissionSearch.toLowerCase()),
-                      )
-                      .map((p) => (
-                        <div
-                          className='grid grid-cols-[160px_1fr_80px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-muted'
-                          key={p.id}
-                        >
-                          <div className='text-xs font-semibold text-gray-13'>
-                            {p.name}
-                          </div>
-                          <div className='text-xs leading-normal text-gray-10'>
-                            {p.description}
-                          </div>
-                          <div className='flex items-center justify-center'>
-                            {p.id === 'view' ? (
-                              <span className='inline-flex rounded-full bg-primary-3 px-2 py-0.5 align-middle text-[9px] font-semibold tracking-wide text-primary-11'>
-                                {t`Mandatory`}
-                              </span>
-                            ) : (
-                              <button
-                                type='button'
-                                className={cn(
-                                  'relative inline-flex h-5 w-9 rounded-full align-middle shadow-2xs transition',
-                                  p.enabled ? 'bg-primary-9' : 'bg-gray-4',
-                                )}
-                                onClick={() => togglePermission(p.id)}
-                              >
-                                <span
-                                  className={cn(
-                                    'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--control-thumb)] shadow transition',
-                                    p.enabled ? 'left-4.5' : 'left-0.5',
-                                  )}
-                                />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
-
-                <div className='flex items-center justify-between border-t border-[var(--border-default)] bg-surface-muted px-4 py-2 text-xs'>
-                  <span className='font-medium text-gray-10'>
-                    {t`${permissions.filter((p) => p.enabled).length} of ${permissions.length} permissions enabled`}
-                  </span>
+              <div className='flex flex-col gap-3'>
+                <div className='flex items-center justify-end text-xs'>
                   <button
                     className='font-semibold text-primary-9 transition hover:text-primary-10'
                     type='button'
@@ -806,6 +809,113 @@ export default function FolderSecurityPolicyWizard({
                       : t`Select All`}
                   </button>
                 </div>
+                {PERMISSION_GROUPS.map((group) => {
+                  const rows = visibleGroupPermissions(group, permissions)
+                  const isOpen = openPermissionGroups[group.id]
+                  const enabledCount = rows.filter((p) => p.enabled).length
+
+                  return (
+                    <div
+                      className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:border-gray-5 hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--gray-12)_16%,transparent)] active:translate-y-0 active:scale-[0.995]'
+                      key={group.id}
+                    >
+                      <button
+                        className={cn(
+                          'flex w-full cursor-pointer items-center justify-between gap-3 bg-surface px-4 py-3 text-left transition-colors duration-200 hover:bg-gray-2',
+                          isOpen && 'border-b border-[var(--border-default)]',
+                        )}
+                        type='button'
+                        onClick={() =>
+                          setOpenPermissionGroups((prev) => ({
+                            ...prev,
+                            [group.id]: !prev[group.id],
+                          }))
+                        }
+                      >
+                        <div className='min-w-0'>
+                          <div className='text-xs font-semibold text-gray-13'>
+                            {group.name}
+                          </div>
+                          <div className='mt-0.5 text-[11px] leading-normal text-gray-10'>
+                            {group.description}
+                          </div>
+                        </div>
+                        <div className='flex shrink-0 items-center gap-2'>
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+                              permissionCountCapsuleClass(
+                                enabledCount,
+                                rows.length,
+                              ),
+                            )}
+                          >
+                            {enabledCount}/{rows.length}
+                          </span>
+                          <span
+                            aria-hidden
+                            className='flex size-8 items-center justify-center rounded-md text-gray-11 transition duration-200 hover:bg-gray-3 hover:text-gray-12 hover:shadow-sm'
+                          >
+                            <Icon
+                              className={cn(
+                                'size-4 transition-transform duration-200',
+                                isOpen ? 'rotate-0' : '-rotate-90',
+                              )}
+                              name='tabler:chevron-down'
+                            />
+                          </span>
+                        </div>
+                      </button>
+                      {isOpen ? (
+                        rows.length === 0 ? (
+                          <div className='border-t border-[var(--border-default)] p-4 text-center text-xs text-gray-10'>{t`No matching permissions found`}</div>
+                        ) : (
+                          <div className='divide-y divide-[var(--border-default)] bg-gray-1'>
+                            {rows.map((p) => (
+                              <div
+                                className='grid grid-cols-[160px_1fr_80px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface'
+                                key={p.id}
+                              >
+                                <div className='text-xs font-semibold text-gray-13'>
+                                  {p.name}
+                                </div>
+                                <div className='text-xs leading-normal text-gray-10'>
+                                  {p.description}
+                                </div>
+                                <div className='flex items-center justify-center'>
+                                  {p.id === 'view' ? (
+                                    <span className='inline-flex rounded-full bg-primary-3 px-2 py-0.5 align-middle text-[9px] font-semibold tracking-wide text-primary-11'>
+                                      {t`Mandatory`}
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type='button'
+                                      className={cn(
+                                        'relative inline-flex h-5 w-9 rounded-full align-middle shadow-2xs transition',
+                                        p.enabled ? 'bg-primary-9' : 'bg-gray-4',
+                                      )}
+                                      onClick={() => togglePermission(p.id)}
+                                    >
+                                      <span
+                                        className={cn(
+                                          'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--control-thumb)] shadow transition',
+                                          p.enabled ? 'left-4.5' : 'left-0.5',
+                                        )}
+                                      />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      ) : null}
+                    </div>
+                  )
+                })}
+                <p className='text-xs font-medium text-gray-10'>
+                  {t`${permissions.filter((p) => p.enabled).length} of ${permissions.length} permissions enabled`}
+                </p>
               </div>
             </div>
           </AnimateScale>

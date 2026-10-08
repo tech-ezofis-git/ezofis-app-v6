@@ -16,12 +16,14 @@ export interface DocumentSecurityRule {
 }
 
 export interface FolderPermissionFlags {
+  allVersionDocuments: boolean
   checkIn: boolean
   checkOut: boolean
   delete: boolean
   download: boolean
   editDocument: boolean
   editMetadata: boolean
+  piiRedaction: boolean
   print: boolean
   sendForSignature: boolean
   upload: boolean
@@ -97,12 +99,14 @@ const isRequestCanceled = (err: any): boolean => {
 }
 
 export const FOLDER_PERMISSIONS_ALLOW_ALL: FolderPermissionFlags = {
+  allVersionDocuments: true,
   checkIn: true,
   checkOut: true,
   delete: true,
   download: true,
   editDocument: true,
   editMetadata: true,
+  piiRedaction: true,
   print: true,
   sendForSignature: true,
   upload: true,
@@ -110,12 +114,14 @@ export const FOLDER_PERMISSIONS_ALLOW_ALL: FolderPermissionFlags = {
 }
 
 export const FOLDER_PERMISSIONS_VIEW_ONLY: FolderPermissionFlags = {
+  allVersionDocuments: false,
   checkIn: false,
   checkOut: false,
   delete: false,
   download: false,
   editDocument: false,
   editMetadata: false,
+  piiRedaction: false,
   print: false,
   sendForSignature: false,
   upload: false,
@@ -151,12 +157,15 @@ const mergePermissionFlags = (
   if (!flags.length) return { ...FOLDER_PERMISSIONS_VIEW_ONLY }
   return flags.reduce<FolderPermissionFlags>(
     (acc, next) => ({
+      allVersionDocuments:
+        acc.allVersionDocuments || Boolean(next.allVersionDocuments),
       checkIn: acc.checkIn || Boolean(next.checkIn),
       checkOut: acc.checkOut || Boolean(next.checkOut),
       delete: acc.delete || Boolean(next.delete),
       download: acc.download || Boolean(next.download),
       editDocument: acc.editDocument || Boolean(next.editDocument),
       editMetadata: acc.editMetadata || Boolean(next.editMetadata),
+      piiRedaction: acc.piiRedaction || Boolean(next.piiRedaction),
       print: acc.print || Boolean(next.print),
       sendForSignature: acc.sendForSignature || Boolean(next.sendForSignature),
       upload: acc.upload || Boolean(next.upload),

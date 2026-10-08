@@ -26,6 +26,7 @@ import BaseButton from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import InfoCard from '@/components/base/InfoCard'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -61,7 +62,7 @@ import {
 } from './../../../../components/common/animations'
 import DraftFilesMediaLibrary from './DraftFilesMediaLibrary'
 import TableFieldInput from './TableFieldInput'
-import UploadQueueFileCard, { formatCreatedAt } from './UploadQueueFileCard'
+import UploadQueueFileCard from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
@@ -287,6 +288,15 @@ const formatFileSize = (size?: number) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`
 }
 
+const formatDraftDate = (value?: string) => {
+  if (!value?.trim()) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${day}-${month}-${date.getFullYear()}`
+}
+
 const safeJson = (value: unknown) => JSON.stringify(value, null, 2)
 
 const formatOcrFieldDescriptor = (field: RepositoryField) => {
@@ -391,27 +401,24 @@ const getOcrFieldStatusTone = (status: string): OcrFieldStatusTone => {
 
 const OCR_FIELD_STATUS_TONE_CLASS: Record<
   OcrFieldStatusTone,
-  { capsule: string; control: string; label: string }
+  { capsule: string; label: string; panel: string }
 > = {
   green: {
     capsule:
-      'border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-11)]',
-    control:
-      '[&_button]:bg-[var(--green-1)] [&_input]:border-[var(--green-4)] [&_input]:bg-[var(--green-1)] [&_textarea]:border-[var(--green-4)] [&_textarea]:bg-[var(--green-1)]',
+      'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]',
     label: 'text-[var(--green-11)]',
+    panel: 'border-[var(--green-4)] bg-[var(--green-1)]',
   },
   orange: {
     capsule:
-      'border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-11)]',
-    control:
-      '[&_button]:bg-[var(--orange-1)] [&_input]:border-[var(--orange-4)] [&_input]:bg-[var(--orange-1)] [&_textarea]:border-[var(--orange-4)] [&_textarea]:bg-[var(--orange-1)]',
+      'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]',
     label: 'text-[var(--orange-11)]',
+    panel: 'border-[var(--orange-4)] bg-[var(--orange-1)]',
   },
   red: {
-    capsule: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
-    control:
-      '[&_button]:bg-[var(--red-1)] [&_input]:border-[var(--red-4)] [&_input]:bg-[var(--red-1)] [&_textarea]:border-[var(--red-4)] [&_textarea]:bg-[var(--red-1)]',
+    capsule: 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]',
     label: 'text-[var(--red-11)]',
+    panel: 'border-[var(--red-4)] bg-[var(--red-1)]',
   },
 }
 
@@ -1345,7 +1352,6 @@ export default function Upload({
     () => queue.find((entry) => entry.id === openFileId) ?? null,
     [queue, openFileId],
   )
-  const activeCreatedLabel = formatCreatedAt(activeEntry?.createdAt)
 
   const updateEntry = useCallback(
     (
@@ -1354,16 +1360,21 @@ export default function Upload({
         | Partial<QueuedUploadFile>
         | ((entry: QueuedUploadFile) => Partial<QueuedUploadFile>),
     ) => {
-      setQueue((prev) =>
-        prev.map((entry) =>
-          entry.id === id
-            ? {
-              ...entry,
-              ...(typeof patch === 'function' ? patch(entry) : patch),
-            }
-            : entry,
-        ),
-      )
+      setQueue((prev) => {
+        let changed = false
+        const next = prev.map((entry) => {
+          if (entry.id !== id) return entry
+          const patchValue =
+            typeof patch === 'function' ? patch(entry) : patch
+          if (!patchValue || Object.keys(patchValue).length === 0) return entry
+          changed = true
+          return {
+            ...entry,
+            ...patchValue,
+          }
+        })
+        return changed ? next : prev
+      })
     },
     [],
   )
@@ -1428,6 +1439,8 @@ export default function Upload({
             const missing = queueRef.current.filter(
               (entry) =>
                 Boolean(entry.stageFileId) &&
+                !/\.pdf$/i.test(entry.fileName || '') &&
+                !/\.docx$/i.test(entry.fileName || '') &&
                 !isPlayablePreviewUrl(entry.previewUrl) &&
                 !draftPreviewLoadIdsRef.current.has(entry.id) &&
                 !draftPreviewInFlightRef.current.has(entry.id) &&
@@ -1443,63 +1456,73 @@ export default function Upload({
               return 0
             })
 
-            for (const entry of ordered) {
-              if (
-                draftPreviewLoadIdsRef.current.has(entry.id) ||
-                draftPreviewInFlightRef.current.has(entry.id) ||
-                softFailedThisPass.has(entry.id)
-              ) {
-                continue
-              }
+            const batchSize = 8
+            for (let index = 0; index < ordered.length; index += batchSize) {
+              const batch = ordered.slice(index, index + batchSize)
+              await Promise.all(
+                batch.map(async (entry) => {
+                  if (
+                    draftPreviewLoadIdsRef.current.has(entry.id) ||
+                    draftPreviewInFlightRef.current.has(entry.id) ||
+                    softFailedThisPass.has(entry.id)
+                  ) {
+                    return
+                  }
 
-              const stageId = String(
-                entry.stageFileId || entry.id.replace(/^staged-/, ''),
+                  const stageId = String(
+                    entry.stageFileId || entry.id.replace(/^staged-/, ''),
+                  )
+                  if (!stageId) {
+                    draftPreviewLoadIdsRef.current.add(entry.id)
+                    return
+                  }
+
+                  const attempts =
+                    draftPreviewAttemptsRef.current.get(entry.id) ?? 0
+                  if (attempts >= 4) {
+                    draftPreviewLoadIdsRef.current.add(entry.id)
+                    return
+                  }
+
+                  draftPreviewInFlightRef.current.add(entry.id)
+                  draftPreviewAttemptsRef.current.set(entry.id, attempts + 1)
+                  try {
+                    const blob = await fetchStageFileBlob(stageId)
+                    if (isUsableFileBlob(blob)) {
+                      const fileName = entry.fileName || 'file'
+                      const { blob: typedBlob, mimeType } = typedPreviewBlob(
+                        blob!,
+                        fileName,
+                      )
+                      const previewUrl = URL.createObjectURL(typedBlob)
+                      const latest = queueRef.current.find(
+                        (item) => item.id === entry.id,
+                      )
+                      updateEntry(entry.id, {
+                        file:
+                          latest?.file ||
+                          entry.file ||
+                          new File([typedBlob], fileName, { type: mimeType }),
+                        previewUrl,
+                      })
+                      draftPreviewLoadIdsRef.current.add(entry.id)
+                    } else if (blob) {
+                      draftPreviewLoadIdsRef.current.add(entry.id)
+                    } else {
+                      softFailedThisPass.add(entry.id)
+                    }
+                  } catch {
+                    softFailedThisPass.add(entry.id)
+                  } finally {
+                    draftPreviewInFlightRef.current.delete(entry.id)
+                  }
+                }),
               )
-              if (!stageId) {
-                draftPreviewLoadIdsRef.current.add(entry.id)
-                continue
-              }
+            }
 
-              const attempts =
-                draftPreviewAttemptsRef.current.get(entry.id) ?? 0
-              if (attempts >= 3) {
-                draftPreviewLoadIdsRef.current.add(entry.id)
-                continue
-              }
-
-              draftPreviewInFlightRef.current.add(entry.id)
-              draftPreviewAttemptsRef.current.set(entry.id, attempts + 1)
-              try {
-                const blob = await fetchStageFileBlob(stageId)
-                if (isUsableFileBlob(blob)) {
-                  const fileName = entry.fileName || 'file'
-                  const { blob: typedBlob, mimeType } = typedPreviewBlob(
-                    blob!,
-                    fileName,
-                  )
-                  const previewUrl = URL.createObjectURL(typedBlob)
-                  const latest = queueRef.current.find(
-                    (item) => item.id === entry.id,
-                  )
-                  updateEntry(entry.id, {
-                    file:
-                      latest?.file ||
-                      entry.file ||
-                      new File([typedBlob], fileName, { type: mimeType }),
-                    previewUrl,
-                  })
-                  draftPreviewLoadIdsRef.current.add(entry.id)
-                } else if (blob) {
-                  // Received a payload but it isn't a real file — stop retrying.
-                  draftPreviewLoadIdsRef.current.add(entry.id)
-                } else {
-                  softFailedThisPass.add(entry.id)
-                }
-              } catch {
-                softFailedThisPass.add(entry.id)
-              } finally {
-                draftPreviewInFlightRef.current.delete(entry.id)
-              }
+            if (softFailedThisPass.size > 0) {
+              softFailedThisPass.clear()
+              await new Promise((resolve) => window.setTimeout(resolve, 400))
             }
           }
         } while (draftPreviewNeedsRerunRef.current)
@@ -1957,6 +1980,7 @@ export default function Upload({
 
         if (!entries.length) {
           if (preferredLocal.length > 0) {
+            const uploadedId = preferredLocal[0]?.id ?? null
             setDraftCounts(
               countQueueDraftGroups(preferredLocal, repositoryFields),
             )
@@ -1967,7 +1991,8 @@ export default function Upload({
             draftPreviewAttemptsRef.current.clear()
             draftPreviewInFlightRef.current.clear()
             setQueue(preferredLocal)
-            setFocusedDraftId(preferredLocal[0]?.id ?? null)
+            setFocusedDraftId(uploadedId)
+            setSelectedDraftIds(uploadedId ? [uploadedId] : [])
             return
           }
           showToast({
@@ -1991,12 +2016,34 @@ export default function Upload({
         draftPreviewAttemptsRef.current.clear()
         draftPreviewInFlightRef.current.clear()
         setQueue(entries)
-        setFocusedDraftId((current) => {
-          if (current && entries.some((entry) => entry.id === current)) {
-            return current
-          }
-          return entries[0]?.id ?? null
-        })
+        const uploadedEntry = preferredLocal
+          .map(
+            (local) =>
+              entries.find(
+                (entry) =>
+                  entry.id === local.id ||
+                  (local.stageFileId && entry.stageFileId === local.stageFileId),
+              ) ?? null,
+          )
+          .find((entry): entry is QueuedUploadFile => Boolean(entry))
+        if (uploadedEntry) {
+          setFocusedDraftId(uploadedEntry.id)
+          setSelectedDraftIds([uploadedEntry.id])
+        } else {
+          setFocusedDraftId((current) => {
+            if (current && entries.some((entry) => entry.id === current)) {
+              return current
+            }
+            return entries[0]?.id ?? null
+          })
+          setSelectedDraftIds((current) => {
+            const stillThere = current.filter((id) =>
+              entries.some((entry) => entry.id === id),
+            )
+            if (stillThere.length > 0) return stillThere
+            return entries[0]?.id ? [entries[0].id] : []
+          })
+        }
       } catch {
         if (preferredLocal.length && tab === 'uploading') {
           setDraftCounts(
@@ -2006,6 +2053,10 @@ export default function Upload({
           setViewingDrafts(true)
           setOpenFileId(null)
           setQueue(preferredLocal)
+          setFocusedDraftId(preferredLocal[0]?.id ?? null)
+          setSelectedDraftIds(
+            preferredLocal[0]?.id ? [preferredLocal[0].id] : [],
+          )
           return
         }
         showToast({
@@ -2585,6 +2636,9 @@ export default function Upload({
           setOpenFileId(null)
           setViewingDrafts(true)
           setFocusedDraftId(newEntries[0]?.id ?? null)
+          setSelectedDraftIds(
+            newEntries[0]?.id ? [newEntries[0].id] : [],
+          )
         }
 
         if (newFiles.length < validFiles.length) {
@@ -3197,9 +3251,7 @@ export default function Upload({
     const fieldClassName = cn(
       'w-full',
       isSyncField &&
-        !statusToneClass &&
         '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
-      statusToneClass?.control,
     )
 
     const renderSuggestionCapsule = () => {
@@ -3376,9 +3428,16 @@ export default function Upload({
     }
 
     return (
-      <div className='flex w-full flex-col'>
+      <div
+        className={cn(
+          'flex w-full flex-col',
+          fieldStatus && statusToneClass
+            ? cn('rounded-xl border p-3', statusToneClass.panel)
+            : undefined,
+        )}
+      >
         {fieldStatus && statusToneClass ? (
-          <div className='mb-1 flex items-center justify-between gap-2'>
+          <div className='mb-2 flex items-center justify-between gap-2'>
             <div
               className={cn(
                 'flex min-w-0 items-center gap-1 text-13 font-medium',
@@ -3496,7 +3555,7 @@ export default function Upload({
     ensureDraftFieldsLoaded(focusedDraftId)
   }, [ensureDraftFieldsLoaded, focusedDraftId, viewingDrafts])
 
-  const handleExportQueuedFile = (id: string) => {
+  const handleExportQueuedFile = async (id: string) => {
     requestIndexEntry(id, { keepList: true })
   }
 
@@ -3619,6 +3678,13 @@ export default function Upload({
   const isListOnlyPage = isVerticalQueueLayout && !activeEntry
   const isDraftFullPage = viewingDrafts && isListOnlyPage
   const draftFileCount = draftQueue.length
+  const draftNavIndex = draftQueue.findIndex((entry) => entry.id === openFileId)
+  const previousDraft =
+    draftNavIndex > 0 ? draftQueue[draftNavIndex - 1] : null
+  const nextDraft =
+    draftNavIndex >= 0 && draftNavIndex < draftQueue.length - 1
+      ? draftQueue[draftNavIndex + 1]
+      : null
 
   const queueStrip = queue.length > 0 && showQueueList && (
     <div
@@ -3700,9 +3766,11 @@ export default function Upload({
           allSelected={allVisibleSelected}
           entries={draftQueue}
           exportableSelectedCount={selectedExportableCount}
+          focusedId={focusedDraftId}
           fullPage={isDraftFullPage}
           isBulkDeleting={isBulkDeleting}
           isBulkExporting={isBulkExporting}
+          repositoryFields={repositoryFields}
           selectedIds={selectedDraftIds}
           someSelected={someVisibleSelected}
           title={`${t`Draft Files`} (${draftFileCount})`}
@@ -3726,7 +3794,23 @@ export default function Upload({
           }}
           onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
           onBulkExport={() => setBulkExportConfirmOpen(true)}
+          onExport={handleExportQueuedFile}
+          onFieldChange={(entryId, fieldKey, value) => {
+            updateEntry(entryId, (entry) => {
+              if (String(entry.fieldValues?.[fieldKey] ?? '') === value) {
+                return {}
+              }
+              return {
+                fieldValues: { ...entry.fieldValues, [fieldKey]: value },
+              }
+            })
+          }}
+          onFocus={(id) => {
+            setFocusedDraftId(id)
+            if (id) ensureDraftFieldsLoaded(id)
+          }}
           onOpen={handleOpenQueuedFile}
+          onRegenerate={handleRetryOcr}
           onRemove={handleRemoveFromQueue}
           onToggleSelect={toggleDraftSelection}
           onSelectAll={(checked) => {
@@ -4137,6 +4221,36 @@ export default function Upload({
                   )
                 })}
               </div>
+              {viewingDrafts ? (
+                <div className='flex shrink-0 items-center gap-1 border-l border-[var(--gray-4)] pl-3'>
+                  <Tooltip content={t`Previous file`} position='top'>
+                    <button
+                      aria-label={t`Previous file`}
+                      className='flex size-8 items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+                      disabled={!previousDraft}
+                      type='button'
+                      onClick={() => {
+                        if (previousDraft) handleOpenQueuedFile(previousDraft.id)
+                      }}
+                    >
+                      <Icon className='size-4' name='lucide:chevron-left' />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content={t`Next file`} position='top'>
+                    <button
+                      aria-label={t`Next file`}
+                      className='flex size-8 items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+                      disabled={!nextDraft}
+                      type='button'
+                      onClick={() => {
+                        if (nextDraft) handleOpenQueuedFile(nextDraft.id)
+                      }}
+                    >
+                      <Icon className='size-4' name='lucide:chevron-right' />
+                    </button>
+                  </Tooltip>
+                </div>
+              ) : null}
             </div>
 
             <div className='grid h-full min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
@@ -4147,24 +4261,17 @@ export default function Upload({
                       <FileText size={18} />
                     </div>
                     <div className='min-w-0'>
-                      <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                        {t`Document Preview`}
-                      </h2>
-                      <div className='mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[var(--gray-9)]'>
-                        <Tooltip content={activeEntry.fileName} position='bottom-start'>
-                          <span className='block max-w-[150px] truncate cursor-pointer'>
-                            {activeEntry.fileName}
-                          </span>
-                        </Tooltip>
-                        <span className='text-[var(--gray-5)]'>•</span>
-                        <span>{formatFileSize(activeEntry.fileSize)}</span>
-                        {activeCreatedLabel ? (
-                          <>
-                            <span className='text-[var(--gray-5)]'>•</span>
-                            <span>{activeCreatedLabel}</span>
-                          </>
-                        ) : null}
-                      </div>
+                      <Tooltip content={activeEntry.fileName} position='bottom-start'>
+                        <h2 className='truncate text-base font-bold text-[var(--gray-13)]'>
+                          {activeEntry.fileName}
+                        </h2>
+                      </Tooltip>
+                      <p className='mt-0.5 text-xs font-medium text-[var(--gray-9)]'>
+                        {formatFileSize(activeEntry.fileSize)}
+                        {formatDraftDate(activeEntry.createdAt)
+                          ? ` ${formatDraftDate(activeEntry.createdAt)}`
+                          : ''}
+                      </p>
                     </div>
                   </div>
                   {isFieldsPhase && !isExporting && (
@@ -4280,12 +4387,7 @@ export default function Upload({
                               <Icon className='size-3 text-red-9' name='lucide:alert-circle' />
                               <span>{t`Save failed`}</span>
                             </span>
-                          ) : (
-                            <span className='inline-flex items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11 transition-all'>
-                              <Icon className='size-3 text-primary-9' name='lucide:cloud' />
-                              <span>{t`Auto-save`}</span>
-                            </span>
-                          ))}
+                          ) : null)}
                       </div>
                       <p className='text-xs font-medium text-[var(--gray-9)]'>
                         {isAnalyzing
@@ -4296,6 +4398,19 @@ export default function Upload({
                   </div>
 
                   <div className='flex items-center gap-3'>
+                    {!isExporting ? (
+                      <Tooltip content={t`Regenerate`} position='top'>
+                        <button
+                          aria-label={t`Regenerate`}
+                          className='flex size-8 items-center justify-center rounded-lg bg-secondary-3 text-secondary-11 transition-all hover:bg-secondary-4 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+                          disabled={isAnalyzing || isDeletingStageFile}
+                          type='button'
+                          onClick={() => handleRetryOcr(activeEntry.id)}
+                        >
+                          <Icon className='size-4' name='tabler:scan' />
+                        </button>
+                      </Tooltip>
+                    ) : null}
                     {!isExporting ? (
                       <Tooltip content={t`Delete staged file`} position='top'>
                         <button
@@ -4369,6 +4484,75 @@ export default function Upload({
 
                       return (
                         <div className='flex h-full flex-col'>
+                          {(() => {
+                            if (!activeEntry) return null
+                            const grouped = new Map<
+                              'danger' | 'info' | 'success',
+                              Array<{ name: string; status: string }>
+                            >()
+                            for (const field of repositoryFields) {
+                              const status = resolveVisibleOcrFieldStatus(
+                                field,
+                                activeEntry,
+                              )
+                              if (!status) continue
+                              const tone = getOcrFieldStatusTone(status)
+                              const variant =
+                                tone === 'red'
+                                  ? 'danger'
+                                  : tone === 'green'
+                                    ? 'success'
+                                    : 'info'
+                              const list = grouped.get(variant) ?? []
+                              list.push({ name: field.name, status })
+                              grouped.set(variant, list)
+                            }
+                            const joinNames = (names: string[]) => {
+                              if (names.length <= 1) return names[0] ?? ''
+                              if (names.length === 2) {
+                                return `${names[0]} and ${names[1]}`
+                              }
+                              return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
+                            }
+                            const cards = (
+                              ['danger', 'info', 'success'] as const
+                            ).flatMap((variant) => {
+                              const items = grouped.get(variant)
+                              if (!items?.length) return []
+                              const sameStatus = items.every(
+                                (item) => item.status === items[0].status,
+                              )
+                              return [
+                                {
+                                  description: sameStatus
+                                    ? joinNames(items.map((item) => item.name))
+                                    : items
+                                        .map(
+                                          (item) =>
+                                            `${item.name}: ${item.status}`,
+                                        )
+                                        .join('. '),
+                                  title: sameStatus
+                                    ? items[0].status
+                                    : t`Review these fields`,
+                                  variant,
+                                },
+                              ]
+                            })
+                            if (!cards.length) return null
+                            return (
+                              <div className='mb-3 flex shrink-0 flex-col gap-2'>
+                                {cards.map((card) => (
+                                  <InfoCard
+                                    description={card.description}
+                                    key={card.variant}
+                                    title={card.title}
+                                    variant={card.variant}
+                                  />
+                                ))}
+                              </div>
+                            )
+                          })()}
                           {syncRepoFields.length > 0 && (
                             <div className='shrink-0 pb-3'>
                               <div className='grid grid-cols-1 gap-4'>

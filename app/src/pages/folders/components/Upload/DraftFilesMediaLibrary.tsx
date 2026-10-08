@@ -1,14 +1,18 @@
 import { useLingui } from '@lingui/react/macro'
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import BaseButton from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
+import Skeleton from '@/components/base/Skeleton'
 import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import cn from '@/utils/cn'
+import DraftAttachmentFields, {
+  type DraftRepositoryField,
+} from './DraftAttachmentFields'
 import PdfThumbnail from './PdfThumbnail'
 import WordThumbnail from './WordThumbnail'
 import type { QueuedUploadFile } from './uploadQueueTypes'
@@ -18,17 +22,23 @@ type DraftFilesMediaLibraryProps = {
   allSelected: boolean
   entries: QueuedUploadFile[]
   exportableSelectedCount?: number
+  focusedId?: string | null
   fullPage?: boolean
   isBulkDeleting?: boolean
   isBulkExporting?: boolean
   missingMandatoryById: Record<string, boolean>
+  repositoryFields?: DraftRepositoryField[]
   selectedIds: string[]
   someSelected: boolean
   title?: string
   onBack?: () => void
   onBulkDelete: () => void
   onBulkExport: () => void
+  onExport?: (id: string) => void
+  onFieldChange?: (id: string, fieldKey: string, value: string) => void
+  onFocus?: (id: string | null) => void
   onOpen: (id: string) => void
+  onRegenerate?: (id: string) => void
   onRemove: (id: string) => void
   onSelectAll: (checked: boolean) => void
   onToggleSelect: (id: string, checked: boolean) => void
@@ -85,22 +95,29 @@ export default function DraftFilesMediaLibrary({
   allSelected,
   entries,
   exportableSelectedCount = 0,
+  focusedId = null,
   fullPage = false,
   isBulkDeleting = false,
   isBulkExporting = false,
   missingMandatoryById,
+  repositoryFields = [],
   selectedIds,
   someSelected,
   title,
   onBack,
   onBulkDelete,
   onBulkExport,
+  onExport,
+  onFieldChange,
+  onFocus,
   onOpen,
+  onRegenerate,
   onRemove,
   onSelectAll,
   onToggleSelect,
 }: DraftFilesMediaLibraryProps) {
   const { t } = useLingui()
+  const didSelectFirstRef = useRef(false)
   const [search, setSearch] = useState('')
   const [failedPreviewIds, setFailedPreviewIds] = useState<Set<string>>(
     () => new Set(),
@@ -121,14 +138,61 @@ export default function DraftFilesMediaLibrary({
     return entries.filter((entry) => entry.fileName.toLowerCase().includes(q))
   }, [entries, search])
 
-  const selectedCount = selectedIds.length
+  const focused =
+    filtered.find((entry) => entry.id === focusedId) ||
+    entries.find((entry) => entry.id === focusedId) ||
+    null
 
-  const gridClassName = cn(
-    'grid gap-3',
-    fullPage
-      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7'
-      : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5',
+  const entryIdsKey = useMemo(
+    () => entries.map((entry) => entry.id).join('|'),
+    [entries],
   )
+
+  const onFocusRef = useRef(onFocus)
+  const onToggleSelectRef = useRef(onToggleSelect)
+  const lastRequestedFocusRef = useRef<string | null>(null)
+  onFocusRef.current = onFocus
+  onToggleSelectRef.current = onToggleSelect
+
+  useEffect(() => {
+    if (!filtered.length) return
+
+    if (!didSelectFirstRef.current) {
+      didSelectFirstRef.current = true
+      const preferred =
+        filtered.find((entry) => entry.id === focusedId) ||
+        filtered.find((entry) => selectedIds.includes(entry.id)) ||
+        filtered[0]
+      if (!preferred) return
+      lastRequestedFocusRef.current = preferred.id
+      onFocusRef.current?.(preferred.id)
+      if (!selectedIds.includes(preferred.id)) {
+        onToggleSelectRef.current(preferred.id, true)
+      }
+      return
+    }
+
+    if (focusedId && entries.some((entry) => entry.id === focusedId)) return
+    const nextId = filtered[0].id
+    if (lastRequestedFocusRef.current === nextId) return
+    lastRequestedFocusRef.current = nextId
+    onFocusRef.current?.(nextId)
+    // entryIdsKey tracks membership; `entries` is read for the latest row.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryIdsKey, focusedId])
+
+  const selectedCount = selectedIds.length
+  const singleSelectedId = selectedIds.length === 1 ? selectedIds[0] : null
+
+  useEffect(() => {
+    if (!singleSelectedId || focusedId === singleSelectedId) return
+    if (lastRequestedFocusRef.current === singleSelectedId) return
+    lastRequestedFocusRef.current = singleSelectedId
+    onFocusRef.current?.(singleSelectedId)
+  }, [focusedId, singleSelectedId])
+
+  const gridClassName =
+    'grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3'
 
   const selectAllControls = (
     <div className='flex min-w-0 items-center gap-2 ml-2'>
@@ -214,10 +278,11 @@ export default function DraftFilesMediaLibrary({
         </div>
       )}
 
+      <div className='flex min-h-0 flex-1'>
       <div
         className={cn(
-          'ez-scrollbar min-h-0 flex-1 overflow-y-auto bg-surface',
-          fullPage ? 'p-4' : 'rounded-xl border border-gray-3 p-3',
+          'ez-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface',
+          fullPage ? 'px-5 pt-1 pb-4' : 'rounded-xl border border-gray-3 p-3',
         )}
       >
         {filtered.length === 0 ? (
@@ -236,12 +301,11 @@ export default function DraftFilesMediaLibrary({
               const showImage = Boolean(
                 fileUrl && isImageFile(entry.fileName) && !previewFailed,
               )
-              const showPdfThumb = Boolean(
-                fileUrl && isPdfFile(entry.fileName) && !previewFailed,
-              )
-              const showWordThumb = Boolean(
-                fileUrl && isWordFile(entry.fileName) && !previewFailed,
-              )
+              const showPdfThumb = isPdfFile(entry.fileName) && !previewFailed
+              const pdfSourceId = entry.stageFileId || null
+              const showWordThumb =
+                isWordFile(entry.fileName) && !previewFailed
+              const wordSourceId = entry.stageFileId || null
               const canSelect =
                 entry.status !== 'indexing' && entry.status !== 'indexed'
               const isUploadInProgress =
@@ -260,34 +324,45 @@ export default function DraftFilesMediaLibrary({
                   role='button'
                   tabIndex={0}
                   className={cn(
-                    'group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-surface text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]',
+                    'group/card relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-surface text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]',
                     selected
                       ? 'border-[var(--primary-9)] shadow-[0_4px_16px_color-mix(in_srgb,var(--primary-9)_35%,transparent)] hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--primary-9)_32%,transparent)]'
                       : 'border-gray-3 shadow-sm hover:border-gray-5 hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--gray-12)_16%,transparent)]',
                   )}
                   onClick={() => {
-                    if (entry.status !== 'indexing') onOpen(entry.id)
+                    if (!canSelect) {
+                      onFocus?.(entry.id)
+                      return
+                    }
+                    onToggleSelect(entry.id, !selected)
+                    if (!selected) onFocus?.(entry.id)
                   }}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      if (entry.status !== 'indexing') onOpen(entry.id)
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
+                    if (!canSelect) {
+                      onFocus?.(entry.id)
+                      return
                     }
+                    onToggleSelect(entry.id, !selected)
+                    if (!selected) onFocus?.(entry.id)
                   }}
                 >
-                  <div
-                    className='flex items-center justify-between gap-1 border-b border-gray-3 px-2 py-1'
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => event.stopPropagation()}
-                  >
-                    <InputCheckbox
-                      aria-label={t`Select file`}
-                      checked={selected}
-                      disabled={!canSelect}
-                      onChange={(checked) =>
-                        onToggleSelect(entry.id, checked)
-                      }
-                    />
+                  <div className='flex items-center justify-between gap-1 border-b border-gray-3 px-2 py-1'>
+                    <span
+                      className='inline-flex'
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
+                      <InputCheckbox
+                        aria-label={t`Select file`}
+                        checked={selected}
+                        disabled={!canSelect}
+                        onChange={(checked) =>
+                          onToggleSelect(entry.id, checked)
+                        }
+                      />
+                    </span>
                     <div className='flex items-center gap-0.5'>
                       {entry.status === 'ready' ? (
                         needsFields ? (
@@ -317,13 +392,16 @@ export default function DraftFilesMediaLibrary({
                         icon='lucide:trash-2'
                         size='xs'
                         variant='ghost'
-                        onClick={() => onRemove(entry.id)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onRemove(entry.id)
+                        }}
                       />
                     </div>
                   </div>
 
                   <div className='relative aspect-square w-full overflow-hidden bg-gray-2'>
-                    <div className='h-full w-full origin-center transition-transform duration-300 ease-out group-hover:scale-105'>
+                    <div className='h-full w-full origin-center transition-transform duration-300 ease-out group-hover/card:scale-105'>
                     {showImage ? (
                       <img
                         alt={entry.fileName}
@@ -331,22 +409,47 @@ export default function DraftFilesMediaLibrary({
                         src={fileUrl || undefined}
                         onError={() => markPreviewFailed(entry.id)}
                       />
-                    ) : showPdfThumb && fileUrl ? (
+                    ) : showPdfThumb ? (
                       <PdfThumbnail
-                        fileName={entry.fileName}
-                        fileUrl={fileUrl}
+                        cacheKey={entry.id}
                         fallback={fileTypeFallback}
+                        fileName={entry.fileName}
+                        fileUrl={fileUrl || undefined}
+                        stageFileId={pdfSourceId || undefined}
                       />
-                    ) : showWordThumb && fileUrl ? (
+                    ) : showWordThumb ? (
                       <WordThumbnail
-                        fileName={entry.fileName}
-                        fileUrl={fileUrl}
                         fallback={fileTypeFallback}
+                        fileName={entry.fileName}
+                        fileUrl={fileUrl || undefined}
+                        stageFileId={wordSourceId || undefined}
                       />
+                    ) : !fileUrl && isImageFile(entry.fileName) ? (
+                      <Skeleton className='h-full w-full rounded-none' />
                     ) : (
                       fileTypeFallback
                     )}
                     </div>
+                    <div className='pointer-events-none absolute inset-0 z-[1] bg-gray-12/0 transition-colors duration-200 group-hover/card:bg-gray-12/20' />
+                    <Tooltip
+                      className='absolute top-2 right-2 z-10'
+                      content={t`Open file`}
+                      offset={4}
+                      position='bottom'
+                    >
+                      <button
+                        aria-label={t`Open file`}
+                        className='flex size-8 items-center justify-center rounded-lg bg-gray-2 text-gray-12 opacity-0 shadow-sm transition-[opacity,background-color,transform] duration-150 group-hover/card:opacity-100 hover:bg-gray-3 active:scale-95'
+                        disabled={entry.status === 'indexing'}
+                        type='button'
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (entry.status !== 'indexing') onOpen(entry.id)
+                        }}
+                      >
+                        <Icon className='size-4' name='lucide:expand' />
+                      </button>
+                    </Tooltip>
                   </div>
 
                   <div className='border-t border-gray-3 px-3 py-2.5'>
@@ -376,7 +479,7 @@ export default function DraftFilesMediaLibrary({
                                 name={extIcon}
                               />
                               <p
-                                className='min-w-0 flex-1 truncate text-12 font-semibold leading-snug text-gray-12 group-hover:whitespace-normal group-hover:break-all'
+                                className='min-w-0 flex-1 truncate text-12 font-semibold leading-snug text-gray-12 group-hover/card:whitespace-normal group-hover/card:break-all'
                                 title={entry.fileName}
                               >
                                 {entry.fileName}
@@ -408,7 +511,7 @@ export default function DraftFilesMediaLibrary({
                           <div className='flex min-w-0 items-center gap-1.5'>
                             <Icon className='size-4 shrink-0' name={extIcon} />
                             <p
-                              className='min-w-0 flex-1 truncate text-12 font-semibold leading-snug text-gray-12 group-hover:whitespace-normal group-hover:break-all'
+                              className='min-w-0 flex-1 truncate text-12 font-semibold leading-snug text-gray-12 group-hover/card:whitespace-normal group-hover/card:break-all'
                               title={entry.fileName}
                             >
                               {entry.fileName}
@@ -427,6 +530,39 @@ export default function DraftFilesMediaLibrary({
             })}
           </div>
         )}
+      </div>
+      {selectedCount === 1 ? (
+        <aside className='flex w-[340px] shrink-0 flex-col border-l border-gray-3 bg-surface xl:w-[380px]'>
+          {!focused ? (
+            <p className='px-4 py-10 text-center text-13 text-gray-10'>
+              {t`Select a file to view extracted data.`}
+            </p>
+          ) : (
+            <DraftAttachmentFields
+              exportDisabled={
+                focused.status !== 'ready' ||
+                Boolean(missingMandatoryById[focused.id])
+              }
+              exportLoading={
+                focused.status === 'indexing' ||
+                focused.exportStatus === 'exporting'
+              }
+              fieldValues={focused.fieldValues}
+              fields={repositoryFields}
+              isAnalyzing={
+                focused.status === 'analyzing' || focused.status === 'queued'
+              }
+              onExport={() => onExport?.(focused.id)}
+              onFieldChange={(fieldKey, value) =>
+                onFieldChange?.(focused.id, fieldKey, value)
+              }
+              onRegenerate={
+                onRegenerate ? () => onRegenerate(focused.id) : undefined
+              }
+            />
+          )}
+        </aside>
+      ) : null}
       </div>
     </div>
   )

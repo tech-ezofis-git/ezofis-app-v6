@@ -13,7 +13,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
       labelWrapper: 'data-[disabled]:opacity-50 cursor-pointer',
       thumb: 'bg-[var(--control-thumb)] shadow-sm pointer-events-none',
       track: cn(
-        'bg-gray-4 mt-0.5 cursor-pointer ring-0 transition-all duration-300 peer-checked:bg-primary-9 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8',
+        'mt-0.5 cursor-pointer !bg-gray-4 ring-0 transition-all duration-300 peer-checked:!bg-primary-9 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8',
         Boolean(error) && 'border border-red-9',
       ),
     }
@@ -28,6 +28,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
         classNames={_classNames}
         ref={ref}
         size='xs'
+        style={{ '--switch-color': 'var(--primary-9)' }}
         withThumbIndicator={false}
         onChange={handleChange}
       />

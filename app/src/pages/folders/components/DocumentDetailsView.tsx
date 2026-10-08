@@ -30,8 +30,6 @@ import {
 } from '@/api/v6/folder/signRequest'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import InputText from '@/components/base/inputs/InputText'
-import Menu from '@/components/base/menu/Menu'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
@@ -88,8 +86,6 @@ import {
   emptyFolderPiiSettings,
   type FolderPiiSettings,
   resolveFolderPiiSettings,
-  userCanToggleFolderPii,
-  verifyFolderPiiPassword,
 } from '../utils/folderPiiSettings'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import {
@@ -394,6 +390,7 @@ export function DocumentDetailsView({
     download?: boolean
     editDocument?: boolean
     editMetadata?: boolean
+    piiRedaction?: boolean
     print?: boolean
     sendForSignature?: boolean
     upload?: boolean
@@ -648,7 +645,6 @@ export function DocumentDetailsView({
   const currentUserEmail = String(session?.email || '')
     .trim()
     .toLowerCase()
-  const currentUserId = String(session?.id || '').trim()
   const signerName =
     [session?.firstName, session?.lastName].filter(Boolean).join(' ').trim() ||
     session?.name ||
@@ -660,16 +656,7 @@ export function DocumentDetailsView({
   const [piiRepositoryFields, setPiiRepositoryFields] = useState<
     RepositoryFieldDto[]
   >([])
-  const [showUnredactedPreview, setShowUnredactedPreview] = useState(false)
-  const [piiPasswordMenuOpen, setPiiPasswordMenuOpen] = useState(false)
-  const [piiPasswordInput, setPiiPasswordInput] = useState('')
-  const [piiPasswordError, setPiiPasswordError] = useState('')
-
   useEffect(() => {
-    setShowUnredactedPreview(false)
-    setPiiPasswordMenuOpen(false)
-    setPiiPasswordInput('')
-    setPiiPasswordError('')
     let cancelled = false
     const loadFolderPii = async () => {
       if (!repositoryId) {
@@ -704,12 +691,9 @@ export function DocumentDetailsView({
   }, [repositoryId])
 
   const folderPiiEnabled = folderPiiSettings.enabled
-  const canToggleUnredacted = userCanToggleFolderPii(
-    folderPiiSettings,
-    currentUserId,
-  )
-  const enablePiiRedaction =
-    folderPiiEnabled && !(canToggleUnredacted && showUnredactedPreview)
+  // Folder security `piiRedaction` grants the original file. Everyone else sees the redacted preview.
+  const canViewOriginalFile = permissions?.piiRedaction === true
+  const enablePiiRedaction = folderPiiEnabled && !canViewOriginalFile
   const piiLevel = folderPiiSettings.level
   // low = selected values only; medium = + regex; high = + NER
   const usePiiNer = enablePiiRedaction && piiLevel === 'high'
@@ -2159,120 +2143,6 @@ export function DocumentDetailsView({
         <div className='flex shrink-0 items-center gap-1 sm:gap-1.5'>
           {!compactActions ? (
             <>
-              {canToggleUnredacted ? (
-                showUnredactedPreview ? (
-                  <Tooltip content={t`Show redacted file`} position='bottom'>
-                    <button
-                      aria-label={t`Show redacted file`}
-                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
-                      type='button'
-                      onClick={() => {
-                        setShowUnredactedPreview(false)
-                        setPiiPasswordInput('')
-                        setPiiPasswordError('')
-                      }}
-                    >
-                      <DynamicIcon className='h-4 w-4' name='eyeOff' />
-                    </button>
-                  </Tooltip>
-                ) : (
-                  <Menu
-                    closeOnItemClick={false}
-                    opened={piiPasswordMenuOpen}
-                    position='bottom-end'
-                    width={280}
-                    closeOnClickOutside
-                    withinPortal
-                    target={
-                      <Tooltip
-                        content={t`Show original file`}
-                        position='bottom'
-                      >
-                        <button
-                          aria-label={t`Show original file`}
-                          className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
-                          type='button'
-                        >
-                          <DynamicIcon className='h-4 w-4' name='eye' />
-                        </button>
-                      </Tooltip>
-                    }
-                    onChange={(opened) => {
-                      setPiiPasswordMenuOpen(opened)
-                      if (!opened) {
-                        setPiiPasswordInput('')
-                        setPiiPasswordError('')
-                      }
-                    }}
-                  >
-                    <div
-                      className='flex flex-col gap-2.5 p-2.5'
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => event.stopPropagation()}
-                    >
-                      <div className='text-13 font-semibold text-gray-12'>
-                        {t`Enter password`}
-                      </div>
-                      <p className='text-12 text-gray-11'>
-                        {t`Enter your PII access password to view the original file.`}
-                      </p>
-                      <InputText
-                        autoComplete='current-password'
-                        error={piiPasswordError || undefined}
-                        placeholder={t`Password`}
-                        type='password'
-                        value={piiPasswordInput}
-                        autoFocus
-                        onChange={(value) => {
-                          setPiiPasswordInput(value)
-                          if (piiPasswordError) setPiiPasswordError('')
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key !== 'Enter') return
-                          event.preventDefault()
-                          if (
-                            verifyFolderPiiPassword(
-                              folderPiiSettings,
-                              currentUserId,
-                              piiPasswordInput,
-                            )
-                          ) {
-                            setShowUnredactedPreview(true)
-                            setPiiPasswordMenuOpen(false)
-                            setPiiPasswordInput('')
-                            setPiiPasswordError('')
-                          } else {
-                            setPiiPasswordError(t`Incorrect password`)
-                          }
-                        }}
-                      />
-                      <Buttons
-                        className='w-full'
-                        label={t`Reveal original`}
-                        size='sm'
-                        type='button'
-                        onClick={() => {
-                          if (
-                            verifyFolderPiiPassword(
-                              folderPiiSettings,
-                              currentUserId,
-                              piiPasswordInput,
-                            )
-                          ) {
-                            setShowUnredactedPreview(true)
-                            setPiiPasswordMenuOpen(false)
-                            setPiiPasswordInput('')
-                            setPiiPasswordError('')
-                          } else {
-                            setPiiPasswordError(t`Incorrect password`)
-                          }
-                        }}
-                      />
-                    </div>
-                  </Menu>
-                )
-              ) : null}
-
               {isEditableDocType && canEditDocument ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
                   <button
