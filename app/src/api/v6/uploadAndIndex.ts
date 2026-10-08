@@ -28,6 +28,7 @@ export interface OcrFieldResult {
   name: string
   type: string
   value: string
+  status?: string
 }
 
 export interface UploadWithOcrResult {
@@ -80,6 +81,7 @@ interface UploadWithOcrParams {
   ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
   ocrJson?: string
   ocrText?: string
+  signal?: AbortSignal
 }
 
 // Pre-ticket upload for the normal (non-AP-Agent) workflow flow — see the
@@ -95,6 +97,7 @@ const uploadWithOcr = async ({
   ocrJson,
   ocrText,
   repositoryId,
+  signal,
 }: UploadWithOcrParams) => {
   const response: { data: UploadWithOcrResult | null; error: string } = {
     data: null,
@@ -121,15 +124,20 @@ const uploadWithOcr = async ({
         'Content-Type': 'multipart/form-data',
       },
       method: 'POST',
+      signal,
       url: '/uploadAndIndex/uploadWithOcr',
     })
     if (status !== 200 && status !== 201) throw new Error('invalid status code')
     response.data = data as UploadWithOcrResult
   } catch (e: unknown) {
-    console.error(e)
-    const err = e as { message?: string; response?: { data?: string } }
+    const err = e as { message?: string; name?: string; response?: { data?: string } }
+    if (err?.name !== 'CanceledError' && !signal?.aborted) {
+      console.error(e)
+    }
     response.error =
-      err?.response?.data || err?.message || 'error uploading file'
+      err?.name === 'CanceledError' || signal?.aborted
+        ? 'Upload cancelled'
+        : err?.response?.data || err?.message || 'error uploading file'
   }
   return response
 }
@@ -261,6 +269,11 @@ export interface StageFileSummary {
   name: string
   status: StageFileStatus
   createdAt?: string
+  downloadUrl?: string | null
+  fileId?: string
+  filePath?: string
+  fileType?: string
+  fileUrl?: string | null
   promotedItemId?: string | null
   repositoryId?: string
   repositoryName?: string
@@ -489,6 +502,39 @@ const indexStageFile = async (
   return response
 }
 
+const updateStageFileFields = async (
+  fileId: string,
+  payload: IndexStageFileRequest,
+) => {
+  const response: { data: IndexStageFileResponse | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: { ...getTenantHeaders() },
+      method: 'PUT',
+      url: `/uploadAndIndex/index/${fileId}/fields`,
+    })
+    if (status !== 200 && status !== 201 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+    response.data = data as IndexStageFileResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as {
+      message?: string
+      response?: { data?: unknown; status?: number }
+    }
+    response.error =
+      parseApiError(err?.response?.data) ||
+      err?.message ||
+      'error auto-saving staged file fields'
+  }
+  return response
+}
+
 const deleteStagedFiles = async (payload: {
   fileIds: string[]
   repositoryId: string
@@ -514,15 +560,46 @@ const deleteStagedFiles = async (payload: {
   return response
 }
 
-const fetchStageFileBlob = async (fileId: string) => {
+const looksLikeErrorPayload = async (blob: Blob) => {
+  const type = (blob.type || '').toLowerCase()
+  if (
+    type.includes('json') ||
+    type.includes('text/html') ||
+    type.includes('text/plain') ||
+    type.includes('xml')
+  ) {
+    return true
+  }
   try {
-    const { data } = await axiosV6({
-      headers: { ...getTenantHeaders() },
+    const head = (await blob.slice(0, 64).text()).trimStart()
+    return head.startsWith('{') || head.startsWith('<') || head.startsWith('[')
+  } catch {
+    return false
+  }
+}
+
+const fetchStageFileBlob = async (fileId: string) => {
+  if (!fileId) return null
+  try {
+    const { data, status } = await axiosV6({
+      headers: {
+        ...getTenantHeaders(),
+        Accept: '*/*',
+        // Instance default is application/json; omit it for binary GETs.
+        'Content-Type': undefined,
+      },
       method: 'GET',
       responseType: 'blob',
-      url: `/uploadAndIndex/files/${fileId}`,
+      // Same URL can be requested from grid + sidebar + open-file; do not
+      // abort in-flight downloads when a second caller starts.
+      skipCancellation: true,
+      url: `/uploadAndIndex/files/${encodeURIComponent(fileId)}`,
     })
-    return data as Blob
+    if (status < 200 || status >= 300) return null
+    const blob = data as Blob
+    if (!blob || blob.size < 5) return null
+    if (await looksLikeErrorPayload(blob)) return null
+    return blob
   } catch (e) {
     console.error('Error fetching stage file blob:', e)
     return null
@@ -606,12 +683,13 @@ const uploadAndIndexApi = {
   classifyDocumentWithText,
   deleteStagedFiles,
   fetchStageFileBlob,
+  getBulkUploadJobStatus,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  updateStageFileFields,
   uploadAndClassifyDocument,
   uploadWithOcr,
-  getBulkUploadJobStatus,
 }
 
 export default uploadAndIndexApi
@@ -624,6 +702,7 @@ export {
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  updateStageFileFields,
   uploadAndClassifyDocument,
   uploadWithOcr,
 }

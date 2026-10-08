@@ -1170,6 +1170,7 @@ export const uploadForOcr = async (
   repositoryId: string,
   file: File,
   fields: string[],
+  signal?: AbortSignal,
 ) => {
   const response: any = { data: null, error: '' }
 
@@ -1179,6 +1180,9 @@ export const uploadForOcr = async (
   formData.append('fields', JSON.stringify(fields))
 
   const parseError = (e: any) => {
+    if (e?.name === 'CanceledError' || signal?.aborted) {
+      return 'Upload cancelled'
+    }
     const errorPayload = e?.response?.data
     return (
       (typeof errorPayload === 'string' ? errorPayload : null) ||
@@ -1197,6 +1201,7 @@ export const uploadForOcr = async (
         'Content-Type': undefined,
       },
       method: 'POST',
+      signal,
       transformRequest: [(payload) => payload],
       url: '/uploadAndIndex/uploadForOcr',
     })
@@ -1208,7 +1213,9 @@ export const uploadForOcr = async (
 
     response.data = typeof data === 'string' ? JSON.parse(data) : data
   } catch (e: any) {
-    console.error(e)
+    if (e?.name !== 'CanceledError' && !signal?.aborted) {
+      console.error(e)
+    }
     response.error = parseError(e)
   }
 
