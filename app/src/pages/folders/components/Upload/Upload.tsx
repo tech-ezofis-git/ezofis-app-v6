@@ -631,45 +631,41 @@ const appendOcrFieldStatuses = (
   })
 }
 
-const extractOcrFieldStatusMap = (response: unknown) => {
-  const statusMap = new Map<string, string>()
-  if (!response || typeof response !== 'object') return statusMap
+/** Pull per-field status from ocrFieldList, ocrResult, or a nested ocrJson string/object. */
+const readOcrFieldStatuses = (target: Map<string, string>, value: unknown) => {
+  if (value == null) return
 
-  const payload = response as Record<string, unknown>
-  const dataObj = payload.data as Record<string, unknown> | undefined
-
-  appendOcrFieldStatuses(statusMap, payload.fields)
-  appendOcrFieldStatuses(statusMap, dataObj?.fields)
-
-  const sources = [
-    payload,
-    payload.data,
-    payload.result,
-    payload.fields,
-    payload.values,
-    payload.metadata,
-  ].filter(
-    (source): source is Record<string, unknown> =>
-      Boolean(source) && typeof source === 'object' && !Array.isArray(source),
-  )
-
-  sources.forEach((source) => {
-    appendOcrFieldStatuses(statusMap, source.ocrFieldList)
-    appendOcrFieldStatuses(statusMap, source.ocrResult)
-
-    const ocrJson = source.ocrJson
-    if (typeof ocrJson !== 'string' || !ocrJson.trim()) return
-
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return
     try {
-      const parsed = JSON.parse(ocrJson) as Record<string, unknown>
-      appendOcrFieldStatuses(statusMap, parsed.ocrResult)
-      appendOcrFieldStatuses(statusMap, parsed.fields)
-      appendOcrFieldStatuses(statusMap, parsed.ocrFieldList)
+      readOcrFieldStatuses(target, JSON.parse(trimmed))
     } catch {
       // ignore invalid OCR JSON payload
     }
-  })
+    return
+  }
 
+  if (Array.isArray(value)) {
+    appendOcrFieldStatuses(target, value)
+    return
+  }
+
+  if (typeof value !== 'object') return
+
+  const source = value as Record<string, unknown>
+  appendOcrFieldStatuses(target, source.ocrFieldList)
+  appendOcrFieldStatuses(target, source.ocrResult)
+  appendOcrFieldStatuses(target, source.fields)
+  if ('ocrJson' in source) readOcrFieldStatuses(target, source.ocrJson)
+  if (source.data && source.data !== value) {
+    readOcrFieldStatuses(target, source.data)
+  }
+}
+
+const extractOcrFieldStatusMap = (response: unknown) => {
+  const statusMap = new Map<string, string>()
+  readOcrFieldStatuses(statusMap, response)
   return statusMap
 }
 
@@ -697,7 +693,7 @@ const mapOcrResponseToFieldStatuses = (
   repositoryFields: RepositoryField[],
 ) => {
   const result: Record<string, string> = {}
-  if (!response || typeof response !== 'object') return result
+  if (response == null) return result
 
   const statusMap = extractOcrFieldStatusMap(response)
 
@@ -2141,10 +2137,16 @@ export default function Upload({
             return
           }
 
+          const fieldStatuses = mapOcrResponseToFieldStatuses(
+            data,
+            repositoryFields,
+          )
+
           const stagedEntry: QueuedUploadFile = {
             ...singleEntry,
             backendStatus: 'OCR',
             errorMessage: undefined,
+            fieldStatuses,
             fieldValues,
             masterSyncedValues: fieldValues,
             ocrExtractedValues,
@@ -2291,10 +2293,11 @@ export default function Upload({
         repositoryFields,
         entry.fileName,
       )
-      const fieldStatuses = mapOcrResponseToFieldStatuses(
-        data,
-        repositoryFields,
-      )
+      const fieldStatuses = {
+        ...(entry.fieldStatuses ?? {}),
+        ...mapOcrResponseToFieldStatuses(entry.rawOcrJson, repositoryFields),
+        ...mapOcrResponseToFieldStatuses(data, repositoryFields),
+      }
 
       let previewUrl = isPlayablePreviewUrl(entry.previewUrl)
         ? entry.previewUrl
