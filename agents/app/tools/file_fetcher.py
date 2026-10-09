@@ -16,7 +16,7 @@ logger = logging.getLogger("orchestrator.tools.file_fetcher")
 TOOL_ID = "file_fetcher"
 NO_LOGIN_ERROR = (
     "File Fetcher login is missing: send login_email / login_password, "
-    "or set FILE_FETCHER_LOGIN_EMAIL / FILE_FETCHER_LOGIN_PASSWORD."
+    "or set EZOFIS_LOGIN_EMAIL / EZOFIS_LOGIN_PASSWORD."
 )
 NO_TENANT_ERROR = "A tenant id is required."
 NO_PATH_ERROR = "Provide a path, or a timestamp and file name."
@@ -57,12 +57,30 @@ async def _login(
 ) -> str:
     """POST /auth/ezofis/login as `tenant_id`; returns the `Authorization` header value.
 
-    `email` / `password` from the request win over FILE_FETCHER_LOGIN_*.
+    `email` / `password` from the request win over EZOFIS_LOGIN_*.
     """
-    email = (email or settings.file_fetcher_login_email or "").strip()
-    password = password or settings.file_fetcher_login_password or ""
+    email = (email or settings.ezofis_login_email or settings.file_fetcher_login_email or "").strip()
+    password = password or settings.ezofis_login_password or settings.file_fetcher_login_password or ""
     if not email or not password:
         raise RuntimeError(NO_LOGIN_ERROR)
+    # DEPLOYMENT VERIFICATION: visible on every Classification/File Fetcher call.
+    # Look for 'file_fetcher_login_attempt' in console logs after deployment.
+    _src = (
+        "request" if (email and email not in (
+            (settings.ezofis_login_email or "").strip(),
+            (settings.file_fetcher_login_email or "").strip(),
+        ))
+        else ("EZOFIS_LOGIN_EMAIL" if (settings.ezofis_login_email or "").strip() == email
+              else "FILE_FETCHER_LOGIN_EMAIL")
+    )
+    logger.info(
+        "file_fetcher_login_attempt",
+        extra={
+            "tenant_id": tenant_id,
+            "login_email": email,
+            "credential_source": _src,
+        },
+    )
     response = await client.post(
         f"{base}/auth/ezofis/login",
         headers={"accept": "application/json", "Content-Type": "application/json", "X-Tenant-Id": tenant_id},
@@ -133,7 +151,7 @@ async def fetch_file_by_path(
 ) -> dict[str, Any]:
     """Log in as `tenant_id` (fresh token every call), download the file at `path` as base64, and decode it.
 
-    `login_email` / `login_password` override FILE_FETCHER_LOGIN_* for this call.
+    `login_email` / `login_password` override EZOFIS_LOGIN_* for this call.
 
     `file_bytes` holds the decoded file, ready for `run_ocr_tool(file_bytes=...)`.
     Never raises: missing input, login/HTTP errors and bad base64 come back as
