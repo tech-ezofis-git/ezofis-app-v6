@@ -182,8 +182,8 @@ export function ShareView({
       showToast({
         message:
           emails.length === 1
-            ? t`Invite sent`
-            : t`${emails.length} invites sent`,
+            ? t`File shared successfully`
+            : t`File shared with ${emails.length} recipients successfully`,
         variant: 'success',
       })
 

@@ -608,9 +608,11 @@ export const submitSignRequest = async (payload: {
 }
 
 export type SignRequestInvitePreview = {
+  createdAtUtc?: string | null
   expiresAtUtc?: string | null
   fields?: SignRequestFieldDto[]
   fileName?: string
+  invitedAtUtc?: string | null
   inviteToken: string
   itemId: string
   message?: string | null
@@ -618,6 +620,7 @@ export type SignRequestInvitePreview = {
   repositoryId: string
   requiredSocialProvider?: string | null
   requiresLogin?: boolean
+  requiresOtp?: boolean
   requiresPasswordSetup?: boolean
   senderEmail?: string
   senderName?: string
@@ -833,3 +836,148 @@ export const submitInviteSignRequest = async (payload: {
 
   return response
 }
+
+export const sendSignRequestOtp = async (payload: {
+  email: string
+  inviteToken: string
+  tenantId?: string
+}) => {
+  const response: { data: { sent: boolean } | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  const token = String(payload.inviteToken || '').trim()
+  const email = String(payload.email || '').trim()
+  if (!token) {
+    response.error = 'Invite token is required'
+    return response
+  }
+  if (!email) {
+    response.error = 'Email is required'
+    return response
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({ email }),
+      headers: getTenantHeaders(payload.tenantId),
+      method: 'POST',
+      skipAuthToken: true,
+      url: `/sign-requests/invite/${encodeURIComponent(token)}/otp`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data?.sent !== undefined ? data : { sent: true }
+  } catch (error: unknown) {
+    if (isRequestCanceled(error)) return response
+    console.error(error)
+    response.error = toErrorMessage(
+      error,
+      'Failed to send verification code. Please try again.',
+    )
+  }
+  return response
+}
+
+export const verifySignRequestOtp = async (payload: {
+  email: string
+  inviteToken: string
+  otp: string
+  tenantId?: string
+}) => {
+  const response: {
+    data: {
+      accessToken?: string
+      expiresIn?: number
+      tokenType?: string
+      userId?: string
+      [key: string]: any
+    } | null
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+  const token = String(payload.inviteToken || '').trim()
+  const email = String(payload.email || '').trim()
+  const otp = String(payload.otp || '').trim()
+  if (!token) {
+    response.error = 'Invite token is required'
+    return response
+  }
+  if (!email) {
+    response.error = 'Email is required'
+    return response
+  }
+  if (!otp) {
+    response.error = 'Verification code is required'
+    return response
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({ email, otp }),
+      headers: getTenantHeaders(payload.tenantId),
+      method: 'POST',
+      skipAuthToken: true,
+      url: `/sign-requests/invite/${encodeURIComponent(token)}/otp/verify`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = unwrap(data)
+  } catch (error: unknown) {
+    if (isRequestCanceled(error)) return response
+    console.error(error)
+    response.error = toErrorMessage(
+      error,
+      'Invalid or expired verification code.',
+    )
+  }
+  return response
+}
+
+export const declineSignRequestInvite = async (payload: {
+  accessToken?: string
+  inviteToken: string
+  reason?: string
+  tenantId?: string
+}) => {
+  const response: { data: unknown; error: string } = {
+    data: null,
+    error: '',
+  }
+  const token = String(payload.inviteToken || '').trim()
+  if (!token) {
+    response.error = 'Invite token is required'
+    return response
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      ...getTenantHeaders(payload.tenantId),
+    }
+    if (payload.accessToken) {
+      headers.Authorization = `Bearer ${payload.accessToken}`
+    }
+
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        reason: payload.reason?.trim() || 'Not my document',
+      }),
+      headers,
+      method: 'POST',
+      url: `/sign-requests/invite/${encodeURIComponent(token)}/decline`,
+    })
+
+    if (status !== 200 && status !== 201 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+    response.data = unwrap(data)
+  } catch (error: unknown) {
+    if (isRequestCanceled(error)) return response
+    console.error(error)
+    response.error = toErrorMessage(error, 'Unable to decline sign request')
+  }
+  return response
+}
+
