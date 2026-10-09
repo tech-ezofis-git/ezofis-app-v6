@@ -396,13 +396,14 @@ export default function SearchPage() {
               ref={inputRef}
               rightSectionWidth={loading && query.length > 0 ? 80 : 48}
               value={query}
+              leftSection={
+                <Icon className='size-5 text-primary-11' name='lucide:search' />
+              }
               classNames={{
                 input:
-                  'rounded-xl border border-gray-4 bg-surface py-6 pr-12 pl-12 text-lg text-gray-12 shadow-sm transition-all focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20',
+                  'rounded-xl border border-gray-4 bg-surface py-6 pr-12 !pl-16 text-lg text-gray-12 shadow-sm transition-all focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20',
+                section: 'bg-primary-4 text-primary-11',
               }}
-              leftSection={
-                <Icon className='size-5 text-gray-9' name='lucide:search' />
-              }
               rightSection={
                 <div className='flex items-center gap-2 pr-2'>
                   {loading && (

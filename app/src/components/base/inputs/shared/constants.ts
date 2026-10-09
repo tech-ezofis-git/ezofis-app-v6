@@ -10,6 +10,10 @@ export const classNames = {
   wrapper: 'm-0',
 } as const
 
+/** Primary fill for a search icon slot. Does not color the text field. */
+export const searchIconSectionClass =
+  'bg-primary-4 text-primary-11 [&_svg]:text-primary-11 data-[position=right]:bg-transparent data-[position=right]:text-inherit [&[data-position=right]_svg]:text-inherit'
+
 export const inputWrapperOrder: InputWrapperOrder[] = [
   'label',
   'input',
