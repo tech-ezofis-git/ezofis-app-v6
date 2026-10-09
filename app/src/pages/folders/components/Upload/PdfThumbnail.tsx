@@ -13,7 +13,7 @@ type PdfJsModule = typeof import('pdfjs-dist')
 
 let pdfjsPromise: Promise<PdfJsModule> | null = null
 
-const THUMB_CONCURRENCY = 4
+const THUMB_CONCURRENCY = 16
 let activeThumbRenders = 0
 const thumbWaiters: Array<() => void> = []
 
@@ -111,7 +111,7 @@ export default function PdfThumbnail({
         if (cancelled) return
 
         const page = await pdf.getPage(1)
-        const viewport = page.getViewport({ scale: 0.45 })
+        const viewport = page.getViewport({ scale: 0.22 })
         const canvas = document.createElement('canvas')
         canvas.width = Math.max(1, Math.floor(viewport.width))
         canvas.height = Math.max(1, Math.floor(viewport.height))

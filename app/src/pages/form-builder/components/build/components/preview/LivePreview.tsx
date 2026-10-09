@@ -17,11 +17,11 @@ import {
   uploadForOcr,
 } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
-import authUserStore from '@/stores/authUserStore'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
+import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
@@ -43,8 +43,10 @@ import {
   getFieldOptions as getSharedFieldOptions,
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
+  resolveShortTextFillValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 const LivePreview = () => {
@@ -94,7 +96,21 @@ const LivePreview = () => {
 
   useEffect(() => {
     if (isPreviewOpen) {
-      setPreviewModel((prev) => applyCalculatedFields(panels, prev))
+      setPreviewModel((prev) => {
+        const seeded = { ...prev }
+        for (const panel of panels) {
+          for (const field of panel.fields || []) {
+            if (
+              (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') &&
+              !seeded[field.id]
+            ) {
+              const resolved = resolveShortTextFillValue(field)
+              if (resolved) seeded[field.id] = resolved
+            }
+          }
+        }
+        return applyCalculatedFields(panels, seeded)
+      })
     }
   }, [isPreviewOpen, panels])
 
@@ -434,8 +450,8 @@ const LivePreviewDropdown = ({
   const parentValue = parentField
     ? model?.[parentField.id]
     : masterInfo.masterFormParentColumn && model
-    ? model[masterInfo.masterFormParentColumn]
-    : undefined
+      ? model[masterInfo.masterFormParentColumn]
+      : undefined
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
@@ -466,8 +482,8 @@ const LivePreviewDropdown = ({
   const repoParentRawValue = repoParentField
     ? model?.[repoParentField.id]
     : facetSource.repositoryFieldParent && model
-    ? model[facetSource.repositoryFieldParent]
-    : undefined
+      ? model[facetSource.repositoryFieldParent]
+      : undefined
 
   const repoParentValue = extractScalarStrings(repoParentRawValue)[0] || ''
 
@@ -851,26 +867,28 @@ const LivePreviewChoiceGroup = ({
 }
 
 const LivePreviewSearchableInput = ({
+  children,
+  fallbackRepositoryId,
   field,
   model,
   onChange,
   onUpdateModel,
-  fallbackRepositoryId,
-  children,
 }: {
+  children: React.ReactNode
+  fallbackRepositoryId?: string
   field: Question
   model: Record<string, any>
   onChange: (fieldId: string, value: any) => void
   onUpdateModel?: (patch: Record<string, any>) => void
-  fallbackRepositoryId?: string
-  children: React.ReactNode
 }) => {
   const [isSearching, setIsSearching] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+  const qrEnabled = Boolean(field.settings?.specific?.qrValue)
   const fieldValue = model[field.id] ?? ''
   const { panels } = useFormStore()
 
-  if (!isSearchField) return <>{children}</>
+  if (!isSearchField && !qrEnabled) return <>{children}</>
 
   const handleSearch = (overrideVal?: any) => {
     const valToSearch = overrideVal !== undefined ? overrideVal : fieldValue
@@ -894,31 +912,56 @@ const LivePreviewSearchableInput = ({
   }
 
   return (
-    <div className='flex items-end gap-1.5 w-full'>
-      <div
-        className='flex-1 min-w-0'
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            handleSearch()
-          }
-        }}
-      >
-        {children}
-      </div>
-      <button
-        className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
-        disabled={isSearching}
-        title='Search & Auto-Sync'
-        type='button'
-        onClick={() => handleSearch()}
-      >
-        {isSearching ? (
-          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
-        ) : (
-          <Icon className='size-4' name='lucide:search' />
+    <div className='relative w-full'>
+      <div className='flex w-full items-end gap-1.5'>
+        <div
+          className='min-w-0 flex-1'
+          onKeyDown={(e) => {
+            if (isSearchField && e.key === 'Enter') {
+              e.preventDefault()
+              handleSearch()
+            }
+          }}
+        >
+          {children}
+        </div>
+        {qrEnabled && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+            title='Scan QR / Barcode'
+            type='button'
+            onClick={() => setIsScannerOpen((prev) => !prev)}
+          >
+            <Icon className='size-4' name='lucide:qr-code' />
+          </button>
         )}
-      </button>
+        {isSearchField && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+            disabled={isSearching}
+            title='Search & Auto-Sync'
+            type='button'
+            onClick={() => handleSearch()}
+          >
+            {isSearching ? (
+              <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+            ) : (
+              <Icon className='size-4' name='lucide:search' />
+            )}
+          </button>
+        )}
+      </div>
+      {isScannerOpen && (
+        <div className='absolute top-full z-20 mt-1.5 w-full'>
+          <BarcodeScannerPanel
+            onClose={() => setIsScannerOpen(false)}
+            onScan={(rawValue) => {
+              onChange(field.id, rawValue)
+              setIsScannerOpen(false)
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -1176,8 +1219,8 @@ const renderPreviewInput = (
           onUpdateModel={onUpdateModel}
         >
           <TextInput
-            type='number'
             size='sm'
+            type='number'
             value={String(fieldValue)}
             variant='default'
             classNames={{
@@ -1253,8 +1296,8 @@ const renderPreviewInput = (
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
           model={model}
-          multiple
           value={fieldValue}
+          multiple
           onChange={(val) => onChange(field.id, val)}
         />
       )

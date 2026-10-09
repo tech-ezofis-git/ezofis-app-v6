@@ -175,7 +175,9 @@ export interface Question {
       conditionMappings?: { fieldId: string; operator: string; value: any }[]
       connectionId?: number | string
       connectionType?: 'SQL' | 'API' | 'ORACLE' | 'GOOGLE_SHEETS' | 'SALESFORCE'
+      hasLookupCondition?: boolean
       hasSameConnection?: boolean
+      hasSameFunction?: boolean
       hubName?: string
       mappingField?: string
       parentField?: string
@@ -186,6 +188,11 @@ export interface Question {
     pipingEnabled?: boolean
     specific: {
       addressFields?: string[]
+      addressMatchingFields?: Array<{
+        addressColumn: 'CITY' | 'COUNTRY' | 'POSTALCODE' | 'STATE'
+        id: string
+        selectFieldColumn: string[]
+      }>
       addressMode?: 'INTERNATIONAL' | 'SPECIFIC'
       allowCustomEntries?: boolean
       allowHalfRating?: boolean
@@ -212,24 +219,35 @@ export interface Question {
       fibFields?: any[]
       fibMapping?: string
       fileInStageOnly?: boolean
+      fillValueType?:
+        | 'ASSIGN_PARENT_FIELD'
+        | 'AUTO_GENERATE'
+        | 'CURRENT_YEAR'
+        | 'CUSTOM'
+        | 'LOGIN_NAME'
+        | 'MASTER'
+        | 'REQUEST_NO'
+        | 'USER_EMAIL'
+        | 'USER_NAME'
       fixedRowCount?: number
+      formSyncField?: string[]
       formulaTokens?: {
         type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION' | 'TABLE_SUM'
         value: string
       }[]
+      hasSameForm?: 'YES' | 'NO' | boolean
       iconCount?: number
       iconType?: 'STAR' | 'HEART' | 'SMILEY'
       importExportEnabled?: boolean
       inputMask?: string
+      isAddressField?: boolean
       isCalculationEnabled?: boolean
       isInteger?: boolean
       isSameMaster?: boolean
+      isSearchField?: 'YES' | 'NO'
       listUsersByGroup?: string
       lookupMaster?: string
       masterFormColumn?: string
-      formSyncField?: string[]
-      hasSameForm?: 'YES' | 'NO' | boolean
-      isSearchField?: 'YES' | 'NO'
       masterFormConditionColumn?: Array<{
         formField: string
         masterColumn: string
@@ -242,7 +260,6 @@ export interface Question {
         masterField: string
       }>
       masterSyncField?: string
-      searchFormId?: string | number
       matrixColumnLabels?: string[]
       matrixColumns?: string[]
       matrixRowLabels?: string[]
@@ -265,6 +282,7 @@ export interface Question {
       prefixLabel?: string
       preventNegative?: boolean
       qrCodeEnabled?: boolean
+      qrValue?: boolean
       repositoryField?: string
       repositoryFieldParent?: string
       repositoryId?: string
@@ -274,6 +292,7 @@ export interface Question {
       requireState?: boolean
       rowSelection?: 'NONE' | 'SINGLE' | 'MULTIPLE'
       rowsType?: 'ON_DEMAND' | 'FIXED'
+      searchFormId?: string | number
       separateOptionsUsing?: string
       showAllData?: boolean
       showMiddle?: boolean
@@ -311,11 +330,13 @@ export interface Question {
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
       uniqueCheck?: boolean
       variant?: 'default' | 'filled' | 'unstyled'
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
       yesLabel?: string
       yesNoLabels?: { no: string; yes: string }
     }
     validation: {
       allowedFileTypes?: string[]
+      answerIndicator?: 'NO' | 'YES'
       // Field IDs to auto-fill from this FILE_UPLOAD field's OCR extraction
       assignOtherControls?: string[]
       contentRule?: string
@@ -347,6 +368,7 @@ export interface Question {
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
       timeRange?: string
+      verificationRequired?: boolean
     }
   }
 }

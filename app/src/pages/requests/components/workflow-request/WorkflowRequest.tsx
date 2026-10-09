@@ -12,7 +12,10 @@ import {
   extractApAgentJobId,
   registerApAgentJobProcessing,
 } from '@/pages/requests/utils/registerApAgentJobProcessing'
-import { extractBlocks } from '@/pages/requests/utils/workflow.utils'
+import {
+  extractBlocks,
+  listWorkflowStages,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import AgentSummaryBoxes, {
@@ -27,6 +30,7 @@ import RepoFieldsPanel from './components/RepoFieldsPanel'
 import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
+import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
 interface Props {
   workflow: any
@@ -42,6 +46,7 @@ type SidePanel = 'attachments' | 'comments'
 const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const { t } = useLingui()
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
+  const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
   const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
   // Clicking a repository field highlights its value in the file preview —
@@ -77,6 +82,12 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     .toUpperCase()
     .replace(/[-_\s]/g, '')
   const isDocumentForm = initiateType === 'DOCUMENTFORM'
+
+  const workflowStages = useMemo(
+    () => listWorkflowStages(workflow),
+    [workflow],
+  )
+  const currentActivityId = workflowStages[0]?.id
 
   const agentBlocks = useMemo(() => {
     const blocks = extractBlocks(workflow)
@@ -419,6 +430,12 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       message: t`Request submitted successfully.`,
       variant: 'success',
     })
+    if (result.commentError) {
+      showToast({
+        message: t`The request was created, but the comments could not be saved.`,
+        variant: 'error',
+      })
+    }
 
     const responseData = (result as any)?.data
     const apAgentJobId = extractApAgentJobId(responseData)
@@ -460,12 +477,16 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   return (
     <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
       <Header
+        activePanel={activePanel}
         attachmentCount={attachments.length}
         commentCount={comments.length}
         isSubmitDisabled={isLoadingForm || !!loadError}
         isSubmitting={isSubmitting}
         title={t`New Request`}
         onClose={onClose}
+        onTogglePanel={(panel) =>
+          setActivePanel((current) => (current === panel ? null : panel))
+        }
         onSubmit={
           createdInstanceId || (isDocumentForm && hasAgents)
             ? undefined
@@ -594,9 +615,11 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   ) : activeTab === 'summary' ? (
                     <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
                       <WorkflowFormRenderer
+                        currentActivityId={currentActivityId}
                         formModel={formModel}
                         hasAttemptedSubmit={hasAttemptedSubmit}
                         hiddenFieldIds={summaryHiddenFieldIds}
+                        stages={workflowStages}
                         hidePanels={agentBlocks.length > 0}
                         missingMandatoryFieldIds={missingMandatoryFieldIds}
                         panels={panels}
@@ -611,9 +634,11 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                     lineItemsHiddenFieldIds.hasLineItems ? (
                     <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
                       <WorkflowFormRenderer
+                        currentActivityId={currentActivityId}
                         formModel={formModel}
                         hasAttemptedSubmit={hasAttemptedSubmit}
                         hiddenFieldIds={lineItemsHiddenFieldIds.ids}
+                        stages={workflowStages}
                         hidePanels={agentBlocks.length > 0}
                         missingMandatoryFieldIds={missingMandatoryFieldIds}
                         panels={panels}
@@ -657,10 +682,12 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
             // below, where the user still has to supply missing data.
             <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
               <WorkflowFormRenderer
+                currentActivityId={currentActivityId}
                 formModel={formModel}
                 hasAttemptedSubmit={hasAttemptedSubmit}
                 missingMandatoryFieldIds={missingMandatoryFieldIds}
                 panels={panels}
+                stages={workflowStages}
                 repoFieldHints={repoFieldHints}
                 repositoryId={workflow?.repositoryId}
                 onFieldChange={setFieldValue}
@@ -719,7 +746,20 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
               </div>
             </div>
           )}
-          {/* The sidebar is no longer rendered here because it is integrated into the tabs */}
+          {activePanel ? (
+            <WorkflowRequestSidebar
+              activePanel={activePanel}
+              attachments={attachments}
+              commentDraft={commentDraft}
+              comments={comments}
+              isUploadingAttachment={isUploadingAttachment}
+              onAddAttachment={addAttachment}
+              onClose={() => setActivePanel(null)}
+              onCommentDraftChange={setCommentDraft}
+              onRemoveAttachment={removeAttachment}
+              onSendComment={addComment}
+            />
+          ) : null}
         </div>
       )}
     </div>

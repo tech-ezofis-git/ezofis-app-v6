@@ -36,11 +36,11 @@ const AuthLayout = ({ children }: Props) => {
         : ''
 
   // Share + sign-request flows: centered form only (no marketing Hero).
-  // Plain /sign-in keeps the two-column AuthLayout.
   const isCenteredAuth =
     isResetPassword ||
     Boolean(shareToken) ||
     Boolean(inviteToken) ||
+    search?.auth === 'otp' ||
     redirect.includes('/sign-request/')
 
   if (isMobile) {
@@ -49,33 +49,37 @@ const AuthLayout = ({ children }: Props) => {
     )
   }
 
+  if (isCenteredAuth) {
+    return (
+      <div className='flex h-dvh max-h-dvh flex-col justify-between overflow-hidden bg-surface p-4 sm:px-8 sm:py-6'>
+        <AuthHeader />
+        <div className='flex min-h-0 flex-1 items-center justify-center overflow-y-auto py-2 sm:py-4'>
+          <div className='w-full max-w-115'>{children}</div>
+        </div>
+        <AuthFooter />
+      </div>
+    )
+  }
+
   return (
-    <div
-      className={
-        isCenteredAuth
-          ? 'block min-h-svh bg-surface'
-          : 'grid min-h-svh grid-cols-1 xl:grid-cols-2'
-      }
-    >
+    <div className='grid min-h-svh grid-cols-1 xl:grid-cols-2'>
       <div className='relative bg-surface p-6'>
         <AuthHeader />
         <div
           className='flex items-center justify-center py-10 xl:py-24'
           style={{ minHeight: 'calc(100dvh - 120px)' }}
         >
-          <div className={isCenteredAuth ? 'w-120' : 'w-105'}>{children}</div>
+          <div className='w-105'>{children}</div>
         </div>
         <AuthFooter />
       </div>
 
-      {!isCenteredAuth && (
-        <div className='col-span-1 hidden items-center justify-center bg-surface-muted p-6 xl:flex'>
-          <div className='flex size-full w-124 flex-col items-center justify-center'>
-            <Hero />
-            <Features />
-          </div>
+      <div className='col-span-1 hidden items-center justify-center bg-surface-muted p-6 xl:flex'>
+        <div className='flex size-full w-124 flex-col items-center justify-center'>
+          <Hero />
+          <Features />
         </div>
-      )}
+      </div>
     </div>
   )
 }

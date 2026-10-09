@@ -8,12 +8,12 @@ import {
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { type ComponentProps, useEffect, useState } from 'react'
-import type { Option } from '@/types/option'
 import type {
   LogicRule,
   Question,
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
+import type { Option } from '@/types/option'
 import connectorApi from '@/api/connector'
 import formApi from '@/api/form/form'
 import {
@@ -529,6 +529,24 @@ const QuestionSettings = ({
     { id: 'NONE', name: 'None' },
   ]
 
+  const fillValueOptions = [
+    { id: 'CUSTOM', name: 'Custom' },
+    { id: 'AUTO_GENERATE', name: 'Auto Generate' },
+    { id: 'USER_EMAIL', name: "Logged in user's email" },
+    { id: 'USER_NAME', name: "Logged in user's first name" },
+    { id: 'LOGIN_NAME', name: "Logged in user's name" },
+    { id: 'CURRENT_YEAR', name: 'Current year' },
+    { id: 'MASTER', name: 'Use values from a master table' },
+    { id: 'ASSIGN_PARENT_FIELD', name: 'Use values from another field' },
+    { id: 'REQUEST_NO', name: 'Use value from workflow Request No' },
+  ]
+
+  const autoGenerateSuffixOptions = [
+    { id: 'DATE_TIME', name: 'Datetime' },
+    { id: 'DATE', name: 'Date' },
+    { id: 'TIME', name: 'Time' },
+  ]
+
   return (
     <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-surface p-4 duration-500'>
       {/* 1. GENERAL SETUP SECTION */}
@@ -592,7 +610,8 @@ const QuestionSettings = ({
             />
           )}
 
-          {!isNumber &&
+          {!isShortText &&
+            !isNumber &&
             !isDate &&
             !isDateTime &&
             !isSelect &&
@@ -673,7 +692,8 @@ const QuestionSettings = ({
 
           {showMoreSetup && (
             <div className='animate-in fade-in slide-in-from-top-1 space-y-4 duration-200'>
-              {(isLongText ||
+              {(isShortText ||
+                isLongText ||
                 isNumber ||
                 isDate ||
                 isTime ||
@@ -689,7 +709,7 @@ const QuestionSettings = ({
                 />
               )}
 
-              <div className='bg-surface-muted/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+              <div className='flex items-center justify-between rounded-lg border border-gray-1 bg-surface-muted/50 px-3 py-2'>
                 <div className='text-xs font-semibold text-gray-7'>
                   Hide Label
                 </div>
@@ -718,7 +738,12 @@ const QuestionSettings = ({
                 </div>
               </div>
 
-              {(isLongText || isNumber || isDate || isTime || isDateTime) && (
+              {(isShortText ||
+                isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime) && (
                 <InputText
                   label='Tooltip (Hover Text)'
                   placeholder='Explanation on hover'
@@ -736,7 +761,7 @@ const QuestionSettings = ({
                 isTime ||
                 isDateTime ||
                 isSelect) && (
-                <div className='bg-surface-muted/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                <div className='flex items-center justify-between rounded-lg border border-gray-1 bg-surface-muted/50 px-3 py-2'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Answer Status Indicator
@@ -761,7 +786,8 @@ const QuestionSettings = ({
 
               <Divider className='border-gray-1' />
 
-              {(isLongText ||
+              {(isShortText ||
+                isLongText ||
                 isNumber ||
                 isDate ||
                 isTime ||
@@ -787,14 +813,15 @@ const QuestionSettings = ({
                 </div>
               )}
 
-              {!isLongText &&
+              {!isShortText &&
+                !isLongText &&
                 !isNumber &&
                 !isDate &&
                 !isTime &&
                 !isDateTime &&
                 !isSelect && (
                   <div className='grid grid-cols-2 gap-2'>
-                    <div className='bg-surface-muted/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='flex flex-col gap-2 rounded-xl border border-gray-1 bg-surface-muted/30 p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Read Only
                       </div>
@@ -807,7 +834,7 @@ const QuestionSettings = ({
                         }
                       />
                     </div>
-                    <div className='bg-surface-muted/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='flex flex-col gap-2 rounded-xl border border-gray-1 bg-surface-muted/30 p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Hidden Field
                       </div>
@@ -828,7 +855,8 @@ const QuestionSettings = ({
       </SettingsSection>
 
       {/* 2. SPECIFIC SETTINGS */}
-      {(isNumber ||
+      {(isShortText ||
+        isNumber ||
         isDate ||
         isTime ||
         isDateTime ||
@@ -888,6 +916,349 @@ const QuestionSettings = ({
           onToggle={() => setOpenSpecific(!openSpecific)}
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
+            {isShortText && (
+              <div className='space-y-4'>
+                <div>
+                  <label className='mb-2 block text-13 font-medium text-gray-11'>
+                    Fill Value
+                  </label>
+                  <InputSelect
+                    options={fillValueOptions}
+                    placeholder='How this field is pre-filled'
+                    value={
+                      fillValueOptions.find(
+                        (o) =>
+                          o.id ===
+                          (activeQuestion.settings.specific.fillValueType ||
+                            'CUSTOM'),
+                      ) || fillValueOptions[0]
+                    }
+                    onChange={(val) =>
+                      val && updateNested('specific', { fillValueType: val.id })
+                    }
+                  />
+                </div>
+
+                {(activeQuestion.settings.specific.fillValueType ||
+                  'CUSTOM') === 'CUSTOM' && (
+                  <InputText
+                    label='Custom Default Value'
+                    placeholder='Static text to pre-fill'
+                    value={
+                      activeQuestion.settings.specific.customDefaultValue || ''
+                    }
+                    onChange={(val: string) =>
+                      updateNested('specific', { customDefaultValue: val })
+                    }
+                  />
+                )}
+
+                {activeQuestion.settings.specific.fillValueType ===
+                  'AUTO_GENERATE' && (
+                  <div className='grid grid-cols-2 gap-2'>
+                    <InputText
+                      label='Prefix'
+                      placeholder='e.g. Form'
+                      value={
+                        activeQuestion.settings.specific.autoGenerateValue
+                          ?.prefix || ''
+                      }
+                      onChange={(v: string) =>
+                        updateNested('specific', {
+                          autoGenerateValue: {
+                            ...activeQuestion.settings.specific
+                              .autoGenerateValue,
+                            prefix: v,
+                          },
+                        })
+                      }
+                    />
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Suffix
+                      </label>
+                      <InputSelect
+                        options={autoGenerateSuffixOptions}
+                        value={
+                          autoGenerateSuffixOptions.find(
+                            (o) =>
+                              o.id ===
+                              activeQuestion.settings.specific.autoGenerateValue
+                                ?.suffix,
+                          ) || autoGenerateSuffixOptions[0]
+                        }
+                        onChange={(val) =>
+                          val &&
+                          updateNested('specific', {
+                            autoGenerateValue: {
+                              ...activeQuestion.settings.specific
+                                .autoGenerateValue,
+                              suffix: val.id,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.fillValueType ===
+                  'CURRENT_YEAR' && (
+                  <div>
+                    <label className='mb-1 block text-xs font-medium text-gray-11'>
+                      Year Type
+                    </label>
+                    <SegmentedControl
+                      size='xs'
+                      fullWidth
+                      data={[
+                        { label: 'Calendar Year', value: 'CALENDER_YEAR' },
+                        { label: 'Financial Year', value: 'FINANCIAL_YEAR' },
+                      ]}
+                      value={
+                        activeQuestion.settings.specific.yearType ||
+                        'CALENDER_YEAR'
+                      }
+                      onChange={(v) =>
+                        updateNested('specific', { yearType: v })
+                      }
+                    />
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.fillValueType ===
+                  'MASTER' && (
+                  <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Parent Field
+                      </label>
+                      <InputSelect
+                        placeholder='Field that selects the master row'
+                        options={allQuestions
+                          .filter((q) => q.id !== activeQuestion.id)
+                          .map((q) => ({
+                            id: q.id,
+                            name: q.label || 'Untitled Field',
+                          }))}
+                        value={
+                          allQuestions
+                            .map((q) => ({
+                              id: q.id,
+                              name: q.label || 'Untitled Field',
+                            }))
+                            .find(
+                              (q) =>
+                                q.id ===
+                                activeQuestion.settings.specific
+                                  .masterFormParentColumn,
+                            ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            masterFormParentColumn: val?.id || '',
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Master Table
+                      </label>
+                      <InputSelect
+                        options={masterForms}
+                        placeholder='Select master form'
+                        value={
+                          masterForms.find(
+                            (f: any) =>
+                              String(f.id) === String(currentMasterFormId),
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            masterFormColumn: '',
+                            masterFormId: val?.id || '',
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className='mb-1 block text-xs font-medium text-gray-11'>
+                        Column
+                      </label>
+                      <InputSelect
+                        options={masterColumns}
+                        placeholder='Master column to bind'
+                        value={
+                          masterColumns.find(
+                            (c: any) =>
+                              c.id ===
+                              activeQuestion.settings.specific.masterFormColumn,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateNested('specific', {
+                            masterFormColumn: val?.id || '',
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeQuestion.settings.specific.fillValueType ===
+                  'ASSIGN_PARENT_FIELD' && (
+                  <div>
+                    <label className='mb-1 block text-xs font-medium text-gray-11'>
+                      Parent Field
+                    </label>
+                    <InputSelect
+                      placeholder='Copy value from this field'
+                      options={allQuestions
+                        .filter(
+                          (q) =>
+                            q.id !== activeQuestion.id &&
+                            ['SHORT_TEXT', 'SINGLE_SELECT'].includes(q.type),
+                        )
+                        .map((q) => ({
+                          id: q.id,
+                          name: q.label || 'Untitled Field',
+                        }))}
+                      value={
+                        allQuestions
+                          .map((q) => ({
+                            id: q.id,
+                            name: q.label || 'Untitled Field',
+                          }))
+                          .find(
+                            (q) =>
+                              q.id ===
+                              activeQuestion.settings.specific.parentFieldId,
+                          ) || null
+                      }
+                      onChange={(val) =>
+                        updateNested('specific', {
+                          parentFieldId: val?.id || '',
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
+                {[
+                  'USER_EMAIL',
+                  'USER_NAME',
+                  'LOGIN_NAME',
+                  'REQUEST_NO',
+                ].includes(
+                  activeQuestion.settings.specific.fillValueType || '',
+                ) && (
+                  <div className='text-[10px] text-gray-6 italic'>
+                    {
+                      fillValueOptions.find(
+                        (o) =>
+                          o.id ===
+                          activeQuestion.settings.specific.fillValueType,
+                      )?.name
+                    }{' '}
+                    is populated automatically at runtime — no further setup
+                    needed.
+                  </div>
+                )}
+
+                <Divider className='border-dashed border-gray-1' />
+
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Address Autocomplete
+                    </div>
+                    <div className='text-[10px] text-gray-6'>
+                      Geocode typed address, split into other fields
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={
+                      activeQuestion.settings.specific.isAddressField || false
+                    }
+                    onChange={(checked) =>
+                      updateNested('specific', { isAddressField: checked })
+                    }
+                  />
+                </div>
+
+                {activeQuestion.settings.specific.isAddressField && (
+                  <div className='space-y-2 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+                    <div className='text-[11px] font-bold text-gray-8 uppercase'>
+                      Address Matching Fields
+                    </div>
+                    {(
+                      activeQuestion.settings.specific.addressMatchingFields ||
+                      []
+                    ).map((row, rIdx) => (
+                      <div
+                        className='grid grid-cols-2 items-center gap-2'
+                        key={row.id}
+                      >
+                        <span className='text-xs font-medium text-gray-10'>
+                          {row.addressColumn}
+                        </span>
+                        <InputSelectMultiple
+                          placeholder='Target field(s)'
+                          options={allQuestions
+                            .filter((q) => q.id !== activeQuestion.id)
+                            .map((q) => ({
+                              id: q.id,
+                              name: q.label || 'Untitled Field',
+                            }))}
+                          value={allQuestions
+                            .filter((q) =>
+                              (row.selectFieldColumn || []).includes(q.id),
+                            )
+                            .map((q) => ({
+                              id: q.id,
+                              name: q.label || 'Untitled Field',
+                            }))}
+                          onChange={(opts: Option[]) => {
+                            const current = [
+                              ...(activeQuestion.settings.specific
+                                .addressMatchingFields || []),
+                            ]
+                            current[rIdx] = {
+                              ...current[rIdx],
+                              selectFieldColumn: opts.map((o) => String(o.id)),
+                            }
+                            updateNested('specific', {
+                              addressMatchingFields: current,
+                            })
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Divider className='border-dashed border-gray-1' />
+
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Read Values from QR Code
+                    </div>
+                    <div className='text-[10px] text-gray-6'>
+                      Show a scan button beside the field
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={activeQuestion.settings.specific.qrValue || false}
+                    onChange={(checked) =>
+                      updateNested('specific', { qrValue: checked })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
             {isCountryCode && (
               <div className='space-y-4'>
                 <InputText
@@ -1640,7 +2011,7 @@ const QuestionSettings = ({
                 {showSelectAdvanced && (
                   <>
                     {isMulti && (
-                      <div className='bg-surface-muted/50 space-y-4 rounded-xl border border-gray-1 p-3'>
+                      <div className='space-y-4 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
                         <div className='flex items-center justify-between'>
                           <div>
                             <div className='text-xs font-bold text-gray-8'>
@@ -1937,7 +2308,7 @@ const QuestionSettings = ({
 
             {isNumber && (
               <div className='space-y-4'>
-                <div className='bg-surface-muted/50 space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-bold text-gray-13'>
@@ -2107,7 +2478,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.dateDefaultValueType ===
                   'CUSTOM' && (
-                  <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
+                  <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
                     <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
                       {isDateTime
                         ? 'Pick Fixed Date & Time'
@@ -2190,7 +2561,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.timeDefaultValueType ===
                   'CUSTOM' && (
-                  <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
+                  <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
                     <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
                       Pick Fixed Time
                     </label>
@@ -2246,7 +2617,7 @@ const QuestionSettings = ({
                     Default Content
                   </label>
                   <div className='overflow-hidden rounded-lg border bg-surface'>
-                    <div className='bg-surface-muted flex items-center gap-1 border-b border-gray-1 p-1'>
+                    <div className='flex items-center gap-1 border-b border-gray-1 bg-surface-muted p-1'>
                       <Icon
                         className='rounded p-1 text-gray-4 hover:bg-surface'
                         height={14}
@@ -2266,7 +2637,7 @@ const QuestionSettings = ({
                         name='lucide:list'
                         width={14}
                       />
-                      <div className='bg-blue-2 text-blue-11 hover:bg-blue-3 ml-auto flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-colors'>
+                      <div className='ml-auto flex cursor-pointer items-center gap-1 rounded bg-blue-2 px-2 py-0.5 text-[10px] font-bold text-blue-11 transition-colors hover:bg-blue-3'>
                         <Icon height={10} name='lucide:plus' width={10} />
                         Insert Field
                       </div>
@@ -2401,7 +2772,7 @@ const QuestionSettings = ({
                                 id={col.id}
                                 key={col.id}
                               >
-                                <div className='group/col bg-surface-muted/80 flex-1 space-y-2 rounded-lg border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
+                                <div className='group/col flex-1 space-y-2 rounded-lg border border-gray-2 bg-surface-muted/80 p-2.5 transition-colors hover:border-gray-3'>
                                   <div className='flex items-center justify-between gap-2'>
                                     <input
                                       className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
@@ -2453,13 +2824,14 @@ const QuestionSettings = ({
                                       <Select
                                         comboboxProps={{ width: 340 }}
                                         data={TABLE_COLUMN_TYPES}
-                                        searchable
                                         size='xs'
                                         value={col.type || 'SHORT_TEXT'}
+                                        searchable
                                         classNames={{
                                           input:
                                             'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
-                                          option: 'whitespace-normal break-words',
+                                          option:
+                                            'break-words whitespace-normal',
                                         }}
                                         onChange={(val) =>
                                           val &&
@@ -2753,7 +3125,7 @@ const QuestionSettings = ({
                       Min Label
                     </label>
                     <input
-                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.min ||
@@ -2774,7 +3146,7 @@ const QuestionSettings = ({
                       Mid Label
                     </label>
                     <input
-                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.mid ||
@@ -2795,7 +3167,7 @@ const QuestionSettings = ({
                       Max Label
                     </label>
                     <input
-                      className='bg-surface-muted w-full rounded border border-gray-1 px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.max ||
@@ -2976,7 +3348,7 @@ const QuestionSettings = ({
 
             {isFullName && (
               <div className='space-y-4'>
-                <div className='bg-surface-muted space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted p-3'>
                   <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
                     Field Options
                   </div>
@@ -3061,7 +3433,7 @@ const QuestionSettings = ({
                     }
                   />
                 </div>
-                <div className='bg-surface-muted space-y-3 rounded-xl border border-gray-1 p-3'>
+                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted p-3'>
                   <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
                     Required Fields
                   </div>
@@ -3305,6 +3677,31 @@ const QuestionSettings = ({
                 </div>
               )}
 
+              {isShortText &&
+                activeQuestion.settings.validation.contentRule === 'EMAIL' && (
+                  <div className='flex items-center justify-between rounded-lg border border-gray-1 bg-surface-muted/40 p-2.5'>
+                    <div>
+                      <div className='text-xs font-bold text-gray-13'>
+                        Require Email OTP Verification
+                      </div>
+                      <div className='text-[10px] text-gray-6'>
+                        User must verify a one-time code before submitting
+                      </div>
+                    </div>
+                    <InputSwitch
+                      checked={
+                        activeQuestion.settings.validation
+                          .verificationRequired || false
+                      }
+                      onChange={(checked) =>
+                        updateNested('validation', {
+                          verificationRequired: checked,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
               {isNumber &&
                 (activeQuestion.settings.validation.contentRule === 'DECIMAL' ||
                   activeQuestion.settings.validation.contentRule ===
@@ -3386,7 +3783,7 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.dateLimitType ===
                     'RANGE' && (
-                    <div className='bg-surface-muted grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
+                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-1 bg-surface-muted p-3'>
                       <div>
                         <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
                           Start Date
@@ -3492,7 +3889,7 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.timeLimitType ===
                     'RANGE' && (
-                    <div className='bg-surface-muted grid grid-cols-2 gap-2 rounded-lg border border-gray-1 p-3'>
+                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-1 bg-surface-muted p-3'>
                       <div>
                         <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
                           Start Time
@@ -3714,7 +4111,7 @@ const QuestionSettings = ({
                                 .allowedFileTypes || []
                             ).includes(ext)
                               ? 'border-accent-primary bg-accent-soft text-accent-primary'
-                              : 'hover:bg-surface-hover border-gray-2 bg-surface text-gray-8 hover:border-accent-primary/40',
+                              : 'border-gray-2 bg-surface text-gray-8 hover:border-accent-primary/40 hover:bg-surface-hover',
                           )}
                           onClick={() => {
                             const current =
@@ -3812,7 +4209,8 @@ const QuestionSettings = ({
 
       {/* 4. DATA LOOKUP SECTION */}
       {!isDivider &&
-        (isLongText ||
+        (isShortText ||
+          isLongText ||
           isNumber ||
           isDate ||
           isTime ||
@@ -3920,7 +4318,7 @@ const QuestionSettings = ({
                 }
               />
 
-              <div className='bg-surface-muted/50 space-y-3 rounded-xl border border-gray-1 p-3'>
+              <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
                 <div className='text-xs font-bold text-gray-12'>
                   Column Mappings
                 </div>
@@ -4137,18 +4535,20 @@ const QuestionSettings = ({
                 Search Field (Lookup)
               </label>
               <SegmentedControl
-                fullWidth
                 size='xs'
+                fullWidth
+                data={[
+                  { label: 'Yes', value: 'YES' },
+                  { label: 'No', value: 'NO' },
+                ]}
                 value={
                   activeQuestion.settings.specific.isSearchField === 'YES'
                     ? 'YES'
                     : 'NO'
                 }
-                data={[
-                  { label: 'Yes', value: 'YES' },
-                  { label: 'No', value: 'NO' },
-                ]}
-                onChange={(val) => updateNested('specific', { isSearchField: val })}
+                onChange={(val) =>
+                  updateNested('specific', { isSearchField: val })
+                }
               />
             </div>
 
@@ -4159,17 +4559,17 @@ const QuestionSettings = ({
                     Same Form
                   </label>
                   <SegmentedControl
-                    fullWidth
                     size='xs'
+                    fullWidth
+                    data={[
+                      { label: 'Yes', value: 'YES' },
+                      { label: 'No', value: 'NO' },
+                    ]}
                     value={
                       activeQuestion.settings.specific.hasSameForm === 'NO'
                         ? 'NO'
                         : 'YES'
                     }
-                    data={[
-                      { label: 'Yes', value: 'YES' },
-                      { label: 'No', value: 'NO' },
-                    ]}
                     onChange={(val) =>
                       updateNested('specific', { hasSameForm: val })
                     }
@@ -4217,7 +4617,8 @@ const QuestionSettings = ({
                       }
                     />
                     <div className='mt-1 text-[10px] text-gray-6 italic'>
-                      Matches previous entries of current form and populates selected fields.
+                      Matches previous entries of current form and populates
+                      selected fields.
                     </div>
                   </div>
                 ) : (
@@ -4227,8 +4628,8 @@ const QuestionSettings = ({
                         Forms *
                       </label>
                       <InputSelect
-                        placeholder='Select Master Form'
                         options={masterForms}
+                        placeholder='Select Master Form'
                         value={
                           masterForms.find(
                             (f: any) =>
@@ -4253,8 +4654,8 @@ const QuestionSettings = ({
                         Master Form Search Match Field *
                       </label>
                       <InputSelect
-                        placeholder='Select Master Field'
                         options={searchMasterFields}
+                        placeholder='Select Master Field'
                         value={
                           searchMasterFields.find(
                             (col: any) =>
@@ -4307,7 +4708,7 @@ const QuestionSettings = ({
                           .masterFormSyncSettings || []
                       ).map((row: any, rIdx: number) => (
                         <div
-                          className='relative rounded-lg border border-border-default bg-surface p-3 space-y-2.5 shadow-2xs'
+                          className='relative space-y-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-2xs'
                           key={row.id || rIdx}
                         >
                           <div className='flex items-center justify-between border-b border-border-default/60 pb-1.5'>
@@ -4318,8 +4719,8 @@ const QuestionSettings = ({
                               color='red'
                               icon='lucide:trash-2'
                               size='xs'
-                              variant='ghost'
                               title='Delete sync mapping'
+                              variant='ghost'
                               onClick={() => {
                                 const current = (
                                   activeQuestion.settings.specific
@@ -4343,11 +4744,9 @@ const QuestionSettings = ({
                                   .filter(
                                     (q) =>
                                       q.id !== activeQuestion.id &&
-                                      ![
-                                        'DIVIDER',
-                                        'HEADING',
-                                        'LABEL',
-                                      ].includes(q.type),
+                                      !['DIVIDER', 'HEADING', 'LABEL'].includes(
+                                        q.type,
+                                      ),
                                   )
                                   .map((q) => ({
                                     id: q.id,
@@ -4379,7 +4778,10 @@ const QuestionSettings = ({
                             </div>
 
                             <div className='flex items-center gap-1.5 py-0.5 text-accent-primary'>
-                              <Icon className='size-3.5 shrink-0' name='lucide:arrow-down' />
+                              <Icon
+                                className='size-3.5 shrink-0'
+                                name='lucide:arrow-down'
+                              />
                               <span className='text-[10px] font-medium text-gray-10'>
                                 Populates from Master Field
                               </span>
@@ -4387,8 +4789,8 @@ const QuestionSettings = ({
 
                             <div>
                               <InputSelect
-                                placeholder='Select Master Field'
                                 options={searchMasterFields}
+                                placeholder='Select Master Field'
                                 value={
                                   searchMasterFields.find(
                                     (col: any) => col.id === row.masterField,
@@ -4484,7 +4886,7 @@ const QuestionSettings = ({
                 Visual Style
               </label>
               <SegmentedControl
-                className='bg-surface-muted w-full border border-gray-1'
+                className='w-full border border-gray-1 bg-surface-muted'
                 size='xs'
                 value={activeQuestion.settings.specific.variant || 'default'}
                 data={[
@@ -4504,7 +4906,7 @@ const QuestionSettings = ({
                     Divider Style
                   </label>
                   <SegmentedControl
-                    className='bg-surface-muted border border-gray-1'
+                    className='border border-gray-1 bg-surface-muted'
                     size='xs'
                     fullWidth
                     data={[
@@ -4555,7 +4957,7 @@ const QuestionSettings = ({
         onToggle={() => setOpenAdvanced(!openAdvanced)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-          <div className='bg-surface-muted rounded-lg border border-gray-1 p-3'>
+          <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
             <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
               Field ID / Key
             </div>
@@ -4605,7 +5007,7 @@ const QuestionSettings = ({
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
             {logicRules.length === 0 ? (
-              <div className='bg-surface-muted/50 rounded-xl border border-gray-2 p-4 text-center'>
+              <div className='rounded-xl border border-gray-2 bg-surface-muted/50 p-4 text-center'>
                 <div className='mb-1 text-sm font-semibold text-gray-9'>
                   Visibility Logic
                 </div>
@@ -4646,7 +5048,7 @@ const QuestionSettings = ({
                           {idx === 0 ? 'If' : 'And if'}
                         </span>
                         <button
-                          className='hover:text-red-9 text-gray-4 transition-colors'
+                          className='text-gray-4 transition-colors hover:text-red-9'
                           title='Remove rule'
                           onClick={() => removeLogicRule(rule.id)}
                         >

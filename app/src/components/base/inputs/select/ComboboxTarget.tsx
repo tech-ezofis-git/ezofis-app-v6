@@ -97,7 +97,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
     const chevron = (
       <Icon
-        className='text-gray-10'
+        className='size-4 text-gray-10'
         name={rightSectionIcon || 'lucide:chevron-down'}
       />
     )

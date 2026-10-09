@@ -287,7 +287,11 @@ const ReviewLaunchStep = () => {
           />
 
           <ReviewSummaryCard
-            icon={selectedStorage.logo ? undefined : 'tabler:cloud'}
+            icon={
+              selectedStorage.logo
+                ? undefined
+                : selectedStorage.icon || 'tabler:cloud'
+            }
             iconClassName='bg-green-2 text-green-11'
             label='Storage'
             logo={selectedStorage.logo}

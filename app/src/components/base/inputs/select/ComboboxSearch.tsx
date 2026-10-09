@@ -20,18 +20,23 @@ const ComboboxSearch = ({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     onSearch(e.currentTarget.value)
 
-  const _leftSection = <Icon className='text-gray-8' name='lucide:search' />
+  const _leftSection = (
+    <Icon className='text-primary-11' name='lucide:search' />
+  )
 
   return (
     <Base.Search
       className={className}
       leftSection={_leftSection}
-      leftSectionWidth={40}
+      leftSectionPointerEvents='none'
+      leftSectionWidth={28}
       placeholder={placeholder}
       value={search}
       classNames={{
         input:
-          'm-0 h-10 w-full border-gray-3 bg-transparent placeholder:text-gray-8',
+          'm-0 h-10 w-full border-gray-3 bg-transparent !pl-8 placeholder:text-gray-8',
+        section:
+          'bg-primary-4 text-primary-11 data-[position=right]:bg-transparent data-[position=right]:text-inherit',
       }}
       onChange={handleChange}
       onKeyDown={onKeyDown}

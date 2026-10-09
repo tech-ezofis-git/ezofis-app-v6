@@ -14,9 +14,11 @@ interface Props extends PinInputProps {
 }
 
 const InputPin = forwardRef<HTMLInputElement, Props>(
-  ({ placeholder = '', ...rest }, ref) => {
+  ({ placeholder = '', type = 'number', onChange, ...rest }, ref) => {
     return (
       <Base
+        inputMode='numeric'
+        type={type}
         {...rest}
         placeholder={placeholder}
         ref={ref}
@@ -25,6 +27,13 @@ const InputPin = forwardRef<HTMLInputElement, Props>(
           pinInput: 'flex-1',
         }}
         oneTimeCode
+        onChange={(val) => {
+          if (type === 'number') {
+            onChange(val.replace(/\D/g, ''))
+          } else {
+            onChange(val)
+          }
+        }}
       />
     )
   },

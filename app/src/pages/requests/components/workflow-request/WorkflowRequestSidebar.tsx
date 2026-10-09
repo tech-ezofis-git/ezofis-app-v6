@@ -1,4 +1,3 @@
-import AnimateSlideUp from '@/components/common/animations/AnimateSlideUp'
 import AttachmentsPanel, {
   type AttachmentEntry,
 } from './components/AttachmentsPanel'
@@ -11,6 +10,7 @@ interface Props {
   comments: LocalComment[]
   isUploadingAttachment: boolean
   onAddAttachment: (files: FileList | null) => void
+  onClose: () => void
   onCommentDraftChange: (value: string) => void
   onRemoveAttachment: (fileId: string) => void
   onSendComment: () => void
@@ -26,29 +26,30 @@ const WorkflowRequestSidebar = ({
   comments,
   isUploadingAttachment,
   onAddAttachment,
+  onClose,
   onCommentDraftChange,
   onRemoveAttachment,
   onSendComment,
 }: Props) => {
   return (
-    <div className='flex w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-gray-3 bg-gray-1 p-4'>
-      <AnimateSlideUp delay={0.05}>
-        {activePanel === 'attachments' ? (
-          <AttachmentsPanel
-            attachments={attachments}
-            isUploading={isUploadingAttachment}
-            onAdd={onAddAttachment}
-            onRemove={onRemoveAttachment}
-          />
-        ) : (
-          <CommentsPanel
-            comments={comments}
-            draft={commentDraft}
-            onDraftChange={onCommentDraftChange}
-            onSend={onSendComment}
-          />
-        )}
-      </AnimateSlideUp>
+    <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
+      {activePanel === 'attachments' ? (
+        <AttachmentsPanel
+          attachments={attachments}
+          isUploading={isUploadingAttachment}
+          onAdd={onAddAttachment}
+          onClose={onClose}
+          onRemove={onRemoveAttachment}
+        />
+      ) : (
+        <CommentsPanel
+          comments={comments}
+          draft={commentDraft}
+          onClose={onClose}
+          onDraftChange={onCommentDraftChange}
+          onSend={onSendComment}
+        />
+      )}
     </div>
   )
 }

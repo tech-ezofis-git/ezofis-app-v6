@@ -1,9 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, Loader2 } from 'lucide-react'
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   collectSignRequestFields,
+  declineSignRequestInvite,
   getSignRequest,
   getSignRequestInvitePreview,
   type SignRequestFieldDto,
@@ -16,9 +17,10 @@ import {
 } from '@/pages/folders/utils/signRequestFieldsStorage'
 import authUserStore from '@/stores/authUserStore'
 
-type Gate = 'loading' | 'auth' | 'signing' | 'done' | 'error'
+type Gate = 'loading' | 'auth' | 'signing' | 'done' | 'declined' | 'error'
 
 type SignRequestInvitePageProps = {
+  auth?: string
   email: string
   /** Full path after `/sign-request/` (may be one token or tenant/id/token). */
   invitePath: string
@@ -26,6 +28,7 @@ type SignRequestInvitePageProps = {
 }
 
 export default function SignRequestInvitePage({
+  auth,
   email,
   invitePath,
   isNew,
@@ -64,6 +67,14 @@ export default function SignRequestInvitePage({
           signRequestId: previewData.signRequestId,
           tenantId: previewData.tenantId,
         })
+        if (detail.data) {
+          if (detail.data.createdAtUtc && !previewData.createdAtUtc) {
+            previewData.createdAtUtc = detail.data.createdAtUtc
+          }
+          if (detail.data.status && !previewData.signRequestStatus) {
+            previewData.signRequestStatus = detail.data.status
+          }
+        }
         const detailFields = collectSignRequestFields(detail.data)
         if (detailFields.length) fields = detailFields
       }
@@ -136,6 +147,7 @@ export default function SignRequestInvitePage({
       await hydrateFields(previewResult.data)
       if (!mounted) return
 
+      const isOtp = auth === 'otp' || Boolean(previewResult.data.requiresOtp)
       const sessionEmail = String(authUserStore.getState().session?.email || '')
         .trim()
         .toLowerCase()
@@ -155,6 +167,7 @@ export default function SignRequestInvitePage({
       }
 
       if (
+        isOtp ||
         previewResult.data.requiresPasswordSetup ||
         previewResult.data.requiresLogin ||
         isNew
@@ -172,12 +185,13 @@ export default function SignRequestInvitePage({
       mounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invitePath, email, isNew])
+  }, [invitePath, email, isNew, auth])
 
   // Use the centered Sign-in page (same layout as share login).
   useEffect(() => {
     if (gate !== 'auth' || !inviteToken) return
 
+    const isOtp = auth === 'otp' || Boolean(preview?.requiresOtp)
     const redirect =
       typeof window !== 'undefined'
         ? `${window.location.pathname}${window.location.search}`
@@ -188,6 +202,7 @@ export default function SignRequestInvitePage({
     void navigate({
       replace: true,
       search: {
+        auth: isOtp ? 'otp' : undefined,
         email: recipientEmail || email || undefined,
         inviteToken,
         isnew: needsSetup ? 'true' : 'false',
@@ -202,6 +217,8 @@ export default function SignRequestInvitePage({
     email,
     recipientEmail,
     isNew,
+    auth,
+    preview?.requiresOtp,
     preview?.requiresPasswordSetup,
     navigate,
   ])
@@ -234,6 +251,24 @@ export default function SignRequestInvitePage({
     )
   }
 
+  if (gate === 'declined') {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-surface p-5 text-[13px]'>
+        <div className='w-full max-w-md rounded-2xl border border-gray-3 bg-surface-primary p-6 shadow-sm'>
+          <div className='flex items-center gap-2'>
+            <XCircle className='h-5 w-5 text-red-9' />
+            <h1 className='text-[18px] font-semibold text-gray-13'>
+              {t`Sign request declined`}
+            </h1>
+          </div>
+          <p className='mt-2 text-[13px] text-gray-10'>
+            {t`You have declined this sign request. You can safely close this page.`}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (gate === 'done') {
     return (
       <div className='flex min-h-screen items-center justify-center bg-surface p-5 text-[13px]'>
@@ -257,14 +292,26 @@ export default function SignRequestInvitePage({
   return (
     <div className='flex h-screen min-h-0 flex-col overflow-hidden bg-surface-secondary'>
       <DocumentDetailsView
+        compactActions
+        forceSigning
         id={preview.itemId}
         invitePreview={preview}
         inviteToken={inviteToken}
         repositoryId={preview.repositoryId}
         signatureFields={signatureFields}
         signRequestId={preview.signRequestId}
-        compactActions
-        forceSigning
+        onDecline={async (reason) => {
+          const res = await declineSignRequestInvite({
+            accessToken: authUserStore.getState().identity?.accessToken,
+            inviteToken,
+            reason,
+            tenantId: preview.tenantId,
+          })
+          if (res.error) {
+            throw new Error(String(res.error || t`Failed to decline sign request`))
+          }
+          setGate('declined')
+        }}
         onSigningComplete={() => setGate('done')}
       />
     </div>

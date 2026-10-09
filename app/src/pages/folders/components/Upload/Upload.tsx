@@ -60,6 +60,7 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from './../../../../components/common/animations'
+import { RequiredProgressPie } from './DraftAttachmentFields'
 import DraftFilesMediaLibrary from './DraftFilesMediaLibrary'
 import TableFieldInput from './TableFieldInput'
 import UploadQueueFileCard from './UploadQueueFileCard'
@@ -1137,9 +1138,17 @@ const mergeDraftWithLocalUpload = (
     base.status === 'indexed' ||
     base.status === 'indexing'
 
+  const localStatuses = local.fieldStatuses ?? {}
+  const baseStatuses = base.fieldStatuses ?? {}
   return {
     ...base,
+    fieldStatuses:
+      Object.keys(localStatuses).length > 0 ? localStatuses : baseStatuses,
     file: local.file ?? base.file,
+    ocrExtractedValues:
+      Object.keys(local.ocrExtractedValues ?? {}).length > 0
+        ? local.ocrExtractedValues
+        : base.ocrExtractedValues,
     previewUrl: local.previewUrl ?? base.previewUrl,
     ...(serverSettled
       ? {}
@@ -1456,7 +1465,7 @@ export default function Upload({
               return 0
             })
 
-            const batchSize = 8
+            const batchSize = 16
             for (let index = 0; index < ordered.length; index += batchSize) {
               const batch = ordered.slice(index, index + batchSize)
               await Promise.all(
@@ -1533,20 +1542,7 @@ export default function Upload({
     }
 
     void loadPreviews()
-  }, [
-    draftPreviewLoadKey,
-    focusedDraftId,
-    openFileId,
-    updateEntry,
-    viewingDrafts,
-  ])
-
-  // Re-attempt the focused draft if a prior hydration pass failed.
-  useEffect(() => {
-    if (!viewingDrafts || !focusedDraftId) return
-    draftPreviewLoadIdsRef.current.delete(focusedDraftId)
-    draftPreviewAttemptsRef.current.delete(focusedDraftId)
-  }, [focusedDraftId, viewingDrafts])
+  }, [draftPreviewLoadKey, openFileId, updateEntry, viewingDrafts])
 
   const masterFormSyncData = useMemo(() => {
     if (
@@ -3137,8 +3133,8 @@ export default function Upload({
     const statusToneClass = statusTone
       ? OCR_FIELD_STATUS_TONE_CLASS[statusTone]
       : null
-    const inputLabel = fieldStatus ? undefined : label
-    const inputRequired = fieldStatus ? false : required
+    const inputLabel = undefined
+    const inputRequired = false
 
     const focusProps = {
       onFocus: () => handleFieldFocus(field),
@@ -3161,8 +3157,11 @@ export default function Upload({
       const currentValue = activeFieldValues[fieldKey]
 
       // Icon if value is from OCR or Master Sync
-      if (currentValue) {
-        if (currentValue === syncValue) {
+      if (currentValue && syncValue && currentValue !== ocrValue) {
+        if (
+          normalizeComparableFieldValue(currentValue) ===
+          normalizeComparableFieldValue(syncValue)
+        ) {
           elements.push(
             <Tooltip
               content={t`Master Sync Data`}
@@ -3171,18 +3170,6 @@ export default function Upload({
             >
               <div className='flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]'>
                 <Icon className='size-4' name='lucide:database' />
-              </div>
-            </Tooltip>,
-          )
-        } else if (currentValue === ocrValue) {
-          elements.push(
-            <Tooltip
-              content={t`OCR Extracted Data`}
-              key='ocr-icon'
-              position='top'
-            >
-              <div className='flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]'>
-                <Icon className='size-4' name='tabler:scan' />
               </div>
             </Tooltip>,
           )
@@ -3248,9 +3235,19 @@ export default function Upload({
       )
     }
 
+    const fromOcr =
+      !isBlankFieldValue(value) &&
+      normalizeComparableFieldValue(value) ===
+        normalizeComparableFieldValue(activeOcrExtractedValues[fieldKey])
+    const missingRequired =
+      required && !isAnalyzing && isBlankFieldValue(value) && !fieldStatus
+
     const fieldClassName = cn(
       'w-full',
+      missingRequired &&
+        '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
       isSyncField &&
+        !missingRequired &&
         '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
     )
 
@@ -3430,35 +3427,45 @@ export default function Upload({
     return (
       <div
         className={cn(
-          'flex w-full flex-col',
+          'flex w-full flex-col gap-1',
           fieldStatus && statusToneClass
             ? cn('rounded-xl border p-3', statusToneClass.panel)
             : undefined,
+          missingRequired &&
+            !statusToneClass &&
+            '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
         )}
       >
-        {fieldStatus && statusToneClass ? (
-          <div className='mb-2 flex items-center justify-between gap-2'>
-            <div
-              className={cn(
-                'flex min-w-0 items-center gap-1 text-13 font-medium',
-                statusToneClass.label,
-              )}
-            >
-              <span className='truncate'>{label}</span>
-              {required ? (
-                <span className='text-[var(--red-9)]'>*</span>
-              ) : null}
-            </div>
-            <span
-              className={cn(
-                'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-tight',
-                statusToneClass.capsule,
-              )}
-            >
-              {fieldStatus}
-            </span>
+        <div className='flex items-center justify-between gap-2'>
+          <div
+            className={cn(
+              'flex min-w-0 items-center gap-1 text-13 font-medium',
+              statusToneClass?.label,
+            )}
+          >
+            <span className='truncate'>{label}</span>
+            {required ? <span className='text-red-9'>*</span> : null}
           </div>
-        ) : null}
+          <div className='flex shrink-0 items-center gap-1.5'>
+            {fromOcr ? (
+              <Tooltip content={t`Extracted by OCR`} position='top'>
+                <span className='inline-flex'>
+                  <Icon className='size-3.5 text-primary-11' name='tabler:scan' />
+                </span>
+              </Tooltip>
+            ) : null}
+            {fieldStatus && statusToneClass ? (
+              <span
+                className={cn(
+                  'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-tight',
+                  statusToneClass.capsule,
+                )}
+              >
+                {fieldStatus}
+              </span>
+            ) : null}
+          </div>
+        </div>
         {InputComponent}
         {renderSuggestionCapsule()}
       </div>
@@ -4274,11 +4281,36 @@ export default function Upload({
                       </p>
                     </div>
                   </div>
-                  {isFieldsPhase && !isExporting && (
-                    <span className='shrink-0 rounded-full border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--orange-7)] uppercase'>
-                      {t`Ready to export`}
-                    </span>
-                  )}
+                  {isFieldsPhase && !isExporting &&
+                    (() => {
+                      const requiredTotal = repositoryFields.filter(
+                        (field) => field.isMandatory,
+                      ).length
+                      const requiredFilled = repositoryFields.filter(
+                        (field) =>
+                          field.isMandatory &&
+                          !isBlankFieldValue(
+                            activeEntry.fieldValues[getFieldKey(field)],
+                          ),
+                      ).length
+                      const requiredDone =
+                        requiredTotal === 0 || requiredFilled === requiredTotal
+                      return requiredDone ? (
+                        <Tooltip
+                          content={t`All ${requiredTotal} Mandatory Fields Filled.`}
+                          position='top'
+                        >
+                          <span className='flex size-4 shrink-0 items-center justify-center text-green-9'>
+                            <Icon className='size-4' name='lucide:circle-check' />
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <RequiredProgressPie
+                          filled={requiredFilled}
+                          total={requiredTotal}
+                        />
+                      )
+                    })()}
                 </div>
 
                 <div
@@ -4407,7 +4439,7 @@ export default function Upload({
                           type='button'
                           onClick={() => handleRetryOcr(activeEntry.id)}
                         >
-                          <Icon className='size-4' name='tabler:scan' />
+                          <Icon className='size-4' name='lucide:refresh-cw' />
                         </button>
                       </Tooltip>
                     ) : null}
@@ -4482,8 +4514,37 @@ export default function Upload({
                         (f) => !syncRepoFields.includes(f),
                       )
 
+                      const requiredTotal = repositoryFields.filter(
+                        (field) => field.isMandatory,
+                      ).length
+                      const requiredFilled = repositoryFields.filter(
+                        (field) =>
+                          field.isMandatory &&
+                          !isBlankFieldValue(
+                            activeEntry?.fieldValues[getFieldKey(field)],
+                          ),
+                      ).length
+                      const requiredDone =
+                        requiredTotal === 0 || requiredFilled === requiredTotal
+
                       return (
                         <div className='flex h-full flex-col'>
+                          {requiredTotal > 0 ? (
+                            <InfoCard
+                              className={
+                                requiredDone
+                                  ? 'mb-3 shrink-0 rounded-xl border-l border-l-green-4'
+                                  : 'mb-3 shrink-0 rounded-xl border-l border-orange-4 bg-orange-1 text-orange-12 [&_svg]:text-orange-9'
+                              }
+                              description=''
+                              variant={requiredDone ? 'success' : 'info'}
+                              title={
+                                requiredDone
+                                  ? t`All Mandatory fields are filled.`
+                                  : t`${requiredTotal - requiredFilled} Mandatory fields need to be filled.`
+                              }
+                            />
+                          ) : null}
                           {(() => {
                             if (!activeEntry) return null
                             const grouped = new Map<

@@ -5,6 +5,7 @@ const PROVIDER_CODE_BY_VALUE: Record<string, OAuthProviderCode> = {
   'gmail': 'GMAIL',
   'Google Drive': 'GOOGLE_DRIVE',
   'OneDrive': 'ONEDRIVE',
+  'One Drive': 'ONEDRIVE',
   'outlook': 'OUTLOOK',
   'QuickBooks': 'QUICKBOOKS',
   'SAP': 'SAP_XSUAA',

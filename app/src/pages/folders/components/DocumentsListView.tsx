@@ -706,7 +706,7 @@ export function DocumentsListView({
             >
               <Icon className='size-5 shrink-0 pt-0.5' name={iconName} />
               <EllipsisText
-                className='font-semibold text-gray-13'
+                className='font-semibold text-primary-9 hover:underline'
                 lines={1}
                 value={fileName || '-'}
               />
