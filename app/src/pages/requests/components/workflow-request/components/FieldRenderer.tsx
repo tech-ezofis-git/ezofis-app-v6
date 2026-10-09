@@ -727,7 +727,11 @@ const FieldRenderer = ({
 
   switch (field.type) {
     case 'HEADING':
-      return <h3 className='text-15 font-bold text-gray-13'>{field.label}</h3>
+      return (
+        <div className='w-full border-b border-gray-3 pb-3'>
+          <h3 className='text-15 font-bold text-gray-13'>{field.label}</h3>
+        </div>
+      )
     case 'LABEL':
       return <div className='text-13 font-bold text-gray-13'>{field.label}</div>
     case 'DIVIDER':

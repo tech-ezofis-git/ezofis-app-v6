@@ -23,8 +23,13 @@ const Search = ({ query, onChange }: Props) => {
         autoFocus
         clearable
         leftSection={
-          <Icon className='h-4 w-4 text-gray-9' name='lucide:search' />
+          <Icon className='h-4 w-4 text-primary-11' name='lucide:search' />
         }
+        leftSectionWidth={28}
+        classNames={{
+          input: '!pl-8',
+          section: 'bg-primary-4 text-primary-11',
+        }}
         onBlur={() => {
           if (!query) setIsExpanded(false)
         }}

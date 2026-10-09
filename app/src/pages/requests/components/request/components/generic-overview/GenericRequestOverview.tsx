@@ -51,6 +51,7 @@ import {
   type RepositoryFieldSchema,
   toUploadMetadata,
 } from '@/pages/requests/utils/repoFolderMetadata'
+import { listWorkflowStages } from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import Attachments from '../sections/attachment/Attachments'
@@ -820,6 +821,13 @@ const GenericRequestOverview = ({
     () => getFormPanels(rawWorkflowData),
     [rawWorkflowData],
   )
+  const workflowStages = useMemo(
+    () => listWorkflowStages(rawWorkflowData),
+    [rawWorkflowData],
+  )
+  const currentActivityId = selectedItem?.activityId
+    ? String(selectedItem.activityId)
+    : undefined
 
   const missingRequiredLabels = useMemo(() => {
     if (!kanbanMissingFieldIds?.length) return []
@@ -1306,8 +1314,10 @@ const GenericRequestOverview = ({
             formNode={
               <WorkflowFormRenderer
                 attachments={attachments}
+                currentActivityId={currentActivityId}
                 disableOwnScroll={true}
                 formModel={formModel}
+                stages={workflowStages}
                 hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                 hiddenFieldIds={hiddenFieldIds}
                 hidePanels={true}
@@ -1382,8 +1392,10 @@ const GenericRequestOverview = ({
             formNode={
               <WorkflowFormRenderer
                 attachments={attachments}
+                currentActivityId={currentActivityId}
                 disableOwnScroll={true}
                 formModel={formModel}
+                stages={workflowStages}
                 hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                 hiddenFieldIds={summaryHiddenFieldIds}
                 hidePanels={agentBlocks.length > 0}
@@ -1427,8 +1439,10 @@ const GenericRequestOverview = ({
               lineItemsHiddenFieldIds.hasLineItems ? (
                 <WorkflowFormRenderer
                   attachments={attachments}
+                  currentActivityId={currentActivityId}
                   disableOwnScroll={true}
                   formModel={formModel}
+                  stages={workflowStages}
                   hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                   hiddenFieldIds={lineItemsHiddenFieldIds.ids}
                   hidePanels={agentBlocks.length > 0}
@@ -1517,8 +1531,10 @@ const GenericRequestOverview = ({
                   ) : null} */}
                   <WorkflowFormRenderer
                     attachments={attachments}
+                    currentActivityId={currentActivityId}
                     disableOwnScroll={true}
                     formModel={formModel}
+                    stages={workflowStages}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                     hiddenFieldIds={summaryHiddenFieldIds}
                     hidePanels={agentBlocks.length > 0}

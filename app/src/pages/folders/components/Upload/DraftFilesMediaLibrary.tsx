@@ -12,6 +12,7 @@ import { getFileIcon } from '@/pages/requests/components/request/components/sect
 import cn from '@/utils/cn'
 import DraftAttachmentFields, {
   type DraftRepositoryField,
+  RequiredProgressPie,
 } from './DraftAttachmentFields'
 import PdfThumbnail from './PdfThumbnail'
 import WordThumbnail from './WordThumbnail'
@@ -119,6 +120,9 @@ export default function DraftFilesMediaLibrary({
   const { t } = useLingui()
   const didSelectFirstRef = useRef(false)
   const [search, setSearch] = useState('')
+  const [previousFocusedId, setPreviousFocusedId] = useState<string | null>(
+    null,
+  )
   const [failedPreviewIds, setFailedPreviewIds] = useState<Set<string>>(
     () => new Set(),
   )
@@ -151,11 +155,13 @@ export default function DraftFilesMediaLibrary({
   const onFocusRef = useRef(onFocus)
   const onToggleSelectRef = useRef(onToggleSelect)
   const lastRequestedFocusRef = useRef<string | null>(null)
+  const skipAutoFocusRef = useRef(false)
   onFocusRef.current = onFocus
   onToggleSelectRef.current = onToggleSelect
 
   useEffect(() => {
     if (!filtered.length) return
+    if (skipAutoFocusRef.current) return
 
     if (!didSelectFirstRef.current) {
       didSelectFirstRef.current = true
@@ -190,6 +196,39 @@ export default function DraftFilesMediaLibrary({
     lastRequestedFocusRef.current = singleSelectedId
     onFocusRef.current?.(singleSelectedId)
   }, [focusedId, singleSelectedId])
+
+  const focusEntry = (id: string, alreadySelected: boolean) => {
+    if (id === focusedId && alreadySelected) {
+      onToggleSelect(id, false)
+      const fallback =
+        (previousFocusedId &&
+        previousFocusedId !== id &&
+        entries.some((entry) => entry.id === previousFocusedId)
+          ? previousFocusedId
+          : selectedIds.find((selectedId) => selectedId !== id)) || null
+      setPreviousFocusedId(null)
+      if (fallback) {
+        skipAutoFocusRef.current = false
+        lastRequestedFocusRef.current = fallback
+        onFocus?.(fallback)
+        return
+      }
+      skipAutoFocusRef.current = true
+      lastRequestedFocusRef.current = null
+      onFocus?.(null)
+      return
+    }
+
+    skipAutoFocusRef.current = false
+    if (focusedId && selectedIds.includes(focusedId)) {
+      setPreviousFocusedId(focusedId)
+    } else {
+      setPreviousFocusedId(null)
+    }
+    lastRequestedFocusRef.current = id
+    onFocus?.(id)
+    if (!alreadySelected) onToggleSelect(id, true)
+  }
 
   const gridClassName =
     'grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3'
@@ -235,9 +274,14 @@ export default function DraftFilesMediaLibrary({
   const searchControl = (
     <div className='w-full max-w-xs sm:w-72'>
       <InputText
-        leftSection={<Icon className='size-4' name='lucide:search' />}
+        leftSection={<Icon className='size-4 text-primary-11' name='lucide:search' />}
+        leftSectionWidth={28}
         placeholder={t`Search media`}
         value={search}
+        classNames={{
+          input: '!pl-8',
+          section: 'bg-primary-4 text-primary-11',
+        }}
         onChange={(value) => setSearch(String(value ?? ''))}
       />
     </div>
@@ -295,7 +339,21 @@ export default function DraftFilesMediaLibrary({
           <div className={gridClassName}>
             {filtered.map((entry) => {
               const selected = selectedIds.includes(entry.id)
-              const needsFields = Boolean(missingMandatoryById[entry.id])
+              const isCurrent = entry.id === focusedId
+              const requiredFields = repositoryFields.filter(
+                (field) => field.isMandatory,
+              )
+              const requiredFilled = requiredFields.filter((field) => {
+                const raw = String(
+                  entry.fieldValues[field.sqlColumnName || field.id] ?? '',
+                )
+                  .trim()
+                  .toLowerCase()
+                return Boolean(raw) && raw !== 'null' && raw !== 'undefined'
+              }).length
+              const requiredDone =
+                requiredFields.length === 0 ||
+                requiredFilled === requiredFields.length
               const fileUrl = entry.previewUrl
               const previewFailed = failedPreviewIds.has(entry.id)
               const showImage = Boolean(
@@ -324,18 +382,19 @@ export default function DraftFilesMediaLibrary({
                   role='button'
                   tabIndex={0}
                   className={cn(
-                    'group/card relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-surface text-left transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]',
-                    selected
-                      ? 'border-[var(--primary-9)] shadow-[0_4px_16px_color-mix(in_srgb,var(--primary-9)_35%,transparent)] hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--primary-9)_32%,transparent)]'
-                      : 'border-gray-3 shadow-sm hover:border-gray-5 hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--gray-12)_16%,transparent)]',
+                    'group/card relative flex cursor-pointer flex-col overflow-hidden rounded-lg border-2 bg-surface text-left transition-[transform,border-color,background-color] duration-200 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]',
+                    isCurrent
+                      ? 'border-primary-9'
+                      : selected
+                        ? 'border-secondary-9 bg-gray-2'
+                        : 'border-gray-3 hover:border-gray-5',
                   )}
                   onClick={() => {
                     if (!canSelect) {
                       onFocus?.(entry.id)
                       return
                     }
-                    onToggleSelect(entry.id, !selected)
-                    if (!selected) onFocus?.(entry.id)
+                    focusEntry(entry.id, selected)
                   }}
                   onKeyDown={(event) => {
                     if (event.key !== 'Enter' && event.key !== ' ') return
@@ -344,11 +403,19 @@ export default function DraftFilesMediaLibrary({
                       onFocus?.(entry.id)
                       return
                     }
-                    onToggleSelect(entry.id, !selected)
-                    if (!selected) onFocus?.(entry.id)
+                    focusEntry(entry.id, selected)
                   }}
                 >
-                  <div className='flex items-center justify-between gap-1 border-b border-gray-3 px-2 py-1'>
+                  <div
+                    className={cn(
+                      'flex items-center justify-between gap-1 border-b px-2 py-1',
+                      isCurrent
+                        ? 'border-primary-5 bg-primary-4'
+                        : selected
+                          ? 'border-gray-4 bg-gray-3'
+                          : 'border-gray-3 bg-surface',
+                    )}
+                  >
                     <span
                       className='inline-flex'
                       onClick={(event) => event.stopPropagation()}
@@ -358,31 +425,42 @@ export default function DraftFilesMediaLibrary({
                         aria-label={t`Select file`}
                         checked={selected}
                         disabled={!canSelect}
-                        onChange={(checked) =>
-                          onToggleSelect(entry.id, checked)
-                        }
+                        onChange={(checked) => {
+                          if (!checked) {
+                            if (entry.id === focusedId) {
+                              focusEntry(entry.id, true)
+                              return
+                            }
+                            onToggleSelect(entry.id, false)
+                            if (previousFocusedId === entry.id) {
+                              setPreviousFocusedId(null)
+                            }
+                            return
+                          }
+                          onToggleSelect(entry.id, true)
+                          if (entry.id !== focusedId) focusEntry(entry.id, true)
+                        }}
                       />
                     </span>
                     <div className='flex items-center gap-0.5'>
-                      {entry.status === 'ready' ? (
-                        needsFields ? (
-                          <Tooltip content={t`Mandatory Fields Missing`}>
-                            <span className='flex size-7 items-center justify-center text-[var(--orange-9)]'>
-                              <Icon
-                                className='size-4'
-                                name='lucide:alert-circle'
-                              />
-                            </span>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip content={t`Ready To Export`}>
-                            <span className='flex size-7 items-center justify-center text-[var(--green-9)]'>
+                      {entry.status === 'ready' && requiredFields.length > 0 ? (
+                        requiredDone ? (
+                          <Tooltip
+                            content={t`All ${requiredFields.length} Mandatory Fields Filled.`}
+                            position='top'
+                          >
+                            <span className='flex size-7 items-center justify-center text-green-9'>
                               <Icon
                                 className='size-4'
                                 name='lucide:circle-check'
                               />
                             </span>
                           </Tooltip>
+                        ) : (
+                          <RequiredProgressPie
+                            filled={requiredFilled}
+                            total={requiredFields.length}
+                          />
                         )
                       ) : null}
                       <IconButton
@@ -401,7 +479,14 @@ export default function DraftFilesMediaLibrary({
                   </div>
 
                   <div className='relative aspect-square w-full overflow-hidden bg-gray-2'>
-                    <div className='h-full w-full origin-center transition-transform duration-300 ease-out group-hover/card:scale-105'>
+                    <div
+                      className={cn(
+                        'h-full w-full origin-center transition-transform duration-300 ease-out group-hover/card:scale-105',
+                        selected &&
+                          !isCurrent &&
+                          'brightness-105 grayscale-[0.45]',
+                      )}
+                    >
                     {showImage ? (
                       <img
                         alt={entry.fileName}
@@ -430,7 +515,14 @@ export default function DraftFilesMediaLibrary({
                       fileTypeFallback
                     )}
                     </div>
-                    <div className='pointer-events-none absolute inset-0 z-[1] bg-gray-12/0 transition-colors duration-200 group-hover/card:bg-gray-12/20' />
+                    <div
+                      className={cn(
+                        'pointer-events-none absolute inset-0 z-[1] transition-colors duration-200',
+                        selected && !isCurrent
+                          ? 'bg-gray-3/45'
+                          : 'bg-gray-12/0 group-hover/card:bg-gray-12/20',
+                      )}
+                    />
                     <Tooltip
                       className='absolute top-2 right-2 z-10'
                       content={t`Open file`}
@@ -439,7 +531,7 @@ export default function DraftFilesMediaLibrary({
                     >
                       <button
                         aria-label={t`Open file`}
-                        className='flex size-8 items-center justify-center rounded-lg bg-gray-2 text-gray-12 opacity-0 shadow-sm transition-[opacity,background-color,transform] duration-150 group-hover/card:opacity-100 hover:bg-gray-3 active:scale-95'
+                        className='flex size-5 items-center justify-center rounded-sm bg-gray-2 text-gray-12 opacity-0 shadow-sm transition-[opacity,background-color,transform] duration-150 group-hover/card:opacity-100 hover:bg-gray-3 active:scale-95'
                         disabled={entry.status === 'indexing'}
                         type='button'
                         onClick={(event) => {
@@ -447,7 +539,7 @@ export default function DraftFilesMediaLibrary({
                           if (entry.status !== 'indexing') onOpen(entry.id)
                         }}
                       >
-                        <Icon className='size-4' name='lucide:expand' />
+                        <Icon className='size-3' name='lucide:expand' />
                       </button>
                     </Tooltip>
                   </div>
@@ -531,7 +623,7 @@ export default function DraftFilesMediaLibrary({
           </div>
         )}
       </div>
-      {selectedCount === 1 ? (
+      {focused ? (
         <aside className='flex w-[340px] shrink-0 flex-col border-l border-gray-3 bg-surface xl:w-[380px]'>
           {!focused ? (
             <p className='px-4 py-10 text-center text-13 text-gray-10'>
@@ -547,8 +639,12 @@ export default function DraftFilesMediaLibrary({
                 focused.status === 'indexing' ||
                 focused.exportStatus === 'exporting'
               }
+              fieldStatuses={focused.fieldStatuses}
               fieldValues={focused.fieldValues}
               fields={repositoryFields}
+              fileName={focused.fileName}
+              ocrExtractedValues={focused.ocrExtractedValues}
+              rawOcrJson={focused.rawOcrJson}
               isAnalyzing={
                 focused.status === 'analyzing' || focused.status === 'queued'
               }

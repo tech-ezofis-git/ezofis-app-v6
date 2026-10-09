@@ -6,7 +6,10 @@ import type { OptionsPerLineClass } from './constants'
 export interface InputProps {
   className?: string
   classNames?: Partial<
-    Record<'input' | 'label' | 'description' | 'error' | 'wrapper', string>
+    Record<
+      'input' | 'label' | 'description' | 'error' | 'section' | 'wrapper',
+      string
+    >
   >
   clearable?: boolean
   description?: string

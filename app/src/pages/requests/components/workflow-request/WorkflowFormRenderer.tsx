@@ -1,8 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { Accordion } from '@mantine/core'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
+import Tooltip from '@/components/base/Tooltip'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
@@ -18,6 +19,153 @@ import {
   isFieldRequired,
 } from './utils/fieldRendering'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
+
+const STAGE_PAGE_SIZE = 8
+
+function stageWindowStart(activeIndex: number, total: number) {
+  if (total <= STAGE_PAGE_SIZE || activeIndex < 0) return 0
+  const maxStart = total - STAGE_PAGE_SIZE
+  const centered = activeIndex - Math.floor((STAGE_PAGE_SIZE - 1) / 2)
+  return Math.min(Math.max(0, centered), maxStart)
+}
+
+function WorkflowStageBar({
+  currentActivityId,
+  stages,
+}: {
+  currentActivityId?: string
+  stages: { id: string; label: string }[]
+}) {
+  const { t } = useLingui()
+  const activeIndex = stages.findIndex(
+    (stage) => String(stage.id) === String(currentActivityId || ''),
+  )
+  const shown = stages
+    .map((stage, index) => ({ index, stage }))
+    .slice(0, activeIndex < 0 ? 1 : Math.min(stages.length, activeIndex + 2))
+  const [start, setStart] = useState(() =>
+    stageWindowStart(activeIndex, shown.length),
+  )
+  const canPage = shown.length > STAGE_PAGE_SIZE
+  const maxStart = Math.max(0, shown.length - STAGE_PAGE_SIZE)
+
+  useEffect(() => {
+    setStart(stageWindowStart(activeIndex, shown.length))
+  }, [activeIndex, shown.length])
+
+  const visibleCount = Math.min(STAGE_PAGE_SIZE, shown.length)
+
+  return (
+    <div className='mb-4 flex items-start gap-1 rounded-xl border border-gray-3 bg-gray-0 px-2 py-3'>
+      {canPage ? (
+        <div className='flex h-6 shrink-0 items-center'>
+          <button
+            aria-label={t`Previous stages`}
+            className='flex size-8 items-center justify-center rounded-lg  transition-colors hover:bg-primary-5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+            disabled={start === 0}
+            type='button'
+            onClick={() => setStart((value) => Math.max(0, value - 1))}
+          >
+            <Icon className='size-4' name='tabler:chevron-left' />
+          </button>
+        </div>
+      ) : null}
+      <div className='min-w-0 flex-1 overflow-hidden'>
+        <div
+          className='flex items-start transition-transform duration-300 ease-in-out'
+          style={{
+            transform: `translateX(-${shown.length ? (start * 100) / shown.length : 0}%)`,
+            width: `${(shown.length / visibleCount) * 100}%`,
+          }}
+        >
+          {shown.map(({ index, stage }) => {
+            const done = activeIndex >= 0 && index < activeIndex
+            const current = activeIndex === index
+            return (
+              <div
+                className='flex min-w-0 flex-1 flex-col'
+                key={stage.id}
+              >
+                <div className='flex w-full items-center'>
+                  <div
+                    className={cn(
+                      'h-0.5 flex-1',
+                      index === 0
+                        ? 'bg-transparent'
+                        : done || current
+                          ? 'bg-green-9'
+                          : 'bg-gray-4',
+                    )}
+                  />
+                  <div className='relative shrink-0'>
+                    {current ? (
+                      <span className='absolute inset-0 animate-ping rounded-full bg-primary-7' />
+                    ) : null}
+                    <div
+                      className={cn(
+                        'relative flex size-6 items-center justify-center rounded-full text-11 font-semibold',
+                        done && 'bg-green-9 text-green-1',
+                        current && 'bg-primary-9 text-primary-1',
+                        !done &&
+                          !current &&
+                          'border border-gray-5 bg-gray-0 text-gray-10',
+                      )}
+                    >
+                      {done ? (
+                        <Icon className='size-3.5' name='tabler:check' />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      'h-0.5 flex-1',
+                    index === shown[shown.length - 1]?.index
+                      ? 'bg-transparent'
+                        : index < activeIndex
+                          ? 'bg-green-9'
+                          : 'bg-gray-4',
+                    )}
+                  />
+                </div>
+                <Tooltip
+                  className='mt-1.5 w-full min-w-0 justify-center'
+                  content={stage.label}
+                  position='bottom'
+                >
+                  <span
+                    className={cn(
+                      'block w-full truncate px-1 text-center text-11',
+                      current
+                        ? 'font-semibold text-primary-11'
+                        : 'text-gray-10',
+                    )}
+                  >
+                    {stage.label}
+                  </span>
+                </Tooltip>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {canPage ? (
+        <div className='flex h-6 shrink-0 items-center'>
+          <button
+            aria-label={t`Next stages`}
+            className='flex size-8 items-center justify-center rounded-lg  transition-colors hover:bg-primary-5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+            disabled={start >= maxStart}
+            type='button'
+            onClick={() => setStart((value) => Math.min(maxStart, value + 1))}
+          >
+            <Icon className='size-4' name='tabler:chevron-right' />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 const EXTRACTED_FALLBACK_TYPES = new Set([
   'TABLE',
@@ -43,6 +191,7 @@ interface Props {
   // process files with no mapping: only the first one is shown on the first
   // FILE_UPLOAD field; the rest stay in the Attachments panel.
   attachments?: any[]
+  currentActivityId?: string
   // Skips the internal ScrollArea (height: 100%) — used when this renderer
   // is nested inside another scrollable container (the split-view's
   // right pane), where a second height:100% ScrollArea would otherwise
@@ -67,6 +216,7 @@ interface Props {
   readOnlyFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
+  stages?: { id: string; label: string }[]
   viewOnly?: boolean
   getPanelValue?: (panel: any, index: number) => string
   onFieldChange: (fieldId: string, value: any) => void
@@ -88,6 +238,7 @@ const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
 // evaluated yet.
 const WorkflowFormRenderer = ({
   attachments,
+  currentActivityId,
   disableOwnScroll,
   exclusive,
   formModel,
@@ -104,6 +255,7 @@ const WorkflowFormRenderer = ({
   readOnlyFieldIds,
   repoFieldHints,
   repositoryId,
+  stages,
   viewOnly,
   getPanelValue,
   onFieldChange,
@@ -282,11 +434,14 @@ const WorkflowFormRenderer = ({
         {visibleFields.map((field: any) => {
           const isTableField =
             field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
-          const sizeClass = getColumnSizeClass(
-            isTableField
-              ? field.settings?.general?.size || 'col-12'
-              : field.settings?.general?.size,
-          )
+          const isSectionHeading = field.type === 'HEADING'
+          const sizeClass = isSectionHeading
+            ? 'w-full'
+            : getColumnSizeClass(
+                isTableField
+                  ? field.settings?.general?.size || 'col-12'
+                  : field.settings?.general?.size,
+              )
           const state = evaluatedFieldStates[field.id]
           const isReadOnlyByRule = Boolean(state?.disabled)
           const isRequiredByRule = state
@@ -300,7 +455,7 @@ const WorkflowFormRenderer = ({
               className={cn(
                 sizeClass,
                 'max-w-full min-w-0 px-2',
-                isTableField ? 'pb-6' : 'pb-4',
+                isTableField ? 'pb-3' : 'pb-2',
               )}
             >
               <FieldRenderer
@@ -353,14 +508,22 @@ const WorkflowFormRenderer = ({
     )
   }
 
+  const stageBar =
+    stages && stages.length > 0 ? (
+      <WorkflowStageBar
+        currentActivityId={currentActivityId}
+        stages={stages}
+      />
+    ) : null
+
   if (hidePanels) {
     return (
       <div
         className={
           disableOwnScroll
             ? cn(
-                'w-full max-w-full min-w-0',
-                presentation === 'extracted' && 'p-2',
+                'w-full max-w-full min-w-0 px-4 py-4',
+                presentation === 'extracted' && 'p-4',
               )
             : cn(
                 'w-full max-w-full min-w-0 overflow-x-hidden',
@@ -368,6 +531,7 @@ const WorkflowFormRenderer = ({
               )
         }
       >
+        {stageBar}
         <AnimateFadeIn delay={0.1}>
           <div className='flex flex-col gap-6'>
             {panels.map((panel: any, panelIndex: number) => {
@@ -402,10 +566,11 @@ const WorkflowFormRenderer = ({
     <div
       className={
         disableOwnScroll
-          ? 'w-full max-w-full min-w-0'
-          : 'w-full max-w-full min-w-0 overflow-x-hidden px-6 py-6'
+          ? 'w-full max-w-full min-w-0 px-3 py-3'
+          : 'w-full max-w-full min-w-0 overflow-x-hidden px-4 py-3'
       }
     >
+      {stageBar}
       <AnimateFadeIn delay={0.1}>
         <Accordion
           multiple={!exclusive}
@@ -415,10 +580,10 @@ const WorkflowFormRenderer = ({
           classNames={{
             chevron: 'text-gray-10',
             content: 'p-0',
-            control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-            item: 'mb-3 min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
-            label: 'text-14 font-bold tracking-tight text-gray-13',
-            panel: 'min-w-0 overflow-hidden px-6 pt-2 pb-6',
+            control: 'rounded-xl px-3 py-1.5 transition-colors hover:bg-gray-1',
+            item: 'mb-2 h-auto min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            label: 'py-0 text-13 font-bold tracking-tight text-gray-13',
+            panel: 'h-auto min-w-0 overflow-hidden border-t border-gray-3 px-4 py-3',
           }}
           defaultValue={
             exclusive
@@ -439,6 +604,17 @@ const WorkflowFormRenderer = ({
               return !isHiddenByRule && !hiddenFieldIds?.has(field.id)
             })
             if (visibleFields.length === 0) return null
+
+            const allReadOnly =
+              viewOnly ||
+              visibleFields.every((field: any) => {
+                const state = evaluatedFieldStates[field.id]
+                return (
+                  readOnlyFieldIds?.has(String(field.id)) ||
+                  isFieldReadOnly(field) ||
+                  Boolean(state?.disabled)
+                )
+              })
 
             const requiredFields = visibleFields.filter(
               (field: any) =>
@@ -467,7 +643,7 @@ const WorkflowFormRenderer = ({
                 <Accordion.Control>
                   <div className='flex items-center justify-between gap-3'>
                     <div className='flex items-center gap-3'>
-                      <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
+                      <div className='flex size-11 shrink-0 items-center justify-center rounded-sm bg-[var(--primary-1)]'>
                         <Icon
                           className='size-4 text-[var(--primary-9)]'
                           name='tabler:forms'
@@ -484,7 +660,12 @@ const WorkflowFormRenderer = ({
                         )}
                       </div>
                     </div>
-                    {!viewOnly && requiredFields.length > 0 && (
+                    {allReadOnly ? (
+                      <span className='mr-3 shrink-0 self-center text-12 font-medium whitespace-nowrap text-gray-5'>
+                        {t`Read-Only at this step`}
+                      </span>
+                    ) : null}
+                    {!allReadOnly && !viewOnly && requiredFields.length > 0 && (
                       <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-medium whitespace-nowrap text-gray-9'>
                         <span
                           className={

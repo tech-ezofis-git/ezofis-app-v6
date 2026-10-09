@@ -33,6 +33,7 @@ import Icon from '@/components/base/icon/Icon'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import cn from '@/utils/cn'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   buildRedactedFileBlob,
@@ -3297,38 +3298,54 @@ export function DocumentDetailsView({
                         </h4>
                         <div className='flex flex-col gap-3'>
                           {ticketData.history.map(
-                            (hist: any, index: number) => (
-                              <div
-                                key={index}
-                                className={`relative z-10 flex gap-3 ${
-                                  index < ticketData.history.length - 1
-                                    ? 'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-[2px] before:bg-gray-3'
-                                    : ''
-                                }`}
-                              >
-                                <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-surface-primary bg-gray-2 text-gray-10'>
-                                  <DynamicIcon
-                                    className='h-3 w-3 text-gray-11'
-                                    name={getMilestoneIcon(hist.milestone)}
-                                  />
-                                </div>
-                                <div className='flex-1 pb-1'>
-                                  <p className='text-[13px] leading-tight font-medium text-gray-13'>
-                                    {hist.title}
-                                  </p>
-                                  {hist.description && (
-                                    <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
-                                      {hist.description}
-                                    </p>
+                            (hist: any, index: number) => {
+                              const isPending =
+                                index === ticketData.history.length - 1
+                              return (
+                                <div
+                                  key={index}
+                                  className={cn(
+                                    'relative z-10 flex gap-3',
+                                    index < ticketData.history.length - 1 &&
+                                      'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-0.5 before:bg-green-6',
                                   )}
-                                  {hist.occurredAtUtc && (
-                                    <p className='mt-1 text-[11px] text-gray-8'>
-                                      {formatDateTime(hist.occurredAtUtc)}
+                                >
+                                  <div className='relative h-6 w-6 shrink-0'>
+                                    {isPending ? (
+                                      <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
+                                    ) : null}
+                                    <div
+                                      className={cn(
+                                        'relative flex h-6 w-6 items-center justify-center rounded-full border-2',
+                                        isPending
+                                          ? 'border-orange-6 bg-orange-3 text-orange-11'
+                                          : 'border-green-6 bg-green-3 text-green-11',
+                                      )}
+                                    >
+                                      <DynamicIcon
+                                        className='h-3 w-3'
+                                        name={getMilestoneIcon(hist.milestone)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='min-w-0 flex-1 pb-1'>
+                                    <p className='text-[13px] leading-tight font-medium text-gray-13'>
+                                      {hist.title}
                                     </p>
-                                  )}
+                                    {hist.description && (
+                                      <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
+                                        {hist.description}
+                                      </p>
+                                    )}
+                                    {hist.occurredAtUtc && (
+                                      <p className='mt-1 text-[11px] text-gray-8'>
+                                        {formatDateTime(hist.occurredAtUtc)}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ),
+                              )
+                            },
                           )}
                         </div>
                       </div>
