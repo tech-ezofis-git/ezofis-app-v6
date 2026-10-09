@@ -527,7 +527,7 @@ const WorkflowFormRenderer = ({
               )
             : cn(
                 'w-full max-w-full min-w-0 overflow-x-hidden',
-                presentation === 'extracted' ? 'px-4 py-4' : 'px-6 py-6',
+                presentation === 'extracted' ? 'px-4 pt-2 pb-4' : 'px-4 pt-3 pb-6',
               )
         }
       >

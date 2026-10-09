@@ -58,10 +58,11 @@ const Header = ({
     ]
 
   return (
-    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-2'>
+    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
       <div className='flex items-center gap-1.5'>
         <IconButton
           aria-label={t`Back`}
+          className='-ml-2'
           color='gray'
           variant='ghost'
           onClick={onClose}

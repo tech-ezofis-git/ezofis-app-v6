@@ -76,8 +76,8 @@ const LeftViewerAttachmentStrip = ({
   const moreCount = ordered.length - MAX_VISIBLE
 
   return (
-    <div className='flex shrink-0 items-center gap-2 overflow-visible border-b border-gray-3 bg-surface px-3 pb-2.5 pt-3.5'>
-      <div className='no-scrollbar  flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto overflow-y-visible py-1'>
+    <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface p-2.5'>
+      <div className='no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto'>
         {visible.map((file) => {
           const key = attachmentKeyOf(file)
           const selected = key === selectedKey
@@ -91,7 +91,7 @@ const LeftViewerAttachmentStrip = ({
               key={key || label}
               type='button'
               className={cn(
-                'group relative ml-2 mt-3 flex min-h-11 w-[10.5rem] shrink-0 items-start gap-2 rounded-lg border bg-surface px-2.5 py-1.5 text-left transition-colors hover:bg-gray-2 active:scale-[0.99]',
+                'group relative flex min-h-10 w-[10.5rem] shrink-0 items-start gap-2 rounded-lg border bg-surface px-2.5 py-1.5 text-left transition-colors hover:bg-gray-2 active:scale-[0.99]',
                 selected
                   ? 'border-primary-9 ring-1 ring-primary-9'
                   : 'border-gray-3',
@@ -99,7 +99,7 @@ const LeftViewerAttachmentStrip = ({
               onClick={() => onSelect(file)}
             >
               {isNew ? (
-                <span className='absolute -top-2.5 right-1.5 z-10 inline-flex items-center rounded-full border border-green-4 bg-green-2 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-green-11 shadow-xs'>
+                <span className='absolute -top-2 right-1.5 z-10 inline-flex items-center rounded-full border border-green-4 bg-green-2 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-green-11 shadow-xs'>
                   {t`New`}
                 </span>
               ) : null}

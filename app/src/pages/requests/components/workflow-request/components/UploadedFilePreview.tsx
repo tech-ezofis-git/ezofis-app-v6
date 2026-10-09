@@ -61,9 +61,9 @@ const UploadedFilePreview = ({
   }, [activeFile?.rawFile])
 
   return (
-    <div className='flex h-full min-h-0 flex-col gap-3'>
+    <div className='flex h-full min-h-0 flex-col gap-2.5'>
       {files.length > 1 && (
-        <div className='flex flex-wrap gap-2 px-1'>
+        <div className='flex flex-wrap gap-2 p-2.5'>
           {files.map((file) => {
             const ext = getFileExtension(file.fileName)
             const icon = getFileIcon(ext)

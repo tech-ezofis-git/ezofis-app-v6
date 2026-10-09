@@ -366,9 +366,9 @@ const Form = (props: any) => {
             chevron: 'text-[var(--gray-10)]',
             content: 'p-0',
             control:
-              'rounded-[12px] px-4 py-2 transition-colors hover:bg-[var(--gray-1)]',
-            item: 'mb-3 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-0)] shadow-sm',
-            label: 'text-[14px] font-bold tracking-tight text-[var(--gray-13)]',
+              'rounded-[12px] px-4 !py-1.5 transition-colors hover:bg-[var(--gray-1)]',
+            item: '!mt-0 !mb-2.5 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-0)] shadow-sm',
+            label: '!py-0 !my-0 text-[14px] font-bold tracking-tight text-[var(--gray-13)]',
             panel: 'px-6 pt-2 pb-6',
           }}
         >
