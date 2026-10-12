@@ -50,14 +50,15 @@ export const dmsStorageOptions: DmsStorageOption[] = [
     title: 'Google Drive',
   },
   {
-    comingSoon: true,
-    description:
-      'Azure Blob storage integration for organizations using Microsoft Azure.',
-    icon: 'logos:microsoft-azure',
-    id: 'Azure Drive',
-    storageProviderCode: 'AZURE',
-    subtitle: 'Coming soon',
-    title: 'Azure Drive',
+    comingSoon: false,
+    connectorType: 'GCP',
+    description: 'Store folder documents in Google Cloud Storage.',
+    icon: 'logos:google-cloud',
+    id: 'GCP',
+    oauthProvider: 'gcp',
+    storageProviderCode: 'GCP',
+    subtitle: 'Google Cloud',
+    title: 'GCP Storage',
   },
 ]
 

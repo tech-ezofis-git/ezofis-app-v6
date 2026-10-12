@@ -491,6 +491,107 @@ export const emailValidate = async (
   return response
 }
 
+export const sendShareOtp = async (payload: {
+  email: string
+  shareToken: string
+  tenantId?: string
+}) => {
+  const response: { data: { sent: boolean } | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  const token = String(payload.shareToken || '').trim()
+  const email = String(payload.email || '').trim()
+  if (!token) {
+    response.error = 'Share token is required'
+    return response
+  }
+  if (!email) {
+    response.error = 'Email is required'
+    return response
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({ email }),
+      headers: payload.tenantId
+        ? { 'X-Tenant-Id': payload.tenantId }
+        : undefined,
+      method: 'POST',
+      skipAuthToken: true,
+      url: `/repositories/share/${encodeURIComponent(token)}/otp`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data?.sent !== undefined ? data : { sent: true }
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'Failed to send verification code. Please try again.',
+    )
+  }
+  return response
+}
+
+export const verifyShareOtp = async (payload: {
+  email: string
+  otp: string
+  shareToken: string
+  tenantId?: string
+}) => {
+  const response: {
+    data: {
+      accessToken?: string
+      expiresIn?: number
+      tokenType?: string
+      userId?: string
+      [key: string]: any
+    } | null
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+  const token = String(payload.shareToken || '').trim()
+  const email = String(payload.email || '').trim()
+  const otp = String(payload.otp || '').trim()
+  if (!token) {
+    response.error = 'Share token is required'
+    return response
+  }
+  if (!email) {
+    response.error = 'Email is required'
+    return response
+  }
+  if (!otp) {
+    response.error = 'Verification code is required'
+    return response
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({ email, otp }),
+      headers: payload.tenantId
+        ? { 'X-Tenant-Id': payload.tenantId }
+        : undefined,
+      method: 'POST',
+      skipAuthToken: true,
+      url: `/repositories/share/${encodeURIComponent(token)}/otp/verify`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'Invalid or expired verification code.',
+    )
+  }
+  return response
+}
+
 export const authApiV6 = {
   emailValidate,
   login,
@@ -498,10 +599,12 @@ export const authApiV6 = {
   refreshUserSession,
   resetUserSessionFetchGate,
   sendMailOTP,
+  sendShareOtp,
   shareSocialLogin,
   signUp,
   socialLogin,
   verifyMailOTP,
+  verifyShareOtp,
   getSession,
   getSharePreview,
   getTenants,

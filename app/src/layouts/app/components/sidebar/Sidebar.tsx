@@ -21,7 +21,7 @@ const Sidebar = () => {
           route: '/',
         },
         {
-          icon: 'lucide:inbox',
+          icon: 'lucide:workflow',
           label: t`Workflows`,
           permissionKey: 'workflow-inbox',
           route: '/requests',

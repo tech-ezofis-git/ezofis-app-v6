@@ -62,7 +62,7 @@ type FolderSharePopoverProps = {
     shares: FolderShareInvitePayload[],
     message: string,
     meta?: FolderShareMeta,
-  ) => Promise<boolean>
+  ) => Promise<boolean | string | void>
 }
 
 const roleAction = (role: string) => {
@@ -492,8 +492,8 @@ export default function FolderSharePopover({
 
     setIsSharing(true)
     try {
-      const success = await onShare(shares, shareMessage, meta)
-      if (!success) return
+      const shareResult = await onShare(shares, shareMessage, meta)
+      if (shareResult === false) return
 
       setSharedUsers((prev) => {
         const next = new Set(prev)
@@ -503,8 +503,23 @@ export default function FolderSharePopover({
       })
       closeShare()
       queryClient.invalidateQueries({ queryKey: ['user-list'] })
+
+      const signCount = signShares.length
+      const viewCount = shares.length - signCount
+      const defaultRoleMessage =
+        signCount > 0 && viewCount === 0
+          ? t`Sign request sent successfully`
+          : signCount > 0 && viewCount > 0
+            ? t`File shared and sign request sent successfully`
+            : t`File shared successfully`
+
+      const messageToDisplay =
+        typeof shareResult === 'string' && shareResult.trim()
+          ? shareResult
+          : successMessage || defaultRoleMessage
+
       showToast({
-        message: successMessage || t`Shared successfully`,
+        message: messageToDisplay,
         variant: 'success',
       })
     } finally {

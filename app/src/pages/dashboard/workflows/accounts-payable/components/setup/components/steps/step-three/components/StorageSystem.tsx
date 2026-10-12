@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 // import AmazonLogo from '@/assets/brands/amazon.svg'
 // import DropboxLogo from '@/assets/brands/dropbox.svg'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
+import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import StorageLogo from '@/assets/brands/storage.svg'
 import {
   AnimateBounce,
@@ -33,6 +34,12 @@ const cloudStorageProviders: Array<{
   value: string
 }> = [
   {
+    description: 'Store invoice documents in OneDrive.',
+    logo: OneDriveLogo,
+    name: 'OneDrive',
+    value: 'OneDrive',
+  },
+  {
     description: 'Store invoice documents in Google Drive.',
     logo: GoogleDriveLogo,
     name: 'Google Drive',
@@ -44,12 +51,6 @@ const cloudStorageProviders: Array<{
     name: 'GCP',
     value: 'GCP',
   },
-  // {
-  //   description: 'Store invoice documents in OneDrive.',
-  //   icon: 'logos:microsoft-onedrive',
-  //   name: 'OneDrive',
-  //   value: 'OneDrive',
-  // },
 ]
 
 const getStorageLabel = (value: string) => {

@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
+import connectorApi from '@/api/connector'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
@@ -147,7 +148,7 @@ export default function FolderStorageConnectorPanel({
     return () => window.removeEventListener('message', handleMessage)
   }, [option.connectorType, pendingConnectionName, queryClient])
 
-  const handleAuthorize = () => {
+  const handleAuthorize = async () => {
     if (!session?.tenantId) {
       showToast({
         message: t`We couldn't connect to the service. Please try again or contact your administrator.`,
@@ -161,6 +162,24 @@ export default function FolderStorageConnectorPanel({
 
     setIsConnecting(true)
     setNewConnectionName(connectionName)
+
+    if (
+      option.connectorType === 'GCP' ||
+      option.storageProviderCode === 'GCP' ||
+      option.oauthProvider === 'gcp'
+    ) {
+      const resp = await connectorApi.authorizeOAuth({
+        name: connectionName,
+        providerCode: 'GCP',
+        successRedirectUrl: `${window.location.origin}/auth`,
+      })
+      if (!resp.error && resp.payload) {
+        window.open(resp.payload, '_blank')
+        setPendingConnectionName(connectionName)
+        return
+      }
+    }
+
     const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${session.tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${option.oauthProvider}&resulturl=${window.location.origin}/auth/`
     window.open(url, '_blank')
     setPendingConnectionName(connectionName)
