@@ -15,6 +15,7 @@ import {
   type V6UserListItem,
 } from '@/api/v6/user'
 import Alert from '@/components/base/Alert'
+import InfoCard from '@/components/base/InfoCard'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
@@ -1198,6 +1199,12 @@ export default function DocumentSecurityRuleWizard({
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
+            <InfoCard
+              className='mb-5'
+              description={t`Set the conditions that decide which documents this rule covers, then choose the security action. Review each step before you save.`}
+              showVideo
+              title={t`What should I do on this page?`}
+            />
             {renderStepContent()}
 
             {/* Footer Navigation */}

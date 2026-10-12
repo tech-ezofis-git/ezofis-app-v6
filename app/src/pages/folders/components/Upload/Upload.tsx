@@ -30,6 +30,7 @@ import InfoCard from '@/components/base/InfoCard'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
@@ -1223,6 +1224,38 @@ const fileFingerprint = (file: File) =>
 const batchFingerprint = (files: File[]) =>
   files.map(fileFingerprint).sort().join('|')
 
+const INTELLIGENT_UPLOAD_CACHE_PREFIX = 'ezofis.intelligentUpload.'
+
+const intelligentUploadScopeId = (
+  repositoryId: string | number | null | undefined,
+  folderId: string | number | null | undefined,
+) => String(repositoryId || folderId || '')
+
+const readIntelligentUploadEnabled = (scopeId: string) => {
+  if (!scopeId) return true
+  try {
+    const stored = localStorage.getItem(
+      `${INTELLIGENT_UPLOAD_CACHE_PREFIX}${scopeId}`,
+    )
+    if (stored === null) return true
+    return stored === '1'
+  } catch {
+    return true
+  }
+}
+
+const writeIntelligentUploadEnabled = (scopeId: string, enabled: boolean) => {
+  if (!scopeId) return
+  try {
+    localStorage.setItem(
+      `${INTELLIGENT_UPLOAD_CACHE_PREFIX}${scopeId}`,
+      enabled ? '1' : '0',
+    )
+  } catch {
+    // Cache is unavailable in private browsing.
+  }
+}
+
 /** Cycles the three upload highlights in one card. */
 function UploadFeatureHighlight() {
   const { t } = useLingui()
@@ -1322,7 +1355,6 @@ export default function Upload({
   repositoryData,
   repositoryId,
   onBack,
-  onIntelligentUpload,
   onSuccess,
 }: UploadProps) {
   const { t } = useLingui()
@@ -1345,17 +1377,21 @@ export default function Upload({
   )
 
   const [isDragOver, setIsDragOver] = useState(false)
-  const [useIntelligentUpload, setUseIntelligentUpload] = useState(true)
+  const uploadScopeId = intelligentUploadScopeId(
+    repositoryId || repositoryData?.id,
+    folderId,
+  )
+  const [useIntelligentUpload, setUseIntelligentUpload] = useState(() =>
+    readIntelligentUploadEnabled(
+      intelligentUploadScopeId(repositoryId || repositoryData?.id, folderId),
+    ),
+  )
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
   const [openFileId, setOpenFileId] = useState<string | null>(null)
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
   const [isRestoringQueue, setIsRestoringQueue] = useState(false)
   const [draftCounts, setDraftCounts] = useState(emptyDraftCounts)
   const [isLoadingDraftCount, setIsLoadingDraftCount] = useState(false)
-  const [draftHintVisible, setDraftHintVisible] = useState(false)
-  const [intelligentHintVisible, setIntelligentHintVisible] = useState(true)
-  const draftHintStartedRef = useRef(false)
-  const draftHintTimerRef = useRef<number | null>(null)
   const [viewingDrafts, setViewingDrafts] = useState(false)
   const [queueListTab, setQueueListTab] = useState<'uploading' | 'export'>(
     'export',
@@ -1413,32 +1449,13 @@ export default function Upload({
   }, [activeRepositoryId, queue.length, repositoryFields])
 
   useEffect(() => {
-    if (
-      isLoadingDraftCount ||
-      draftCounts.total <= 1 ||
-      draftHintStartedRef.current
-    ) {
-      return
-    }
-    draftHintStartedRef.current = true
-    setDraftHintVisible(true)
-    draftHintTimerRef.current = window.setTimeout(() => {
-      setDraftHintVisible(false)
-    }, 5000)
-  }, [draftCounts.total, isLoadingDraftCount])
+    setUseIntelligentUpload(readIntelligentUploadEnabled(uploadScopeId))
+  }, [uploadScopeId])
 
-  useEffect(() => {
-    return () => {
-      if (draftHintTimerRef.current) {
-        window.clearTimeout(draftHintTimerRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIntelligentHintVisible(false), 5000)
-    return () => window.clearTimeout(timer)
-  }, [])
+  const setIntelligentUploadEnabled = (enabled: boolean) => {
+    setUseIntelligentUpload(enabled)
+    writeIntelligentUploadEnabled(uploadScopeId, enabled)
+  }
 
   const activeEntry = useMemo(
     () => queue.find((entry) => entry.id === openFileId) ?? null,
@@ -2673,20 +2690,6 @@ export default function Upload({
       const activeRepositoryId = String(
         repositoryId || repositoryData?.id || '',
       )
-
-      if (useIntelligentUpload) {
-        if (!onIntelligentUpload) {
-          showToast({
-            message: t`Intelligent upload is not available.`,
-            variant: 'error',
-          })
-          resetInput()
-          return
-        }
-        onIntelligentUpload(validFiles)
-        resetInput()
-        return
-      }
 
       if (!activeRepositoryId) {
         showToast({
@@ -4025,10 +4028,10 @@ export default function Upload({
 
                 <div
                   className={cn(
-                    'relative z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors duration-300',
+                    'relative z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 pt-6 pb-2 text-center transition-colors duration-300',
                     useIntelligentUpload
                       ? 'border-primary-6 bg-primary-2'
-                      : 'border-gray-5 bg-surface',
+                      : 'border-primary-4 bg-surface',
                     isDragOver && 'border-primary-7 bg-primary-3',
                   )}
                   onClick={() => invoiceInputRef.current?.click()}
@@ -4044,64 +4047,13 @@ export default function Upload({
                   }}
                 >
                   <div
-                    className='absolute top-3 right-3'
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => event.stopPropagation()}
-                  >
-                    <Tooltip
-                      content={
-                        useIntelligentUpload
-                          ? t`Click to turn intelligent upload off`
-                          : t`Click to turn intelligent upload on`
-                      }
-                      position='bottom'
-                    >
-                      <button
-                        aria-pressed={useIntelligentUpload}
-                        className={cn(
-                          'relative flex cursor-pointer items-center gap-2 rounded-full border py-1 pr-1 pl-3 shadow-sm transition-colors duration-300',
-                          useIntelligentUpload
-                            ? 'border-primary-6 bg-primary-3 hover:bg-primary-4 active:bg-primary-5'
-                            : 'border-gray-5 bg-surface hover:bg-gray-2 active:bg-gray-3',
-                        )}
-                        type='button'
-                        onClick={() =>
-                          setUseIntelligentUpload((current) => !current)
-                        }
-                      >
-                        <span className='text-12 font-semibold text-gray-13'>
-                          {t`Intelligent upload`}
-                        </span>
-                        <span className='relative flex size-7 items-center justify-center'>
-                          {intelligentHintVisible ? (
-                            <span
-                              className={cn(
-                                'absolute inset-0 animate-ping rounded-full',
-                                useIntelligentUpload
-                                  ? 'bg-primary-4'
-                                  : 'bg-gray-4',
-                              )}
-                            />
-                          ) : null}
-                          <AiBrandIcon
-                            className='relative size-4'
-                            variant={
-                              useIntelligentUpload ? 'purple' : 'outline-black'
-                            }
-                          />
-                        </span>
-                      </button>
-                    </Tooltip>
-                  </div>
-
-                  <div
                     className={cn(
                       'flex size-11 items-center justify-center rounded-lg',
-                      useIntelligentUpload ? 'bg-surface' : 'bg-gray-2',
+                      useIntelligentUpload ? 'bg-surface' : 'bg-primary-2',
                     )}
                   >
                     <Icon
-                      className='size-5 text-gray-11'
+                      className='size-5 text-primary-9'
                       name='tabler:cloud-upload'
                     />
                   </div>
@@ -4138,6 +4090,18 @@ export default function Upload({
                       ))}
                     </div>
                   ) : null}
+
+                  <div
+                    className='flex w-full items-center justify-end border-t border-dashed border-primary-4 pt-1.5 [&_.mantine-Switch-body]:items-center [&_.mantine-Switch-track]:!mt-0'
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <InputSwitch
+                      checked={useIntelligentUpload}
+                      label={t`Enable Document Classification`}
+                      onChange={setIntelligentUploadEnabled}
+                    />
+                  </div>
 
                   <input
                     accept={DOCUMENT_ACCEPT}
@@ -4233,10 +4197,7 @@ export default function Upload({
 
               <AnimateEntrancePop className='h-full' delay={0.24}>
                 <button
-                  className={cn(
-                    'group relative flex h-full w-full flex-col items-start rounded-xl border border-orange-4 bg-orange-1 p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-6 hover:shadow-md active:translate-y-0 active:shadow-sm',
-                    draftHintVisible && 'ring-2 ring-orange-6',
-                  )}
+                  className='group relative flex h-full w-full flex-col items-start rounded-xl border border-orange-4 bg-orange-1 p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-6 hover:shadow-md active:translate-y-0 active:shadow-sm'
                   type='button'
                   onClick={() => {
                     void handleOpenDraftFiles()
@@ -4252,12 +4213,7 @@ export default function Upload({
                     <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
                       {t`Draft Files`}
                     </h4>
-                    <span
-                      className={cn(
-                        'ml-auto rounded-full bg-orange-3 px-2.5 py-0.5 text-xs font-semibold text-orange-11',
-                        draftHintVisible && 'animate-pulse',
-                      )}
-                    >
+                    <span className='ml-auto rounded-full bg-orange-3 px-2.5 py-0.5 text-xs font-semibold text-orange-11'>
                       {isLoadingDraftCount ? '…' : draftCounts.total}
                     </span>
                   </div>
@@ -4295,15 +4251,12 @@ export default function Upload({
                       </span>
                     </div>
                   </div>
-                  {draftHintVisible ? (
-                    <span className='pointer-events-none mt-2 flex w-full items-center justify-end gap-1.5 text-orange-11'>
-                      <span className='text-11 font-semibold'>{t`Tap to view`}</span>
-                      <Icon
-                        className='size-5 animate-[draft-point_1s_ease-in-out_infinite]'
-                        name='tabler:hand-click'
-                      />
+                  <span className='mt-2 inline-flex items-center gap-1 text-13 font-semibold text-primary-11'>
+                    <span className='underline-offset-2 hover:underline'>
+                      {t`Open draft files`}
                     </span>
-                  ) : null}
+                    <Icon className='size-4' name='lucide:arrow-right' />
+                  </span>
                 </button>
               </AnimateEntrancePop>
             </div>
@@ -4311,10 +4264,6 @@ export default function Upload({
             @keyframes scan {
               0% { transform: translateY(-100%); }
               100% { transform: translateY(200%); }
-            }
-            @keyframes draft-point {
-              0%, 100% { transform: translateX(0); }
-              50% { transform: translateX(-6px); }
             }
           `}</style>
           </div>

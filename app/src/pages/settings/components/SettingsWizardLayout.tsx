@@ -2,6 +2,7 @@ import type { I18n, MessageDescriptor } from '@lingui/core'
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef } from 'react'
 import Button from '@/components/base/button/Button'
+import InfoCard from '@/components/base/InfoCard'
 import Stepper from '@/components/base/Stepper'
 import cn from '@/utils/cn'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
@@ -13,6 +14,7 @@ export type SettingsWizardStep = {
   icon?: string
   id: number
   label: string
+  videoUrl?: string
 }
 
 type Translatable = string | MessageDescriptor
@@ -191,6 +193,14 @@ export default function SettingsWizardLayout({
             )}
           >
             <div className='flex min-h-full w-full flex-col gap-6 pt-3 pb-6 md:gap-7 md:pb-8'>
+              {steps[activeStep]?.description ? (
+                <InfoCard
+                  description={t`${steps[activeStep]?.label ?? ''}. ${steps[activeStep]?.description ?? ''} Complete the fields on this step, then continue when you are ready. You can return to this step before you save.`}
+                  showVideo
+                  title={t`What should I do on this page?`}
+                  videoUrl={steps[activeStep]?.videoUrl}
+                />
+              ) : null}
               <div className='flex flex-col gap-6 md:gap-7'>{children}</div>
 
               {/* Footer Navigation */}
