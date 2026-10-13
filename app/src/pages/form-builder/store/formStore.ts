@@ -259,6 +259,11 @@ export interface Question {
         id?: string
         masterField: string
       }>
+      masterFormTableColumns?: Array<{
+        id: string
+        masterColumn: string
+        tableColumn: string
+      }>
       masterSyncField?: string
       matrixColumnLabels?: string[]
       matrixColumns?: string[]
@@ -304,29 +309,51 @@ export interface Question {
       specificCurrencies?: string[]
       suffixIcon?: string
       suffixLabel?: string
+      tableFixedRowLabels?: string[]
       tableColumns?: Array<{
         id: string
         name: string
         settings?: {
+          general?: {
+            displayLabel?: string
+            tooltip?: string
+            visibility?: 'DISABLE' | 'NORMAL' | 'READ_ONLY'
+          }
           lookupSettings?: {
+            /** Id of another column in this table whose value in the same
+             * row filters this column's repository-facet options (cascade). */
+            cascadeFromColumn?: string
             /** LOOKUP = repository facets; API = FTL catalog on focus/select */
             optionsSource?: 'LOOKUP' | 'API'
             repositoryField?: string
             repositoryId?: string
           }
           specific?: {
+            customDefaultValue?: string
             customOptions?: string
+            defaultValueType?:
+              | 'AUTO_SEQUENCE'
+              | 'CURRENT_DATE'
+              | 'CUSTOM'
+              | 'USER_EMAIL'
             formulaTokens?: Array<{
               type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
               value: string
             }>
             placeholder?: string
+            showColumnTotal?: boolean
           }
-          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+          validation?: {
+            contentRule?: string
+            fieldRule?: 'OPTIONAL' | 'REQUIRED'
+            maximum?: number | string
+            minimum?: number | string
+          }
         }
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
       }>
+      tableViewMode?: 'ADVANCE' | 'NORMAL'
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
       uniqueCheck?: boolean
       variant?: 'default' | 'filled' | 'unstyled'
@@ -409,6 +436,9 @@ export type QuestionType =
   | 'SCORE'
   | 'IMAGE_UPLOAD'
   | 'CONSENT'
+  | 'SERIAL_NUMBER'
+  | 'CHIPS'
+  | 'IMAGE'
 
 // export type FormLayout = 'typeform' | 'grid' | 'full'
 // export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { SegmentedControl } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -30,6 +31,8 @@ import Tr from '@/components/base/table/Tr'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import { extractHeadersAndData } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/utils/fileParser'
 import { evaluateFormula } from '@/pages/form-builder/helpers/formula'
+import { fetchMasterTableRows } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 const generateRowId = () => {
@@ -49,22 +52,43 @@ export interface TableColumn {
   size?: 'SMALL' | 'MEDIUM' | 'LARGE'
   type?: string
   settings?: {
+    general?: {
+      displayLabel?: string
+      tooltip?: string
+      visibility?: 'DISABLE' | 'NORMAL' | 'READ_ONLY'
+    }
     lookupSettings?: {
+      cascadeFromColumn?: string
       optionsSource?: 'LOOKUP' | 'API'
       repositoryField?: string
       repositoryId?: string
     }
     specific?: {
+      customDefaultValue?: string
       customOptions?: string
+      defaultValueType?: string
       formulaTokens?: Array<{ type: string; value: string }>
       placeholder?: string
+      showColumnTotal?: boolean
     }
-    validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+    validation?: {
+      contentRule?: string
+      fieldRule?: 'OPTIONAL' | 'REQUIRED'
+      maximum?: number | string
+      minimum?: number | string
+    }
   }
 }
 
 const getColumnPlaceholder = (col: TableColumn) =>
   col.settings?.specific?.placeholder || col.name || '...'
+
+const getColumnLabel = (col: TableColumn) =>
+  col.settings?.general?.displayLabel || col.name || 'Column'
+
+const isColumnReadOnly = (col: TableColumn) =>
+  col.settings?.general?.visibility === 'READ_ONLY' ||
+  col.settings?.general?.visibility === 'DISABLE'
 
 const isApiOptionsColumn = (col: TableColumn) =>
   col.settings?.lookupSettings?.optionsSource === 'API'
@@ -165,6 +189,10 @@ export const mapExternalRowsToTableColumns = (
 
 interface Props {
   field: any
+  /** The resolved master-form column key the parent field matches against (see fetchMasterTableRows). */
+  masterSyncParentColumnKey?: string
+  /** The current form's parent field live value — triggers a master-table re-sync when it changes. */
+  masterSyncParentValue?: any
   ocrLineItems?: Record<string, any>[]
   readOnly?: boolean
   required?: boolean
@@ -392,15 +420,15 @@ export { ApiCatalogSelect }
 
 const TableCellSelect = ({
   col,
-  val,
-  options,
   isMulti,
+  options,
+  val,
   onCellChange,
 }: {
   col: TableColumn
-  val: any
-  options: { id: string; name: string }[]
   isMulti?: boolean
+  options: { id: string; name: string }[]
+  val: any
   onCellChange: (newVal: any) => void
 }) => {
   useEffect(() => {
@@ -450,8 +478,17 @@ const renderCellInput = (
   readOnly?: boolean,
   resolvedOptions?: { id: string; name: string }[],
   onApiProductSelect?: (productCode: string | null) => void | Promise<void>,
+  rowIndex?: number,
 ): ReactNode => {
   const cellType = (col.type || 'SHORT_TEXT').toUpperCase()
+
+  if (cellType === 'SERIAL_NUMBER') {
+    return (
+      <div className='truncate px-2 py-1 text-xs font-semibold text-gray-11'>
+        {(rowIndex ?? 0) + 1}
+      </div>
+    )
+  }
 
   if (cellType === 'CALCULATED') {
     return (
@@ -579,17 +616,19 @@ const renderCellInput = (
       return (
         <TableCellSelect
           col={col}
-          isMulti
           options={options}
           val={val}
+          isMulti
           onCellChange={onCellChange}
         />
       )
     }
 
     case 'FILE_UPLOAD':
-    case 'IMAGE_UPLOAD': {
+    case 'IMAGE_UPLOAD':
+    case 'IMAGE': {
       const fileName: string | undefined = val?.fileName
+      const isImageType = cellType === 'IMAGE_UPLOAD' || cellType === 'IMAGE'
       return (
         <label className='flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5'>
           <Icon
@@ -600,7 +639,7 @@ const renderCellInput = (
           />
           <span className='min-w-0 flex-1 truncate'>{fileName || '...'}</span>
           <input
-            accept={cellType === 'IMAGE_UPLOAD' ? 'image/*' : undefined}
+            accept={isImageType ? 'image/*' : undefined}
             className='hidden'
             type='file'
             onChange={(e) => {
@@ -611,6 +650,48 @@ const renderCellInput = (
             }}
           />
         </label>
+      )
+    }
+
+    case 'CHIPS': {
+      const chips: string[] = Array.isArray(val)
+        ? val
+        : typeof val === 'string' && val
+          ? val.split(',').map((v) => v.trim())
+          : []
+      return (
+        <div className='flex min-h-[28px] w-full flex-wrap items-center gap-1 rounded-md border border-transparent px-1 py-0.5'>
+          {chips.map((chip, i) => (
+            <span
+              className='flex items-center gap-1 rounded-full bg-primary-2 px-2 py-0.5 text-[11px] font-medium text-primary-10'
+              key={`${chip}-${i}`}
+            >
+              {chip}
+              <button
+                className='cursor-pointer text-primary-8 hover:text-primary-11'
+                type='button'
+                onClick={() =>
+                  onCellChange(chips.filter((_, idx) => idx !== i))
+                }
+              >
+                <Icon height={10} name='lucide:x' width={10} />
+              </button>
+            </span>
+          ))}
+          <input
+            className='min-w-[60px] flex-1 bg-transparent text-xs outline-none'
+            placeholder={chips.length === 0 ? getColumnPlaceholder(col) : ''}
+            type='text'
+            onKeyDown={(e) => {
+              const input = e.currentTarget
+              if (e.key === 'Enter' && input.value.trim()) {
+                e.preventDefault()
+                onCellChange([...chips, input.value.trim()])
+                input.value = ''
+              }
+            }}
+          />
+        </div>
       )
     }
 
@@ -632,6 +713,8 @@ const renderCellInput = (
 
 const TableFieldRenderer = ({
   field,
+  masterSyncParentColumnKey,
+  masterSyncParentValue,
   ocrLineItems,
   readOnly,
   required,
@@ -647,10 +730,65 @@ const TableFieldRenderer = ({
   const tableColumns: TableColumn[] = specific.tableColumns || []
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
   const fixedRowCount: number = specific.fixedRowCount || 5
+  const fixedRowLabels: string[] = specific.tableFixedRowLabels || []
+  const getRowDisplayLabel = (rowIndex: number) =>
+    rowsType === 'FIXED' && fixedRowLabels[rowIndex]
+      ? fixedRowLabels[rowIndex]
+      : String(rowIndex + 1)
   const rowSelection: 'NONE' | 'SINGLE' | 'MULTIPLE' =
     specific.rowSelection || 'NONE'
   const showSummaryRow: boolean = Boolean(specific.showSummaryRow)
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set())
+  const [isMasterSyncing, setIsMasterSyncing] = useState(false)
+  const [viewOverride, setViewOverride] = useState<'ADVANCE' | 'NORMAL' | null>(
+    null,
+  )
+  const [expandedRowIndex, setExpandedRowIndex] = useState<number | null>(null)
+
+  const hasUploadColumn = tableColumns.some((c) =>
+    ['FILE_UPLOAD', 'IMAGE', 'IMAGE_UPLOAD'].includes(
+      (c.type || '').toUpperCase(),
+    ),
+  )
+  const activeView: 'ADVANCE' | 'NORMAL' =
+    viewOverride ||
+    (hasUploadColumn || specific.tableViewMode === 'ADVANCE'
+      ? 'ADVANCE'
+      : 'NORMAL')
+
+  const isMasterSynced = specific.fillValueType === 'MASTER'
+  const masterFormId = specific.masterFormId
+    ? String(specific.masterFormId)
+    : ''
+  const masterFormTableColumns = specific.masterFormTableColumns || []
+
+  useEffect(() => {
+    if (readOnly || !isMasterSynced || !masterFormId) return
+    if (masterFormTableColumns.length === 0) return
+
+    let cancelled = false
+    setIsMasterSyncing(true)
+    fetchMasterTableRows(
+      masterFormId,
+      masterSyncParentColumnKey,
+      masterSyncParentValue,
+      masterFormTableColumns,
+    )
+      .then((syncedRows) => {
+        if (cancelled) return
+        onChange(syncedRows.map((row) => ({ _rowId: generateRowId(), ...row })))
+      })
+      .finally(() => {
+        if (!cancelled) setIsMasterSyncing(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // Re-sync only when the parent value (or the master binding itself)
+    // changes — not on every row edit, or user edits would be clobbered.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMasterSynced, masterFormId, masterSyncParentValue])
 
   const rows: Array<Record<string, any>> = (() => {
     const raw = Array.isArray(value) ? value : []
@@ -671,11 +809,154 @@ const TableFieldRenderer = ({
     return raw
   })()
 
+  // DYNAMIC_TABLE's defining feature: end-users can add/rename/reorder their
+  // own columns at fill-time, on top of whatever the builder predefined.
+  // There's no separate schema channel for per-submission column defs (the
+  // TABLE value is just a row array), so the ad-hoc column list is carried
+  // as a reserved `_dynamicColumns` key copied onto every row — self
+  // contained inside this field's own value, same as any other row data.
+  const isDynamicTable = field?.type === 'DYNAMIC_TABLE'
+  const dynamicColumns: TableColumn[] = isDynamicTable
+    ? rows.find((r) => r._dynamicColumns)?._dynamicColumns || []
+    : []
+  const effectiveColumns: TableColumn[] = isDynamicTable
+    ? [...tableColumns, ...dynamicColumns]
+    : tableColumns
+  const isDynamicColumn = (col: TableColumn) =>
+    isDynamicTable && dynamicColumns.some((c) => c.id === col.id)
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
+
+  const updateDynamicColumns = (next: TableColumn[]) => {
+    onChange(rows.map((row) => ({ ...row, _dynamicColumns: next })))
+  }
+
+  const handleAddDynamicColumn = () => {
+    const newCol: TableColumn = {
+      id: generateRowId(),
+      name: `Column ${dynamicColumns.length + 1}`,
+      size: 'MEDIUM',
+      type: 'SHORT_TEXT',
+    }
+    updateDynamicColumns([...dynamicColumns, newCol])
+    setEditingColumnId(newCol.id)
+  }
+
+  const handleRenameDynamicColumn = (colId: string, name: string) => {
+    updateDynamicColumns(
+      dynamicColumns.map((c) => (c.id === colId ? { ...c, name } : c)),
+    )
+  }
+
+  const handleDeleteDynamicColumn = (colId: string) => {
+    updateDynamicColumns(dynamicColumns.filter((c) => c.id !== colId))
+  }
+
+  const handleMoveDynamicColumn = (colId: string, direction: -1 | 1) => {
+    const idx = dynamicColumns.findIndex((c) => c.id === colId)
+    const nextIdx = idx + direction
+    if (idx === -1 || nextIdx < 0 || nextIdx >= dynamicColumns.length) return
+    const next = [...dynamicColumns]
+    ;[next[idx], next[nextIdx]] = [next[nextIdx], next[idx]]
+    updateDynamicColumns(next)
+  }
+
   const lookupColumns = tableColumns.filter(
     (col) =>
       col.settings?.lookupSettings?.optionsSource !== 'API' &&
-      col.settings?.lookupSettings?.repositoryId,
+      col.settings?.lookupSettings?.repositoryId &&
+      !col.settings?.lookupSettings?.cascadeFromColumn,
   )
+  const cascadeColumns = tableColumns.filter(
+    (col) =>
+      col.settings?.lookupSettings?.optionsSource !== 'API' &&
+      col.settings?.lookupSettings?.repositoryId &&
+      col.settings?.lookupSettings?.cascadeFromColumn,
+  )
+
+  // For columns configured with a "cascade" parent (another column in the
+  // same row), facet options are filtered server-side per distinct parent
+  // value seen across the current rows — unlike lookupOptionsByColumn below,
+  // this is keyed by [columnId][parentValue] since options differ per row.
+  const { data: cascadedOptionsByColumn = {} } = useQuery({
+    enabled: cascadeColumns.length > 0,
+    queryKey: [
+      'tableColumnCascadedLookupOptions',
+      field?.id,
+      cascadeColumns.map((c) => {
+        const parentColId = c.settings?.lookupSettings?.cascadeFromColumn
+        const distinctValues = Array.from(
+          new Set(
+            rows
+              .map((r) => r[parentColId || ''])
+              .filter((v) => v !== undefined && v !== null && v !== ''),
+          ),
+        )
+        return `${c.id}:${c.settings?.lookupSettings?.repositoryId}:${c.settings?.lookupSettings?.repositoryField}:${distinctValues.join(',')}`
+      }),
+    ],
+    queryFn: async () => {
+      const result: Record<
+        string,
+        Record<string, { id: string; name: string }[]>
+      > = {}
+      await Promise.all(
+        cascadeColumns.map(async (col) => {
+          const repositoryId = col.settings?.lookupSettings?.repositoryId
+          const repositoryField = col.settings?.lookupSettings?.repositoryField
+          const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
+          const parentCol = tableColumns.find((c) => c.id === parentColId)
+          const parentFieldName =
+            parentCol?.settings?.lookupSettings?.repositoryField ||
+            parentCol?.name ||
+            parentColId
+          if (!repositoryId || !repositoryField || !parentColId) return
+
+          const distinctValues = Array.from(
+            new Set(
+              rows
+                .map((r) => r[parentColId])
+                .filter((v) => v !== undefined && v !== null && v !== ''),
+            ),
+          )
+          const byValue: Record<string, { id: string; name: string }[]> = {}
+          await Promise.all(
+            distinctValues.map(async (val) => {
+              const res = await getRepositoryItemFacets({
+                fieldName: repositoryField,
+                limit: 1000,
+                repositoryId,
+                scopeFilters: parentFieldName
+                  ? { [parentFieldName]: String(val) }
+                  : undefined,
+              })
+              byValue[String(val)] = (res.data || []).map((f) => ({
+                id: f.value,
+                name: f.value,
+              }))
+            }),
+          )
+          result[col.id] = byValue
+        }),
+      )
+      return result
+    },
+  })
+
+  const getLookupOptionsForCell = (
+    col: TableColumn,
+    row: Record<string, any>,
+  ): { id: string; name: string }[] | undefined => {
+    const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
+    if (parentColId) {
+      const parentVal = row[parentColId]
+      if (parentVal === undefined || parentVal === null || parentVal === '') {
+        return []
+      }
+      return cascadedOptionsByColumn[col.id]?.[String(parentVal)] || []
+    }
+    return lookupOptionsByColumn[col.id]
+  }
+
   const { data: lookupOptionsByColumn = {} } = useQuery({
     enabled: lookupColumns.length > 0,
     queryKey: [
@@ -777,8 +1058,29 @@ const TableFieldRenderer = ({
     onChange(next)
   }
 
+  const resolveColumnDefaultValue = (col: TableColumn): any => {
+    const type = col.settings?.specific?.defaultValueType || 'CUSTOM'
+    switch (type) {
+      case 'USER_EMAIL':
+        return authUserStore.getState().session?.email || ''
+      case 'CURRENT_DATE':
+        return new Date().toISOString().slice(0, 10)
+      case 'AUTO_SEQUENCE':
+        return rows.length + 1
+      case 'CUSTOM':
+      default:
+        return col.settings?.specific?.customDefaultValue || ''
+    }
+  }
+
   const handleAddRow = () => {
-    onChange([...rows, { _rowId: generateRowId() }])
+    const defaults: Record<string, any> = {}
+    for (const col of tableColumns) {
+      const def = resolveColumnDefaultValue(col)
+      if (def !== '' && def !== undefined) defaults[col.id] = def
+    }
+    onChange([...rows, { _rowId: generateRowId(), ...defaults }])
+    if (activeView === 'ADVANCE') setExpandedRowIndex(rows.length)
   }
 
   const handleDeleteRow = (rowIndex: number) => {
@@ -810,24 +1112,56 @@ const TableFieldRenderer = ({
     })
   }
 
+  const handleBulkDelete = () => {
+    const remaining = rows.filter(
+      (row, i) => !selectedRowIds.has(row._rowId || `row-${i}`),
+    )
+    onChange(remaining.length > 0 ? remaining : [{ _rowId: generateRowId() }])
+    setSelectedRowIds(new Set())
+  }
+
+  const handleBulkApprove = () => {
+    const next = rows.map((row, i) =>
+      selectedRowIds.has(row._rowId || `row-${i}`)
+        ? { ...row, _approved: true, _hideNote: true }
+        : row,
+    )
+    onChange(next)
+    setSelectedRowIds(new Set())
+  }
+
   const importExportEnabled: boolean = Boolean(specific.importExportEnabled)
   const qrScanEnabled: boolean = Boolean(specific.qrCodeEnabled)
   const [isImporting, setIsImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [importMode, setImportMode] = useState<'APPEND' | 'REPLACE'>('APPEND')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Re-stamps the current dynamic-column list onto freshly built rows (import/
+  // scan/master-sync all construct plain row dicts with no knowledge of
+  // `_dynamicColumns`) so a DYNAMIC_TABLE's end-user-added columns survive
+  // those operations instead of silently disappearing.
+  const withDynamicColumnsStamped = (newRows: Record<string, any>[]) =>
+    isDynamicTable && dynamicColumns.length > 0
+      ? newRows.map((r) => ({ ...r, _dynamicColumns: dynamicColumns }))
+      : newRows
 
   const appendRows = (newRows: Record<string, any>[]) => {
     const withoutDefaultBlank =
       rows.length === 1 && Object.keys(rows[0]).length <= 1 ? [] : rows
-    onChange([...withoutDefaultBlank, ...newRows])
+    onChange([...withoutDefaultBlank, ...withDynamicColumnsStamped(newRows)])
+  }
+
+  const replaceRows = (newRows: Record<string, any>[]) => {
+    onChange(withDynamicColumnsStamped(newRows))
   }
 
   const handleScan = (rawValue: string) => {
     try {
       const parsed = JSON.parse(rawValue)
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        appendRows(mapExternalRowsToTableColumns([parsed], tableColumns))
+        appendRows(mapExternalRowsToTableColumns([parsed], effectiveColumns))
         setIsScannerOpen(false)
         return
       }
@@ -847,7 +1181,7 @@ const TableFieldRenderer = ({
 
   const handleImportOcrLineItems = () => {
     if (!ocrLineItems?.length) return
-    appendRows(mapExternalRowsToTableColumns(ocrLineItems, tableColumns))
+    appendRows(mapExternalRowsToTableColumns(ocrLineItems, effectiveColumns))
   }
 
   const handleImportFile = async (file: File) => {
@@ -858,14 +1192,21 @@ const TableFieldRenderer = ({
       const nonEmptyRows = (previewRows || []).filter((row: any) =>
         Object.values(row || {}).some((v) => v !== undefined && v !== ''),
       )
-      const imported = mapExternalRowsToTableColumns(nonEmptyRows, tableColumns)
+      const imported = mapExternalRowsToTableColumns(
+        nonEmptyRows,
+        effectiveColumns,
+      )
       if (imported.length === 0) {
         setImportError(
           t`No matching columns found — CSV/Excel headers must match table column names.`,
         )
         return
       }
-      appendRows(imported)
+      if (importMode === 'REPLACE') {
+        replaceRows(imported)
+      } else {
+        appendRows(imported)
+      }
     } catch (err: any) {
       setImportError(err?.message || t`Could not read that file.`)
     } finally {
@@ -876,7 +1217,7 @@ const TableFieldRenderer = ({
   const handleExport = () => {
     const exportRows = rows.map((row) => {
       const out: Record<string, any> = {}
-      tableColumns.forEach((col) => {
+      effectiveColumns.forEach((col) => {
         out[col.name || col.id] = row[col.id] ?? ''
       })
       return out
@@ -888,10 +1229,14 @@ const TableFieldRenderer = ({
   }
 
   const columnTotals: Record<string, number> = showSummaryRow
-    ? tableColumns.reduce<Record<string, number>>((totals, col) => {
-        if (!col.type || !SUMMABLE_TYPES.has(col.type.toUpperCase())) {
-          return totals
-        }
+    ? effectiveColumns.reduce<Record<string, number>>((totals, col) => {
+        const type = col.type?.toUpperCase() || ''
+        const showColumnTotal = col.settings?.specific?.showColumnTotal
+        const isIncluded =
+          type === 'CALCULATED'
+            ? showColumnTotal === true
+            : SUMMABLE_TYPES.has(type) && showColumnTotal !== false
+        if (!isIncluded) return totals
         totals[col.id] = rows.reduce((sum, row) => {
           const num = Number(row[col.id])
           return sum + (Number.isFinite(num) ? num : 0)
@@ -900,7 +1245,19 @@ const TableFieldRenderer = ({
       }, {})
     : {}
 
-  if (tableColumns.length === 0) {
+  if (effectiveColumns.length === 0) {
+    if (isDynamicTable && !readOnly) {
+      return (
+        <button
+          className='flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-3 bg-gray-1 p-4 text-12 font-semibold text-primary-9 hover:border-primary-5 hover:bg-primary-1/40'
+          type='button'
+          onClick={handleAddDynamicColumn}
+        >
+          <Icon height={14} name='lucide:plus' width={14} />
+          {t`Add the first column`}
+        </button>
+      )
+    }
     return (
       <div className='rounded-lg border border-dashed border-gray-3 bg-gray-1 p-4 text-center text-12 text-gray-9 italic'>
         {t`No table columns configured.`}
@@ -917,26 +1274,68 @@ const TableFieldRenderer = ({
     >
       <div className='flex items-center justify-between gap-2'>
         <div>
-          <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
-            <Icon
-              className='h-4 w-4 text-[var(--primary-9)]'
-              name={getTableIconName(field.label)}
-            />
-            {field.label}
-            {isFlat ? (
-              <span className='font-bold text-[var(--gray-13)]'>
-                ({rows.length})
-              </span>
-            ) : null}
-            {required && <span className='ml-1 text-red-9'>*</span>}
-          </h4>
+          {!general.hideLabel && (
+            <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
+              <Icon
+                className='h-4 w-4 text-[var(--primary-9)]'
+                name={getTableIconName(field.label)}
+              />
+              {field.displayLabel || field.label}
+              {isFlat ? (
+                <span className='font-bold text-[var(--gray-13)]'>
+                  ({rows.length})
+                </span>
+              ) : null}
+              {required && <span className='ml-1 text-red-9'>*</span>}
+              {general.tooltip && (
+                <Icon
+                  className='text-gray-8'
+                  height={12}
+                  name='lucide:info'
+                  title={general.tooltip}
+                  width={12}
+                />
+              )}
+            </h4>
+          )}
           {general.description && (
             <p className='mt-0.5 ml-5 text-12 text-gray-9'>
               {general.description}
             </p>
           )}
+          {isMasterSyncing && (
+            <p className='mt-0.5 ml-5 flex items-center gap-1 text-11 text-primary-9'>
+              <Icon
+                className='animate-spin'
+                height={11}
+                name='lucide:loader-2'
+                width={11}
+              />
+              {t`Syncing from master table...`}
+            </p>
+          )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
+          {!hasUploadColumn && (
+            <IconButton
+              color='gray'
+              size='xs'
+              variant='ghost'
+              icon={
+                activeView === 'ADVANCE'
+                  ? 'lucide:table-2'
+                  : 'eva:menu-2-outline'
+              }
+              tooltip={
+                activeView === 'ADVANCE'
+                  ? t`Switch to Normal (grid) view`
+                  : t`Switch to Advance (card) view`
+              }
+              onClick={() =>
+                setViewOverride(activeView === 'ADVANCE' ? 'NORMAL' : 'ADVANCE')
+              }
+            />
+          )}
           {qrScanEnabled && !readOnly && rowsType === 'ON_DEMAND' && (
             <IconButton
               color='gray'
@@ -961,15 +1360,30 @@ const TableFieldRenderer = ({
                 }}
               />
               {!readOnly && (
-                <IconButton
-                  color='gray'
-                  icon='lucide:upload'
-                  loading={isImporting}
-                  size='xs'
-                  tooltip={t`Import CSV/Excel`}
-                  variant='ghost'
-                  onClick={() => fileInputRef.current?.click()}
-                />
+                <>
+                  <SegmentedControl
+                    size='xs'
+                    value={importMode}
+                    data={[
+                      { label: t`Append`, value: 'APPEND' },
+                      { label: t`Replace`, value: 'REPLACE' },
+                    ]}
+                    onChange={(v) => setImportMode(v as 'APPEND' | 'REPLACE')}
+                  />
+                  <IconButton
+                    color='gray'
+                    icon='lucide:upload'
+                    loading={isImporting}
+                    size='xs'
+                    variant='ghost'
+                    tooltip={
+                      importMode === 'REPLACE'
+                        ? t`Import CSV/Excel (replaces existing rows)`
+                        : t`Import CSV/Excel (adds to existing rows)`
+                    }
+                    onClick={() => fileInputRef.current?.click()}
+                  />
+                </>
               )}
               <IconButton
                 color='gray'
@@ -1010,6 +1424,36 @@ const TableFieldRenderer = ({
         <p className='text-12 font-medium text-red-9'>{importError}</p>
       )}
 
+      {!readOnly && rowSelection !== 'NONE' && selectedRowIds.size > 0 && (
+        <div className='flex items-center justify-between gap-2 rounded-lg border border-primary-5/40 bg-primary-1/40 px-3 py-1.5'>
+          <span className='text-11 font-bold text-primary-9'>
+            {t`${selectedRowIds.size} row(s) selected`}
+          </span>
+          <div className='flex items-center gap-1.5'>
+            {showRowApprove && (
+              <button
+                className='flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[11px] font-bold text-green-11 hover:bg-green-3 active:scale-95'
+                type='button'
+                onClick={handleBulkApprove}
+              >
+                <Icon height={12} name='lucide:check' width={12} />
+                {t`Approve selected`}
+              </button>
+            )}
+            {rowsType === 'ON_DEMAND' && (
+              <button
+                className='flex cursor-pointer items-center gap-1 rounded-md border border-red-4 bg-red-2 px-2 py-0.5 text-[11px] font-bold text-red-11 hover:bg-red-3 active:scale-95'
+                type='button'
+                onClick={handleBulkDelete}
+              >
+                <Icon height={12} name='lucide:trash-2' width={12} />
+                {t`Delete selected`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {isScannerOpen && (
         <BarcodeScannerPanel
           onClose={() => setIsScannerOpen(false)}
@@ -1038,199 +1482,494 @@ const TableFieldRenderer = ({
         </div>
       )}
 
-      <div
-        className={cn(
-          'relative w-full max-w-full min-w-0 overflow-hidden',
-          isFlat
-            ? 'rounded-xl border border-[var(--gray-3)] bg-surface'
-            : 'rounded-lg border border-gray-3 bg-surface shadow-2xs',
-        )}
-      >
+      {activeView === 'NORMAL' && (
         <div
           className={cn(
-            'h-full w-full overflow-x-auto overflow-y-hidden overscroll-x-contain',
-            // Spreadsheet-like borderless inputs
-            '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
-            '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
-            '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-surface',
-            '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
-            !isFlat &&
-              '[&_td]:border-r [&_td]:border-gray-2 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',
+            'relative w-full max-w-full min-w-0 overflow-hidden',
+            isFlat
+              ? 'rounded-xl border border-[var(--gray-3)] bg-surface'
+              : 'rounded-lg border border-gray-3 bg-surface shadow-2xs',
           )}
         >
-          <Table className='w-max min-w-full border-collapse'>
-            <Thead className={isFlat ? 'bg-[var(--gray-1)]' : 'bg-gray-2/60'}>
-              <Tr className='border-b border-gray-3'>
-                {rowSelection !== 'NONE' && (
+          <div
+            className={cn(
+              'h-full w-full overflow-x-auto overflow-y-hidden overscroll-x-contain',
+              // Spreadsheet-like borderless inputs
+              '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
+              '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
+              '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-surface',
+              '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
+              !isFlat &&
+                '[&_td]:border-r [&_td]:border-gray-2 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',
+            )}
+          >
+            <Table className='w-max min-w-full border-collapse'>
+              <Thead className={isFlat ? 'bg-[var(--gray-1)]' : 'bg-gray-2/60'}>
+                <Tr className='border-b border-gray-3'>
+                  {rowSelection !== 'NONE' && (
+                    <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
+                      {rowSelection === 'MULTIPLE' ? (
+                        <input
+                          aria-label={t`Select all rows`}
+                          className='cursor-pointer'
+                          disabled={readOnly || rows.length === 0}
+                          type='checkbox'
+                          checked={
+                            rows.length > 0 &&
+                            rows.every((row, i) =>
+                              selectedRowIds.has(row._rowId || `row-${i}`),
+                            )
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRowIds(
+                                new Set(
+                                  rows.map(
+                                    (row, i) => row._rowId || `row-${i}`,
+                                  ),
+                                ),
+                              )
+                            } else {
+                              setSelectedRowIds(new Set())
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className='sr-only'>{t`Select`}</span>
+                      )}
+                    </Th>
+                  )}
                   <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
-                    <span className='sr-only'>{t`Select`}</span>
+                    #
                   </Th>
-                )}
-                <Th className='w-10 px-2.5 py-2 text-center text-11 font-bold text-gray-10'>
-                  #
-                </Th>
-                {tableColumns.map((col) => (
-                  <Th
-                    key={col.id}
-                    className={cn(
-                      'px-3 py-2 text-left text-11 font-bold text-gray-12',
-                      getColumnWidthClass(col.size),
-                    )}
-                  >
-                    <span className='truncate'>{col.name || 'Column'}</span>
-                  </Th>
-                ))}
-                {showActionColumn && (
-                  <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
-                    {showRowApprove ? (
-                      t`Approve`
-                    ) : (
-                      <span className='sr-only'>{t`Actions`}</span>
-                    )}
-                  </Th>
-                )}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {rows.length === 0
-                ? [0, 1, 2].map((i) => (
-                    <Tr
-                      className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
-                      key={`skeleton-${i}`}
+                  {effectiveColumns.map((col) => (
+                    <Th
+                      key={col.id}
+                      className={cn(
+                        'px-3 py-2 text-left text-11 font-bold text-gray-12',
+                        getColumnWidthClass(col.size),
+                      )}
                     >
-                      {rowSelection !== 'NONE' && (
-                        <Td className='px-2.5 py-3 text-center align-middle'>
-                          <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                        </Td>
+                      {isDynamicColumn(col) && !readOnly ? (
+                        <div className='flex items-center gap-1'>
+                          {editingColumnId === col.id ? (
+                            <input
+                              className='min-w-0 flex-1 rounded border border-primary-5 bg-surface px-1 py-0.5 text-11 font-bold text-gray-12 outline-none'
+                              defaultValue={col.name}
+                              type='text'
+                              autoFocus
+                              onBlur={(e) => {
+                                handleRenameDynamicColumn(
+                                  col.id,
+                                  e.target.value.trim() || col.name || 'Column',
+                                )
+                                setEditingColumnId(null)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur()
+                                if (e.key === 'Escape') setEditingColumnId(null)
+                              }}
+                            />
+                          ) : (
+                            <button
+                              className='min-w-0 flex-1 cursor-pointer truncate text-left hover:underline'
+                              title={t`Click to rename`}
+                              type='button'
+                              onClick={() => setEditingColumnId(col.id)}
+                            >
+                              {col.name || 'Column'}
+                            </button>
+                          )}
+                          <button
+                            className='shrink-0 cursor-pointer text-gray-6 hover:text-gray-10 disabled:opacity-30'
+                            disabled={dynamicColumns[0]?.id === col.id}
+                            title={t`Move left`}
+                            type='button'
+                            onClick={() => handleMoveDynamicColumn(col.id, -1)}
+                          >
+                            <Icon
+                              height={10}
+                              name='lucide:chevron-left'
+                              width={10}
+                            />
+                          </button>
+                          <button
+                            className='shrink-0 cursor-pointer text-gray-6 hover:text-gray-10 disabled:opacity-30'
+                            title={t`Move right`}
+                            type='button'
+                            disabled={
+                              dynamicColumns[dynamicColumns.length - 1]?.id ===
+                              col.id
+                            }
+                            onClick={() => handleMoveDynamicColumn(col.id, 1)}
+                          >
+                            <Icon
+                              height={10}
+                              name='lucide:chevron-right'
+                              width={10}
+                            />
+                          </button>
+                          <button
+                            className='shrink-0 cursor-pointer text-red-7 hover:text-red-9'
+                            title={t`Delete column`}
+                            type='button'
+                            onClick={() => handleDeleteDynamicColumn(col.id)}
+                          >
+                            <Icon height={10} name='lucide:x' width={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className='inline-flex items-center gap-1 truncate'>
+                          {getColumnLabel(col)}
+                          {col.settings?.general?.tooltip && (
+                            <Icon
+                              className='shrink-0 text-gray-8'
+                              height={11}
+                              name='lucide:info'
+                              title={col.settings.general.tooltip}
+                              width={11}
+                            />
+                          )}
+                        </span>
                       )}
-                      <Td className='px-2.5 py-3 text-center'>
-                        <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                      </Td>
-                      {tableColumns.map((col) => (
-                        <Td className='px-3 py-3 align-middle' key={col.id}>
-                          <div className='h-4 w-5/6 animate-pulse rounded-full bg-[var(--gray-3)]' />
-                        </Td>
-                      ))}
-                      {showActionColumn && (
-                        <Td className='px-2 py-3 text-center align-middle'>
-                          <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
-                        </Td>
+                    </Th>
+                  ))}
+                  {isDynamicTable && !readOnly && (
+                    <Th className='w-10 px-1 py-2 text-center'>
+                      <IconButton
+                        aria-label={t`Add column`}
+                        color='primary'
+                        icon='lucide:plus'
+                        size='xs'
+                        variant='ghost'
+                        onClick={handleAddDynamicColumn}
+                      />
+                    </Th>
+                  )}
+                  {showActionColumn && (
+                    <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
+                      {showRowApprove ? (
+                        t`Approve`
+                      ) : (
+                        <span className='sr-only'>{t`Actions`}</span>
                       )}
-                    </Tr>
-                  ))
-                : rows.map((row, rowIndex) => {
-                    const rowId = row._rowId || `row-${rowIndex}`
-                    const isSelected = selectedRowIds.has(rowId)
-                    const resolvedRow = resolvedRows[rowIndex] || row
-                    return (
+                    </Th>
+                  )}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {rows.length === 0
+                  ? [0, 1, 2].map((i) => (
                       <Tr
-                        className='group border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
-                        key={rowId}
+                        className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                        key={`skeleton-${i}`}
                       >
                         {rowSelection !== 'NONE' && (
-                          <Td className='px-2.5 py-1.5 text-center align-middle'>
-                            <input
-                              aria-label={t`Select row`}
-                              checked={isSelected}
-                              className='cursor-pointer'
-                              disabled={readOnly}
-                              type={
-                                rowSelection === 'SINGLE' ? 'radio' : 'checkbox'
-                              }
-                              onChange={() => toggleRowSelected(rowId)}
-                            />
+                          <Td className='px-2.5 py-3 text-center align-middle'>
+                            <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
                           </Td>
                         )}
-                        <Td className='px-2.5 py-1.5 text-center text-xs font-semibold text-gray-8'>
-                          {rowIndex + 1}
+                        <Td className='px-2.5 py-3 text-center'>
+                          <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
                         </Td>
-                        {tableColumns.map((col) => (
-                          <Td className='p-1.5 align-middle' key={col.id}>
-                            {renderCellInput(
-                              col,
-                              resolvedRow[col.id] ??
-                                (col.name ? resolvedRow[col.name] : undefined),
-                              (cellVal) =>
-                                handleCellChange(rowIndex, col.id, cellVal),
-                              readOnly,
-                              lookupOptionsByColumn[col.id],
-                              isApiOptionsColumn(col)
-                                ? (code) =>
-                                    handleApiProductSelect(
-                                      rowIndex,
-                                      col.id,
-                                      code,
-                                    )
-                                : undefined,
-                            )}
+                        {effectiveColumns.map((col) => (
+                          <Td className='px-3 py-3 align-middle' key={col.id}>
+                            <div className='h-4 w-5/6 animate-pulse rounded-full bg-[var(--gray-3)]' />
                           </Td>
                         ))}
+                        {isDynamicTable && !readOnly && <Td />}
                         {showActionColumn && (
-                          <Td className='px-1.5 py-1 text-center align-middle'>
-                            <div className='flex items-center justify-center gap-1'>
-                              {showRowApprove &&
-                                (row._approved ? (
-                                  <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
-                                    <Icon
-                                      height={12}
-                                      name='lucide:check'
-                                      width={12}
-                                    />
-                                    {t`Approved`}
-                                  </span>
-                                ) : (
-                                  <button
-                                    className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 opacity-80 transition-all group-hover:opacity-100 hover:bg-green-3 active:scale-95'
-                                    type='button'
-                                    onClick={() => handleApproveRow(rowIndex)}
-                                  >
-                                    <Icon
-                                      height={12}
-                                      name='lucide:check'
-                                      width={12}
-                                    />
-                                    {t`Approve`}
-                                  </button>
-                                ))}
-                              {!readOnly && rowsType === 'ON_DEMAND' && (
-                                <IconButton
-                                  aria-label={t`Delete row`}
-                                  color='red'
-                                  icon='lucide:trash-2'
-                                  size='xs'
-                                  variant='ghost'
-                                  onClick={() => handleDeleteRow(rowIndex)}
-                                />
-                              )}
-                            </div>
+                          <Td className='px-2 py-3 text-center align-middle'>
+                            <div className='mx-auto h-4 w-4 animate-pulse rounded bg-gray-2' />
                           </Td>
                         )}
                       </Tr>
-                    )
-                  })}
-              {showSummaryRow && (
-                <Tr className='border-t-2 border-gray-3 bg-gray-1/60'>
-                  {rowSelection !== 'NONE' && <Td />}
-                  <Td className='px-2.5 py-1.5 text-center text-xs font-bold text-gray-9'>
-                    {t`Total`}
-                  </Td>
-                  {tableColumns.map((col) => (
-                    <Td
-                      className='px-3 py-1.5 text-left text-xs font-bold text-gray-12'
-                      key={col.id}
-                    >
-                      {col.id in columnTotals
-                        ? columnTotals[col.id].toLocaleString()
-                        : ''}
+                    ))
+                  : rows.map((row, rowIndex) => {
+                      const rowId = row._rowId || `row-${rowIndex}`
+                      const isSelected = selectedRowIds.has(rowId)
+                      const resolvedRow = resolvedRows[rowIndex] || row
+                      return (
+                        <Tr
+                          className='group border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
+                          key={rowId}
+                        >
+                          {rowSelection !== 'NONE' && (
+                            <Td className='px-2.5 py-1.5 text-center align-middle'>
+                              <input
+                                aria-label={t`Select row`}
+                                checked={isSelected}
+                                className='cursor-pointer'
+                                disabled={readOnly}
+                                type={
+                                  rowSelection === 'SINGLE'
+                                    ? 'radio'
+                                    : 'checkbox'
+                                }
+                                onChange={() => toggleRowSelected(rowId)}
+                              />
+                            </Td>
+                          )}
+                          <Td className='px-2.5 py-1.5 text-center text-xs font-semibold text-gray-8'>
+                            {getRowDisplayLabel(rowIndex)}
+                          </Td>
+                          {effectiveColumns.map((col) => (
+                            <Td className='p-1.5 align-middle' key={col.id}>
+                              {renderCellInput(
+                                col,
+                                resolvedRow[col.id] ??
+                                  (col.name
+                                    ? resolvedRow[col.name]
+                                    : undefined),
+                                (cellVal) =>
+                                  handleCellChange(rowIndex, col.id, cellVal),
+                                readOnly || isColumnReadOnly(col),
+                                getLookupOptionsForCell(col, resolvedRow),
+                                isApiOptionsColumn(col)
+                                  ? (code) =>
+                                      handleApiProductSelect(
+                                        rowIndex,
+                                        col.id,
+                                        code,
+                                      )
+                                  : undefined,
+                                rowIndex,
+                              )}
+                            </Td>
+                          ))}
+                          {isDynamicTable && !readOnly && <Td />}
+                          {showActionColumn && (
+                            <Td className='px-1.5 py-1 text-center align-middle'>
+                              <div className='flex items-center justify-center gap-1'>
+                                {showRowApprove &&
+                                  (row._approved ? (
+                                    <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
+                                      <Icon
+                                        height={12}
+                                        name='lucide:check'
+                                        width={12}
+                                      />
+                                      {t`Approved`}
+                                    </span>
+                                  ) : (
+                                    <button
+                                      className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 opacity-80 transition-all group-hover:opacity-100 hover:bg-green-3 active:scale-95'
+                                      type='button'
+                                      onClick={() => handleApproveRow(rowIndex)}
+                                    >
+                                      <Icon
+                                        height={12}
+                                        name='lucide:check'
+                                        width={12}
+                                      />
+                                      {t`Approve`}
+                                    </button>
+                                  ))}
+                                {!readOnly && rowsType === 'ON_DEMAND' && (
+                                  <IconButton
+                                    aria-label={t`Delete row`}
+                                    color='red'
+                                    icon='lucide:trash-2'
+                                    size='xs'
+                                    variant='ghost'
+                                    onClick={() => handleDeleteRow(rowIndex)}
+                                  />
+                                )}
+                              </div>
+                            </Td>
+                          )}
+                        </Tr>
+                      )
+                    })}
+                {showSummaryRow && (
+                  <Tr className='border-t-2 border-gray-3 bg-gray-1/60'>
+                    {rowSelection !== 'NONE' && <Td />}
+                    <Td className='px-2.5 py-1.5 text-center text-xs font-bold text-gray-9'>
+                      {t`Total`}
                     </Td>
-                  ))}
-                  {showActionColumn && <Td />}
-                </Tr>
-              )}
-            </Tbody>
-          </Table>
+                    {effectiveColumns.map((col) => (
+                      <Td
+                        className='px-3 py-1.5 text-left text-xs font-bold text-gray-12'
+                        key={col.id}
+                      >
+                        {col.id in columnTotals
+                          ? columnTotals[col.id].toLocaleString()
+                          : ''}
+                      </Td>
+                    ))}
+                    {isDynamicTable && !readOnly && <Td />}
+                    {showActionColumn && <Td />}
+                  </Tr>
+                )}
+              </Tbody>
+            </Table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeView === 'ADVANCE' && (
+        <div className='space-y-2'>
+          {rows.map((row, rowIndex) => {
+            const rowId = row._rowId || `row-${rowIndex}`
+            const isSelected = selectedRowIds.has(rowId)
+            const resolvedRow = resolvedRows[rowIndex] || row
+            const isExpanded = expandedRowIndex === rowIndex
+            const summaryColumns = effectiveColumns.slice(0, 2)
+
+            return (
+              <div
+                key={rowId}
+                className={cn(
+                  'rounded-xl border bg-surface shadow-2xs transition-colors',
+                  isExpanded
+                    ? 'border-primary-5'
+                    : 'border-[var(--gray-3)] hover:border-gray-4',
+                )}
+              >
+                <div className='flex items-center gap-2 px-3 py-2'>
+                  {rowSelection !== 'NONE' && (
+                    <input
+                      aria-label={t`Select row`}
+                      checked={isSelected}
+                      className='cursor-pointer'
+                      disabled={readOnly}
+                      type={rowSelection === 'SINGLE' ? 'radio' : 'checkbox'}
+                      onChange={() => toggleRowSelected(rowId)}
+                    />
+                  )}
+                  <span className='text-xs font-semibold text-gray-8'>
+                    {rowsType === 'FIXED' && fixedRowLabels[rowIndex]
+                      ? fixedRowLabels[rowIndex]
+                      : `#${rowIndex + 1}`}
+                  </span>
+                  <button
+                    className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 truncate text-left text-xs text-gray-11'
+                    type='button'
+                    onClick={() =>
+                      setExpandedRowIndex(isExpanded ? null : rowIndex)
+                    }
+                  >
+                    {summaryColumns.length > 0
+                      ? summaryColumns
+                          .map((col) => {
+                            const v =
+                              resolvedRow[col.id] ??
+                              (col.name ? resolvedRow[col.name] : undefined)
+                            return v != null && v !== '' ? String(v) : null
+                          })
+                          .filter(Boolean)
+                          .join(' · ') || t`(empty row)`
+                      : t`(empty row)`}
+                  </button>
+                  {showRowApprove &&
+                    (row._approved ? (
+                      <span className='inline-flex items-center gap-1 rounded-md border border-green-3 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11'>
+                        <Icon height={12} name='lucide:check' width={12} />
+                        {t`Approved`}
+                      </span>
+                    ) : (
+                      <button
+                        className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-green-4 bg-green-2 px-2 py-0.5 text-[10px] font-bold text-green-11 hover:bg-green-3 active:scale-95'
+                        type='button'
+                        onClick={() => handleApproveRow(rowIndex)}
+                      >
+                        <Icon height={12} name='lucide:check' width={12} />
+                        {t`Approve`}
+                      </button>
+                    ))}
+                  {!readOnly && rowsType === 'ON_DEMAND' && (
+                    <IconButton
+                      aria-label={t`Delete row`}
+                      color='red'
+                      icon='lucide:trash-2'
+                      size='xs'
+                      variant='ghost'
+                      onClick={() => handleDeleteRow(rowIndex)}
+                    />
+                  )}
+                  <IconButton
+                    aria-label={isExpanded ? t`Collapse row` : t`Expand row`}
+                    color='gray'
+                    size='xs'
+                    variant='ghost'
+                    icon={
+                      isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'
+                    }
+                    onClick={() =>
+                      setExpandedRowIndex(isExpanded ? null : rowIndex)
+                    }
+                  />
+                </div>
+
+                {isExpanded && (
+                  <div className='space-y-3 border-t border-[var(--gray-3)] px-3 py-3'>
+                    {effectiveColumns.map((col) => (
+                      <div key={col.id}>
+                        <div className='mb-1 flex items-center gap-1.5'>
+                          <label className='block text-11 font-bold text-gray-8'>
+                            {getColumnLabel(col)}
+                          </label>
+                          {isDynamicColumn(col) && !readOnly && (
+                            <button
+                              className='cursor-pointer text-[10px] text-red-7 hover:text-red-9'
+                              type='button'
+                              onClick={() => handleDeleteDynamicColumn(col.id)}
+                            >
+                              {t`(remove column)`}
+                            </button>
+                          )}
+                        </div>
+                        {renderCellInput(
+                          col,
+                          resolvedRow[col.id] ??
+                            (col.name ? resolvedRow[col.name] : undefined),
+                          (cellVal) =>
+                            handleCellChange(rowIndex, col.id, cellVal),
+                          readOnly || isColumnReadOnly(col),
+                          getLookupOptionsForCell(col, resolvedRow),
+                          isApiOptionsColumn(col)
+                            ? (code) =>
+                                handleApiProductSelect(rowIndex, col.id, code)
+                            : undefined,
+                          rowIndex,
+                        )}
+                      </div>
+                    ))}
+                    {isDynamicTable && !readOnly && (
+                      <button
+                        className='flex cursor-pointer items-center gap-1.5 text-11 font-bold text-primary-9 hover:underline'
+                        type='button'
+                        onClick={handleAddDynamicColumn}
+                      >
+                        <Icon height={12} name='lucide:plus' width={12} />
+                        {t`Add column`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {rows.length === 0 && (
+            <div className='rounded-xl border border-dashed border-[var(--gray-3)] bg-gray-1/40 p-4 text-center text-12 text-gray-9 italic'>
+              {t`No rows yet.`}
+            </div>
+          )}
+
+          {showSummaryRow && Object.keys(columnTotals).length > 0 && (
+            <div className='rounded-xl border border-[var(--gray-3)] bg-gray-1/60 px-3 py-2 text-xs font-bold text-gray-9'>
+              {effectiveColumns
+                .filter((col) => col.id in columnTotals)
+                .map(
+                  (col) =>
+                    `${getColumnLabel(col)}: ${columnTotals[col.id].toLocaleString()}`,
+                )
+                .join('   ·   ')}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
