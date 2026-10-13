@@ -159,6 +159,7 @@ export interface Question {
     }
     general: {
       description?: string
+      dividerType?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE' | string
       hidden?: boolean
       hideLabel: boolean
       placeholder?: string
@@ -211,6 +212,7 @@ export interface Question {
       decimalPrecision?: number
       defaultCountryCode?: string
       defaultValue?: string
+      defaultValueInSelectField?: 'USER_EMAIL' | 'USER_NAME' | 'NONE' | string
       defaultValueType?: 'STATIC' | 'DYNAMIC' | 'NONE'
       dense?: boolean
       dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
@@ -246,6 +248,8 @@ export interface Question {
       isSameMaster?: boolean
       isSearchField?: 'YES' | 'NO'
       listUsersByGroup?: string
+      loginType?: string
+      additionalLoginTypes?: string[]
       lookupMaster?: string
       masterFormColumn?: string
       masterFormConditionColumn?: Array<{
@@ -258,6 +262,11 @@ export interface Question {
         formField: string
         id?: string
         masterField: string
+      }>
+      masterFormTableColumns?: Array<{
+        id: string
+        masterColumn: string
+        tableColumn: string
       }>
       masterSyncField?: string
       matrixColumnLabels?: string[]
@@ -276,6 +285,7 @@ export interface Question {
       parentFieldFilterValue?: any
       parentFieldId?: string
       predefinedColumn?: string
+      predefinedParentColumn?: string
       predefinedType?: 'USER' | 'WORKSPACE' | 'FOLDER' | 'WORKFLOW'
       prefillFromUrl?: boolean
       prefixIcon?: string
@@ -304,33 +314,58 @@ export interface Question {
       specificCurrencies?: string[]
       suffixIcon?: string
       suffixLabel?: string
+      tableFixedRowLabels?: string[]
       tableColumns?: Array<{
         id: string
         name: string
         settings?: {
+          general?: {
+            displayLabel?: string
+            tooltip?: string
+            visibility?: 'DISABLE' | 'NORMAL' | 'READ_ONLY'
+          }
           lookupSettings?: {
+            /** Id of another column in this table whose value in the same
+             * row filters this column's repository-facet options (cascade). */
+            cascadeFromColumn?: string
             /** LOOKUP = repository facets; API = FTL catalog on focus/select */
             optionsSource?: 'LOOKUP' | 'API'
             repositoryField?: string
             repositoryId?: string
           }
           specific?: {
+            customDefaultValue?: string
             customOptions?: string
+            defaultValueType?:
+              | 'AUTO_SEQUENCE'
+              | 'CURRENT_DATE'
+              | 'CUSTOM'
+              | 'USER_EMAIL'
             formulaTokens?: Array<{
               type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
               value: string
             }>
             placeholder?: string
+            showColumnTotal?: boolean
           }
-          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+          validation?: {
+            contentRule?: string
+            fieldRule?: 'OPTIONAL' | 'REQUIRED'
+            maximum?: number | string
+            minimum?: number | string
+          }
         }
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
       }>
+      tableViewMode?: 'ADVANCE' | 'NORMAL'
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
+      hasYearType?: boolean
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR' | string
+      // qrValue?: boolean
       uniqueCheck?: boolean
       variant?: 'default' | 'filled' | 'unstyled'
-      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
+      // yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
       yesLabel?: string
       yesNoLabels?: { no: string; yes: string }
     }
@@ -345,6 +380,11 @@ export interface Question {
       dateLimitType?: 'NONE' | 'MIN_DATE' | 'MAX_DATE' | 'RANGE'
       dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
       decimalDigits?: number
+      enableSettings?: Array<{
+        controls?: string[]
+        id?: string
+        value?: string
+      }>
       errorMessage?: string
       expiryFieldId?: string
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -353,6 +393,11 @@ export interface Question {
       fixedStartDate?: string
       fixedStartTime?: string
       isCalculationEnabled?: boolean
+      mandatorySettings?: Array<{
+        controls: string[]
+        id: string
+        value: string
+      }>
       maxDateOffset?: number
       maxFileSize?: number
       maximum?: string | number
@@ -362,13 +407,22 @@ export interface Question {
       minTimeOffset?: number
       pattern?: string
       rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
+      readonlySettings?: Array<{
+        controls: string[]
+        id: string
+        notEqual?: boolean
+        value: string
+      }>
       requireCurrencyUnit?: boolean
       requiredValidation?: 'ANY' | 'ALL'
+      // answerIndicator?: 'YES' | 'NO'
+      hasCalculatedField?: boolean
+      verificationRequired?: boolean
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
       timeRange?: string
-      verificationRequired?: boolean
+      // verificationRequired?: boolean
     }
   }
 }
@@ -409,6 +463,9 @@ export type QuestionType =
   | 'SCORE'
   | 'IMAGE_UPLOAD'
   | 'CONSENT'
+  | 'SERIAL_NUMBER'
+  | 'CHIPS'
+  | 'IMAGE'
 
 // export type FormLayout = 'typeform' | 'grid' | 'full'
 // export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'

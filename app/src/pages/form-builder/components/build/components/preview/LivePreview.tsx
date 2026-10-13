@@ -94,26 +94,62 @@ const LivePreview = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setIsPreviewOpen])
 
-  useEffect(() => {
-    if (isPreviewOpen) {
-      setPreviewModel((prev) => {
-        const seeded = { ...prev }
-        for (const panel of panels) {
-          for (const field of panel.fields || []) {
-            if (
-              (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') &&
-              !seeded[field.id]
-            ) {
-              const resolved = resolveShortTextFillValue(field)
-              if (resolved) seeded[field.id] = resolved
-            }
-          }
-        }
-        return applyCalculatedFields(panels, seeded)
-      })
-    }
-  }, [isPreviewOpen, panels])
+useEffect(() => {
+  if (!isPreviewOpen) return
 
+  setPreviewModel((prev) => {
+    const next = { ...prev }
+    const session = authUserStore.getState().session
+
+    const allFields = panels.flatMap((panel: any) => panel.fields || [])
+
+    for (const field of allFields) {
+      // Don't overwrite an already populated value
+      const hasValue =
+        next[field.id] !== undefined &&
+        next[field.id] !== null &&
+        next[field.id] !== ''
+
+      if (hasValue) continue
+
+      // Default USER_EMAIL
+      if (
+        field.settings?.specific?.defaultValueInSelectField === 'USER_EMAIL' &&
+        session?.email
+      ) {
+        next[field.id] = session.email
+        continue
+      }
+
+      // Default USER_NAME
+      if (
+        field.settings?.specific?.defaultValueInSelectField === 'USER_NAME'
+      ) {
+        const name = session
+          ? `${session.firstName || ''} ${session.lastName || ''}`.trim()
+          : ''
+
+        if (name) {
+          next[field.id] = name
+          continue
+        }
+      }
+
+      // SHORT_TEXT / FULL_NAME auto-fill
+      if (
+        (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME')
+      ) {
+        const resolved = resolveShortTextFillValue(field)
+
+        if (resolved) {
+          next[field.id] = resolved
+        }
+      }
+    }
+
+    return applyCalculatedFields(panels, next)
+  })
+}, [isPreviewOpen, panels])
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
@@ -559,18 +595,28 @@ const LivePreviewDropdown = ({
       ),
   })
 
-  const selectOptions = withExtraFieldOptions(
-    withExtraFieldOptions(
-      withExtraFieldOptions(
-        optionsType === 'DYNAMIC'
-          ? getSharedFieldOptions(field)
-          : getConfiguredFieldOptions(field),
-        uniqueFieldOptions,
-      ),
-      userFieldOptions,
-    ),
+  const selectOptions = useMemo(() => {
+    if (masterInfo.enabled) {
+      return masterFieldOptions
+    }
+    if (optionsType === 'USER_LIST') {
+      return userFieldOptions
+    }
+    if (facetSource.enabled) {
+      return uniqueFieldOptions
+    }
+    return optionsType === 'DYNAMIC'
+      ? getSharedFieldOptions(field)
+      : getConfiguredFieldOptions(field)
+  }, [
+    masterInfo.enabled,
     masterFieldOptions,
-  )
+    optionsType,
+    userFieldOptions,
+    facetSource.enabled,
+    uniqueFieldOptions,
+    field,
+  ])
 
   useEffect(() => {
     if (selectOptions.length === 1) {

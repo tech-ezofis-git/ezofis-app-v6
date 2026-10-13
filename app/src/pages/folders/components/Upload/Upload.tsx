@@ -30,6 +30,7 @@ import InfoCard from '@/components/base/InfoCard'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
@@ -104,6 +105,7 @@ type UploadProps = {
   } | null
   repositoryId: string | number | null
   onBack: () => void
+  onIntelligentUpload?: (files: File[]) => void
   onSuccess?: () => void | Promise<void>
 }
 
@@ -1084,46 +1086,102 @@ const draftSummaryToQueueEntry = (
   }
 }
 
+const mandatoryFillState = (
+  fieldValues: Record<string, string>,
+  repositoryFields: RepositoryField[],
+) => {
+  const mandatory = repositoryFields.filter((field) => field.isMandatory)
+  if (mandatory.length === 0) return 'complete' as const
+  const filled = mandatory.filter(
+    (field) => !isBlankFieldValue(fieldValues[getFieldKey(field)]),
+  ).length
+  if (filled === 0) return 'empty' as const
+  if (filled < mandatory.length) return 'partial' as const
+  return 'complete' as const
+}
+
+const emptyDraftCounts = {
+  inProgress: 0,
+  inQueue: 0,
+  needsReview: 0,
+  partiallyVerified: 0,
+  processingName: '',
+  total: 0,
+  waiting: 0,
+}
+
 const countDraftGroups = (
   drafts: StageFileSummary[],
   repositoryFields: RepositoryField[] = [],
 ) => {
+  let inQueue = 0
+  let needsReview = 0
+  let partiallyVerified = 0
   let waiting = 0
-  let inProgress = 0
+  let processingName = ''
   for (const summary of drafts) {
     const queueStatus = backendStatusToQueueStatus(
       (summary.status || 'OCR') as StageFileStatus,
     )
-    if (queueStatus === 'ready') {
-      const fieldValues = mapOcrResponseToFieldValues(
-        summary,
-        repositoryFields,
-        summary.name,
-      )
-      if (hasMissingMandatoryFields(fieldValues, repositoryFields)) {
-        inProgress += 1
-      } else {
-        waiting += 1
-      }
-    } else if (queueStatus !== 'indexed') {
-      inProgress += 1
+    if (queueStatus === 'indexed') continue
+    if (queueStatus !== 'ready') {
+      inQueue += 1
+      if (!processingName) processingName = summary.name || ''
+      continue
     }
+    const fieldValues = mapOcrResponseToFieldValues(
+      summary,
+      repositoryFields,
+      summary.name,
+    )
+    const fill = mandatoryFillState(fieldValues, repositoryFields)
+    if (fill === 'complete') waiting += 1
+    else if (fill === 'partial') partiallyVerified += 1
+    else needsReview += 1
   }
-  return { inProgress, total: waiting + inProgress, waiting }
+  const inProgress = inQueue + needsReview + partiallyVerified
+  return {
+    inProgress,
+    inQueue,
+    needsReview,
+    partiallyVerified,
+    processingName,
+    total: waiting + inProgress,
+    waiting,
+  }
 }
 
 const countQueueDraftGroups = (
   entries: QueuedUploadFile[],
   repositoryFields: RepositoryField[],
 ) => {
+  let inQueue = 0
+  let needsReview = 0
+  let partiallyVerified = 0
   let waiting = 0
-  let inProgress = 0
+  let processingName = ''
   for (const entry of entries) {
     if (entry.status === 'indexed') continue
-    if (isDraftReadyForExport(entry, repositoryFields)) waiting += 1
-    else inProgress += 1
+    if (entry.status !== 'ready') {
+      inQueue += 1
+      if (!processingName) processingName = entry.fileName || ''
+      continue
+    }
+    const fill = mandatoryFillState(entry.fieldValues, repositoryFields)
+    if (fill === 'complete') waiting += 1
+    else if (fill === 'partial') partiallyVerified += 1
+    else needsReview += 1
   }
-  return { inProgress, total: waiting + inProgress, waiting }
+  const inProgress = inQueue + needsReview + partiallyVerified
+  return {
+    inProgress,
+    inQueue,
+    needsReview,
+    partiallyVerified,
+    processingName,
+    total: waiting + inProgress,
+    waiting,
+  }
 }
 
 // Keep the in-memory upload row's job id and file blob when the draft list
@@ -1166,25 +1224,57 @@ const fileFingerprint = (file: File) =>
 const batchFingerprint = (files: File[]) =>
   files.map(fileFingerprint).sort().join('|')
 
+const INTELLIGENT_UPLOAD_CACHE_PREFIX = 'ezofis.intelligentUpload.'
+
+const intelligentUploadScopeId = (
+  repositoryId: string | number | null | undefined,
+  folderId: string | number | null | undefined,
+) => String(repositoryId || folderId || '')
+
+const readIntelligentUploadEnabled = (scopeId: string) => {
+  if (!scopeId) return true
+  try {
+    const stored = localStorage.getItem(
+      `${INTELLIGENT_UPLOAD_CACHE_PREFIX}${scopeId}`,
+    )
+    if (stored === null) return true
+    return stored === '1'
+  } catch {
+    return true
+  }
+}
+
+const writeIntelligentUploadEnabled = (scopeId: string, enabled: boolean) => {
+  if (!scopeId) return
+  try {
+    localStorage.setItem(
+      `${INTELLIGENT_UPLOAD_CACHE_PREFIX}${scopeId}`,
+      enabled ? '1' : '0',
+    )
+  } catch {
+    // Cache is unavailable in private browsing.
+  }
+}
+
 /** Cycles the three upload highlights in one card. */
 function UploadFeatureHighlight() {
   const { t } = useLingui()
   const items = useMemo(
     () => [
       {
-        color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
+        color: 'text-orange-9 bg-orange-2',
         icon: 'tabler:bolt',
         sub: t`Process documents faster with our agentic pipeline`,
         title: t`Lightning Fast`,
       },
       {
-        color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
+        color: 'text-primary-11 bg-primary-3',
         icon: 'tabler:sparkles',
         sub: t`Industry-leading extraction accuracy and field precision`,
         title: t`100% Accuracy`,
       },
       {
-        color: 'text-[var(--green-11)] bg-[var(--green-2)]',
+        color: 'text-green-11 bg-green-2',
         icon: 'tabler:clock',
         sub: t`Support for PDF, images, and scanned documents`,
         title: t`Any Format`,
@@ -1204,8 +1294,8 @@ function UploadFeatureHighlight() {
   const item = items[index]
 
   return (
-    <AnimateEntrancePop className='h-full' delay={0.3}>
-      <div className='group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-5 text-left shadow-sm transition-shadow duration-300 hover:shadow-md'>
+    <AnimateEntrancePop className='h-full' delay={0.08}>
+      <div className='group flex h-full w-full flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-5 hover:shadow-md'>
         <AnimatePresence mode='wait'>
           <motion.div
             key={item.icon}
@@ -1215,33 +1305,29 @@ function UploadFeatureHighlight() {
             initial={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-2'>
               <div
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10',
+                  'flex size-7 shrink-0 items-center justify-center rounded-md',
                   item.color,
                 )}
               >
                 {item.icon === 'tabler:sparkles' ? (
-                  <AiBrandIcon
-                    className='size-5'
-                    variant='outline-purple'
-                  />
+                  <AiBrandIcon className='size-4' variant='outline-purple' />
                 ) : (
-                  <Icon className='size-5' name={item.icon} />
+                  <Icon className='size-4' name={item.icon} />
                 )}
               </div>
-              <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
+              <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
                 {item.title}
               </h4>
             </div>
-            <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
+            <p className='mt-2 line-clamp-2 text-xs leading-snug font-medium text-gray-10'>
               {item.sub}
             </p>
           </motion.div>
         </AnimatePresence>
-
-        <div className='mt-auto flex items-center justify-center gap-1.5 pt-4'>
+        <div className='mt-auto flex items-center justify-center gap-1.5 pt-3'>
           {items.map((entry, dotIndex) => (
             <button
               key={entry.icon}
@@ -1249,8 +1335,8 @@ function UploadFeatureHighlight() {
               className={cn(
                 'h-1.5 rounded-full transition-all duration-300',
                 dotIndex === index
-                  ? 'w-5 bg-[var(--primary-9)]'
-                  : 'w-1.5 bg-[var(--gray-5)] hover:bg-[var(--gray-7)]',
+                  ? 'w-5 bg-primary-9'
+                  : 'w-1.5 bg-gray-5 hover:bg-gray-7',
               )}
               type='button'
               onClick={() => setIndex(dotIndex)}
@@ -1291,15 +1377,20 @@ export default function Upload({
   )
 
   const [isDragOver, setIsDragOver] = useState(false)
+  const uploadScopeId = intelligentUploadScopeId(
+    repositoryId || repositoryData?.id,
+    folderId,
+  )
+  const [useIntelligentUpload, setUseIntelligentUpload] = useState(() =>
+    readIntelligentUploadEnabled(
+      intelligentUploadScopeId(repositoryId || repositoryData?.id, folderId),
+    ),
+  )
   const [queue, setQueue] = useState<QueuedUploadFile[]>([])
   const [openFileId, setOpenFileId] = useState<string | null>(null)
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false)
   const [isRestoringQueue, setIsRestoringQueue] = useState(false)
-  const [draftCounts, setDraftCounts] = useState({
-    inProgress: 0,
-    total: 0,
-    waiting: 0,
-  })
+  const [draftCounts, setDraftCounts] = useState(emptyDraftCounts)
   const [isLoadingDraftCount, setIsLoadingDraftCount] = useState(false)
   const [viewingDrafts, setViewingDrafts] = useState(false)
   const [queueListTab, setQueueListTab] = useState<'uploading' | 'export'>(
@@ -1344,7 +1435,7 @@ export default function Upload({
         if (!cancelled) setDraftCounts(countDraftGroups(drafts, repositoryFields))
       } catch {
         if (!cancelled) {
-          setDraftCounts({ inProgress: 0, total: 0, waiting: 0 })
+          setDraftCounts(emptyDraftCounts)
         }
       } finally {
         if (!cancelled) setIsLoadingDraftCount(false)
@@ -1356,6 +1447,15 @@ export default function Upload({
       cancelled = true
     }
   }, [activeRepositoryId, queue.length, repositoryFields])
+
+  useEffect(() => {
+    setUseIntelligentUpload(readIntelligentUploadEnabled(uploadScopeId))
+  }, [uploadScopeId])
+
+  const setIntelligentUploadEnabled = (enabled: boolean) => {
+    setUseIntelligentUpload(enabled)
+    writeIntelligentUploadEnabled(uploadScopeId, enabled)
+  }
 
   const activeEntry = useMemo(
     () => queue.find((entry) => entry.id === openFileId) ?? null,
@@ -3887,9 +3987,9 @@ export default function Upload({
 
   if (queue.length === 0) {
     return (
-      <>
-        <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-4 py-4'>
-          <div className='flex items-start gap-3'>
+      <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 bg-surface px-4 py-2.5'>
+          <div className='flex min-w-0 items-center gap-3'>
             <IconButton
               ariaLabel={t`Back`}
               color='gray'
@@ -3898,42 +3998,42 @@ export default function Upload({
               variant='ghost'
               onClick={onBack}
             />
-            <div>
-              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
+            <div className='min-w-0'>
+              <h1 className='text-16 font-semibold tracking-tight text-gray-13'>
                 {t`Upload Files`}
               </h1>
-
-              <p className='text-13/5 text-gray-11'>
+              <p className='truncate text-12 text-gray-11'>
                 {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
               </p>
             </div>
           </div>
         </div>
-        <AnimateFadeIn className='relative flex h-full flex-col items-stretch overflow-y-auto bg-surface-muted px-4 py-6 sm:px-6 lg:px-8'>
-          <div className='mx-auto flex w-full max-w-5xl flex-col gap-6'>
-            <AnimateSlideUp className='space-y-1 text-center'>
-              <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
+        <AnimateFadeIn className='relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-muted px-4 py-3 sm:px-5'>
+          <div className='mx-auto mt-4 flex w-full max-w-5xl flex-col gap-3'>
+            <AnimateSlideUp className='shrink-0 space-y-0.5 text-center'>
+              <h1 className='text-xl font-bold tracking-tight text-gray-13'>
                 {t`Upload`}{' '}
-                <span className='text-[var(--primary-9)]'>{t`Files`}</span>
+                <span className='text-primary-9'>{t`Files`}</span>
               </h1>
-              <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
+              <p className='mx-auto max-w-xl text-12 font-medium text-gray-10'>
                 {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
               </p>
             </AnimateSlideUp>
 
-            <AnimateSlideUp className='relative z-10 w-full' delay={0.1}>
-              <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
+            <AnimateSlideUp className='relative z-10 w-full shrink-0' delay={0.1}>
+              <div className='group relative overflow-hidden rounded-xl border border-gray-3 bg-surface p-1.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md'>
                 <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
                   <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
                 </div>
 
                 <div
-                  className={[
-                    'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out',
-                    isDragOver
-                      ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
-                      : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
-                  ].join(' ')}
+                  className={cn(
+                    'relative z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 pt-6 pb-2 text-center transition-colors duration-300',
+                    useIntelligentUpload
+                      ? 'border-primary-6 bg-primary-2'
+                      : 'border-primary-4 bg-surface',
+                    isDragOver && 'border-primary-7 bg-primary-3',
+                  )}
                   onClick={() => invoiceInputRef.current?.click()}
                   onDragLeave={() => setIsDragOver(false)}
                   onDragOver={(event) => {
@@ -3946,23 +4046,62 @@ export default function Upload({
                     handleInvoiceFiles(event.dataTransfer.files)
                   }}
                 >
-                  <AnimateStagger className='flex flex-col items-center gap-3'>
-                    <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm transition-all duration-500 group-hover:scale-105'>
-                      <Icon
-                        className='size-7 text-[var(--primary-9)]'
-                        name='tabler:cloud-upload'
-                      />
+                  <div
+                    className={cn(
+                      'flex size-11 items-center justify-center rounded-lg',
+                      useIntelligentUpload ? 'bg-surface' : 'bg-primary-2',
+                    )}
+                  >
+                    <Icon
+                      className='size-5 text-primary-9'
+                      name='tabler:cloud-upload'
+                    />
+                  </div>
+                  <div className='text-center'>
+                    <h2 className='text-15 font-semibold tracking-tight text-gray-13'>
+                      {useIntelligentUpload ? (
+                        t`Drop files — we'll read and organize them`
+                      ) : (
+                        <>
+                          {t`Drop your files here, or`}{' '}
+                          <span className='text-primary-9'>{t`browse`}</span>
+                        </>
+                      )}
+                    </h2>
+                    <p className='mt-1 text-12 font-medium text-gray-9'>
+                      {t`PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each`}
+                    </p>
+                  </div>
+                  {useIntelligentUpload ? (
+                    <div className='mt-1 flex flex-wrap items-center justify-center gap-1.5'>
+                      {[
+                        t`Extract text`,
+                        t`Auto-tag`,
+                        t`Summarize`,
+                        t`Detect type`,
+                        t`Suggest Folder`,
+                      ].map((label) => (
+                        <span
+                          key={label}
+                          className='rounded-full border border-primary-5 bg-surface px-2.5 py-0.5 text-11 font-medium text-gray-12'
+                        >
+                          {label}
+                        </span>
+                      ))}
                     </div>
-                    <div className='text-center'>
-                      <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
-                        {t`Drop your files here, or`}{' '}
-                        <span className='text-[var(--primary-9)]'>{t`browse`}</span>
-                      </h2>
-                      <p className='text-xs font-medium text-[var(--gray-9)]'>
-                        {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each`}
-                      </p>
-                    </div>
-                  </AnimateStagger>
+                  ) : null}
+
+                  <div
+                    className='flex w-full items-center justify-end border-t border-dashed border-primary-4 pt-1.5 [&_.mantine-Switch-body]:items-center [&_.mantine-Switch-track]:!mt-0'
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <InputSwitch
+                      checked={useIntelligentUpload}
+                      label={t`Enable Document Classification`}
+                      onChange={setIntelligentUploadEnabled}
+                    />
+                  </div>
 
                   <input
                     accept={DOCUMENT_ACCEPT}
@@ -3978,54 +4117,146 @@ export default function Upload({
               </div>
             </AnimateSlideUp>
 
-            <div className='mx-auto grid w-full max-w-3xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2'>
+            <div className='grid w-full shrink-0 grid-cols-1 items-stretch gap-3 lg:grid-cols-3'>
               <UploadFeatureHighlight />
 
-              <AnimateEntrancePop className='h-full' delay={0.15}>
+              <AnimateEntrancePop className='h-full' delay={0.16}>
+                <div className='flex h-full flex-col rounded-xl border border-gray-3 bg-surface p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-5 hover:shadow-md'>
+                  <div className='flex items-center gap-2'>
+                    <div className='flex size-7 shrink-0 items-center justify-center rounded-md bg-primary-3 text-primary-11'>
+                      <AiBrandIcon className='size-4' variant='outline-purple' />
+                    </div>
+                    <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
+                      {t`OCR Agent`}
+                    </h4>
+                    <span
+                      className={cn(
+                        'ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                        draftCounts.inQueue > 0
+                          ? 'bg-primary-3 text-primary-11'
+                          : 'bg-gray-3 text-gray-11',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'size-1.5 rounded-full',
+                          draftCounts.inQueue > 0
+                            ? 'bg-primary-9'
+                            : 'bg-gray-8',
+                        )}
+                      />
+                      {draftCounts.inQueue > 0 ? t`Working` : t`Idle`}
+                    </span>
+                  </div>
+                  <div className='flex min-h-8 flex-1 items-center py-2'>
+                    {draftCounts.processingName ? (
+                      <div className='flex w-full min-w-0 items-center gap-2'>
+                        <span className='min-w-0 flex-1 truncate text-left text-13 font-medium text-gray-12 animate-pulse'>
+                          {draftCounts.processingName}
+                        </span>
+                        <Icon
+                          className='size-4 shrink-0 animate-spin text-primary-9'
+                          name='tabler:loader-2'
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className='mt-auto flex w-full flex-col gap-1.5'>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1.5 shrink-0 rounded-full bg-primary-9' />
+                        {t`In queue`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount ? '…' : draftCounts.inQueue}
+                      </span>
+                    </div>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1.5 shrink-0 rounded-full bg-secondary-9' />
+                        {t`Processed (drafts)`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount
+                          ? '…'
+                          : Math.max(draftCounts.total - draftCounts.inQueue, 0)}
+                      </span>
+                    </div>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1.5 shrink-0 rounded-full bg-green-9' />
+                        {t`Estimated wait`}
+                      </span>
+                      <span className='font-semibold'>
+                        {draftCounts.inQueue > 0 ? t`10s` : t`None`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </AnimateEntrancePop>
+
+              <AnimateEntrancePop className='h-full' delay={0.24}>
                 <button
-                  className='group flex h-full w-full flex-col items-start rounded-xl border border-[var(--orange-4)] bg-[var(--orange-1)] p-5 text-left shadow-sm transition-all duration-300 hover:border-[var(--orange-6)] hover:shadow-md active:scale-[0.99]'
+                  className='group relative flex h-full w-full flex-col items-start rounded-xl border border-orange-4 bg-orange-1 p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-6 hover:shadow-md active:translate-y-0 active:shadow-sm'
                   type='button'
                   onClick={() => {
                     void handleOpenDraftFiles()
                   }}
                 >
-                  <div className='flex w-full items-center gap-3'>
-                    <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-3)] text-[var(--orange-11)] transition-transform duration-300 group-hover:scale-110 2xl:size-10'>
+                  <div className='flex w-full items-center gap-2'>
+                    <div className='flex size-7 shrink-0 items-center justify-center rounded-md bg-orange-3 text-orange-11 transition-transform duration-300 group-hover:scale-110'>
                       <Icon
-                        className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                        className='size-4 transition-transform duration-300 group-hover:rotate-6'
                         name='tabler:file-pencil'
                       />
                     </div>
-                    <h4 className='text-sm font-semibold tracking-tight text-[var(--gray-13)]'>
+                    <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
                       {t`Draft Files`}
                     </h4>
-                    <span className='ml-auto rounded-full bg-[var(--orange-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--orange-11)]'>
+                    <span className='ml-auto rounded-full bg-orange-3 px-2.5 py-0.5 text-xs font-semibold text-orange-11'>
                       {isLoadingDraftCount ? '…' : draftCounts.total}
                     </span>
                   </div>
-                  <p className='mt-2.5 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
-                    {t`Open a saved file to review it and finish it.`}
+                  <p className='mt-2 line-clamp-2 flex-1 text-xs leading-snug font-medium text-gray-10'>
+                    {t`Open a saved file to review the extracted data and finish it.`}
                   </p>
-                  <div className='mt-3 flex w-full flex-col gap-1.5'>
-                    <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
+                  <div className='mt-auto flex w-full flex-col gap-1.5 pt-3'>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
                       <span className='flex min-w-0 items-center gap-1.5'>
-                        <span className='size-1 shrink-0 rounded-full bg-[var(--orange-9)]' />
+                        <span className='size-1.5 shrink-0 rounded-full bg-orange-9' />
+                        {t`Processing`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount ? '…' : draftCounts.inQueue}
+                      </span>
+                    </div>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1.5 shrink-0 rounded-full bg-secondary-9' />
+                        {t`Partially verified`}
+                      </span>
+                      <span className='font-semibold'>
+                        {isLoadingDraftCount
+                          ? '…'
+                          : draftCounts.partiallyVerified}
+                      </span>
+                    </div>
+                    <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
+                      <span className='flex min-w-0 items-center gap-1.5'>
+                        <span className='size-1.5 shrink-0 rounded-full bg-green-9' />
                         {t`Ready to export`}
                       </span>
                       <span className='font-semibold'>
                         {isLoadingDraftCount ? '…' : draftCounts.waiting}
                       </span>
                     </div>
-                    <div className='flex w-full items-center justify-between gap-3 text-xs text-[var(--gray-12)]'>
-                      <span className='flex min-w-0 items-center gap-1.5'>
-                        <span className='size-1 shrink-0 rounded-full bg-[var(--primary-9)]' />
-                        {t`In progress`}
-                      </span>
-                      <span className='font-semibold'>
-                        {isLoadingDraftCount ? '…' : draftCounts.inProgress}
-                      </span>
-                    </div>
                   </div>
+                  <span className='mt-2 inline-flex items-center gap-1 text-13 font-semibold text-primary-11'>
+                    <span className='underline-offset-2 hover:underline'>
+                      {t`Open draft files`}
+                    </span>
+                    <Icon className='size-4' name='lucide:arrow-right' />
+                  </span>
                 </button>
               </AnimateEntrancePop>
             </div>
@@ -4037,7 +4268,7 @@ export default function Upload({
           `}</style>
           </div>
         </AnimateFadeIn>
-      </>
+      </div>
     )
   }
 

@@ -965,18 +965,28 @@ const FieldRenderer = ({
       ),
   })
 
-  const selectOptions = withExtraFieldOptions(
-    withExtraFieldOptions(
-      withExtraFieldOptions(
-        optionsType === 'DYNAMIC'
-          ? getFieldOptions(field)
-          : getConfiguredFieldOptions(field),
-        uniqueFieldOptions,
-      ),
-      userFieldOptions,
-    ),
+  const selectOptions = useMemo(() => {
+    if (masterInfo.enabled) {
+      return masterFieldOptions
+    }
+    if (optionsType === 'USER_LIST') {
+      return userFieldOptions
+    }
+    if (facetSource.enabled) {
+      return uniqueFieldOptions
+    }
+    return optionsType === 'DYNAMIC'
+      ? getFieldOptions(field)
+      : getConfiguredFieldOptions(field)
+  }, [
+    masterInfo.enabled,
     masterFieldOptions,
-  )
+    optionsType,
+    userFieldOptions,
+    facetSource.enabled,
+    uniqueFieldOptions,
+    field,
+  ])
 
   useEffect(() => {
     if (readOnly) return
@@ -1575,10 +1585,26 @@ const FieldRenderer = ({
         }
       }
 
+      const masterParentFieldId =
+        field.settings?.specific?.masterFormParentColumn
+      const masterParentField = masterParentFieldId
+        ? allFields.find((f: any) => f.id === masterParentFieldId)
+        : undefined
+      const masterSyncParentValue = masterParentFieldId
+        ? formModel?.[masterParentFieldId]
+        : undefined
+      const masterSyncParentColumnKey =
+        masterParentField?.settings?.specific?.masterFormColumn ||
+        masterParentField?.label ||
+        masterParentField?.id ||
+        masterParentFieldId
+
       return (
         <div className='w-full'>
           <TableFieldRenderer
             field={field}
+            masterSyncParentColumnKey={masterSyncParentColumnKey}
+            masterSyncParentValue={masterSyncParentValue}
             ocrLineItems={ocrLineItems}
             readOnly={readOnly}
             required={required}

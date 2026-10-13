@@ -309,6 +309,17 @@ export default function DraftFilesMediaLibrary({
                 </p>
               </div>
             ) : null}
+            {onBack ? (
+              <BaseButton
+                className='ml-auto'
+                color='gray'
+                icon='lucide:upload'
+                label={t`Upload`}
+                size='xs'
+                variant='outline'
+                onClick={onBack}
+              />
+            ) : null}
           </div>
           <div className='flex items-center justify-between gap-4 border-t border-gray-3 px-5 py-3'>
             {selectAllControls}

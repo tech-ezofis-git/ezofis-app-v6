@@ -3,6 +3,7 @@ import { Textarea } from '@mantine/core'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
+import InfoCard from '@/components/base/InfoCard'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -129,6 +130,13 @@ export default function AiWorkflowBuilder({
       </div>
 
       <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-6 sm:pt-8 md:pt-10'>
+        <div className='w-full max-w-3xl'>
+          <InfoCard
+            description={t`Describe the workflow you want. The builder turns that into steps you can review, rename, and save. You can also build the workflow manually.`}
+            showVideo
+            title={t`What should I do on this page?`}
+          />
+        </div>
         <div className='flex flex-col items-center gap-3 text-center'>
           <div className='bg-purple-2 text-purple-11 flex h-12 w-12 items-center justify-center rounded-2xl'>
             <AiBrandIcon className='size-6' variant='outline-purple' />

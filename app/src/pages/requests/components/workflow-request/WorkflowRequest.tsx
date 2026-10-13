@@ -45,6 +45,22 @@ type SidePanel = 'attachments' | 'comments'
 // it to start a new workflow instance.
 const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const { t } = useLingui()
+
+  useEffect(() => {
+    const site = window.location.origin
+    const requestName = String(workflow?.name || '').trim()
+    const confirmLeave = (event: BeforeUnloadEvent) => {
+      const message = requestName
+        ? t`Leave ${site}? Your ${requestName} request may not be saved.`
+        : t`Leave ${site}? Your new request may not be saved.`
+      event.preventDefault()
+      event.returnValue = message
+      return message
+    }
+    window.addEventListener('beforeunload', confirmLeave)
+    return () => window.removeEventListener('beforeunload', confirmLeave)
+  }, [t, workflow?.name])
+
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)

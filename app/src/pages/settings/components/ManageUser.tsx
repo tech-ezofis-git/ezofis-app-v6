@@ -2782,8 +2782,14 @@ function UserSetup({
     }))
   }, [steps, editingUserId])
 
-  const isNextDisabled =
-    activeStep === 2 && !(draftUser.groups ?? []).length
+  const hasSelectedGroups = Boolean(
+    (draftUser.groups ?? []).filter((groupName) => {
+      const normalized = String(groupName || '').trim()
+      return normalized && normalized !== '—' && normalized !== '-'
+    }).length,
+  )
+
+  const isNextDisabled = activeStep === 2 && !hasSelectedGroups
 
   const handleSkip = () => {
     setShowErrors(false)
@@ -2806,7 +2812,7 @@ function UserSetup({
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
-      onSkip={activeStep === 2 ? handleSkip : undefined}
+      onSkip={activeStep === 2 && !hasSelectedGroups ? handleSkip : undefined}
       onStepChange={handleStepChange}
     >
       <AnimatePresence initial={false} mode='wait'>
