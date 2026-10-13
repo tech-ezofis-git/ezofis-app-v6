@@ -129,6 +129,7 @@ export interface Panel {
     description: string
     isCollapsed?: boolean
     isLocked?: boolean
+    logic?: LogicRule[]
     title?: string
   }
 }

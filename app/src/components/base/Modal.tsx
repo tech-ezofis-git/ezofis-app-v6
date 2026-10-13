@@ -5,6 +5,7 @@ import cn from '@/utils/cn'
 interface Props {
   children: ReactNode
   opened: boolean
+  className?: string
   closeOnInteractOutside?: boolean
   fullScreen?: boolean
   width?: number | string
@@ -13,6 +14,7 @@ interface Props {
 
 const Modal = ({
   children,
+  className,
   closeOnInteractOutside = true,
   fullScreen,
   opened,
@@ -26,6 +28,7 @@ const Modal = ({
       fullScreen
         ? 'flex h-screen min-h-0 w-screen max-w-none flex-col rounded-none'
         : 'rounded-lg',
+      className,
     ),
     overlay: 'bg-[var(--overlay-backdrop)]',
   }

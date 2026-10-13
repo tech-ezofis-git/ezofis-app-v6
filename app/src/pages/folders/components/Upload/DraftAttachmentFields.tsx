@@ -59,7 +59,9 @@ const isDateAfterToday = (value: unknown) => {
   return date.getTime() > today.getTime()
 }
 
-const statusTone = (status: string): 'danger' | 'info' | 'success' => {
+const statusTone = (
+  status: string,
+): 'danger' | 'info' | 'success' | 'warning' => {
   const normalized = status.toLowerCase()
   if (
     /(expired|invalid|error|fail|reject|overdue|revoke|denied|dead)/.test(
@@ -75,7 +77,7 @@ const statusTone = (status: string): 'danger' | 'info' | 'success' => {
   ) {
     return 'success'
   }
-  return 'info'
+  return 'warning'
 }
 
 const visibleFieldStatus = (
@@ -217,7 +219,7 @@ export default function DraftAttachmentFields({
 
   const statusCards = (() => {
     const grouped = new Map<
-      'danger' | 'info' | 'success',
+      'danger' | 'info' | 'success' | 'warning',
       Array<{ name: string; status: string }>
     >()
     for (const field of fields) {
@@ -238,7 +240,7 @@ export default function DraftAttachmentFields({
       if (names.length === 2) return `${names[0]} and ${names[1]}`
       return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
     }
-    return (['danger', 'info', 'success'] as const).flatMap((variant) => {
+    return (['danger', 'warning', 'info', 'success'] as const).flatMap((variant) => {
       const items = grouped.get(variant)
       if (!items?.length) return []
       const sameStatus = items.every((item) => item.status === items[0].status)
@@ -324,31 +326,35 @@ export default function DraftAttachmentFields({
         </div>
       ) : null}
 
+      {requiredFields.length > 0 || statusCards.length > 0 ? (
+        <div className='flex shrink-0 flex-col gap-2 px-4 pt-3 pb-1'>
+          {requiredFields.length > 0 ? (
+            <InfoCard
+              size='sm'
+              description=''
+              title={
+                requiredComplete
+                  ? t`All Mandatory fields are filled.`
+                  : t`${missingRequiredFields.length} Mandatory fields need to be filled.`
+              }
+              variant={requiredComplete ? 'success' : 'warning'}
+              className='shrink-0 rounded-xl'
+            />
+          ) : null}
+          {statusCards.map((card) => (
+            <InfoCard
+              size='sm'
+              description={card.description}
+              key={card.variant}
+              title={card.title}
+              variant={card.variant}
+              className='shrink-0'
+            />
+          ))}
+        </div>
+      ) : null}
+
       <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3'>
-        {requiredFields.length > 0 ? (
-          <InfoCard
-            description=''
-            title={
-              requiredComplete
-                ? t`All Mandatory fields are filled.`
-                : t`${missingRequiredFields.length} Mandatory fields need to be filled.`
-            }
-            variant={requiredComplete ? 'success' : 'info'}
-            className={
-              requiredComplete
-                ? 'rounded-xl border-l border-l-green-4'
-                : 'rounded-xl border-l border-orange-4 bg-orange-1 text-orange-12 [&_svg]:text-orange-9'
-            }
-          />
-        ) : null}
-        {statusCards.map((card) => (
-          <InfoCard
-            description={card.description}
-            key={card.variant}
-            title={card.title}
-            variant={card.variant}
-          />
-        ))}
         {fields.length === 0 ? (
           <p className='text-12 text-gray-10'>
             {t`No repository fields configured.`}

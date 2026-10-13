@@ -1540,7 +1540,7 @@ export default function Upload({
           // Avoid tight-retrying the same failed id inside one drain pass.
           const softFailedThisPass = new Set<string>()
 
-          for (;;) {
+          for (; ;) {
             if (!viewingDraftsRef.current && !openFileIdRef.current) break
 
             const focusId = focusedDraftIdRef.current
@@ -3131,8 +3131,8 @@ export default function Upload({
         badStatuses.length === 1
           ? t`This file has expired with date ${dateLabel}. Do you want to export?`
           : t`This file still has expired or invalid fields (${badStatuses
-              .map((item) => `${item.fieldName}: ${item.status}`)
-              .join(', ')}). Do you want to export?`
+            .map((item) => `${item.fieldName}: ${item.status}`)
+            .join(', ')}). Do you want to export?`
 
       pendingExpiredExportRef.current = { id, options }
       setExpiredExportDescription(description)
@@ -3338,17 +3338,17 @@ export default function Upload({
     const fromOcr =
       !isBlankFieldValue(value) &&
       normalizeComparableFieldValue(value) ===
-        normalizeComparableFieldValue(activeOcrExtractedValues[fieldKey])
+      normalizeComparableFieldValue(activeOcrExtractedValues[fieldKey])
     const missingRequired =
       required && !isAnalyzing && isBlankFieldValue(value) && !fieldStatus
 
     const fieldClassName = cn(
       'w-full',
       missingRequired &&
-        '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
+      '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
       isSyncField &&
-        !missingRequired &&
-        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+      !missingRequired &&
+      '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
     )
 
     const renderSuggestionCapsule = () => {
@@ -3532,8 +3532,8 @@ export default function Upload({
             ? cn('rounded-xl border p-3', statusToneClass.panel)
             : undefined,
           missingRequired &&
-            !statusToneClass &&
-            '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
+          !statusToneClass &&
+          '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
         )}
       >
         <div className='flex items-center justify-between gap-2'>
@@ -3886,9 +3886,9 @@ export default function Upload({
               entry.id,
               entry.status === 'ready'
                 ? hasMissingMandatoryFields(
-                    entry.fieldValues,
-                    repositoryFields,
-                  )
+                  entry.fieldValues,
+                  repositoryFields,
+                )
                 : entry.status !== 'indexed',
             ]),
           )}
@@ -4028,7 +4028,7 @@ export default function Upload({
 
                 <div
                   className={cn(
-                    'relative z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 pt-6 pb-2 text-center transition-colors duration-300',
+                    'relative z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 pt-6 pb-0 text-center transition-colors duration-300',
                     useIntelligentUpload
                       ? 'border-primary-6 bg-primary-2'
                       : 'border-primary-4 bg-surface',
@@ -4092,13 +4092,26 @@ export default function Upload({
                   ) : null}
 
                   <div
-                    className='flex w-full items-center justify-end border-t border-dashed border-primary-4 pt-1.5 [&_.mantine-Switch-body]:items-center [&_.mantine-Switch-track]:!mt-0'
+                    className={cn(
+                      'mt-4 flex w-full items-center justify-end border-t border-dashed py-3',
+                      useIntelligentUpload
+                        ? 'border-primary-5'
+                        : 'border-primary-4',
+                    )}
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <InputSwitch
                       checked={useIntelligentUpload}
-                      label={t`Enable Document Classification`}
+                      label={
+                        <span className='inline-flex items-center gap-1.5'>
+                          <span>{t`Intelligent Document Processing`}</span>
+                          <AiBrandIcon
+                            className='size-4 shrink-0'
+                            variant='outline-purple'
+                          />
+                        </span>
+                      }
                       onChange={setIntelligentUploadEnabled}
                     />
                   </div>
@@ -4148,20 +4161,24 @@ export default function Upload({
                       {draftCounts.inQueue > 0 ? t`Working` : t`Idle`}
                     </span>
                   </div>
-                  <div className='flex min-h-8 flex-1 items-center py-2'>
-                    {draftCounts.processingName ? (
-                      <div className='flex w-full min-w-0 items-center gap-2'>
-                        <span className='min-w-0 flex-1 truncate text-left text-13 font-medium text-gray-12 animate-pulse'>
-                          {draftCounts.processingName}
-                        </span>
-                        <Icon
-                          className='size-4 shrink-0 animate-spin text-primary-9'
-                          name='tabler:loader-2'
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className='mt-auto flex w-full flex-col gap-1.5'>
+
+                  {draftCounts.processingName ? (
+                    <div className='mt-2 flex min-h-5 w-full min-w-0 items-center gap-2'>
+                      <span className='min-w-0 flex-1 truncate text-left text-xs font-medium text-gray-12 animate-pulse'>
+                        {draftCounts.processingName}
+                      </span>
+                      <Icon
+                        className='size-3.5 shrink-0 animate-spin text-primary-9'
+                        name='tabler:loader-2'
+                      />
+                    </div>
+                  ) : (
+                    <p className='mt-2 line-clamp-2 text-xs leading-snug font-medium text-gray-10'>
+                      {t`Automated text recognition and document data extraction.`}
+                    </p>
+                  )}
+
+                  <div className='mt-3 flex w-full flex-col gap-1.5'>
                     <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
                       <span className='flex min-w-0 items-center gap-1.5'>
                         <span className='size-1.5 shrink-0 rounded-full bg-primary-9' />
@@ -4192,6 +4209,13 @@ export default function Upload({
                       </span>
                     </div>
                   </div>
+
+                  <div className='mt-auto flex w-full items-center justify-between border-t border-gray-3/80 pt-3'>
+                    <span className='inline-flex items-center gap-1.5 text-12 font-medium text-gray-11'>
+                      <Icon className='size-3.5 text-primary-9' name='tabler:cpu' />
+                      <span>{draftCounts.inQueue > 0 ? t`Processing active` : t`Agent ready`}</span>
+                    </span>
+                  </div>
                 </div>
               </AnimateEntrancePop>
 
@@ -4217,10 +4241,10 @@ export default function Upload({
                       {isLoadingDraftCount ? '…' : draftCounts.total}
                     </span>
                   </div>
-                  <p className='mt-2 line-clamp-2 flex-1 text-xs leading-snug font-medium text-gray-10'>
+                  <p className='mt-2 line-clamp-2 text-xs leading-snug font-medium text-gray-10'>
                     {t`Open a saved file to review the extracted data and finish it.`}
                   </p>
-                  <div className='mt-auto flex w-full flex-col gap-1.5 pt-3'>
+                  <div className='mt-3 flex w-full flex-col gap-1.5'>
                     <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
                       <span className='flex min-w-0 items-center gap-1.5'>
                         <span className='size-1.5 shrink-0 rounded-full bg-orange-9' />
@@ -4251,12 +4275,14 @@ export default function Upload({
                       </span>
                     </div>
                   </div>
-                  <span className='mt-2 inline-flex items-center gap-1 text-13 font-semibold text-primary-11'>
-                    <span className='underline-offset-2 hover:underline'>
-                      {t`Open draft files`}
+                  <div className='mt-auto flex w-full items-center justify-between border-t border-orange-3/80 pt-3'>
+                    <span className='inline-flex items-center gap-1.5 text-12 font-semibold text-primary-11 transition-colors group-hover:text-primary-10'>
+                      <span className='underline-offset-2 group-hover:underline'>
+                        {t`Open draft files`}
+                      </span>
+                      <Icon className='size-3.5 transition-transform duration-300 group-hover:translate-x-0.5' name='lucide:arrow-right' />
                     </span>
-                    <Icon className='size-4' name='lucide:arrow-right' />
-                  </span>
+                  </div>
                 </button>
               </AnimateEntrancePop>
             </div>
@@ -4582,8 +4608,8 @@ export default function Upload({
                       activeEntry.file
                         ? isImage(activeEntry.file)
                         : /\.(bmp|jpeg|jpg|png|svg|tif|tiff|webp)$/i.test(
-                            activeEntry.fileName || '',
-                          )
+                          activeEntry.fileName || '',
+                        )
                     }
                     isLoading={
                       !isPlayablePreviewUrl(activeEntry.previewUrl) &&
@@ -4762,13 +4788,10 @@ export default function Upload({
                         <div className='flex h-full flex-col'>
                           {requiredTotal > 0 ? (
                             <InfoCard
-                              className={
-                                requiredDone
-                                  ? 'mb-3 shrink-0 rounded-xl border-l border-l-green-4'
-                                  : 'mb-3 shrink-0 rounded-xl border-l border-orange-4 bg-orange-1 text-orange-12 [&_svg]:text-orange-9'
-                              }
+                              size='sm'
+                              className='mb-3 shrink-0 rounded-xl'
                               description=''
-                              variant={requiredDone ? 'success' : 'info'}
+                              variant={requiredDone ? 'success' : 'warning'}
                               title={
                                 requiredDone
                                   ? t`All Mandatory fields are filled.`
@@ -4779,7 +4802,7 @@ export default function Upload({
                           {(() => {
                             if (!activeEntry) return null
                             const grouped = new Map<
-                              'danger' | 'info' | 'success',
+                              'danger' | 'info' | 'success' | 'warning',
                               Array<{ name: string; status: string }>
                             >()
                             for (const field of repositoryFields) {
@@ -4794,7 +4817,7 @@ export default function Upload({
                                   ? 'danger'
                                   : tone === 'green'
                                     ? 'success'
-                                    : 'info'
+                                    : 'warning'
                               const list = grouped.get(variant) ?? []
                               list.push({ name: field.name, status })
                               grouped.set(variant, list)
@@ -4807,7 +4830,7 @@ export default function Upload({
                               return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
                             }
                             const cards = (
-                              ['danger', 'info', 'success'] as const
+                              ['danger', 'warning', 'info', 'success'] as const
                             ).flatMap((variant) => {
                               const items = grouped.get(variant)
                               if (!items?.length) return []
@@ -4819,11 +4842,11 @@ export default function Upload({
                                   description: sameStatus
                                     ? joinNames(items.map((item) => item.name))
                                     : items
-                                        .map(
-                                          (item) =>
-                                            `${item.name}: ${item.status}`,
-                                        )
-                                        .join('. '),
+                                      .map(
+                                        (item) =>
+                                          `${item.name}: ${item.status}`,
+                                      )
+                                      .join('. '),
                                   title: sameStatus
                                     ? items[0].status
                                     : t`Review these fields`,
@@ -4836,6 +4859,7 @@ export default function Upload({
                               <div className='mb-3 flex shrink-0 flex-col gap-2'>
                                 {cards.map((card) => (
                                   <InfoCard
+                                    size='sm'
                                     description={card.description}
                                     key={card.variant}
                                     title={card.title}

@@ -1,3 +1,4 @@
+import { t } from '@lingui/macro'
 import type { ActionButton } from '../types'
 
 // Helper to determine tenant specific logic (replacing isTenantArmgroup, etc.)
@@ -287,67 +288,270 @@ export const extractWorkflowGraph = (
   }
 }
 
-export type WorkflowStageStep = { id: string; label: string }
+export type WorkflowStageStep = {
+  id: string
+  label: string
+  isCondition?: boolean
+  isEnd?: boolean
+  isSuccess?: boolean
+  status?: 'done' | 'current' | 'future'
+}
 
 const stageLabel = (block: any) =>
   String(
     block?.settings?.label || block?.label || block?.name || block?.type || 'Stage',
   )
 
-// User-facing stages of a workflow, in rule order. The END block is only the
-// last step — it is never listed in the middle of the path.
-export const listWorkflowStages = (workflow: any): WorkflowStageStep[] => {
+export interface ComputeWorkflowStagesParams {
+  workflow: any
+  history?: any[]
+  currentActivityId?: string | number
+  isCompleted?: boolean
+}
+
+// Computes user-facing stages based on history (executed path), active stage,
+// and prospective next stage (or condition block if multiple connections exist).
+export const computeWorkflowStages = ({
+  workflow,
+  history = [],
+  currentActivityId,
+  isCompleted = false,
+}: ComputeWorkflowStagesParams): WorkflowStageStep[] => {
   const { blocks, rules } = extractWorkflowGraph(workflow)
   if (!blocks.length) return []
 
   const byId = new Map(blocks.map((block: any) => [String(block.id), block]))
-  const start = blocks.find(
-    (block: any) => String(block?.type || '').toUpperCase() === 'START',
-  )
-  const ordered: any[] = []
-  const seen = new Set<string>()
-  const queue = start
-    ? [String(start.id)]
-    : [String(blocks[0]?.id || '')].filter(Boolean)
+  const byName = new Map<string, any>()
+  blocks.forEach((block: any) => {
+    const l = stageLabel(block).toLowerCase().trim()
+    if (l) byName.set(l, block)
+    const n = String(block.name || '').toLowerCase().trim()
+    if (n) byName.set(n, block)
+  })
 
-  while (queue.length) {
-    const id = queue.shift() as string
-    if (!id || seen.has(id)) continue
-    seen.add(id)
-    const block = byId.get(id)
-    if (block) ordered.push(block)
-    const outgoing = rules.filter(
-      (rule: any) => String(rule.fromBlockId || rule.from || rule.source || '') === id,
-    )
-    const forward = outgoing.filter((rule: any) => {
-      const action = String(rule.action || rule.proceedAction || '')
-      return action !== 'Reject' && action !== 'Terminate'
-    })
-    ;(forward.length ? forward : outgoing).forEach((rule: any) => {
-      const to = String(rule.toBlockId || rule.to || rule.target || '')
-      if (to && !seen.has(to)) queue.push(to)
+  const endBlocks = blocks.filter(
+    (block: any) => String(block?.type || '').toUpperCase() === 'END',
+  )
+  const endBlock = endBlocks[endBlocks.length - 1] || endBlocks[0] || null
+
+  const currentIdStr =
+    currentActivityId != null ? String(currentActivityId).trim() : ''
+
+  // 1. Determine if the workflow has completed / reached terminal stage
+  const isTerminal =
+    Boolean(isCompleted) ||
+    (Boolean(endBlock) && currentIdStr === String(endBlock.id)) ||
+    (Array.isArray(history) &&
+      history.some((h: any) => {
+        const s = String(
+          h.status || h.stage || h.title || h.action || h.stageName || '',
+        )
+          .toLowerCase()
+          .trim()
+        return (
+          s === 'completed' ||
+          s === 'workflow success' ||
+          s === 'success' ||
+          s === 'approved' ||
+          s.includes('completed')
+        )
+      }))
+
+  // 2. Extract stages that actually executed from history (ignoring unvisited branches)
+  const visitedBlocks: any[] = []
+  const seenIds = new Set<string>()
+
+  if (Array.isArray(history) && history.length > 0) {
+    history.forEach((h: any) => {
+      const actId = h.activityId != null ? String(h.activityId).trim() : ''
+      let block = actId ? byId.get(actId) : null
+
+      if (!block) {
+        const rawName = String(h.stageName || h.stage || '').toLowerCase().trim()
+        block = byName.get(rawName)
+      }
+
+      if (!block && h.title) {
+        const titleStr = String(h.title).toLowerCase()
+        const afterDash = (
+          titleStr.split('—')[1] || titleStr.split('-')[1] || ''
+        ).trim()
+        if (afterDash && byName.has(afterDash)) {
+          block = byName.get(afterDash)
+        } else {
+          for (const b of blocks) {
+            const bLabel = stageLabel(b).toLowerCase().trim()
+            if (bLabel && titleStr.includes(bLabel)) {
+              block = b
+              break
+            }
+          }
+        }
+      }
+
+      const isEnd =
+        block && String(block.type || '').toUpperCase() === 'END'
+      if (isEnd) return // Appended explicitly when terminal
+
+      if (block) {
+        const id = String(block.id)
+        if (!seenIds.has(id)) {
+          seenIds.add(id)
+          visitedBlocks.push(block)
+        }
+      } else {
+        const fallbackLabel = String(
+          h.stageName || h.stage || h.title || '',
+        ).trim()
+        const fallbackLower = fallbackLabel.toLowerCase()
+        if (
+          fallbackLabel &&
+          fallbackLower !== 'completed' &&
+          fallbackLower !== 'start' &&
+          !fallbackLower.includes('start')
+        ) {
+          const synthId = actId || `hist-${fallbackLabel}`
+          if (!seenIds.has(synthId)) {
+            seenIds.add(synthId)
+            visitedBlocks.push({ id: synthId, label: fallbackLabel })
+          }
+        }
+      }
     })
   }
 
-  blocks.forEach((block: any) => {
-    const id = String(block?.id || '')
-    if (id && !seen.has(id)) ordered.push(block)
-  })
+  // 3. Fallback if history is empty (e.g. brand new request)
+  if (visitedBlocks.length === 0) {
+    if (currentIdStr && byId.has(currentIdStr)) {
+      const b = byId.get(currentIdStr)
+      if (String(b.type || '').toUpperCase() !== 'END') {
+        visitedBlocks.push(b)
+        seenIds.add(String(b.id))
+      }
+    } else {
+      const start = blocks.find(
+        (b: any) => String(b?.type || '').toUpperCase() === 'START',
+      )
+      if (start) {
+        visitedBlocks.push(start)
+        seenIds.add(String(start.id))
+      }
+    }
+  }
 
-  const middle = ordered.filter(
-    (block) => String(block?.type || '').toUpperCase() !== 'END',
-  )
-  const endBlocks = ordered.filter(
-    (block) => String(block?.type || '').toUpperCase() === 'END',
-  )
-  const last = endBlocks[endBlocks.length - 1]
-  const stages = last ? [...middle, last] : middle
+  // Ensure current active block is present in visited blocks if running
+  let currentBlock = currentIdStr ? byId.get(currentIdStr) : null
+  if (
+    currentBlock &&
+    String(currentBlock.type || '').toUpperCase() !== 'END' &&
+    !seenIds.has(String(currentBlock.id))
+  ) {
+    visitedBlocks.push(currentBlock)
+    seenIds.add(String(currentBlock.id))
+  }
 
-  return stages.map((block) => ({
-    id: String(block.id),
-    label: stageLabel(block),
+  if (!currentBlock && visitedBlocks.length > 0) {
+    currentBlock = visitedBlocks[visitedBlocks.length - 1]
+  }
+
+  const result: WorkflowStageStep[] = visitedBlocks.map((b: any) => ({
+    id: String(b.id),
+    label: stageLabel(b),
+    status: 'done',
   }))
+
+  // 4. Completed / Terminal:
+  if (isTerminal) {
+    if (endBlock) {
+      result.push({
+        id: String(endBlock.id),
+        label: stageLabel(endBlock),
+        isEnd: true,
+        isSuccess: true,
+        status: 'done',
+      })
+    } else {
+      result.push({
+        id: '__end_success__',
+        label: 'Workflow Success',
+        isEnd: true,
+        isSuccess: true,
+        status: 'done',
+      })
+    }
+    return result
+  }
+
+  // 5. In-progress: mark active block as 'current'
+  if (result.length > 0) {
+    result[result.length - 1].status = 'current'
+  }
+
+  // Check outgoing connections from the current block
+  if (currentBlock) {
+    const curId = String(currentBlock.id)
+    const outgoing = rules.filter(
+      (rule: any) =>
+        String(rule.fromBlockId || rule.from || rule.source || '') === curId,
+    )
+    const distinctTargets = Array.from(
+      new Set(
+        outgoing
+          .map((r: any) => String(r.toBlockId || r.to || r.target || ''))
+          .filter(Boolean),
+      ),
+    )
+
+    if (distinctTargets.length >= 2 || outgoing.length >= 2) {
+      result.push({
+        id: '__conditional_next__',
+        label: t`Conditional flow`,
+        isCondition: true,
+        status: 'future',
+      })
+    } else if (distinctTargets.length === 1) {
+      const nextTargetId = distinctTargets[0]
+      const nextBlock = byId.get(nextTargetId)
+      if (nextBlock) {
+        const nextType = String(nextBlock.type || '').toUpperCase()
+        if (
+          nextType === 'CONDITION' ||
+          nextType === 'DECISION' ||
+          nextType === 'BRANCH'
+        ) {
+          result.push({
+            id: '__conditional_next__',
+            label: t`Conditional flow`,
+            isCondition: true,
+            status: 'future',
+          })
+        } else {
+          result.push({
+            id: String(nextBlock.id),
+            label: stageLabel(nextBlock),
+            isEnd: nextType === 'END',
+            status: 'future',
+          })
+        }
+      }
+    }
+  }
+
+  return result
 }
+
+export const listWorkflowStages = (
+  workflow: any,
+  history?: any[],
+  currentActivityId?: string | number,
+  isCompleted?: boolean,
+): WorkflowStageStep[] =>
+  computeWorkflowStages({
+    workflow,
+    history,
+    currentActivityId,
+    isCompleted,
+  })
 
 export interface GenericStageInfo {
   currentLabel: string
