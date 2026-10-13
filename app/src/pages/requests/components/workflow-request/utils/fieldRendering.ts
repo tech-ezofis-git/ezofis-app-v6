@@ -4,13 +4,67 @@
 
 import dayjs from 'dayjs'
 import formApi from '@/api/form/form'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+
+import {
+  computeTableColumnTotals,
+  ensureNormalizedRuntimeFormJson,
+  evaluateTableRows,
+  extractCurrencyCode,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
+  formatRuntimeFieldDisplayValue,
+  getEffectiveColumnLabel,
+  getEffectiveFieldDescription,
+  getEffectiveFieldLabel,
+  getEffectiveFieldPlaceholder,
+  getEffectiveFieldTooltip,
+  getMatrixCellValue,
+  getNormalizedMatrixConfig,
+  hydrateFormModel,
+  isFieldLabelHidden,
+  isStructuredCurrencyValue,
+  isStructuredPhoneValue,
+  LEGACY_INLINE_FIELD_TYPES,
+  resolveRuntimeFieldType,
+  setMatrixCellValue,
+  shouldShowTableSummaryRow,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
+} from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import authUserStore from '@/stores/authUserStore'
 import {
   getFileNameWithoutExtension,
   isFilenameField,
   sortIndexingFields,
 } from '@/pages/requests/utils/repoFolderMetadata'
-// import authUserStore from '@/stores/authUserStore'
+
+export {
+  computeTableColumnTotals,
+  ensureNormalizedRuntimeFormJson,
+  evaluateTableRows,
+  extractCurrencyCode,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
+  formatRuntimeFieldDisplayValue,
+  getEffectiveColumnLabel,
+  getEffectiveFieldDescription,
+  getEffectiveFieldLabel,
+  getEffectiveFieldPlaceholder,
+  getEffectiveFieldTooltip,
+  getMatrixCellValue,
+  getNormalizedMatrixConfig,
+  hydrateFormModel,
+  isFieldLabelHidden,
+  isStructuredCurrencyValue,
+  isStructuredPhoneValue,
+  LEGACY_INLINE_FIELD_TYPES,
+  resolveRuntimeFieldType,
+  setMatrixCellValue,
+  shouldShowTableSummaryRow,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
+}
 
 export interface DateTimeLimits {
   maxDate?: string
@@ -122,20 +176,26 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
   for (const panel of panels || []) {
     for (const field of panel.fields || []) {
       const specific = field?.settings?.specific || {}
+      const fieldType = resolveRuntimeFieldType(field)
 
-      if (field.type === 'DATE' || field.type === 'DATE_TIME') {
-        if (specific.dateDefaultValueType === 'TODAY') {
+      if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+        const isToday =
+          specific.dateDefaultValueType === 'TODAY' ||
+          specific.dateDefaultValueType === 'CURRENT_DATE' ||
+          specific.defaultValueInSelectField === 'CURRENT_DATE' ||
+          specific.defaultValueInSelectField === 'TODAY'
+        if (isToday) {
           model[field.id] =
-            field.type === 'DATE_TIME'
+            fieldType === 'DATE_TIME'
               ? dayjs().format('YYYY-MM-DD HH:mm')
               : dayjs().format('YYYY-MM-DD')
         } else if (
-          specific.dateDefaultValueType === 'CUSTOM' &&
+          (specific.dateDefaultValueType === 'CUSTOM' || specific.defaultValue) &&
           specific.defaultValue
         ) {
           model[field.id] = String(specific.defaultValue).replace('T', ' ')
         }
-      } else if (field.type === 'TIME') {
+      } else if (fieldType === 'TIME') {
         if (specific.timeDefaultValueType === 'NOW') {
           model[field.id] = dayjs().format('HH:mm')
         } else if (
@@ -144,7 +204,12 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
-      } else if (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT' || field.type === 'SINGLE_CHOICE' || field.type === 'MULTIPLE_CHOICE') {
+      } else if (
+        fieldType === 'SINGLE_SELECT' ||
+        fieldType === 'MULTI_SELECT' ||
+        fieldType === 'SINGLE_CHOICE' ||
+        fieldType === 'MULTIPLE_CHOICE'
+      ) {
         const defaultMode = specific.defaultValueInSelectField
         if (defaultMode === 'USER_EMAIL') {
           const email = authUserStore.getState().session?.email
@@ -157,17 +222,35 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           if (name) {
             model[field.id] = name
           }
+        } else if (defaultMode === 'LOGIN_NAME') {
+          const s = authUserStore.getState().session
+          const loginName = s?.name || s?.email?.split('@')[0] || ''
+          if (loginName) {
+            model[field.id] = loginName
+          }
+        } else if (specific.customDefaultValue) {
+          model[field.id] = specific.customDefaultValue
+        } else if (
+          specific.defaultValueInSelectField &&
+          specific.defaultValueInSelectField !== 'USER_EMAIL' &&
+          specific.defaultValueInSelectField !== 'USER_NAME' &&
+          specific.defaultValueInSelectField !== 'LOGIN_NAME'
+        ) {
+          model[field.id] = specific.defaultValueInSelectField
         } else {
           const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
           if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
             const opts = getFieldOptions(field)
             if (opts.length === 1) {
               const val = selectOptionStoredValue(opts[0], opts)
-              model[field.id] = (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') ? [val] : val
+              model[field.id] =
+                fieldType === 'MULTI_SELECT' || fieldType === 'MULTIPLE_CHOICE'
+                  ? [val]
+                  : val
             }
           }
         }
-      } else if (field.type === 'SHORT_TEXT') {
+      } else if (fieldType === 'SHORT_TEXT' || fieldType === 'FULL_NAME') {
         const defaultMode = specific.defaultValueInSelectField
         if (defaultMode === 'USER_EMAIL') {
           const email = authUserStore.getState().session?.email
@@ -180,15 +263,39 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           if (name) {
             model[field.id] = name
           }
+        } else if (defaultMode === 'LOGIN_NAME') {
+          const s = authUserStore.getState().session
+          const loginName = s?.name || s?.email?.split('@')[0] || ''
+          if (loginName) {
+            model[field.id] = loginName
+          }
+        } else {
+          const resolved = resolveShortTextFillValue(field)
+          if (resolved) model[field.id] = resolved
         }
-      } else if (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') {
-        const resolved = resolveShortTextFillValue(field)
-        if (resolved) model[field.id] = resolved
-      } else if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
-        const rowsType = specific.rowsType || 'ON_DEMAND'
-        const fixedRowCount = specific.fixedRowCount || 5
+      } else if (fieldType === 'COUNTER' || fieldType === 'RATING') {
+        model[field.id] = 0
+      } else if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
+        const rowsType = specific.rowsType || specific.tableRowsType || 'ON_DEMAND'
+        const fixedRowCount =
+          specific.fixedRowCount || specific.tableFixedRowCount || 5
         if (rowsType === 'FIXED') {
-          model[field.id] = Array.from({ length: fixedRowCount }, () => ({}))
+          const tableColumns: any[] = specific.tableColumns || []
+          const labelCol = tableColumns.find((c: any) => c.type === 'LABEL')
+          const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
+
+          model[field.id] = Array.from({ length: fixedRowCount }, (_, idx) => {
+            const rowObj: Record<string, any> = {}
+            if (labelCol) {
+              const labelEntry = fixedRowLabels[idx]
+              if (typeof labelEntry === 'string') {
+                rowObj[labelCol.id] = labelEntry
+              } else if (labelEntry && typeof labelEntry === 'object') {
+                rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
+              }
+            }
+            return rowObj
+          })
         } else {
           model[field.id] = [{}]
         }
@@ -229,9 +336,13 @@ export const isFieldHidden = (field: any): boolean =>
   field?.hidden === true
 
 export const isFieldReadOnly = (field: any): boolean =>
-  field?.type === 'CALCULATED' ||
+  resolveRuntimeFieldType(field) === 'CALCULATED' ||
   Boolean(field?.settings?.general?.readOnly) ||
+  Boolean(field?.settings?.specific?.isReadOnly) ||
+  Boolean(field?.settings?.validation?.readonlySettings?.isReadOnly) ||
+  Boolean(field?.settings?.validation?.readonlySettings?.state) ||
   field?.settings?.general?.visibility === 'READ_ONLY' ||
+  field?.settings?.general?.visibility === 'DISABLE' ||
   field?.readOnly === true ||
   field?.disabled === true
 
@@ -262,10 +373,19 @@ export const getFieldOptions = (field: any): FieldOption[] => {
   const splitType = specific?.separateOptionsUsing
   const raw: string = specific?.customOptions || ''
   if (!raw.trim()) {
-    if (field?.type === 'YES_NO_TOGGLE') {
+    const rawType = String(field?.type || '').toUpperCase()
+    if (rawType === 'YES_NO_TOGGLE' || rawType === 'YES_NO') {
       return [
         { id: 'Yes', name: 'Yes' },
         { id: 'No', name: 'No' },
+      ]
+    }
+    if (rawType === 'LEGAL') {
+      return [
+        {
+          id: 'I accept the Terms of Service',
+          name: 'I accept the Terms of Service',
+        },
       ]
     }
     return [
@@ -310,11 +430,12 @@ export interface MasterFormInfo {
 }
 
 export const getMasterFormInfo = (field: any): MasterFormInfo => {
+  const fieldType = resolveRuntimeFieldType(field)
   const isSelect =
-    field?.type === 'SINGLE_SELECT' ||
-    field?.type === 'MULTI_SELECT' ||
-    field?.type === 'SINGLE_CHOICE' ||
-    field?.type === 'MULTIPLE_CHOICE'
+    fieldType === 'SINGLE_SELECT' ||
+    fieldType === 'MULTI_SELECT' ||
+    fieldType === 'SINGLE_CHOICE' ||
+    fieldType === 'MULTIPLE_CHOICE'
 
   const specific = field?.settings?.specific || {}
   const aiSettings = field?.settings?.aiSettings || {}
@@ -940,11 +1061,12 @@ export const getDropdownFacetSource = (
   field: any,
   fallbackRepositoryId?: string,
 ): DropdownFacetSource => {
+  const fieldType = resolveRuntimeFieldType(field)
   const isSelect =
-    field?.type === 'SINGLE_SELECT' ||
-    field?.type === 'MULTI_SELECT' ||
-    field?.type === 'SINGLE_CHOICE' ||
-    field?.type === 'MULTIPLE_CHOICE'
+    fieldType === 'SINGLE_SELECT' ||
+    fieldType === 'MULTI_SELECT' ||
+    fieldType === 'SINGLE_CHOICE' ||
+    fieldType === 'MULTIPLE_CHOICE'
   const specific = field?.settings?.specific || {}
   const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
   const optionsSource = String(
@@ -1042,6 +1164,15 @@ export const getDependentChildFieldIds = (
     const repoParent = String(
       field.settings?.specific?.repositoryFieldParent || '',
     ).trim()
+    const explicitParent = String(
+      field.settings?.specific?.parentFieldId || '',
+    ).trim()
+    const currencyParent = String(
+      field.settings?.specific?.currencyParentField || '',
+    ).trim()
+    const predefinedParent = String(
+      field.settings?.specific?.predefinedParentColumn || '',
+    ).trim()
 
     const matchesMasterParent =
       masterParent &&
@@ -1050,8 +1181,26 @@ export const getDependentChildFieldIds = (
     const matchesRepoParent =
       repoParent &&
       (parentKeys.has(repoParent) || parentKeys.has(repoParent.toLowerCase()))
+    const matchesExplicitParent =
+      explicitParent &&
+      (parentKeys.has(explicitParent) ||
+        parentKeys.has(explicitParent.toLowerCase()))
+    const matchesCurrencyParent =
+      currencyParent &&
+      (parentKeys.has(currencyParent) ||
+        parentKeys.has(currencyParent.toLowerCase()))
+    const matchesPredefinedParent =
+      predefinedParent &&
+      (parentKeys.has(predefinedParent) ||
+        parentKeys.has(predefinedParent.toLowerCase()))
 
-    if (matchesMasterParent || matchesRepoParent) {
+    if (
+      matchesMasterParent ||
+      matchesRepoParent ||
+      matchesExplicitParent ||
+      matchesCurrencyParent ||
+      matchesPredefinedParent
+    ) {
       if (fieldId) directChildIds.push(fieldId)
     }
   }
@@ -1483,11 +1632,9 @@ export const applyFilenamePreFillToFormModel = (
   return changed ? next : formModel
 }
 
-const stringifyFieldValue = (value: any): string => {
+export const stringifyFieldValue = (value: any): string => {
   if (isValueEmpty(value)) return ''
-  if (Array.isArray(value)) return value.join(', ')
-  if (typeof value === 'object') return String(value.fileName || '')
-  return String(value)
+  return formatRuntimeFieldDisplayValue(value)
 }
 
 export interface MissingMandatoryField {
@@ -1500,7 +1647,7 @@ export const getMissingMandatoryFieldsList = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { hasUploadedFile?: boolean },
+  options?: { formRules?: any[]; hasUploadedFile?: boolean },
 ): MissingMandatoryField[] => {
   let panels: any[] = []
   let formModel: Record<string, any> = {}
@@ -1514,6 +1661,7 @@ export const getMissingMandatoryFieldsList = (
 
   const missing: MissingMandatoryField[] = []
   const processedIds = new Set<string>()
+  const computedStates = evaluateFormRules(panels, formModel, options?.formRules)
 
   // 1. Process repository fields (unmatched repo fields are only required when indexing an uploaded file)
   for (const descriptor of descriptors || []) {
@@ -1527,8 +1675,13 @@ export const getMissingMandatoryFieldsList = (
     if (descriptor.matchedFieldId) {
       matchedField = findFormFieldById(panels, descriptor.matchedFieldId)
       if (matchedField) {
-        isReadOnly = isFieldReadOnly(matchedField)
-        isHidden = isFieldHidden(matchedField)
+        const dynamicState = computedStates[matchedField.id]
+        isReadOnly = dynamicState
+          ? dynamicState.disabled
+          : isFieldReadOnly(matchedField)
+        isHidden = dynamicState
+          ? !dynamicState.visible
+          : isFieldHidden(matchedField)
       }
     }
 
@@ -1553,20 +1706,30 @@ export const getMissingMandatoryFieldsList = (
 
   // 2. Process form panel fields
   for (const panel of panels || []) {
+    if (panel?.id && computedStates[panel.id]?.visible === false) continue
     for (const field of panel.fields || []) {
       const fieldId = String(field.id || field.jsonId || '')
       if (!fieldId || processedIds.has(fieldId)) continue
-      if (PRESENTATIONAL_TYPES.has(field.type)) continue
+      const fieldType = resolveRuntimeFieldType(field)
+      if (PRESENTATIONAL_TYPES.has(fieldType)) continue
 
-      if (isFieldHidden(field) || isFieldReadOnly(field)) continue
+      const dynamicState = computedStates[field.id]
+      const isHidden = dynamicState
+        ? !dynamicState.visible
+        : isFieldHidden(field)
+      const isReadOnly = dynamicState
+        ? dynamicState.disabled
+        : isFieldReadOnly(field)
 
-      if (isFieldRequired(field)) {
+      if (isHidden || isReadOnly) continue
+
+      const isReq = dynamicState ? dynamicState.required : isFieldRequired(field)
+      if (isReq) {
         const val =
           formModel[field.id] ??
           (field.jsonId ? formModel[field.jsonId] : undefined)
         if (!isFieldFilled(field, val)) {
-          const label =
-            field.label || field.name || field.title || 'Required Field'
+          const label = getEffectiveFieldLabel(field, 'Required Field')
           missing.push({ id: fieldId, label })
           processedIds.add(fieldId)
           if (field.id) processedIds.add(String(field.id))
@@ -1584,7 +1747,7 @@ export const getMissingMandatoryFields = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { hasUploadedFile?: boolean },
+  options?: { formRules?: any[]; hasUploadedFile?: boolean },
 ): string[] => {
   const list = getMissingMandatoryFieldsList(
     descriptors,
@@ -1604,7 +1767,7 @@ export const getMissingMandatoryFieldIds = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { hasUploadedFile?: boolean },
+  options?: { formRules?: any[]; hasUploadedFile?: boolean },
 ): Set<string> => {
   const list = getMissingMandatoryFieldsList(
     descriptors,
@@ -1705,30 +1868,39 @@ export const formatFileSize = (bytes?: number): string => {
 // Whether a required field currently has a value worth counting toward a
 // panel's "N of M mandatory fields completed" indicator.
 export const isFieldFilled = (field: any, value: any): boolean => {
-  if (PRESENTATIONAL_TYPES.has(field.type)) return true
+  const fieldType = resolveRuntimeFieldType(field)
+  if (PRESENTATIONAL_TYPES.has(fieldType)) return true
 
-  if (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') {
-    return Boolean(value?.fileId || value?.itemId)
+  if (fieldType === 'FILE_UPLOAD' || fieldType === 'IMAGE_UPLOAD') {
+    return Boolean(value?.fileId || value?.itemId || value?.fileName)
   }
-  if (field.type === 'MULTI_SELECT') {
+  if (fieldType === 'MULTI_SELECT') {
     return normalizeStoredMultiSelectValue(value).length > 0
   }
-  if (field.type === 'MULTIPLE_CHOICE') {
-    if (!Array.isArray(value) || value.length === 0) return false
+  if (fieldType === 'MULTIPLE_CHOICE') {
+    const list = Array.isArray(value)
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? value
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : []
+    if (list.length === 0) return false
     if (field.settings?.validation?.requiredValidation === 'ALL') {
       const opts = getFieldOptions(field)
-      return opts.length > 0 && value.length >= opts.length
+      return opts.length > 0 && list.length >= opts.length
     }
     return true
   }
-  if (field.type === 'YES_NO_TOGGLE' || field.type === 'CONSENT') {
-    return value === true
+  if (fieldType === 'YES_NO_TOGGLE' || fieldType === 'CONSENT') {
+    return value === true || value === 'Yes'
   }
-  if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
+  if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
     return (
       Array.isArray(value) &&
       value.some((row) =>
-        Object.entries(row).some(
+        Object.entries(row || {}).some(
           ([k, v]) =>
             !k.startsWith('_') &&
             v !== undefined &&
@@ -1737,6 +1909,23 @@ export const isFieldFilled = (field: any, value: any): boolean => {
         ),
       )
     )
+  }
+  if (fieldType === 'MATRIX') {
+    if (!value || typeof value !== 'object') return false
+    return Object.entries(value).some(
+      ([k, v]) =>
+        !k.startsWith('_') &&
+        v !== undefined &&
+        v !== null &&
+        (Array.isArray(v) ? v.length > 0 : String(v).trim() !== ''),
+    )
+  }
+  if (fieldType === 'CURRENCY_AMOUNT') {
+    const numVal = extractCurrencyNumericValue(value)
+    return numVal !== '' && numVal !== null && numVal !== undefined
+  }
+  if (fieldType === 'PHONE_NUMBER') {
+    return extractPhoneInputString(value).trim() !== ''
   }
   return value !== undefined && value !== null && String(value).trim() !== ''
 }

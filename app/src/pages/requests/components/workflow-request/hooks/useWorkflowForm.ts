@@ -15,11 +15,14 @@ import {
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
   buildRepoMetadata,
+  ensureNormalizedRuntimeFormJson,
   extractOcrText,
   getDependentChildFieldIds,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
+  hydrateFormModel,
   mapOcrFieldsToModel,
+  resolveRuntimeFieldType,
 } from '../utils/fieldRendering'
 
 const readStartedInstanceId = (data: unknown): string | null => {
@@ -73,7 +76,7 @@ export interface UseWorkflowFormOptions {
 
 interface FormRecord {
   description?: string
-  formJson?: { panels?: any[] }
+  formJson?: { panels?: any[]; settings?: { rules?: any[] } }
   layout?: string
   name?: string
   type?: string
@@ -88,7 +91,7 @@ export const useWorkflowForm = (
   const [loadError, setLoadError] = useState<string | null>(null)
   const [formModel, setFormModel] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState(null as string | null)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([])
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
@@ -130,12 +133,25 @@ export const useWorkflowForm = (
         return
       }
 
-      setForm(data)
+      const normalizedJson = ensureNormalizedRuntimeFormJson(data?.formJson)
+      const normalizedForm: FormRecord = {
+        ...data,
+        formJson: {
+          ...(data?.formJson || {}),
+          panels: normalizedJson.panels,
+          settings: {
+            ...(data?.formJson?.settings || {}),
+            rules: normalizedJson.rules,
+          },
+        },
+      }
+
+      setForm(normalizedForm)
       setFormModel(
-        applyCalculatedFields(
-          data?.formJson?.panels || [],
-          buildInitialFormModel(data?.formJson?.panels || []),
-        ),
+        hydrateFormModel(normalizedJson.panels, null, {
+          formRules: normalizedJson.rules,
+          initialDefaults: buildInitialFormModel(normalizedJson.panels),
+        }),
       )
       setIsLoadingForm(false)
     }
@@ -166,6 +182,7 @@ export const useWorkflowForm = (
   }, [repositoryId])
 
   const panels = useMemo(() => form?.formJson?.panels || [], [form])
+  const formRules = useMemo(() => form?.formJson?.settings?.rules || [], [form])
   const repoFieldHints = useMemo(
     () => buildRepoFieldHints(repositoryFields),
     [repositoryFields],
@@ -187,11 +204,14 @@ export const useWorkflowForm = (
       }))
     const fromFields = panels.flatMap((panel: any) =>
       (panel.fields || [])
-        .filter(
-          (field: any) =>
-            (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') &&
-            (formModel[field.id]?.rawFile || formModel[field.id]?.fileId),
-        )
+        .filter((field: any) => {
+          const resolvedType = resolveRuntimeFieldType(field)
+          return (
+            (resolvedType === 'FILE_UPLOAD' ||
+              resolvedType === 'IMAGE_UPLOAD') &&
+            (formModel[field.id]?.rawFile || formModel[field.id]?.fileId)
+          )
+        })
         .map((field: any) => ({
           fileName: formModel[field.id].fileName,
           key: `field:${field.id}`,
@@ -208,9 +228,10 @@ export const useWorkflowForm = (
   const missingMandatoryFieldIds = useMemo(
     () =>
       getMissingMandatoryFieldIds(repoFieldDescriptors, panels, formModel, {
+        formRules,
         hasUploadedFile,
       }),
-    [repoFieldDescriptors, panels, formModel, hasUploadedFile],
+    [repoFieldDescriptors, panels, formModel, hasUploadedFile, formRules],
   )
 
   // Same as folder / inbox indexing: fill empty Filename from the uploaded
@@ -225,9 +246,9 @@ export const useWorkflowForm = (
         pendingUploadFileName,
       )
       if (patched === prev) return prev
-      return applyCalculatedFields(panels, patched)
+      return applyCalculatedFields(panels, patched, formRules)
     })
-  }, [panels, pendingUploadFileName, repoFieldDescriptors])
+  }, [panels, pendingUploadFileName, repoFieldDescriptors, formRules])
 
   // True while any pending (unstaged) file's own OCR phase-1 pass is still
   // in flight — drives the "Extracting…" loading state.
@@ -238,7 +259,8 @@ export const useWorkflowForm = (
     if (pendingAttachment) return true
     return panels.some((panel: any) =>
       (panel.fields || []).some((field: any) => {
-        if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
+        const resolvedType = resolveRuntimeFieldType(field)
+        if (resolvedType !== 'FILE_UPLOAD' && resolvedType !== 'IMAGE_UPLOAD')
           return false
         const value = formModel[field.id]
         return Boolean(value?.rawFile && !value?.fileId && !value?.ocrChecked)
@@ -271,7 +293,7 @@ export const useWorkflowForm = (
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next)
+      return applyCalculatedFields(panels, next, formRules)
     })
   }
 
@@ -296,7 +318,7 @@ export const useWorkflowForm = (
           next[key] = value
         }
       }
-      return applyCalculatedFields(panels, next)
+      return applyCalculatedFields(panels, next, formRules)
     })
   }
 
@@ -566,7 +588,7 @@ export const useWorkflowForm = (
       repoFieldDescriptors,
       panels,
       formModel,
-      { hasUploadedFile },
+      { formRules, hasUploadedFile },
     )
     if (missing.length > 0) {
       const errorMsg = `Please fill in required field(s): ${missing.join(', ')}`
@@ -688,6 +710,7 @@ export const useWorkflowForm = (
     confirmUpload,
     form,
     formModel,
+    formRules,
     hasAttemptedSubmit,
     hasUploadedFile,
     isExtractingOcr,

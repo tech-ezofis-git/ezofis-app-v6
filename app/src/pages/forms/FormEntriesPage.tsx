@@ -36,22 +36,46 @@ import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import {
+  LegacyInlineFieldRenderer,
+  RuntimeMatrixField,
+} from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import {
+  buildInitialFormModel,
+  computeTableColumnTotals,
+  ensureNormalizedRuntimeFormJson,
+  evaluateTableRows,
+  extractCurrencyCode,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   type FieldOption,
+  formatRuntimeFieldDisplayValue,
   getConfiguredFieldOptions,
   getDependentChildFieldIds,
   getDropdownFacetSource,
+  getEffectiveColumnLabel,
+  getEffectiveFieldDescription,
+  getEffectiveFieldLabel,
+  getEffectiveFieldPlaceholder,
   getFieldOptions,
   getMasterFormInfo,
+  hydrateFormModel,
+  isFieldLabelHidden,
+  isFieldReadOnly,
+  resolveRuntimeFieldType,
+  shouldShowTableSummaryRow,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -955,16 +979,16 @@ const FormLineItemInlineEditor = ({
 
 // Sub-component for rendering line items / table fields inside entry creation/editing
 const FormLineItemsEditor = ({
+  disabled,
   field,
   isFieldRequired,
-  // isFieldRequired,
   value,
   getFieldLabel,
   onChange,
 }: {
+  disabled?: boolean
   field: Question
   isFieldRequired?: boolean
-  // isFieldRequired?: boolean
   value: any
   getFieldLabel: (key: string) => string
   onChange: (val: string) => void
@@ -976,29 +1000,36 @@ const FormLineItemsEditor = ({
     null,
   )
 
-  // Parse existing data
+  const rawTableColumns = useMemo(() => {
+    const tableCols =
+      field.settings?.specific?.tableColumns ||
+      (field.settings?.specific as any)?.columns
+    return Array.isArray(tableCols) ? tableCols : []
+  }, [field])
+
+  // Parse existing data and evaluate calculated columns
   const rows: any[] = useMemo(() => {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string' && value.trim().startsWith('[')) {
+    let parsedRows: any[] = []
+    if (Array.isArray(value)) {
+      parsedRows = value
+    } else if (typeof value === 'string' && value.trim().startsWith('[')) {
       try {
         const parsed = JSON.parse(value)
-        if (Array.isArray(parsed)) return parsed
+        if (Array.isArray(parsed)) parsedRows = parsed
       } catch (e) {
         console.error('Failed to parse line items JSON:', e)
       }
     }
-    return []
-  }, [value])
+    return evaluateTableRows(field, parsedRows)
+  }, [value, field])
 
   // Determine columns
   const columns = useMemo(() => {
-    const tableCols =
-      field.settings?.specific?.tableColumns ||
-      (field.settings?.specific as any)?.columns
-    if (Array.isArray(tableCols) && tableCols.length > 0) {
-      return tableCols.map((c: any) => ({
+    if (rawTableColumns.length > 0) {
+      return rawTableColumns.map((c: any) => ({
+        ...c,
         id: c.id || c.name || c.key,
-        label: c.name || c.label || getFieldLabel(c.id || c.name || c.key),
+        label: getEffectiveColumnLabel(c),
       }))
     }
     if (rows.length > 0 && typeof rows[0] === 'object' && rows[0] !== null) {
@@ -1015,14 +1046,28 @@ const FormLineItemsEditor = ({
       { id: 'price', label: 'Unit Price' },
       { id: 'total', label: 'Total Amount' },
     ]
-  }, [field, rows, getFieldLabel])
+  }, [rawTableColumns, rows, getFieldLabel])
+
+  const showTotals = useMemo(
+    () => shouldShowTableSummaryRow(field, rawTableColumns),
+    [field, rawTableColumns],
+  )
+  const columnTotals = useMemo(
+    () =>
+      showTotals
+        ? computeTableColumnTotals(field, rows, rawTableColumns)
+        : {},
+    [showTotals, field, rows, rawTableColumns],
+  )
 
   const handleOpenAdd = () => {
+    if (disabled) return
     setEditingRowIndex(null)
     setIsInlineOpen(true)
   }
 
   const handleOpenEdit = (rIdx: number) => {
+    if (disabled) return
     setEditingRowIndex(rIdx)
     setIsInlineOpen(true)
   }
@@ -1044,7 +1089,8 @@ const FormLineItemsEditor = ({
       targetIdx = updatedRows.length - 1
     }
 
-    onChange(JSON.stringify(updatedRows))
+    const evaluated = evaluateTableRows(field, updatedRows)
+    onChange(JSON.stringify(evaluated))
 
     // Highlight row briefly
     setHighlightedRowIndex(targetIdx)
@@ -1057,7 +1103,11 @@ const FormLineItemsEditor = ({
   }
 
   const handleDeleteRow = (rowIndex: number) => {
-    const updated = rows.filter((_, idx) => idx !== rowIndex)
+    if (disabled) return
+    const updated = evaluateTableRows(
+      field,
+      rows.filter((_, idx) => idx !== rowIndex),
+    )
     onChange(JSON.stringify(updated))
   }
 
@@ -1067,7 +1117,7 @@ const FormLineItemsEditor = ({
       <div className='mb-1.5 flex items-center justify-between'>
         <div>
           <label className='block text-xs font-bold text-gray-12'>
-            {field.label || 'Untitled Question'}
+            {getEffectiveFieldLabel(field, 'Untitled Question')}
             {isFieldRequired && (
               <span
                 className='ml-1 font-bold text-red-9'
@@ -1077,20 +1127,22 @@ const FormLineItemsEditor = ({
               </span>
             )}
           </label>
-          {field.settings?.general?.description && (
+          {getEffectiveFieldDescription(field) && (
             <p className='mt-0.5 text-[11px] text-gray-7'>
-              {field.settings.general.description}
+              {getEffectiveFieldDescription(field)}
             </p>
           )}
         </div>
-        <Button
-          color='primary'
-          icon='lucide:plus'
-          label={t`Add Line Item`}
-          size='xs'
-          variant='solid'
-          onClick={handleOpenAdd}
-        />
+        {!disabled && (
+          <Button
+            color='primary'
+            icon='lucide:plus'
+            label={t`Add Line Item`}
+            size='xs'
+            variant='solid'
+            onClick={handleOpenAdd}
+          />
+        )}
       </div>
 
       {/* Inline Expansion Form Card (Flat-Focus UI rule compliant) */}
@@ -1132,9 +1184,11 @@ const FormLineItemsEditor = ({
                       {col.label}
                     </th>
                   ))}
-                  <th className='w-20 p-2.5 text-center font-bold text-gray-11'>
-                    Actions
-                  </th>
+                  {!disabled && (
+                    <th className='w-20 p-2.5 text-center font-bold text-gray-11'>
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -1148,43 +1202,66 @@ const FormLineItemsEditor = ({
                         isHighlighted ? 'animate-pulse bg-accent-soft/20' : '',
                       )}
                     >
-                      {columns.map((col) => (
-                        <td
-                          className='p-2.5 font-medium whitespace-nowrap text-gray-12'
-                          key={col.id}
-                        >
-                          {row[col.id] !== undefined &&
-                            row[col.id] !== null &&
-                            String(row[col.id]).trim() !== '' ? (
-                            String(row[col.id])
-                          ) : (
-                            <span className='text-gray-5'>—</span>
-                          )}
+                      {columns.map((col) => {
+                        const colType = resolveRuntimeFieldType(col)
+                        const formatted =
+                          colType === 'SERIAL_NUMBER'
+                            ? String(rIdx + 1)
+                            : formatRuntimeFieldDisplayValue(row[col.id], col)
+                        return (
+                          <td
+                            className='p-2.5 font-medium whitespace-nowrap text-gray-12'
+                            key={col.id}
+                          >
+                            {formatted !== '-' ? (
+                              formatted
+                            ) : (
+                              <span className='text-gray-5'>—</span>
+                            )}
+                          </td>
+                        )
+                      })}
+                      {!disabled && (
+                        <td className='p-2 text-center'>
+                          <div className='flex items-center justify-center gap-1'>
+                            <IconButton
+                              color='gray'
+                              icon='lucide:pencil'
+                              size='sm'
+                              title={t`Edit Line Item`}
+                              variant='ghost'
+                              onClick={() => handleOpenEdit(rIdx)}
+                            />
+                            <IconButton
+                              color='red'
+                              icon='lucide:trash-2'
+                              size='sm'
+                              title={t`Delete Row`}
+                              variant='ghost'
+                              onClick={() => handleDeleteRow(rIdx)}
+                            />
+                          </div>
                         </td>
-                      ))}
-                      <td className='p-2 text-center'>
-                        <div className='flex items-center justify-center gap-1'>
-                          <IconButton
-                            color='gray'
-                            icon='lucide:pencil'
-                            size='sm'
-                            title={t`Edit Line Item`}
-                            variant='ghost'
-                            onClick={() => handleOpenEdit(rIdx)}
-                          />
-                          <IconButton
-                            color='red'
-                            icon='lucide:trash-2'
-                            size='sm'
-                            title={t`Delete Row`}
-                            variant='ghost'
-                            onClick={() => handleDeleteRow(rIdx)}
-                          />
-                        </div>
-                      </td>
+                      )}
                     </tr>
                   )
                 })}
+                {showTotals && Object.keys(columnTotals).length > 0 && (
+                  <tr className='border-t border-gray-3 bg-gray-1/80 font-bold'>
+                    {columns.map((col, cIdx) => (
+                      <td className='p-2.5 text-xs text-gray-12' key={col.id}>
+                        {columnTotals[col.id] !== undefined
+                          ? columnTotals[col.id].toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })
+                          : cIdx === 0
+                            ? t`Total`
+                            : ''}
+                      </td>
+                    ))}
+                    {!disabled && <td />}
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -1352,19 +1429,20 @@ const FormEntriesPage = () => {
     },
   })
 
-  const panels = useMemo(() => {
-    if (!formData) return []
-    let json = formData._json || formData.formJson
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json)
-      } catch (e) {
-        console.error('Failed to parse formJson:', e)
-        json = null
-      }
-    }
-    return json?.panels || []
+  const normalizedFormJson = useMemo(() => {
+    if (!formData) return { panels: [], rules: [], settings: {} as any }
+    return ensureNormalizedRuntimeFormJson(formData._json || formData.formJson)
   }, [formData])
+
+  const panels = useMemo(
+    () => normalizedFormJson.panels || [],
+    [normalizedFormJson],
+  )
+
+  const formRules = useMemo(
+    () => normalizedFormJson.rules || [],
+    [normalizedFormJson],
+  )
 
   const fields = useMemo(
     () => panels.flatMap((p: any) => p.fields || []),
@@ -1373,17 +1451,10 @@ const FormEntriesPage = () => {
 
   const formName = useMemo(() => {
     if (!formData) return ''
-    let json = formData._json || formData.formJson
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json)
-      } catch (e) {
-        console.error('Failed to parse formJson:', e)
-        json = null
-      }
-    }
-    return json?.settings?.general?.name || formData?.name || ''
-  }, [formData])
+    return (
+      normalizedFormJson.settings?.general?.name || formData?.name || ''
+    )
+  }, [formData, normalizedFormJson])
 
   const isPoMasterForm = useMemo(() => {
     const normalized = formName.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -1394,7 +1465,7 @@ const FormEntriesPage = () => {
   const getFieldLabel = useCallback(
     (key: string) => {
       const topField = fields.find((item: Question) => item.id === key)
-      if (topField) return topField.label || key
+      if (topField) return getEffectiveFieldLabel(topField, key)
 
       for (const field of fields) {
         const tableCols =
@@ -1402,7 +1473,7 @@ const FormEntriesPage = () => {
           field.settings?.specific?.columns
         if (Array.isArray(tableCols)) {
           const matchedCol = tableCols.find((col: any) => col.id === key)
-          if (matchedCol) return matchedCol.name || matchedCol.label || key
+          if (matchedCol) return getEffectiveColumnLabel(matchedCol) || key
         }
       }
 
@@ -1546,19 +1617,28 @@ const FormEntriesPage = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next)
+      return applyCalculatedFields(panels, next, formRules)
     })
   }
 
   // Slide-in pane toggle functions
   const openNewEntry = () => {
-    setEditValues(applyCalculatedFields(panels, {}))
+    setEditValues(
+      hydrateFormModel(panels, null, {
+        formRules,
+        initialDefaults: buildInitialFormModel(panels),
+      }),
+    )
     setSelectedEntry(null)
     setIsAddOpen(true)
   }
 
   const openEditEntry = (entry: any) => {
-    setEditValues(applyCalculatedFields(panels, { ...entry.values }))
+    setEditValues(
+      hydrateFormModel(panels, entry?.values || {}, {
+        formRules,
+      }),
+    )
     setSelectedEntry(entry)
     setIsAddOpen(false)
   }
@@ -1596,6 +1676,18 @@ const FormEntriesPage = () => {
 
   // Actions
   const handleSaveEntry = async () => {
+    // Phase 4: Validate form fields before submitting
+    const validationResult = validateFormModel(panels, editValues, { formRules })
+    if (!validationResult.isValid) {
+      const firstErrorMessage: string =
+        Object.values(validationResult.errors)[0] || 'Please complete all required fields correctly.'
+      showToast({
+        message: String(firstErrorMessage),
+        variant: 'error',
+      })
+      return
+    }
+
     setIsSaving(true)
     try {
       let targetEntryId: number | string =
@@ -1760,7 +1852,7 @@ const FormEntriesPage = () => {
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
-      const fieldLabel = field.label || t`Untitled Field`
+      const fieldLabel = getEffectiveFieldLabel(field, t`Untitled Field`)
       const isStatusCol = fieldLabel.toLowerCase().trim() === 'matched status'
 
       // Calculate max character length across header label and cell values
@@ -1768,7 +1860,7 @@ const FormEntriesPage = () => {
       paginatedEntries.forEach((row: any) => {
         const val = row.values?.[field.id]
         if (val !== undefined && val !== null) {
-          const valStr = String(val)
+          const valStr = formatRuntimeFieldDisplayValue(val, field)
           if (valStr.length > maxCharLength) {
             maxCharLength = valStr.length
           }
@@ -1813,7 +1905,14 @@ const FormEntriesPage = () => {
           }
 
           // 2. Handle nested PO line items table inline expansion
+          const resolvedType = resolveRuntimeFieldType(field)
           const isJsonTable = (() => {
+            if (
+              Array.isArray(val) &&
+              (resolvedType === 'TABLE' || resolvedType === 'DYNAMIC_TABLE')
+            ) {
+              return true
+            }
             if (typeof val !== 'string') return false
             const trimmed = val.trim()
             return trimmed.startsWith('[') && trimmed.endsWith(']')
@@ -1822,7 +1921,7 @@ const FormEntriesPage = () => {
           if (isJsonTable) {
             let parsedData: any[] = []
             try {
-              parsedData = JSON.parse(String(val))
+              parsedData = Array.isArray(val) ? val : JSON.parse(String(val))
             } catch (e) {
               console.error('Failed to parse nested table JSON', e)
             }
@@ -1851,7 +1950,7 @@ const FormEntriesPage = () => {
 
           return (
             <span className='block overflow-hidden font-medium text-ellipsis whitespace-nowrap text-[var(--gray-12)]'>
-              {val !== undefined && val !== null ? String(val) : '-'}
+              {formatRuntimeFieldDisplayValue(val, field)}
             </span>
           )
         },
@@ -2169,7 +2268,11 @@ const FormEntriesPage = () => {
   const isPanelOpen = isAddOpen || !!selectedEntry
 
   if (isPanelOpen) {
-    const evaluatedFieldStates = evaluateFormRules(panels, editValues)
+    const evaluatedFieldStates = evaluateFormRules(
+      panels,
+      editValues,
+      formRules,
+    )
 
     return (
       <div className='bg-surface-muted/20 flex h-full flex-col font-inter'>
@@ -2212,10 +2315,8 @@ const FormEntriesPage = () => {
               const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
               const panelDescription = panel.settings?.description || ''
               const renderableFields = (panel.fields || []).filter((f: any) => {
-                if (
-                  ['HEADING', 'DIVIDER'].includes((f.type || '').toUpperCase())
-                )
-                  return false
+                const resolvedType = resolveRuntimeFieldType(f)
+                if (['HEADING', 'DIVIDER'].includes(resolvedType)) return false
                 const state = evaluatedFieldStates[f.id]
                 if (state && !state.visible) return false
                 return true
@@ -2250,7 +2351,7 @@ const FormEntriesPage = () => {
                   {/* Block Fields Layout using 12-column grid */}
                   <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
                     {renderableFields.map((field: Question) => {
-                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                      const type = resolveRuntimeFieldType(field)
                       const val = editValues[field.id] ?? ''
                       const state = evaluatedFieldStates[field.id]
                       const isFieldRequired = state
@@ -2258,19 +2359,19 @@ const FormEntriesPage = () => {
                         : field.settings?.validation?.fieldRule === 'REQUIRED'
                       const isReadOnly = state
                         ? state.disabled
-                        : Boolean((field.settings?.specific as any)?.isReadOnly)
+                        : isFieldReadOnly(field)
                       const colSpan = getColumnSpan(
                         field.settings?.general?.size,
                       )
 
                       const isTableType =
-                        type === 'LINE_ITEM' ||
                         type === 'TABLE' ||
                         type === 'DYNAMIC_TABLE' ||
-                        (typeof val === 'string' &&
+                        (type !== 'MULTIPLE_CHOICE' &&
+                          type !== 'MULTI_SELECT' &&
+                          typeof val === 'string' &&
                           val.trim().startsWith('[') &&
-                          val.trim().endsWith(']')) ||
-                        Array.isArray(val)
+                          val.trim().endsWith(']'))
 
                       return (
                         <div
@@ -2290,10 +2391,13 @@ const FormEntriesPage = () => {
                           )}
                         >
                           {/* Label / Required Indicators (rendered internally for table fields) */}
-                          {!isTableType && (
+                          {!isTableType && !isFieldLabelHidden(field) && (
                             <div className='mb-1.5 flex items-center justify-between'>
                               <label className='block text-xs font-bold text-gray-12'>
-                                {field.label || 'Untitled Question'}
+                                {getEffectiveFieldLabel(
+                                  field,
+                                  'Untitled Question',
+                                )}
                                 {isFieldRequired && (
                                   <span
                                     className='ml-1 font-bold text-red-9'
@@ -2305,16 +2409,18 @@ const FormEntriesPage = () => {
                               </label>
                               {(type === 'CALCULATED' || isReadOnly) && (
                                 <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
-                                  Auto-calculated
+                                  {type === 'CALCULATED'
+                                    ? 'Auto-calculated'
+                                    : 'Read-only'}
                                 </span>
                               )}
                             </div>
                           )}
 
                           {!isTableType &&
-                            field.settings?.general?.description && (
+                            getEffectiveFieldDescription(field) && (
                               <p className='mb-1.5 text-[11px] text-gray-7'>
-                                {field.settings.general.description}
+                                {getEffectiveFieldDescription(field)}
                               </p>
                             )}
 
@@ -2325,7 +2431,12 @@ const FormEntriesPage = () => {
                                 Consent / Enable
                               </span>
                               <InputSwitch
-                                checked={val === 'Yes'}
+                                checked={
+                                  val === 'Yes' ||
+                                  val === true ||
+                                  val === 'true'
+                                }
+                                disabled={isReadOnly}
                                 onChange={(checked) =>
                                   handleFieldChange(
                                     field.id,
@@ -2336,7 +2447,8 @@ const FormEntriesPage = () => {
                             </div>
                           ) : type === 'DATE' ? (
                             <InputDate
-                              placeholder={field.settings?.general?.placeholder}
+                              disabled={isReadOnly}
+                              placeholder={getEffectiveFieldPlaceholder(field)}
                               value={val ? val : null}
                               onChange={(dateString) =>
                                 handleFieldChange(field.id, dateString)
@@ -2356,7 +2468,8 @@ const FormEntriesPage = () => {
                               }
                             >
                               <InputNumber
-                                placeholder={field.settings?.general?.placeholder}
+                                disabled={isReadOnly}
+                                placeholder={getEffectiveFieldPlaceholder(field)}
                                 value={val}
                                 onChange={(num) =>
                                   handleFieldChange(field.id, num)
@@ -2364,22 +2477,79 @@ const FormEntriesPage = () => {
                               />
                             </FormEntriesSearchableInput>
                           ) : type === 'CURRENCY_AMOUNT' ? (
-                            <div className='max-w-xs'>
+                            <div className='flex max-w-xs items-center gap-1.5'>
+                              <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
+                                {extractCurrencyCode(val, field)}
+                              </span>
                               <InputNumber
-                                value={val}
+                                className='flex-1'
+                                disabled={isReadOnly}
+                                value={extractCurrencyNumericValue(val)}
                                 placeholder={
-                                  field.settings?.general?.placeholder || '0.00'
+                                  getEffectiveFieldPlaceholder(field) || '0.00'
                                 }
                                 onChange={(num) =>
-                                  handleFieldChange(field.id, num)
+                                  handleFieldChange(
+                                    field.id,
+                                    updateCurrencyFieldValue(val, num, field),
+                                  )
                                 }
                               />
                             </div>
+                          ) : type === 'PHONE_NUMBER' ? (
+                            <FormEntriesSearchableInput
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={extractPhoneInputString(val)}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
+                              }
+                            >
+                              <InputText
+                                disabled={isReadOnly}
+                                placeholder={getEffectiveFieldPlaceholder(field)}
+                                value={extractPhoneInputString(val)}
+                                onChange={(text) =>
+                                  handleFieldChange(
+                                    field.id,
+                                    updatePhoneFieldValue(val, text, field),
+                                  )
+                                }
+                              />
+                            </FormEntriesSearchableInput>
+                          ) : type === 'MATRIX' ? (
+                            <RuntimeMatrixField
+                              disabled={isReadOnly}
+                              field={field}
+                              value={val}
+                              onChange={(next) =>
+                                handleFieldChange(field.id, next)
+                              }
+                            />
+                          ) : type === 'POPUP' ||
+                            type === 'TABS' ||
+                            type === 'NESTED_LIST' ||
+                            type === 'LOGIN_AUTHENTICATION' ||
+                            type === 'EMAIL_AUTHENTICATION' ||
+                            type === 'MOBILE_AUTHENTICATION' ? (
+                            <LegacyInlineFieldRenderer
+                              disabled={isReadOnly}
+                              field={field}
+                              value={val}
+                              onChange={(next) =>
+                                handleFieldChange(field.id, next)
+                              }
+                            />
                           ) : type === 'RATING' ? (
                             <div className='py-1'>
                               <Rating
                                 color='yellow'
                                 count={field.settings?.specific?.iconCount || 5}
+                                readOnly={isReadOnly}
                                 size='md'
                                 value={Number(val || 0)}
                                 onChange={(v) => handleFieldChange(field.id, v)}
@@ -2392,6 +2562,7 @@ const FormEntriesPage = () => {
                                   Number(val) === i && val !== ''
                                 return (
                                   <button
+                                    disabled={isReadOnly}
                                     key={i}
                                     type='button'
                                     className={cn(
@@ -2399,6 +2570,8 @@ const FormEntriesPage = () => {
                                       isSelected
                                         ? 'border-accent-primary bg-accent-primary text-white'
                                         : 'border-gray-3 bg-surface text-gray-12',
+                                      isReadOnly &&
+                                        'cursor-not-allowed opacity-60',
                                     )}
                                     onClick={() =>
                                       handleFieldChange(field.id, i)
@@ -2415,9 +2588,9 @@ const FormEntriesPage = () => {
                               field={field}
                               formModel={editValues}
                               val={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
+                              onChange={(next) => {
+                                if (!isReadOnly) handleFieldChange(field.id, next)
+                              }}
                             />
                           ) : type === 'MULTIPLE_CHOICE' ? (
                             <FormEntriesChoiceInput
@@ -2426,9 +2599,9 @@ const FormEntriesPage = () => {
                               formModel={editValues}
                               isMultiple
                               val={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
+                              onChange={(next) => {
+                                if (!isReadOnly) handleFieldChange(field.id, next)
+                              }}
                             />
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
@@ -2452,9 +2625,10 @@ const FormEntriesPage = () => {
                                 }
                                 formModel={editValues}
                                 val={val}
-                                onChange={(next) =>
-                                  handleFieldChange(field.id, next)
-                                }
+                                onChange={(next) => {
+                                  if (!isReadOnly)
+                                    handleFieldChange(field.id, next)
+                                }}
                               />
                             </FormEntriesSearchableInput>
                           ) : type === 'FILE_UPLOAD' ||
@@ -2478,6 +2652,7 @@ const FormEntriesPage = () => {
                               </div>
                               <Button
                                 color='gray'
+                                disabled={isReadOnly}
                                 icon='lucide:upload'
                                 label={t`Choose File`}
                                 size='xs'
@@ -2494,14 +2669,16 @@ const FormEntriesPage = () => {
                             <CalculatedFieldInput value={val} hideLabel />
                           ) : type === 'LONG_TEXT' ? (
                             <InputTextarea
-                              placeholder={field.settings?.general?.placeholder}
-                              value={val}
+                              disabled={isReadOnly}
+                              placeholder={getEffectiveFieldPlaceholder(field)}
+                              value={val != null ? String(val) : ''}
                               onChange={(text) =>
                                 handleFieldChange(field.id, text)
                               }
                             />
                           ) : isTableType ? (
                             <FormLineItemsEditor
+                              disabled={isReadOnly}
                               field={field}
                               isFieldRequired={isFieldRequired}
                               value={val}
@@ -2524,8 +2701,14 @@ const FormEntriesPage = () => {
                               }
                             >
                               <InputText
-                                placeholder={field.settings?.general?.placeholder}
-                                value={val}
+                                disabled={isReadOnly}
+                                placeholder={getEffectiveFieldPlaceholder(field)}
+                                value={
+                                  formatRuntimeFieldDisplayValue(val, field) ===
+                                  '-'
+                                    ? ''
+                                    : formatRuntimeFieldDisplayValue(val, field)
+                                }
                                 onChange={(text) =>
                                   handleFieldChange(field.id, text)
                                 }

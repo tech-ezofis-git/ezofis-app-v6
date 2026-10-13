@@ -1728,6 +1728,10 @@ const QuestionSettings = ({
                               id: 'USER_NAME',
                               name: "Logged in user's full name",
                             },
+                            {
+                              id: 'LOGIN_NAME',
+                              name: 'Login Username',
+                            },
                           ]}
                           value={
                             [
@@ -1739,6 +1743,10 @@ const QuestionSettings = ({
                               {
                                 id: 'USER_NAME',
                                 name: "Logged in user's full name",
+                              },
+                              {
+                                id: 'LOGIN_NAME',
+                                name: 'Login Username',
                               },
                             ].find(
                               (o) =>
@@ -3420,17 +3428,30 @@ const QuestionSettings = ({
                                     activeQuestion.settings.specific
                                       .fixedRowCount || 5,
                                 }).map((_, rowLabelIdx) => {
-                                  const labels =
+                                  const labels: any[] =
                                     activeQuestion.settings.specific
                                       .tableFixedRowLabels || []
+                                  const currentEntry = labels[rowLabelIdx]
+                                  const labelCol = tableColumns.find((c) => c.type === 'LABEL')
+                                  const labelVal =
+                                    typeof currentEntry === 'string'
+                                      ? currentEntry
+                                      : currentEntry && typeof currentEntry === 'object'
+                                        ? (labelCol ? currentEntry[labelCol.id] : currentEntry.label) || ''
+                                        : ''
+
                                   return (
                                     <InputText
                                       key={rowLabelIdx}
                                       placeholder={`Row ${rowLabelIdx + 1}`}
-                                      value={labels[rowLabelIdx] || ''}
+                                      value={labelVal}
                                       onChange={(val: string) => {
                                         const next = [...labels]
-                                        next[rowLabelIdx] = val
+                                        if (currentEntry && typeof currentEntry === 'object' && labelCol) {
+                                          next[rowLabelIdx] = { ...currentEntry, [labelCol.id]: val }
+                                        } else {
+                                          next[rowLabelIdx] = val
+                                        }
                                         updateNested('specific', {
                                           tableFixedRowLabels: next,
                                         })

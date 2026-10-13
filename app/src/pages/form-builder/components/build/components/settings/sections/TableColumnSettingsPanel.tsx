@@ -167,13 +167,15 @@ const TableColumnSettingsPanel = ({
           { id: 'NORMAL', name: 'Normal (Editable)' },
           { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
           { id: 'DISABLE', name: 'Disable (Grayed out)' },
+          { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
         ]}
         value={
           {
             NORMAL: { id: 'NORMAL', name: 'Normal (Editable)' },
             READ_ONLY: { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
             DISABLE: { id: 'DISABLE', name: 'Disable (Grayed out)' },
-          }[visibility]
+            HIDDEN: { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
+          }[visibility] || { id: 'NORMAL', name: 'Normal (Editable)' }
         }
         onChange={(opt) =>
           onUpdate({

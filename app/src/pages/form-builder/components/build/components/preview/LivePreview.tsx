@@ -23,6 +23,10 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import {
+  LegacyInlineFieldRenderer,
+  RuntimeMatrixField,
+} from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import {
   evaluateFormRules,
@@ -34,30 +38,51 @@ import {
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import {
+  buildInitialFormModel,
   buildMergedOcrFieldHints,
+  computeTableColumnTotals,
+  evaluateTableRows,
+  extractCurrencyCode,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
   findFieldOption,
+  formatRuntimeFieldDisplayValue,
   getConfiguredFieldOptions,
   getDependentChildFieldIds,
   getDropdownFacetSource,
+  getEffectiveColumnLabel,
+  getEffectiveFieldDescription,
+  getEffectiveFieldLabel,
+  getEffectiveFieldPlaceholder,
   getMasterFormInfo,
   getFieldOptions as getSharedFieldOptions,
+  isFieldLabelHidden,
+  isFieldReadOnly,
+  isStructuredCurrencyValue,
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
+  resolveRuntimeFieldType,
   resolveShortTextFillValue,
+  shouldShowTableSummaryRow,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 const LivePreview = () => {
-  const { isPreviewOpen, name, panels, setIsPreviewOpen } = useFormStore()
+  const { isPreviewOpen, name, panels, rules, setIsPreviewOpen } =
+    useFormStore()
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
   const [previewModel, setPreviewModel] = useState<Record<string, any>>({})
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
   const [extractingFieldId, setExtractingFieldId] = useState<string | null>(
     null,
   )
@@ -65,13 +90,18 @@ const LivePreview = () => {
   const [selectedRepoId, setSelectedRepoId] = useState<string>('')
 
   const fieldStates = useMemo(
-    () => evaluateFormRules(panels, previewModel),
-    [panels, previewModel],
+    () => evaluateFormRules(panels, previewModel, rules as any),
+    [panels, previewModel, rules],
   )
   const panelStates = useMemo(
     () => evaluatePanelRules(panels, previewModel),
     [panels, previewModel],
   )
+
+  const validationErrors = useMemo(() => {
+    if (!hasAttemptedSubmit) return {} as Record<string, string>
+    return validateFormModel(panels, previewModel, { formRules: rules as any[] }).errors
+  }, [hasAttemptedSubmit, panels, previewModel, rules])
 
   // Fetch repositories for OCR target context
   useEffect(() => {
@@ -105,7 +135,8 @@ const LivePreview = () => {
     if (!isPreviewOpen) return
 
     setPreviewModel((prev) => {
-      const next = { ...prev }
+      const defaults = buildInitialFormModel(panels)
+      const next: Record<string, any> = { ...defaults, ...prev }
       const session = authUserStore.getState().session
 
       const allFields = panels.flatMap((panel: any) => panel.fields || [])
@@ -117,6 +148,7 @@ const LivePreview = () => {
           next[field.id] !== null &&
           next[field.id] !== ''
 
+        if (hasValue) continue
         if (hasValue) continue
 
         // Default USER_EMAIL
@@ -165,7 +197,7 @@ const LivePreview = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next)
+      return applyCalculatedFields(panels, next, rules)
     })
   }
 
@@ -225,17 +257,17 @@ const LivePreview = () => {
 
         const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
         setPreviewModel((prev) =>
-          applyCalculatedFields(panels, { ...prev, ...mergedPatch }),
+          applyCalculatedFields(panels, { ...prev, ...mergedPatch }, rules),
         )
       } else {
         setPreviewModel((prev) =>
-          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
         )
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err)
       setPreviewModel((prev) =>
-        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
       )
     } finally {
       setExtractingFieldId(null)
@@ -261,6 +293,19 @@ const LivePreview = () => {
         </div>
 
         <div className='flex items-center gap-3'>
+          <Button
+            className='h-9 cursor-pointer rounded-xl font-medium'
+            color='primary'
+            size='sm'
+            variant='filled'
+            leftSection={
+              <Icon height={14} name='tabler:check' width={14} />
+            }
+            onClick={() => setHasAttemptedSubmit(true)}
+          >
+            Test Validation
+          </Button>
+
           {Object.keys(previewModel).length > 0 && (
             <Button
               className='h-9 cursor-pointer rounded-xl font-medium'
@@ -270,7 +315,10 @@ const LivePreview = () => {
               leftSection={
                 <Icon height={14} name='lucide:rotate-ccw' width={14} />
               }
-              onClick={() => setPreviewModel(applyCalculatedFields(panels, {}))}
+              onClick={() => {
+                setHasAttemptedSubmit(false)
+                setPreviewModel(applyCalculatedFields(panels, {}, rules))
+              }}
             >
               Clear Values
             </Button>
@@ -373,78 +421,91 @@ const LivePreview = () => {
                       )}
                     </div>
 
-                    {/* Section Fields Grid */}
-                    <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
-                      {panel.fields.map((field) => {
-                        const state = fieldStates[field.id]
-                        if (state && !state.visible) return null
-                        const isRequired = state
-                          ? state.required
-                          : field.settings.validation.fieldRule === 'REQUIRED'
+                  {/* Section Fields Grid */}
+                  <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
+                    {panel.fields.map((field) => {
+                      const state = fieldStates[field.id]
+                      if (state && !state.visible) return null
+                      const isRequired = state
+                        ? state.required
+                        : field.settings.validation.fieldRule === 'REQUIRED'
+                      const isDisabled =
+                        isFieldReadOnly(field) || Boolean(state?.disabled)
+                      const effectiveLabel = getEffectiveFieldLabel(
+                        field,
+                        'Untitled Question',
+                      )
+                      const effectiveDesc = getEffectiveFieldDescription(field)
 
-                        return (
-                          <div
-                            key={field.id}
-                            className={cn(
-                              'col-span-12',
-                              deviceType !== 'mobile' &&
-                                field.settings.general.size === 'col-6' &&
-                                'md:col-span-6',
-                              deviceType !== 'mobile' &&
-                                field.settings.general.size === 'col-4' &&
-                                'md:col-span-4',
-                              deviceType !== 'mobile' &&
-                                field.settings.general.size === 'col-3' &&
-                                'md:col-span-3',
-                            )}
-                          >
-                            {!field.settings.general.hideLabel && (
-                              <div className='mb-1.5 flex items-center justify-between'>
-                                <label className='block text-xs font-semibold text-gray-12'>
-                                  {field.label || 'Untitled Question'}
-                                  {isRequired && (
-                                    <span className='ml-1 font-bold text-red-11'>
-                                      *
-                                    </span>
-                                  )}
-                                </label>
-                              </div>
-                            )}
-                            {field.settings.general.description && (
-                              <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
-                                {field.settings.general.description}
-                              </p>
-                            )}
-                            <div
-                              aria-disabled={state?.disabled || undefined}
-                              inert={state?.disabled || undefined}
-                              className={cn(
-                                state?.disabled && 'opacity-60 select-none',
-                              )}
-                            >
-                              {renderPreviewInput(
-                                field,
-                                previewModel,
-                                handleFieldValueChange,
-                                (file) => handleOcrFileSelect(file, field),
-                                extractingFieldId === field.id,
-                                selectedRepoId,
-                                (patch) =>
-                                  setPreviewModel((prev) =>
-                                    applyCalculatedFields(panels, {
-                                      ...prev,
-                                      ...patch,
-                                    }),
-                                  ),
+                      return (
+                        <div
+                          key={field.id}
+                          className={cn(
+                            'col-span-12',
+                            deviceType !== 'mobile' &&
+                              field.settings.general.size === 'col-6' &&
+                              'md:col-span-6',
+                            deviceType !== 'mobile' &&
+                              field.settings.general.size === 'col-4' &&
+                              'md:col-span-4',
+                            deviceType !== 'mobile' &&
+                              field.settings.general.size === 'col-3' &&
+                              'md:col-span-3',
+                          )}
+                        >
+                          {!isFieldLabelHidden(field) && (
+                            <div className='mb-1.5 flex items-center justify-between'>
+                              <label className='block text-xs font-semibold text-gray-12'>
+                                {effectiveLabel}
+                                {isRequired && (
+                                  <span className='ml-1 font-bold text-red-11'>
+                                    *
+                                  </span>
+                                )}
+                              </label>
+                              {isDisabled && (
+                                <Badge color='gray' size='xs' variant='light'>
+                                  Read-only
+                                </Badge>
                               )}
                             </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                          )}
+                          {effectiveDesc && (
+                            <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
+                              {effectiveDesc}
+                            </p>
+                          )}
+                          {renderPreviewInput(
+                            field,
+                            previewModel,
+                            handleFieldValueChange,
+                            (file) => handleOcrFileSelect(file, field),
+                            extractingFieldId === field.id,
+                            selectedRepoId,
+                            (patch) =>
+                              setPreviewModel((prev) =>
+                                applyCalculatedFields(
+                                  panels,
+                                  {
+                                    ...prev,
+                                    ...patch,
+                                  },
+                                  rules,
+                                ),
+                              ),
+                            isDisabled,
+                          )}
+                          {hasAttemptedSubmit && validationErrors[field.id] && (
+                            <p className='mt-1 text-[11px] font-medium text-red-11 animate-in fade-in duration-200'>
+                              {validationErrors[field.id]}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                ),
-              )
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -454,19 +515,13 @@ const LivePreview = () => {
 }
 
 const getFieldOptions = (field: Question): string[] => {
-  const { customOptions, separateOptionsUsing } = field.settings.specific
-  if (!customOptions) return ['Option A', 'Option B', 'Option C']
-
-  const separator = separateOptionsUsing === 'COMMA' ? ',' : '\n'
-  const options = customOptions
-    .split(separator)
-    .map((opt) => opt.trim())
-    .filter(Boolean)
-
-  return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
+  const shared = getSharedFieldOptions(field)
+  if (shared.length > 0) return shared.map((o) => o.name)
+  return ['Option A', 'Option B', 'Option C']
 }
 
 const LivePreviewDropdown = ({
+  disabled,
   fallbackRepositoryId,
   field,
   model,
@@ -474,6 +529,7 @@ const LivePreviewDropdown = ({
   value,
   onChange,
 }: {
+  disabled?: boolean
   fallbackRepositoryId?: string
   field: Question
   model?: Record<string, any>
@@ -568,7 +624,7 @@ const LivePreviewDropdown = ({
           Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
       })
       return facetsToFieldOptions(res.data, {
-        splitArrayValues: field.type === 'MULTI_SELECT',
+        splitArrayValues: resolveRuntimeFieldType(field) === 'MULTI_SELECT',
       })
     },
   })
@@ -668,10 +724,11 @@ const LivePreviewDropdown = ({
 
     return (
       <InputSelectMultiple
+        disabled={disabled}
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
         value={selectedOptions}
         placeholder={
-          field.settings?.general?.placeholder || 'Select options...'
+          getEffectiveFieldPlaceholder(field) || 'Select options...'
         }
         onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
       />
@@ -681,7 +738,8 @@ const LivePreviewDropdown = ({
   return (
     <Select
       data={selectOptions.map((opt) => opt.name)}
-      placeholder={field.settings.general.placeholder || 'Select an option'}
+      disabled={disabled}
+      placeholder={getEffectiveFieldPlaceholder(field) || 'Select an option'}
       size='sm'
       value={String(value) || null}
       classNames={{
@@ -694,10 +752,12 @@ const LivePreviewDropdown = ({
 }
 
 const LivePreviewChoiceGroup = ({
+  disabled,
   field,
   value,
   onChange,
 }: {
+  disabled?: boolean
   field: Question
   value: any
   onChange: (val: any) => void
@@ -713,14 +773,17 @@ const LivePreviewChoiceGroup = ({
 
   const optionsPerLine = specific.optionsPerLine ?? 3
   const isAutoFlex = optionsPerLine === 0
-  const isSingle = field.type === 'SINGLE_CHOICE'
-  const isMulti = field.type === 'MULTIPLE_CHOICE'
+  const resolvedType = resolveRuntimeFieldType(field)
+  const isSingle = resolvedType === 'SINGLE_CHOICE'
+  const isMulti = resolvedType === 'MULTIPLE_CHOICE'
 
   const selectedList = Array.isArray(value)
     ? value
-    : value
-      ? [String(value)]
-      : []
+    : typeof value === 'string' && value.includes(',') && isMulti
+      ? value.split(',').map((s) => s.trim()).filter(Boolean)
+      : value
+        ? [String(value)]
+        : []
 
   useEffect(() => {
     if (allOptions.length === 1) {
@@ -737,6 +800,7 @@ const LivePreviewChoiceGroup = ({
   }, [allOptions, value, isSingle, isMulti, onChange])
 
   const handleToggle = (opt: string) => {
+    if (disabled) return
     if (isSingle) {
       onChange(opt)
     } else {
@@ -748,14 +812,17 @@ const LivePreviewChoiceGroup = ({
   }
 
   const handleSelectAll = () => {
+    if (disabled) return
     onChange(allOptions)
   }
 
   const handleClearAll = () => {
+    if (disabled) return
     onChange([])
   }
 
   const handleAddCustomOption = () => {
+    if (disabled) return
     const trimmed = newOptionText.trim()
     if (!trimmed || allOptions.includes(trimmed)) return
     setCustomList((prev) => [...prev, trimmed])
@@ -774,11 +841,12 @@ const LivePreviewChoiceGroup = ({
         'w-full space-y-2.5',
         specific.showOptionsWrapper &&
           'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+        disabled && 'opacity-70',
       )}
     >
       {/* Header controls for QR code and Bulk actions */}
       <div className='flex items-center justify-between'>
-        {isMulti && specific.bulkActionsEnabled && (
+        {isMulti && specific.bulkActionsEnabled && !disabled && (
           <div className='flex items-center gap-2'>
             <button
               className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
@@ -798,7 +866,7 @@ const LivePreviewChoiceGroup = ({
           </div>
         )}
 
-        {isSingle && specific.qrCodeEnabled && (
+        {isSingle && specific.qrCodeEnabled && !disabled && (
           <button
             className='ml-auto flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-surface px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9'
             title='Simulate QR Code Scan'
@@ -837,7 +905,8 @@ const LivePreviewChoiceGroup = ({
             <div
               key={i}
               className={cn(
-                'flex min-h-[38px] cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-all active:scale-[0.99]',
+                'flex min-h-[38px] items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-all',
+                disabled ? 'cursor-not-allowed' : 'cursor-pointer active:scale-[0.99]',
                 isAutoFlex ? 'flex-shrink-0' : '',
                 isSelected
                   ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
@@ -869,7 +938,7 @@ const LivePreviewChoiceGroup = ({
       </div>
 
       {/* Custom option adder */}
-      {(specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+      {(specific.allowCustomEntries || specific.allowToAddNewOptions) && !disabled && (
         <div className='pt-1'>
           {isAddingOption ? (
             <div className='flex items-center gap-2'>
@@ -1039,19 +1108,30 @@ const renderPreviewInput = (
   isExtracting?: boolean,
   fallbackRepositoryId?: string,
   onUpdateModel?: (patch: Record<string, any>) => void,
+  disabled?: boolean,
 ) => {
   const fieldValue = model[field.id] ?? ''
+  const resolvedType = resolveRuntimeFieldType(field)
+  const placeholder =
+    getEffectiveFieldPlaceholder(field) || 'Type your answer here...'
 
-  switch (field.type) {
+  switch (resolvedType) {
+    case 'HEADING':
+      return (
+        <h4 className='border-b border-gray-3 pb-2 text-sm font-bold text-gray-13'>
+          {getEffectiveFieldLabel(field, 'Section Heading')}
+        </h4>
+      )
     case 'LABEL':
       return (
         <div className='text-sm font-medium text-gray-12'>
-          {field.label || 'Label Text'}
+          {getEffectiveFieldLabel(field, 'Label Text')}
         </div>
       )
     case 'DIVIDER':
       return <Divider className='my-2' />
     case 'TEXT_BUILDER':
+    case 'HTML_EDITOR':
       return (
         <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-surface'>
           <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
@@ -1074,10 +1154,28 @@ const renderPreviewInput = (
               width={14}
             />
           </div>
-          <div className='p-3 text-xs text-gray-9 italic'>
-            {fieldValue ? String(fieldValue) : 'Rich text content editor...'}
-          </div>
+          <textarea
+            className='min-h-[80px] w-full border-0 bg-surface p-3 text-xs text-gray-12 outline-none placeholder:italic placeholder:text-gray-9'
+            disabled={disabled}
+            placeholder='Rich text content editor...'
+            value={fieldValue ? String(fieldValue) : ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
         </div>
+      )
+    case 'JSON_EDITOR':
+      return (
+        <textarea
+          className='min-h-[100px] w-full rounded-lg border border-gray-3 bg-surface p-2.5 font-mono text-xs text-gray-12 shadow-2xs outline-none focus:border-primary-9'
+          disabled={disabled}
+          placeholder='{ "key": "value" }'
+          value={
+            typeof fieldValue === 'object' && fieldValue !== null
+              ? JSON.stringify(fieldValue, null, 2)
+              : String(fieldValue || '')
+          }
+          onChange={(e) => onChange(field.id, e.target.value)}
+        />
       )
     case 'IMAGE_UPLOAD':
     case 'FILE_UPLOAD': {
@@ -1085,9 +1183,9 @@ const renderPreviewInput = (
       return (
         <div className='w-full'>
           <input
-            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+            accept={resolvedType === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
             className='hidden'
-            disabled={isExtracting}
+            disabled={disabled || isExtracting}
             id={fileInputId}
             type='file'
             onChange={(e) => {
@@ -1098,12 +1196,14 @@ const renderPreviewInput = (
             }}
           />
           <label
-            htmlFor={isExtracting ? undefined : fileInputId}
+            htmlFor={disabled || isExtracting ? undefined : fileInputId}
             className={cn(
               'flex w-full flex-col items-center justify-center rounded-xl border border-dashed p-4 transition-all',
-              isExtracting
-                ? 'cursor-wait border-purple-4 bg-purple-1/40'
-                : 'cursor-pointer border-gray-3 bg-gray-1/40 hover:border-primary-9 hover:bg-primary-1/30 active:scale-[0.99]',
+              disabled
+                ? 'cursor-not-allowed border-gray-3 bg-gray-1/30 opacity-60'
+                : isExtracting
+                  ? 'cursor-wait border-purple-4 bg-purple-1/40'
+                  : 'cursor-pointer border-gray-3 bg-gray-1/40 hover:border-primary-9 hover:bg-primary-1/30 active:scale-[0.99]',
             )}
           >
             {isExtracting ? (
@@ -1133,7 +1233,7 @@ const renderPreviewInput = (
                   {fieldValue ? (
                     <span className='flex items-center gap-1.5 font-bold text-primary-9'>
                       <Icon height={16} name='lucide:file-check' width={16} />
-                      {String(fieldValue)}
+                      {formatRuntimeFieldDisplayValue(fieldValue, field)}
                     </span>
                   ) : (
                     'Click to select file for this field or drag & drop'
@@ -1151,6 +1251,7 @@ const renderPreviewInput = (
     case 'TIME':
       return (
         <InputTime
+          disabled={disabled}
           value={fieldValue || ''}
           format={
             field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
@@ -1161,6 +1262,7 @@ const renderPreviewInput = (
     case 'DATE_TIME':
       return (
         <InputDateTime
+          disabled={disabled}
           value={fieldValue || null}
           format={
             field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
@@ -1175,80 +1277,209 @@ const renderPreviewInput = (
         { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
         { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
       ]
-      const rows: Array<Record<string, unknown>> = Array.isArray(fieldValue)
+      const rowsType = field.settings.specific.rowsType || 'ON_DEMAND'
+      const fixedRowCount = field.settings.specific.fixedRowCount || 2
+      const fixedRowLabels: string[] =
+        (field.settings.specific as any).tableFixedRowLabels || []
+      const rawRows: Array<Record<string, any>> = Array.isArray(fieldValue)
         ? fieldValue.length > 0
           ? fieldValue
-          : [{ _rowId: '1' }, { _rowId: '2' }]
-        : [{ _rowId: '1' }, { _rowId: '2' }]
+          : Array.from(
+              { length: rowsType === 'FIXED' ? fixedRowCount : 2 },
+              (_, idx) => ({ _rowId: String(idx + 1) }),
+            )
+        : Array.from(
+            { length: rowsType === 'FIXED' ? fixedRowCount : 2 },
+            (_, idx) => ({ _rowId: String(idx + 1) }),
+          )
+      const evaluatedRows = evaluateTableRows(field, rawRows)
+      const showTotals = shouldShowTableSummaryRow(field, columns)
+      const totals = showTotals
+        ? computeTableColumnTotals(field, evaluatedRows, columns)
+        : {}
 
       const updateCell = (
         rowIndex: number,
-        columnId: string,
-        cellValue: string,
+        column: any,
+        cellValue: any,
       ) => {
-        const next = rows.map((row, index) =>
-          index === rowIndex ? { ...row, [columnId]: cellValue } : { ...row },
+        if (disabled) return
+        const next = rawRows.map((row, index) =>
+          index === rowIndex ? { ...row, [column.id]: cellValue } : { ...row },
         )
-        onChange(field.id, next)
+        onChange(field.id, evaluateTableRows(field, next))
       }
 
       return (
-        <div className='overflow-x-auto rounded-lg border border-gray-3 bg-surface'>
-          <table className='w-full border-collapse text-left text-xs'>
-            <thead className='border-b border-gray-3 bg-gray-2/60'>
-              <tr>
-                {columns.map((col: any) => (
-                  <th
-                    className='p-2.5 font-bold whitespace-nowrap text-gray-12'
-                    key={col.id}
-                  >
-                    {col.name || col.label || 'Column'}
+        <div className='space-y-2'>
+          <div className='overflow-x-auto rounded-lg border border-gray-3 bg-surface'>
+            <table className='w-full border-collapse text-left text-xs'>
+              <thead className='border-b border-gray-3 bg-gray-2/60'>
+                <tr>
+                  <th className='w-10 p-2.5 text-center font-bold text-gray-10'>
+                    #
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, rowIndex) => (
-                <tr
-                  className='border-b border-gray-2 last:border-0'
-                  key={String(row._rowId || rowIndex)}
-                >
                   {columns.map((col: any) => (
-                    <td className='p-2' key={col.id}>
-                      <TextInput
-                        placeholder='...'
-                        size='xs'
-                        variant='unstyled'
-                        type={
-                          col.type === 'NUMBER' ||
-                          col.type === 'COUNTER' ||
-                          col.type === 'CURRENCY_AMOUNT'
-                            ? 'number'
-                            : 'text'
-                        }
-                        value={
-                          row[col.id] === undefined || row[col.id] === null
-                            ? ''
-                            : String(row[col.id])
-                        }
-                        onChange={(event) =>
-                          updateCell(rowIndex, col.id, event.target.value)
-                        }
-                      />
-                    </td>
+                    <th
+                      className='p-2.5 font-bold whitespace-nowrap text-gray-12'
+                      key={col.id}
+                    >
+                      {getEffectiveColumnLabel(col)}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {evaluatedRows.map((row, rowIndex) => (
+                  <tr
+                    className='border-b border-gray-2 last:border-0'
+                    key={String(row._rowId || rowIndex)}
+                  >
+                    <td className='p-2 text-center text-[11px] font-medium text-gray-10'>
+                      {rowsType === 'FIXED' && fixedRowLabels[rowIndex]
+                        ? fixedRowLabels[rowIndex]
+                        : rowIndex + 1}
+                    </td>
+                    {columns.map((col: any) => {
+                      const colType = resolveRuntimeFieldType(col)
+                      const cellVal = row[col.id]
+                      const colDisabled =
+                        disabled ||
+                        colType === 'CALCULATED' ||
+                        colType === 'SERIAL_NUMBER' ||
+                        col.settings?.general?.visibility === 'READ_ONLY' ||
+                        col.settings?.general?.visibility === 'DISABLE'
+
+                      if (colType === 'SERIAL_NUMBER') {
+                        return (
+                          <td
+                            className='p-2 font-semibold text-gray-11'
+                            key={col.id}
+                          >
+                            {rowIndex + 1}
+                          </td>
+                        )
+                      }
+
+                      if (colType === 'CALCULATED') {
+                        return (
+                          <td
+                            className='p-2 font-semibold text-gray-11'
+                            key={col.id}
+                          >
+                            {formatRuntimeFieldDisplayValue(cellVal, col)}
+                          </td>
+                        )
+                      }
+
+                      return (
+                        <td className='p-2' key={col.id}>
+                          <TextInput
+                            disabled={colDisabled}
+                            placeholder='...'
+                            size='xs'
+                            variant='unstyled'
+                            type={
+                              colType === 'NUMBER' ||
+                              colType === 'COUNTER' ||
+                              colType === 'CURRENCY_AMOUNT'
+                                ? 'number'
+                                : 'text'
+                            }
+                            value={
+                              colType === 'CURRENCY_AMOUNT'
+                                ? String(extractCurrencyNumericValue(cellVal))
+                                : colType === 'PHONE_NUMBER'
+                                  ? extractPhoneInputString(cellVal)
+                                  : cellVal === undefined || cellVal === null
+                                    ? ''
+                                    : String(cellVal)
+                            }
+                            onChange={(event) => {
+                              const rawVal = event.target.value
+                              const nextVal =
+                                colType === 'CURRENCY_AMOUNT'
+                                  ? updateCurrencyFieldValue(
+                                      cellVal,
+                                      rawVal,
+                                      col,
+                                    )
+                                  : colType === 'PHONE_NUMBER'
+                                    ? updatePhoneFieldValue(
+                                        cellVal,
+                                        rawVal,
+                                        col,
+                                      )
+                                    : rawVal
+                              updateCell(rowIndex, col, nextVal)
+                            }}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+                {showTotals && Object.keys(totals).length > 0 && (
+                  <tr className='border-t border-gray-3 bg-gray-1/80 font-bold'>
+                    <td className='p-2 text-center text-[11px] text-gray-11'>
+                      Total
+                    </td>
+                    {columns.map((col: any) => (
+                      <td className='p-2 text-xs text-gray-12' key={col.id}>
+                        {totals[col.id] !== undefined
+                          ? totals[col.id].toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })
+                          : ''}
+                      </td>
+                    ))}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {!disabled && rowsType === 'ON_DEMAND' && (
+            <button
+              className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-surface px-2.5 py-1 text-xs font-semibold text-primary-9 hover:bg-primary-1'
+              type='button'
+              onClick={() =>
+                onChange(field.id, [
+                  ...evaluatedRows,
+                  { _rowId: String(evaluatedRows.length + 1) },
+                ])
+              }
+            >
+              <Icon height={12} name='lucide:plus' width={12} />
+              Add Row
+            </button>
+          )}
         </div>
       )
     }
-    case 'SHORT_TEXT':
-    case 'EMAIL':
+    case 'MATRIX':
+      return (
+        <RuntimeMatrixField
+          disabled={disabled}
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
+    case 'POPUP':
+    case 'TABS':
+    case 'NESTED_LIST':
+    case 'LOGIN_AUTHENTICATION':
+    case 'EMAIL_AUTHENTICATION':
+    case 'MOBILE_AUTHENTICATION':
+      return (
+        <LegacyInlineFieldRenderer
+          disabled={disabled}
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
     case 'PHONE_NUMBER':
-    case 'ADDRESS':
-    case 'FULL_NAME':
       return (
         <LivePreviewSearchableInput
           fallbackRepositoryId={fallbackRepositoryId}
@@ -1258,23 +1489,95 @@ const renderPreviewInput = (
           onUpdateModel={onUpdateModel}
         >
           <TextInput
+            disabled={disabled}
             size='sm'
-            value={String(fieldValue)}
+            value={extractPhoneInputString(fieldValue)}
             variant='default'
             classNames={{
               input:
                 'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
             }}
-            placeholder={
-              field.settings.general.placeholder || 'Type your answer here...'
+            placeholder={placeholder}
+            onChange={(e) =>
+              onChange(
+                field.id,
+                updatePhoneFieldValue(fieldValue, e.target.value, field),
+              )
             }
+          />
+        </LivePreviewSearchableInput>
+      )
+    case 'CURRENCY_AMOUNT': {
+      const currencyCode = extractCurrencyCode(fieldValue, field)
+      return (
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <div className='flex items-center gap-1.5'>
+            <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
+              {currencyCode}
+            </span>
+            <TextInput
+              className='flex-1'
+              disabled={disabled}
+              size='sm'
+              type='number'
+              value={String(extractCurrencyNumericValue(fieldValue))}
+              variant='default'
+              classNames={{
+                input:
+                  'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+              }}
+              placeholder={placeholder}
+              onChange={(e) =>
+                onChange(
+                  field.id,
+                  updateCurrencyFieldValue(fieldValue, e.target.value, field),
+                )
+              }
+            />
+          </div>
+        </LivePreviewSearchableInput>
+      )
+    }
+    case 'SHORT_TEXT':
+    case 'EMAIL':
+    case 'URL':
+    case 'ADDRESS':
+    case 'FULL_NAME':
+    case 'CONTACT_INFO':
+      return (
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            disabled={disabled}
+            size='sm'
+            value={
+              isStructuredCurrencyValue(fieldValue)
+                ? formatRuntimeFieldDisplayValue(fieldValue, field)
+                : String(fieldValue)
+            }
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            placeholder={placeholder}
             onChange={(e) => onChange(field.id, e.target.value)}
           />
         </LivePreviewSearchableInput>
       )
     case 'NUMBER':
     case 'COUNTER':
-    case 'CURRENCY_AMOUNT':
       return (
         <LivePreviewSearchableInput
           fallbackRepositoryId={fallbackRepositoryId}
@@ -1284,6 +1587,7 @@ const renderPreviewInput = (
           onUpdateModel={onUpdateModel}
         >
           <TextInput
+            disabled={disabled}
             size='sm'
             type='number'
             value={String(fieldValue)}
@@ -1292,9 +1596,7 @@ const renderPreviewInput = (
               input:
                 'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
             }}
-            placeholder={
-              field.settings.general.placeholder || 'Type your answer here...'
-            }
+            placeholder={placeholder}
             onChange={(e) => onChange(field.id, e.target.value)}
           />
         </LivePreviewSearchableInput>
@@ -1304,17 +1606,17 @@ const renderPreviewInput = (
     case 'LONG_TEXT':
       return (
         <textarea
-          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-surface p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-surface p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3 disabled:opacity-60'
+          disabled={disabled}
+          placeholder={placeholder}
           value={String(fieldValue)}
-          placeholder={
-            field.settings.general.placeholder || 'Type your answer here...'
-          }
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'DATE':
       return (
         <TextInput
+          disabled={disabled}
           leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
           placeholder='YYYY-MM-DD or MM/DD/YYYY'
           size='sm'
@@ -1332,11 +1634,79 @@ const renderPreviewInput = (
         <Rating
           color='yellow'
           count={field.settings.specific.iconCount || 5}
+          readOnly={disabled}
           size='md'
           value={Number(fieldValue) || 0}
           onChange={(val) => onChange(field.id, val)}
         />
       )
+    case 'OPINION_SCALE': {
+      const maxScale = Number((field.settings.specific as any).scaleMax) || 10
+      const currentNum = Number(fieldValue)
+      return (
+        <div className='flex flex-wrap gap-1.5'>
+          {Array.from({ length: maxScale }, (_, idx) => idx + 1).map((num) => (
+            <button
+              disabled={disabled}
+              key={num}
+              type='button'
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold transition-all',
+                currentNum === num
+                  ? 'border-primary-9 bg-primary-9 text-white'
+                  : 'border-gray-3 bg-surface text-gray-12 hover:border-primary-5',
+                disabled && 'cursor-not-allowed opacity-60',
+              )}
+              onClick={() => onChange(field.id, num)}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      )
+    }
+    case 'YES_NO_TOGGLE': {
+      const isYes =
+        fieldValue === true ||
+        fieldValue === 'true' ||
+        fieldValue === 'Yes' ||
+        fieldValue === 'YES'
+      return (
+        <div className='flex items-center gap-2'>
+          <button
+            disabled={disabled}
+            type='button'
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
+              isYes
+                ? 'border-primary-9 bg-primary-9 text-white'
+                : 'border-gray-3 bg-surface text-gray-12',
+              disabled && 'cursor-not-allowed opacity-60',
+            )}
+            onClick={() => onChange(field.id, true)}
+          >
+            Yes
+          </button>
+          <button
+            disabled={disabled}
+            type='button'
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all',
+              fieldValue === false ||
+                fieldValue === 'false' ||
+                fieldValue === 'No' ||
+                fieldValue === 'NO'
+                ? 'border-primary-9 bg-primary-9 text-white'
+                : 'border-gray-3 bg-surface text-gray-12',
+              disabled && 'cursor-not-allowed opacity-60',
+            )}
+            onClick={() => onChange(field.id, false)}
+          >
+            No
+          </button>
+        </div>
+      )
+    }
     case 'SINGLE_SELECT':
       return (
         <LivePreviewSearchableInput
@@ -1347,6 +1717,7 @@ const renderPreviewInput = (
           onUpdateModel={onUpdateModel}
         >
           <LivePreviewDropdown
+            disabled={disabled}
             fallbackRepositoryId={fallbackRepositoryId}
             field={field}
             model={model}
@@ -1358,6 +1729,7 @@ const renderPreviewInput = (
     case 'MULTI_SELECT':
       return (
         <LivePreviewDropdown
+          disabled={disabled}
           fallbackRepositoryId={fallbackRepositoryId}
           field={field}
           model={model}
@@ -1370,6 +1742,7 @@ const renderPreviewInput = (
     case 'MULTIPLE_CHOICE':
       return (
         <LivePreviewChoiceGroup
+          disabled={disabled}
           field={field}
           value={fieldValue}
           onChange={(val) => onChange(field.id, val)}
@@ -1378,16 +1751,15 @@ const renderPreviewInput = (
     default:
       return (
         <TextInput
+          disabled={disabled}
           size='sm'
-          value={String(fieldValue)}
+          value={formatRuntimeFieldDisplayValue(fieldValue, field) === '-' ? '' : formatRuntimeFieldDisplayValue(fieldValue, field)}
           variant='default'
           classNames={{
             input:
               'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
-          placeholder={
-            field.settings.general.placeholder || 'Type your answer here...'
-          }
+          placeholder={placeholder}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )

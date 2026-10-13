@@ -1,6 +1,8 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useReactFlow } from '@xyflow/react'
 import { useState } from 'react'
+import connectorApi from '@/api/connector'
+import emailIngestApi from '@/api/emailIngest'
 import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -8,6 +10,10 @@ import showToast from '@/components/base/toast/showToast'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { exportWorkflow } from '../../utils/exportWorkflow'
+import {
+  getNodeToolType,
+  NODE_TOOL_TYPE,
+} from '../../utils/nodeToolTypes'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
 
 const BuilderHeader = () => {
@@ -111,6 +117,34 @@ const BuilderHeader = () => {
           variant: 'success',
         })
         const newId = data?.id || (typeof data === 'string' ? data : null)
+        const finalWorkflowId = String(newId || workflowId)
+
+        // Automatically link Gmail email-ingest mailbox if workflow contains a Gmail trigger node
+        if (finalWorkflowId && finalWorkflowId !== 'new') {
+          const gmailNode = getNodes().find(
+            (n) =>
+              getNodeToolType(n.data) === NODE_TOOL_TYPE.GMAIL &&
+              Boolean(n.data?.connectorId || n.data?.connection),
+          )
+          if (gmailNode) {
+            const connectorId = String(
+              gmailNode.data?.connectorId || gmailNode.data?.connection,
+            )
+            void connectorApi.enableGmailPush(connectorId).catch(console.error)
+            void emailIngestApi
+              .syncMailboxForWorkflow({
+                connectorId,
+                isEnabled: true,
+                masterSource: 'InternalForm',
+                pollIntervalMinutes: 0,
+                workflowId: finalWorkflowId,
+              })
+              .catch((err) =>
+                console.warn('Failed to sync email-ingest mailbox:', err),
+              )
+          }
+        }
+
         if (workflowId === 'new' && newId) {
           navigate({
             params: { workflowId: String(newId) },
