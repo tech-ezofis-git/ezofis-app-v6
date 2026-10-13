@@ -13,6 +13,7 @@ import {
   registerApAgentJobProcessing,
 } from '@/pages/requests/utils/registerApAgentJobProcessing'
 import {
+  computeWorkflowStages,
   extractBlocks,
   listWorkflowStages,
 } from '@/pages/requests/utils/workflow.utils'
@@ -99,11 +100,29 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     .replace(/[-_\s]/g, '')
   const isDocumentForm = initiateType === 'DOCUMENTFORM'
 
+  const isCompleted =
+    Boolean(requestData?.isCompleted) ||
+    Boolean(requestData?.completedAtUtc) ||
+    Boolean(requestData?.completedAt) ||
+    ['completed', 'approved', 'closed', 'paid', 'success', 'succeeded'].includes(
+      String(requestData?.status || '')
+        .toLowerCase()
+        .trim(),
+    )
+  const currentActivityId = requestData?.activityId
+    ? String(requestData.activityId)
+    : undefined
+
   const workflowStages = useMemo(
-    () => listWorkflowStages(workflow),
-    [workflow],
+    () =>
+      computeWorkflowStages({
+        workflow,
+        history: requestData?._history || [],
+        currentActivityId,
+        isCompleted,
+      }),
+    [workflow, requestData?._history, currentActivityId, isCompleted],
   )
-  const currentActivityId = workflowStages[0]?.id
 
   const agentBlocks = useMemo(() => {
     const blocks = extractBlocks(workflow)

@@ -34,15 +34,33 @@ function WorkflowStageBar({
   stages,
 }: {
   currentActivityId?: string
-  stages: { id: string; label: string }[]
+  stages: {
+    id: string
+    label: string
+    isCondition?: boolean
+    isEnd?: boolean
+    isSuccess?: boolean
+    status?: 'done' | 'current' | 'future'
+  }[]
 }) {
   const { t } = useLingui()
-  const activeIndex = stages.findIndex(
+  let activeIndex = stages.findIndex(
     (stage) => String(stage.id) === String(currentActivityId || ''),
   )
-  const shown = stages
-    .map((stage, index) => ({ index, stage }))
-    .slice(0, activeIndex < 0 ? 1 : Math.min(stages.length, activeIndex + 2))
+
+  if (activeIndex < 0) {
+    activeIndex = stages.findIndex((stage) => stage.status === 'current')
+  }
+
+  const lastStage = stages[stages.length - 1]
+  const isAllDone =
+    Boolean(lastStage?.isSuccess) ||
+    Boolean(lastStage?.isEnd && stages.every((s) => s.status === 'done'))
+  if (activeIndex < 0 && isAllDone) {
+    activeIndex = stages.length - 1
+  }
+
+  const shown = stages.map((stage, index) => ({ index, stage }))
   const [start, setStart] = useState(() =>
     stageWindowStart(activeIndex, shown.length),
   )
@@ -79,8 +97,17 @@ function WorkflowStageBar({
           }}
         >
           {shown.map(({ index, stage }) => {
-            const done = activeIndex >= 0 && index < activeIndex
-            const current = activeIndex === index
+            const isEndSuccess =
+              Boolean(stage.isSuccess) ||
+              Boolean(stage.isEnd && (isAllDone || activeIndex === index))
+            const done =
+              isEndSuccess ||
+              (activeIndex >= 0 ? index < activeIndex : stage.status === 'done')
+            const current =
+              !isEndSuccess &&
+              (activeIndex === index || stage.status === 'current')
+            const isCondition = Boolean(stage.isCondition)
+
             return (
               <div
                 className='flex min-w-0 flex-1 flex-col'
@@ -92,27 +119,33 @@ function WorkflowStageBar({
                       'h-0.5 flex-1',
                       index === 0
                         ? 'bg-transparent'
-                        : done || current
+                        : done || current || isEndSuccess
                           ? 'bg-green-9'
                           : 'bg-gray-4',
                     )}
                   />
                   <div className='relative shrink-0'>
-                    {current ? (
+                    {current && !isEndSuccess ? (
                       <span className='absolute inset-0 animate-ping rounded-full bg-primary-7' />
                     ) : null}
                     <div
                       className={cn(
-                        'relative flex size-6 items-center justify-center rounded-full text-11 font-semibold',
-                        done && 'bg-green-9 text-green-1',
-                        current && 'bg-primary-9 text-primary-1',
+                        'relative flex size-6 items-center justify-center rounded-full text-11 font-semibold transition-all',
+                        (done || isEndSuccess) && 'bg-green-9 text-green-1',
+                        current && 'bg-primary-9 text-primary-1 shadow-sm',
+                        isCondition &&
+                          'border border-primary-7 bg-primary-2 text-primary-11',
                         !done &&
+                          !isEndSuccess &&
                           !current &&
+                          !isCondition &&
                           'border border-gray-5 bg-gray-0 text-gray-10',
                       )}
                     >
-                      {done ? (
+                      {done || isEndSuccess ? (
                         <Icon className='size-3.5' name='tabler:check' />
+                      ) : isCondition ? (
+                        <Icon className='size-3.5 text-primary-11' name='tabler:git-branch' />
                       ) : (
                         index + 1
                       )}
@@ -121,9 +154,9 @@ function WorkflowStageBar({
                   <div
                     className={cn(
                       'h-0.5 flex-1',
-                    index === shown[shown.length - 1]?.index
-                      ? 'bg-transparent'
-                        : index < activeIndex
+                      index === shown[shown.length - 1]?.index
+                        ? 'bg-transparent'
+                        : done && index < activeIndex
                           ? 'bg-green-9'
                           : 'bg-gray-4',
                     )}
@@ -137,9 +170,13 @@ function WorkflowStageBar({
                   <span
                     className={cn(
                       'block w-full truncate px-1 text-center text-11',
-                      current
-                        ? 'font-semibold text-primary-11'
-                        : 'text-gray-10',
+                      isEndSuccess
+                        ? 'font-semibold text-green-11'
+                        : current
+                          ? 'font-semibold text-primary-11'
+                          : isCondition
+                            ? 'font-medium text-primary-11'
+                            : 'text-gray-10',
                     )}
                   >
                     {stage.label}
@@ -216,7 +253,14 @@ interface Props {
   readOnlyFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
-  stages?: { id: string; label: string }[]
+  stages?: {
+    id: string
+    label: string
+    isCondition?: boolean
+    isEnd?: boolean
+    isSuccess?: boolean
+    status?: 'done' | 'current' | 'future'
+  }[]
   viewOnly?: boolean
   getPanelValue?: (panel: any, index: number) => string
   onFieldChange: (fieldId: string, value: any) => void

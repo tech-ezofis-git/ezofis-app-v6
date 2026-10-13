@@ -44,7 +44,7 @@ export interface SelectionProps {
   description?: string
   disabled?: boolean
   error?: string
-  label?: string
+  label?: ReactNode
   value?: string
   onChange?: (value: boolean) => void
 }

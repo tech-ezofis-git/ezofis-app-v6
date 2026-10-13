@@ -7,6 +7,7 @@ import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { TabBar, type TabBarItemId } from '../../components/layout/TabBar'
 import { Icon } from '../../components/primitives/Icon'
 import { FileCard, FolderRow } from './FolderCards'
+import { MobileFolderFilters } from './MobileFolderFilters'
 
 type FoldersScreenProps = {
   onTabBarChange?: (id: TabBarItemId) => void
@@ -18,24 +19,31 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
   const [search, setSearch] = useState('')
 
   const {
+    activeFolder,
     breadcrumbs,
     canGoBackInExplorer,
     changeServerPage,
     changeViewMode,
     currentTitle,
     error,
+    fileFilters,
     filePage,
     files,
     folderContextFilters,
     folders,
     goBackInExplorer,
+    itemFilterFields,
     loading,
     openFile,
     openFolder,
     refreshData,
     refreshing,
+    selectedRepository,
     viewMode,
+    getRepositoryIdFromFolder,
+    setFileFilters,
     setFileSearch,
+    setFolderFilters,
     setFolderSearch,
   } = useFolderExplorer()
 
@@ -157,28 +165,20 @@ export function FoldersScreen({ onTabBarChange }: FoldersScreenProps) {
               ) : null}
             </label>
 
-            <div className='no-scrollbar mt-2.5 flex gap-2 overflow-x-auto'>
-              {['Status', 'Supplier', 'Document type'].map((label) => (
-                <button
-                  className='inline-flex shrink-0 items-center gap-1 rounded-full border border-border-default px-3 py-1.5 text-11 font-medium text-text-secondary transition-all active:scale-95'
-                  key={label}
-                  type='button'
-                >
-                  {label}
-                  <Icon
-                    className='size-2.5 text-text-muted'
-                    name='ChevronDown'
-                  />
-                </button>
-              ))}
-              <button
-                aria-label='More filters'
-                className='inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-border-default text-text-secondary transition-all active:scale-90'
-                type='button'
-              >
-                <Icon className='size-3' name='Plus' />
-              </button>
-            </div>
+            <MobileFolderFilters
+              activeFilters={fileFilters}
+              folderContextFilters={folderContextFilters}
+              itemFilterFields={itemFilterFields}
+              repositoryId={
+                selectedRepository?.id ||
+                getRepositoryIdFromFolder(activeFolder) ||
+                ''
+              }
+              onChange={(filters) => {
+                setFileFilters(filters, { manual: true })
+                setFolderFilters(filters, { manual: true })
+              }}
+            />
           </div>
         </div>
       }
