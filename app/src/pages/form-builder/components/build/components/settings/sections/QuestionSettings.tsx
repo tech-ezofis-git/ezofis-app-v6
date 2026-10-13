@@ -50,6 +50,8 @@ function InputSelectMultiple(
 }
 
 const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
+  { label: 'Label', value: 'LABEL' },
+  { label: 'Serial Number', value: 'SERIAL_NUMBER' },
   { label: 'Short Text', value: 'SHORT_TEXT' },
   { label: 'Long Text', value: 'LONG_TEXT' },
   { label: 'Number', value: 'NUMBER' },
@@ -61,8 +63,10 @@ const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
   { label: 'Multi Select', value: 'MULTI_SELECT' },
   { label: 'Single Choice', value: 'SINGLE_CHOICE' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'Chips', value: 'CHIPS' },
   { label: 'File Upload', value: 'FILE_UPLOAD' },
   { label: 'Image Upload', value: 'IMAGE_UPLOAD' },
+  { label: 'Image', value: 'IMAGE' },
   { label: 'Signature', value: 'SIGNATURE' },
   { label: 'Rating', value: 'RATING' },
   { label: 'Yes/No Toggle', value: 'YES_NO_TOGGLE' },
@@ -737,7 +741,8 @@ const QuestionSettings = ({
                 isDate ||
                 isTime ||
                 isDateTime ||
-                isSelect) && (
+                isSelect ||
+                isTable) && (
                 <InputText
                   label='Display Label (Internal)'
                   placeholder='Alternative visual name'
@@ -782,7 +787,8 @@ const QuestionSettings = ({
                 isNumber ||
                 isDate ||
                 isTime ||
-                isDateTime || isSelect) && (
+                isDateTime || isSelect ||
+                isTable) && (
                 <InputText
                   label='Tooltip (Hover Text)'
                   placeholder='Explanation on hover'
@@ -3147,6 +3153,10 @@ const QuestionSettings = ({
                   if (!col) return
                   handleUpdateTableColumn(colId, {
                     settings: {
+                      general: {
+                        ...col.settings?.general,
+                        ...settingsPatch.general,
+                      },
                       lookupSettings: {
                         ...col.settings?.lookupSettings,
                         ...settingsPatch.lookupSettings,
@@ -3379,19 +3389,57 @@ const QuestionSettings = ({
 
                           {activeQuestion.settings.specific.rowsType ===
                             'FIXED' && (
-                            <NumberInput
-                              label='Fixed Row Count'
-                              max={100}
-                              min={1}
-                              size='xs'
-                              value={
-                                activeQuestion.settings.specific
-                                  .fixedRowCount || 5
-                              }
-                              onChange={(v) =>
-                                updateNested('specific', { fixedRowCount: v })
-                              }
-                            />
+                            <>
+                              <NumberInput
+                                label='Fixed Row Count'
+                                max={100}
+                                min={1}
+                                size='xs'
+                                value={
+                                  activeQuestion.settings.specific
+                                    .fixedRowCount || 5
+                                }
+                                onChange={(v) =>
+                                  updateNested('specific', {
+                                    fixedRowCount: v,
+                                  })
+                                }
+                              />
+
+                              <div className='space-y-2 rounded-lg border border-dashed border-gray-1 p-2.5'>
+                                <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                                  Row Labels (optional)
+                                </label>
+                                <div className='text-[10px] text-gray-6 italic'>
+                                  Pre-fill a static label for each frozen row
+                                  (e.g. "Director Approval", "Finance
+                                  Review") instead of just a row number.
+                                </div>
+                                {Array.from({
+                                  length:
+                                    activeQuestion.settings.specific
+                                      .fixedRowCount || 5,
+                                }).map((_, rowLabelIdx) => {
+                                  const labels =
+                                    activeQuestion.settings.specific
+                                      .tableFixedRowLabels || []
+                                  return (
+                                    <InputText
+                                      key={rowLabelIdx}
+                                      placeholder={`Row ${rowLabelIdx + 1}`}
+                                      value={labels[rowLabelIdx] || ''}
+                                      onChange={(val: string) => {
+                                        const next = [...labels]
+                                        next[rowLabelIdx] = val
+                                        updateNested('specific', {
+                                          tableFixedRowLabels: next,
+                                        })
+                                      }}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </>
                           )}
 
                           <InputSelect
@@ -3419,6 +3467,37 @@ const QuestionSettings = ({
                               updateNested('specific', { rowSelection: v.id })
                             }
                           />
+
+                          <div className='space-y-2'>
+                            <label className='block text-13 font-medium text-gray-11'>
+                              Table View
+                            </label>
+                            <SegmentedControl
+                              className='bg-surface-muted'
+                              size='xs'
+                              fullWidth
+                              data={[
+                                { label: 'Normal (Grid)', value: 'NORMAL' },
+                                {
+                                  label: 'Advance (Card Rows)',
+                                  value: 'ADVANCE',
+                                },
+                              ]}
+                              value={
+                                activeQuestion.settings.specific
+                                  .tableViewMode || 'NORMAL'
+                              }
+                              onChange={(v) =>
+                                updateNested('specific', { tableViewMode: v })
+                              }
+                            />
+                            <div className='text-[10px] text-gray-6 italic'>
+                              Advance view switches each row to a vertical card
+                              form — better for mobile or many columns.
+                              Automatically used when a column is a File/Image
+                              Upload, even if Normal is selected here.
+                            </div>
+                          </div>
                         </div>
 
                         <Divider className='border-dashed border-gray-1' />
@@ -3457,6 +3536,208 @@ const QuestionSettings = ({
                               updateNested('specific', { qrCodeEnabled: v })
                             }
                           />
+                        </div>
+
+                        <Divider className='border-dashed border-gray-1' />
+
+                        {/* Master Table Sync */}
+                        <div className='space-y-3'>
+                          <InputSwitch
+                            description='Query a master table when the parent field changes and populate rows from matching records'
+                            label='Use values from a master table'
+                            checked={
+                              activeQuestion.settings.specific.fillValueType ===
+                              'MASTER'
+                            }
+                            onChange={(checked) =>
+                              updateNested('specific', {
+                                fillValueType: checked ? 'MASTER' : 'CUSTOM',
+                              })
+                            }
+                          />
+
+                          {activeQuestion.settings.specific.fillValueType ===
+                            'MASTER' && (
+                            <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+                              <div>
+                                <label className='mb-1 block text-xs font-medium text-gray-11'>
+                                  Parent Field
+                                </label>
+                                <InputSelect
+                                  placeholder='Field that selects the master row'
+                                  options={allQuestions
+                                    .filter((q) => q.id !== activeQuestion.id)
+                                    .map((q) => ({
+                                      id: q.id,
+                                      name: q.label || 'Untitled Field',
+                                    }))}
+                                  value={
+                                    allQuestions
+                                      .map((q) => ({
+                                        id: q.id,
+                                        name: q.label || 'Untitled Field',
+                                      }))
+                                      .find(
+                                        (q) =>
+                                          q.id ===
+                                          activeQuestion.settings.specific
+                                            .masterFormParentColumn,
+                                      ) || null
+                                  }
+                                  onChange={(val) =>
+                                    updateNested('specific', {
+                                      masterFormParentColumn: val?.id || '',
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className='mb-1 block text-xs font-medium text-gray-11'>
+                                  Master Table
+                                </label>
+                                <InputSelect
+                                  options={masterForms}
+                                  placeholder='Select master form'
+                                  value={
+                                    masterForms.find(
+                                      (f: any) =>
+                                        String(f.id) ===
+                                        String(currentMasterFormId),
+                                    ) || null
+                                  }
+                                  onChange={(val) =>
+                                    updateNested('specific', {
+                                      masterFormId: val?.id || '',
+                                      masterFormTableColumns: [],
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              <div className='space-y-2.5 border-t border-border-default pt-3'>
+                                <div className='flex items-center justify-between'>
+                                  <label className='block text-xs font-bold text-gray-11'>
+                                    Column Mapping
+                                  </label>
+                                  <button
+                                    className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
+                                    type='button'
+                                    onClick={() => {
+                                      const current =
+                                        activeQuestion.settings.specific
+                                          .masterFormTableColumns || []
+                                      updateNested('specific', {
+                                        masterFormTableColumns: [
+                                          ...current,
+                                          {
+                                            id: generateId(),
+                                            masterColumn: '',
+                                            tableColumn: '',
+                                          },
+                                        ],
+                                      })
+                                    }}
+                                  >
+                                    <Icon
+                                      height={10}
+                                      name='lucide:plus'
+                                      width={10}
+                                    />
+                                    Add Row
+                                  </button>
+                                </div>
+
+                                {(
+                                  activeQuestion.settings.specific
+                                    .masterFormTableColumns || []
+                                ).map((row, mIdx) => (
+                                  <div
+                                    className='flex items-center gap-2'
+                                    key={row.id}
+                                  >
+                                    <InputSelect
+                                      placeholder='Table Column'
+                                      options={tableColumns.map((c) => ({
+                                        id: c.id,
+                                        name: c.name || 'Column',
+                                      }))}
+                                      value={
+                                        tableColumns
+                                          .map((c) => ({
+                                            id: c.id,
+                                            name: c.name || 'Column',
+                                          }))
+                                          .find(
+                                            (c) => c.id === row.tableColumn,
+                                          ) || null
+                                      }
+                                      onChange={(val) => {
+                                        const current = [
+                                          ...(activeQuestion.settings.specific
+                                            .masterFormTableColumns || []),
+                                        ]
+                                        current[mIdx] = {
+                                          ...current[mIdx],
+                                          tableColumn: val?.id
+                                            ? String(val.id)
+                                            : '',
+                                        }
+                                        updateNested('specific', {
+                                          masterFormTableColumns: current,
+                                        })
+                                      }}
+                                    />
+                                    <Icon
+                                      className='shrink-0 text-gray-8'
+                                      height={12}
+                                      name='lucide:arrow-left'
+                                      width={12}
+                                    />
+                                    <InputSelect
+                                      options={masterColumns}
+                                      placeholder='Master Column'
+                                      value={
+                                        masterColumns.find(
+                                          (c: any) => c.id === row.masterColumn,
+                                        ) || null
+                                      }
+                                      onChange={(val) => {
+                                        const current = [
+                                          ...(activeQuestion.settings.specific
+                                            .masterFormTableColumns || []),
+                                        ]
+                                        current[mIdx] = {
+                                          ...current[mIdx],
+                                          masterColumn: val?.id
+                                            ? String(val.id)
+                                            : '',
+                                        }
+                                        updateNested('specific', {
+                                          masterFormTableColumns: current,
+                                        })
+                                      }}
+                                    />
+                                    <IconButton
+                                      color='red'
+                                      icon='lucide:trash-2'
+                                      size='xs'
+                                      title='Delete mapping'
+                                      variant='ghost'
+                                      onClick={() => {
+                                        const current = (
+                                          activeQuestion.settings.specific
+                                            .masterFormTableColumns || []
+                                        ).filter((_, idx) => idx !== mIdx)
+                                        updateNested('specific', {
+                                          masterFormTableColumns: current,
+                                        })
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <Divider className='border-dashed border-gray-1' />

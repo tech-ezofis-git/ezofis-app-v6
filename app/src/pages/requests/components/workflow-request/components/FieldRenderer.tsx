@@ -1585,10 +1585,26 @@ const FieldRenderer = ({
         }
       }
 
+      const masterParentFieldId =
+        field.settings?.specific?.masterFormParentColumn
+      const masterParentField = masterParentFieldId
+        ? allFields.find((f: any) => f.id === masterParentFieldId)
+        : undefined
+      const masterSyncParentValue = masterParentFieldId
+        ? formModel?.[masterParentFieldId]
+        : undefined
+      const masterSyncParentColumnKey =
+        masterParentField?.settings?.specific?.masterFormColumn ||
+        masterParentField?.label ||
+        masterParentField?.id ||
+        masterParentFieldId
+
       return (
         <div className='w-full'>
           <TableFieldRenderer
             field={field}
+            masterSyncParentColumnKey={masterSyncParentColumnKey}
+            masterSyncParentValue={masterSyncParentValue}
             ocrLineItems={ocrLineItems}
             readOnly={readOnly}
             required={required}
