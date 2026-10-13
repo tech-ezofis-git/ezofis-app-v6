@@ -377,7 +377,7 @@ export interface Question {
           general?: {
             displayLabel?: string
             tooltip?: string
-            visibility?: 'DISABLE' | 'NORMAL' | 'READ_ONLY'
+            visibility?: 'DISABLE' | 'HIDDEN' | 'NORMAL' | 'READ_ONLY'
           }
           lookupSettings?: {
             /** Id of another column in this table whose value in the same

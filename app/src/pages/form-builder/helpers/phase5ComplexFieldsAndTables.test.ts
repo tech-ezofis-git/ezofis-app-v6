@@ -269,7 +269,7 @@ describe('Phase 5 (P0-5): Complex Fields, Layouts & Entry Persistence', () => {
 
     const row1 = { qty: 5, price: 20 }
     const res1 = evaluateFormula(
-      tableColumns[2].settings.specific.formulaTokens as any,
+      (tableColumns[2] as any).settings.specific.formulaTokens as any,
       row1,
       tableColumns as any,
     )
@@ -277,7 +277,7 @@ describe('Phase 5 (P0-5): Complex Fields, Layouts & Entry Persistence', () => {
 
     const row2 = { qty: 3, price: 15.5 }
     const res2 = evaluateFormula(
-      tableColumns[2].settings.specific.formulaTokens as any,
+      (tableColumns[2] as any).settings.specific.formulaTokens as any,
       row2,
       tableColumns as any,
     )
@@ -393,8 +393,8 @@ describe('Phase 5 (P0-5): Complex Fields, Layouts & Entry Persistence', () => {
     expect(newTableId).not.toBe(rawPanel.fields[1].id)
     expect(newTotalId).not.toBe(rawPanel.fields[2].id)
 
-    const origColAmtId = rawPanel.fields[1].settings.specific.tableColumns[1].id
-    const newColAmtId = clonedPanel.fields[1].settings.specific.tableColumns[1].id
+    const origColAmtId = (rawPanel.fields[1] as any).settings.specific.tableColumns[1].id
+    const newColAmtId = (clonedPanel.fields[1] as any).settings.specific.tableColumns[1].id
     expect(newColAmtId).not.toBe(origColAmtId)
 
     // Intra-panel table column reference in formula remapped: `${newTableId}.${newColAmtId}`

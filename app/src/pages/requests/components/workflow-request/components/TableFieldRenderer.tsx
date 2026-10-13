@@ -68,7 +68,7 @@ export interface TableColumn {
     general?: {
       displayLabel?: string
       tooltip?: string
-      visibility?: 'DISABLE' | 'NORMAL' | 'READ_ONLY'
+      visibility?: 'DISABLE' | 'HIDDEN' | 'NORMAL' | 'READ_ONLY'
     }
     lookupSettings?: {
       cascadeFromColumn?: string

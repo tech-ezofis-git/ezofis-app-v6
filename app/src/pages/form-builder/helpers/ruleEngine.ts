@@ -1149,7 +1149,7 @@ export function evaluateFormRules(
   declarativeRules: DeclarativeRule[] = [],
 ): Record<string, FieldComputedState> {
   const allFields: Question[] = (panels || []).flatMap((p) => p.fields || [])
-  const engine = new FormRuleEngine(allFields, declarativeRules)
+  const engine = new FormRuleEngine(allFields, declarativeRules, panels)
   const fieldStates = engine.evaluateAll(formModel)
 
   // Section rules override their fields: a hidden section hides (and un-requires)
@@ -1158,6 +1158,10 @@ export function evaluateFormRules(
   for (const panel of panels || []) {
     const panelState = panelStates[panel.id]
     if (!panelState || (panelState.visible && !panelState.disabled)) continue
+    if (fieldStates[panel.id]) {
+      if (!panelState.visible) fieldStates[panel.id].visible = false
+      if (panelState.disabled) fieldStates[panel.id].disabled = true
+    }
     for (const field of panel.fields || []) {
       const state = fieldStates[field.id]
       if (!state) continue
