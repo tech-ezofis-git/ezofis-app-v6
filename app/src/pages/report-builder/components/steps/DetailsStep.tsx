@@ -1,41 +1,57 @@
 import { useLingui } from '@lingui/react/macro'
+import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
-import InputRadioCard from '@/components/base/inputs/InputRadioCard'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import cn from '@/utils/cn'
 import type { ReportVisibility } from '../../types'
 import useReportForm from '../../hooks/useReportForm'
 import useUserGroupOptions from '../../hooks/useUserGroupOptions'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
-
-const VISIBILITY_OPTIONS: {
-  description: string
-  icon: string
-  value: ReportVisibility
-}[] = [
-  {
-    description: 'Only visible to you',
-    icon: 'lucide:lock',
-    value: 'Private',
-  },
-  {
-    description: 'Choose specific people',
-    icon: 'lucide:users',
-    value: 'Selected Users',
-  },
-  {
-    description: 'Choose one or more groups',
-    icon: 'lucide:user-round-check',
-    value: 'Selected Groups',
-  },
-]
 
 const DetailsStep = () => {
   const { t } = useLingui()
   const { form, syncField } = useReportForm()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
+
+  const visibilityOptions = useMemo<
+    {
+      description: string
+      icon: string
+      title: string
+      value: ReportVisibility
+    }[]
+  >(
+    () => [
+      {
+        description: t`Only visible to you`,
+        icon: 'lucide:lock',
+        title: t`Private`,
+        value: 'Private',
+      },
+      {
+        description: t`Visible to everyone`,
+        icon: 'lucide:globe',
+        title: t`Public`,
+        value: 'Public',
+      },
+      {
+        description: t`Choose specific people`,
+        icon: 'lucide:users',
+        title: t`Selected Users`,
+        value: 'Selected Users',
+      },
+      {
+        description: t`Choose one or more groups`,
+        icon: 'lucide:user-round-check',
+        title: t`Selected Groups`,
+        value: 'Selected Groups',
+      },
+    ],
+    [t],
+  )
 
   const {
     groupOptions,
@@ -90,29 +106,70 @@ const DetailsStep = () => {
       />
 
       <div>
-        <p className='mb-2 text-13 font-medium text-gray-12'>{t`Sharing`}</p>
-        <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-          {VISIBILITY_OPTIONS.map((option) => (
-            <InputRadioCard
-              checked={draft.visibility === option.value}
-              description={option.description}
-              icon={option.icon}
-              key={option.value}
-              label={option.value}
-              size='sm'
-              onClick={() =>
-                setDraft({
-                  sharedGroups:
-                    option.value === 'Selected Groups'
-                      ? draft.sharedGroups
-                      : [],
-                  sharedUsers:
-                    option.value === 'Selected Users' ? draft.sharedUsers : [],
-                  visibility: option.value,
-                })
-              }
-            />
-          ))}
+        <label className='mb-2 block text-xs font-semibold text-[var(--gray-13)]'>
+          {t`Sharing`}
+        </label>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+          {visibilityOptions.map((option) => {
+            const isSelected = draft.visibility === option.value
+            return (
+              <button
+                key={option.value}
+                type='button'
+                className={cn(
+                  'flex w-full cursor-pointer items-start gap-3 rounded-[12px] border p-3.5 text-left transition',
+                  isSelected
+                    ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
+                    : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
+                )}
+                onClick={() =>
+                  setDraft({
+                    sharedGroups:
+                      option.value === 'Selected Groups'
+                        ? draft.sharedGroups
+                        : [],
+                    sharedUsers:
+                      option.value === 'Selected Users'
+                        ? draft.sharedUsers
+                        : [],
+                    visibility: option.value,
+                  })
+                }
+              >
+                <div
+                  className={cn(
+                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                    isSelected
+                      ? 'border-[var(--primary-9)] bg-surface'
+                      : 'border-[var(--gray-7)] bg-surface',
+                  )}
+                >
+                  {isSelected && (
+                    <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
+                  )}
+                </div>
+
+                <Icon
+                  className={cn(
+                    'mt-0.5 size-4 shrink-0 transition',
+                    isSelected
+                      ? 'text-[var(--primary-10)]'
+                      : 'text-[var(--gray-11)]',
+                  )}
+                  name={option.icon}
+                />
+
+                <div className='min-w-0 flex-1'>
+                  <div className='text-xs leading-snug font-semibold text-[var(--gray-13)]'>
+                    {option.title}
+                  </div>
+                  <div className='mt-0.5 text-xs leading-relaxed text-[var(--gray-10)]'>
+                    {option.description}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
 

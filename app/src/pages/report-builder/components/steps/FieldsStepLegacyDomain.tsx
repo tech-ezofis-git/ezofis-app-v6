@@ -4,6 +4,7 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import cn from '@/utils/cn'
 import type { ReportDomain } from '../../constants'
 import type { PreviewColumn } from './FieldsPreviewTable'
 import { DOMAIN_FIELDS } from '../../constants'
@@ -32,7 +33,9 @@ const FieldsStepLegacyDomain = () => {
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
   const [search, setSearch] = useState('')
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [expandedFieldId, setExpandedFieldId] = useState<string | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const settingsPanelRef = useRef<HTMLDivElement>(null)
 
   const domainFields = DOMAIN_FIELDS[draft.domain as ReportDomain] || []
@@ -114,16 +117,84 @@ const FieldsStepLegacyDomain = () => {
   return (
     <div className='flex flex-col gap-5'>
       <div className='grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2'>
-        <div className='flex h-[420px] flex-col gap-3 rounded-xl border border-gray-3 p-3'>
-          <div className='flex h-8 items-center'>
+        <div className='flex h-[420px] flex-col gap-2 rounded-xl border border-gray-3 p-3'>
+          <div className='flex min-h-7 items-center justify-between gap-2'>
             <p className='text-13 font-medium text-gray-12'>{t`Available fields`}</p>
+            <div
+              className={cn(
+                'flex h-7 items-center overflow-hidden rounded-md border transition-all duration-200',
+                isSearchExpanded || search
+                  ? 'w-48 border-primary-6 bg-surface shadow-2xs'
+                  : 'w-7 cursor-pointer justify-center border-gray-4 bg-surface text-gray-10 hover:border-gray-6 hover:bg-gray-1 hover:text-gray-13 active:scale-95',
+              )}
+              onClick={() => {
+                if (!isSearchExpanded) {
+                  setIsSearchExpanded(true)
+                }
+                setTimeout(() => searchInputRef.current?.focus(), 40)
+              }}
+            >
+              <button
+                aria-label={t`Search fields`}
+                className='flex size-7 shrink-0 cursor-pointer items-center justify-center text-gray-10 transition-colors hover:text-gray-13'
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsSearchExpanded((prev) => !prev)
+                  if (!isSearchExpanded) {
+                    setTimeout(() => searchInputRef.current?.focus(), 40)
+                  }
+                }}
+              >
+                <Icon
+                  className={cn(
+                    'size-3.5 shrink-0 transition-colors',
+                    isSearchExpanded || search
+                      ? 'text-primary-10'
+                      : 'text-gray-10',
+                  )}
+                  name='lucide:search'
+                />
+              </button>
+
+              {(isSearchExpanded || Boolean(search)) && (
+                <input
+                  className='h-full min-w-0 flex-1 bg-transparent pr-1 text-12 text-gray-13 outline-none placeholder:text-gray-8'
+                  placeholder={t`Search fields...`}
+                  ref={searchInputRef}
+                  type='text'
+                  value={search}
+                  onBlur={() => {
+                    if (!search) {
+                      setIsSearchExpanded(false)
+                    }
+                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearch('')
+                      setIsSearchExpanded(false)
+                    }
+                  }}
+                />
+              )}
+
+              {Boolean(search) && (
+                <button
+                  aria-label={t`Clear search`}
+                  className='mr-1 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-9 transition hover:bg-gray-2 hover:text-gray-12'
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSearch('')
+                    searchInputRef.current?.focus()
+                  }}
+                >
+                  <Icon className='size-3' name='lucide:x' />
+                </button>
+              )}
+            </div>
           </div>
-          <InputText
-            placeholder={t`Search fields...`}
-            value={search}
-            clearable
-            onChange={setSearch}
-          />
           <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-lg border border-gray-3 p-2'>
             {availableFields.length === 0 ? (
               <p className='p-3 text-center text-12 text-gray-9'>{t`No more fields to add.`}</p>
@@ -150,13 +221,12 @@ const FieldsStepLegacyDomain = () => {
           </div>
         </div>
 
-        <div className='flex h-[420px] flex-col gap-3 rounded-xl border border-gray-3 p-3'>
-          <div className='flex h-8 items-center'>
+        <div className='flex h-[420px] flex-col gap-2 rounded-xl border border-gray-3 p-3'>
+          <div className='flex min-h-7 items-center'>
             <p className='text-13 font-medium text-gray-12'>
               {t`Selected fields`} ({selectedFields.length})
             </p>
           </div>
-          <div className='h-8 shrink-0' />
           <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto rounded-lg border border-gray-3 p-2'>
             {selectedFields.length === 0 ? (
               <p className='p-3 text-center text-12 text-gray-9'>{t`No fields selected yet.`}</p>
@@ -289,7 +359,7 @@ const FieldsStepLegacyDomain = () => {
       )}
 
       <div className='flex flex-col gap-2'>
-        <p className='text-13 font-medium text-gray-12'>{t`Live preview`}</p>
+        <p className='text-13 font-medium text-gray-12'>{t`Preview Data`}</p>
         <FieldsPreviewTable columns={previewColumns} />
       </div>
     </div>

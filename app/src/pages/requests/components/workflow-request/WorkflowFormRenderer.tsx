@@ -17,7 +17,9 @@ import {
   isFieldHidden,
   isFieldReadOnly,
   isFieldRequired,
+  resolveRuntimeFieldType,
 } from './utils/fieldRendering'
+import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
 
 const STAGE_PAGE_SIZE = 8
@@ -207,6 +209,7 @@ function WorkflowStageBar({
 const EXTRACTED_FALLBACK_TYPES = new Set([
   'TABLE',
   'DYNAMIC_TABLE',
+  'MATRIX',
   'FILE_UPLOAD',
   'IMAGE_UPLOAD',
   'SIGNATURE',
@@ -215,6 +218,12 @@ const EXTRACTED_FALLBACK_TYPES = new Set([
   'MULTIPLE_CHOICE',
   'USER',
   'USERS',
+  'POPUP',
+  'TABS',
+  'NESTED_LIST',
+  'LOGIN_AUTHENTICATION',
+  'EMAIL_AUTHENTICATION',
+  'MOBILE_AUTHENTICATION',
 ])
 
 interface Props {
@@ -235,6 +244,7 @@ interface Props {
   // fight the outer container for scroll ownership.
   disableOwnScroll?: boolean
   exclusive?: boolean
+  formRules?: any[]
   hasAttemptedSubmit?: boolean
   // Field ids hidden from the current acting user by the current stage's
   // Security & Form Access settings (formVisibilityAccess / formSecureControls).
@@ -286,6 +296,7 @@ const WorkflowFormRenderer = ({
   disableOwnScroll,
   exclusive,
   formModel,
+  formRules,
   hasAttemptedSubmit,
   hiddenFieldIds,
   hidePanels,
@@ -313,7 +324,7 @@ const WorkflowFormRenderer = ({
   const firstFileFieldId = useMemo(() => {
     const fileFieldIds = panels.flatMap((panel: any) =>
       (panel.fields || [])
-        .filter((field: any) => FILE_FIELD_TYPES.has(field.type))
+        .filter((field: any) => FILE_FIELD_TYPES.has(resolveRuntimeFieldType(field)))
         .map((field: any) => field.id || field.jsonId),
     )
     return fileFieldIds[0] || null
@@ -353,9 +364,17 @@ const WorkflowFormRenderer = ({
   }, [attachments, firstFileFieldId, instanceId])
 
   const evaluatedFieldStates = useMemo(
-    () => evaluateFormRules(panels, formModel),
-    [panels, formModel],
+    () => evaluateFormRules(panels, formModel, formRules),
+    [panels, formModel, formRules],
   )
+
+  // Phase 4: compute rich per-field validation errors when the user has
+  // attempted to submit. These cover format, length, numeric bounds, etc. —
+  // not just the "required" check that missingMandatoryFieldIds covers.
+  const validationErrors = useMemo(() => {
+    if (!hasAttemptedSubmit) return {} as Record<string, string>
+    return validateFormModel(panels, formModel, { formRules }).errors
+  }, [hasAttemptedSubmit, panels, formModel, formRules])
 
   const handleFieldChangeWithCascade = (fieldId: string, value: any) => {
     onFieldChange(fieldId, value)
@@ -378,27 +397,41 @@ const WorkflowFormRenderer = ({
     if (presentation === 'extracted') {
       const scalarFields = visibleFields.filter(
         (field) =>
-          !EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
+          !EXTRACTED_FALLBACK_TYPES.has(resolveRuntimeFieldType(field)),
       )
       const complexFields = visibleFields.filter((field) =>
-        EXTRACTED_FALLBACK_TYPES.has(String(field.type || '').toUpperCase()),
+        EXTRACTED_FALLBACK_TYPES.has(resolveRuntimeFieldType(field)),
       )
 
       return (
         <div className='flex max-w-full min-w-0 flex-col gap-6'>
           <div className='grid grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2'>
             {scalarFields.map((field: any) => {
-              const fieldError =
-                hasAttemptedSubmit &&
-                (missingMandatoryFieldIds?.has(String(field.id)) ||
-                  (field.jsonId &&
-                    missingMandatoryFieldIds?.has(String(field.jsonId))))
-                  ? t`This field is required.`
-                  : undefined
+              const state = evaluatedFieldStates[field.id]
+              const isRequiredByRule = state
+                ? state.required
+                : isFieldRequired(field)
+              // Phase 4: prefer richer format/length/numeric error from validationErrors
+              // over the legacy "required only" check, falling back to the server-side
+              // missingMandatoryFieldIds set for backward compatibility.
+              const fieldError: string | undefined = (() => {
+                if (!hasAttemptedSubmit) return undefined
+                const richErr =
+                  validationErrors[String(field.id)] ||
+                  (field.jsonId ? validationErrors[String(field.jsonId)] : undefined)
+                if (richErr) return richErr
+                if (
+                  missingMandatoryFieldIds?.has(String(field.id)) ||
+                  (field.jsonId && missingMandatoryFieldIds?.has(String(field.jsonId)))
+                )
+                  return t`This field is required.`
+                return undefined
+              })()
               const isReadOnly =
                 viewOnly ||
                 Boolean(readOnlyFieldIds?.has(String(field.id))) ||
-                isFieldReadOnly(field)
+                isFieldReadOnly(field) ||
+                Boolean(state?.disabled)
 
               return (
                 <ExtractedFieldCell
@@ -418,13 +451,16 @@ const WorkflowFormRenderer = ({
             })}
           </div>
           {complexFields.map((field: any) => {
+            const resolvedType = resolveRuntimeFieldType(field)
             const isTableField =
-              field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
+              resolvedType === 'TABLE' || resolvedType === 'DYNAMIC_TABLE'
             const sizeClass = getColumnSizeClass(
               isTableField
                 ? field.settings?.general?.size || 'col-12'
                 : field.settings?.general?.size,
             )
+            const state = evaluatedFieldStates[field.id]
+            const isReadOnlyByRule = Boolean(state?.disabled)
             return (
               <div
                 className={`${sizeClass} max-w-full min-w-0 px-1 pb-2`}
@@ -440,20 +476,27 @@ const WorkflowFormRenderer = ({
                   repoFieldHints={repoFieldHints}
                   repositoryId={repositoryId}
                   value={formModel[field.id]}
-                  error={
-                    hasAttemptedSubmit &&
-                    (missingMandatoryFieldIds?.has(String(field.id)) ||
-                      (field.jsonId &&
-                        missingMandatoryFieldIds?.has(String(field.jsonId))))
-                      ? t`This field is required.`
-                      : undefined
-                  }
+                  error={(() => {
+                    if (!hasAttemptedSubmit) return undefined
+                    const richErr =
+                      validationErrors[String(field.id)] ||
+                      (field.jsonId ? validationErrors[String(field.jsonId)] : undefined)
+                    if (richErr) return richErr
+                    if (
+                      missingMandatoryFieldIds?.has(String(field.id)) ||
+                      (field.jsonId && missingMandatoryFieldIds?.has(String(field.jsonId)))
+                    )
+                      return t`This field is required.`
+                    return undefined
+                  })()}
                   isPreparing={
                     Boolean(preparePhase) &&
                     preparingFieldId === String(field.id)
                   }
                   viewOnly={
-                    viewOnly || Boolean(readOnlyFieldIds?.has(String(field.id)))
+                    viewOnly ||
+                    Boolean(readOnlyFieldIds?.has(String(field.id))) ||
+                    isReadOnlyByRule
                   }
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                   onOcrFieldList={onOcrFieldList}
@@ -461,7 +504,8 @@ const WorkflowFormRenderer = ({
                   onRequestUpload={
                     onRequestUpload &&
                     !viewOnly &&
-                    !readOnlyFieldIds?.has(String(field.id))
+                    !readOnlyFieldIds?.has(String(field.id)) &&
+                    !isReadOnlyByRule
                       ? (file) => onRequestUpload(field.id, file)
                       : undefined
                   }
@@ -476,9 +520,10 @@ const WorkflowFormRenderer = ({
     return (
       <div className='-mx-2 -mb-4 flex max-w-full min-w-0 flex-wrap'>
         {visibleFields.map((field: any) => {
+          const resolvedType = resolveRuntimeFieldType(field)
           const isTableField =
-            field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
-          const isSectionHeading = field.type === 'HEADING'
+            resolvedType === 'TABLE' || resolvedType === 'DYNAMIC_TABLE'
+          const isSectionHeading = resolvedType === 'HEADING'
           const sizeClass = isSectionHeading
             ? 'w-full'
             : getColumnSizeClass(
@@ -511,15 +556,19 @@ const WorkflowFormRenderer = ({
                 repoFieldHints={repoFieldHints}
                 repositoryId={repositoryId}
                 value={formModel[field.id]}
-                error={
-                  hasAttemptedSubmit &&
-                  ((isRequiredByRule && !formModel[field.id]) ||
+                error={(() => {
+                  if (!hasAttemptedSubmit) return undefined
+                  const richErr =
+                    validationErrors[String(field.id)] ||
+                    (field.jsonId ? validationErrors[String(field.jsonId)] : undefined)
+                  if (richErr) return richErr
+                  if (
                     missingMandatoryFieldIds?.has(String(field.id)) ||
-                    (field.jsonId &&
-                      missingMandatoryFieldIds?.has(String(field.jsonId))))
-                    ? t`This field is required.`
-                    : undefined
-                }
+                    (field.jsonId && missingMandatoryFieldIds?.has(String(field.jsonId)))
+                  )
+                    return t`This field is required.`
+                  return undefined
+                })()}
                 isPreparing={
                   Boolean(preparePhase) && preparingFieldId === String(field.id)
                 }
@@ -660,12 +709,14 @@ const WorkflowFormRenderer = ({
                 )
               })
 
-            const requiredFields = visibleFields.filter(
-              (field: any) =>
-                isFieldRequired(field) &&
-                !isFieldReadOnly(field) &&
-                !readOnlyFieldIds?.has(String(field.id)),
-            )
+            const requiredFields = visibleFields.filter((field: any) => {
+              const state = evaluatedFieldStates[field.id]
+              const isReq = state ? state.required : isFieldRequired(field)
+              const isRo =
+                (state ? state.disabled : isFieldReadOnly(field)) ||
+                Boolean(readOnlyFieldIds?.has(String(field.id)))
+              return isReq && !isRo
+            })
             const completedCount = requiredFields.filter((field: any) =>
               isFieldFilled(field, formModel[field.id]),
             ).length

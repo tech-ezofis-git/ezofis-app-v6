@@ -8,6 +8,7 @@ import type { ReportFilterOperator } from '../../types'
 import { DOMAIN_FIELDS, FILTER_OPERATORS } from '../../constants'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
+import { isInputControlField } from '../../utils/fieldFilter'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -27,10 +28,12 @@ const FiltersStep = () => {
 
   const fieldOptions =
     hasDynamicSource || sourceFields.length > 0
-      ? [...sourceFields, ...draft.customFields].map((f) => ({
-          id: f.id,
-          name: f.label || f.id,
-        }))
+      ? [...sourceFields, ...draft.customFields]
+          .filter(isInputControlField)
+          .map((f) => ({
+            id: f.id,
+            name: f.label || f.id,
+          }))
       : (DOMAIN_FIELDS[draft.domain as ReportDomain] || []).map((f) => ({
           id: f.id,
           name: f.label,

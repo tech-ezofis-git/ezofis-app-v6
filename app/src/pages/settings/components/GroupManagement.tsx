@@ -558,7 +558,10 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         selectedMembers={selectedMembers}
         userOptions={userOptions}
         onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
-        onBackToSettings={onBack}
+        onBackToSettings={() => {
+          setIsSetupOpen(false)
+          onBack?.()
+        }}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftGroup}
         onMembersChange={setSelectedMembers}
@@ -825,7 +828,7 @@ function GroupSetup({
       steps={wizardSteps}
       setupTitle={editingGroupId ? msg`Edit Group` : msg`Create Group`}
       onBack={handleBack}
-      onBackToSettings={onBack}
+      onBackToSettings={onBackToSettings}
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}

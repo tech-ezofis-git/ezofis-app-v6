@@ -8,6 +8,7 @@ import { getRepositoryById } from '@/api/v6/folder/folder'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 import { getField } from '@/helpers/new-field'
 import type { ReportSourceType } from '../types'
+import { isInputControlField } from '../utils/fieldFilter'
 
 const mapDataTypeToQuestionType = (dataType?: string): QuestionType => {
   const dt = (dataType || '').toLowerCase()
@@ -118,7 +119,9 @@ const useReportSourceFields = (
               '',
           )
           if (!targetFormId && wf.formJson?.panels) {
-            return wf.formJson.panels.flatMap((p: any) => p.fields ?? [])
+            return wf.formJson.panels
+              .flatMap((p: any) => p.fields ?? [])
+              .filter(isInputControlField)
           }
         }
       }
@@ -129,7 +132,9 @@ const useReportSourceFields = (
       if (error) throw new Error(error)
       const panels: Array<{ fields?: Question[] }> =
         data?.formJson?.panels ?? []
-      return panels.flatMap((p) => p.fields ?? [])
+      return panels
+        .flatMap((p) => p.fields ?? [])
+        .filter(isInputControlField)
     },
   })
 
@@ -147,7 +152,7 @@ const useReportSourceFields = (
       const combined = [
         ...STANDARD_FOLDER_FIELDS.filter((f) => !existingIds.has(f.id)),
         ...customFields,
-      ]
+      ].filter(isInputControlField)
       return combined
     },
   })
