@@ -2274,8 +2274,20 @@ const FormEntriesPage = () => {
 
                       return (
                         <div
-                          className={cn('flex flex-col justify-start', colSpan)}
+                          aria-disabled={isReadOnly || undefined}
+                          inert={
+                            isReadOnly && type !== 'CALCULATED'
+                              ? true
+                              : undefined
+                          }
                           key={field.id}
+                          className={cn(
+                            'flex flex-col justify-start',
+                            colSpan,
+                            isReadOnly &&
+                              type !== 'CALCULATED' &&
+                              'opacity-60 select-none',
+                          )}
                         >
                           {/* Label / Required Indicators (rendered internally for table fields) */}
                           {!isTableType && (

@@ -405,21 +405,29 @@ useEffect(() => {
                               {field.settings.general.description}
                             </p>
                           )}
-                          {renderPreviewInput(
-                            field,
-                            previewModel,
-                            handleFieldValueChange,
-                            (file) => handleOcrFileSelect(file, field),
-                            extractingFieldId === field.id,
-                            selectedRepoId,
-                            (patch) =>
-                              setPreviewModel((prev) =>
-                                applyCalculatedFields(panels, {
-                                  ...prev,
-                                  ...patch,
-                                }),
-                              ),
-                          )}
+                          <div
+                            aria-disabled={state?.disabled || undefined}
+                            inert={state?.disabled || undefined}
+                            className={cn(
+                              state?.disabled && 'opacity-60 select-none',
+                            )}
+                          >
+                            {renderPreviewInput(
+                              field,
+                              previewModel,
+                              handleFieldValueChange,
+                              (file) => handleOcrFileSelect(file, field),
+                              extractingFieldId === field.id,
+                              selectedRepoId,
+                              (patch) =>
+                                setPreviewModel((prev) =>
+                                  applyCalculatedFields(panels, {
+                                    ...prev,
+                                    ...patch,
+                                  }),
+                                ),
+                            )}
+                          </div>
                         </div>
                       )
                     })}

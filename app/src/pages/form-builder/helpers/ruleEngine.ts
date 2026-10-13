@@ -200,26 +200,31 @@ export class FormRuleEngine {
       const fieldRules: LogicRule[] = field.settings?.logic || []
       if (!fieldRules.length) continue
 
-      for (const rule of fieldRules) {
-        const isMet = evaluateCondition(rule, formValues)
-        switch (rule.action) {
-          case 'SHOW':
-            fieldStates[field.id].visible = isMet
-            break
-          case 'HIDE':
-            fieldStates[field.id].visible = !isMet
-            break
-          case 'ENABLE':
-            fieldStates[field.id].disabled = !isMet
-            break
-          case 'DISABLE':
-            fieldStates[field.id].disabled = isMet
-            break
-          case 'REQUIRE':
-            fieldStates[field.id].required = isMet
-            break
+      // Rules on one field are combined (OR) per axis instead of the last
+      // rule overwriting the earlier ones. SHOW / ENABLE / REQUIRE take
+      // priority: HIDE / DISABLE are ignored when the same field also has
+      // a positive rule for that axis.
+      const metOf = (action: LogicRule['action']) => {
+        const list = fieldRules.filter((r) => r.action === action)
+        return {
+          any: list.some((r) => evaluateCondition(r, formValues)),
+          has: list.length > 0,
         }
       }
+      const show = metOf('SHOW')
+      const hide = metOf('HIDE')
+      const enable = metOf('ENABLE')
+      const disable = metOf('DISABLE')
+      const require = metOf('REQUIRE')
+      const state = fieldStates[field.id]
+
+      if (show.has) state.visible = show.any
+      else if (hide.has) state.visible = !hide.any
+
+      if (enable.has) state.disabled = !enable.any
+      else if (disable.has) state.disabled = disable.any
+
+      if (require.has) state.required = state.required || require.any
     }
 
     // Process source-driven validation conditional rules (mandatorySettings, readonlySettings)

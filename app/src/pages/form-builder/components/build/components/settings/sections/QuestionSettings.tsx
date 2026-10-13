@@ -6332,6 +6332,23 @@ const QuestionSettings = ({
                   const needsValue = !['EMPTY', 'NOT_EMPTY'].includes(
                     rule.condition,
                   )
+                  const sourceField = allQuestions.find(
+                    (q) => q.id === rule.fieldId,
+                  )
+                  const sourceOptions: Option[] =
+                    sourceField &&
+                    [
+                      'SINGLE_CHOICE',
+                      'MULTIPLE_CHOICE',
+                      'SINGLE_SELECT',
+                      'MULTI_SELECT',
+                      'YES_NO_TOGGLE',
+                    ].includes(sourceField.type)
+                      ? getFieldOptions(sourceField).map((o) => ({
+                          id: String(o.id ?? o.name),
+                          name: String(o.name ?? o.id),
+                        }))
+                      : []
                   return (
                     <div
                       className='space-y-2 rounded-xl border border-gray-1 bg-surface p-3 shadow-sm'
@@ -6361,7 +6378,10 @@ const QuestionSettings = ({
                         }
                         onChange={(val) =>
                           val &&
-                          updateLogicRule(rule.id, { fieldId: String(val.id) })
+                          updateLogicRule(rule.id, {
+                            fieldId: String(val.id),
+                            value: '',
+                          })
                         }
                       />
 
@@ -6385,15 +6405,32 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                        {needsValue && (
-                          <InputText
-                            placeholder='Value'
-                            value={rule.value ?? ''}
-                            onChange={(val: string) =>
-                              updateLogicRule(rule.id, { value: val })
-                            }
-                          />
-                        )}
+                        {needsValue &&
+                          (sourceOptions.length > 0 ? (
+                            <InputSelect
+                              options={sourceOptions}
+                              placeholder='Select option'
+                              value={
+                                sourceOptions.find(
+                                  (o) => o.name === rule.value,
+                                ) || null
+                              }
+                              onChange={(val) =>
+                                val &&
+                                updateLogicRule(rule.id, {
+                                  value: String(val.name),
+                                })
+                              }
+                            />
+                          ) : (
+                            <InputText
+                              placeholder='Value'
+                              value={rule.value ?? ''}
+                              onChange={(val: string) =>
+                                updateLogicRule(rule.id, { value: val })
+                              }
+                            />
+                          ))}
                       </div>
 
                       <div className='flex items-center gap-2 border-t border-dashed border-gray-1 pt-2'>
