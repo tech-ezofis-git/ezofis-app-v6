@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { Button, Rating } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
@@ -17,14 +18,22 @@ import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import {
+  LegacyInlineFieldRenderer,
+  RuntimeMatrixField,
+} from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
 import {
   buildMergedOcrFieldHints,
+  extractCurrencyCode,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
@@ -32,13 +41,18 @@ import {
   getConfiguredFieldOptions,
   getDateTimeLimits,
   getDropdownFacetSource,
+  getEffectiveFieldLabel,
   getFieldOptions,
   getFileExtension,
   getMasterFormInfo,
   isFieldReadOnly,
   isFieldRequired,
+  isStructuredCurrencyValue,
   normalizeStoredMultiSelectValue,
+  resolveRuntimeFieldType,
   selectOptionStoredValue,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
@@ -73,9 +87,6 @@ interface Props {
   onOpenAttachment?: (attachment: any) => void
   onRequestUpload?: (file: File) => void | Promise<void>
 }
-
-import { Button } from '@mantine/core'
-import cn from '@/utils/cn'
 
 interface StagedFileValue {
   fileName: string
@@ -142,7 +153,7 @@ const ChoiceRadioGroupField = ({
       {!general.hideLabel && (
         <div className='flex items-center justify-between'>
           <label className='block text-13 font-medium text-gray-12'>
-            {field.label}
+            {getEffectiveFieldLabel(field)}
             {required && <span className='text-red-9'> *</span>}
           </label>
 
@@ -344,7 +355,7 @@ const ChoiceCheckboxGroupField = ({
       {!general.hideLabel && (
         <div className='flex items-center justify-between'>
           <label className='block text-13 font-medium text-gray-12'>
-            {field.label}
+            {getEffectiveFieldLabel(field)}
             {required && <span className='text-red-9'> *</span>}
           </label>
 
@@ -988,47 +999,52 @@ const FieldRenderer = ({
     field,
   ])
 
+  const runtimeType = resolveRuntimeFieldType(field)
+  const effectiveLabel = getEffectiveFieldLabel(field)
+
   useEffect(() => {
     if (readOnly) return
     if (
-      (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT') &&
+      (runtimeType === 'SINGLE_SELECT' || runtimeType === 'MULTI_SELECT') &&
       selectOptions.length === 1
     ) {
       const singleOptVal = selectOptionStoredValue(
         selectOptions[0],
         selectOptions,
       )
-      if (field.type === 'SINGLE_SELECT') {
+      if (runtimeType === 'SINGLE_SELECT') {
         if (value === undefined || value === null || value === '') {
           onChange(singleOptVal)
         }
-      } else if (field.type === 'MULTI_SELECT') {
+      } else if (runtimeType === 'MULTI_SELECT') {
         const currentList = normalizeStoredMultiSelectValue(value)
         if (currentList.length === 0) {
           onChange([singleOptVal])
         }
       }
     }
-  }, [field.type, selectOptions, value, readOnly, onChange])
+  }, [runtimeType, selectOptions, value, readOnly, onChange])
 
   const common = {
     disabled: readOnly,
     error,
-    label: general.hideLabel ? undefined : field.label,
+    label: general.hideLabel ? undefined : effectiveLabel,
     placeholder: general.placeholder,
     required,
     tooltip: general.tooltip,
   }
 
-  switch (field.type) {
+  switch (runtimeType) {
     case 'HEADING':
       return (
         <div className='w-full border-b border-gray-3 pb-3'>
-          <h3 className='text-15 font-bold text-gray-13'>{field.label}</h3>
+          <h3 className='text-15 font-bold text-gray-13'>{effectiveLabel}</h3>
         </div>
       )
     case 'LABEL':
-      return <div className='text-13 font-bold text-gray-13'>{field.label}</div>
+      return (
+        <div className='text-13 font-bold text-gray-13'>{effectiveLabel}</div>
+      )
     case 'DIVIDER':
       return <div className='h-px w-full bg-gray-3' />
 
@@ -1046,6 +1062,7 @@ const FieldRenderer = ({
           )}
         </div>
       )
+    case 'REDIRECT_TO_URL':
     case 'URL':
       return (
         <InputText
@@ -1055,15 +1072,19 @@ const FieldRenderer = ({
           onChange={onChange}
         />
       )
-    case 'PHONE_NUMBER':
+    case 'PHONE_NUMBER': {
+      const phoneDisplayValue = extractPhoneInputString(value)
       return (
         <InputText
           {...common}
           type='tel'
-          value={value || ''}
-          onChange={onChange}
+          value={phoneDisplayValue}
+          onChange={(nextVal) =>
+            onChange(updatePhoneFieldValue(value, nextVal, field))
+          }
         />
       )
+    }
     case 'PASSWORD':
       return (
         <InputText
@@ -1073,6 +1094,8 @@ const FieldRenderer = ({
           onChange={onChange}
         />
       )
+    case 'ADDRESS':
+    case 'CONTACT_INFO':
     case 'FULL_NAME':
     case 'SHORT_TEXT':
       return (
@@ -1088,13 +1111,19 @@ const FieldRenderer = ({
         />
       )
 
+    case 'HTML_EDITOR':
+    case 'JSON_EDITOR':
     case 'TEXT_BUILDER':
     case 'LONG_TEXT':
       return (
         <InputTextarea
           {...common}
           rows={3}
-          value={value || ''}
+          value={
+            typeof value === 'object' && value !== null
+              ? JSON.stringify(value, null, 2)
+              : value || ''
+          }
           onChange={onChange}
         />
       )
@@ -1102,6 +1131,21 @@ const FieldRenderer = ({
     case 'CURRENCY_AMOUNT':
     case 'COUNTER':
     case 'NUMBER': {
+      const isCurrency =
+        runtimeType === 'CURRENCY_AMOUNT' || isStructuredCurrencyValue(value)
+      const numericInputValue = isCurrency
+        ? extractCurrencyNumericValue(value)
+        : (value ?? '')
+      const currencyPrefix = isCurrency
+        ? `${extractCurrencyCode(value, field)} `
+        : undefined
+      const handleNumericChange = (nextVal: any) => {
+        if (isCurrency) {
+          onChange(updateCurrencyFieldValue(value, nextVal, field))
+        } else {
+          onChange(nextVal)
+        }
+      }
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
       if (isSearchField) {
         return (
@@ -1109,8 +1153,9 @@ const FieldRenderer = ({
             <div className='min-w-0 flex-1'>
               <InputNumber
                 {...common}
-                value={value ?? ''}
-                onChange={onChange}
+                prefix={currencyPrefix}
+                value={numericInputValue}
+                onChange={handleNumericChange}
                 onKeyDown={(e: any) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -1135,7 +1180,14 @@ const FieldRenderer = ({
           </div>
         )
       }
-      return <InputNumber {...common} value={value ?? ''} onChange={onChange} />
+      return (
+        <InputNumber
+          {...common}
+          prefix={currencyPrefix}
+          value={numericInputValue}
+          onChange={handleNumericChange}
+        />
+      )
     }
 
     case 'CALCULATED':
@@ -1143,7 +1195,7 @@ const FieldRenderer = ({
         <CalculatedFieldInput
           error={error}
           hideLabel={general.hideLabel}
-          label={field.label}
+          label={effectiveLabel}
           required={required}
           tooltip={general.tooltip}
           value={value}
@@ -1314,11 +1366,126 @@ const FieldRenderer = ({
       return (
         <div>
           <InputSwitch
-            checked={Boolean(value)}
+            checked={value === true || value === 'Yes'}
             description={general.tooltip}
             disabled={readOnly}
             error={error}
-            label={field.label}
+            label={effectiveLabel}
+            onChange={onChange}
+          />
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
+      )
+
+    case 'RATING':
+      return (
+        <div>
+          {!general.hideLabel && (
+            <label className='mb-1.5 block text-13 font-medium text-gray-12'>
+              {effectiveLabel}
+              {required && <span className='text-red-9'> *</span>}
+            </label>
+          )}
+          <Rating
+            color='yellow'
+            count={
+              field.settings?.specific?.iconCount ||
+              field.settings?.specific?.ratingIconCount ||
+              5
+            }
+            fractions={field.settings?.specific?.allowHalfRating ? 2 : 1}
+            readOnly={readOnly}
+            size='md'
+            value={Number(value) || 0}
+            onChange={onChange}
+          />
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
+      )
+
+    case 'OPINION_SCALE':
+      return (
+        <div>
+          {!general.hideLabel && (
+            <label className='mb-1.5 block text-13 font-medium text-gray-12'>
+              {effectiveLabel}
+              {required && <span className='text-red-9'> *</span>}
+            </label>
+          )}
+          <div className='flex flex-wrap gap-1.5 py-1'>
+            {Array.from({ length: 11 }).map((_, i) => {
+              const isSelected =
+                value !== '' &&
+                value !== null &&
+                value !== undefined &&
+                Number(value) === i
+              return (
+                <button
+                  key={i}
+                  disabled={readOnly}
+                  type='button'
+                  className={cn(
+                    'size-8 rounded-lg border text-xs font-bold transition-all active:scale-95 disabled:opacity-50',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-9 text-white'
+                      : 'border-gray-3 bg-surface text-gray-12 hover:bg-gray-2',
+                  )}
+                  onClick={() => onChange(i)}
+                >
+                  {i}
+                </button>
+              )
+            })}
+          </div>
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
+      )
+
+    case 'MATRIX':
+      return (
+        <div className='w-full'>
+          {!general.hideLabel && (
+            <label className='mb-1.5 block text-13 font-medium text-gray-12'>
+              {effectiveLabel}
+              {required && <span className='text-red-9'> *</span>}
+            </label>
+          )}
+          <RuntimeMatrixField
+            disabled={readOnly}
+            field={field}
+            value={value}
+            onChange={onChange}
+          />
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
+      )
+
+    case 'POPUP':
+    case 'TABS':
+    case 'NESTED_LIST':
+    case 'LOGIN_AUTHENTICATION':
+    case 'EMAIL_AUTHENTICATION':
+    case 'MOBILE_AUTHENTICATION':
+      return (
+        <div className='w-full'>
+          {!general.hideLabel && (
+            <label className='mb-1.5 block text-13 font-medium text-gray-12'>
+              {effectiveLabel}
+              {required && <span className='text-red-9'> *</span>}
+            </label>
+          )}
+          <LegacyInlineFieldRenderer
+            disabled={readOnly}
+            field={field}
+            value={value}
             onChange={onChange}
           />
           {error && (
@@ -1489,13 +1656,13 @@ const FieldRenderer = ({
         <div>
           {!general.hideLabel && (
             <label className='mb-1.5 block text-13 font-medium text-gray-12'>
-              {field.label}
+              {effectiveLabel}
               {required && <span className='text-red-9'> *</span>}
             </label>
           )}
           {!readOnly && (
             <CompactDropzone
-              accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+              accept={runtimeType === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
               disabled={readOnly}
               isLoading={isUploading || Boolean(isPreparing)}
               loadingText={
@@ -1619,16 +1786,16 @@ const FieldRenderer = ({
     }
 
     default: {
-      const fieldType = field.type
       return (
-        <div>
-          <label className='mb-1.5 block text-13 font-medium text-gray-12'>
-            {field.label}
-          </label>
-          <div className='rounded-lg border border-dashed border-gray-4 bg-gray-1 px-3 py-2.5 text-12 text-gray-9'>
-            {t`This field type (${fieldType}) isn't supported in this view yet.`}
-          </div>
-        </div>
+        <InputText
+          {...common}
+          value={
+            value !== undefined && value !== null && typeof value !== 'object'
+              ? String(value)
+              : ''
+          }
+          onChange={onChange}
+        />
       )
     }
   }

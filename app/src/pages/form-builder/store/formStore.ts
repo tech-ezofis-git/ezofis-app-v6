@@ -1,8 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { notifications } from '@mantine/notifications'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import formApi from '@/api/form/form'
 import { getField } from '@/helpers/new-field'
+import {
+  cloneFieldWithNewIds,
+  clonePanelWithNewIds,
+  mapV5LayoutToV6,
+  normalizeFieldSchema,
+  normalizeV5FormJson,
+  serializeFieldForSave,
+  serializeFormPayload,
+  type V5CalculationRule,
+} from '../helpers/v5SchemaAdapter'
 
 export const generateId = () => {
   try {
@@ -19,6 +30,8 @@ export type FormLayout =
   | 'SINGLE'
   | 'CLASSIC'
   | 'ACCORDION'
+  | 'CARD'
+  | 'TAB'
   | 'typeform'
   | 'grid'
   | 'full'
@@ -30,9 +43,12 @@ export interface FormStore {
   conversationalMode: boolean
   coordinator: string
   description: string
+  entryUser: string[]
   footerText: string
   formType: FormType
   headerText: string
+  historyFuture: Panel[][]
+  historyPast: Panel[][]
   hubLinkIds: any[]
   isBuilderMode: boolean
   isLeftSidebarCollapsed: boolean
@@ -45,11 +61,19 @@ export interface FormStore {
   panels: Panel[]
   previewMode: 'typeform' | 'grid' | 'full'
   publishStatus: PublishStatus
+  qrFields: string[]
+  rawFormRoot: Record<string, any>
+  rawPublish: Record<string, any>
+  rawSettings: Record<string, any>
+  rawSettingsGeneral: Record<string, any>
+  rules: V5CalculationRule[]
   secondaryPanels: Panel[]
   selectionType: 'general' | 'question'
   showHeaderFooter: boolean
   sidebarView: 'explorer' | 'fields'
+  superUser: string[]
   uid: string
+  uniqueColumns: string[]
   closedMessage?: string
   // Phase 4: Management
   responseLimit?: number
@@ -68,11 +92,13 @@ export interface FormStore {
   loadForm: (data: any) => void
   movePanel: (id: string, direction: 'up' | 'down') => void
   moveQuestion: (id: string, toPanelId: string, index: number) => void
+  redo: () => void
   resetForm: () => void
   saveForm: (
     targetStatus?: PublishStatus,
     formId?: string,
   ) => Promise<{ createdFormId?: string; success: boolean }>
+  undo: () => void
   updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
   updateQuestion: (id: string, updates: any) => void
   setActivePanelId: (id: string | null) => void
@@ -82,6 +108,7 @@ export interface FormStore {
   setConversationalMode: (enabled: boolean) => void
   setCoordinator: (coordinator: string) => void
   setDescription: (description: string) => void
+  setEntryUser: (users: string[]) => void
   setFormType: (type: FormType) => void
   setHeaderFooter: (updates: {
     footer?: string
@@ -97,14 +124,24 @@ export interface FormStore {
   setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
   setPublishOpen: (open: boolean) => void
   setPublishStatus: (status: PublishStatus) => void
+  setQrFields: (fields: string[]) => void
   setResponseLimit: (limit: number | undefined) => void
+  setRules: (rules: V5CalculationRule[]) => void
   setSchedule: (start?: string, end?: string) => void
   setSelectionType: (type: 'general' | 'question') => void
   setSidebarOpen: (open: boolean) => void
   setSidebarView: (view: 'explorer' | 'fields') => void
+  setSuperUser: (users: string[]) => void
+  setUniqueColumns: (columns: string[]) => void
 }
 
-export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
+export type FormType =
+  | 'WORKFLOW'
+  | 'FEEDBACK'
+  | 'MASTER'
+  | 'TASK'
+  | 'SLA'
+  | 'Feedback Form'
 
 export interface LogicRule {
   action: 'SHOW' | 'HIDE' | 'ENABLE' | 'DISABLE' | 'REQUIRE'
@@ -127,21 +164,31 @@ export interface Panel {
   id: string
   settings: {
     description: string
+    formEntryId?: number | string
     isCollapsed?: boolean
     isLocked?: boolean
     logic?: LogicRule[]
+    masterFormId?: number | string | null
     title?: string
   }
 }
-export type PublishStatus = 'DRAFT' | 'PUBLISHED'
+export type PublishStatus =
+  | 'DRAFT'
+  | 'PUBLISHED'
+  | 'PUBLISH_SCHEDULE'
+  | 'UNPUBLISHED'
+  | 'UNPUBLISH_SCHEDULE'
 
 export interface Question {
   id: string
   label: string
   type: QuestionType
   displayLabel?: string
+  notEditable?: boolean
+  showSettingsOnly?: boolean
   settings: {
     aiSettings?: {
+      fileDataValidate?: string[]
       fileValidation?: {
         classificationRules?: string
         enableClassification?: boolean
@@ -149,9 +196,16 @@ export interface Question {
         extractionRules?: string
       }
       formControlValidate?: {
-        conditionFields?: string[]
+        conditionFields?: any[]
+        existingFormFields?: string[]
+        formFields?: string
         masterFormColumn: any[]
         masterFormId: number
+        optionsType?: string
+      }
+      imageFileValidate?: {
+        formFields?: string[]
+        optionsType?: string
       }
       // TABLE fields only: id of a FILE_UPLOAD field on the same form whose
       // OCR-extracted line items should be offered for import into this table.
@@ -168,7 +222,7 @@ export interface Question {
       size: QuestionWidth
       tooltip?: string
       url?: string
-      visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN'
+      visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN' | 'DISABLE'
     }
     logic?: LogicRule[]
     lookupSettings: {
@@ -189,6 +243,7 @@ export interface Question {
     }
     pipingEnabled?: boolean
     specific: {
+      additionalLoginTypes?: string[]
       addressFields?: string[]
       addressMatchingFields?: Array<{
         addressColumn: 'CITY' | 'COUNTRY' | 'POSTALCODE' | 'STATE'
@@ -239,6 +294,7 @@ export interface Question {
         value: string
       }[]
       hasSameForm?: 'YES' | 'NO' | boolean
+      hasYearType?: boolean
       iconCount?: number
       iconType?: 'STAR' | 'HEART' | 'SMILEY'
       importExportEnabled?: boolean
@@ -250,7 +306,6 @@ export interface Question {
       isSearchField?: 'YES' | 'NO'
       listUsersByGroup?: string
       loginType?: string
-      additionalLoginTypes?: string[]
       lookupMaster?: string
       masterFormColumn?: string
       masterFormConditionColumn?: Array<{
@@ -315,7 +370,6 @@ export interface Question {
       specificCurrencies?: string[]
       suffixIcon?: string
       suffixLabel?: string
-      tableFixedRowLabels?: string[]
       tableColumns?: Array<{
         id: string
         name: string
@@ -359,13 +413,13 @@ export interface Question {
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
       }>
+      tableFixedRowLabels?: string[]
       tableViewMode?: 'ADVANCE' | 'NORMAL'
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
-      hasYearType?: boolean
-      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR' | string
       // qrValue?: boolean
       uniqueCheck?: boolean
       variant?: 'default' | 'filled' | 'unstyled'
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR' | string
       // yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
       yesLabel?: string
       yesNoLabels?: { no: string; yes: string }
@@ -393,6 +447,8 @@ export interface Question {
       fixedEndTime?: string
       fixedStartDate?: string
       fixedStartTime?: string
+      // answerIndicator?: 'YES' | 'NO'
+      hasCalculatedField?: boolean
       isCalculationEnabled?: boolean
       mandatorySettings?: Array<{
         controls: string[]
@@ -416,13 +472,11 @@ export interface Question {
       }>
       requireCurrencyUnit?: boolean
       requiredValidation?: 'ANY' | 'ALL'
-      // answerIndicator?: 'YES' | 'NO'
-      hasCalculatedField?: boolean
-      verificationRequired?: boolean
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
       timeRange?: string
+      verificationRequired?: boolean
       // verificationRequired?: boolean
     }
   }
@@ -449,6 +503,7 @@ export type QuestionType =
   | 'HEADING'
   | 'DIVIDER'
   | 'LABEL'
+  | 'PARAGRAPH'
   | 'RATING'
   | 'OPINION_SCALE'
   | 'COUNTER'
@@ -467,12 +522,29 @@ export type QuestionType =
   | 'SERIAL_NUMBER'
   | 'CHIPS'
   | 'IMAGE'
-
-// export type FormLayout = 'typeform' | 'grid' | 'full'
-// export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
-// export type PublishStatus = 'DRAFT' | 'PUBLISHED'
+  | 'JSON_EDITOR'
+  | 'NESTED_LIST'
+  | 'POPUP'
+  | 'TABS'
+  | 'LOGIN_AUTHENTICATION'
+  | 'CURRENCY'
 
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
+
+const MAX_HISTORY_STEPS = 50
+
+const snapshotPanels = (panels: Panel[]): Panel[] =>
+  JSON.parse(JSON.stringify(panels || []))
+
+const pushPastHistory = (
+  past: Panel[][],
+  currentPanels: Panel[],
+): Panel[][] => {
+  const next = [...(past || []), snapshotPanels(currentPanels)]
+  return next.length > MAX_HISTORY_STEPS
+    ? next.slice(next.length - MAX_HISTORY_STEPS)
+    : next
+}
 
 const initialState = {
   activePanelId: null,
@@ -482,29 +554,40 @@ const initialState = {
   conversationalMode: false,
   coordinator: '',
   description: '',
+  entryUser: [] as string[],
   footerText: '',
-  formType: 'WORKFLOW' as const,
+  formType: 'WORKFLOW' as FormType,
   headerText: '',
-  hubLinkIds: [],
+  historyFuture: [] as Panel[][],
+  historyPast: [] as Panel[][],
+  hubLinkIds: [] as any[],
   isBuilderMode: true,
   isLeftSidebarCollapsed: false,
   isPreviewOpen: false,
   isPublishOpen: false,
   isSidebarOpen: false,
   lastAddedPanelId: null,
-  layout: 'typeform' as const,
+  layout: 'CLASSIC' as FormLayout,
   name: 'Untitled Form',
-  panels: [],
+  panels: [] as Panel[],
   previewMode: 'typeform' as const,
-  publishStatus: 'DRAFT' as const,
+  publishStatus: 'DRAFT' as PublishStatus,
+  qrFields: [] as string[],
+  rawFormRoot: {} as Record<string, any>,
+  rawPublish: {} as Record<string, any>,
+  rawSettings: {} as Record<string, any>,
+  rawSettingsGeneral: {} as Record<string, any>,
   responseLimit: undefined,
+  rules: [] as V5CalculationRule[],
   scheduleEnd: '',
   scheduleStart: '',
-  secondaryPanels: [],
+  secondaryPanels: [] as Panel[],
   selectionType: 'general' as const,
   showHeaderFooter: false,
   sidebarView: 'fields' as const,
+  superUser: [] as string[],
   uid: '',
+  uniqueColumns: [] as string[],
 }
 
 export const useFormStore = create<FormStore>()(
@@ -530,23 +613,33 @@ export const useFormStore = create<FormStore>()(
           } else {
             newPanels.push(newPanel)
           }
-          return { lastAddedPanelId: newPanel.id, panels: newPanels }
+          return {
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            lastAddedPanelId: newPanel.id,
+            panels: newPanels,
+          }
         }),
 
       addQuestion: (panelId, question, index) =>
-        set((state) => ({
-          activeQuestionId: question.id,
-          panels: state.panels.map((p) => {
-            if (p.id !== panelId) return p
-            const newFields = [...p.fields]
-            if (typeof index === 'number') {
-              newFields.splice(index, 0, question)
-            } else {
-              newFields.push(question)
-            }
-            return { ...p, fields: newFields }
-          }),
-        })),
+        set((state) => {
+          const normalized = normalizeFieldSchema(question)
+          return {
+            activeQuestionId: normalized.id,
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            panels: state.panels.map((p) => {
+              if (p.id !== panelId) return p
+              const newFields = [...p.fields]
+              if (typeof index === 'number') {
+                newFields.splice(index, 0, normalized)
+              } else {
+                newFields.push(normalized)
+              }
+              return { ...p, fields: newFields }
+            }),
+          }
+        }),
 
       appendAIResponse: (data) =>
         set((state) => {
@@ -558,6 +651,8 @@ export const useFormStore = create<FormStore>()(
             return {
               ...state,
               activeQuestionId: null,
+              historyFuture: [],
+              historyPast: pushPastHistory(state.historyPast, state.panels),
               panels: [],
               selectionType: 'general',
             }
@@ -582,9 +677,11 @@ export const useFormStore = create<FormStore>()(
               f.isMandatory !== undefined
                 ? f.isMandatory
                 : f.settings?.validation?.fieldRule
-                  ? f.settings.validation.fieldRule === 'MANDATORY'
+                  ? f.settings.validation.fieldRule === 'MANDATORY' ||
+                    f.settings.validation.fieldRule === 'REQUIRED'
                   : (existingField.settings?.validation
-                      ?.fieldRule as string) === 'MANDATORY'
+                      ?.fieldRule as string) === 'MANDATORY' ||
+                    existingField.settings?.validation?.fieldRule === 'REQUIRED'
 
             return {
               ...existingField,
@@ -618,7 +715,7 @@ export const useFormStore = create<FormStore>()(
                 validation: {
                   ...existingField.settings?.validation,
                   fieldRule: (isMandatory
-                    ? 'MANDATORY'
+                    ? 'REQUIRED'
                     : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                 },
               },
@@ -633,7 +730,8 @@ export const useFormStore = create<FormStore>()(
             const baseField = getField(fieldType)
             const isMandatory = Boolean(
               f.isMandatory ||
-              f.settings?.validation?.fieldRule === 'MANDATORY',
+              f.settings?.validation?.fieldRule === 'MANDATORY' ||
+              f.settings?.validation?.fieldRule === 'REQUIRED',
             )
 
             return {
@@ -662,10 +760,10 @@ export const useFormStore = create<FormStore>()(
                       : f.settings?.specific?.customOptions || '',
                 },
                 validation: {
-                  fieldRule: (isMandatory
-                    ? 'MANDATORY'
-                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                   ...f.settings?.validation,
+                  fieldRule: (isMandatory
+                    ? 'REQUIRED'
+                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                 },
               },
             }
@@ -770,6 +868,8 @@ export const useFormStore = create<FormStore>()(
             activeQuestionId: null,
             description: data.description || state.description,
             formType: data.formType || state.formType,
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
             layout: data.layout || state.layout,
             name: data.name || state.name,
             panels: [...mergedExistingPanels, ...newPanels],
@@ -784,6 +884,8 @@ export const useFormStore = create<FormStore>()(
 
       deletePanel: (id) =>
         set((state) => ({
+          historyFuture: [],
+          historyPast: pushPastHistory(state.historyPast, state.panels),
           panels: state.panels.filter((p) => p.id !== id),
         })),
 
@@ -791,6 +893,8 @@ export const useFormStore = create<FormStore>()(
         set((state) => ({
           activeQuestionId:
             state.activeQuestionId === id ? null : state.activeQuestionId,
+          historyFuture: [],
+          historyPast: pushPastHistory(state.historyPast, state.panels),
           panels: state.panels.map((p) => ({
             ...p,
             fields: p.fields.filter((f) => f.id !== id),
@@ -802,18 +906,14 @@ export const useFormStore = create<FormStore>()(
           const index = state.panels.findIndex((p) => p.id === id)
           if (index === -1) return state
           const original = state.panels[index]
-          const clone: Panel = {
-            ...JSON.parse(JSON.stringify(original)),
-            fields: original.fields.map((f) => ({
-              ...f,
-              id: generateId(),
-              label: `${f.label} (Copy)`,
-            })),
-            id: generateId(),
-          }
+          const clone: Panel = clonePanelWithNewIds(original)
           const newPanels = [...state.panels]
           newPanels.splice(index + 1, 0, clone)
-          return { panels: newPanels }
+          return {
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            panels: newPanels,
+          }
         }),
 
       duplicateQuestion: (id) =>
@@ -821,16 +921,16 @@ export const useFormStore = create<FormStore>()(
           const newPanels = state.panels.map((p) => {
             const index = p.fields.findIndex((f) => f.id === id)
             if (index === -1) return p
-            const clone = {
-              ...p.fields[index],
-              id: generateId(),
-              label: `${p.fields[index].label} (Copy)`,
-            }
+            const clone = cloneFieldWithNewIds(p.fields[index])
             const newFields = [...p.fields]
             newFields.splice(index + 1, 0, clone)
             return { ...p, fields: newFields }
           })
-          return { panels: newPanels }
+          return {
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            panels: newPanels,
+          }
         }),
 
       // Lifecycle Actions
@@ -852,43 +952,93 @@ export const useFormStore = create<FormStore>()(
         // Validate that we have some valid form structure
         if (!json || (!json.panels && !json.settings)) return
 
-        const genSettings = json.settings?.general || {}
+        const normalized = normalizeV5FormJson(json)
+        const genSettings = normalized.settings?.general || {}
+        const pubSettings = normalized.settings?.publish || {}
+
+        const validFormTypes = [
+          'WORKFLOW',
+          'FEEDBACK',
+          'MASTER',
+          'TASK',
+          'SLA',
+          'Feedback Form',
+        ]
+        const resolvedFormType: FormType = validFormTypes.includes(
+          genSettings.type,
+        )
+          ? genSettings.type
+          : 'WORKFLOW'
+
+        const superUser = Array.isArray(genSettings.superUser)
+          ? genSettings.superUser
+          : genSettings.coordinator
+            ? [genSettings.coordinator]
+            : []
 
         set({
           activeQuestionId: null,
-          coordinator: genSettings.coordinator || '',
-          description: genSettings.description || '',
-          formType: ['WORKFLOW', 'FEEDBACK', 'MASTER'].includes(
-            genSettings.type,
-          )
-            ? genSettings.type
-            : 'WORKFLOW',
-          hubLinkIds: json.settings?.hubLinkIds || [],
+          closedMessage:
+            genSettings.closedMessage ?? 'This form is currently closed.',
+          conversationalMode: Boolean(genSettings.conversationalMode),
+          coordinator:
+            genSettings.coordinator ||
+            (Array.isArray(genSettings.superUser) &&
+            genSettings.superUser.length > 0
+              ? String(genSettings.superUser[0])
+              : ''),
+          description: genSettings.description || data.description || '',
+          entryUser: Array.isArray(genSettings.entryUser)
+            ? genSettings.entryUser
+            : [],
+          footerText: genSettings.footerText || '',
+          formType: resolvedFormType,
+          headerText: genSettings.headerText || '',
+          historyFuture: [],
+          historyPast: [],
+          hubLinkIds: normalized.settings?.hubLinkIds || [],
           isPreviewOpen: false,
           isPublishOpen: false,
           isSidebarOpen: false,
-          layout: (() => {
-            const l = String(genSettings.layout || 'CLASSIC').toUpperCase()
-            if (l === 'TYPEFORM' || l === 'STEPPER' || l === 'SINGLE')
-              return 'SINGLE'
-            if (l === 'GRID' || l === 'CLASSIC') return 'CLASSIC'
-            if (l === 'FULL' || l === 'ACCORDION') return 'ACCORDION'
-            return 'CLASSIC'
-          })(),
-          name: genSettings.name || 'Untitled Form',
-          panels: json.panels || [],
+          layout: mapV5LayoutToV6(genSettings.layout),
+          name: genSettings.name || data.name || 'Untitled Form',
+          panels: normalized.panels || [],
           publishStatus: (() => {
             const raw =
               data?.publishOption ||
               data?.status ||
-              json.settings?.publish?.publishOption
+              pubSettings?.publishOption ||
+              'DRAFT'
             const str = String(raw).toUpperCase()
-            return str === 'PUBLISHED' || raw === 1 || raw === '1'
-              ? 'PUBLISHED'
-              : 'DRAFT'
+            if (
+              str === 'PUBLISHED' ||
+              str === 'PUBLISH_SCHEDULE' ||
+              str === 'UNPUBLISHED' ||
+              str === 'UNPUBLISH_SCHEDULE' ||
+              str === 'DRAFT'
+            ) {
+              return str as PublishStatus
+            }
+            return raw === 1 || raw === '1' ? 'PUBLISHED' : 'DRAFT'
           })(),
-          secondaryPanels: json.secondaryPanels || [],
+          qrFields: Array.isArray(genSettings.qrFields)
+            ? genSettings.qrFields
+            : [],
+          rawFormRoot: normalized.rawFormRoot || {},
+          rawPublish: { ...pubSettings },
+          rawSettings: normalized.rawSettings || {},
+          rawSettingsGeneral: { ...genSettings },
+          responseLimit: genSettings.responseLimit,
+          rules: normalized.rules || [],
+          scheduleEnd: pubSettings.unpublishSchedule || '',
+          scheduleStart: pubSettings.publishSchedule || '',
+          secondaryPanels: normalized.secondaryPanels || [],
+          showHeaderFooter: Boolean(genSettings.showHeaderFooter),
+          superUser,
           uid: data.uid || json.uid || generateId(),
+          uniqueColumns: Array.isArray(genSettings.uniqueColumns)
+            ? genSettings.uniqueColumns
+            : [],
         })
       },
 
@@ -901,7 +1051,11 @@ export const useFormStore = create<FormStore>()(
           if (newIndex < 0 || newIndex >= newPanels.length) return state
           const [moved] = newPanels.splice(index, 1)
           newPanels.splice(newIndex, 0, moved)
-          return { panels: newPanels }
+          return {
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            panels: newPanels,
+          }
         }),
       moveQuestion: (id, toPanelId, index) =>
         set((state) => {
@@ -916,12 +1070,27 @@ export const useFormStore = create<FormStore>()(
           })
           if (!questionToMove) return state
           return {
+            historyFuture: [],
+            historyPast: pushPastHistory(state.historyPast, state.panels),
             panels: panelsWithout.map((p) => {
               if (p.id !== toPanelId) return p
               const newFields = [...p.fields]
               newFields.splice(index, 0, questionToMove!)
               return { ...p, fields: newFields }
             }),
+          }
+        }),
+
+      redo: () =>
+        set((state) => {
+          if (!state.historyFuture || state.historyFuture.length === 0) {
+            return state
+          }
+          const [nextPanels, ...remainingFuture] = state.historyFuture
+          return {
+            historyFuture: remainingFuture,
+            historyPast: pushPastHistory(state.historyPast, state.panels),
+            panels: snapshotPanels(nextPanels),
           }
         }),
 
@@ -989,7 +1158,7 @@ export const useFormStore = create<FormStore>()(
               (typeof response.data === 'string' ? response.data : undefined))
 
           return { createdFormId, success: true }
-        } catch (error) {
+        } catch {
           notifications.show({
             color: 'red',
             message: 'An unexpected error occurred while saving.',
@@ -998,35 +1167,70 @@ export const useFormStore = create<FormStore>()(
           return { success: false }
         }
       },
+      undo: () =>
+        set((state) => {
+          if (!state.historyPast || state.historyPast.length === 0) {
+            return state
+          }
+          const previousPanels = state.historyPast[state.historyPast.length - 1]
+          const remainingPast = state.historyPast.slice(0, -1)
+          return {
+            historyFuture: [
+              snapshotPanels(state.panels),
+              ...(state.historyFuture || []),
+            ].slice(0, MAX_HISTORY_STEPS),
+            historyPast: remainingPast,
+            panels: snapshotPanels(previousPanels),
+          }
+        }),
       updatePanel: (id, updates) =>
         set((state) => ({
+          historyFuture: [],
+          historyPast: pushPastHistory(state.historyPast, state.panels),
           panels: state.panels.map((p) =>
             p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p,
           ),
         })),
-
       updateQuestion: (id, updates) =>
         set((state) => ({
+          historyFuture: [],
+          historyPast: pushPastHistory(state.historyPast, state.panels),
           panels: state.panels.map((p) => ({
             ...p,
             fields: p.fields.map((f) => {
               if (f.id !== id) return f
-              if (typeof updates === 'function') return updates(f)
-              return { ...f, ...updates }
+              const nextField =
+                typeof updates === 'function'
+                  ? updates(f)
+                  : { ...f, ...updates }
+              return normalizeFieldSchema(nextField, 'save')
             }),
           })),
         })),
       setActivePanelId: (activePanelId) => set({ activePanelId }),
+
       // UI Selection Actions
       setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
       setAddFieldPosition: (addFieldPosition) => set({ addFieldPosition }),
       setClosedMessage: (closedMessage) => set({ closedMessage }),
-
       setConversationalMode: (conversationalMode) =>
         set({ conversationalMode }),
-      setCoordinator: (coordinator) => set({ coordinator }),
+      setCoordinator: (coordinator) =>
+        set((state) => ({
+          coordinator,
+          superUser: coordinator
+            ? Array.from(new Set([coordinator, ...(state.superUser || [])]))
+            : state.superUser,
+        })),
       setDescription: (description) => set({ description }),
-      setFormType: (formType) => set({ formType }),
+      setEntryUser: (entryUser) => set({ entryUser }),
+      // Fix V5 Bug 5: Preserve superUser and entryUser when switching formType
+      setFormType: (formType) =>
+        set((state) => ({
+          entryUser: state.entryUser,
+          formType,
+          superUser: state.superUser,
+        })),
       setHeaderFooter: (updates) =>
         set((state) => ({
           footerText: updates.footer ?? state.footerText,
@@ -1035,39 +1239,60 @@ export const useFormStore = create<FormStore>()(
         })),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
       setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
+
       setLayout: (layout) => set({ layout }),
       setLeftSidebarCollapsed: (isLeftSidebarCollapsed) =>
         set({ isLeftSidebarCollapsed }),
       // Form Metadata Actions
       setName: (name) => set({ name }),
-
-      setPanels: (panels) => set({ panels }),
+      setPanels: (panels) =>
+        set((state) => ({
+          historyFuture: [],
+          historyPast: pushPastHistory(state.historyPast, state.panels),
+          panels,
+        })),
       setPreviewMode: (previewMode) => set({ previewMode }),
+
       setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
       setPublishStatus: (publishStatus) => set({ publishStatus }),
-
+      setQrFields: (qrFields) => set({ qrFields }),
       // Management Actions
       setResponseLimit: (responseLimit) => set({ responseLimit }),
-      setSchedule: (scheduleStart, scheduleEnd) =>
-        set({ scheduleEnd, scheduleStart }),
-      setSelectionType: (selectionType) => set({ selectionType }),
 
+      setRules: (rules) => set({ rules }),
+      setSchedule: (scheduleStart, scheduleEnd) =>
+        set({
+          scheduleEnd: scheduleEnd ?? '',
+          scheduleStart: scheduleStart ?? '',
+        }),
+      setSelectionType: (selectionType) => set({ selectionType }),
       // Sidebar Actions
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+
       setSidebarView: (sidebarView) => set({ sidebarView }),
+
+      setSuperUser: (superUser) =>
+        set((state) => ({
+          coordinator: superUser[0] ?? state.coordinator,
+          superUser,
+        })),
+
+      setUniqueColumns: (uniqueColumns) => set({ uniqueColumns }),
     }),
     {
       name: 'form-builder-storage-v3',
       version: 3,
       partialize: (state) => {
-        // Exclude transient UI drawer flags from localStorage persistence
+        // Exclude transient UI drawer flags and undo/redo stacks from localStorage persistence
         const {
-          activePanelId,
-          activeQuestionId,
-          addFieldPosition,
-          isPreviewOpen,
-          isPublishOpen,
-          isSidebarOpen,
+          activePanelId: _activePanelId,
+          activeQuestionId: _activeQuestionId,
+          addFieldPosition: _addFieldPosition,
+          historyFuture: _historyFuture,
+          historyPast: _historyPast,
+          isPreviewOpen: _isPreviewOpen,
+          isPublishOpen: _isPublishOpen,
+          isSidebarOpen: _isSidebarOpen,
           ...rest
         } = state
         return rest
@@ -1076,48 +1301,6 @@ export const useFormStore = create<FormStore>()(
   ),
 )
 
-export const cleanField = (field: Question) => {
-  const cleaned = JSON.parse(JSON.stringify(field))
-  const keysToRemove = [
-    'filterBy',
-    'filter',
-    'filters',
-    'isManualChange',
-    'lookupFilterBy',
-    'lookupFilter',
-  ]
-  keysToRemove.forEach((key) => delete (cleaned as any)[key])
-  return cleaned
-}
+export const cleanField = (field: Question) => serializeFieldForSave(field)
 
-export const cleanFormPayload = (state: any) => {
-  return {
-    isDeleted: false,
-    panels: state.panels.map((p: any) => ({
-      ...p,
-      fields: p.fields.map((f: any) => cleanField(f)),
-    })),
-    secondaryPanels: state.secondaryPanels.map((p: any) => ({
-      ...p,
-      fields: p.fields.map((f: any) => cleanField(f)),
-    })),
-    uid: state.uid,
-    settings: {
-      general: {
-        coordinator: state.coordinator,
-        description: state.description,
-        layout: state.layout,
-        name: state.name,
-        type: state.formType,
-      },
-
-      hubLinkIds: state.hubLinkIds,
-      publish: {
-        publishOption: state.publishStatus,
-        publishSchedule: '',
-        unpublishSchedule: '',
-      },
-      rules: [],
-    },
-  }
-}
+export const cleanFormPayload = (state: any) => serializeFormPayload(state)

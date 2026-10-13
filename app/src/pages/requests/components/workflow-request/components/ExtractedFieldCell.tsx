@@ -8,18 +8,19 @@ import InputTextarea from '@/components/base/inputs/InputTextarea'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 import {
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
+  formatRuntimeFieldDisplayValue,
   getConfiguredFieldOptions,
+  getEffectiveFieldLabel,
   getFieldOptions,
+  resolveRuntimeFieldType,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
 } from '../utils/fieldRendering'
 
-const formatDisplayValue = (value: unknown) => {
-  if (value === null || value === undefined || value === '') return '-'
-  if (Array.isArray(value)) {
-    return value.length ? value.map(String).join(', ') : '-'
-  }
-  if (typeof value === 'object') return '-'
-  return String(value)
-}
+const formatDisplayValue = (value: unknown, field?: any) =>
+  formatRuntimeFieldDisplayValue(value, field)
 
 const getFieldIconName = (label: string, type?: string) => {
   const l = `${label || ''} ${type || ''}`.toLowerCase()
@@ -67,16 +68,10 @@ const ExtractedFieldCell = ({
   const { t } = useLingui()
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
-  const label =
-    field?.label ||
-    field?.settings?.general?.label ||
-    field?.name ||
-    field?.title ||
-    field?.settings?.title ||
-    'Field'
-  const type = String(field?.type || 'SHORT_TEXT').toUpperCase()
+  const label = getEffectiveFieldLabel(field, 'Field')
+  const type = resolveRuntimeFieldType(field)
   const iconName = getFieldIconName(label, type)
-  const display = formatDisplayValue(value)
+  const display = formatDisplayValue(value, field)
   const missing = Boolean(error)
 
   useEffect(() => {
@@ -122,11 +117,17 @@ const ExtractedFieldCell = ({
         onChange={(val) => commit(val || '')}
       />
     )
-  } else if (
-    type === 'NUMBER' ||
-    type === 'CURRENCY_AMOUNT' ||
-    type === 'COUNTER'
-  ) {
+  } else if (type === 'CURRENCY_AMOUNT') {
+    editor = (
+      <InputNumber
+        className='w-full font-semibold'
+        value={extractCurrencyNumericValue(localValue)}
+        onChange={(val) =>
+          commit(updateCurrencyFieldValue(localValue, val, field))
+        }
+      />
+    )
+  } else if (type === 'NUMBER' || type === 'COUNTER') {
     editor = (
       <InputNumber
         className='w-full font-semibold'
@@ -134,11 +135,7 @@ const ExtractedFieldCell = ({
         onChange={(val) => commit(val)}
       />
     )
-  } else if (
-    type === 'SINGLE_SELECT' ||
-    type === 'DROPDOWN' ||
-    type === 'SINGLE_CHOICE'
-  ) {
+  } else if (type === 'SINGLE_SELECT' || type === 'SINGLE_CHOICE') {
     const options =
       getConfiguredFieldOptions(field).length > 0
         ? getConfiguredFieldOptions(field)
@@ -180,6 +177,27 @@ const ExtractedFieldCell = ({
           onChange={(val) => setLocalValue(val)}
         />
       </div>
+    )
+  } else if (type === 'PHONE_NUMBER') {
+    editor = (
+      <input
+        className='w-full border-none bg-transparent p-0 text-[13px] font-semibold text-[var(--gray-13)] placeholder:font-normal focus:ring-0 focus:outline-none'
+        placeholder={`Enter ${label}...`}
+        type='text'
+        autoFocus
+        value={extractPhoneInputString(localValue)}
+        onBlur={stopEditing}
+        onChange={(e) =>
+          setLocalValue(updatePhoneFieldValue(localValue, e.target.value, field))
+        }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') stopEditing()
+          if (e.key === 'Escape') {
+            setLocalValue(value)
+            setIsEditing(false)
+          }
+        }}
+      />
     )
   } else {
     editor = (

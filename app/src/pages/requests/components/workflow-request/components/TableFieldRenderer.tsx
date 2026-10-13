@@ -31,7 +31,19 @@ import Tr from '@/components/base/table/Tr'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import { extractHeadersAndData } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/utils/fileParser'
 import { evaluateFormula } from '@/pages/form-builder/helpers/formula'
-import { fetchMasterTableRows } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import {
+  computeTableColumnTotals,
+  extractCurrencyNumericValue,
+  extractPhoneInputString,
+  fetchMasterTableRows,
+  formatRuntimeFieldDisplayValue,
+  getEffectiveColumnLabel,
+  getEffectiveFieldLabel,
+  resolveRuntimeFieldType,
+  shouldShowTableSummaryRow,
+  updateCurrencyFieldValue,
+  updatePhoneFieldValue,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
@@ -48,6 +60,7 @@ const generateRowId = () => {
 
 export interface TableColumn {
   id: string
+  label?: string
   name?: string
   size?: 'SMALL' | 'MEDIUM' | 'LARGE'
   type?: string
@@ -81,10 +94,9 @@ export interface TableColumn {
 }
 
 const getColumnPlaceholder = (col: TableColumn) =>
-  col.settings?.specific?.placeholder || col.name || '...'
+  col.settings?.specific?.placeholder || getEffectiveColumnLabel(col) || '...'
 
-const getColumnLabel = (col: TableColumn) =>
-  col.settings?.general?.displayLabel || col.name || 'Column'
+const getColumnLabel = (col: TableColumn) => getEffectiveColumnLabel(col)
 
 const isColumnReadOnly = (col: TableColumn) =>
   col.settings?.general?.visibility === 'READ_ONLY' ||
@@ -108,8 +120,6 @@ const findPriceColumnId = (columns: TableColumn[]) => {
 
 const findDescriptionColumnId = (columns: TableColumn[]) =>
   columns.find((col) => isDescriptionColumn(col))?.id
-
-const SUMMABLE_TYPES = new Set(['NUMBER', 'CURRENCY_AMOUNT', 'COUNTER'])
 
 const parseColumnOptions = (col: TableColumn): { id: string; name: string }[] =>
   (col.settings?.specific?.customOptions || '')
@@ -225,17 +235,30 @@ const getTableIconName = (label: string) => {
 const resolveCalculatedRow = (
   row: Record<string, any>,
   tableColumns: TableColumn[],
+  allRows: Record<string, any>[] = [],
+  tableFieldId?: string,
 ): Record<string, any> => {
   const next = { ...row }
   const calculatedColumns = tableColumns.filter((c) => c.type === 'CALCULATED')
   if (calculatedColumns.length === 0) return next
+
+  const colRefs = tableColumns.map((c) => ({
+    id: c.id,
+    label: c.name,
+    name: c.name,
+    settings: c.settings,
+    type: c.type,
+  }))
 
   for (let pass = 0; pass <= calculatedColumns.length; pass += 1) {
     let changed = false
     for (const col of calculatedColumns) {
       const tokens = col.settings?.specific?.formulaTokens
       if (!tokens?.length) continue
-      const result = evaluateFormula(tokens as any, next)
+      const context = tableFieldId
+        ? { ...next, [tableFieldId]: allRows }
+        : { ...next, _rows: allRows }
+      const result = evaluateFormula(tokens as any, context, colRefs as any)
       const formatted = result === null ? '' : result
       if (next[col.id] !== formatted) {
         next[col.id] = formatted
@@ -480,7 +503,7 @@ const renderCellInput = (
   onApiProductSelect?: (productCode: string | null) => void | Promise<void>,
   rowIndex?: number,
 ): ReactNode => {
-  const cellType = (col.type || 'SHORT_TEXT').toUpperCase()
+  const cellType = resolveRuntimeFieldType(col)
 
   if (cellType === 'SERIAL_NUMBER') {
     return (
@@ -493,7 +516,7 @@ const renderCellInput = (
   if (cellType === 'CALCULATED') {
     return (
       <div className='truncate px-2 py-1 text-xs font-semibold text-gray-11'>
-        {val !== undefined && val !== null && val !== '' ? String(val) : '-'}
+        {formatRuntimeFieldDisplayValue(val, col)}
       </div>
     )
   }
@@ -520,7 +543,7 @@ const renderCellInput = (
   if (readOnly) {
     return (
       <div className='truncate px-2 py-1 text-xs text-gray-12'>
-        {val !== undefined && val !== null && val !== '' ? String(val) : '-'}
+        {formatRuntimeFieldDisplayValue(val, col)}
       </div>
     )
   }
@@ -557,8 +580,8 @@ const renderCellInput = (
           placeholder='0.00'
           prefix='$'
           thousandSeparator=','
-          value={val != null ? val : ''}
-          onChange={(v) => onCellChange(v)}
+          value={extractCurrencyNumericValue(val)}
+          onChange={(v) => onCellChange(updateCurrencyFieldValue(val, v, col))}
         />
       )
 
@@ -593,7 +616,7 @@ const renderCellInput = (
     case 'LABEL':
       return (
         <div className='truncate px-2 py-1 text-xs font-semibold text-gray-11'>
-          {val || col.name}
+          {val || getColumnLabel(col)}
         </div>
       )
 
@@ -625,10 +648,9 @@ const renderCellInput = (
     }
 
     case 'FILE_UPLOAD':
-    case 'IMAGE_UPLOAD':
-    case 'IMAGE': {
+    case 'IMAGE_UPLOAD': {
       const fileName: string | undefined = val?.fileName
-      const isImageType = cellType === 'IMAGE_UPLOAD' || cellType === 'IMAGE'
+      const isImageType = cellType === 'IMAGE_UPLOAD'
       return (
         <label className='flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5'>
           <Icon
@@ -695,9 +717,18 @@ const renderCellInput = (
       )
     }
 
+    case 'PHONE_NUMBER':
+      return (
+        <InputText
+          className='w-full'
+          placeholder={getColumnPlaceholder(col)}
+          value={extractPhoneInputString(val)}
+          onChange={(v) => onCellChange(updatePhoneFieldValue(val, v, col))}
+        />
+      )
+
     case 'SHORT_TEXT':
     case 'EMAIL':
-    case 'PHONE_NUMBER':
     case 'URL':
     default:
       return (
@@ -730,14 +761,20 @@ const TableFieldRenderer = ({
   const tableColumns: TableColumn[] = specific.tableColumns || []
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
   const fixedRowCount: number = specific.fixedRowCount || 5
-  const fixedRowLabels: string[] = specific.tableFixedRowLabels || []
-  const getRowDisplayLabel = (rowIndex: number) =>
-    rowsType === 'FIXED' && fixedRowLabels[rowIndex]
-      ? fixedRowLabels[rowIndex]
-      : String(rowIndex + 1)
+  const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
+  const getRowDisplayLabel = (rowIndex: number) => {
+    if (rowsType !== 'FIXED') return String(rowIndex + 1)
+    const entry = fixedRowLabels[rowIndex]
+    if (typeof entry === 'string' && entry.trim()) return entry
+    if (entry && typeof entry === 'object') {
+      const labelCol = tableColumns.find((c) => c.type === 'LABEL')
+      const val = labelCol ? entry[labelCol.id] : entry.label
+      if (val) return String(val)
+    }
+    return String(rowIndex + 1)
+  }
   const rowSelection: 'NONE' | 'SINGLE' | 'MULTIPLE' =
     specific.rowSelection || 'NONE'
-  const showSummaryRow: boolean = Boolean(specific.showSummaryRow)
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set())
   const [isMasterSyncing, setIsMasterSyncing] = useState(false)
   const [viewOverride, setViewOverride] = useState<'ADVANCE' | 'NORMAL' | null>(
@@ -796,9 +833,22 @@ const TableFieldRenderer = ({
       if (raw.length >= fixedRowCount) {
         return raw.slice(0, fixedRowCount)
       }
+      const labelCol = tableColumns.find((c: any) => c.type === 'LABEL')
+      const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
+
       const backfilled = [...raw]
       while (backfilled.length < fixedRowCount) {
-        backfilled.push({ _rowId: generateRowId() })
+        const idx = backfilled.length
+        const rowObj: Record<string, any> = { _rowId: generateRowId() }
+        if (labelCol) {
+          const labelEntry = fixedRowLabels[idx]
+          if (typeof labelEntry === 'string') {
+            rowObj[labelCol.id] = labelEntry
+          } else if (labelEntry && typeof labelEntry === 'object') {
+            rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
+          }
+        }
+        backfilled.push(rowObj)
       }
       return backfilled
     }
@@ -819,9 +869,9 @@ const TableFieldRenderer = ({
   const dynamicColumns: TableColumn[] = isDynamicTable
     ? rows.find((r) => r._dynamicColumns)?._dynamicColumns || []
     : []
-  const effectiveColumns: TableColumn[] = isDynamicTable
-    ? [...tableColumns, ...dynamicColumns]
-    : tableColumns
+  const effectiveColumns: TableColumn[] = (
+    isDynamicTable ? [...tableColumns, ...dynamicColumns] : tableColumns
+  ).filter((col) => col.settings?.general?.visibility !== 'HIDDEN')
   const isDynamicColumn = (col: TableColumn) =>
     isDynamicTable && dynamicColumns.some((c) => c.id === col.id)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
@@ -993,7 +1043,7 @@ const TableFieldRenderer = ({
   })
 
   const resolvedRows = rows.map((row) =>
-    resolveCalculatedRow(row, tableColumns),
+    resolveCalculatedRow(row, tableColumns, rows, field?.id),
   )
 
   // Calculated cells are computed for display above, but a submitted row
@@ -1228,21 +1278,9 @@ const TableFieldRenderer = ({
     XLSX.writeFile(workbook, `${field.label || 'table'}.xlsx`)
   }
 
+  const showSummaryRow = shouldShowTableSummaryRow(field, effectiveColumns)
   const columnTotals: Record<string, number> = showSummaryRow
-    ? effectiveColumns.reduce<Record<string, number>>((totals, col) => {
-        const type = col.type?.toUpperCase() || ''
-        const showColumnTotal = col.settings?.specific?.showColumnTotal
-        const isIncluded =
-          type === 'CALCULATED'
-            ? showColumnTotal === true
-            : SUMMABLE_TYPES.has(type) && showColumnTotal !== false
-        if (!isIncluded) return totals
-        totals[col.id] = rows.reduce((sum, row) => {
-          const num = Number(row[col.id])
-          return sum + (Number.isFinite(num) ? num : 0)
-        }, 0)
-        return totals
-      }, {})
+    ? computeTableColumnTotals(field, resolvedRows, effectiveColumns)
     : {}
 
   if (effectiveColumns.length === 0) {
@@ -1278,9 +1316,9 @@ const TableFieldRenderer = ({
             <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
               <Icon
                 className='h-4 w-4 text-[var(--primary-9)]'
-                name={getTableIconName(field.label)}
+                name={getTableIconName(getEffectiveFieldLabel(field))}
               />
-              {field.displayLabel || field.label}
+              {getEffectiveFieldLabel(field)}
               {isFlat ? (
                 <span className='font-bold text-[var(--gray-13)]'>
                   ({rows.length})
