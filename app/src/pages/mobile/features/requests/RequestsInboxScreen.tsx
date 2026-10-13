@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import workflowsApiV6 from '@/api/v6/workflows'
 import cn from '@/utils/cn'
 import { IconButton } from '../../components/layout/AppBar'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
@@ -10,10 +11,7 @@ import {
   RequestCardSkeleton,
   type RequestCardTone,
 } from './RequestCard'
-import {
-  type MobileInboxTab,
-  useMobileRequestsInbox,
-} from './useMobileRequestsInbox'
+import { useMobileRequestsInbox } from './useMobileRequestsInbox'
 
 const FILTERS: {
   countKey: 'overdue' | 'matched' | 'discrepancies' | 'high'
@@ -52,16 +50,6 @@ const FILTERS: {
   },
 ]
 
-const TABS: {
-  countKey: 'invoices' | 'exceptions' | 'processed'
-  id: MobileInboxTab
-  label: string
-}[] = [
-  { countKey: 'invoices', id: 'Inbox', label: 'Invoices' },
-  { countKey: 'exceptions', id: 'Exceptions', label: 'Exceptions' },
-  { countKey: 'processed', id: 'Processed', label: 'Processed' },
-]
-
 type RequestsInboxScreenProps = {
   onOpenRequest?: (id: string) => void
   onTabBarChange?: (id: TabBarItemId) => void
@@ -73,6 +61,9 @@ export function RequestsInboxScreen({
 }: RequestsInboxScreenProps) {
   const [tabBarId, setTabBarId] = useState<TabBarItemId>('inbox')
   const [workflowPickerOpen, setWorkflowPickerOpen] = useState(false)
+  const [openFilterId, setOpenFilterId] = useState<string | null>(null)
+  const [filterOptions, setFilterOptions] = useState<string[]>([])
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
@@ -80,20 +71,26 @@ export function RequestsInboxScreen({
     activeQuickFilters,
     activeTab,
     allWorkflows,
+    applyFieldFilters,
     cards,
+    clearFieldFilters,
+    fieldFilters,
     filterCounts,
     handleOpenRequest,
     handleQuickFilter,
     handleSelectWorkflow,
     hasMore,
+    isAccountsPayable,
     isInitialLoading,
     isLoadingMore,
     loadMore,
     refetch,
+    replaceQuickFilters,
+    requestTabs,
     selectedWorkflowId,
     showTopLoader,
-    tabCounts,
-    totalItems,
+    toggleFieldValue,
+    workflowFilterFields,
     workflowLoadStatus,
     workflowName,
     setActiveTab,
@@ -102,9 +99,43 @@ export function RequestsInboxScreen({
   const emptyMessage = useMemo(() => {
     if (workflowLoadStatus === 'empty') return 'No workflows available'
     if (isInitialLoading) return null
-    if (cards.length === 0) return 'No other pending invoices'
+    if (cards.length === 0) return 'No requests in this view'
     return null
   }, [cards.length, isInitialLoading, workflowLoadStatus])
+
+  const openFilter = workflowFilterFields.find(
+    (field) => field.id === openFilterId,
+  )
+
+  useEffect(() => {
+    setOpenFilterId(null)
+    setFilterOptions([])
+  }, [selectedWorkflowId])
+
+  useEffect(() => {
+    if (!openFilter || !selectedWorkflowId) {
+      setFilterOptions([])
+      return
+    }
+    let cancelled = false
+    setFilterOptionsLoading(true)
+    void workflowsApiV6
+      .getControlValues(String(selectedWorkflowId), openFilter.label)
+      .then((res) => {
+        if (cancelled) return
+        const values = Array.isArray(res.data?.values) ? res.data.values : []
+        setFilterOptions(values.map((value) => String(value)).filter(Boolean))
+      })
+      .catch(() => {
+        if (!cancelled) setFilterOptions([])
+      })
+      .finally(() => {
+        if (!cancelled) setFilterOptionsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [openFilter, selectedWorkflowId])
 
   const onIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -220,34 +251,30 @@ export function RequestsInboxScreen({
       `}</style>
 
       {/* Underline tabs */}
-      <div className='shrink-0 border-b border-[var(--gray-3)] bg-surface-primary px-3'>
-        <div className='flex'>
-          {TABS.map((tab) => {
-            const active = tab.id === activeTab
-            const count = tabCounts[tab.countKey]
+      <div className='shrink-0 border-b border-[var(--gray-3)] bg-surface-primary'>
+        <div className='no-scrollbar flex overflow-x-auto px-2'>
+          {requestTabs.map((tab) => {
+            const active = tab.value === activeTab
             return (
               <button
-                key={tab.id}
+                key={tab.value}
                 type='button'
                 className={cn(
-                  'flex-1 border-b-2 py-2.5 text-center text-[12px] transition-colors',
+                  'shrink-0 border-b-2 px-3 py-2.5 text-center text-[12px] whitespace-nowrap transition-colors',
                   active
                     ? 'border-[var(--primary-9)] font-semibold text-[var(--primary-9)]'
                     : 'border-transparent font-medium text-[var(--gray-9)]',
                 )}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.value)}
               >
-                <span className='truncate'>
-                  {tab.label} ({count})
-                </span>
+                {tab.label} ({tab.count})
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Capsule filters */}
-      {activeTab === 'Inbox' ? (
+      {isAccountsPayable && activeTab === 'Inbox' ? (
         <div className='no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-3 py-2.5'>
           {FILTERS.map((filter) => (
             <FilterChip
@@ -260,6 +287,90 @@ export function RequestsInboxScreen({
               onClick={() => handleQuickFilter(filter.id)}
             />
           ))}
+        </div>
+      ) : null}
+
+      {!isAccountsPayable && workflowFilterFields.length > 0 ? (
+        <div className='shrink-0 px-3 py-2.5'>
+          <div className='no-scrollbar flex gap-2 overflow-x-auto'>
+            {workflowFilterFields.map((field) => {
+              const selected = fieldFilters[field.id] || []
+              const open = openFilterId === field.id
+              return (
+                <button
+                  key={field.id}
+                  type='button'
+                  className={cn(
+                    'inline-flex h-7 shrink-0 items-center gap-1 rounded-full border px-2.5 text-[11px] font-medium active:scale-95',
+                    open || selected.length
+                      ? 'border-[var(--primary-8)] bg-[var(--primary-3)] font-semibold text-[var(--primary-11)]'
+                      : 'border-[var(--gray-4)] text-[var(--gray-11)]',
+                  )}
+                  onClick={() =>
+                    setOpenFilterId((current) =>
+                      current === field.id ? null : field.id,
+                    )
+                  }
+                >
+                  <span className='max-w-[140px] truncate'>
+                    {selected.length
+                      ? `${field.label} · ${selected.length}`
+                      : field.label}
+                  </span>
+                  <Icon className='size-2.5' name='ChevronDown' />
+                </button>
+              )
+            })}
+            {Object.values(fieldFilters).some((values) => values.length) ? (
+              <button
+                className='shrink-0 px-1 text-[11px] font-semibold text-[var(--primary-11)]'
+                type='button'
+                onClick={() => {
+                  clearFieldFilters()
+                  setOpenFilterId(null)
+                }}
+              >
+                Reset
+              </button>
+            ) : null}
+          </div>
+          {openFilter ? (
+            <div className='mt-2 max-h-44 overflow-y-auto rounded-xl border border-[var(--gray-4)] bg-surface-primary p-1'>
+              {filterOptionsLoading ? (
+                <p className='px-2 py-3 text-[11px] text-[var(--gray-9)]'>
+                  Loading options…
+                </p>
+              ) : filterOptions.length === 0 ? (
+                <p className='px-2 py-3 text-[11px] text-[var(--gray-9)]'>
+                  No options for this filter
+                </p>
+              ) : (
+                filterOptions.map((option) => {
+                  const selected = (fieldFilters[openFilter.id] || []).includes(
+                    option,
+                  )
+                  return (
+                    <button
+                      key={option}
+                      type='button'
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[12px]',
+                        selected
+                          ? 'bg-[var(--primary-3)] font-semibold text-[var(--primary-11)]'
+                          : 'text-[var(--gray-12)]',
+                      )}
+                      onClick={() => toggleFieldValue(openFilter.id, option)}
+                    >
+                      <span className='min-w-0 flex-1 truncate'>{option}</span>
+                      {selected ? (
+                        <Icon className='size-3.5' name='Check' />
+                      ) : null}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

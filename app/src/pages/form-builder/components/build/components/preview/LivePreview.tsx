@@ -24,7 +24,10 @@ import InputTime from '@/components/base/inputs/InputTime'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import {
+  evaluateFormRules,
+  evaluatePanelRules,
+} from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   type Question,
@@ -65,6 +68,10 @@ const LivePreview = () => {
     () => evaluateFormRules(panels, previewModel),
     [panels, previewModel],
   )
+  const panelStates = useMemo(
+    () => evaluatePanelRules(panels, previewModel),
+    [panels, previewModel],
+  )
 
   // Fetch repositories for OCR target context
   useEffect(() => {
@@ -94,62 +101,61 @@ const LivePreview = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setIsPreviewOpen])
 
-useEffect(() => {
-  if (!isPreviewOpen) return
+  useEffect(() => {
+    if (!isPreviewOpen) return
 
-  setPreviewModel((prev) => {
-    const next = { ...prev }
-    const session = authUserStore.getState().session
+    setPreviewModel((prev) => {
+      const next = { ...prev }
+      const session = authUserStore.getState().session
 
-    const allFields = panels.flatMap((panel: any) => panel.fields || [])
+      const allFields = panels.flatMap((panel: any) => panel.fields || [])
 
-    for (const field of allFields) {
-      // Don't overwrite an already populated value
-      const hasValue =
-        next[field.id] !== undefined &&
-        next[field.id] !== null &&
-        next[field.id] !== ''
+      for (const field of allFields) {
+        // Don't overwrite an already populated value
+        const hasValue =
+          next[field.id] !== undefined &&
+          next[field.id] !== null &&
+          next[field.id] !== ''
 
-      if (hasValue) continue
+        if (hasValue) continue
 
-      // Default USER_EMAIL
-      if (
-        field.settings?.specific?.defaultValueInSelectField === 'USER_EMAIL' &&
-        session?.email
-      ) {
-        next[field.id] = session.email
-        continue
-      }
-
-      // Default USER_NAME
-      if (
-        field.settings?.specific?.defaultValueInSelectField === 'USER_NAME'
-      ) {
-        const name = session
-          ? `${session.firstName || ''} ${session.lastName || ''}`.trim()
-          : ''
-
-        if (name) {
-          next[field.id] = name
+        // Default USER_EMAIL
+        if (
+          field.settings?.specific?.defaultValueInSelectField ===
+            'USER_EMAIL' &&
+          session?.email
+        ) {
+          next[field.id] = session.email
           continue
         }
-      }
 
-      // SHORT_TEXT / FULL_NAME auto-fill
-      if (
-        (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME')
-      ) {
-        const resolved = resolveShortTextFillValue(field)
+        // Default USER_NAME
+        if (
+          field.settings?.specific?.defaultValueInSelectField === 'USER_NAME'
+        ) {
+          const name = session
+            ? `${session.firstName || ''} ${session.lastName || ''}`.trim()
+            : ''
 
-        if (resolved) {
-          next[field.id] = resolved
+          if (name) {
+            next[field.id] = name
+            continue
+          }
+        }
+
+        // SHORT_TEXT / FULL_NAME auto-fill
+        if (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') {
+          const resolved = resolveShortTextFillValue(field)
+
+          if (resolved) {
+            next[field.id] = resolved
+          }
         }
       }
-    }
 
-    return applyCalculatedFields(panels, next)
-  })
-}, [isPreviewOpen, panels])
+      return applyCalculatedFields(panels, next)
+    })
+  }, [isPreviewOpen, panels])
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
@@ -346,86 +352,99 @@ useEffect(() => {
                 </div>
               </div>
             ) : (
-              panels.map((panel, idx) => (
-                <div
-                  className='space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs'
-                  key={panel.id}
-                >
-                  {/* Section Title & Description Header */}
-                  <div className='border-b border-gray-3 pb-3'>
-                    <h3 className='text-base font-bold text-gray-12'>
-                      {panel.settings.title || `Section ${idx + 1}`}
-                    </h3>
-                    {panel.settings.description && (
-                      <p className='mt-1 text-xs font-normal text-gray-10'>
-                        {panel.settings.description}
-                      </p>
+              panels.map((panel, idx) =>
+                panelStates[panel.id]?.visible === false ? null : (
+                  <div
+                    className={cn(
+                      'space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs',
+                      panelStates[panel.id]?.disabled && 'opacity-70',
                     )}
-                  </div>
+                    key={panel.id}
+                  >
+                    {/* Section Title & Description Header */}
+                    <div className='border-b border-gray-3 pb-3'>
+                      <h3 className='text-base font-bold text-gray-12'>
+                        {panel.settings.title || `Section ${idx + 1}`}
+                      </h3>
+                      {panel.settings.description && (
+                        <p className='mt-1 text-xs font-normal text-gray-10'>
+                          {panel.settings.description}
+                        </p>
+                      )}
+                    </div>
 
-                  {/* Section Fields Grid */}
-                  <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
-                    {panel.fields.map((field) => {
-                      const state = fieldStates[field.id]
-                      if (state && !state.visible) return null
-                      const isRequired = state
-                        ? state.required
-                        : field.settings.validation.fieldRule === 'REQUIRED'
+                    {/* Section Fields Grid */}
+                    <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
+                      {panel.fields.map((field) => {
+                        const state = fieldStates[field.id]
+                        if (state && !state.visible) return null
+                        const isRequired = state
+                          ? state.required
+                          : field.settings.validation.fieldRule === 'REQUIRED'
 
-                      return (
-                        <div
-                          key={field.id}
-                          className={cn(
-                            'col-span-12',
-                            deviceType !== 'mobile' &&
-                              field.settings.general.size === 'col-6' &&
-                              'md:col-span-6',
-                            deviceType !== 'mobile' &&
-                              field.settings.general.size === 'col-4' &&
-                              'md:col-span-4',
-                            deviceType !== 'mobile' &&
-                              field.settings.general.size === 'col-3' &&
-                              'md:col-span-3',
-                          )}
-                        >
-                          {!field.settings.general.hideLabel && (
-                            <div className='mb-1.5 flex items-center justify-between'>
-                              <label className='block text-xs font-semibold text-gray-12'>
-                                {field.label || 'Untitled Question'}
-                                {isRequired && (
-                                  <span className='ml-1 font-bold text-red-11'>
-                                    *
-                                  </span>
-                                )}
-                              </label>
+                        return (
+                          <div
+                            key={field.id}
+                            className={cn(
+                              'col-span-12',
+                              deviceType !== 'mobile' &&
+                                field.settings.general.size === 'col-6' &&
+                                'md:col-span-6',
+                              deviceType !== 'mobile' &&
+                                field.settings.general.size === 'col-4' &&
+                                'md:col-span-4',
+                              deviceType !== 'mobile' &&
+                                field.settings.general.size === 'col-3' &&
+                                'md:col-span-3',
+                            )}
+                          >
+                            {!field.settings.general.hideLabel && (
+                              <div className='mb-1.5 flex items-center justify-between'>
+                                <label className='block text-xs font-semibold text-gray-12'>
+                                  {field.label || 'Untitled Question'}
+                                  {isRequired && (
+                                    <span className='ml-1 font-bold text-red-11'>
+                                      *
+                                    </span>
+                                  )}
+                                </label>
+                              </div>
+                            )}
+                            {field.settings.general.description && (
+                              <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
+                                {field.settings.general.description}
+                              </p>
+                            )}
+                            <div
+                              aria-disabled={state?.disabled || undefined}
+                              inert={state?.disabled || undefined}
+                              className={cn(
+                                state?.disabled && 'opacity-60 select-none',
+                              )}
+                            >
+                              {renderPreviewInput(
+                                field,
+                                previewModel,
+                                handleFieldValueChange,
+                                (file) => handleOcrFileSelect(file, field),
+                                extractingFieldId === field.id,
+                                selectedRepoId,
+                                (patch) =>
+                                  setPreviewModel((prev) =>
+                                    applyCalculatedFields(panels, {
+                                      ...prev,
+                                      ...patch,
+                                    }),
+                                  ),
+                              )}
                             </div>
-                          )}
-                          {field.settings.general.description && (
-                            <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
-                              {field.settings.general.description}
-                            </p>
-                          )}
-                          {renderPreviewInput(
-                            field,
-                            previewModel,
-                            handleFieldValueChange,
-                            (file) => handleOcrFileSelect(file, field),
-                            extractingFieldId === field.id,
-                            selectedRepoId,
-                            (patch) =>
-                              setPreviewModel((prev) =>
-                                applyCalculatedFields(panels, {
-                                  ...prev,
-                                  ...patch,
-                                }),
-                              ),
-                          )}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))
+                ),
+              )
             )}
           </div>
         </div>

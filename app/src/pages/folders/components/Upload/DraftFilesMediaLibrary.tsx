@@ -642,6 +642,7 @@ export default function DraftFilesMediaLibrary({
             </p>
           ) : (
             <DraftAttachmentFields
+              key={focused.id}
               exportDisabled={
                 focused.status !== 'ready' ||
                 Boolean(missingMandatoryById[focused.id])

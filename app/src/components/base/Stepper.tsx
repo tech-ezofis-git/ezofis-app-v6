@@ -48,7 +48,7 @@ const Stepper = ({
       size='xs'
       classNames={{
         separator: 'rounded-full bg-gray-3',
-        step: 'disabled:opacity-50',
+        step: 'disabled:opacity-50 data-[allow-click]:cursor-pointer transition-opacity hover:opacity-90',
         stepBody: 'ml-3',
         stepCompletedIcon: 'text-primary-11 [&>svg]:!size-3.5',
         stepDescription: 'text-xs/5 text-gray-10',

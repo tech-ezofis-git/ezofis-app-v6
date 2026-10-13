@@ -1496,7 +1496,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         managerOptions={managerOptions}
         roleOptions={apiRoleOptions}
         onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
-        onBackToSettings={onBack}
+        onBackToSettings={() => {
+          void (async () => {
+            await discardUserWizardDraft()
+            setOriginalUser(null)
+            setIsSetupOpen(false)
+            onBack?.()
+          })()
+        }}
         onCancel={() => {
           void (async () => {
             await discardUserWizardDraft()
@@ -2003,12 +2010,12 @@ function getInitials(firstName: string, lastName: string) {
 
 function getPasswordRequirementError(
   password: string,
-  i18n: { _: (descriptor: any) => string },
-  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+  _i18n?: { _: (descriptor: any) => string },
+  _t?: (strings: TemplateStringsArray, ...values: any[]) => string,
 ) {
   const unmet = requirementsConfig.find((req) => !req.regex.test(password))
   return unmet
-    ? t`Your password doesn't meet the requirements. Please check the requirements and try again.`
+    ? staticT`Your password doesn't meet the requirements. Please check the requirements and try again.`
     : undefined
 }
 
@@ -2016,19 +2023,19 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function getEmailValidationError(
   email: string,
-  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+  _t?: (strings: TemplateStringsArray, ...values: any[]) => string,
 ) {
   const trimmed = String(email || '').trim()
   if (!trimmed) return undefined
   if (!EMAIL_PATTERN.test(trimmed)) {
-    return t`Please enter a valid email address.`
+    return staticT`Please enter a valid email address.`
   }
   return undefined
 }
 
 function getMissingRequiredUserLabels(
   user: DraftUser,
-  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+  _t?: (strings: TemplateStringsArray, ...values: any[]) => string,
   step?: number,
 ) {
   if (step === 2) return []
@@ -2041,25 +2048,25 @@ function getMissingRequiredUserLabels(
     )
 
     if (user.mfaEnabled && !hasValidMethod) {
-      return [t`MFA Method`]
+      return [staticT`MFA Method`]
     }
     return []
   }
 
   if (step === 1) {
-    return getMissingRequiredLabels([{ label: t`Role`, value: user.role }])
+    return getMissingRequiredLabels([{ label: staticT`Role`, value: user.role }])
   }
 
   const loginFields = [
-    { label: t`First Name`, value: user.firstName },
-    { label: t`Last Name`, value: user.lastName },
-    { label: t`Email Address`, value: user.email },
-    { label: t`Login Type`, value: user.loginType },
+    { label: staticT`First Name`, value: user.firstName },
+    { label: staticT`Last Name`, value: user.lastName },
+    { label: staticT`Email Address`, value: user.email },
+    { label: staticT`Login Type`, value: user.loginType },
   ]
 
   if (user.loginType === 'Password' && user.resetPassword !== false) {
     loginFields.push({
-      label: user.resetPassword === true ? t`New Password` : t`Password`,
+      label: user.resetPassword === true ? staticT`New Password` : staticT`Password`,
       value: user.password,
     })
   }
@@ -2070,7 +2077,7 @@ function getMissingRequiredUserLabels(
 
   const missing = getMissingRequiredLabels([
     ...loginFields,
-    { label: t`Role`, value: user.role },
+    { label: staticT`Role`, value: user.role },
   ])
 
   if (user.mfaEnabled) {
@@ -2080,7 +2087,7 @@ function getMissingRequiredUserLabels(
       method && !(method === 'Mobile OTP' && !hasPhone),
     )
     if (!hasValidMethod) {
-      missing.push(t`MFA Method`)
+      missing.push(staticT`MFA Method`)
     }
   }
 
@@ -2089,17 +2096,17 @@ function getMissingRequiredUserLabels(
 
 function getUserSetupValidationMessage(
   user: DraftUser,
-  t: (strings: TemplateStringsArray, ...values: any[]) => string,
-  i18n: { _: (descriptor: any) => string },
+  _t?: (strings: TemplateStringsArray, ...values: any[]) => string,
+  _i18n?: { _: (descriptor: any) => string },
   step?: number,
 ) {
-  const missingLabels = getMissingRequiredUserLabels(user, t, step)
+  const missingLabels = getMissingRequiredUserLabels(user, _t, step)
   if (missingLabels.length) {
     return getRequiredFieldErrorMessage(missingLabels)
   }
 
   if (step === undefined || step === 0) {
-    const emailError = getEmailValidationError(user.email, t)
+    const emailError = getEmailValidationError(user.email, _t)
     if (emailError) return emailError
 
     if (
@@ -2107,7 +2114,7 @@ function getUserSetupValidationMessage(
       user.resetPassword !== false &&
       user.password
     ) {
-      return getPasswordRequirementError(user.password, i18n, t)
+      return getPasswordRequirementError(user.password, _i18n, _t)
     }
   }
 
@@ -2808,7 +2815,7 @@ function UserSetup({
       steps={wizardSteps}
       setupTitle={editingUserId ? msg`Edit User` : msg`Create User`}
       onBack={handleBack}
-      onBackToSettings={onBack}
+      onBackToSettings={onBackToSettings}
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}

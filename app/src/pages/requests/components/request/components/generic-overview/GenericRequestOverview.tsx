@@ -51,7 +51,8 @@ import {
   type RepositoryFieldSchema,
   toUploadMetadata,
 } from '@/pages/requests/utils/repoFolderMetadata'
-import { listWorkflowStages } from '@/pages/requests/utils/workflow.utils'
+import { computeWorkflowStages, listWorkflowStages } from '@/pages/requests/utils/workflow.utils'
+import { useHistory } from '@/pages/requests/hooks/useHistory'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import Attachments from '../sections/attachment/Attachments'
@@ -179,21 +180,21 @@ const DocumentApprovalSplitLayout = ({
 
   const previewAttachment = firstAttachment
     ? {
-        ...firstAttachment,
-        itemId: targetItemId,
-        repositoryId: targetRepoId,
-      }
+      ...firstAttachment,
+      itemId: targetItemId,
+      repositoryId: targetRepoId,
+    }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-          _localFileUrl: selectedItem?._localFileUrl,
-          fileExtension:
-            selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-          fileName:
-            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          itemId: selectedItem?.itemId,
-          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          repositoryId: selectedItem?.repositoryId,
-        }
+        _localFileUrl: selectedItem?._localFileUrl,
+        fileExtension:
+          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+        fileName:
+          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        itemId: selectedItem?.itemId,
+        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        repositoryId: selectedItem?.repositoryId,
+      }
       : null
 
   const {
@@ -380,10 +381,10 @@ const DocumentFormSplitLayout = ({
 
   const requestIdentity = String(
     selectedItem?.itemId ||
-      selectedItem?.id ||
-      selectedItem?.requestId ||
-      selectedItem?.transactionId ||
-      '',
+    selectedItem?.id ||
+    selectedItem?.requestId ||
+    selectedItem?.transactionId ||
+    '',
   )
 
   // Reset baseline when navigating to a different request.
@@ -549,10 +550,10 @@ const DocumentFormSplitLayout = ({
         { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
         lineItemsNode
           ? {
-              icon: 'tabler:layers-linked',
-              id: 'line_items',
-              label: t`Line Items`,
-            }
+            icon: 'tabler:layers-linked',
+            id: 'line_items',
+            label: t`Line Items`,
+          }
           : null,
         {
           count: attachmentsCount,
@@ -626,21 +627,21 @@ const DocumentFormSplitLayout = ({
 
   const previewAttachment = viewerAttachment
     ? {
-        ...viewerAttachment,
-        itemId: targetItemId,
-        repositoryId: targetRepoId,
-      }
+      ...viewerAttachment,
+      itemId: targetItemId,
+      repositoryId: targetRepoId,
+    }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-          _localFileUrl: selectedItem?._localFileUrl,
-          fileExtension:
-            selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
-          fileName:
-            selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          itemId: selectedItem?.itemId,
-          name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
-          repositoryId: selectedItem?.repositoryId,
-        }
+        _localFileUrl: selectedItem?._localFileUrl,
+        fileExtension:
+          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+        fileName:
+          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        itemId: selectedItem?.itemId,
+        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        repositoryId: selectedItem?.repositoryId,
+      }
       : null
 
   const {
@@ -817,23 +818,62 @@ const GenericRequestOverview = ({
     [kanbanMissingFieldIds],
   )
 
+  const workflowId = rawWorkflowData?.id
+  const instanceId =
+    selectedItem?.workflowInstanceId ||
+    selectedItem?.instanceId ||
+    selectedItem?.processId ||
+    selectedItem?.id ||
+    ''
+  const processId = selectedItem?.processId
+  const repositoryId = rawWorkflowData?.repositoryId
+
+  const isCompleted =
+    Boolean(selectedItem?.isCompleted) ||
+    Boolean(selectedItem?.completedAtUtc) ||
+    Boolean(selectedItem?.completedAt) ||
+    ['completed', 'approved', 'closed', 'paid', 'success', 'succeeded'].includes(
+      String(selectedItem?.status || '')
+        .toLowerCase()
+        .trim(),
+    )
+  const currentActivityId = selectedItem?.activityId
+    ? String(selectedItem.activityId)
+    : undefined
+
+  const { data: hookHistory = [] } = useHistory(
+    workflowId,
+    instanceId || processId,
+    Boolean(workflowId && (instanceId || processId)),
+  )
+
+  const historyList = useMemo(() => {
+    if (hookHistory && hookHistory.length > 0) return hookHistory
+    if (Array.isArray(selectedItem?._history)) return selectedItem._history
+    if (Array.isArray(selectedItem?.history)) return selectedItem.history
+    return []
+  }, [hookHistory, selectedItem?._history, selectedItem?.history])
+
   const panels = useMemo(
     () => getFormPanels(rawWorkflowData),
     [rawWorkflowData],
   )
   const workflowStages = useMemo(
-    () => listWorkflowStages(rawWorkflowData),
-    [rawWorkflowData],
+    () =>
+      computeWorkflowStages({
+        workflow: rawWorkflowData,
+        history: historyList,
+        currentActivityId,
+        isCompleted,
+      }),
+    [rawWorkflowData, historyList, currentActivityId, isCompleted],
   )
-  const currentActivityId = selectedItem?.activityId
-    ? String(selectedItem.activityId)
-    : undefined
 
   const missingRequiredLabels = useMemo(() => {
     if (!kanbanMissingFieldIds?.length) return []
     const byId = new Map<string, string>()
     panels.forEach((panel: any) => {
-      ;(panel.fields || []).forEach((field: any) => {
+      ; (panel.fields || []).forEach((field: any) => {
         byId.set(
           String(field.id),
           String(field.label || field.name || field.id),
@@ -924,16 +964,16 @@ const GenericRequestOverview = ({
         ? new Set(allFieldIds)
         : access === 'CUSTOM'
           ? (() => {
-              const rules = Array.isArray(blockSettings.formEditControls)
-                ? blockSettings.formEditControls
-                : []
-              const rule = rules.find(
-                (r: any) => String(r.userId) === currentUserId,
-              )
-              if (!rule) return undefined
-              const editable = new Set((rule?.formFields || []).map(String))
-              return new Set(allFieldIds.filter((id) => !editable.has(id)))
-            })()
+            const rules = Array.isArray(blockSettings.formEditControls)
+              ? blockSettings.formEditControls
+              : []
+            const rule = rules.find(
+              (r: any) => String(r.userId) === currentUserId,
+            )
+            if (!rule) return undefined
+            const editable = new Set((rule?.formFields || []).map(String))
+            return new Set(allFieldIds.filter((id) => !editable.has(id)))
+          })()
           : undefined
 
     if (requestNumberFieldIds.size === 0) return base
@@ -984,14 +1024,9 @@ const GenericRequestOverview = ({
     return { hasLineItems, ids }
   }, [hiddenFieldIds, allFieldIds, panels])
 
-  const workflowId = rawWorkflowData?.id
-  const instanceId = selectedItem?.workflowInstanceId || selectedItem?.processId
-  const processId = selectedItem?.processId
-  const repositoryId = rawWorkflowData?.repositoryId
-
   const agentBlocks: AgentBlock[] = useMemo(() => {
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
-    return blocks.filter((b: any) => b.type && b.type.includes('AGENT'))
+    return blocks.filter((b: any) => b.type && b.type.includes('AGENT') && b.type !== 'FTP_AGENT' && b.type !== 'CLASSIFICATION_AGENT')
   }, [rawWorkflowData])
 
   const showAgentProcess = agentBlocks.some((block) => {
@@ -1147,9 +1182,9 @@ const GenericRequestOverview = ({
           String(repositoryId),
           existingItem
             ? {
-                itemId: existingItem.itemId,
-                repositoryId: existingItem.repositoryId || repositoryId,
-              }
+              itemId: existingItem.itemId,
+              repositoryId: existingItem.repositoryId || repositoryId,
+            }
             : undefined,
         )
         const formMeta = buildRepoMetadata(
@@ -1352,7 +1387,7 @@ const GenericRequestOverview = ({
             }
           />
         ) : rawWorkflowData?.settings?.general?.initiateUsing?.type ===
-            'DOCUMENT_FORM' ||
+          'DOCUMENT_FORM' ||
           rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing
             ?.type === 'DOCUMENT_FORM' ? (
           <DocumentFormSplitLayout

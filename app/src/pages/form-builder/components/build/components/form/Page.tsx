@@ -5,7 +5,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
@@ -16,6 +16,7 @@ import cn from '@/utils/cn'
 import AddFieldButton from './AddFieldButton'
 import QuestionCard from './QuestionCard'
 import SectionHeader from './SectionHeader'
+import SectionLogic from './SectionLogic'
 
 interface Props {
   panel: PanelType
@@ -45,6 +46,7 @@ const Page = ({ panel, panelIndex }: Props) => {
   const pageRef = useRef<HTMLDivElement>(null)
   const isLocked = panel?.settings?.isLocked || false
   const isCollapsed = panel?.settings?.isCollapsed || false
+  const [isLogicOpen, setIsLogicOpen] = useState(false)
 
   // Mapping for field widths to 12-column grid spans
   const getColumnSpan = (size: string) => {
@@ -193,14 +195,19 @@ const Page = ({ panel, panelIndex }: Props) => {
         fieldCount={panel.fields.length}
         isCollapsed={isCollapsed}
         isLocked={isLocked}
+        isLogicOpen={isLogicOpen}
         panel={panel}
+        onToggleLogic={() => setIsLogicOpen((v) => !v)}
         onToggleCollapse={() =>
           updatePanel(panel.id, { isCollapsed: !isCollapsed })
         }
       />
 
       {/* 2. Page Canvas / Field Grid */}
-      {!isCollapsed && (
+      {isLogicOpen && (
+        <SectionLogic panel={panel} onBack={() => setIsLogicOpen(false)} />
+      )}
+      {!isCollapsed && !isLogicOpen && (
         <div className='relative z-10 p-4 pt-1'>
           <SortableContext
             items={panel.fields.map((q) => q.id)}
