@@ -200,31 +200,11 @@ export class FormRuleEngine {
       const fieldRules: LogicRule[] = field.settings?.logic || []
       if (!fieldRules.length) continue
 
-      // Rules on one field are combined (OR) per axis instead of the last
-      // rule overwriting the earlier ones. SHOW / ENABLE / REQUIRE take
-      // priority: HIDE / DISABLE are ignored when the same field also has
-      // a positive rule for that axis.
-      const metOf = (action: LogicRule['action']) => {
-        const list = fieldRules.filter((r) => r.action === action)
-        return {
-          any: list.some((r) => evaluateCondition(r, formValues)),
-          has: list.length > 0,
-        }
-      }
-      const show = metOf('SHOW')
-      const hide = metOf('HIDE')
-      const enable = metOf('ENABLE')
-      const disable = metOf('DISABLE')
-      const require = metOf('REQUIRE')
       const state = fieldStates[field.id]
-
-      if (show.has) state.visible = show.any
-      else if (hide.has) state.visible = !hide.any
-
-      if (enable.has) state.disabled = !enable.any
-      else if (disable.has) state.disabled = disable.any
-
-      if (require.has) state.required = state.required || require.any
+      const result = combineLogicRules(fieldRules, formValues)
+      if (result.visible !== undefined) state.visible = result.visible
+      if (result.disabled !== undefined) state.disabled = result.disabled
+      if (result.required) state.required = true
     }
 
     // Process source-driven validation conditional rules (mandatorySettings, readonlySettings)
@@ -325,6 +305,70 @@ export class FormRuleEngine {
   }
 }
 
+export interface LogicRuleResult {
+  disabled?: boolean
+  required?: boolean
+  visible?: boolean
+}
+
+/**
+ * Combines every logic rule of one field/section (OR per axis) instead of
+ * letting the last rule overwrite the earlier ones. SHOW / ENABLE / REQUIRE
+ * take priority: HIDE / DISABLE are ignored when the same target also has a
+ * positive rule for that axis. An axis with no rules stays undefined.
+ */
+export function combineLogicRules(
+  rules: LogicRule[],
+  formValues: Record<string, any>,
+): LogicRuleResult {
+  const metOf = (action: LogicRule['action']) => {
+    const list = rules.filter((r) => r.action === action)
+    return {
+      any: list.some((r) => evaluateCondition(r, formValues)),
+      has: list.length > 0,
+    }
+  }
+  const show = metOf('SHOW')
+  const hide = metOf('HIDE')
+  const enable = metOf('ENABLE')
+  const disable = metOf('DISABLE')
+  const require = metOf('REQUIRE')
+  const result: LogicRuleResult = {}
+
+  if (show.has) result.visible = show.any
+  else if (hide.has) result.visible = !hide.any
+
+  if (enable.has) result.disabled = !enable.any
+  else if (disable.has) result.disabled = disable.any
+
+  if (require.has) result.required = require.any
+  return result
+}
+
+export interface PanelComputedState {
+  disabled: boolean
+  visible: boolean
+}
+
+/** Computes the show/hide/enable/disable state of every section. */
+export function evaluatePanelRules(
+  panels: any[],
+  formValues: Record<string, any>,
+): Record<string, PanelComputedState> {
+  const states: Record<string, PanelComputedState> = {}
+  for (const panel of panels || []) {
+    const result = combineLogicRules(
+      (panel.settings?.logic as LogicRule[]) || [],
+      formValues,
+    )
+    states[panel.id] = {
+      disabled: result.disabled ?? false,
+      visible: result.visible ?? true,
+    }
+  }
+  return states
+}
+
 export function evaluateCondition(
   condition: RuleCondition | LogicRule,
   formValues: Record<string, any>,
@@ -395,5 +439,23 @@ export function evaluateFormRules(
 ): Record<string, FieldComputedState> {
   const allFields: Question[] = (panels || []).flatMap((p) => p.fields || [])
   const engine = new FormRuleEngine(allFields, declarativeRules)
-  return engine.evaluateAll(formModel)
+  const fieldStates = engine.evaluateAll(formModel)
+
+  // Section rules override their fields: a hidden section hides (and un-requires)
+  // all its fields, a disabled section disables all of them.
+  const panelStates = evaluatePanelRules(panels, formModel)
+  for (const panel of panels || []) {
+    const panelState = panelStates[panel.id]
+    if (!panelState || (panelState.visible && !panelState.disabled)) continue
+    for (const field of panel.fields || []) {
+      const state = fieldStates[field.id]
+      if (!state) continue
+      if (!panelState.visible) {
+        state.visible = false
+        state.required = false
+      }
+      if (panelState.disabled) state.disabled = true
+    }
+  }
+  return fieldStates
 }
