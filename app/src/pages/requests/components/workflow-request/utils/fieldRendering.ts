@@ -4,12 +4,13 @@
 
 import dayjs from 'dayjs'
 import formApi from '@/api/form/form'
+import authUserStore from '@/stores/authUserStore'
 import {
   getFileNameWithoutExtension,
   isFilenameField,
   sortIndexingFields,
 } from '@/pages/requests/utils/repoFolderMetadata'
-import authUserStore from '@/stores/authUserStore'
+// import authUserStore from '@/stores/authUserStore'
 
 export interface DateTimeLimits {
   maxDate?: string
@@ -143,23 +144,41 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
-      } else if (
-        field.type === 'SINGLE_SELECT' ||
-        field.type === 'MULTI_SELECT' ||
-        field.type === 'SINGLE_CHOICE' ||
-        field.type === 'MULTIPLE_CHOICE'
-      ) {
-        const optionsType = String(
-          specific.optionsType || 'CUSTOM',
-        ).toUpperCase()
-        if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
-          const opts = getFieldOptions(field)
-          if (opts.length === 1) {
-            const val = selectOptionStoredValue(opts[0], opts)
-            model[field.id] =
-              field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE'
-                ? [val]
-                : val
+      } else if (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT' || field.type === 'SINGLE_CHOICE' || field.type === 'MULTIPLE_CHOICE') {
+        const defaultMode = specific.defaultValueInSelectField
+        if (defaultMode === 'USER_EMAIL') {
+          const email = authUserStore.getState().session?.email
+          if (email) {
+            model[field.id] = email
+          }
+        } else if (defaultMode === 'USER_NAME') {
+          const s = authUserStore.getState().session
+          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          if (name) {
+            model[field.id] = name
+          }
+        } else {
+          const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+          if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
+            const opts = getFieldOptions(field)
+            if (opts.length === 1) {
+              const val = selectOptionStoredValue(opts[0], opts)
+              model[field.id] = (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') ? [val] : val
+            }
+          }
+        }
+      } else if (field.type === 'SHORT_TEXT') {
+        const defaultMode = specific.defaultValueInSelectField
+        if (defaultMode === 'USER_EMAIL') {
+          const email = authUserStore.getState().session?.email
+          if (email) {
+            model[field.id] = email
+          }
+        } else if (defaultMode === 'USER_NAME') {
+          const s = authUserStore.getState().session
+          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          if (name) {
+            model[field.id] = name
           }
         }
       } else if (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') {
@@ -419,6 +438,11 @@ export const fetchMasterFormColumnOptions = async (
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
     const formDefRes = await formApi.getFormDataById(masterFormId)
+    console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
+      masterFormId,
+      masterFormColumn,
+      formDefRes,
+    })
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -519,18 +543,9 @@ export const fetchMasterFormColumnOptions = async (
 
     const uniqueValues = new Set<string>()
 
-    // Include custom options defined on the master form column schema ONLY when parent filter is NOT active
-    if (!hasParentFilter && matchedField) {
-      const schemaOptions = getFieldOptions(matchedField)
-      for (const opt of schemaOptions) {
-        if (opt.name && opt.name.trim()) {
-          uniqueValues.add(opt.name.trim())
-        }
-      }
-    }
-
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
     const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    console.log('[fetchMasterFormColumnOptions] 2. entriesRes (GET /entries):', entriesRes)
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -560,10 +575,13 @@ export const fetchMasterFormColumnOptions = async (
         currentPage: 1,
         itemsPerPage: 500,
       })
+      console.log('[fetchMasterFormColumnOptions] 2b. searchRes (POST /search):', searchRes)
       if (searchRes.data) {
         rawEntries = parseEntriesData(searchRes.data)
       }
     }
+
+    console.log('[fetchMasterFormColumnOptions] rawEntries count:', rawEntries.length, rawEntries)
 
     const extractFromDict = (dictionary: any, keys: Set<string>): any => {
       if (!dictionary || typeof dictionary !== 'object') return undefined
@@ -669,9 +687,212 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    return Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    const finalOptions = Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    console.log('[fetchMasterFormColumnOptions] Final extracted options:', finalOptions)
+    return finalOptions
   } catch (err) {
     console.error('Error fetching master form column options:', err)
+    return []
+  }
+}
+
+// Powers a TABLE field's "Use values from a master table" sync
+// (settings.specific.fillValueType === 'MASTER' + masterFormTableColumns,
+// set in QuestionSettings.tsx's table-level Specific settings): fetches the
+// master form's submitted records (same formApi.getFormEntries/
+// searchFormEntries pattern as fetchMasterFormColumnOptions above, since
+// there's no server-side filter param), keeps only the rows whose
+// parentMasterColumnKey matches the current form's parent-field value, and
+// maps each matching row into this TABLE's column-id-keyed row shape.
+export const fetchMasterTableRows = async (
+  masterFormId: string,
+  parentMasterColumnKey: string | undefined,
+  parentValue: any,
+  columnMappings: Array<{ masterColumn: string; tableColumn: string }>,
+): Promise<Record<string, any>[]> => {
+  if (!masterFormId || columnMappings.length === 0) return []
+
+  try {
+    let formFields: any[] = []
+    const formDefRes = await formApi.getFormDataById(masterFormId)
+    if (formDefRes.data) {
+      let fJson = formDefRes.data.formJson || formDefRes.data._json
+      if (typeof fJson === 'string') {
+        try {
+          fJson = JSON.parse(fJson)
+        } catch {
+          // ignore
+        }
+      }
+      if (fJson?.panels) {
+        formFields = fJson.panels.flatMap((p: any) => p.fields || [])
+      }
+    }
+
+    const buildCandidateKeys = (keyOrLabel: string): Set<string> => {
+      const keys = new Set<string>()
+      if (!keyOrLabel) return keys
+      keys.add(keyOrLabel)
+      keys.add(keyOrLabel.trim())
+      keys.add(keyOrLabel.trim().toLowerCase())
+      const matched = formFields.find(
+        (f: any) =>
+          f.id === keyOrLabel ||
+          f.id?.trim() === keyOrLabel.trim() ||
+          f.label?.trim().toLowerCase() === keyOrLabel.trim().toLowerCase() ||
+          f.name?.trim().toLowerCase() === keyOrLabel.trim().toLowerCase(),
+      )
+      if (matched) {
+        for (const v of [matched.id, matched.label, matched.name]) {
+          if (v) {
+            keys.add(v)
+            keys.add(v.trim())
+            keys.add(v.trim().toLowerCase())
+          }
+        }
+      }
+      return keys
+    }
+
+    const hasParentFilter = Boolean(parentMasterColumnKey)
+    const parentCandidateKeys = buildCandidateKeys(parentMasterColumnKey || '')
+    const targetParentSet = new Set(
+      extractScalarStrings(parentValue).map((s) => s.trim().toLowerCase()),
+    )
+    if (hasParentFilter && targetParentSet.size === 0) return []
+
+    const parseEntriesData = (data: any): any[] => {
+      if (!data) return []
+      if (Array.isArray(data)) return data
+      if (Array.isArray(data.entries)) return data.entries
+      if (Array.isArray(data.content)) return data.content
+      if (Array.isArray(data.rows)) return data.rows
+      if (Array.isArray(data.items)) return data.items
+      if (Array.isArray(data.result)) return data.result
+      if (Array.isArray(data.data)) {
+        if (
+          data.data.length > 0 &&
+          data.data[0].value &&
+          Array.isArray(data.data[0].value)
+        ) {
+          return data.data.flatMap((g: any) => g.value || [])
+        }
+        return data.data
+      }
+      return []
+    }
+
+    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    let rawEntries = parseEntriesData(entriesRes.data)
+    if (rawEntries.length === 0) {
+      const searchRes = await formApi.searchFormEntries(masterFormId, {
+        currentPage: 1,
+        itemsPerPage: 500,
+      })
+      if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)
+    }
+
+    const extractFromDict = (dictionary: any, keys: Set<string>): any => {
+      if (!dictionary || typeof dictionary !== 'object') return undefined
+      if (!Array.isArray(dictionary)) {
+        for (const k of keys) {
+          if (
+            dictionary[k] !== undefined &&
+            dictionary[k] !== null &&
+            dictionary[k] !== ''
+          ) {
+            return dictionary[k]
+          }
+        }
+        for (const [k, v] of Object.entries(dictionary)) {
+          if (v !== undefined && v !== null && v !== '') {
+            const kNorm = k.trim().toLowerCase()
+            if (keys.has(kNorm) || keys.has(k)) return v
+          }
+        }
+      } else {
+        for (const item of dictionary) {
+          if (item && typeof item === 'object') {
+            const itemKey = String(
+              item.id ||
+                item.name ||
+                item.label ||
+                item.column ||
+                item.key ||
+                item.fieldName ||
+                item.fieldId ||
+                '',
+            )
+              .trim()
+              .toLowerCase()
+            if (keys.has(itemKey) && item.value != null && item.value !== '') {
+              return item.value
+            }
+          }
+        }
+      }
+      return undefined
+    }
+
+    const mappingKeySets = columnMappings
+      .filter((m) => m.masterColumn && m.tableColumn)
+      .map((m) => ({
+        keys: buildCandidateKeys(m.masterColumn),
+        tableColumn: m.tableColumn,
+      }))
+
+    const rows: Record<string, any>[] = []
+    for (const entry of rawEntries) {
+      const dicts = [
+        ...normalizeDictList(entry.formData),
+        ...normalizeDictList(entry.values),
+        ...normalizeDictList(entry.data),
+        ...normalizeDictList(entry.fields),
+        ...normalizeDictList(entry),
+      ]
+
+      if (hasParentFilter) {
+        let entryParentVal: any
+        for (const dict of dicts) {
+          entryParentVal = extractFromDict(dict, parentCandidateKeys)
+          if (
+            entryParentVal !== undefined &&
+            entryParentVal !== null &&
+            entryParentVal !== ''
+          ) {
+            break
+          }
+        }
+        if (
+          entryParentVal === undefined ||
+          entryParentVal === null ||
+          entryParentVal === ''
+        ) {
+          continue
+        }
+        const entryParentStrings = extractScalarStrings(entryParentVal).map(
+          (s) => s.trim().toLowerCase(),
+        )
+        if (!entryParentStrings.some((s) => targetParentSet.has(s))) continue
+      }
+
+      const row: Record<string, any> = {}
+      for (const { keys, tableColumn } of mappingKeySets) {
+        let val: any
+        for (const dict of dicts) {
+          val = extractFromDict(dict, keys)
+          if (val !== undefined && val !== null && val !== '') break
+        }
+        if (val !== undefined && val !== null && val !== '') {
+          row[tableColumn] = Array.isArray(val) ? val.join(', ') : val
+        }
+      }
+      if (Object.keys(row).length > 0) rows.push(row)
+    }
+
+    return rows
+  } catch (err) {
+    console.error('Error fetching master table rows:', err)
     return []
   }
 }

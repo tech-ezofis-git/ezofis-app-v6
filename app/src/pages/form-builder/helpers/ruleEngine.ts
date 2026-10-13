@@ -138,6 +138,19 @@ export class FormRuleEngine {
         this.dependencyMap.get(cond.fieldId)!.add(rule.id)
       }
     }
+    for (const field of this.fields) {
+      const v = field.settings?.validation
+      if (
+        v?.mandatorySettings?.length ||
+        v?.readonlySettings?.length ||
+        v?.enableSettings?.length
+      ) {
+        if (!this.dependencyMap.has(field.id)) {
+          this.dependencyMap.set(field.id, new Set())
+        }
+        this.dependencyMap.get(field.id)!.add(`validation-rules-${field.id}`)
+      }
+    }
   }
 
   evaluateAll(
@@ -187,24 +200,68 @@ export class FormRuleEngine {
       const fieldRules: LogicRule[] = field.settings?.logic || []
       if (!fieldRules.length) continue
 
-      for (const rule of fieldRules) {
-        const isMet = evaluateCondition(rule, formValues)
-        switch (rule.action) {
-          case 'SHOW':
-            fieldStates[field.id].visible = isMet
-            break
-          case 'HIDE':
-            fieldStates[field.id].visible = !isMet
-            break
-          case 'ENABLE':
-            fieldStates[field.id].disabled = !isMet
-            break
-          case 'DISABLE':
-            fieldStates[field.id].disabled = isMet
-            break
-          case 'REQUIRE':
-            fieldStates[field.id].required = isMet
-            break
+      const state = fieldStates[field.id]
+      const result = combineLogicRules(fieldRules, formValues)
+      if (result.visible !== undefined) state.visible = result.visible
+      if (result.disabled !== undefined) state.disabled = result.disabled
+      if (result.required) state.required = true
+    }
+
+    // Process source-driven validation conditional rules (mandatorySettings, readonlySettings)
+    for (const field of this.fields) {
+      const valSettings = field.settings?.validation
+      if (!valSettings) continue
+      const rawVal = formValues[field.id]
+      const currentValStr = String(rawVal ?? '').trim()
+
+      // 1. mandatorySettings: [{ id, value, controls }]
+      const mandatoryRules = valSettings.mandatorySettings || []
+      for (const rule of mandatoryRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isMatched =
+          currentValStr !== '' &&
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        if (isMatched) {
+          for (const targetId of rule.controls) {
+            if (fieldStates[targetId]) {
+              fieldStates[targetId].required = true
+            }
+          }
+        }
+      }
+
+      // 2. readonlySettings: [{ id, value, controls, notEqual }]
+      const readonlyRules = valSettings.readonlySettings || []
+      for (const rule of readonlyRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isValueMatch =
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        const shouldLock = rule.notEqual
+          ? !isValueMatch
+          : currentValStr !== '' && isValueMatch
+        if (shouldLock) {
+          for (const targetId of rule.controls) {
+            if (fieldStates[targetId]) {
+              fieldStates[targetId].disabled = true
+            }
+          }
+        }
+      }
+
+      // 3. enableSettings: [{ id, value, controls }] (Show target controls when value matches)
+      const enableRules = valSettings.enableSettings || []
+      for (const rule of enableRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isMatched =
+          currentValStr !== '' &&
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        for (const targetId of rule.controls) {
+          if (fieldStates[targetId]) {
+            fieldStates[targetId].visible = isMatched
+          }
         }
       }
     }
@@ -246,6 +303,70 @@ export class FormRuleEngine {
       }
     }
   }
+}
+
+export interface LogicRuleResult {
+  disabled?: boolean
+  required?: boolean
+  visible?: boolean
+}
+
+/**
+ * Combines every logic rule of one field/section (OR per axis) instead of
+ * letting the last rule overwrite the earlier ones. SHOW / ENABLE / REQUIRE
+ * take priority: HIDE / DISABLE are ignored when the same target also has a
+ * positive rule for that axis. An axis with no rules stays undefined.
+ */
+export function combineLogicRules(
+  rules: LogicRule[],
+  formValues: Record<string, any>,
+): LogicRuleResult {
+  const metOf = (action: LogicRule['action']) => {
+    const list = rules.filter((r) => r.action === action)
+    return {
+      any: list.some((r) => evaluateCondition(r, formValues)),
+      has: list.length > 0,
+    }
+  }
+  const show = metOf('SHOW')
+  const hide = metOf('HIDE')
+  const enable = metOf('ENABLE')
+  const disable = metOf('DISABLE')
+  const require = metOf('REQUIRE')
+  const result: LogicRuleResult = {}
+
+  if (show.has) result.visible = show.any
+  else if (hide.has) result.visible = !hide.any
+
+  if (enable.has) result.disabled = !enable.any
+  else if (disable.has) result.disabled = disable.any
+
+  if (require.has) result.required = require.any
+  return result
+}
+
+export interface PanelComputedState {
+  disabled: boolean
+  visible: boolean
+}
+
+/** Computes the show/hide/enable/disable state of every section. */
+export function evaluatePanelRules(
+  panels: any[],
+  formValues: Record<string, any>,
+): Record<string, PanelComputedState> {
+  const states: Record<string, PanelComputedState> = {}
+  for (const panel of panels || []) {
+    const result = combineLogicRules(
+      (panel.settings?.logic as LogicRule[]) || [],
+      formValues,
+    )
+    states[panel.id] = {
+      disabled: result.disabled ?? false,
+      visible: result.visible ?? true,
+    }
+  }
+  return states
 }
 
 export function evaluateCondition(
@@ -318,5 +439,23 @@ export function evaluateFormRules(
 ): Record<string, FieldComputedState> {
   const allFields: Question[] = (panels || []).flatMap((p) => p.fields || [])
   const engine = new FormRuleEngine(allFields, declarativeRules)
-  return engine.evaluateAll(formModel)
+  const fieldStates = engine.evaluateAll(formModel)
+
+  // Section rules override their fields: a hidden section hides (and un-requires)
+  // all its fields, a disabled section disables all of them.
+  const panelStates = evaluatePanelRules(panels, formModel)
+  for (const panel of panels || []) {
+    const panelState = panelStates[panel.id]
+    if (!panelState || (panelState.visible && !panelState.disabled)) continue
+    for (const field of panel.fields || []) {
+      const state = fieldStates[field.id]
+      if (!state) continue
+      if (!panelState.visible) {
+        state.visible = false
+        state.required = false
+      }
+      if (panelState.disabled) state.disabled = true
+    }
+  }
+  return fieldStates
 }

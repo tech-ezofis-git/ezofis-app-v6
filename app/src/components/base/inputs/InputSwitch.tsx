@@ -24,6 +24,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
 
     return (
       <Base
+        color='primary'
         {...rest}
         className={cn(rest.disabled && 'opacity-50', className)}
         classNames={_classNames}

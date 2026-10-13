@@ -56,6 +56,21 @@
   }
 }
 
+/* Mantine Switch checked & active state styles */
+.mantine-Switch-track[data-checked],
+[data-mantine-color-scheme] .m_926b4011:checked + .m_9307d992,
+[data-mantine-color-scheme] .mantine-Switch-track[data-checked] {
+  background-color: var(--primary-9) !important;
+  border-color: var(--primary-9) !important;
+  --switch-bg: var(--primary-9) !important;
+}
+
+.mantine-Switch-thumb,
+.m_93039a1d {
+  background-color: #ffffff !important;
+  --switch-thumb-bg: #ffffff !important;
+}
+
 .sparkline-chart {
   @media (prefers-color-scheme: light) {
     --chart-color: var(--mantine-color-orange-8);

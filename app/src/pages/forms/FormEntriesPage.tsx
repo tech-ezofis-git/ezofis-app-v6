@@ -44,6 +44,7 @@ import {
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
+  type FieldOption,
   getConfiguredFieldOptions,
   getDependentChildFieldIds,
   getDropdownFacetSource,
@@ -145,20 +146,24 @@ const FormEntriesChoiceInput = ({
       ),
   })
 
-  const rawOptions = withExtraFieldOptions(
-    withExtraFieldOptions(
-      optionsType === 'DYNAMIC'
-        ? getFieldOptions(field)
-        : getConfiguredFieldOptions(field),
-      userFieldOptions,
-    ),
-    masterFieldOptions,
-  )
+  const rawOptions = useMemo(() => {
+    if (masterInfo.enabled) {
+      return masterFieldOptions
+    }
+    if (optionsType === 'USER_LIST') {
+      return userFieldOptions
+    }
+    return optionsType === 'DYNAMIC'
+      ? getFieldOptions(field)
+      : getConfiguredFieldOptions(field)
+  }, [masterInfo.enabled, masterFieldOptions, optionsType, userFieldOptions, field])
 
   const opts =
     rawOptions.length > 0
       ? rawOptions.map((o) => o.name)
-      : ['Option 1', 'Option 2', 'Option 3']
+      : masterInfo.enabled || optionsType === 'USER_LIST'
+        ? []
+        : ['Option 1', 'Option 2', 'Option 3']
 
   useEffect(() => {
     if (rawOptions.length === 1) {
@@ -400,26 +405,59 @@ const FormEntriesSelectInput = ({
       ),
   })
 
-  const normalizedDistinctOptions = fieldDistinctOptions.map((o) => ({
+  const normalizedDistinctOptions: FieldOption[] = fieldDistinctOptions.map((o) => ({
     id: String(o.id),
     name: o.name,
   }))
 
-  const selectOptions = withExtraFieldOptions(
-    withExtraFieldOptions(
-      withExtraFieldOptions(
-        withExtraFieldOptions(
-          optionsType === 'DYNAMIC'
-            ? getFieldOptions(field)
-            : getConfiguredFieldOptions(field),
-          uniqueFieldOptions,
-        ),
-        userFieldOptions,
-      ),
+  const selectOptions = useMemo<FieldOption[]>(() => {
+    let resolved: FieldOption[] = []
+    if (masterInfo.enabled) {
+      resolved =
+        masterFieldOptions.length > 0
+          ? masterFieldOptions
+          : normalizedDistinctOptions
+    } else if (optionsType === 'USER_LIST') {
+      resolved =
+        userFieldOptions.length > 0
+          ? userFieldOptions
+          : normalizedDistinctOptions
+    } else if (facetSource.enabled) {
+      resolved =
+        uniqueFieldOptions.length > 0
+          ? uniqueFieldOptions
+          : normalizedDistinctOptions
+    } else if (optionsType === 'EXISTING') {
+      resolved = normalizedDistinctOptions
+    } else {
+      const baseOptions =
+        optionsType === 'DYNAMIC'
+          ? getFieldOptions(field)
+          : getConfiguredFieldOptions(field)
+      resolved = withExtraFieldOptions(baseOptions, normalizedDistinctOptions)
+    }
+
+    console.log('[FormEntriesSelectInput] Resolved options:', {
+      fieldId: field.id,
+      fieldLabel: field.label,
+      optionsType,
+      masterInfo,
       masterFieldOptions,
-    ),
+      normalizedDistinctOptions,
+      resolved,
+    })
+
+    return resolved
+  }, [
+    masterInfo,
+    masterFieldOptions,
     normalizedDistinctOptions,
-  )
+    optionsType,
+    userFieldOptions,
+    facetSource.enabled,
+    uniqueFieldOptions,
+    field,
+  ])
 
   const isMulti = field.type === 'MULTI_SELECT'
 
@@ -1276,6 +1314,25 @@ const FormEntriesPage = () => {
     },
   })
 
+  const isDraftForm = useMemo(() => {
+    if (!formData) return false
+    const raw =
+      formData.publishOption ||
+      formData.status ||
+      formData._json?.settings?.publish?.publishOption ||
+      (typeof formData.formJson === 'object'
+        ? formData.formJson?.settings?.publish?.publishOption
+        : undefined)
+    const str = String(raw || '').toUpperCase()
+    return !(str === 'PUBLISHED' || raw === 1 || raw === '1')
+  }, [formData])
+
+  useEffect(() => {
+    if (formData && isDraftForm) {
+      navigate({ to: '/forms' })
+    }
+  }, [formData, isDraftForm, navigate])
+
   // Fetch form entries from backend API
   const {
     data: fetchedEntries,
@@ -1283,7 +1340,7 @@ const FormEntriesPage = () => {
     isLoading: isEntriesLoading,
     refetch: refetchEntries,
   } = useQuery({
-    enabled: !!formId,
+    enabled: !!formId && !isLoading && !isDraftForm,
     queryKey: ['forms', 'entries', formId],
     queryFn: async () => {
       const { data, error } = await formApi.getFormEntries(formId, 1, 500)
@@ -1371,9 +1428,16 @@ const FormEntriesPage = () => {
             .split(',')
             .map((v) => v.trim())
             .filter(Boolean)
-            .forEach((v) => unique.add(v))
+            .forEach((v) => {
+              if (v !== 'Option 1' && v !== 'Option 2' && v !== 'Option 3') {
+                unique.add(v)
+              }
+            })
         } else {
-          unique.add(String(raw).trim())
+          const trimmed = String(raw).trim()
+          if (trimmed !== 'Option 1' && trimmed !== 'Option 2' && trimmed !== 'Option 3') {
+            unique.add(trimmed)
+          }
         }
       })
       map[field.id] = Array.from(unique).map((v) => ({ id: v, name: v }))
@@ -1941,8 +2005,8 @@ const FormEntriesPage = () => {
     },
   })
 
-  const isPageLoading = isLoading || isEntriesLoading
-  const isPageError = isError || isEntriesError
+  const isPageLoading = isLoading || (!isDraftForm && isEntriesLoading)
+  const isPageError = isError || (!isDraftForm && isEntriesError)
 
   const createdByOptions = useMemo(() => {
     const unique = new Map<string, string>()
@@ -2022,6 +2086,40 @@ const FormEntriesPage = () => {
         </div>
         <Skeleton className='mb-4' height={45} radius='md' />
         <Skeleton className='flex-1' height={300} radius='md' />
+      </div>
+    )
+  }
+
+  if (isDraftForm) {
+    return (
+      <div className='bg-surface-muted/20 flex h-full flex-col items-center justify-center p-8'>
+        <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-amber-3 bg-amber-2 text-amber-11'>
+          <Icon className='size-7' name='lucide:file-edit' />
+        </div>
+        <h3 className='text-lg font-bold text-gray-12'>{t`Form is in Draft`}</h3>
+        <p className='mt-1 max-w-[340px] text-center text-xs text-gray-7'>
+          {t`Draft forms do not have an entries page. Publish the form to view and collect entries.`}
+        </p>
+        <div className='mt-6 flex items-center gap-3'>
+          <Button
+            color='gray'
+            variant='outline'
+            icon='lucide:arrow-left'
+            label={t`Back to Forms`}
+            onClick={() => navigate({ to: '/forms' })}
+          />
+          <Button
+            color='primary'
+            icon='lucide:edit'
+            label={t`Edit Form`}
+            onClick={() =>
+              navigate({
+                params: { formId },
+                to: '/form-builder/$formId',
+              })
+            }
+          />
+        </div>
       </div>
     )
   }
@@ -2176,8 +2274,20 @@ const FormEntriesPage = () => {
 
                       return (
                         <div
-                          className={cn('flex flex-col justify-start', colSpan)}
+                          aria-disabled={isReadOnly || undefined}
+                          inert={
+                            isReadOnly && type !== 'CALCULATED'
+                              ? true
+                              : undefined
+                          }
                           key={field.id}
+                          className={cn(
+                            'flex flex-col justify-start',
+                            colSpan,
+                            isReadOnly &&
+                              type !== 'CALCULATED' &&
+                              'opacity-60 select-none',
+                          )}
                         >
                           {/* Label / Required Indicators (rendered internally for table fields) */}
                           {!isTableType && (
