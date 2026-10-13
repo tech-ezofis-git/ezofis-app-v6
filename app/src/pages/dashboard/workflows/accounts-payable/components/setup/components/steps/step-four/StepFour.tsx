@@ -3,7 +3,9 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import apiRouter from '@/api/apiRouter'
+import connectorApi from '@/api/connector'
 import { createRepository } from '@/api/createFolder'
+import emailIngestApi from '@/api/emailIngest'
 import formApi from '@/api/form/form'
 import workflowApi from '@/api/workflow/workflow'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
@@ -723,6 +725,37 @@ const StepFour = () => {
         })
         setIsSaving(false)
         return
+      }
+
+      const createdWorkflowId =
+        workflowRes.payload?.id ??
+        workflowRes.payload?.data?.id ??
+        (typeof workflowRes.payload === 'string' ||
+        typeof workflowRes.payload === 'number'
+          ? String(workflowRes.payload)
+          : '')
+
+      // If Gmail connector is used, register Gmail push and link the email-ingest mailbox
+      if (
+        emailSettings.connectorId &&
+        emailSettings.provider === 'gmail' &&
+        createdWorkflowId
+      ) {
+        try {
+          await connectorApi.enableGmailPush(emailSettings.connectorId)
+          const mailboxRes = await emailIngestApi.syncMailboxForWorkflow({
+            connectorId: emailSettings.connectorId,
+            isEnabled: true,
+            masterSource: 'InternalForm',
+            pollIntervalMinutes: 0,
+            workflowId: String(createdWorkflowId),
+          })
+          if (mailboxRes.error) {
+            console.warn('Mailbox sync warning:', mailboxRes.error)
+          }
+        } catch (mailboxErr) {
+          console.error('Failed to link email mailbox:', mailboxErr)
+        }
       }
 
       const documentApprovalRes = await createDocumentApprovalFormAndWorkflow()

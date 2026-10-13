@@ -274,11 +274,108 @@ export const getConnectorById = async (connectorId: string) => {
   return _response
 }
 
+export interface ConnectorStatusResponse {
+  connectorId: string
+  providerCode: string
+  oAuthStatus: string
+  externalAccountEmail?: string | null
+  tokenExpiresAtUtc?: string
+  isConnected: boolean
+}
+
+export const getConnectorStatus = async (connectorId: string) => {
+  const _response = {
+    error: '',
+    payload: null as ConnectorStatusResponse | null,
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const response = await axiosV6.get(`/connector/${connectorId}/status`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    const { data, status } = response
+
+    if (status !== 200) {
+      throw new Error('invalid status code')
+    }
+
+    const details =
+      data?.data && typeof data.data === 'object' ? data.data : data
+
+    _response.payload = details as ConnectorStatusResponse
+  } catch (e: any) {
+    console.error(e)
+    _response.error =
+      e?.response?.data?.error ||
+      e?.response?.data?.message ||
+      e?.message ||
+      'error fetching connector status'
+  }
+
+  return _response
+}
+
+export interface GmailPushEnableResponse {
+  email: string
+  topicName: string
+  historyId?: string
+  expirationUtc: string
+}
+
+export const enableGmailPush = async (connectorId: string) => {
+  const _response = {
+    error: '',
+    payload: null as GmailPushEnableResponse | null,
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const response = await axiosV6.post(
+      `/connector/${connectorId}/gmail-push/enable`,
+      {},
+      {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+      },
+    )
+    const { data, status } = response
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    const payload =
+      data?.data && typeof data.data === 'object' ? data.data : data
+
+    _response.payload = payload as GmailPushEnableResponse
+  } catch (e: any) {
+    console.error(e)
+    _response.error =
+      e?.response?.data?.error ||
+      e?.response?.data?.message ||
+      e?.message ||
+      'error enabling gmail push'
+  }
+
+  return _response
+}
+
 export const connectorApi = {
   addConnector,
   authorizeOAuth,
+  enableGmailPush,
   getConnection,
   getConnectorById,
+  getConnectorStatus,
 }
 
 export default connectorApi
+

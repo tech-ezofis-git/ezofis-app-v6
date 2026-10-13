@@ -60,6 +60,7 @@ type AuthSearch = {
   connector?: string
   connectorId?: string
   connectorOAuth?: string
+  error?: string
   grant?: string
   provider?: string
 }
@@ -75,13 +76,14 @@ export const Route = createFileRoute('/auth')({
       typeof search.connectorOAuth === 'string'
         ? search.connectorOAuth
         : undefined,
+    error: typeof search.error === 'string' ? search.error : undefined,
     grant: typeof search.grant === 'string' ? search.grant : undefined,
     provider: typeof search.provider === 'string' ? search.provider : undefined,
   }),
 })
 
 function AuthPage() {
-  const { connector, connectorId, connectorOAuth, grant, provider } =
+  const { connector, connectorId, connectorOAuth, error, grant, provider } =
     Route.useSearch()
 
   const hasCompleted = useRef(false)
@@ -91,6 +93,9 @@ function AuthPage() {
     return 'error'
   })
   const [connectedEmail, setConnectedEmail] = useState('')
+  const [errorMessage, setErrorMessage] = useState(
+    error || (connectorOAuth === 'error' ? 'Authorization was denied or failed.' : ''),
+  )
 
   useEffect(() => {
     if (hasCompleted.current) return
@@ -101,6 +106,9 @@ function AuthPage() {
       email?: string
       externalAccountEmail?: string
       provider?: string
+      pushEnabled?: boolean
+      pushExpirationUtc?: string
+      pushTopicName?: string
     }) => {
       hasCompleted.current = true
       setStatus('success')
@@ -139,6 +147,9 @@ function AuthPage() {
         if (response.error || !response.payload) {
           hasCompleted.current = true
           setStatus('error')
+          setErrorMessage(
+            response.error || 'Failed to fetch connector details.',
+          )
           return
         }
 
@@ -146,12 +157,36 @@ function AuthPage() {
         const email = details.externalAccountEmail || ''
         setConnectedEmail(email)
 
+        const normalizedProvider = String(
+          details.providerCode || provider || '',
+        ).toUpperCase()
+
+        let pushEnabled = false
+        let pushExpirationUtc: string | undefined
+        let pushTopicName: string | undefined
+
+        // Enable Gmail push automatically if connecting Gmail
+        if (normalizedProvider === 'GMAIL') {
+          const pushRes = await connectorApi.enableGmailPush(connectorId)
+          if (cancelled) return
+          if (!pushRes.error && pushRes.payload) {
+            pushEnabled = true
+            pushExpirationUtc = pushRes.payload.expirationUtc
+            pushTopicName = pushRes.payload.topicName
+          } else if (pushRes.error) {
+            console.warn('Gmail push enable warning:', pushRes.error)
+          }
+        }
+
         notifyAndClose({
           connector: details.name || connectorId,
           connectorId: details.id,
           email,
           externalAccountEmail: email,
           provider: details.providerCode || provider,
+          pushEnabled,
+          pushExpirationUtc,
+          pushTopicName,
         })
       }
 
@@ -163,7 +198,10 @@ function AuthPage() {
 
     hasCompleted.current = true
     setStatus('error')
-  }, [connector, connectorId, connectorOAuth, grant, provider])
+    if (connectorOAuth === 'error' && error) {
+      setErrorMessage(error)
+    }
+  }, [connector, connectorId, connectorOAuth, error, grant, provider])
 
   return (
     <div className='flex h-screen w-full flex-col items-center justify-center gap-4 bg-gray-1'>
@@ -246,7 +284,8 @@ function AuthPage() {
           </AnimateSlideUp>
           <AnimateFadeIn delay={0.3}>
             <p className='max-w-md text-center text-gray-11'>
-              Something went wrong while connecting. Please try again.
+              {errorMessage ||
+                'Something went wrong while connecting. Please try again.'}
             </p>
           </AnimateFadeIn>
         </>

@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
+import connectorApi from '@/api/connector'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
+import emailIngestApi from '@/api/emailIngest'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -51,6 +53,7 @@ export default function EmailSettingsPanel({
   const [isCreatingConnection, setIsCreatingConnection] = useState(false)
   const [newConnectionName, setNewConnectionName] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isPolling, setIsPolling] = useState(false)
   const [connectionOptions] = useState<{ label: string; value: string }[]>([])
   const [pendingConnectionName, setPendingConnectionName] = useState<
     string | null
@@ -201,6 +204,9 @@ export default function EmailSettingsPanel({
           connectorId: connectorId,
           connectorType: provider.toUpperCase(),
         })
+        if (provider === 'gmail') {
+          void connectorApi.enableGmailPush(connectorId).catch(console.error)
+        }
         setIsConnecting(false)
         setIsCreatingConnection(false)
         setIsConnectionOpen(false)
@@ -216,6 +222,50 @@ export default function EmailSettingsPanel({
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [currentNode?.id, newConnectionName, provider, queryClient])
+
+  const handleManualPoll = async () => {
+    const targetConnectorId = nodeData.connectorId || nodeData.connection
+    if (!targetConnectorId || isPolling) return
+    setIsPolling(true)
+    try {
+      const mailboxesRes = await emailIngestApi.getMailboxes()
+      const matchingMailbox = mailboxesRes.payload?.find(
+        (m) =>
+          String(m.connectorId).toLowerCase() ===
+          String(targetConnectorId).toLowerCase(),
+      )
+
+      if (!matchingMailbox) {
+        showToast({
+          message:
+            'Mailbox is not yet registered for this workflow. Please save the workflow first.',
+          variant: 'default',
+        })
+        return
+      }
+
+      const pollRes = await emailIngestApi.pollMailbox(matchingMailbox.id)
+      if (pollRes.error) {
+        showToast({
+          message: `Poll failed: ${pollRes.error}`,
+          variant: 'error',
+        })
+      } else {
+        const info = pollRes.payload
+        showToast({
+          message: `Manual check complete: ${info?.messagesScanned ?? 0} scanned, ${info?.attachmentsStarted ?? 0} started.`,
+          variant: 'success',
+        })
+      }
+    } catch (err: any) {
+      showToast({
+        message: `Error checking mailbox: ${err?.message || err}`,
+        variant: 'error',
+      })
+    } finally {
+      setIsPolling(false)
+    }
+  }
 
   const handleConnect = async () => {
     if (!newConnectionName.trim() || isConnecting) return
@@ -315,6 +365,11 @@ export default function EmailSettingsPanel({
                                     connectorId: option.value,
                                     connectorType: provider.toUpperCase(),
                                   })
+                                  if (provider === 'gmail') {
+                                    void connectorApi
+                                      .enableGmailPush(option.value)
+                                      .catch(console.error)
+                                  }
                                   setIsConnectionOpen(false)
                                 }}
                               >
@@ -410,6 +465,38 @@ export default function EmailSettingsPanel({
                     </>
                   )}
                 </div>
+                {provider === 'gmail' && nodeData.connectorId && (
+                  <div className='flex items-center justify-between rounded-lg border border-gray-3 bg-gray-1 p-2.5'>
+                    <div className='flex items-center gap-2'>
+                      <span className='relative flex h-2 w-2'>
+                        <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-9 opacity-75' />
+                        <span className='relative inline-flex h-2 w-2 rounded-full bg-green-10' />
+                      </span>
+                      <div className='flex flex-col'>
+                        <span className='text-xs font-medium text-gray-12'>
+                          Gmail Push Active
+                        </span>
+                        <span className='text-[11px] text-gray-9'>
+                          Syncs new inbox attachments
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      className='flex items-center gap-1.5'
+                      color='gray'
+                      disabled={isPolling}
+                      size='sm'
+                      variant='outline'
+                      onClick={handleManualPoll}
+                    >
+                      <Icon
+                        className={cn('size-3.5', isPolling && 'animate-spin')}
+                        name='lucide:refresh-cw'
+                      />
+                      <span className='text-xs'>Check Now</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

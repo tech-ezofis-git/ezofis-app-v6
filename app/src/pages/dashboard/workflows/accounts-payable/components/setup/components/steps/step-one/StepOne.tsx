@@ -4,6 +4,7 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import connectorApi from '@/api/connector'
 import { openApOAuthAuthorize } from '@/pages/dashboard/workflows/accounts-payable/utils/oauthAuthorize'
 import authUserStore from '@/stores/authUserStore'
 import setupStore from '../../../../../stores/useSetupStore'
@@ -53,6 +54,12 @@ const StepOne = () => {
         isConnected: true,
         isConnecting: false,
       })
+
+      if (current.provider === 'gmail' && connectorId) {
+        void connectorApi.enableGmailPush(connectorId).catch((err) => {
+          console.warn('Failed to enable Gmail push:', err)
+        })
+      }
     }
 
     window.addEventListener('message', handleMessage)
