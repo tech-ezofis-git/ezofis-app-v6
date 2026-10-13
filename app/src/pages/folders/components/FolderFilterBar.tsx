@@ -633,9 +633,9 @@ export function FolderFilterBar({
         buildFilterOptionsFromContext(filterId, folderContextFilters),
         isFolderStructureFilter
           ? buildFilterOptionsFromFolders(
-              filterFolders(folderBaseline, getSiblingFolderFilters(filterId)),
-              filterId,
-            )
+            filterFolders(folderBaseline, getSiblingFolderFilters(filterId)),
+            filterId,
+          )
           : [],
         buildFilterOptionsFromFiles(siblingFilteredFiles, filterId),
       ),
@@ -762,53 +762,53 @@ export function FolderFilterBar({
         },
         ...(onUpload && String(repositoryId || '').trim()
           ? [
-              {
-                color: 'primary' as const,
-                disabled: isBusy,
-                icon: 'lucide:upload',
-                id: 'upload',
-                isIconButton: false,
-                label: t`Upload`,
-                onClick: () => onUpload(),
-              },
-            ]
+            {
+              color: 'primary' as const,
+              disabled: isBusy,
+              icon: 'lucide:upload',
+              id: 'upload',
+              isIconButton: false,
+              label: t`Upload`,
+              onClick: () => onUpload(),
+            },
+          ]
           : []),
-        ...(onIntelligentUpload &&
-        String(repositoryId || '').trim()
-          ? [
-              {
-                color: 'primary' as const,
-                disabled: isBusy,
-                iconNode: (
-                  <AiBrandIcon
-                    className='size-4 shrink-0'
-                    variant='outline-purple'
-                  />
-                ),
-                id: 'intelligent-upload',
-                isIconButton: false,
-                label: t`Intelligent Upload`,
-                tooltip: t`Intelligent Upload`,
-                variant: 'outline' as const,
-                onClick: () => onIntelligentUpload(),
-              },
-            ]
-          : []),
+        // ...(onIntelligentUpload &&
+        //   String(repositoryId || '').trim()
+        //   ? [
+        //     {
+        //       color: 'primary' as const,
+        //       disabled: isBusy,
+        //       iconNode: (
+        //         <AiBrandIcon
+        //           className='size-4 shrink-0'
+        //           variant='outline-purple'
+        //         />
+        //       ),
+        //       id: 'intelligent-upload',
+        //       isIconButton: false,
+        //       label: t`Intelligent Upload`,
+        //       tooltip: t`Intelligent Upload`,
+        //       variant: 'outline' as const,
+        //       onClick: () => onIntelligentUpload(),
+        //     },
+        //   ]
+        //   : []),
         ...(onShare && repositoryId && !isGuestShare
           ? [
-              {
-                id: 'share',
-                node: (
-                  <FolderSharePopover
-                    allowSign={false}
-                    iconOnly={false}
-                    triggerClassName='px-2.5 sm:px-3.5'
-                    triggerLabel={t`Share`}
-                    onShare={onShare}
-                  />
-                ),
-              },
-            ]
+            {
+              id: 'share',
+              node: (
+                <FolderSharePopover
+                  allowSign={false}
+                  iconOnly={false}
+                  triggerClassName='px-2.5 sm:px-3.5'
+                  triggerLabel={t`Share`}
+                  onShare={onShare}
+                />
+              ),
+            },
+          ]
           : []),
       ]}
       onFilterChange={handleFilterChange}

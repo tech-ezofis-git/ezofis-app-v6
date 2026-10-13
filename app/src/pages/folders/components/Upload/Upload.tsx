@@ -1355,6 +1355,7 @@ export default function Upload({
   repositoryData,
   repositoryId,
   onBack,
+  onIntelligentUpload,
   onSuccess,
 }: UploadProps) {
   const { t } = useLingui()
@@ -2673,6 +2674,12 @@ export default function Upload({
     }
 
     if (validFiles.length) {
+      if (useIntelligentUpload && onIntelligentUpload) {
+        onIntelligentUpload(validFiles)
+        resetInput()
+        return
+      }
+
       const fingerprint = batchFingerprint(validFiles)
       const now = Date.now()
       const lastSelection = lastBatchSelectionRef.current
