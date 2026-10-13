@@ -32,6 +32,10 @@ import {
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
 } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
+import {
+  buildTableRowDefaults,
+  hasMeaningfulTableRows,
+} from '@/pages/form-builder/helpers/tableColumnDefaults'
 import authUserStore from '@/stores/authUserStore'
 import {
   getFileNameWithoutExtension,
@@ -284,7 +288,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           const labelCol = tableColumns.find((c: any) => c.type === 'LABEL')
           const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
 
-          model[field.id] = Array.from({ length: fixedRowCount }, (_, idx) => {
+          const email = authUserStore.getState().session?.email || ''
+          const fixedRows: Array<Record<string, unknown>> = []
+          for (let idx = 0; idx < fixedRowCount; idx += 1) {
             const rowObj: Record<string, any> = {}
             if (labelCol) {
               const labelEntry = fixedRowLabels[idx]
@@ -294,10 +300,22 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
                 rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
               }
             }
-            return rowObj
-          })
+            // Column defaults fill only cells the label seeding left empty
+            Object.assign(
+              rowObj,
+              buildTableRowDefaults(tableColumns, fixedRows, email, rowObj),
+            )
+            fixedRows.push(rowObj)
+          }
+          model[field.id] = fixedRows
         } else {
-          model[field.id] = [{}]
+          model[field.id] = [
+            buildTableRowDefaults(
+              specific.tableColumns || [],
+              [],
+              authUserStore.getState().session?.email || '',
+            ),
+          ]
         }
       }
     }
@@ -1897,17 +1915,10 @@ export const isFieldFilled = (field: any, value: any): boolean => {
     return value === true || value === 'Yes'
   }
   if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
-    return (
-      Array.isArray(value) &&
-      value.some((row) =>
-        Object.entries(row || {}).some(
-          ([k, v]) =>
-            !k.startsWith('_') &&
-            v !== undefined &&
-            v !== null &&
-            String(v).trim() !== '',
-        ),
-      )
+    return hasMeaningfulTableRows(
+      value,
+      field?.settings?.specific?.tableColumns || [],
+      authUserStore.getState().session?.email || '',
     )
   }
   if (fieldType === 'MATRIX') {

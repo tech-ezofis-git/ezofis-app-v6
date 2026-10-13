@@ -4,6 +4,7 @@ import type {
   Question,
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
+import formApi from '@/api/form/form'
 import { getRepositoryItemFilterFields } from '@/api/v6/folder/folder'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
@@ -11,7 +12,14 @@ import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import {
+  extractFormFieldChoices,
+  getColumnOptionsSource,
+} from '@/pages/form-builder/helpers/tableColumnOptions'
 import FormulaBuilder from './FormulaBuilder'
+import TableColumnAiSettings from './TableColumnAiSettings'
+import TableColumnFormatSettings from './TableColumnFormatSettings'
+import TableColumnRuleSettings from './TableColumnRuleSettings'
 
 const SUMMABLE_COLUMN_TYPES: QuestionType[] = [
   'NUMBER',
@@ -53,7 +61,14 @@ function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
 const OPTIONS_SOURCE = {
   API: 2,
   LOOKUP: 1,
+  MASTER: 3,
+  USER_LIST: 4,
 } as const
+
+const SEPARATOR_OPTIONS = [
+  { id: 'COMMA', name: 'Comma (Option 1, Option 2)' },
+  { id: 'NEWLINE', name: 'New line (one option per line)' },
+]
 
 const optionsSourceRadio = [
   {
@@ -66,6 +81,16 @@ const optionsSourceRadio = [
     id: OPTIONS_SOURCE.API,
     name: 'API',
   },
+  {
+    description: 'Load options from a master table column',
+    id: OPTIONS_SOURCE.MASTER,
+    name: 'Master Table',
+  },
+  {
+    description: 'Load system user emails',
+    id: OPTIONS_SOURCE.USER_LIST,
+    name: 'User List',
+  },
 ]
 
 export type TableColumn = NonNullable<
@@ -76,6 +101,7 @@ type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 
 interface Props {
   column: TableColumn
+  masterForms?: { id: string; name: string }[]
   repositories?: { id: string; name: string }[]
   siblingColumns?: TableColumn[]
   onUpdate: (patch: ColumnSettingsPatch) => void
@@ -107,6 +133,7 @@ const toPseudoQuestion = (col: TableColumn): Question =>
 
 const TableColumnSettingsPanel = ({
   column,
+  masterForms = [],
   repositories = [],
   siblingColumns = [],
   onUpdate,
@@ -127,15 +154,34 @@ const TableColumnSettingsPanel = ({
   const contentRule = column.settings?.validation?.contentRule || 'TEXT'
   const minimum = column.settings?.validation?.minimum ?? ''
   const maximum = column.settings?.validation?.maximum ?? ''
+  const isNumericColumn = column.type === 'NUMBER' || column.type === 'COUNTER'
+  const decimalDigits = column.settings?.validation?.decimalDigits ?? ''
+  const step = column.settings?.specific?.step ?? ''
+  const prefixLabel = column.settings?.specific?.prefixLabel || ''
+  const suffixLabel = column.settings?.specific?.suffixLabel || ''
 
   const repositoryId = column.settings?.lookupSettings?.repositoryId || ''
   const repositoryField = column.settings?.lookupSettings?.repositoryField || ''
   const cascadeFromColumn =
     column.settings?.lookupSettings?.cascadeFromColumn || ''
-  const optionsSource =
-    column.settings?.lookupSettings?.optionsSource === 'API' ? 'API' : 'LOOKUP'
-  const optionsSourceId =
-    optionsSource === 'API' ? OPTIONS_SOURCE.API : OPTIONS_SOURCE.LOOKUP
+  const optionsSource = getColumnOptionsSource(column)
+  const optionsSourceId = OPTIONS_SOURCE[optionsSource]
+  const separator =
+    column.settings?.specific?.separateOptionsUsing === 'NEWLINE'
+      ? 'NEWLINE'
+      : 'COMMA'
+  const masterFormId = column.settings?.specific?.masterFormId || ''
+  const masterFormColumn = column.settings?.specific?.masterFormColumn || ''
+  const showAllData = Boolean(column.settings?.specific?.showAllData)
+
+  const { data: masterColumns = [] } = useQuery({
+    enabled: showOptions && optionsSource === 'MASTER' && !!masterFormId,
+    queryKey: ['tableColumnMasterFormFields', masterFormId],
+    queryFn: async () => {
+      const res = await formApi.getFormDataById(String(masterFormId))
+      return extractFormFieldChoices(res.data)
+    },
+  })
 
   const { data: repositoryFields = [] } = useQuery({
     enabled: showOptions && optionsSource === 'LOOKUP' && !!repositoryId,
@@ -212,12 +258,32 @@ const TableColumnSettingsPanel = ({
 
       {showOptions && (
         <>
+          <InputSelect
+            label='Separate options using'
+            options={SEPARATOR_OPTIONS}
+            value={SEPARATOR_OPTIONS.find((o) => o.id === separator) || null}
+            onChange={(opt) =>
+              onUpdate({
+                specific: {
+                  separateOptionsUsing: opt?.id === 'NEWLINE' ? 'NEWLINE' : 'COMMA',
+                },
+              })
+            }
+          />
           <InputTextarea
-            description='Comma-separated list of options shown for this column. Ignored when Lookup or API is configured below.'
             label='Options'
-            placeholder='Option 1, Option 2, Option 3'
             rows={2}
             value={customOptions}
+            description={
+              separator === 'NEWLINE'
+                ? 'One option per line. Ignored when a dynamic source is selected below.'
+                : 'Comma-separated list of options shown for this column. Ignored when a dynamic source is selected below.'
+            }
+            placeholder={
+              separator === 'NEWLINE'
+                ? 'Option 1\nOption 2\nOption 3'
+                : 'Option 1, Option 2, Option 3'
+            }
             onChange={(value: string) =>
               onUpdate({ specific: { customOptions: value } })
             }
@@ -231,16 +297,24 @@ const TableColumnSettingsPanel = ({
               options={optionsSourceRadio}
               optionsPerLine={2}
               value={optionsSourceId}
-              onChange={(id) =>
+              onChange={(id) => {
+                const next =
+                  id === OPTIONS_SOURCE.API
+                    ? 'API'
+                    : id === OPTIONS_SOURCE.MASTER
+                      ? 'MASTER'
+                      : id === OPTIONS_SOURCE.USER_LIST
+                        ? 'USER_LIST'
+                        : 'LOOKUP'
                 onUpdate({
                   lookupSettings: {
-                    optionsSource: id === OPTIONS_SOURCE.API ? 'API' : 'LOOKUP',
-                    ...(id === OPTIONS_SOURCE.API
+                    optionsSource: next,
+                    ...(next !== 'LOOKUP'
                       ? { repositoryField: '', repositoryId: '' }
                       : {}),
                   },
                 })
-              }
+              }}
             />
 
             {optionsSource === 'LOOKUP' ? (
@@ -320,6 +394,90 @@ const TableColumnSettingsPanel = ({
                   selected row&apos;s value in that other column.
                 </div>
               </>
+            ) : optionsSource === 'MASTER' ? (
+              <>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                  Master Table
+                </label>
+                <InputSelect
+                  options={masterForms}
+                  placeholder='Select a master table'
+                  value={
+                    masterForms.find((f) => String(f.id) === masterFormId) ||
+                    null
+                  }
+                  onChange={(opt) =>
+                    onUpdate({
+                      specific: {
+                        masterFormColumn: '',
+                        masterFormId: opt?.id != null ? String(opt.id) : '',
+                      },
+                    })
+                  }
+                />
+                <InputSelect
+                  disabled={!masterFormId}
+                  options={masterColumns}
+                  placeholder={
+                    masterFormId
+                      ? 'Select the column to show'
+                      : 'Select a master table first'
+                  }
+                  value={
+                    masterColumns.find(
+                      (c) =>
+                        String(c.id) === masterFormColumn ||
+                        c.name === masterFormColumn,
+                    ) || null
+                  }
+                  onChange={(opt) =>
+                    onUpdate({
+                      specific: {
+                        masterFormColumn: opt?.id != null ? String(opt.id) : '',
+                      },
+                    })
+                  }
+                />
+                <InputSwitch
+                  checked={showAllData}
+                  description='When filtering by another column, show every master value if that column is empty.'
+                  label='Show all data'
+                  onChange={(checked) =>
+                    onUpdate({ specific: { showAllData: checked } })
+                  }
+                />
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                  Filter by column (cascade, optional)
+                </label>
+                <InputSelect
+                  placeholder='No cascade — show all options'
+                  clearable
+                  options={siblingColumns.map((c) => ({
+                    id: c.id,
+                    name: c.name || 'Column',
+                  }))}
+                  value={
+                    siblingColumns
+                      .map((c) => ({ id: c.id, name: c.name || 'Column' }))
+                      .find((c) => c.id === cascadeFromColumn) || null
+                  }
+                  onChange={(opt) =>
+                    onUpdate({
+                      lookupSettings: {
+                        cascadeFromColumn: opt?.id ? String(opt.id) : '',
+                      },
+                    })
+                  }
+                />
+                <div className='text-[10px] text-gray-6 italic'>
+                  The selected column&apos;s master column is matched against
+                  this row&apos;s value in that column.
+                </div>
+              </>
+            ) : optionsSource === 'USER_LIST' ? (
+              <p className='text-11 leading-relaxed text-gray-9'>
+                Options are the system user emails.
+              </p>
             ) : (
               <p className='text-11 leading-relaxed text-gray-9'>
                 On focus, loads Data from API
@@ -416,6 +574,16 @@ const TableColumnSettingsPanel = ({
               onUpdate({ validation: { contentRule: String(opt?.id || '') } })
             }
           />
+          {isNumericColumn && contentRule === 'DECIMAL' && (
+            <InputNumber
+              description='Maximum digits after the decimal point. Leave empty for no limit.'
+              label='Decimal Digits'
+              max={10}
+              min={0}
+              value={decimalDigits}
+              onChange={(v) => onUpdate({ validation: { decimalDigits: v } })}
+            />
+          )}
           <div className='grid grid-cols-2 gap-2'>
             <InputNumber
               value={minimum}
@@ -438,6 +606,58 @@ const TableColumnSettingsPanel = ({
           </div>
         </div>
       )}
+
+      {isNumericColumn && (
+        <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            Number Format
+          </label>
+          <InputNumber
+            description='Amount the up/down arrow keys change the value by. Leave empty for the default.'
+            label='Step'
+            min={0}
+            value={step}
+            onChange={(v) => onUpdate({ specific: { step: v } })}
+          />
+          <div className='grid grid-cols-2 gap-2'>
+            <InputText
+              label='Prefix'
+              placeholder='e.g. $'
+              value={prefixLabel}
+              onChange={(value: string) =>
+                onUpdate({ specific: { prefixLabel: value } })
+              }
+            />
+            <InputText
+              label='Suffix'
+              placeholder='e.g. kg'
+              value={suffixLabel}
+              onChange={(value: string) =>
+                onUpdate({ specific: { suffixLabel: value } })
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      <TableColumnFormatSettings
+        column={column}
+        siblingColumns={siblingColumns}
+        onUpdate={onUpdate}
+      />
+
+      <TableColumnAiSettings
+        column={column}
+        masterForms={masterForms}
+        siblingColumns={siblingColumns}
+        onUpdate={onUpdate}
+      />
+
+      <TableColumnRuleSettings
+        column={column}
+        siblingColumns={siblingColumns}
+        onUpdate={onUpdate}
+      />
     </div>
   )
 }

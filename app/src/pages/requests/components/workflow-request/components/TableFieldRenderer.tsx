@@ -6,11 +6,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import type { Option } from '@/types/option'
-import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
+import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
+import { getUsers } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -32,11 +33,47 @@ import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScan
 import { extractHeadersAndData } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/utils/fileParser'
 import { evaluateFormula } from '@/pages/form-builder/helpers/formula'
 import {
+  buildTableRowDefaults,
+  canReplaceUntouchedRow,
+  clampTextToMaxLength,
+  getColumnCurrencyCode,
+  getColumnCurrencyOptions,
+  getNumberCellProps,
+} from '@/pages/form-builder/helpers/tableColumnDefaults'
+import {
+  addFilesToValue,
+  buildColumnOcrHints,
+  getColumnFileError,
+  getColumnOcrTargets,
+  getFileInputAccept,
+  isMultiFileColumn,
+  mapOcrToRowPatch,
+  removeFileFromValue,
+  toFileList,
+} from '@/pages/form-builder/helpers/tableColumnFiles'
+import {
+  ensureSelectedOptions,
+  getColumnMasterConfig,
+  getColumnOptionsSource,
+  parseColumnOptions,
+  selectColumnCellOptions,
+} from '@/pages/form-builder/helpers/tableColumnOptions'
+import { getRowCellRuleStates } from '@/pages/form-builder/helpers/tableColumnRules'
+import {
+  type AddressSuggestion,
+  buildAddressPatch,
+  fetchAddressSuggestions,
+  isAddressColumn,
+  isQrColumn,
+} from '@/pages/form-builder/helpers/tableColumnShortText'
+import {
   computeTableColumnTotals,
   extractCurrencyNumericValue,
   extractPhoneInputString,
+  fetchMasterFormColumnOptions,
   fetchMasterTableRows,
   formatRuntimeFieldDisplayValue,
+  getDateTimeLimits,
   getEffectiveColumnLabel,
   getEffectiveFieldLabel,
   resolveRuntimeFieldType,
@@ -72,25 +109,75 @@ export interface TableColumn {
     }
     lookupSettings?: {
       cascadeFromColumn?: string
-      optionsSource?: 'LOOKUP' | 'API'
+      optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
       repositoryField?: string
       repositoryId?: string
     }
     specific?: {
+      addressMatchingFields?: Array<{
+        addressColumn: string
+        id: string
+        selectFieldColumn: string[]
+      }>
+      allowMultipleFiles?: boolean
+      currencyOptionsType?: 'ALL' | 'SPECIFIC'
       customDefaultValue?: string
       customOptions?: string
+      defaultCurrency?: string
       defaultValueType?: string
       formulaTokens?: Array<{ type: string; value: string }>
+      isAddressField?: boolean
+      masterFormColumn?: string
+      masterFormId?: string
       placeholder?: string
+      prefixLabel?: string
+      qrValue?: boolean
+      separateOptionsUsing?: 'COMMA' | 'NEWLINE'
+      showAllData?: boolean
       showColumnTotal?: boolean
+      specificCurrencies?: string[]
+      step?: number | string
+      suffixLabel?: string
     }
     validation?: {
+      allowedFileTypes?: string[]
+      assignOtherControls?: string[]
       contentRule?: string
+      dateLimitType?: 'MAX_DATE' | 'MIN_DATE' | 'NONE' | 'RANGE'
+      decimalDigits?: number | string
       fieldRule?: 'OPTIONAL' | 'REQUIRED'
+      fixedEndDate?: string
+      fixedEndTime?: string
+      fixedStartDate?: string
+      fixedStartTime?: string
+      mandatorySettings?: Array<{
+        controls: string[]
+        id: string
+        value: string
+      }>
+      maxDateOffset?: number | string
+      maxFileSize?: number | string
       maximum?: number | string
+      maxTimeOffset?: number | string
+      minDateOffset?: number | string
       minimum?: number | string
+      minTimeOffset?: number | string
+      readonlySettings?: Array<{
+        controls: string[]
+        id: string
+        notEqual?: boolean
+        value: string
+      }>
+      timeFormat?: '12' | '24'
+      timeLimitType?: 'MAX_TIME' | 'MIN_TIME' | 'NONE' | 'RANGE'
     }
   }
+}
+
+const toFiniteBound = (bound: unknown): number | undefined => {
+  if (bound === undefined || bound === null || bound === '') return undefined
+  const n = Number(bound)
+  return Number.isFinite(n) ? n : undefined
 }
 
 const getColumnPlaceholder = (col: TableColumn) =>
@@ -120,13 +207,6 @@ const findPriceColumnId = (columns: TableColumn[]) => {
 
 const findDescriptionColumnId = (columns: TableColumn[]) =>
   columns.find((col) => isDescriptionColumn(col))?.id
-
-const parseColumnOptions = (col: TableColumn): { id: string; name: string }[] =>
-  (col.settings?.specific?.customOptions || '')
-    .split(',')
-    .map((opt) => opt.trim())
-    .filter(Boolean)
-    .map((opt) => ({ id: opt, name: opt }))
 
 const normalizeHeaderKey = (value: string) =>
   value
@@ -205,6 +285,8 @@ interface Props {
   masterSyncParentValue?: any
   ocrLineItems?: Record<string, any>[]
   readOnly?: boolean
+  /** Repository the OCR upload runs against (for "fill other columns" file columns). */
+  repositoryId?: string
   required?: boolean
   showRowApprove?: boolean
   value?: Array<Record<string, any>>
@@ -441,6 +523,266 @@ const ApiCatalogSelect = ({
 
 export { ApiCatalogSelect }
 
+interface CellActions {
+  siblingColumns: TableColumn[]
+  onFilesAdded?: (files: File[]) => Promise<void> | void
+  onRowPatch?: (patch: Record<string, unknown>) => void
+}
+
+const TableCellShortText = ({
+  col,
+  siblingColumns,
+  val,
+  onCellChange,
+  onRowPatch,
+}: {
+  col: TableColumn
+  siblingColumns: TableColumn[]
+  val: unknown
+  onCellChange: (newVal: unknown) => void
+  onRowPatch?: (patch: Record<string, unknown>) => void
+}) => {
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
+  const [loading, setLoading] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const qr = isQrColumn(col)
+  const address = isAddressColumn(col)
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+
+  const handleTyped = (typed: string) => {
+    const next = clampTextToMaxLength(typed, col)
+    onCellChange(next)
+    if (!address) return
+    if (timer.current) clearTimeout(timer.current)
+    if (next.trim().length < 3) {
+      setSuggestions([])
+      return
+    }
+    timer.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        setSuggestions(await fetchAddressSuggestions(next))
+      } catch {
+        setSuggestions([])
+      } finally {
+        setLoading(false)
+      }
+    }, 400)
+  }
+
+  const pickSuggestion = (suggestion: AddressSuggestion) => {
+    const label = clampTextToMaxLength(suggestion.label, col)
+    const patch = buildAddressPatch(col, siblingColumns, suggestion.raw)
+    if (onRowPatch) onRowPatch({ [col.id]: label, ...patch })
+    else onCellChange(label)
+    setSuggestions([])
+  }
+
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>
+          <InputText
+            className='w-full'
+            placeholder={getColumnPlaceholder(col)}
+            value={val != null ? String(val) : ''}
+            onChange={handleTyped}
+          />
+        </div>
+        {qr && (
+          <button
+            aria-label='Scan QR / Barcode'
+            className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+            title='Scan QR / Barcode'
+            type='button'
+            onClick={() => setScannerOpen((open) => !open)}
+          >
+            <Icon height={14} name='lucide:qr-code' width={14} />
+          </button>
+        )}
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            onCellChange(clampTextToMaxLength(String(raw), col))
+            setScannerOpen(false)
+          }}
+        />
+      )}
+      {address && (loading || suggestions.length > 0) && (
+        <div className='animate-in fade-in max-h-40 overflow-y-auto rounded-md border border-gray-3 bg-surface duration-200'>
+          {loading ? (
+            <div className='flex items-center gap-2 p-2 text-xs text-gray-9'>
+              <Icon
+                className='animate-spin'
+                height={12}
+                name='lucide:loader-2'
+                width={12}
+              />
+              Searching addresses...
+            </div>
+          ) : (
+            suggestions.map((suggestion, i) => (
+              <button
+                className='block w-full cursor-pointer truncate px-2 py-1.5 text-left text-xs text-gray-12 transition-colors hover:bg-gray-2 active:bg-gray-3'
+                key={`${suggestion.label}-${i}`}
+                type='button'
+                onClick={() => pickSuggestion(suggestion)}
+              >
+                {suggestion.label}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const TableCellFileInput = ({
+  col,
+  isImageType,
+  val,
+  onCellChange,
+  onFilesAdded,
+}: {
+  col: TableColumn
+  isImageType: boolean
+  val: any
+  onCellChange: (newVal: any) => void
+  onFilesAdded?: (files: File[]) => Promise<void> | void
+}) => {
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const multiple = isMultiFileColumn(col)
+  const files = toFileList(val)
+  const fileName: string | undefined = files[0]?.fileName
+
+  const handlePick = async (picked: File[]) => {
+    // The picker's accept list can be bypassed (e.g. "All files"), so every
+    // selection is checked before it is accepted.
+    const accepted: File[] = []
+    let problem: string | null = null
+    for (const file of picked) {
+      const message = getColumnFileError(col, {
+        name: file.name,
+        size: file.size,
+      })
+      if (message) problem = problem ?? `${file.name}: ${message}`
+      else accepted.push(file)
+    }
+    setError(problem)
+    if (accepted.length === 0) return
+
+    onCellChange(
+      addFilesToValue(
+        col,
+        val,
+        accepted.map((file) => ({
+          fileName: file.name,
+          fileSize: file.size,
+          rawFile: file,
+        })),
+      ),
+    )
+    if (onFilesAdded) {
+      setBusy(true)
+      try {
+        await onFilesAdded(accepted)
+      } finally {
+        setBusy(false)
+      }
+    }
+  }
+
+  return (
+    <div className='flex min-w-0 flex-col gap-1'>
+      {multiple &&
+        files.map((file, index) => (
+          <div
+            className='animate-in fade-in flex min-w-0 items-center gap-1 rounded-md bg-gray-2 px-1.5 py-0.5 text-xs text-gray-11 duration-200'
+            key={`${file.fileName}-${index}`}
+          >
+            <Icon
+              className='shrink-0 text-gray-6'
+              height={12}
+              name='lucide:paperclip'
+              width={12}
+            />
+            <span
+              className='min-w-0 flex-1 truncate'
+              title={String(file.fileName ?? '')}
+            >
+              {file.fileName}
+            </span>
+            <button
+              aria-label='Remove file'
+              className='flex size-4 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+              type='button'
+              onClick={() => {
+                setError(null)
+                onCellChange(removeFileFromValue(col, val, index))
+              }}
+            >
+              <Icon height={10} name='lucide:x' width={10} />
+            </button>
+          </div>
+        ))}
+      <label
+        className={cn(
+          'flex min-w-0 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
+          busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+        )}
+      >
+        <Icon
+          className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
+          height={12}
+          width={12}
+          name={
+            busy
+              ? 'lucide:loader-2'
+              : fileName && !multiple
+                ? 'lucide:paperclip'
+                : 'lucide:upload'
+          }
+        />
+        <span className='min-w-0 flex-1 truncate'>
+          {busy
+            ? 'Reading document…'
+            : multiple
+              ? files.length > 0
+                ? 'Add more files'
+                : 'Add files'
+              : fileName || '...'}
+        </span>
+        <input
+          accept={getFileInputAccept(col, isImageType)}
+          className='hidden'
+          disabled={busy}
+          multiple={multiple}
+          type='file'
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? [])
+            e.target.value = ''
+            if (picked.length > 0) void handlePick(picked)
+          }}
+        />
+      </label>
+      {error && (
+        <p className='text-[11px] leading-tight text-red-9'>{error}</p>
+      )}
+    </div>
+  )
+}
+
 const TableCellSelect = ({
   col,
   isMulti,
@@ -470,14 +812,18 @@ const TableCellSelect = ({
     }
   }, [options, val, isMulti, onCellChange])
 
+  // A saved selection stays visible even if the option list changed or has
+  // not loaded yet (the stored value itself is never altered here).
+  const displayOptions = ensureSelectedOptions(options, val)
+
   if (isMulti) {
     const selectedIds: string[] = Array.isArray(val) ? val : []
     return (
       <InputSelectMultiple
         className='w-full'
-        options={options}
+        options={displayOptions}
         placeholder={getColumnPlaceholder(col)}
-        value={options.filter((opt) => selectedIds.includes(opt.id))}
+        value={displayOptions.filter((opt) => selectedIds.includes(opt.id))}
         onChange={(opts) => onCellChange(opts.map((opt) => opt.id))}
       />
     )
@@ -486,9 +832,9 @@ const TableCellSelect = ({
   return (
     <InputSelect
       className='w-full'
-      options={options}
+      options={displayOptions}
       placeholder={getColumnPlaceholder(col)}
-      value={options.find((opt) => opt.id === val) || null}
+      value={displayOptions.find((opt) => opt.id === val) || null}
       onChange={(opt) => onCellChange(opt ? opt.id : null)}
     />
   )
@@ -502,6 +848,7 @@ const renderCellInput = (
   resolvedOptions?: { id: string; name: string }[],
   onApiProductSelect?: (productCode: string | null) => void | Promise<void>,
   rowIndex?: number,
+  actions?: CellActions,
 ): ReactNode => {
   const cellType = resolveRuntimeFieldType(col)
 
@@ -558,7 +905,7 @@ const renderCellInput = (
           placeholder={getColumnPlaceholder(col)}
           value={val != null ? String(val) : ''}
           autosize
-          onChange={(v) => onCellChange(v)}
+          onChange={(v) => onCellChange(clampTextToMaxLength(v, col))}
         />
       )
 
@@ -567,42 +914,87 @@ const renderCellInput = (
       return (
         <InputNumber
           className='w-full'
-          placeholder='0'
+          {...getNumberCellProps(col)}
+          max={toFiniteBound(col.settings?.validation?.maximum)}
+          min={toFiniteBound(col.settings?.validation?.minimum)}
           value={val != null ? val : ''}
           onChange={(v) => onCellChange(v)}
         />
       )
 
-    case 'CURRENCY_AMOUNT':
-      return (
+    case 'CURRENCY_AMOUNT': {
+      const currencyOptions = getColumnCurrencyOptions(col)
+      const currencyCode = getColumnCurrencyCode(col, val)
+      // Only a restricted list of 2+ currencies needs a picker; a single or
+      // default currency is shown as the prefix. No currency configured keeps
+      // the original `$` prefix.
+      const showPicker = currencyOptions.length > 1
+      const amount = (
         <InputNumber
           className='w-full'
           placeholder='0.00'
-          prefix='$'
+          prefix={showPicker ? undefined : currencyCode ? `${currencyCode} ` : '$'}
           thousandSeparator=','
           value={extractCurrencyNumericValue(val)}
-          onChange={(v) => onCellChange(updateCurrencyFieldValue(val, v, col))}
+          onChange={(v) =>
+            // With a configured currency the shown code is stored with the
+            // amount ({ currency, value }); otherwise the cell is unchanged.
+            onCellChange(updateCurrencyFieldValue(val, v, col, currencyCode))
+          }
         />
       )
+      if (!showPicker) return amount
+      return (
+        <div className='flex w-full items-center gap-1'>
+          <InputSelect
+            className='w-24 shrink-0'
+            options={currencyOptions.map((code) => ({ id: code, name: code }))}
+            value={
+              currencyCode ? { id: currencyCode, name: currencyCode } : null
+            }
+            onChange={(opt) =>
+              onCellChange(
+                updateCurrencyFieldValue(
+                  val,
+                  extractCurrencyNumericValue(val),
+                  col,
+                  opt?.id ? String(opt.id) : undefined,
+                ),
+              )
+            }
+          />
+          <div className='min-w-0 flex-1'>{amount}</div>
+        </div>
+      )
+    }
 
-    case 'DATE':
+    case 'DATE': {
+      const { maxDate, minDate } = getDateTimeLimits(col)
       return (
         <InputDate
           className='w-full'
+          maxDate={maxDate}
+          minDate={minDate}
           placeholder='YYYY-MM-DD'
           value={val != null && val !== '' ? String(val) : null}
           onChange={(v) => onCellChange(v || '')}
         />
       )
+    }
 
-    case 'TIME':
+    case 'TIME': {
+      const { maxTime, minTime } = getDateTimeLimits(col)
       return (
         <InputTime
           className='w-full'
+          format={col.settings?.validation?.timeFormat === '24' ? '24h' : '12h'}
+          maxTime={maxTime}
+          minTime={minTime}
           value={val != null ? String(val) : ''}
           onChange={(v) => onCellChange(v || '')}
         />
       )
+    }
 
     case 'DATE_TIME':
       return (
@@ -648,32 +1040,16 @@ const renderCellInput = (
     }
 
     case 'FILE_UPLOAD':
-    case 'IMAGE_UPLOAD': {
-      const fileName: string | undefined = val?.fileName
-      const isImageType = cellType === 'IMAGE_UPLOAD'
+    case 'IMAGE_UPLOAD':
       return (
-        <label className='flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5'>
-          <Icon
-            className='shrink-0 text-gray-6'
-            height={12}
-            name={fileName ? 'lucide:paperclip' : 'lucide:upload'}
-            width={12}
-          />
-          <span className='min-w-0 flex-1 truncate'>{fileName || '...'}</span>
-          <input
-            accept={isImageType ? 'image/*' : undefined}
-            className='hidden'
-            type='file'
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              onCellChange({ fileName: file.name, rawFile: file })
-              e.target.value = ''
-            }}
-          />
-        </label>
+        <TableCellFileInput
+          col={col}
+          isImageType={cellType === 'IMAGE_UPLOAD'}
+          val={val}
+          onCellChange={onCellChange}
+          onFilesAdded={actions?.onFilesAdded}
+        />
       )
-    }
 
     case 'CHIPS': {
       const chips: string[] = Array.isArray(val)
@@ -730,15 +1106,28 @@ const renderCellInput = (
     case 'SHORT_TEXT':
     case 'EMAIL':
     case 'URL':
-    default:
+    default: {
+      // QR scan / address autocomplete (SHORT_TEXT columns that enable them)
+      if (isQrColumn(col) || isAddressColumn(col)) {
+        return (
+          <TableCellShortText
+            col={col}
+            siblingColumns={actions?.siblingColumns ?? []}
+            val={val}
+            onCellChange={onCellChange}
+            onRowPatch={actions?.onRowPatch}
+          />
+        )
+      }
       return (
         <InputText
           className='w-full'
           placeholder={getColumnPlaceholder(col)}
           value={val != null ? String(val) : ''}
-          onChange={(v) => onCellChange(v)}
+          onChange={(v) => onCellChange(clampTextToMaxLength(v, col))}
         />
       )
+    }
   }
 }
 
@@ -748,6 +1137,7 @@ const TableFieldRenderer = ({
   masterSyncParentValue,
   ocrLineItems,
   readOnly,
+  repositoryId,
   required,
   showRowApprove,
   value,
@@ -759,6 +1149,24 @@ const TableFieldRenderer = ({
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
   const tableColumns: TableColumn[] = specific.tableColumns || []
+
+  // A fresh row carrying each column's configured default (if any).
+  // `existingRows` are the rows that will remain alongside it.
+  // Rows the user has edited this session. Stored rows don't record whether a
+  // value was typed or generated, so this keeps an edited row from ever being
+  // mistaken for an untouched default row when scanned/imported rows arrive.
+  const editedRowKeys = useRef(new Set<string>())
+  const rowKeyOf = (row: { _rowId?: string } | undefined, idx: number) =>
+    row?._rowId || `row-${idx}`
+
+  const createBlankRow = (existingRows: Array<Record<string, unknown>>) => ({
+    _rowId: generateRowId(),
+    ...buildTableRowDefaults(
+      tableColumns,
+      existingRows,
+      authUserStore.getState().session?.email || '',
+    ),
+  })
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
   const fixedRowCount: number = specific.fixedRowCount || 5
   const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
@@ -852,7 +1260,8 @@ const TableFieldRenderer = ({
       }
       return backfilled
     }
-    // ON_DEMAND: by default open at least 1 row
+    // ON_DEMAND: by default open at least 1 row. For an empty saved table this
+    // row is display-only, so it carries no defaults (they would not be saved).
     if (raw.length === 0) {
       return [{ _rowId: generateRowId() }]
     }
@@ -912,16 +1321,152 @@ const TableFieldRenderer = ({
 
   const lookupColumns = tableColumns.filter(
     (col) =>
-      col.settings?.lookupSettings?.optionsSource !== 'API' &&
+      getColumnOptionsSource(col) === 'LOOKUP' &&
       col.settings?.lookupSettings?.repositoryId &&
       !col.settings?.lookupSettings?.cascadeFromColumn,
   )
   const cascadeColumns = tableColumns.filter(
     (col) =>
-      col.settings?.lookupSettings?.optionsSource !== 'API' &&
+      getColumnOptionsSource(col) === 'LOOKUP' &&
       col.settings?.lookupSettings?.repositoryId &&
       col.settings?.lookupSettings?.cascadeFromColumn,
   )
+  const masterColumns = tableColumns.filter(
+    (col) =>
+      getColumnMasterConfig(col) &&
+      !col.settings?.lookupSettings?.cascadeFromColumn,
+  )
+  const masterCascadeColumns = tableColumns.filter(
+    (col) =>
+      getColumnMasterConfig(col) &&
+      col.settings?.lookupSettings?.cascadeFromColumn,
+  )
+  const hasUserListColumn = tableColumns.some(
+    (col) => getColumnOptionsSource(col) === 'USER_LIST',
+  )
+
+  // Master-table sources, same fetcher the top-level choice fields use.
+  const { data: masterOptionsByColumn = {} } = useQuery({
+    enabled: masterColumns.length > 0,
+    queryKey: [
+      'tableColumnMasterOptions',
+      field?.id,
+      masterColumns.map((c) => {
+        const cfg = getColumnMasterConfig(c)
+        return `${c.id}:${cfg?.masterFormId}:${cfg?.masterFormColumn}:${cfg?.showAllData}`
+      }),
+    ],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        masterColumns.map(async (col) => {
+          const cfg = getColumnMasterConfig(col)
+          if (!cfg) return [col.id, []] as const
+          const options = await fetchMasterFormColumnOptions(
+            cfg.masterFormId,
+            cfg.masterFormColumn,
+            undefined,
+            undefined,
+            cfg.showAllData,
+          )
+          return [
+            col.id,
+            options.map((o) => ({
+              id: String(o.id ?? o.name),
+              name: String(o.name ?? o.id),
+            })),
+          ] as const
+        }),
+      )
+      return Object.fromEntries(entries)
+    },
+  })
+
+  // Master-table sources filtered by another column of the same row.
+  const { data: masterCascadedOptions = {} } = useQuery({
+    enabled: masterCascadeColumns.length > 0,
+    queryKey: [
+      'tableColumnMasterCascadedOptions',
+      field?.id,
+      masterCascadeColumns.map((c) => {
+        const cfg = getColumnMasterConfig(c)
+        const parentColId = c.settings?.lookupSettings?.cascadeFromColumn
+        const distinct = Array.from(
+          new Set(
+            rows
+              .map((r) => r[parentColId || ''])
+              .filter((v) => v !== undefined && v !== null && v !== ''),
+          ),
+        )
+        return `${c.id}:${cfg?.masterFormId}:${cfg?.masterFormColumn}:${cfg?.showAllData}:${distinct.join(',')}`
+      }),
+    ],
+    queryFn: async () => {
+      const result: Record<
+        string,
+        Record<string, { id: string; name: string }[]>
+      > = {}
+      await Promise.all(
+        masterCascadeColumns.map(async (col) => {
+          const cfg = getColumnMasterConfig(col)
+          const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
+          if (!cfg || !parentColId) return
+          const parentCol = tableColumns.find((c) => c.id === parentColId)
+          // Same rule as top-level fields: the parent's master column, else its label
+          const parentMasterColumn =
+            parentCol?.settings?.specific?.masterFormColumn ||
+            parentCol?.name ||
+            parentColId
+          const distinct = Array.from(
+            new Set(
+              rows
+                .map((r) => r[parentColId])
+                .filter((v) => v !== undefined && v !== null && v !== ''),
+            ),
+          )
+          const byValue: Record<string, { id: string; name: string }[]> = {}
+          await Promise.all(
+            distinct.map(async (val) => {
+              const options = await fetchMasterFormColumnOptions(
+                cfg.masterFormId,
+                cfg.masterFormColumn,
+                val,
+                parentMasterColumn,
+                cfg.showAllData,
+              )
+              byValue[String(val)] = options.map((o) => ({
+                id: String(o.id ?? o.name),
+                name: String(o.name ?? o.id),
+              }))
+            }),
+          )
+          result[col.id] = byValue
+        }),
+      )
+      return result
+    },
+  })
+
+  // System users (emails), as for the top-level "User List" options.
+  const { data: userListOptions = [] } = useQuery({
+    enabled: hasUserListColumn,
+    queryKey: ['tableColumnUserListOptions'],
+    queryFn: async () => {
+      const res = await getUsers()
+      const session = authUserStore.getState().session
+      const currentUserEmail = session?.email?.trim().toLowerCase()
+      const currentUserId = session?.id ? String(session.id) : undefined
+      return res.data
+        .filter((user) => {
+          const userEmail = user.email?.trim().toLowerCase()
+          if (currentUserEmail && userEmail === currentUserEmail) return false
+          if (currentUserId && user.id && String(user.id) === currentUserId) {
+            return false
+          }
+          return true
+        })
+        .map((user) => ({ id: user.email, name: user.email }))
+    },
+  })
 
   // For columns configured with a "cascade" parent (another column in the
   // same row), facet options are filtered server-side per distinct parent
@@ -992,20 +1537,24 @@ const TableFieldRenderer = ({
     },
   })
 
+  // A cell is locked (value kept, input disabled) while a conditional
+  // read-only rule in the same row matches.
+  const isCellRuleReadOnly = (
+    col: TableColumn,
+    row: Record<string, unknown>,
+  ): boolean => Boolean(getRowCellRuleStates(tableColumns, row)[col.id]?.readOnly)
+
   const getLookupOptionsForCell = (
     col: TableColumn,
     row: Record<string, any>,
-  ): { id: string; name: string }[] | undefined => {
-    const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
-    if (parentColId) {
-      const parentVal = row[parentColId]
-      if (parentVal === undefined || parentVal === null || parentVal === '') {
-        return []
-      }
-      return cascadedOptionsByColumn[col.id]?.[String(parentVal)] || []
-    }
-    return lookupOptionsByColumn[col.id]
-  }
+  ): { id: string; name: string }[] | undefined =>
+    selectColumnCellOptions(col, row, {
+      masterByColumn: masterOptionsByColumn,
+      masterCascaded: masterCascadedOptions,
+      repositoryByColumn: lookupOptionsByColumn,
+      repositoryCascaded: cascadedOptionsByColumn,
+      userList: userListOptions,
+    })
 
   const { data: lookupOptionsByColumn = {} } = useQuery({
     enabled: lookupColumns.length > 0,
@@ -1062,6 +1611,7 @@ const TableFieldRenderer = ({
   }, [JSON.stringify(resolvedRows)])
 
   const handleCellChange = (rowIndex: number, colId: string, cellVal: any) => {
+    editedRowKeys.current.add(rowKeyOf(rows[rowIndex], rowIndex))
     const next = rows.map((r, i) => {
       if (i !== rowIndex) return r
       return {
@@ -1070,6 +1620,63 @@ const TableFieldRenderer = ({
       }
     })
     onChange(next)
+  }
+
+  // Latest rows, so an OCR result that arrives after the user kept editing
+  // is merged into the current rows instead of overwriting their changes.
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
+
+  // Applies several cell values to one row at once (an address pick fills
+  // the address cell and the chosen sibling cells together), merged into the
+  // latest rows so nothing typed in the meantime is lost.
+  const handleRowPatch = (rowIndex: number, patch: Record<string, unknown>) => {
+    const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    const current = rowsRef.current
+    const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
+    if (idx < 0) return
+    editedRowKeys.current.add(rowKey)
+    const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+    rowsRef.current = next
+    onChange(next)
+  }
+
+  // A file column set to "fill other columns": send each new document to the
+  // OCR upload with the chosen sibling columns as the field list, then write
+  // the extracted values into those cells of the same row.
+  const handleFilesAdded = async (
+    rowIndex: number,
+    col: TableColumn,
+    files: File[],
+  ) => {
+    const targets = getColumnOcrTargets(col, tableColumns)
+    if (!repositoryId || targets.length === 0 || files.length === 0) return
+    const hints = buildColumnOcrHints(targets)
+    const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    for (const file of files) {
+      const { data, error } = await uploadForOcr(repositoryId, file, hints)
+      if (error || !data?.ocrFieldList) {
+        console.warn(
+          '[table uploadForOcr] OCR extraction warning:',
+          error || 'OCR data unavailable',
+        )
+        continue
+      }
+      const current = rowsRef.current
+      const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
+      if (idx < 0) continue
+      const patch = mapOcrToRowPatch(
+        targets,
+        data.ocrFieldList,
+        current[idx],
+        !isMultiFileColumn(col),
+      )
+      if (Object.keys(patch).length === 0) continue
+      editedRowKeys.current.add(rowKey)
+      const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+      rowsRef.current = next
+      onChange(next)
+    }
   }
 
   const handleApiProductSelect = async (
@@ -1091,6 +1698,7 @@ const TableFieldRenderer = ({
       product = null
     }
 
+    editedRowKeys.current.add(rowKeyOf(rows[rowIndex], rowIndex))
     const next = rows.map((r, i) => {
       if (i !== rowIndex) return r
       const patched: Record<string, any> = {
@@ -1108,34 +1716,14 @@ const TableFieldRenderer = ({
     onChange(next)
   }
 
-  const resolveColumnDefaultValue = (col: TableColumn): any => {
-    const type = col.settings?.specific?.defaultValueType || 'CUSTOM'
-    switch (type) {
-      case 'USER_EMAIL':
-        return authUserStore.getState().session?.email || ''
-      case 'CURRENT_DATE':
-        return new Date().toISOString().slice(0, 10)
-      case 'AUTO_SEQUENCE':
-        return rows.length + 1
-      case 'CUSTOM':
-      default:
-        return col.settings?.specific?.customDefaultValue || ''
-    }
-  }
-
   const handleAddRow = () => {
-    const defaults: Record<string, any> = {}
-    for (const col of tableColumns) {
-      const def = resolveColumnDefaultValue(col)
-      if (def !== '' && def !== undefined) defaults[col.id] = def
-    }
-    onChange([...rows, { _rowId: generateRowId(), ...defaults }])
+    onChange([...rows, createBlankRow(rows)])
     if (activeView === 'ADVANCE') setExpandedRowIndex(rows.length)
   }
 
   const handleDeleteRow = (rowIndex: number) => {
     const next = rows.filter((_, i) => i !== rowIndex)
-    onChange(next.length > 0 ? next : [{ _rowId: generateRowId() }])
+    onChange(next.length > 0 ? next : [createBlankRow([])])
   }
 
   const handleApproveRow = (rowIndex: number) => {
@@ -1166,7 +1754,7 @@ const TableFieldRenderer = ({
     const remaining = rows.filter(
       (row, i) => !selectedRowIds.has(row._rowId || `row-${i}`),
     )
-    onChange(remaining.length > 0 ? remaining : [{ _rowId: generateRowId() }])
+    onChange(remaining.length > 0 ? remaining : [createBlankRow([])])
     setSelectedRowIds(new Set())
   }
 
@@ -1198,8 +1786,18 @@ const TableFieldRenderer = ({
       : newRows
 
   const appendRows = (newRows: Record<string, any>[]) => {
+    // An untouched first row (empty, or holding only generated defaults) is
+    // replaced by the incoming rows; a row with user-entered data is kept.
     const withoutDefaultBlank =
-      rows.length === 1 && Object.keys(rows[0]).length <= 1 ? [] : rows
+      rows.length === 1 &&
+      canReplaceUntouchedRow(
+        rows[0],
+        tableColumns,
+        authUserStore.getState().session?.email || '',
+        editedRowKeys.current.has(rowKeyOf(rows[0], 0)),
+      )
+        ? []
+        : rows
     onChange([...withoutDefaultBlank, ...withDynamicColumnsStamped(newRows)])
   }
 
@@ -1761,7 +2359,9 @@ const TableFieldRenderer = ({
                                     : undefined),
                                 (cellVal) =>
                                   handleCellChange(rowIndex, col.id, cellVal),
-                                readOnly || isColumnReadOnly(col),
+                                readOnly ||
+ isColumnReadOnly(col) ||
+ isCellRuleReadOnly(col, resolvedRow),
                                 getLookupOptionsForCell(col, resolvedRow),
                                 isApiOptionsColumn(col)
                                   ? (code) =>
@@ -1772,6 +2372,13 @@ const TableFieldRenderer = ({
                                       )
                                   : undefined,
                                 rowIndex,
+                                {
+                                  siblingColumns: tableColumns,
+                                  onFilesAdded: (files) =>
+                                    handleFilesAdded(rowIndex, col, files),
+                                  onRowPatch: (patch) =>
+                                    handleRowPatch(rowIndex, patch),
+                                },
                               )}
                             </Td>
                           ))}
@@ -1963,13 +2570,22 @@ const TableFieldRenderer = ({
                             (col.name ? resolvedRow[col.name] : undefined),
                           (cellVal) =>
                             handleCellChange(rowIndex, col.id, cellVal),
-                          readOnly || isColumnReadOnly(col),
+                          readOnly ||
+ isColumnReadOnly(col) ||
+ isCellRuleReadOnly(col, resolvedRow),
                           getLookupOptionsForCell(col, resolvedRow),
                           isApiOptionsColumn(col)
                             ? (code) =>
                                 handleApiProductSelect(rowIndex, col.id, code)
                             : undefined,
                           rowIndex,
+                          {
+                            siblingColumns: tableColumns,
+                            onFilesAdded: (files) =>
+                              handleFilesAdded(rowIndex, col, files),
+                            onRowPatch: (patch) =>
+                              handleRowPatch(rowIndex, patch),
+                          },
                         )}
                       </div>
                     ))}

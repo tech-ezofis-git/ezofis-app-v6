@@ -1505,3 +1505,6 @@ function resolveValueFromModel(
   }
   return undefined
 }
+
+/** Value matching used by row-level table column rules. */
+export const matchRuleValue = isRuleValueMatched
