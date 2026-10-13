@@ -264,7 +264,8 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
 
       {/* Creation Mode Choice once source item is selected */}
       {isSourceReady ? (
-        <div className='animate-in fade-in slide-in-from-top-3 flex flex-col gap-4 rounded-xl border border-primary-4 bg-primary-1/30 p-5 duration-300'>
+        draft.editingReportId ? null : (
+          <div className='animate-in fade-in slide-in-from-top-3 flex flex-col gap-4 rounded-xl border border-primary-4 bg-primary-1/30 p-5 duration-300'>
           <div className='flex items-center gap-2 text-gray-13'>
             <Icon
               className='size-5 text-primary-10'
@@ -299,6 +300,7 @@ const SourceSelectionSection = ({ onBack, onProceed }: Props) => {
             />
           </div>
         </div>
+        )
       ) : (
         <div className='rounded-xl border border-dashed border-gray-4 py-8 text-center text-13 text-gray-10'>
           {t`Select a specific workflow or folder above to proceed with report creation.`}

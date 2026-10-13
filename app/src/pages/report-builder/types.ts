@@ -103,7 +103,11 @@ export interface ReportStatusRule {
   match: string
 }
 
-export type ReportVisibility = 'Private' | 'Selected Users' | 'Selected Groups'
+export type ReportVisibility =
+  | 'Private'
+  | 'Public'
+  | 'Selected Users'
+  | 'Selected Groups'
 
 export const DEFAULT_SCHEDULE: ReportSchedule = {
   cc: [],

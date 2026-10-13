@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWizardLayout'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
@@ -42,6 +42,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const saveReportMutation = useSaveReportBuilderReportMutation()
   const publishReportMutation = usePublishReportBuilderReportMutation()
 
+  const isEditing = Boolean(draft.editingReportId)
   const rawStep = search.step as string
   const normalizedStep = rawStep === 'ask-ai' ? 'source' : (rawStep as StepId)
   const initialIndex = Math.max(
@@ -49,15 +50,23 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     STEP_IDS.indexOf(normalizedStep || 'source'),
   )
   const [activeIndex, setActiveIndex] = useState(initialIndex)
+  const [maxVisitedStep, setMaxVisitedStep] = useState(
+    isEditing ? STEP_IDS.length - 1 : initialIndex,
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [hasAiPlanGenerated, setHasAiPlanGenerated] = useState(false)
 
-  const isNextHidden = useMemo(() => {
-    if (STEP_IDS[activeIndex] === 'source') {
-      return !hasAiPlanGenerated && !draft.aiSuggestion
+  useEffect(() => {
+    if (normalizedStep && (STEP_IDS as readonly string[]).includes(normalizedStep)) {
+      const idx = STEP_IDS.indexOf(normalizedStep as StepId)
+      if (idx !== -1 && idx !== activeIndex) {
+        setActiveIndex(idx)
+        setMaxVisitedStep((prev) => Math.max(prev, idx))
+      }
     }
-    return false
-  }, [activeIndex, hasAiPlanGenerated, draft.aiSuggestion])
+  }, [normalizedStep, activeIndex])
+
+  const isNextHidden = false
 
   const stepDefinitions: Record<
     StepId,
@@ -78,16 +87,17 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const steps: SettingsWizardStep[] = useMemo(() => {
     return STEP_IDS.map((stepId, index) => ({
-      clickable: undefined,
+      clickable: isEditing || index <= maxVisitedStep,
       description: stepDefinitions[stepId].description,
-      disabled: undefined,
+      disabled: isEditing ? false : index > maxVisitedStep,
       id: index,
       label: stepDefinitions[stepId].label,
     }))
-  }, [stepDefinitions])
+  }, [stepDefinitions, isEditing, maxVisitedStep])
 
   const goToStep = (index: number) => {
     setActiveIndex(index)
+    setMaxVisitedStep((prev) => Math.max(prev, index))
     void navigate({
       to: '/settings',
       search: (prev: { step?: string }) => ({ ...prev, step: STEP_IDS[index] }),

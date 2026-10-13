@@ -505,7 +505,10 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         formState={formState}
         isSaving={isSavingMenu}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
-        onBackToSettings={onBack}
+        onBackToSettings={() => {
+          resetSetup()
+          onBack?.()
+        }}
         onCancel={resetSetup}
         onChange={setFormState}
         onNext={() =>
@@ -744,7 +747,7 @@ function MenuSetup({
       steps={wizardSteps}
       setupTitle={editingMenuId ? t`Edit Menu` : t`Create Menu`}
       onBack={handleBack}
-      onBackToSettings={onBack}
+      onBackToSettings={onBackToSettings}
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}

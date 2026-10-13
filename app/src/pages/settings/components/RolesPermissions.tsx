@@ -612,7 +612,10 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         submitLabel={editingRoleId ? t`Update Role` : t`Save Role`}
         userOptions={userOptions}
         onBack={() => setCreateStep((step: number) => Math.max(step - 1, 0))}
-        onBackToSettings={onBack}
+        onBackToSettings={() => {
+          resetCreateRole()
+          onBack?.()
+        }}
         onCancel={resetCreateRole}
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
@@ -1043,7 +1046,7 @@ function CreateRolePage({
       steps={wizardSteps}
       setupTitle={editingRoleId ? msg`Edit Role` : msg`Create Role`}
       onBack={handleBack}
-      onBackToSettings={onBack}
+      onBackToSettings={onBackToSettings}
       onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
