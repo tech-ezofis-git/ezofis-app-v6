@@ -11,9 +11,9 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
       input: 'peer cursor-pointer',
       label: 'pl-2 text-13 font-medium text-gray-12 cursor-pointer',
       labelWrapper: 'data-[disabled]:opacity-50 cursor-pointer',
-      thumb: 'bg-[var(--control-thumb)] shadow-sm pointer-events-none',
+      thumb: 'bg-white shadow-sm pointer-events-none',
       track: cn(
-        'mt-0.5 cursor-pointer !bg-gray-4 ring-0 transition-all duration-300 peer-checked:!bg-primary-9 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8',
+        'bg-gray-4 mt-0.5 cursor-pointer ring-0 transition-all duration-300 data-checked:bg-primary-9 data-checked:border-primary-9 data-checked:ring-2 data-checked:ring-primary-4 data-checked:ring-offset-1 focus-within:outline-primary-8',
         Boolean(error) && 'border border-red-9',
       ),
     }
@@ -23,6 +23,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
 
     return (
       <Base
+        color='primary'
         {...rest}
         className={cn(rest.disabled && 'opacity-50', className)}
         classNames={_classNames}

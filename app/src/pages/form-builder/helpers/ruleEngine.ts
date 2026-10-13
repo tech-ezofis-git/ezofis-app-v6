@@ -138,6 +138,19 @@ export class FormRuleEngine {
         this.dependencyMap.get(cond.fieldId)!.add(rule.id)
       }
     }
+    for (const field of this.fields) {
+      const v = field.settings?.validation
+      if (
+        v?.mandatorySettings?.length ||
+        v?.readonlySettings?.length ||
+        v?.enableSettings?.length
+      ) {
+        if (!this.dependencyMap.has(field.id)) {
+          this.dependencyMap.set(field.id, new Set())
+        }
+        this.dependencyMap.get(field.id)!.add(`validation-rules-${field.id}`)
+      }
+    }
   }
 
   evaluateAll(
@@ -205,6 +218,65 @@ export class FormRuleEngine {
           case 'REQUIRE':
             fieldStates[field.id].required = isMet
             break
+        }
+      }
+    }
+
+    // Process source-driven validation conditional rules (mandatorySettings, readonlySettings)
+    for (const field of this.fields) {
+      const valSettings = field.settings?.validation
+      if (!valSettings) continue
+      const rawVal = formValues[field.id]
+      const currentValStr = String(rawVal ?? '').trim()
+
+      // 1. mandatorySettings: [{ id, value, controls }]
+      const mandatoryRules = valSettings.mandatorySettings || []
+      for (const rule of mandatoryRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isMatched =
+          currentValStr !== '' &&
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        if (isMatched) {
+          for (const targetId of rule.controls) {
+            if (fieldStates[targetId]) {
+              fieldStates[targetId].required = true
+            }
+          }
+        }
+      }
+
+      // 2. readonlySettings: [{ id, value, controls, notEqual }]
+      const readonlyRules = valSettings.readonlySettings || []
+      for (const rule of readonlyRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isValueMatch =
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        const shouldLock = rule.notEqual
+          ? !isValueMatch
+          : currentValStr !== '' && isValueMatch
+        if (shouldLock) {
+          for (const targetId of rule.controls) {
+            if (fieldStates[targetId]) {
+              fieldStates[targetId].disabled = true
+            }
+          }
+        }
+      }
+
+      // 3. enableSettings: [{ id, value, controls }] (Show target controls when value matches)
+      const enableRules = valSettings.enableSettings || []
+      for (const rule of enableRules) {
+        if (!rule.controls || !rule.controls.length) continue
+        const ruleValStr = String(rule.value ?? '').trim()
+        const isMatched =
+          currentValStr !== '' &&
+          currentValStr.toLowerCase() === ruleValStr.toLowerCase()
+        for (const targetId of rule.controls) {
+          if (fieldStates[targetId]) {
+            fieldStates[targetId].visible = isMatched
+          }
         }
       }
     }

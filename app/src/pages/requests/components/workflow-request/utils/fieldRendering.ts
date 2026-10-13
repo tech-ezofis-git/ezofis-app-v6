@@ -4,12 +4,13 @@
 
 import dayjs from 'dayjs'
 import formApi from '@/api/form/form'
+import authUserStore from '@/stores/authUserStore'
 import {
   getFileNameWithoutExtension,
   isFilenameField,
   sortIndexingFields,
 } from '@/pages/requests/utils/repoFolderMetadata'
-import authUserStore from '@/stores/authUserStore'
+// import authUserStore from '@/stores/authUserStore'
 
 export interface DateTimeLimits {
   maxDate?: string
@@ -143,23 +144,41 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
-      } else if (
-        field.type === 'SINGLE_SELECT' ||
-        field.type === 'MULTI_SELECT' ||
-        field.type === 'SINGLE_CHOICE' ||
-        field.type === 'MULTIPLE_CHOICE'
-      ) {
-        const optionsType = String(
-          specific.optionsType || 'CUSTOM',
-        ).toUpperCase()
-        if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
-          const opts = getFieldOptions(field)
-          if (opts.length === 1) {
-            const val = selectOptionStoredValue(opts[0], opts)
-            model[field.id] =
-              field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE'
-                ? [val]
-                : val
+      } else if (field.type === 'SINGLE_SELECT' || field.type === 'MULTI_SELECT' || field.type === 'SINGLE_CHOICE' || field.type === 'MULTIPLE_CHOICE') {
+        const defaultMode = specific.defaultValueInSelectField
+        if (defaultMode === 'USER_EMAIL') {
+          const email = authUserStore.getState().session?.email
+          if (email) {
+            model[field.id] = email
+          }
+        } else if (defaultMode === 'USER_NAME') {
+          const s = authUserStore.getState().session
+          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          if (name) {
+            model[field.id] = name
+          }
+        } else {
+          const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+          if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
+            const opts = getFieldOptions(field)
+            if (opts.length === 1) {
+              const val = selectOptionStoredValue(opts[0], opts)
+              model[field.id] = (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') ? [val] : val
+            }
+          }
+        }
+      } else if (field.type === 'SHORT_TEXT') {
+        const defaultMode = specific.defaultValueInSelectField
+        if (defaultMode === 'USER_EMAIL') {
+          const email = authUserStore.getState().session?.email
+          if (email) {
+            model[field.id] = email
+          }
+        } else if (defaultMode === 'USER_NAME') {
+          const s = authUserStore.getState().session
+          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          if (name) {
+            model[field.id] = name
           }
         }
       } else if (field.type === 'SHORT_TEXT' || field.type === 'FULL_NAME') {
@@ -419,6 +438,11 @@ export const fetchMasterFormColumnOptions = async (
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
     const formDefRes = await formApi.getFormDataById(masterFormId)
+    console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
+      masterFormId,
+      masterFormColumn,
+      formDefRes,
+    })
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -519,18 +543,9 @@ export const fetchMasterFormColumnOptions = async (
 
     const uniqueValues = new Set<string>()
 
-    // Include custom options defined on the master form column schema ONLY when parent filter is NOT active
-    if (!hasParentFilter && matchedField) {
-      const schemaOptions = getFieldOptions(matchedField)
-      for (const opt of schemaOptions) {
-        if (opt.name && opt.name.trim()) {
-          uniqueValues.add(opt.name.trim())
-        }
-      }
-    }
-
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
     const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    console.log('[fetchMasterFormColumnOptions] 2. entriesRes (GET /entries):', entriesRes)
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -560,10 +575,13 @@ export const fetchMasterFormColumnOptions = async (
         currentPage: 1,
         itemsPerPage: 500,
       })
+      console.log('[fetchMasterFormColumnOptions] 2b. searchRes (POST /search):', searchRes)
       if (searchRes.data) {
         rawEntries = parseEntriesData(searchRes.data)
       }
     }
+
+    console.log('[fetchMasterFormColumnOptions] rawEntries count:', rawEntries.length, rawEntries)
 
     const extractFromDict = (dictionary: any, keys: Set<string>): any => {
       if (!dictionary || typeof dictionary !== 'object') return undefined
@@ -669,7 +687,9 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    return Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    const finalOptions = Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    console.log('[fetchMasterFormColumnOptions] Final extracted options:', finalOptions)
+    return finalOptions
   } catch (err) {
     console.error('Error fetching master form column options:', err)
     return []

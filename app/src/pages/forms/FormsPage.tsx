@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { Tooltip } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -31,6 +32,15 @@ import {
 } from '@/utils/filterUtils'
 import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
+
+const isFormDraft = (item: any) => {
+  const rawStatus =
+    item?._json?.settings?.publish?.publishOption ||
+    item?.publishOption ||
+    item?.status
+  const str = String(rawStatus || '').toUpperCase()
+  return !(str === 'PUBLISHED' || rawStatus === 1 || rawStatus === '1')
+}
 
 const mapItem = (item: any) => ({
   ...item,
@@ -170,23 +180,41 @@ const FormsPage = () => {
         id: 'name',
         label: t`Name`,
         size: 200,
-        renderCell: (row: any) => (
-          <span
-            className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
-            onClick={() =>
-              navigate({
-                params: { formId: row.uid || row.id },
-                to: '/forms/$formId/entries',
-              })
-            }
-          >
-            {String(
-              row._json?.settings?.general?.name ||
-                row.name ||
-                t`Untitled Form`,
-            )}
-          </span>
-        ),
+        renderCell: (row: any) => {
+          const isDraft = isFormDraft(row)
+          const formName = String(
+            row._json?.settings?.general?.name ||
+              row.name ||
+              t`Untitled Form`,
+          )
+
+          if (isDraft) {
+            return (
+              <Tooltip
+                label={t`Draft forms do not have entries. Publish the form to view entries.`}
+                withArrow
+              >
+                <span className='cursor-not-allowed font-medium text-gray-10 select-none'>
+                  {formName}
+                </span>
+              </Tooltip>
+            )
+          }
+
+          return (
+            <span
+              className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
+              onClick={() =>
+                navigate({
+                  params: { formId: row.uid || row.id },
+                  to: '/forms/$formId/entries',
+                })
+              }
+            >
+              {formName}
+            </span>
+          )
+        },
       },
       {
         id: 'status',
@@ -265,38 +293,54 @@ const FormsPage = () => {
         label: t`Actions`,
         showMenu: false,
         size: 40,
-        renderCell: (row: any) => (
-          <div className='flex items-center justify-center'>
-            <Menu
-              position='bottom-end'
-              width={160}
-              target={
-                <IconButton
-                  color='gray'
-                  icon='lucide:more-vertical'
-                  variant='ghost'
-                />
-              }
-            >
-              <MenuItem
-                icon='lucide:edit'
-                label={t`Edit`}
-                onClick={() =>
-                  navigate({
-                    params: { formId: row.uid || row.id },
-                    to: '/form-builder/$formId',
-                  })
+        renderCell: (row: any) => {
+          const isDraft = isFormDraft(row)
+
+          return (
+            <div className='flex items-center justify-center'>
+              <Menu
+                position='bottom-end'
+                width={160}
+                target={
+                  <IconButton
+                    color='gray'
+                    icon='lucide:more-vertical'
+                    variant='ghost'
+                  />
                 }
-              />
-              <MenuItem
-                icon='lucide:trash-2'
-                iconClass='text-red-11'
-                label={t`Delete`}
-                onClick={() => setDeletingForm(row)}
-              />
-            </Menu>
-          </div>
-        ),
+              >
+                {!isDraft && (
+                  <MenuItem
+                    icon='lucide:table'
+                    label={t`View Entries`}
+                    onClick={() =>
+                      navigate({
+                        params: { formId: row.uid || row.id },
+                        to: '/forms/$formId/entries',
+                      })
+                    }
+                  />
+                )}
+                <MenuItem
+                  icon='lucide:edit'
+                  label={t`Edit`}
+                  onClick={() =>
+                    navigate({
+                      params: { formId: row.uid || row.id },
+                      to: '/form-builder/$formId',
+                    })
+                  }
+                />
+                <MenuItem
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label={t`Delete`}
+                  onClick={() => setDeletingForm(row)}
+                />
+              </Menu>
+            </div>
+          )
+        },
       },
     ],
     [navigate, queryClient, setDeletingForm, t],

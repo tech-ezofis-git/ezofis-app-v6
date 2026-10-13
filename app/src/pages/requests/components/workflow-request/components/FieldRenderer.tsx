@@ -965,18 +965,28 @@ const FieldRenderer = ({
       ),
   })
 
-  const selectOptions = withExtraFieldOptions(
-    withExtraFieldOptions(
-      withExtraFieldOptions(
-        optionsType === 'DYNAMIC'
-          ? getFieldOptions(field)
-          : getConfiguredFieldOptions(field),
-        uniqueFieldOptions,
-      ),
-      userFieldOptions,
-    ),
+  const selectOptions = useMemo(() => {
+    if (masterInfo.enabled) {
+      return masterFieldOptions
+    }
+    if (optionsType === 'USER_LIST') {
+      return userFieldOptions
+    }
+    if (facetSource.enabled) {
+      return uniqueFieldOptions
+    }
+    return optionsType === 'DYNAMIC'
+      ? getFieldOptions(field)
+      : getConfiguredFieldOptions(field)
+  }, [
+    masterInfo.enabled,
     masterFieldOptions,
-  )
+    optionsType,
+    userFieldOptions,
+    facetSource.enabled,
+    uniqueFieldOptions,
+    field,
+  ])
 
   useEffect(() => {
     if (readOnly) return

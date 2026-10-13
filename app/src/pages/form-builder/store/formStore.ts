@@ -159,6 +159,7 @@ export interface Question {
     }
     general: {
       description?: string
+      dividerType?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE' | string
       hidden?: boolean
       hideLabel: boolean
       placeholder?: string
@@ -211,6 +212,7 @@ export interface Question {
       decimalPrecision?: number
       defaultCountryCode?: string
       defaultValue?: string
+      defaultValueInSelectField?: 'USER_EMAIL' | 'USER_NAME' | 'NONE' | string
       defaultValueType?: 'STATIC' | 'DYNAMIC' | 'NONE'
       dense?: boolean
       dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
@@ -246,6 +248,8 @@ export interface Question {
       isSameMaster?: boolean
       isSearchField?: 'YES' | 'NO'
       listUsersByGroup?: string
+      loginType?: string
+      additionalLoginTypes?: string[]
       lookupMaster?: string
       masterFormColumn?: string
       masterFormConditionColumn?: Array<{
@@ -276,6 +280,7 @@ export interface Question {
       parentFieldFilterValue?: any
       parentFieldId?: string
       predefinedColumn?: string
+      predefinedParentColumn?: string
       predefinedType?: 'USER' | 'WORKSPACE' | 'FOLDER' | 'WORKFLOW'
       prefillFromUrl?: boolean
       prefixIcon?: string
@@ -328,6 +333,9 @@ export interface Question {
         type: QuestionType
       }>
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
+      hasYearType?: boolean
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR' | string
+      qrValue?: boolean
       uniqueCheck?: boolean
       variant?: 'default' | 'filled' | 'unstyled'
       yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
@@ -345,6 +353,11 @@ export interface Question {
       dateLimitType?: 'NONE' | 'MIN_DATE' | 'MAX_DATE' | 'RANGE'
       dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
       decimalDigits?: number
+      enableSettings?: Array<{
+        controls?: string[]
+        id?: string
+        value?: string
+      }>
       errorMessage?: string
       expiryFieldId?: string
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -353,6 +366,11 @@ export interface Question {
       fixedStartDate?: string
       fixedStartTime?: string
       isCalculationEnabled?: boolean
+      mandatorySettings?: Array<{
+        controls: string[]
+        id: string
+        value: string
+      }>
       maxDateOffset?: number
       maxFileSize?: number
       maximum?: string | number
@@ -362,8 +380,17 @@ export interface Question {
       minTimeOffset?: number
       pattern?: string
       rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
+      readonlySettings?: Array<{
+        controls: string[]
+        id: string
+        notEqual?: boolean
+        value: string
+      }>
       requireCurrencyUnit?: boolean
       requiredValidation?: 'ANY' | 'ALL'
+      answerIndicator?: 'YES' | 'NO'
+      hasCalculatedField?: boolean
+      verificationRequired?: boolean
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
