@@ -213,6 +213,7 @@ export type FolderWizardSnapshot = {
 const STORAGE_CODE_TO_OPTION_ID: Record<string, string> = {
   AZURE: 'Azure',
   EZOFIS: 'EZOFIS Drive',
+  GCP: 'GCP',
   GOOGLE_DRIVE: 'Google Drive',
   ONE_DRIVE: 'One Drive',
 }
@@ -224,6 +225,9 @@ export const toStorageProviderCode = (storage: string) => {
     .replace(/\s+/g, '_')
   if (normalized.includes('ONE_DRIVE') || normalized === 'ONEDRIVE') {
     return 'ONE_DRIVE'
+  }
+  if (normalized.includes('GCP') || normalized.includes('GOOGLE_CLOUD')) {
+    return 'GCP'
   }
   if (normalized.includes('GOOGLE')) return 'GOOGLE_DRIVE'
   if (normalized.includes('AZURE')) return 'AZURE'

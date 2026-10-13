@@ -396,8 +396,7 @@ const GlobalSearch = () => {
             aria-label={t`Search`}
             type='button'
             className={cn(
-              'grid size-7 shrink-0 place-items-center rounded-md transition-colors',
-              'text-gray-11 hover:bg-gray-4 hover:text-gray-13',
+              'grid size-7 shrink-0 place-items-center rounded-md bg-primary-4 text-primary-11 transition-colors hover:bg-primary-5',
             )}
             onClick={(e) => {
               e.preventDefault()

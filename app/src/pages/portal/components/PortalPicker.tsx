@@ -62,8 +62,13 @@ export default function PortalPicker({
             placeholder={t`Search request types…`}
             value={query}
             leftSection={
-              <Icon className='size-4 text-gray-9' name='lucide:search' />
+              <Icon className='size-4 text-primary-11' name='lucide:search' />
             }
+            leftSectionWidth={28}
+            classNames={{
+              input: '!pl-8',
+              section: 'bg-primary-4 text-primary-11',
+            }}
             onChange={setQuery}
           />
         </div>

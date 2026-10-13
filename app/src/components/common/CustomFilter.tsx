@@ -40,8 +40,6 @@ const FILTER_CHIP_TRAILING =
   'inline-flex size-5 shrink-0 items-center justify-center'
 const FILTER_CHIP_COUNT =
   'inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-3 px-1 text-10 font-medium text-text-primary tabular-nums'
-const FILTER_SEARCH_INPUT =
-  'w-full bg-transparent py-2.5 pr-3 pl-9 text-12 text-text-primary outline-none placeholder:text-text-muted'
 
 interface DropdownPosition {
   left: number
@@ -507,10 +505,12 @@ export default function CustomFilter({
           >
             <div className='flex max-h-[340px] w-[184px] shrink-0 flex-col border-r border-border-default bg-primary-3/30'>
               <div className='border-b border-border-default/60 p-1.5'>
-                <div className='relative flex items-center'>
-                  <Search className='pointer-events-none absolute left-2 h-3.5 w-3.5 text-text-muted' />
+                <div className='relative flex h-8 overflow-hidden rounded-md border border-border-default bg-surface'>
+                  <span className='flex w-8 shrink-0 items-center justify-center bg-primary-4 text-primary-11'>
+                    <Search className='h-3.5 w-3.5' />
+                  </span>
                   <input
-                    className='w-full rounded-md border border-border-default bg-surface py-1 pr-6 pl-7 text-12 text-text-primary placeholder:text-text-muted focus:border-primary-9 focus:outline-none'
+                    className='min-w-0 flex-1 bg-transparent py-1 pr-6 pl-3 text-12 text-text-primary placeholder:text-text-muted focus:outline-none'
                     placeholder={t`Search fields...`}
                     type='text'
                     value={moreFilterFieldSearch}
@@ -665,10 +665,12 @@ export default function CustomFilter({
                 // Free-text fallback when no options are provided
                 return (
                   <div className='flex flex-col p-2' key={group.id}>
-                    <div className='relative rounded-md border border-border-default'>
-                      <Search className='absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
+                    <div className='flex overflow-hidden rounded-md border border-border-default bg-surface'>
+                      <span className='flex w-8 shrink-0 items-center justify-center bg-primary-4 text-primary-11'>
+                        <Search className='h-3.5 w-3.5' />
+                      </span>
                       <input
-                        className={FILTER_SEARCH_INPUT}
+                        className='min-w-0 flex-1 bg-transparent py-2.5 pr-3 pl-3 text-12 text-text-primary outline-none placeholder:text-text-muted'
                         placeholder={`Filter ${group.label.toLowerCase()}...`}
                         type='text'
                         value={filterSearchQuery}
@@ -994,10 +996,10 @@ export default function CustomFilter({
         ) : hideSearch || !onSearchChange ? null : (
           <div
             className={cn(
-              'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
+              'flex h-8 overflow-hidden rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
               isSearchExpanded || searchQuery
-                ? 'w-44 max-w-full justify-start border-[var(--border-default)] bg-surface pr-1.5 pl-3 sm:w-60 md:w-72'
-                : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+                ? 'w-44 max-w-full items-stretch justify-start border-[var(--border-default)] bg-surface pr-1.5 sm:w-60 md:w-72'
+                : 'w-8 cursor-pointer items-center justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
             onClick={() => {
               if (!isSearchExpanded) {
@@ -1007,17 +1009,25 @@ export default function CustomFilter({
             }}
           >
             <Tooltip
+              className={
+                isSearchExpanded || searchQuery ? 'h-full self-stretch' : undefined
+              }
               content={t`Search`}
               disabled={isSearchExpanded || !!searchQuery}
             >
-              <div className='flex shrink-0 items-center gap-1.5'>
+              <div
+                className={cn(
+                  'flex shrink-0 items-center justify-center',
+                  isSearchExpanded || searchQuery
+                    ? 'h-8 w-7 bg-primary-4 text-primary-11'
+                    : 'text-gray-11',
+                )}
+              >
                 <Icon
                   name='lucide:search'
                   className={cn(
-                    'size-4 shrink-0 transition-colors',
-                    isSearchExpanded || searchQuery
-                      ? 'text-gray-11'
-                      : 'text-gray-11 hover:text-gray-12',
+                    'size-4 shrink-0',
+                    isSearchExpanded || searchQuery ? 'text-primary-11' : 'text-gray-11',
                   )}
                 />
               </div>
@@ -1037,7 +1047,7 @@ export default function CustomFilter({
                 type='text'
                 value={searchQuery}
                 className={cn(
-                  'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)]',
+                  'h-full w-full border-0 bg-transparent pr-2 pl-1 text-13 font-medium text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)]',
                   isSearchExpanded || searchQuery
                     ? 'opacity-100'
                     : 'pointer-events-none opacity-0',
@@ -1081,7 +1091,7 @@ export default function CustomFilter({
                 className={cn(
                   'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'grid'
-                    ? 'bg-surface-contrast text-[var(--primary-9)] shadow-xs'
+                    ? 'bg-primary-4 text-primary-11'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('grid')}
@@ -1095,7 +1105,7 @@ export default function CustomFilter({
                 className={cn(
                   'flex h-[26px] cursor-pointer items-center justify-center rounded px-2 transition-all duration-200',
                   viewMode === 'table'
-                    ? 'bg-surface-contrast text-[var(--primary-9)] shadow-xs'
+                    ? 'bg-primary-4 text-primary-11'
                     : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
                 onClick={() => onViewModeChange('table')}

@@ -1773,6 +1773,21 @@ const Request = ({
   }, [isGenericWorkflow, selectedItem, formModel, currentAgentData])
 
   useEffect(() => {
+    const requestNo = String(resolvedRequestNo || '').trim()
+    const site = window.location.origin
+    const confirmLeave = (event: BeforeUnloadEvent) => {
+      const message = requestNo
+        ? t`Leave ${site}? Request ${requestNo} may not be saved.`
+        : t`Leave ${site}? Changes you made may not be saved.`
+      event.preventDefault()
+      event.returnValue = message
+      return message
+    }
+    window.addEventListener('beforeunload', confirmLeave)
+    return () => window.removeEventListener('beforeunload', confirmLeave)
+  }, [resolvedRequestNo, t])
+
+  useEffect(() => {
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
     const parsed = safeParseFormData(activeItem?.formData)

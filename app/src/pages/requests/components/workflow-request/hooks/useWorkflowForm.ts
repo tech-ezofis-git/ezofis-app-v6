@@ -22,6 +22,34 @@ import {
   mapOcrFieldsToModel,
 } from '../utils/fieldRendering'
 
+const readStartedInstanceId = (data: unknown): string | null => {
+  if (data == null) return null
+  if (typeof data === 'number') return String(data)
+  if (typeof data === 'string') {
+    const text = data.trim()
+    if (!text) return null
+    if (text.startsWith('{') || text.startsWith('[')) {
+      try {
+        return readStartedInstanceId(JSON.parse(text))
+      } catch {
+        return null
+      }
+    }
+    return text
+  }
+  if (typeof data !== 'object') return null
+  const record = data as Record<string, any>
+  const direct =
+    record.instanceId ||
+    record.workflowInstanceId ||
+    record.processId ||
+    record.id
+  if (direct != null && direct !== '') return String(direct)
+  const nested = Array.isArray(record.items) ? record.items[0] : record.data
+  if (nested && nested !== data) return readStartedInstanceId(nested)
+  return null
+}
+
 // Resolves a workflow's form (via its formId) and drives the fill-and-submit
 // lifecycle for creating a new request against it, per the "Normal
 // Workflow — Frontend Integration Guide" (PR #40, Aug 2026): the button
@@ -614,14 +642,39 @@ export const useWorkflowForm = (
       resError = error
     }
 
-    setIsSubmitting(false)
-
     if (resError) {
+      setIsSubmitting(false)
       setSubmitError(resError)
       return { error: resError, success: false }
     }
 
-    return { data: resData, success: true }
+    const pendingComments = comments
+      .map((comment) => comment.text.trim())
+      .filter(Boolean)
+    const instanceId = readStartedInstanceId(resData)
+    let commentError = ''
+    if (pendingComments.length > 0) {
+      if (!instanceId) {
+        commentError =
+          'Request was created, but the comments could not be attached.'
+      } else {
+        for (const text of pendingComments) {
+          const posted = await workflowsApiV6.addInstanceComment(
+            String(workflow.id),
+            instanceId,
+            { comments: text, showTo: 2 },
+          )
+          if (posted.error) {
+            commentError = posted.error
+            break
+          }
+        }
+      }
+    }
+
+    setIsSubmitting(false)
+
+    return { commentError, data: resData, success: true }
   }
 
   return {

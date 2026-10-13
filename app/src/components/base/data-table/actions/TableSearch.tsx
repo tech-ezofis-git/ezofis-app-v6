@@ -81,13 +81,13 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   }
 
   const containerClasses = cn(
-    'flex h-8 items-center rounded-md border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
+    'flex h-8 overflow-hidden rounded-md border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
     isExpanded
       ? cn(
-          'focus-within:border-primary justify-start border-[var(--border-default)] bg-surface pr-1 pl-3',
+          'items-stretch focus-within:border-primary justify-start border-[var(--border-default)] bg-surface pr-1',
           selectedColumnLabel ? 'w-80' : 'w-72',
         )
-      : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+      : 'w-8 cursor-pointer items-center justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
   )
 
   const searchContent = (
@@ -98,23 +98,26 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
       role='search'
       onClick={handleContainerClick}
     >
-      <div className='flex shrink-0 items-center gap-1.5'>
-        {!isExpanded || !selectedColumnLabel ? (
-          <Icon
-            name='lucide:search'
-            className={cn(
-              'size-4 shrink-0 transition-colors',
-              isExpanded ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
-            )}
-          />
-        ) : null}
-
-        {isExpanded && selectedColumnLabel ? (
-          <span className='text-12 font-semibold whitespace-nowrap text-gray-12'>
-            {selectedColumnLabel}:
-          </span>
-        ) : null}
+      <div
+        className={cn(
+          'flex h-full shrink-0 items-center justify-center',
+          isExpanded ? 'h-8 w-7 bg-primary-4 text-primary-11' : 'text-gray-11',
+        )}
+      >
+        <Icon
+          className={cn(
+            'size-4 shrink-0',
+            isExpanded ? 'text-primary-11' : 'text-gray-11',
+          )}
+          name='lucide:search'
+        />
       </div>
+
+      {isExpanded && selectedColumnLabel ? (
+        <span className='shrink-0 px-1 text-12 font-semibold whitespace-nowrap text-gray-12'>
+          {selectedColumnLabel}:
+        </span>
+      ) : null}
 
       <div
         className={cn(
@@ -127,7 +130,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           type='text'
           value={inputValue}
           className={cn(
-            'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-9',
+            'h-full w-full border-0 bg-transparent pr-2 pl-1 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-9',
             isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
           placeholder={

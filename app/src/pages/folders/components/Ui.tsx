@@ -149,6 +149,8 @@ export function StatusPill({ status }: { status: string }) {
     s.includes('clean') ||
     s.includes('pass') ||
     s.includes('verified') ||
+    s.includes('signed') ||
+    s.includes('completed') ||
     s.includes('paid')
       ? 'border-green-6 bg-green-3 text-green-11'
       : isOcr ||
@@ -156,9 +158,13 @@ export function StatusPill({ status }: { status: string }) {
         s.includes('indexed') ||
         s.includes('approver') ||
         s.includes('pending') ||
+        s.includes('requested') ||
         s.includes('high')
         ? 'border-[var(--orange-7)] bg-[var(--orange-2)] text-[var(--orange-7)]'
-        : s.includes('flag') || s.includes('reject')
+        : s.includes('flag') ||
+          s.includes('reject') ||
+          s.includes('decline') ||
+          s.includes('cancel')
           ? 'border-red-6 bg-red-3 text-red-11'
           : s.includes('verifier')
             ? 'border-blue-6 bg-blue-3 text-blue-11'

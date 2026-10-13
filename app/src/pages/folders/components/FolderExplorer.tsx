@@ -97,6 +97,10 @@ export function FolderExplorer() {
   const clearPending = useAskAiActionStore((state) => state.clearPending)
   const applyingAskAiRef = useRef(false)
   const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([])
+  const [pendingIntelligentFiles, setPendingIntelligentFiles] = useState<
+    File[] | undefined
+  >(undefined)
+  const intelligentOpenedFromUploadRef = useRef(false)
   const [pendingStagedFileId, setPendingStagedFileId] = useState<
     string | undefined
   >(undefined)
@@ -659,6 +663,8 @@ export function FolderExplorer() {
       })
       return
     }
+    intelligentOpenedFromUploadRef.current = false
+    setPendingIntelligentFiles(undefined)
     setAppView('intelligentUpload')
   }
 
@@ -779,6 +785,11 @@ export function FolderExplorer() {
         repositoryData={selectedRepository}
         repositoryId={resolvedRepositoryId || null}
         onBack={exitUpload}
+        onIntelligentUpload={(files) => {
+          intelligentOpenedFromUploadRef.current = true
+          setPendingIntelligentFiles(files)
+          setAppView('intelligentUpload')
+        }}
         onSuccess={refreshData}
       />
     )
@@ -794,8 +805,14 @@ export function FolderExplorer() {
     return (
       <IntelligentUploadView
         candidateRepositories={candidateRepos}
+        initialFiles={pendingIntelligentFiles}
         repositoryId={resolvedRepositoryId || null}
-        onBack={() => setAppView('explorer')}
+        onBack={() => {
+          setPendingIntelligentFiles(undefined)
+          setAppView(
+            intelligentOpenedFromUploadRef.current ? 'Upload' : 'explorer',
+          )
+        }}
         onDone={async (targetRepositoryId?: string) => {
           console.log(
             '[FolderExplorer] onDone triggered with targetRepositoryId:',

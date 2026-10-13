@@ -1,7 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useRef } from 'react'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 
 const getInitials = (fullNameOrEmail: string): string => {
@@ -31,6 +33,7 @@ interface Props {
   draft: string
   onDraftChange: (value: string) => void
   onSend: () => void
+  onClose?: () => void
 }
 
 // Notes attached to the request on submit (joined into the start payload's
@@ -38,7 +41,13 @@ interface Props {
 // a real multi-person discussion only exists once the request has an
 // instanceId, which is what the existing request-detail Comments.tsx
 // renders against the real comments API.
-const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
+const CommentsPanel = ({
+  comments,
+  draft,
+  onClose,
+  onDraftChange,
+  onSend,
+}: Props) => {
   const { t } = useLingui()
   const session = authUserStore((state) => state.session)
   const displayName =
@@ -46,6 +55,95 @@ const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
   const initials = getInitials(displayName)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const canSend = draft.trim().length > 0
+
+  if (onClose) {
+    return (
+      <div className='flex h-full min-h-0 w-full flex-col'>
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+          <span className='text-xs font-semibold text-gray-12'>
+            {t`Comments`} ({comments.length})
+          </span>
+          <IconButton
+            ariaLabel={t`Close`}
+            icon='tabler:x'
+            size='sm'
+            variant='ghost'
+            onClick={onClose}
+          />
+        </div>
+        <div className='min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-3'>
+          {comments.length === 0 ? (
+            <div className='flex h-full flex-col items-center justify-center text-gray-8'>
+              <Icon
+                className='mb-2 size-8 opacity-50'
+                name='tabler:messages-off'
+              />
+              <span className='text-13'>{t`No comments yet`}</span>
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <div className='flex items-start gap-3' key={comment.id}>
+                <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-13 font-bold text-primary-9'>
+                  {initials}
+                </div>
+                <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                  <div className='flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5'>
+                    <span className='text-[13px] font-bold text-gray-13'>
+                      {t`You`}
+                    </span>
+                    <span className='text-[11px] font-medium text-gray-9'>
+                      {formatDatetime(comment.createdAt, 'YYYY-MM-DD hh:mm A')}
+                    </span>
+                  </div>
+                  <div className='text-[13px] leading-relaxed font-medium break-words whitespace-pre-wrap text-gray-12'>
+                    {comment.text}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className='shrink-0 border-t border-gray-3 px-3 pt-2 pb-2'>
+          <div className='flex items-start gap-2.5'>
+            <div className='mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-[13px] font-bold text-primary-9'>
+              {initials}
+            </div>
+            <div className='flex min-w-0 flex-1 items-center overflow-hidden rounded-xl border border-gray-4 bg-surface transition-all focus-within:border-primary-6 focus-within:ring-1 focus-within:ring-primary-4'>
+              <textarea
+                className='w-full resize-none bg-transparent px-3 py-2 text-[13px] leading-5 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none'
+                placeholder={t`Add a comment...`}
+                ref={textareaRef}
+                rows={2}
+                value={draft}
+                onChange={(event) => onDraftChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    if (canSend) onSend()
+                  }
+                }}
+              />
+            </div>
+            <button
+              aria-label={t`Send comment`}
+              disabled={!canSend}
+              title={t`Send comment`}
+              type='button'
+              className={cn(
+                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-9 text-text-on-accent transition-all active:scale-95',
+                canSend
+                  ? 'cursor-pointer hover:opacity-90'
+                  : 'cursor-not-allowed opacity-45',
+              )}
+              onClick={onSend}
+            >
+              <Icon className='size-4' name='tabler:send' />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='rounded-xl border border-gray-3 bg-gray-0 p-4 shadow-2xs'>

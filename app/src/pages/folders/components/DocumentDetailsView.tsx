@@ -33,6 +33,7 @@ import Icon from '@/components/base/icon/Icon'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import cn from '@/utils/cn'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   buildRedactedFileBlob,
@@ -366,6 +367,7 @@ export function DocumentDetailsView({
   // onEdit,
   onAiSummary,
   onBack,
+  onDecline,
   onOpenRelatedDocument,
   onShareOpened,
   onSigningComplete,
@@ -402,6 +404,7 @@ export function DocumentDetailsView({
   onAiSummary?: () => void
   /** Leave the details view. Omit when there is nowhere to go back to. */
   onBack?: () => void
+  onDecline?: (reason: string) => Promise<void> | void
   onEdit?: () => void
   /** Open a related file in details (use that row's repositoryId + id). */
   onOpenRelatedDocument?: (payload: {
@@ -478,6 +481,9 @@ export function DocumentDetailsView({
     String(initialSignRequestId || ''),
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
+  const [showDeclineForm, setShowDeclineForm] = useState(false)
+  const [declineReason, setDeclineReason] = useState('')
+  const [isDeclining, setIsDeclining] = useState(false)
   // Signing UI is for invite / forced sign flows only.
   // "Send for Signature" permission gates creating sign requests via Share.
   const canSign = Boolean(forceSigning || activeInviteToken)
@@ -877,6 +883,60 @@ export function DocumentDetailsView({
       // Invite links: assignee may not have repository access — use preview meta.
       if (inviteToken) {
         if (mounted) {
+          const rawReceivedAt =
+            invitePreview?.createdAtUtc ||
+            (invitePreview as any)?.invitedAtUtc ||
+            (invitePreview as any)?.receivedAtUtc ||
+            (invitePreview as any)?.createdDate ||
+            (invitePreview as any)?.createdAt ||
+            invitePreview?.signers?.find(
+              (s) =>
+                String(s.email).trim().toLowerCase() ===
+                String(invitePreview?.recipientEmail).trim().toLowerCase(),
+            )?.invitedAtUtc ||
+            invitePreview?.signers?.[0]?.invitedAtUtc
+
+          const rawStatus =
+            invitePreview?.signerStatus ||
+            invitePreview?.signRequestStatus ||
+            (invitePreview as any)?.status ||
+            'Requested'
+
+          const formatStatusText = (status: string) => {
+            const s = String(status || '').trim()
+            if (!s) return 'Requested'
+            if (s.toUpperCase() === 'REQUESTED') return 'Requested'
+            if (s.toUpperCase() === 'PENDING') return 'Pending'
+            if (s.toUpperCase() === 'SIGNED') return 'Signed'
+            if (s.toUpperCase() === 'DECLINED') return 'Declined'
+            if (s.toUpperCase() === 'COMPLETED') return 'Completed'
+            return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+          }
+
+          const rows: { label: string; value: string }[] = [
+            {
+              label: t`From`,
+              value:
+                invitePreview?.senderName ||
+                invitePreview?.senderEmail ||
+                '-',
+            },
+            {
+              label: t`To`,
+              value: invitePreview?.recipientEmail || '-',
+            },
+            {
+              label: t`Received`,
+              value: rawReceivedAt
+                ? formatDateTime(rawReceivedAt)
+                : formatDateTime(new Date().toISOString()),
+            },
+            {
+              label: t`Status`,
+              value: formatStatusText(rawStatus),
+            },
+          ]
+
           setData({
             documentId: id,
             fileName: String(invitePreview?.fileName || 'Document.pdf'),
@@ -885,20 +945,8 @@ export function DocumentDetailsView({
               {
                 iconKey: 'fileText',
                 id: 'sign-request',
-                rows: [
-                  {
-                    label: 'From',
-                    value:
-                      invitePreview?.senderName ||
-                      invitePreview?.senderEmail ||
-                      '-',
-                  },
-                  {
-                    label: 'To',
-                    value: invitePreview?.recipientEmail || '-',
-                  },
-                ],
-                title: 'Sign request',
+                rows,
+                title: t`Sign Request`,
               },
             ],
           })
@@ -2107,36 +2155,31 @@ export function DocumentDetailsView({
         />
       ) : null}
 
-      <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-3 sm:px-5'>
+      <div
+        className={`no-print relative z-30 flex shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary ${
+          forceSigning ? 'h-[52px] px-3 sm:px-3.5' : 'h-[60px] px-3 sm:px-5'
+        }`}
+      >
         <div className='mr-2 flex min-w-0 flex-1 items-center gap-2 sm:mr-4 sm:gap-3'>
-          {forceSigning || !onBack ? (
-            <div className='h-8 w-[72px] shrink-0' aria-hidden />
-          ) : (
+          {!forceSigning && onBack ? (
             <Button
               className='h-8 shrink-0 border-transparent px-2.5 text-[13px] shadow-none sm:px-3'
               onClick={onBack}
             >
               <ArrowLeft size={12} /> {t`Back`}
             </Button>
-          )}
+          ) : null}
 
           {data?.fileName && (
-            <Tooltip
-              className='max-w-full min-w-0'
-              content={data.fileName}
-              position='bottom'
-              width={240}
-            >
-              <div className='flex max-w-full min-w-0 items-center gap-2 select-none'>
-                <Icon
-                  className='size-5 shrink-0 text-gray-10'
-                  name={getFileIcon(data.fileName)}
-                />
-                <span className='xs:max-w-[200px] max-w-[140px] min-w-0 truncate text-[14px] font-semibold text-gray-12 sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px]'>
-                  {data.fileName}
-                </span>
-              </div>
-            </Tooltip>
+            <div className='flex min-w-0 items-center gap-2 select-none'>
+              <Icon
+                className='size-5 shrink-0 text-gray-10'
+                name={getFileIcon(data.fileName)}
+              />
+              <span className='min-w-0 truncate text-[14px] font-semibold text-gray-12'>
+                {data.fileName}
+              </span>
+            </div>
           )}
         </div>
 
@@ -2252,7 +2295,6 @@ export function DocumentDetailsView({
                   defaultOpen={autoOpenShare}
                   sharedIds={sharedEmails}
                   sharedRoles={sharedRoles}
-                  successMessage={t`Invite sent`}
                   title={t`Share`}
                   onOpenChange={(open) => {
                     if (open && autoOpenShare) onShareOpened?.()
@@ -2351,13 +2393,17 @@ export function DocumentDetailsView({
                         })
                         return next
                       })
-                      return true
+                      return signShares.length > 0 && viewShares.length === 0
+                        ? t`Sign request sent successfully`
+                        : signShares.length > 0 && viewShares.length > 0
+                          ? t`File shared and sign request sent successfully`
+                          : t`File shared successfully`
                     } catch (error) {
                       showToast({
                         message:
                           error instanceof Error
                             ? error.message
-                            : t`Failed to invite`,
+                            : t`Failed to share file`,
                         variant: 'error',
                       })
                       return false
@@ -2366,6 +2412,18 @@ export function DocumentDetailsView({
                 />
               </div>
             </>
+          ) : null}
+          {activeInviteToken && onDecline ? (
+            <button
+              aria-label={t`Decline`}
+              disabled={isDeclining || isPreviewLoading}
+              type='button'
+              className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-3 bg-red-1 px-3 text-[13px] font-semibold text-red-11 transition-all hover:border-red-5 hover:bg-red-2 hover:text-red-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+              onClick={() => setShowDeclineForm((prev) => !prev)}
+            >
+              <DynamicIcon className='h-4 w-4 text-red-9' name='x-circle' />
+              <span>{t`Decline`}</span>
+            </button>
           ) : null}
           {canSign ? (
             <button
@@ -2433,17 +2491,78 @@ export function DocumentDetailsView({
         </div>
       </div>
 
-      <div className='min-h-0 flex-1 overflow-hidden p-3 sm:p-5'>
+      {showDeclineForm && (
+        <div className='animate-in fade-in slide-in-from-top-2 border-b border-red-3 bg-red-1 px-4 py-3 duration-300'>
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='flex-1'>
+              <label className='block text-xs font-semibold text-red-11'>
+                {t`Reason for declining`}
+              </label>
+              <input
+                type='text'
+                className='mt-1 w-full max-w-lg rounded-md border border-red-4 bg-surface px-3 py-1.5 text-xs text-gray-13 placeholder:text-gray-8 focus:border-red-6 focus:outline-none'
+                placeholder={t`e.g. Not my document`}
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+              />
+            </div>
+            <div className='flex items-center gap-2 pt-2 sm:pt-0'>
+              <button
+                type='button'
+                className='inline-flex h-8 items-center justify-center rounded-md border border-gray-4 bg-surface px-3 text-xs font-medium text-gray-11 hover:bg-gray-2'
+                onClick={() => setShowDeclineForm(false)}
+              >
+                {t`Cancel`}
+              </button>
+              <button
+                type='button'
+                disabled={isDeclining}
+                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-red-9 px-3 text-xs font-semibold text-white hover:bg-red-10 disabled:opacity-50'
+                onClick={async () => {
+                  setIsDeclining(true)
+                  try {
+                    await onDecline?.(declineReason.trim() || 'Not my document')
+                  } catch (err: any) {
+                    showToast({
+                      message: err?.message || t`Failed to decline sign request`,
+                      variant: 'error',
+                    })
+                  } finally {
+                    setIsDeclining(false)
+                  }
+                }}
+              >
+                {isDeclining ? (
+                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                ) : null}
+                <span>{t`Confirm Decline`}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`min-h-0 flex-1 overflow-hidden ${
+          forceSigning ? 'p-3 sm:p-3.5' : 'p-3 sm:p-5'
+        }`}
+      >
         <div
-          className={`grid h-full gap-4 sm:gap-5 ${
+          className={`grid h-full ${forceSigning ? 'gap-3' : 'gap-4 sm:gap-5'} ${
             forceSigning && infoCards.length === 0
               ? 'grid-cols-1'
               : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_400px]'
           }`}
         >
-          <main className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-6'>
+          <main
+            className={`ez-detail-scroll min-w-0 ${
+              forceSigning
+                ? 'flex h-full min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0 pb-0'
+                : 'space-y-4 overflow-y-auto pr-2 pb-6'
+            }`}
+          >
             {data.alert ? (
-              <div className='flex items-center justify-between rounded-xl border border-orange-5 bg-orange-2 px-4 py-3'>
+              <div className='flex shrink-0 items-center justify-between rounded-xl border border-orange-5 bg-orange-2 px-4 py-3'>
                 <div className='flex items-start gap-3'>
                   <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-3'>
                     <DynamicIcon
@@ -2466,7 +2585,11 @@ export function DocumentDetailsView({
               </div>
             ) : null}
 
-            <Card className='overflow-hidden p-0'>
+            <Card
+              className={`overflow-hidden p-0 ${
+                forceSigning ? 'flex h-full min-h-0 flex-1 flex-col' : ''
+              }`}
+            >
               {downloadError ? (
                 <div className='border-b border-red-4 bg-red-1 px-5 py-2 text-[12px] font-medium text-red-10'>
                   {downloadError}
@@ -2475,14 +2598,16 @@ export function DocumentDetailsView({
 
               <div
                 className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
-                  isSigning || assignedFields.length > 0
-                    ? 'h-[min(72vh,820px)]'
-                    : 'h-[560px]'
+                  forceSigning
+                    ? 'flex h-full min-h-0 flex-1 flex-col'
+                    : isSigning || assignedFields.length > 0
+                      ? 'h-[min(72vh,820px)]'
+                      : 'h-[560px]'
                 }`}
               >
                 {hasValidFileUrl || isPreviewLoading ? (
                   <div
-                    className='relative h-full min-h-full w-full'
+                    className='relative flex h-full min-h-full w-full flex-1 flex-col'
                     ref={documentSurfaceRef}
                   >
                     <DocumentPreviewViewer
@@ -2596,7 +2721,7 @@ export function DocumentDetailsView({
             </Card>
 
             {hasLineItems ? (
-              <Card className='overflow-hidden p-0'>
+              <Card className={`overflow-hidden p-0 ${forceSigning ? 'shrink-0' : ''}`}>
                 <div className='border-b border-gray-3 px-5 py-4'>
                   <h3 className='text-[15px] font-semibold text-gray-13'>
                     {t`Invoice Line Items`}
@@ -3249,7 +3374,13 @@ export function DocumentDetailsView({
           </main>
 
           {infoCards.length > 0 || ticketData ? (
-            <aside className='ez-detail-scroll min-w-0 space-y-4 overflow-y-auto pr-2 pb-6'>
+            <aside
+              className={`ez-detail-scroll min-w-0 ${
+                forceSigning
+                  ? 'space-y-3 overflow-y-auto pr-0 pb-0'
+                  : 'space-y-4 overflow-y-auto pr-2 pb-6'
+              }`}
+            >
               {ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
@@ -3297,38 +3428,54 @@ export function DocumentDetailsView({
                         </h4>
                         <div className='flex flex-col gap-3'>
                           {ticketData.history.map(
-                            (hist: any, index: number) => (
-                              <div
-                                key={index}
-                                className={`relative z-10 flex gap-3 ${
-                                  index < ticketData.history.length - 1
-                                    ? 'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-[2px] before:bg-gray-3'
-                                    : ''
-                                }`}
-                              >
-                                <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-surface-primary bg-gray-2 text-gray-10'>
-                                  <DynamicIcon
-                                    className='h-3 w-3 text-gray-11'
-                                    name={getMilestoneIcon(hist.milestone)}
-                                  />
-                                </div>
-                                <div className='flex-1 pb-1'>
-                                  <p className='text-[13px] leading-tight font-medium text-gray-13'>
-                                    {hist.title}
-                                  </p>
-                                  {hist.description && (
-                                    <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
-                                      {hist.description}
-                                    </p>
+                            (hist: any, index: number) => {
+                              const isPending =
+                                index === ticketData.history.length - 1
+                              return (
+                                <div
+                                  key={index}
+                                  className={cn(
+                                    'relative z-10 flex gap-3',
+                                    index < ticketData.history.length - 1 &&
+                                      'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-0.5 before:bg-green-6',
                                   )}
-                                  {hist.occurredAtUtc && (
-                                    <p className='mt-1 text-[11px] text-gray-8'>
-                                      {formatDateTime(hist.occurredAtUtc)}
+                                >
+                                  <div className='relative h-6 w-6 shrink-0'>
+                                    {isPending ? (
+                                      <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
+                                    ) : null}
+                                    <div
+                                      className={cn(
+                                        'relative flex h-6 w-6 items-center justify-center rounded-full border-2',
+                                        isPending
+                                          ? 'border-orange-6 bg-orange-3 text-orange-11'
+                                          : 'border-green-6 bg-green-3 text-green-11',
+                                      )}
+                                    >
+                                      <DynamicIcon
+                                        className='h-3 w-3'
+                                        name={getMilestoneIcon(hist.milestone)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='min-w-0 flex-1 pb-1'>
+                                    <p className='text-[13px] leading-tight font-medium text-gray-13'>
+                                      {hist.title}
                                     </p>
-                                  )}
+                                    {hist.description && (
+                                      <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
+                                        {hist.description}
+                                      </p>
+                                    )}
+                                    {hist.occurredAtUtc && (
+                                      <p className='mt-1 text-[11px] text-gray-8'>
+                                        {formatDateTime(hist.occurredAtUtc)}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ),
+                              )
+                            },
                           )}
                         </div>
                       </div>
@@ -3404,6 +3551,8 @@ export function DocumentDetailsView({
                               >
                                 {`*****${maskedTail}`}
                               </b>
+                            ) : row.label.toLowerCase() === 'status' ? (
+                              <StatusPill status={plainVal} />
                             ) : (
                               <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'>
                                 {plainVal}

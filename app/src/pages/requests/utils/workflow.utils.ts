@@ -287,6 +287,68 @@ export const extractWorkflowGraph = (
   }
 }
 
+export type WorkflowStageStep = { id: string; label: string }
+
+const stageLabel = (block: any) =>
+  String(
+    block?.settings?.label || block?.label || block?.name || block?.type || 'Stage',
+  )
+
+// User-facing stages of a workflow, in rule order. The END block is only the
+// last step — it is never listed in the middle of the path.
+export const listWorkflowStages = (workflow: any): WorkflowStageStep[] => {
+  const { blocks, rules } = extractWorkflowGraph(workflow)
+  if (!blocks.length) return []
+
+  const byId = new Map(blocks.map((block: any) => [String(block.id), block]))
+  const start = blocks.find(
+    (block: any) => String(block?.type || '').toUpperCase() === 'START',
+  )
+  const ordered: any[] = []
+  const seen = new Set<string>()
+  const queue = start
+    ? [String(start.id)]
+    : [String(blocks[0]?.id || '')].filter(Boolean)
+
+  while (queue.length) {
+    const id = queue.shift() as string
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    const block = byId.get(id)
+    if (block) ordered.push(block)
+    const outgoing = rules.filter(
+      (rule: any) => String(rule.fromBlockId || rule.from || rule.source || '') === id,
+    )
+    const forward = outgoing.filter((rule: any) => {
+      const action = String(rule.action || rule.proceedAction || '')
+      return action !== 'Reject' && action !== 'Terminate'
+    })
+    ;(forward.length ? forward : outgoing).forEach((rule: any) => {
+      const to = String(rule.toBlockId || rule.to || rule.target || '')
+      if (to && !seen.has(to)) queue.push(to)
+    })
+  }
+
+  blocks.forEach((block: any) => {
+    const id = String(block?.id || '')
+    if (id && !seen.has(id)) ordered.push(block)
+  })
+
+  const middle = ordered.filter(
+    (block) => String(block?.type || '').toUpperCase() !== 'END',
+  )
+  const endBlocks = ordered.filter(
+    (block) => String(block?.type || '').toUpperCase() === 'END',
+  )
+  const last = endBlocks[endBlocks.length - 1]
+  const stages = last ? [...middle, last] : middle
+
+  return stages.map((block) => ({
+    id: String(block.id),
+    label: stageLabel(block),
+  }))
+}
+
 export interface GenericStageInfo {
   currentLabel: string
   isTerminal: boolean

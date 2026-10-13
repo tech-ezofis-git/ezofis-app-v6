@@ -14,6 +14,7 @@ import {
   type V6UserListItem,
 } from '@/api/v6/user'
 import Alert from '@/components/base/Alert'
+import InfoCard from '@/components/base/InfoCard'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
@@ -816,12 +817,12 @@ export default function FolderSecurityPolicyWizard({
 
                   return (
                     <div
-                      className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:border-gray-5 hover:shadow-[0_12px_28px_color-mix(in_srgb,var(--gray-12)_16%,transparent)] active:translate-y-0 active:scale-[0.995]'
+                      className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'
                       key={group.id}
                     >
                       <button
                         className={cn(
-                          'flex w-full cursor-pointer items-center justify-between gap-3 bg-surface px-4 py-3 text-left transition-colors duration-200 hover:bg-gray-2',
+                          'flex w-full cursor-pointer items-center justify-between gap-3 bg-surface px-4 py-3 text-left transition-colors duration-200 hover:bg-primary-5',
                           isOpen && 'border-b border-[var(--border-default)]',
                         )}
                         type='button'
@@ -870,10 +871,10 @@ export default function FolderSecurityPolicyWizard({
                         rows.length === 0 ? (
                           <div className='border-t border-[var(--border-default)] p-4 text-center text-xs text-gray-10'>{t`No matching permissions found`}</div>
                         ) : (
-                          <div className='divide-y divide-[var(--border-default)] bg-gray-1'>
+                          <div className='divide-y divide-[var(--border-default)] bg-surface'>
                             {rows.map((p) => (
                               <div
-                                className='grid grid-cols-[160px_1fr_80px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface'
+                                className='grid grid-cols-[160px_1fr_80px] items-center gap-3 bg-surface px-4 py-2.5 transition-colors hover:bg-gray-2'
                                 key={p.id}
                               >
                                 <div className='text-xs font-semibold text-gray-13'>
@@ -1075,6 +1076,12 @@ export default function FolderSecurityPolicyWizard({
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
+            <InfoCard
+              className='mb-5'
+              description={t`Choose who can open this folder and what they can do. Review each step, then save the policy. You can return to a step before you finish.`}
+              showVideo
+              title={t`What should I do on this page?`}
+            />
             {renderStepContent()}
 
             {/* Footer Navigation */}

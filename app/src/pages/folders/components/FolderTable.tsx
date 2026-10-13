@@ -198,6 +198,8 @@ const EXPLORER_NAME_BUTTON_CLASS =
   'flex min-w-0 max-w-full items-start gap-1.5 text-left'
 const EXPLORER_NAME_TEXT_WRAP_CLASS = 'min-w-0 flex-1'
 const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-4 text-gray-12'
+const EXPLORER_FILE_NAME_TEXT_CLASS =
+  'text-sm font-normal leading-4 text-primary-9 hover:underline'
 const EXPLORER_ICON_WRAP_CLASS =
   'inline-flex size-4 shrink-0 items-center justify-center pt-0.5'
 const EXPLORER_ICON_CLASS = 'block size-4 text-gray-11'
@@ -1364,7 +1366,7 @@ function FileDataTableSection({
                 </span>
                 <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
                   <EllipsisText
-                    className={EXPLORER_NAME_TEXT_CLASS}
+                    className={EXPLORER_FILE_NAME_TEXT_CLASS}
                     lines={1}
                     value={value}
                   />

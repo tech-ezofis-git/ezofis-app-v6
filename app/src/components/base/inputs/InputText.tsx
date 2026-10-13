@@ -112,6 +112,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
           error: cn(classNames.error, rest.classNames?.error),
           input: cn(classNames.input, rest.classNames?.input),
           label: cn(classNames.label, rest.classNames?.label),
+          section: rest.classNames?.section,
           wrapper: cn(classNames.wrapper, rest.classNames?.wrapper),
         }}
         rightSectionPointerEvents={

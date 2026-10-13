@@ -55,6 +55,7 @@ async function getOcrDescriptorsForRepository(repoId: string): Promise<string[]>
 
 interface IntelligentUploadViewProps {
   candidateRepositories: CandidateRepository[]
+  initialFiles?: File[]
   repositoryId?: string | null
   onBack: () => void
   onDone: (targetRepositoryId?: string) => Promise<void> | void
@@ -85,6 +86,7 @@ const FILE_TYPE_ICONS = [
 
 export default function IntelligentUploadView({
   candidateRepositories,
+  initialFiles,
   repositoryId,
   onBack,
   onDone,
@@ -144,6 +146,15 @@ export default function IntelligentUploadView({
     },
     [t],
   )
+
+  const seededInitialFilesRef = useRef(false)
+  useEffect(() => {
+    if (seededInitialFilesRef.current || !initialFiles?.length) return
+    seededInitialFilesRef.current = true
+    const list = new DataTransfer()
+    initialFiles.forEach((file) => list.items.add(file))
+    handleFilesAdded(list.files)
+  }, [handleFilesAdded, initialFiles])
 
   // Start processing pending files sequentially (1 file at a time)
   useEffect(() => {

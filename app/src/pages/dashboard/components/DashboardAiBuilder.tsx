@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'motion/react'
 import React, { useEffect, useRef, useState } from 'react'
+import InfoCard from '@/components/base/InfoCard'
 import {
   Area,
   AreaChart,
@@ -913,6 +914,12 @@ export default function DashboardAiBuilder({
       key={`builder-${repositoryId}`}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
+      <InfoCard
+        className='mb-4'
+        description={t`Set the repository and the business scope for this dashboard. Review each step, then save when the layout matches what people should see.`}
+        showVideo
+        title={t`What should I do on this page?`}
+      />
       {/* PROCEDURE STEP 1: DASHBOARD CONFIGURATION */}
       <BuilderTimelineStep
         bottomConnectorState={getConnectorState(1, 2)}
