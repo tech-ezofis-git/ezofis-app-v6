@@ -16,7 +16,7 @@ type SuccessCelebrationProps = {
 
 export default function SuccessCelebration({
   buttonIcon = 'tabler:plus',
-  buttonLabel = 'Create Request',
+  buttonLabel = 'Start Process',
   description = 'Your Accounts Payable workspace is ready.\nStart by creating your first request.',
   loadingLabel = 'Loading request workspace...',
   title = "You're All Set!",

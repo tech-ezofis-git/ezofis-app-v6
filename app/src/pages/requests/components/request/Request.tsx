@@ -68,6 +68,8 @@ import { summarizeQuoteResult } from './components/generic-overview/quoteResultU
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 import ForwardPopover from './ForwardPopover'
+import { getCanonicalFieldLabel } from '../../utils/localizeRequestUi'
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
 const cleanKey = (s: string) =>
   s
@@ -208,9 +210,19 @@ export const buildFieldMetaMap = (
     string,
     { label: string; originalId?: string; type: string }
   >()
-  const formJson = workflow?.formJson || fallbackFormJson
+  const rawWf = requestStore.getState().rawWorkflowData
+  const formJson =
+    workflow?.formJson ||
+    workflow?.workflowJson?.formJson ||
+    workflow?.workflowJson ||
+    workflow?.formDefinition ||
+    workflow?.forms?.[0]?.formJson ||
+    fallbackFormJson ||
+    rawWf?.formJson ||
+    rawWf?.workflowJson?.formJson ||
+    rawWf?.workflowJson ||
+    rawWf?.formDefinition
   const form = parseFormJson(formJson)
-  if (!form) return metaMap
 
   const addControl = (c: any) => {
     if (!c) return
@@ -268,7 +280,20 @@ export const buildFieldMetaMap = (
     return controls
   }
 
-  collectFormControls(form).forEach(addControl)
+  if (form) {
+    collectFormControls(form).forEach(addControl)
+  }
+
+  // Fallback: seed standard AP form controls so field labels (PO Number, Invoice No, etc.)
+  // are ALWAYS resolved cleanly even if the workflow form is still loading asynchronously.
+  if (apSetupPayloads?.formPayload) {
+    collectFormControls(apSetupPayloads.formPayload).forEach((c) => {
+      const id = c.id || c.jsonId || c.name
+      if (id && !metaMap.has(String(id).toLowerCase())) {
+        addControl(c)
+      }
+    })
+  }
 
   return metaMap
 }
@@ -393,7 +418,7 @@ export const shouldIncludeExtractedField = (
 export const getExtractedFieldLabel = (
   metaMap: Map<string, { label: string; originalId?: string; type: string }>,
   key: string,
-): string => resolveFieldMeta(metaMap, key)?.label || key
+): string => resolveFieldMeta(metaMap, key)?.label || getCanonicalFieldLabel(key) || key
 
 export const parseTableFieldValue = (val: unknown): any[] => {
   if (Array.isArray(val)) return val

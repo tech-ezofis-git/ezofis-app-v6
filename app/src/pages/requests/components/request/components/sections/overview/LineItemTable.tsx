@@ -98,6 +98,7 @@ export interface LineItemTableProps {
   skeletonRows: string[]
   atEnd?: boolean
   hideFooter?: boolean
+  isReadOnly?: boolean
   handleAddItem?: () => void
   handleFieldFocus?: (value: any, field: string) => void
   handleLineItemChange?: (index: number, field: string, value: any) => void
@@ -135,6 +136,7 @@ export default function LineItemTable({
   hideFooter = false,
   isCurrentlyProcessing,
   isDynamicTable,
+  isReadOnly = false,
   LINE_ITEM_ACTION_WIDTH,
   lineItems,
   skeletonRows,
@@ -628,7 +630,7 @@ export default function LineItemTable({
 
               return (
                 <tr
-                  key={item._id}
+                  key={item._id || item.id || `row-${index}`}
                   className={cn(
                     'group transition-colors',
                     isMatch
@@ -682,71 +684,96 @@ export default function LineItemTable({
                           col.isNumeric &&
                           !col.isAmount)
 
-                      cellContent = (
-                        <div className='group/cell relative h-full min-h-[24px] w-full'>
+                      if (isReadOnly || !handleLineItemChange) {
+                        cellContent = (
                           <div
                             className={cn(
-                              'invisible w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap group-hover/cell:whitespace-normal',
+                              'w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap rounded transition-colors select-text cursor-default hover:bg-[var(--gray-2)]/30',
                               col.isNumeric && 'text-right',
-                            )}
-                          >
-                            {cellVal || ' '}
-                          </div>
-                          <textarea
-                            rows={1}
-                            value={cellVal}
-                            className={cn(
-                              'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold whitespace-nowrap transition-all group-hover/cell:break-words group-hover/cell:whitespace-normal hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
                               isGray11
                                 ? 'text-right text-[var(--gray-11)]'
                                 : col.isNumeric
                                   ? 'text-right text-[var(--gray-13)]'
                                   : 'text-[var(--gray-13)]',
                             )}
-                            onBlur={(e) => {
-                              if (!handleLineItemChange) return
-                              if (
-                                col.type === 'rate' ||
-                                col.type === 'amount' ||
-                                (col.type === 'dynamic' &&
-                                  (changeKey.toLowerCase().includes('price') ||
-                                    changeKey.toLowerCase().includes('rate') ||
-                                    changeKey
-                                      .toLowerCase()
-                                      .includes('amount') ||
-                                    changeKey.toLowerCase().includes('total')))
-                              ) {
-                                const num = Number.parseFloat(
-                                  e.target.value.replace(/[^0-9.-]+/g, ''),
-                                )
-                                if (!Number.isNaN(num)) {
-                                  handleLineItemChange(
-                                    index,
-                                    changeKey,
-                                    num.toFixed(2),
-                                  )
-                                  return
-                                }
-                              }
-                              handleLineItemChange(
-                                index,
-                                changeKey,
-                                e.target.value,
-                              )
-                            }}
-                            onChange={(e) =>
-                              handleLineItemChange?.(
-                                index,
-                                changeKey,
-                                e.target.value,
-                              )
+                            tabIndex={0}
+                            onClick={() =>
+                              handleFieldFocus?.(cellVal, focusKey)
                             }
                             onFocus={() =>
                               handleFieldFocus?.(cellVal, focusKey)
                             }
-                          />
-                        </div>
-                      )
+                          >
+                            {cellVal || ' '}
+                          </div>
+                        )
+                      } else {
+                        cellContent = (
+                          <div className='group/cell relative h-full min-h-[24px] w-full'>
+                            <div
+                              className={cn(
+                                'invisible w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap group-hover/cell:whitespace-normal',
+                                col.isNumeric && 'text-right',
+                              )}
+                            >
+                              {cellVal || ' '}
+                            </div>
+                            <textarea
+                              rows={1}
+                              value={cellVal}
+                              className={cn(
+                                'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold whitespace-nowrap transition-all group-hover/cell:break-words group-hover/cell:whitespace-normal hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                isGray11
+                                  ? 'text-right text-[var(--gray-11)]'
+                                  : col.isNumeric
+                                    ? 'text-right text-[var(--gray-13)]'
+                                    : 'text-[var(--gray-13)]',
+                              )}
+                              onBlur={(e) => {
+                                if (!handleLineItemChange) return
+                                if (
+                                  col.type === 'rate' ||
+                                  col.type === 'amount' ||
+                                  (col.type === 'dynamic' &&
+                                    (changeKey.toLowerCase().includes('price') ||
+                                      changeKey.toLowerCase().includes('rate') ||
+                                      changeKey
+                                        .toLowerCase()
+                                        .includes('amount') ||
+                                      changeKey.toLowerCase().includes('total')))
+                                ) {
+                                  const num = Number.parseFloat(
+                                    e.target.value.replace(/[^0-9.-]+/g, ''),
+                                  )
+                                  if (!Number.isNaN(num)) {
+                                    handleLineItemChange(
+                                      index,
+                                      changeKey,
+                                      num.toFixed(2),
+                                    )
+                                    return
+                                  }
+                                }
+                                handleLineItemChange(
+                                  index,
+                                  changeKey,
+                                  e.target.value,
+                                )
+                              }}
+                              onChange={(e) =>
+                                handleLineItemChange?.(
+                                  index,
+                                  changeKey,
+                                  e.target.value,
+                                )
+                              }
+                              onFocus={() =>
+                                handleFieldFocus?.(cellVal, focusKey)
+                              }
+                            />
+                          </div>
+                        )
+                      }
                     }
 
                     return (

@@ -64,6 +64,7 @@ type Store = {
   activeTabValue: string | null
 
   isClosed: boolean
+  isAutoOpenedRequest: boolean
   // UI State
   isMaximized: boolean
   isRequestOpen: boolean
@@ -105,6 +106,7 @@ type Store = {
     workflowId: any,
     tab: string,
     missingFieldIds?: string[],
+    options?: { isAutoOpened?: boolean },
   ) => void
   removeProcessingProcess: (id: string | number) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
@@ -128,6 +130,7 @@ const requestStore = create<Store>()(
     (set) => ({
       activeQuickFilters: [],
       activeTabValue: null,
+      isAutoOpenedRequest: false,
       isClosed: false,
       isMaximized: false,
       isRequestOpen: false,
@@ -169,6 +172,7 @@ const requestStore = create<Store>()(
       closeRequest: () =>
         set((state) => ({
           activeTabValue: null,
+          isAutoOpenedRequest: false,
           isClosed: !state.isClosed,
           isRequestOpen: false,
           kanbanMissingFieldIds: [],
@@ -183,9 +187,10 @@ const requestStore = create<Store>()(
           pendingOpenNewRequest: false,
         }),
       // FIX: Accept data when opening
-      openRequest: (item, workflow, tab, missingFieldIds) =>
+      openRequest: (item, workflow, tab, missingFieldIds, options) =>
         set({
           activeTabValue: tab,
+          isAutoOpenedRequest: Boolean(options?.isAutoOpened),
           isRequestOpen: true,
           kanbanMissingFieldIds: missingFieldIds || [],
           selectedItem: item,
