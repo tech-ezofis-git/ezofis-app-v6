@@ -1663,6 +1663,22 @@ const Request = ({
     sessionEmail,
   ])
 
+  const isInboxTab = useMemo(() => {
+    const norm = String(requestListTab || '').trim().toLowerCase()
+    const localizedInvoices = String(t`Invoices`).trim().toLowerCase()
+    const localizedInbox = String(t`Inbox`).trim().toLowerCase()
+    if (
+      norm === 'inbox' ||
+      norm === 'invoices' ||
+      norm === localizedInbox ||
+      norm === localizedInvoices
+    ) {
+      return true
+    }
+    const itemTab = String(selectedItem?._listTab || '').trim().toLowerCase()
+    return itemTab === 'inbox' || itemTab === 'invoices'
+  }, [requestListTab, selectedItem?._listTab, t])
+
   const headerActions = useMemo(() => {
     if (isApAgentStage || isAutoRoutedAgentStage) return []
 
@@ -1673,10 +1689,10 @@ const Request = ({
       // Configured tabs replace Inbox / Sent / Completed. A request opened
       // from any of those tabs shows actions when the signed-in email is
       // the activity assignee.
-      if (!isUserEmailMatched) return []
+      if (!isUserEmailMatched && !isAssignedToCurrentUser) return []
     } else {
       // No tab configuration: actions only from Inbox.
-      if (requestListTab !== 'Inbox') return []
+      if (!isInboxTab) return []
       if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
     }
 
@@ -1697,9 +1713,9 @@ const Request = ({
     isApAgentStage,
     isAutoRoutedAgentStage,
     hasCustomTabConfig,
+    isInboxTab,
     isUserEmailMatched,
     isAssignedToCurrentUser,
-    requestListTab,
     ruleActions,
     actions,
     currentActivityId,
@@ -2660,7 +2676,7 @@ const Request = ({
           poValue={poValue}
           requestNo={resolvedRequestNo}
           rightView={rightView}
-          showApprove={requestListTab === 'Inbox'}
+          showApprove={isInboxTab}
           simple={isGenericWorkflow}
           status={statusBadge}
           totalAmount={totalAmount}
@@ -2793,8 +2809,8 @@ const Request = ({
                 userSignatureRequired={!!currentBlockSettings.userSignature}
                 viewOnly={
                   hasCustomTabConfig
-                    ? !isUserEmailMatched
-                    : requestListTab !== 'Inbox'
+                    ? !isUserEmailMatched && !isAssignedToCurrentUser
+                    : !isInboxTab
                 }
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
