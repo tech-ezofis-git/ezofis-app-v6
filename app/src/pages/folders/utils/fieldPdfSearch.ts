@@ -53,16 +53,88 @@ export function buildFieldSearchKeywords(value: string): SingleKeyword[] {
     return keywords
   }
 
-  // Amount variants: keep full phrase only — bare numbers match table lines/cells.
-  const currencyMatch = trimmed.match(
-    /^([A-Z]{3}|\$|€|£)\s*([\d,]+(?:\.\d+)?)$/i,
+  // Amount / Currency value matching (e.g. 1582, $1,582.00, ₹1,582, Rs. 1582, etc.)
+  const amountMatch = trimmed.match(
+    /^(?:([A-Za-z]{3}|\$|€|£|₹|Rs\.?|INR)\s*)?([\d,]+(?:\.\d+)?)(?:\s*([A-Za-z]{3}|\$|€|£|₹|Rs\.?|INR))?$/i,
   )
-  if (currencyMatch) {
-    return keywords
-  }
+  if (amountMatch && amountMatch[2]) {
+    const rawNum = amountMatch[2]
+    const cleanDigits = rawNum.replace(/,/g, '')
+    const numFloat = Number.parseFloat(cleanDigits)
 
-  if (/^[\d,]+(?:\.\d+)?$/.test(trimmed)) {
-    return keywords
+    if (!Number.isNaN(numFloat) && numFloat > 0) {
+      const parts = cleanDigits.split('.')
+      const intPart = parts[0]
+      const decPart = parts[1]
+
+      const intWithCommas = Number(intPart).toLocaleString('en-US')
+      const intWithIndianCommas = Number(intPart).toLocaleString('en-IN')
+
+      const numVariants = new Set<string>()
+      numVariants.add(rawNum)
+      numVariants.add(cleanDigits)
+
+      if (decPart !== undefined) {
+        numVariants.add(`${intWithCommas}.${decPart}`)
+        numVariants.add(`${intWithIndianCommas}.${decPart}`)
+        if (decPart === '00' || decPart === '0') {
+          numVariants.add(intPart)
+          numVariants.add(intWithCommas)
+          numVariants.add(intWithIndianCommas)
+        }
+      } else {
+        numVariants.add(intWithCommas)
+        numVariants.add(intWithIndianCommas)
+        numVariants.add(`${intWithCommas}.00`)
+        numVariants.add(`${intWithIndianCommas}.00`)
+        numVariants.add(`${cleanDigits}.00`)
+      }
+
+      const providedSym = amountMatch[1] || amountMatch[3]
+      const symbolsToTry = new Set<string>()
+      if (providedSym) {
+        symbolsToTry.add(providedSym)
+        const lower = providedSym.toLowerCase()
+        if (lower === '$' || lower === 'usd') {
+          symbolsToTry.add('$')
+          symbolsToTry.add('USD')
+        } else if (
+          lower === '₹' ||
+          lower === 'rs' ||
+          lower === 'rs.' ||
+          lower === 'inr'
+        ) {
+          symbolsToTry.add('₹')
+          symbolsToTry.add('Rs.')
+          symbolsToTry.add('Rs')
+          symbolsToTry.add('INR')
+        }
+      } else {
+        // When bare number is provided (e.g. 1582), check with common symbols present on invoice PDFs
+        symbolsToTry.add('$')
+        symbolsToTry.add('₹')
+        symbolsToTry.add('Rs.')
+        symbolsToTry.add('Rs')
+        symbolsToTry.add('USD')
+        symbolsToTry.add('CAD')
+        symbolsToTry.add('INR')
+      }
+
+      // 1. Currency-prefixed variants (e.g. $1,582.00, ₹1,582.00, Rs. 1,582.00)
+      for (const sym of symbolsToTry) {
+        for (const num of numVariants) {
+          pushFlag(`${sym}${num}`, { matchCase: false, wholeWords: false })
+          pushFlag(`${sym} ${num}`, { matchCase: false, wholeWords: false })
+        }
+      }
+
+      // 2. Bare number variants (e.g. 1,582.00, 1582.00, 1,582, 1582)
+      for (const num of numVariants) {
+        pushFlag(num, { matchCase: false, wholeWords: false })
+      }
+
+      return keywords
+    }
   }
 
   // ISO date → common PDF formats (e.g. 2026-07-24 → Jul 24 2026)

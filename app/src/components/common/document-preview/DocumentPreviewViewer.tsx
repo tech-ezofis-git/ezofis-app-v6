@@ -216,6 +216,54 @@ const normalizeHighlightKey = (value: string) =>
     .trim()
     .toLowerCase()
 
+const normalizeAmountKey = (value: string) =>
+  String(value || '')
+    .replace(/[$€£₹]|rs\.?|inr|usd|cad|eur|gbp/gi, '')
+    .replace(/,/g, '')
+    .replace(/\.00$/, '')
+    .trim()
+
+const isHighlightActive = (
+  source: string,
+  text: string,
+  activeTerm?: string | null,
+) => {
+  if (!activeTerm) return false
+  const normActive = normalizeHighlightKey(activeTerm)
+  const normSource = normalizeHighlightKey(source)
+  const normText = normalizeHighlightKey(text)
+  if (!normActive) return false
+
+  if (
+    normSource === normActive ||
+    normText === normActive ||
+    (normSource && normSource.includes(normActive)) ||
+    (normText && normText.includes(normActive)) ||
+    (normActive && normActive.includes(normSource))
+  ) {
+    return true
+  }
+
+  // Amount / currency matching: e.g. "1582" matches "$1,582.00", "₹1,582.00", "Rs. 1,582"
+  const amtActive = normalizeAmountKey(normActive)
+  if (amtActive && /^\d+(?:\.\d+)?$/.test(amtActive)) {
+    const amtSource = normalizeAmountKey(normSource)
+    const amtText = normalizeAmountKey(normText)
+    if (amtSource === amtActive || amtText === amtActive) {
+      return true
+    }
+    if (
+      (amtSource &&
+        (amtSource.includes(amtActive) || amtActive.includes(amtSource))) ||
+      (amtText && (amtText.includes(amtActive) || amtActive.includes(amtText)))
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const resolveHighlightColor = (
   source: string,
   colors: Record<string, string>,
@@ -360,12 +408,15 @@ const applyHighlightStyles = (
   color: string,
   isActive: boolean,
 ) => {
-  element.style.backgroundColor = hexToRgba(color, isActive ? 0.32 : 0.2)
-  element.style.outline = `2px solid ${color}`
+  element.style.backgroundColor = hexToRgba(color, isActive ? 0.35 : 0.2)
+  element.style.outline = isActive ? `2px solid ${color}` : `1.5px solid ${color}`
   element.style.border = 'none'
-  element.style.borderRadius = '2px'
+  element.style.borderRadius = '3px'
   element.style.mixBlendMode = 'multiply'
-  element.style.boxShadow = 'none'
+  element.style.boxShadow = isActive
+    ? `0 0 0 1px ${color}, 0 0 8px ${hexToRgba(color, 0.45)}`
+    : 'none'
+  element.style.zIndex = isActive ? '10' : '1'
 }
 
 export default function DocumentPreviewViewer({
@@ -1499,17 +1550,16 @@ function PdfViewer({
         <>
           {areas.map((area, index) => {
             const source = String(area.keywordStr || '').trim()
-            const color =
-              resolveHighlightColor(source, colorsRef.current, source) ||
-              '#94a3b8'
-            const normalizedActive = normalizeHighlightKey(
-              String(activeTermRef.current || ''),
+            const isActive = isHighlightActive(
+              source,
+              source,
+              activeTermRef.current,
             )
-            const isActive =
-              Boolean(normalizedActive) &&
-              (normalizeHighlightKey(source) === normalizedActive ||
-                normalizedActive.includes(normalizeHighlightKey(source)) ||
-                normalizeHighlightKey(source).includes(normalizedActive))
+            const color =
+              (isActive && activeHighlightColor) ||
+              resolveHighlightColor(source, colorsRef.current, source) ||
+              activeHighlightColor ||
+              '#94a3b8'
 
             return (
               <div
@@ -1553,7 +1603,9 @@ function PdfViewer({
 
   const [documentReady, setDocumentReady] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [probeDone, setProbeDone] = useState(false)
+  const [probeDone, setProbeDone] = useState(
+    !probeTerms || probeTerms.length === 0,
+  )
   const [renderAttempt, setRenderAttempt] = useState(0)
   const [pageScale, setPageScale] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
@@ -1639,10 +1691,12 @@ function PdfViewer({
 
         setPageScale(fitted)
         setScale(fitted)
+        setDocumentReady(true)
       })
       .catch(() => {
         setPageScale(1)
         setScale(1)
+        setDocumentReady(true)
       })
   }
   const [matchesVersion, setMatchesVersion] = useState(0)
@@ -1678,7 +1732,7 @@ function PdfViewer({
   useEffect(() => {
     setDocumentReady(false)
     setLoadError(null)
-    setProbeDone(false)
+    setProbeDone(!probeTerms || probeTerms.length === 0)
     lastHighlightKeyRef.current = ''
     matchesRef.current = []
     highlightElementsRef.current = new Map()
@@ -1832,12 +1886,7 @@ function PdfViewer({
         }
         const keywords = highlightKey.split('\u0001').flatMap((term) => {
           const variants = buildFieldSearchKeywords(term)
-          if (!variants.length) return []
-          // Date variants only — amounts use the full phrase to avoid false hits.
-          if (/^\d{4}-\d{2}-\d{2}$/.test(term)) {
-            return variants
-          }
-          return [variants[0]]
+          return variants
         })
         if (!keywords.length) {
           matchesRef.current = []
@@ -1868,23 +1917,18 @@ function PdfViewer({
     const container = viewerContainerRef.current
     if (!container) return
 
-    const normalizedActive = normalizeHighlightKey(
-      String(activeHighlightTerm || ''),
-    )
     const highlights = container.querySelectorAll('.rpv-search__highlight')
 
     highlights.forEach((node) => {
       const element = node as HTMLElement
       const source = element.dataset.highlightSource || ''
       const text = element.dataset.highlightText || element.textContent || ''
+      const isActive = isHighlightActive(source, text, activeHighlightTerm)
       const color =
-        resolveHighlightColor(source, colorsRef.current, text) || '#94a3b8'
-      const isActive =
-        Boolean(normalizedActive) &&
-        (normalizeHighlightKey(source) === normalizedActive ||
-          normalizeHighlightKey(text) === normalizedActive ||
-          normalizeHighlightKey(text).includes(normalizedActive) ||
-          normalizedActive.includes(normalizeHighlightKey(text)))
+        (isActive && activeHighlightColor) ||
+        resolveHighlightColor(source, colorsRef.current, text) ||
+        activeHighlightColor ||
+        '#94a3b8'
 
       applyHighlightStyles(element, color, isActive)
     })
@@ -1908,6 +1952,9 @@ function PdfViewer({
       const source = normalizeHighlightKey(match.source)
       if (!source) return false
       if (variants.has(source)) return true
+      if (isHighlightActive(match.source, match.source, activeHighlightTerm)) {
+        return true
+      }
       return [...variants].some(
         (variant) => source.includes(variant) || variant.includes(source),
       )
@@ -1939,6 +1986,7 @@ function PdfViewer({
         if (
           (source && variants.has(source)) ||
           (text && variants.has(text)) ||
+          isHighlightActive(source, text, activeHighlightTerm) ||
           [...variants].some(
             (variant) =>
               (text && (text.includes(variant) || variant.includes(text))) ||
