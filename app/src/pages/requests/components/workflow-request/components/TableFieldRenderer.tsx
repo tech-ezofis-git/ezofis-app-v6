@@ -53,6 +53,7 @@ import {
   getColumnFileError,
   getColumnOcrTargets,
   getFileInputAccept,
+  isFileColumnType,
   isMultiFileColumn,
   mapOcrToRowPatch,
   removeFileFromValue,
@@ -541,9 +542,15 @@ export { ApiCatalogSelect }
 interface CellActions {
   siblingColumns: TableColumn[]
   row?: Record<string, unknown>
-  onFilesAdded?: (files: File[]) => Promise<void> | void
+  onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
+}
+/** Outcome of reading a document into the row, shown under the file cell. */
+interface OcrStatus {
+  text: string
+  tone: 'error' | 'info'
 }
+
 
 // NUMBER / COUNTER cell: number input honoring the column's content rule,
 // range (fixed, or taken from another cell of the row), step, prefix/suffix,
@@ -730,9 +737,10 @@ const TableCellFileInput = ({
   isImageType: boolean
   val: any
   onCellChange: (newVal: any) => void
-  onFilesAdded?: (files: File[]) => Promise<void> | void
+  onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
 }) => {
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<OcrStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const multiple = isMultiFileColumn(col)
   const files = toFileList(val)
@@ -752,6 +760,7 @@ const TableCellFileInput = ({
       else accepted.push(file)
     }
     setError(problem)
+    setStatus(null)
     if (accepted.length === 0) return
 
     onCellChange(
@@ -768,7 +777,8 @@ const TableCellFileInput = ({
     if (onFilesAdded) {
       setBusy(true)
       try {
-        await onFilesAdded(accepted)
+        const result = await onFilesAdded(accepted)
+        if (result) setStatus(result)
       } finally {
         setBusy(false)
       }
@@ -850,6 +860,16 @@ const TableCellFileInput = ({
       </label>
       {error && (
         <p className='text-[11px] leading-tight text-red-9'>{error}</p>
+      )}
+      {status && (
+        <p
+          className={cn(
+            'text-[11px] leading-tight',
+            status.tone === 'error' ? 'text-red-9' : 'text-gray-9',
+          )}
+        >
+          {status.text}
+        </p>
       )}
     </div>
   )
@@ -1557,6 +1577,24 @@ const TableFieldRenderer = ({
     },
   })
 
+  // OCR needs a repository. When the screen did not provide one, use the first
+  // available repository, as the builder's own upload preview does.
+  const needsOcrRepository = tableColumns.some(
+    (c) =>
+      isFileColumnType(c.type) && getColumnOcrTargets(c, tableColumns).length > 0,
+  )
+  const { data: fallbackRepositoryId } = useQuery({
+    enabled: needsOcrRepository && !repositoryId,
+    queryKey: ['tableOcrFallbackRepository'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      const list: Array<{ id?: string | number }> = Array.isArray(res.data)
+        ? res.data
+        : []
+      return list[0]?.id != null ? String(list[0].id) : ''
+    },
+  })
+
   const predefinedColumns = tableColumns.filter(
     (col) => getColumnOptionsSource(col) === 'PREDEFINED',
   )
@@ -1792,18 +1830,27 @@ const TableFieldRenderer = ({
     rowIndex: number,
     col: TableColumn,
     files: File[],
-  ) => {
+  ): Promise<OcrStatus | void> => {
     const targets = getColumnOcrTargets(col, tableColumns)
-    if (!repositoryId || targets.length === 0 || files.length === 0) return
+    if (targets.length === 0 || files.length === 0) return
+    const targetNames = targets.map((t) => t.name || t.label || t.id)
+    // The form's own repository, else the first one (as the builder preview does)
+    const ocrRepositoryId = repositoryId || fallbackRepositoryId
+    if (!ocrRepositoryId) {
+      return {
+        text: t`Text could not be read from the document: no repository is available for this form.`,
+        tone: 'error',
+      }
+    }
     const hints = buildColumnOcrHints(targets)
     const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    const filled = new Set<string>()
+    let failure = ''
     for (const file of files) {
-      const { data, error } = await uploadForOcr(repositoryId, file, hints)
+      const { data, error } = await uploadForOcr(ocrRepositoryId, file, hints)
       if (error || !data?.ocrFieldList) {
-        console.warn(
-          '[table uploadForOcr] OCR extraction warning:',
-          error || 'OCR data unavailable',
-        )
+        failure = String(error || 'no data was returned')
+        console.warn('[table uploadForOcr] OCR extraction warning:', failure)
         continue
       }
       const current = rowsRef.current
@@ -1820,6 +1867,22 @@ const TableFieldRenderer = ({
       const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
       rowsRef.current = next
       onChange(next)
+      for (const id of Object.keys(patch)) {
+        const target = targets.find((tg) => tg.id === id)
+        filled.add(String(target?.name || target?.label || id))
+      }
+    }
+    const filledNames = Array.from(filled).join(', ')
+    const wantedNames = targetNames.join(', ')
+    if (filled.size > 0) {
+      return { text: t`Filled from the document: ${filledNames}`, tone: 'info' }
+    }
+    if (failure) {
+      return { text: t`Could not read the document: ${failure}`, tone: 'error' }
+    }
+    return {
+      text: t`No values were found in the document for: ${wantedNames}`,
+      tone: 'info',
     }
   }
 

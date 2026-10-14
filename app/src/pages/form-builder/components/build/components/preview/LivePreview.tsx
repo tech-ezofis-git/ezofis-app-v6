@@ -40,8 +40,6 @@ import {
 import {
   buildInitialFormModel,
   buildMergedOcrFieldHints,
-  computeTableColumnTotals,
-  evaluateTableRows,
   extractCurrencyCode,
   extractCurrencyNumericValue,
   extractPhoneInputString,
@@ -53,7 +51,6 @@ import {
   getConfiguredFieldOptions,
   getDependentChildFieldIds,
   getDropdownFacetSource,
-  getEffectiveColumnLabel,
   getEffectiveFieldDescription,
   getEffectiveFieldLabel,
   getEffectiveFieldPlaceholder,
@@ -66,12 +63,12 @@ import {
   normalizeStoredMultiSelectValue,
   resolveRuntimeFieldType,
   resolveShortTextFillValue,
-  shouldShowTableSummaryRow,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
+import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
@@ -1272,188 +1269,35 @@ const renderPreviewInput = (
       )
     case 'TABLE':
     case 'DYNAMIC_TABLE': {
-      const columns = field.settings.specific.tableColumns || [
-        { id: '1', name: 'Column 1', size: 'MEDIUM', type: 'SHORT_TEXT' },
-        { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
-        { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
-      ]
-      const rowsType = field.settings.specific.rowsType || 'ON_DEMAND'
-      const fixedRowCount = field.settings.specific.fixedRowCount || 2
-      const fixedRowLabels: string[] =
-        (field.settings.specific as any).tableFixedRowLabels || []
-      const rawRows: Array<Record<string, any>> = Array.isArray(fieldValue)
-        ? fieldValue.length > 0
-          ? fieldValue
-          : Array.from(
-              { length: rowsType === 'FIXED' ? fixedRowCount : 2 },
-              (_, idx) => ({ _rowId: String(idx + 1) }),
-            )
-        : Array.from(
-            { length: rowsType === 'FIXED' ? fixedRowCount : 2 },
-            (_, idx) => ({ _rowId: String(idx + 1) }),
-          )
-      const evaluatedRows = evaluateTableRows(field, rawRows)
-      const showTotals = shouldShowTableSummaryRow(field, columns)
-      const totals = showTotals
-        ? computeTableColumnTotals(field, evaluatedRows, columns)
-        : {}
-
-      const updateCell = (
-        rowIndex: number,
-        column: any,
-        cellValue: any,
-      ) => {
-        if (disabled) return
-        const next = rawRows.map((row, index) =>
-          index === rowIndex ? { ...row, [column.id]: cellValue } : { ...row },
-        )
-        onChange(field.id, evaluateTableRows(field, next))
-      }
-
+      // Same table renderer the published form / New Request uses, so every
+      // column setting behaves here exactly as it will for end users.
+      const configured = field.settings.specific.tableColumns
+      const previewField =
+        Array.isArray(configured) && configured.length > 0
+          ? field
+          : {
+              ...field,
+              settings: {
+                ...field.settings,
+                specific: {
+                  ...field.settings.specific,
+                  tableColumns: [1, 2, 3].map((n) => ({
+                    id: String(n),
+                    name: `Column ${n}`,
+                    size: 'MEDIUM',
+                    type: 'SHORT_TEXT',
+                  })),
+                },
+              },
+            }
       return (
-        <div className='space-y-2'>
-          <div className='overflow-x-auto rounded-lg border border-gray-3 bg-surface'>
-            <table className='w-full border-collapse text-left text-xs'>
-              <thead className='border-b border-gray-3 bg-gray-2/60'>
-                <tr>
-                  <th className='w-10 p-2.5 text-center font-bold text-gray-10'>
-                    #
-                  </th>
-                  {columns.map((col: any) => (
-                    <th
-                      className='p-2.5 font-bold whitespace-nowrap text-gray-12'
-                      key={col.id}
-                    >
-                      {getEffectiveColumnLabel(col)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {evaluatedRows.map((row, rowIndex) => (
-                  <tr
-                    className='border-b border-gray-2 last:border-0'
-                    key={String(row._rowId || rowIndex)}
-                  >
-                    <td className='p-2 text-center text-[11px] font-medium text-gray-10'>
-                      {rowsType === 'FIXED' && fixedRowLabels[rowIndex]
-                        ? fixedRowLabels[rowIndex]
-                        : rowIndex + 1}
-                    </td>
-                    {columns.map((col: any) => {
-                      const colType = resolveRuntimeFieldType(col)
-                      const cellVal = row[col.id]
-                      const colDisabled =
-                        disabled ||
-                        colType === 'CALCULATED' ||
-                        colType === 'SERIAL_NUMBER' ||
-                        col.settings?.general?.visibility === 'READ_ONLY' ||
-                        col.settings?.general?.visibility === 'DISABLE'
-
-                      if (colType === 'SERIAL_NUMBER') {
-                        return (
-                          <td
-                            className='p-2 font-semibold text-gray-11'
-                            key={col.id}
-                          >
-                            {rowIndex + 1}
-                          </td>
-                        )
-                      }
-
-                      if (colType === 'CALCULATED') {
-                        return (
-                          <td
-                            className='p-2 font-semibold text-gray-11'
-                            key={col.id}
-                          >
-                            {formatRuntimeFieldDisplayValue(cellVal, col)}
-                          </td>
-                        )
-                      }
-
-                      return (
-                        <td className='p-2' key={col.id}>
-                          <TextInput
-                            disabled={colDisabled}
-                            placeholder='...'
-                            size='xs'
-                            variant='unstyled'
-                            type={
-                              colType === 'NUMBER' ||
-                              colType === 'COUNTER' ||
-                              colType === 'CURRENCY_AMOUNT'
-                                ? 'number'
-                                : 'text'
-                            }
-                            value={
-                              colType === 'CURRENCY_AMOUNT'
-                                ? String(extractCurrencyNumericValue(cellVal))
-                                : colType === 'PHONE_NUMBER'
-                                  ? extractPhoneInputString(cellVal)
-                                  : cellVal === undefined || cellVal === null
-                                    ? ''
-                                    : String(cellVal)
-                            }
-                            onChange={(event) => {
-                              const rawVal = event.target.value
-                              const nextVal =
-                                colType === 'CURRENCY_AMOUNT'
-                                  ? updateCurrencyFieldValue(
-                                      cellVal,
-                                      rawVal,
-                                      col,
-                                    )
-                                  : colType === 'PHONE_NUMBER'
-                                    ? updatePhoneFieldValue(
-                                        cellVal,
-                                        rawVal,
-                                        col,
-                                      )
-                                    : rawVal
-                              updateCell(rowIndex, col, nextVal)
-                            }}
-                          />
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-                {showTotals && Object.keys(totals).length > 0 && (
-                  <tr className='border-t border-gray-3 bg-gray-1/80 font-bold'>
-                    <td className='p-2 text-center text-[11px] text-gray-11'>
-                      Total
-                    </td>
-                    {columns.map((col: any) => (
-                      <td className='p-2 text-xs text-gray-12' key={col.id}>
-                        {totals[col.id] !== undefined
-                          ? totals[col.id].toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                            })
-                          : ''}
-                      </td>
-                    ))}
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {!disabled && rowsType === 'ON_DEMAND' && (
-            <button
-              className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-surface px-2.5 py-1 text-xs font-semibold text-primary-9 hover:bg-primary-1'
-              type='button'
-              onClick={() =>
-                onChange(field.id, [
-                  ...evaluatedRows,
-                  { _rowId: String(evaluatedRows.length + 1) },
-                ])
-              }
-            >
-              <Icon height={12} name='lucide:plus' width={12} />
-              Add Row
-            </button>
-          )}
-        </div>
+        <TableFieldRenderer
+          field={previewField}
+          readOnly={disabled}
+          repositoryId={fallbackRepositoryId}
+          value={Array.isArray(fieldValue) ? fieldValue : []}
+          onChange={(rows) => onChange(field.id, rows)}
+        />
       )
     }
     case 'MATRIX':

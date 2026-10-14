@@ -206,7 +206,7 @@ describe('Batch 7: fill other columns from the document (uploadForOcr)', () => {
       {},
       true,
     )
-    expect(patch).toEqual({ bill: 'B-100', merchant: 'Acme', total: '42.5' })
+    expect(patch).toEqual({ bill: 'B-100', merchant: 'Acme', total: 42.5 })
   })
 
   it('does not overwrite typed values unless the file replaces the document', () => {

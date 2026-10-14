@@ -57,6 +57,34 @@ export interface FormValidationResult {
 }
 
 /**
+ * Blocking validation messages for TABLE / DYNAMIC_TABLE fields only (column
+ * required, content rules, ranges, date / time / currency / file limits and
+ * conditional mandatory rules), one entry per invalid table. Screens that
+ * must stop a submit on table problems use this; it reuses the same
+ * evaluation as `validateFormModel`, so hidden and read-only fields are
+ * skipped the same way.
+ */
+export function getTableFieldErrors(
+  panels: any[] = [],
+  formModel: Record<string, any> = {},
+  options?: { formRules?: any[] },
+): string[] {
+  const result = validateFormModel(panels, formModel, options)
+  const messages: string[] = []
+  for (const panel of panels) {
+    for (const field of panel?.fields || []) {
+      const type = resolveRuntimeFieldType(field)
+      if (type !== 'TABLE' && type !== 'DYNAMIC_TABLE') continue
+      const errors = result.fieldErrors[String(field.id)]
+      if (errors?.length) {
+        messages.push(`${getEffectiveFieldLabel(field)}: ${errors.join('; ')}`)
+      }
+    }
+  }
+  return messages
+}
+
+/**
  * Checks whether a runtime value is considered empty for validation purposes.
  */
 export function isRuntimeValueEmpty(value: any, field?: any): boolean {

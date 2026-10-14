@@ -43,6 +43,10 @@ import {
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
+import {
+  hasConfiguredTableColumns,
+  withParsedTableValues,
+} from '@/pages/form-builder/helpers/tableEntryValue'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import {
   buildInitialFormModel,
@@ -83,6 +87,7 @@ import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
 } from '@/utils/filterUtils'
+import FormEntryTableField from './components/FormEntryTableField'
 import GenericFormImportModal from './components/GenericFormImportModal'
 
 const FormEntriesChoiceInput = ({
@@ -1677,7 +1682,13 @@ const FormEntriesPage = () => {
   // Actions
   const handleSaveEntry = async () => {
     // Phase 4: Validate form fields before submitting
-    const validationResult = validateFormModel(panels, editValues, { formRules })
+    // Tables are stored as JSON strings in an entry; parse them so the column
+    // rules (required, ranges, content rules, file limits...) are checked
+    const validationResult = validateFormModel(
+      panels,
+      withParsedTableValues(panels, editValues),
+      { formRules },
+    )
     if (!validationResult.isValid) {
       const firstErrorMessage: string =
         Object.values(validationResult.errors)[0] || 'Please complete all required fields correctly.'
@@ -2674,6 +2685,16 @@ const FormEntriesPage = () => {
                               value={val != null ? String(val) : ''}
                               onChange={(text) =>
                                 handleFieldChange(field.id, text)
+                              }
+                            />
+                          ) : hasConfiguredTableColumns(field) ? (
+                            <FormEntryTableField
+                              disabled={isReadOnly}
+                              field={field}
+                              required={isFieldRequired}
+                              value={val}
+                              onChange={(serialized) =>
+                                handleFieldChange(field.id, serialized)
                               }
                             />
                           ) : isTableType ? (
