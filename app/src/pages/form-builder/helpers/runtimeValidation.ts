@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import { getDateTimeLimits } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import authUserStore from '@/stores/authUserStore'
 import {
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -27,6 +26,7 @@ import {
 } from './tableColumnDefaults'
 import { getStoredFilesError, isFileColumnType } from './tableColumnFiles'
 import { getRowCellRuleStates } from './tableColumnRules'
+import { getSessionTableUser } from './tableColumnUser'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
@@ -84,7 +84,7 @@ export function isRuntimeValueEmpty(value: any, field?: any): boolean {
       return !hasMeaningfulTableRows(
         value,
         field?.settings?.specific?.tableColumns || [],
-        authUserStore.getState().session?.email || '',
+        getSessionTableUser(),
       )
     }
     return false
@@ -556,6 +556,12 @@ export function validateFormModel(
   }
 }
 
+const CHOICE_COLUMN_TYPES = [
+  'MULTI_SELECT',
+  'MULTIPLE_CHOICE',
+  'SINGLE_CHOICE',
+  'SINGLE_SELECT',
+]
 const TABLE_TEXT_COLUMN_TYPES = ['SHORT_TEXT', 'LONG_TEXT']
 const TABLE_NUMERIC_COLUMN_TYPES = ['NUMBER', 'COUNTER']
 
@@ -629,6 +635,22 @@ function getTableCellConstraintError(col: any, value: any): string | undefined {
     }
     if (maxTime && time > maxTime) {
       return `should be at or before ${maxTime}`
+    }
+    return undefined
+  }
+
+  // Choice columns: Alpha / Integer content rule on the selected value(s)
+  if (CHOICE_COLUMN_TYPES.includes(colType)) {
+    const picked = (Array.isArray(value) ? value : [value])
+      .filter((v) => v !== undefined && v !== null && typeof v !== 'object')
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+    if (contentRule === 'ALPHA') {
+      const rule = TABLE_TEXT_CONTENT_RULES.ALPHA
+      if (picked.some((v) => !rule[0].test(v))) return rule[1]
+    }
+    if (contentRule === 'INTEGER' && picked.some((v) => !INTEGER_REGEX.test(v))) {
+      return 'should be a number without decimals'
     }
     return undefined
   }

@@ -6,7 +6,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import type { Option } from '@/types/option'
-import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
+import {
+  getRepositoryItemFacets,
+  getRepositorys,
+  uploadForOcr,
+} from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
@@ -52,11 +56,14 @@ import {
   toFileList,
 } from '@/pages/form-builder/helpers/tableColumnFiles'
 import {
+  applyScannedValue,
   ensureSelectedOptions,
   getColumnMasterConfig,
   getColumnOptionsSource,
+  getColumnPredefinedType,
   parseColumnOptions,
   selectColumnCellOptions,
+  toStoredOptionValue,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import { getRowCellRuleStates } from '@/pages/form-builder/helpers/tableColumnRules'
 import {
@@ -66,6 +73,7 @@ import {
   isAddressColumn,
   isQrColumn,
 } from '@/pages/form-builder/helpers/tableColumnShortText'
+import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
 import {
   computeTableColumnTotals,
   extractCurrencyNumericValue,
@@ -109,7 +117,7 @@ export interface TableColumn {
     }
     lookupSettings?: {
       cascadeFromColumn?: string
-      optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
+      optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'PREDEFINED' | 'USER_LIST'
       repositoryField?: string
       repositoryId?: string
     }
@@ -120,6 +128,7 @@ export interface TableColumn {
         selectFieldColumn: string[]
       }>
       allowMultipleFiles?: boolean
+      allowToAddNewOptions?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       customDefaultValue?: string
       customOptions?: string
@@ -127,9 +136,11 @@ export interface TableColumn {
       defaultValueType?: string
       formulaTokens?: Array<{ type: string; value: string }>
       isAddressField?: boolean
+      isSameMaster?: boolean
       masterFormColumn?: string
       masterFormId?: string
       placeholder?: string
+      predefinedType?: 'FOLDER' | 'USER'
       prefixLabel?: string
       qrValue?: boolean
       separateOptionsUsing?: 'COMMA' | 'NEWLINE'
@@ -138,6 +149,7 @@ export interface TableColumn {
       specificCurrencies?: string[]
       step?: number | string
       suffixLabel?: string
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
     }
     validation?: {
       allowedFileTypes?: string[]
@@ -815,28 +827,69 @@ const TableCellSelect = ({
   // A saved selection stays visible even if the option list changed or has
   // not loaded yet (the stored value itself is never altered here).
   const displayOptions = ensureSelectedOptions(options, val)
+  const allowNew = col.settings?.specific?.allowToAddNewOptions === true
+  const qr = col.settings?.specific?.qrValue === true
+  const [scannerOpen, setScannerOpen] = useState(false)
 
-  if (isMulti) {
-    const selectedIds: string[] = Array.isArray(val) ? val : []
-    return (
-      <InputSelectMultiple
-        className='w-full'
-        options={displayOptions}
-        placeholder={getColumnPlaceholder(col)}
-        value={displayOptions.filter((opt) => selectedIds.includes(opt.id))}
-        onChange={(opts) => onCellChange(opts.map((opt) => opt.id))}
-      />
-    )
-  }
-
-  return (
+  const select = isMulti ? (
+    <InputSelectMultiple
+      className='w-full'
+      creatable={allowNew}
+      options={displayOptions}
+      placeholder={getColumnPlaceholder(col)}
+      value={displayOptions.filter((opt) =>
+        (Array.isArray(val) ? val : []).includes(opt.id),
+      )}
+      onChange={(opts) =>
+        onCellChange(opts.map((opt) => toStoredOptionValue(opt, displayOptions)))
+      }
+    />
+  ) : (
     <InputSelect
       className='w-full'
+      creatable={allowNew}
       options={displayOptions}
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.find((opt) => opt.id === val) || null}
-      onChange={(opt) => onCellChange(opt ? opt.id : null)}
+      onChange={(opt) =>
+        onCellChange(opt ? toStoredOptionValue(opt, displayOptions) : null)
+      }
     />
+  )
+
+  if (!qr) return select
+
+  // "Read values from QR": a scanned code picks the matching option (or adds
+  // it when users may add new options).
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>{select}</div>
+        <button
+          aria-label='Scan QR / Barcode'
+          className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+          title='Scan QR / Barcode'
+          type='button'
+          onClick={() => setScannerOpen((open) => !open)}
+        >
+          <Icon height={14} name='lucide:qr-code' width={14} />
+        </button>
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            onCellChange(
+              applyScannedValue(displayOptions, val, String(raw), {
+                allowNew,
+                multi: Boolean(isMulti),
+              }),
+            )
+            setScannerOpen(false)
+          }}
+        />
+      )}
+    </div>
   )
 }
 
@@ -1164,7 +1217,7 @@ const TableFieldRenderer = ({
     ...buildTableRowDefaults(
       tableColumns,
       existingRows,
-      authUserStore.getState().session?.email || '',
+      getSessionTableUser(),
     ),
   })
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
@@ -1446,9 +1499,34 @@ const TableFieldRenderer = ({
     },
   })
 
+  const predefinedColumns = tableColumns.filter(
+    (col) => getColumnOptionsSource(col) === 'PREDEFINED',
+  )
+  const hasPredefinedUser = predefinedColumns.some(
+    (col) => getColumnPredefinedType(col) === 'USER',
+  )
+  const hasPredefinedFolder = predefinedColumns.some(
+    (col) => getColumnPredefinedType(col) === 'FOLDER',
+  )
+
+  // Folders / repositories (names) for "predefined list: folders" columns
+  const { data: folderOptions = [] } = useQuery({
+    enabled: hasPredefinedFolder,
+    queryKey: ['tableColumnPredefinedFolders'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      const list: Array<{ name?: string }> = Array.isArray(res.data)
+        ? res.data
+        : []
+      return list
+        .filter((r) => r?.name)
+        .map((r) => ({ id: String(r.name), name: String(r.name) }))
+    },
+  })
+
   // System users (emails), as for the top-level "User List" options.
   const { data: userListOptions = [] } = useQuery({
-    enabled: hasUserListColumn,
+    enabled: hasUserListColumn || hasPredefinedUser,
     queryKey: ['tableColumnUserListOptions'],
     queryFn: async () => {
       const res = await getUsers()
@@ -1551,6 +1629,14 @@ const TableFieldRenderer = ({
     selectColumnCellOptions(col, row, {
       masterByColumn: masterOptionsByColumn,
       masterCascaded: masterCascadedOptions,
+      predefinedByColumn: Object.fromEntries(
+        predefinedColumns.map((c) => [
+          c.id,
+          getColumnPredefinedType(c) === 'FOLDER'
+            ? folderOptions
+            : userListOptions,
+        ]),
+      ),
       repositoryByColumn: lookupOptionsByColumn,
       repositoryCascaded: cascadedOptionsByColumn,
       userList: userListOptions,
@@ -1793,7 +1879,7 @@ const TableFieldRenderer = ({
       canReplaceUntouchedRow(
         rows[0],
         tableColumns,
-        authUserStore.getState().session?.email || '',
+        getSessionTableUser(),
         editedRowKeys.current.has(rowKeyOf(rows[0], 0)),
       )
         ? []

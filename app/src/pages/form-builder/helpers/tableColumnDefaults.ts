@@ -1,5 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/** The signed-in user's details used by the "logged in user" defaults. */
+export interface TableUser {
+  email: string
+  firstName: string
+  name: string
+}
+
+// A bare string is read as the user's email (how callers used to pass it)
+const toTableUser = (user: string | TableUser): TableUser =>
+  typeof user === 'string' ? { email: user, firstName: '', name: '' } : user
+
+const isSameUserValue = (value: unknown, expected: string) =>
+  expected !== '' && String(value) === expected
+
 const isBlank = (v: unknown) => v === undefined || v === null || v === ''
 
 const toPositiveNumber = (v: unknown): number | undefined => {
@@ -19,13 +33,13 @@ const readCell = (row: Record<string, any> | undefined, col: any) =>
 export function buildTableRowDefaults(
   columns: any[],
   existingRows: Array<Record<string, any>>,
-  userEmail: string,
+  user: string | TableUser,
   row: Record<string, any> = {},
 ): Record<string, any> {
   const defaults: Record<string, any> = {}
   for (const col of columns) {
     if (!isBlank(readCell(row, col))) continue
-    const def = resolveTableColumnDefault(col, existingRows, userEmail)
+    const def = resolveTableColumnDefault(col, existingRows, user)
     if (def !== '' && def !== undefined) defaults[col.id] = def
   }
   return defaults
@@ -41,10 +55,10 @@ export function buildTableRowDefaults(
 export function canReplaceUntouchedRow(
   row: Record<string, any> | null | undefined,
   columns: any[],
-  userEmail: string,
+  user: string | TableUser,
   wasEdited: boolean,
 ): boolean {
-  return !wasEdited && isDefaultOnlyRow(row, columns, userEmail)
+  return !wasEdited && isDefaultOnlyRow(row, columns, user)
 }
 
 /**
@@ -152,13 +166,13 @@ export function getNumberCellProps(col: any): {
 export function hasMeaningfulTableRows(
   rows: unknown,
   columns: any[],
-  userEmail: string,
+  user: string | TableUser,
 ): boolean {
   return (
     Array.isArray(rows) &&
     rows.some(
       (row, idx) =>
-        !isDefaultOnlyRow(row, columns, userEmail, rows.slice(0, idx)),
+        !isDefaultOnlyRow(row, columns, user, rows.slice(0, idx)),
     )
   )
 }
@@ -177,7 +191,7 @@ export function hasMeaningfulTableRows(
 export function isDefaultOnlyRow(
   row: Record<string, any> | null | undefined,
   columns: any[],
-  userEmail: string,
+  user: string | TableUser,
   rowsBefore: Array<Record<string, any>> = [],
   now: Date = new Date(),
 ): boolean {
@@ -187,7 +201,7 @@ export function isDefaultOnlyRow(
     if (Array.isArray(value) && value.length === 0) return true
     const col = columns.find((c) => c.id === key || (c.name && c.name === key))
     return col
-      ? isGeneratedDefaultCell(col, value, userEmail, rowsBefore, now)
+      ? isGeneratedDefaultCell(col, value, user, rowsBefore, now)
       : false
   })
 }
@@ -196,7 +210,7 @@ export function isDefaultOnlyRow(
 export function isGeneratedDefaultCell(
   col: any,
   value: unknown,
-  userEmail: string,
+  user: string | TableUser,
   rowsBefore: Array<Record<string, any>> = [],
   now: Date = new Date(),
 ): boolean {
@@ -207,12 +221,16 @@ export function isGeneratedDefaultCell(
       return (
         Number.isFinite(Number(value)) &&
         Number(value) ===
-          Number(resolveTableColumnDefault(col, rowsBefore, userEmail, now))
+          Number(resolveTableColumnDefault(col, rowsBefore, user, now))
       )
     case 'CURRENT_DATE':
       return String(value) === now.toISOString().slice(0, 10)
     case 'USER_EMAIL':
-      return userEmail !== '' && String(value) === userEmail
+      return isSameUserValue(value, toTableUser(user).email)
+    case 'USER_FIRST_NAME':
+      return isSameUserValue(value, toTableUser(user).firstName)
+    case 'USER_NAME':
+      return isSameUserValue(value, toTableUser(user).name)
     case 'CUSTOM':
     default:
       return (
@@ -231,13 +249,17 @@ export function isGeneratedDefaultCell(
 export function resolveTableColumnDefault(
   col: any,
   existingRows: Array<Record<string, any>>,
-  userEmail: string,
+  user: string | TableUser,
   now: Date = new Date(),
 ): any {
   const specific = col?.settings?.specific
   switch (specific?.defaultValueType || 'CUSTOM') {
     case 'USER_EMAIL':
-      return userEmail
+      return toTableUser(user).email
+    case 'USER_FIRST_NAME':
+      return toTableUser(user).firstName
+    case 'USER_NAME':
+      return toTableUser(user).name
     case 'CURRENT_DATE':
       return now.toISOString().slice(0, 10)
     case 'AUTO_SEQUENCE': {

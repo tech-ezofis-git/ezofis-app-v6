@@ -399,8 +399,14 @@ export interface Question {
              * row filters this column's repository-facet options (cascade). */
             cascadeFromColumn?: string
             /** LOOKUP = repository facets; API = FTL catalog on focus/select;
-             * MASTER = master-table column; USER_LIST = system user emails */
-            optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
+             * MASTER = master-table column; USER_LIST = system user emails;
+             * PREDEFINED = a predefined list (see specific.predefinedType) */
+            optionsSource?:
+              | 'API'
+              | 'LOOKUP'
+              | 'MASTER'
+              | 'PREDEFINED'
+              | 'USER_LIST'
             repositoryField?: string
             repositoryId?: string
           }
@@ -411,6 +417,7 @@ export interface Question {
               selectFieldColumn: string[]
             }>
             allowMultipleFiles?: boolean
+            allowToAddNewOptions?: boolean
             currencyOptionsType?: 'ALL' | 'SPECIFIC'
             customDefaultValue?: string
             customOptions?: string
@@ -420,15 +427,19 @@ export interface Question {
               | 'CURRENT_DATE'
               | 'CUSTOM'
               | 'USER_EMAIL'
+              | 'USER_FIRST_NAME'
+              | 'USER_NAME'
             fileInStageOnly?: boolean
             formulaTokens?: Array<{
               type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
               value: string
             }>
             isAddressField?: boolean
+            isSameMaster?: boolean
             masterFormColumn?: string
             masterFormId?: string
             placeholder?: string
+            predefinedType?: 'FOLDER' | 'USER'
             prefixLabel?: string
             qrValue?: boolean
             separateOptionsUsing?: 'COMMA' | 'NEWLINE'
@@ -437,6 +448,7 @@ export interface Question {
             specificCurrencies?: string[]
             step?: number | string
             suffixLabel?: string
+            yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
           }
           validation?: {
             allowedFileTypes?: string[]

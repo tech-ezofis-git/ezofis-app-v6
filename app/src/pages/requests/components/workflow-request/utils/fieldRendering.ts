@@ -36,6 +36,7 @@ import {
   buildTableRowDefaults,
   hasMeaningfulTableRows,
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
+import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
 import authUserStore from '@/stores/authUserStore'
 import {
   getFileNameWithoutExtension,
@@ -288,7 +289,7 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           const labelCol = tableColumns.find((c: any) => c.type === 'LABEL')
           const fixedRowLabels: any[] = specific.tableFixedRowLabels || []
 
-          const email = authUserStore.getState().session?.email || ''
+          const sessionUser = getSessionTableUser()
           const fixedRows: Array<Record<string, unknown>> = []
           for (let idx = 0; idx < fixedRowCount; idx += 1) {
             const rowObj: Record<string, any> = {}
@@ -303,7 +304,12 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
             // Column defaults fill only cells the label seeding left empty
             Object.assign(
               rowObj,
-              buildTableRowDefaults(tableColumns, fixedRows, email, rowObj),
+              buildTableRowDefaults(
+                tableColumns,
+                fixedRows,
+                sessionUser,
+                rowObj,
+              ),
             )
             fixedRows.push(rowObj)
           }
@@ -313,7 +319,7 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
             buildTableRowDefaults(
               specific.tableColumns || [],
               [],
-              authUserStore.getState().session?.email || '',
+              getSessionTableUser(),
             ),
           ]
         }
@@ -1918,7 +1924,7 @@ export const isFieldFilled = (field: any, value: any): boolean => {
     return hasMeaningfulTableRows(
       value,
       field?.settings?.specific?.tableColumns || [],
-      authUserStore.getState().session?.email || '',
+      getSessionTableUser(),
     )
   }
   if (fieldType === 'MATRIX') {

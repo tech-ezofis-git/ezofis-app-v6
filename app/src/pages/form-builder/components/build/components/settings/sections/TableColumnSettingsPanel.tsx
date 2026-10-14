@@ -18,6 +18,7 @@ import {
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import FormulaBuilder from './FormulaBuilder'
 import TableColumnAiSettings from './TableColumnAiSettings'
+import TableColumnChoiceSettings from './TableColumnChoiceSettings'
 import TableColumnFormatSettings from './TableColumnFormatSettings'
 import TableColumnRuleSettings from './TableColumnRuleSettings'
 
@@ -62,6 +63,7 @@ const OPTIONS_SOURCE = {
   API: 2,
   LOOKUP: 1,
   MASTER: 3,
+  PREDEFINED: 5,
   USER_LIST: 4,
 } as const
 
@@ -91,6 +93,16 @@ const optionsSourceRadio = [
     id: OPTIONS_SOURCE.USER_LIST,
     name: 'User List',
   },
+  {
+    description: 'Load names from a predefined list (users or folders)',
+    id: OPTIONS_SOURCE.PREDEFINED,
+    name: 'Predefined List',
+  },
+]
+
+const PREDEFINED_TYPE_OPTIONS = [
+  { id: 'USER', name: 'User directory (emails)' },
+  { id: 'FOLDER', name: 'Folders / Repositories (names)' },
 ]
 
 export type TableColumn = NonNullable<
@@ -173,6 +185,8 @@ const TableColumnSettingsPanel = ({
   const masterFormId = column.settings?.specific?.masterFormId || ''
   const masterFormColumn = column.settings?.specific?.masterFormColumn || ''
   const showAllData = Boolean(column.settings?.specific?.showAllData)
+  const predefinedType =
+    column.settings?.specific?.predefinedType === 'FOLDER' ? 'FOLDER' : 'USER'
 
   const { data: masterColumns = [] } = useQuery({
     enabled: showOptions && optionsSource === 'MASTER' && !!masterFormId,
@@ -305,7 +319,9 @@ const TableColumnSettingsPanel = ({
                       ? 'MASTER'
                       : id === OPTIONS_SOURCE.USER_LIST
                         ? 'USER_LIST'
-                        : 'LOOKUP'
+                        : id === OPTIONS_SOURCE.PREDEFINED
+                          ? 'PREDEFINED'
+                          : 'LOOKUP'
                 onUpdate({
                   lookupSettings: {
                     optionsSource: next,
@@ -446,6 +462,14 @@ const TableColumnSettingsPanel = ({
                     onUpdate({ specific: { showAllData: checked } })
                   }
                 />
+                <InputSwitch
+                  checked={column.settings?.specific?.isSameMaster === true}
+                  description='Saved for V5 parity; not applied when options load yet.'
+                  label='Same Master'
+                  onChange={(checked) =>
+                    onUpdate({ specific: { isSameMaster: checked } })
+                  }
+                />
                 <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
                   Filter by column (cascade, optional)
                 </label>
@@ -478,6 +502,23 @@ const TableColumnSettingsPanel = ({
               <p className='text-11 leading-relaxed text-gray-9'>
                 Options are the system user emails.
               </p>
+            ) : optionsSource === 'PREDEFINED' ? (
+              <InputSelect
+                label='Predefined list'
+                options={PREDEFINED_TYPE_OPTIONS}
+                value={
+                  PREDEFINED_TYPE_OPTIONS.find(
+                    (o) => o.id === predefinedType,
+                  ) || null
+                }
+                onChange={(opt) =>
+                  onUpdate({
+                    specific: {
+                      predefinedType: opt?.id === 'FOLDER' ? 'FOLDER' : 'USER',
+                    },
+                  })
+                }
+              />
             ) : (
               <p className='text-11 leading-relaxed text-gray-9'>
                 On focus, loads Data from API
@@ -645,6 +686,8 @@ const TableColumnSettingsPanel = ({
         siblingColumns={siblingColumns}
         onUpdate={onUpdate}
       />
+
+      <TableColumnChoiceSettings column={column} onUpdate={onUpdate} />
 
       <TableColumnAiSettings
         column={column}
