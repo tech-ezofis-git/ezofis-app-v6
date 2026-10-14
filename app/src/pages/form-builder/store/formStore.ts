@@ -374,6 +374,21 @@ export interface Question {
         id: string
         name: string
         settings?: {
+          aiSettings?: {
+            fileDataValidate?: string[]
+            formControlValidate?: {
+              existingFormFields?: string[]
+              formFields?: string
+              masterFormColumn?: string[]
+              masterFormId?: number | string
+              optionsType?: string
+            }
+            imageFileValidate?: {
+              formFields?: string[]
+              optionsType?: string
+            }
+            validateTypeKeyword?: string
+          }
           general?: {
             displayLabel?: string
             tooltip?: string
@@ -383,31 +398,80 @@ export interface Question {
             /** Id of another column in this table whose value in the same
              * row filters this column's repository-facet options (cascade). */
             cascadeFromColumn?: string
-            /** LOOKUP = repository facets; API = FTL catalog on focus/select */
-            optionsSource?: 'LOOKUP' | 'API'
+            /** LOOKUP = repository facets; API = FTL catalog on focus/select;
+             * MASTER = master-table column; USER_LIST = system user emails */
+            optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
             repositoryField?: string
             repositoryId?: string
           }
           specific?: {
+            addressMatchingFields?: Array<{
+              addressColumn: string
+              id: string
+              selectFieldColumn: string[]
+            }>
+            allowMultipleFiles?: boolean
+            currencyOptionsType?: 'ALL' | 'SPECIFIC'
             customDefaultValue?: string
             customOptions?: string
+            defaultCurrency?: string
             defaultValueType?:
               | 'AUTO_SEQUENCE'
               | 'CURRENT_DATE'
               | 'CUSTOM'
               | 'USER_EMAIL'
+            fileInStageOnly?: boolean
             formulaTokens?: Array<{
               type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
               value: string
             }>
+            isAddressField?: boolean
+            masterFormColumn?: string
+            masterFormId?: string
             placeholder?: string
+            prefixLabel?: string
+            qrValue?: boolean
+            separateOptionsUsing?: 'COMMA' | 'NEWLINE'
+            showAllData?: boolean
             showColumnTotal?: boolean
+            specificCurrencies?: string[]
+            step?: number | string
+            suffixLabel?: string
           }
           validation?: {
+            allowedFileTypes?: string[]
+            answerIndicator?: 'NO' | 'YES'
+            assignOtherControls?: string[]
             contentRule?: string
+            dateLimitType?: 'MAX_DATE' | 'MIN_DATE' | 'NONE' | 'RANGE'
+            decimalDigits?: number | string
+            expiryFieldId?: string | null
             fieldRule?: 'OPTIONAL' | 'REQUIRED'
+            fixedEndDate?: string
+            fixedEndTime?: string
+            fixedStartDate?: string
+            fixedStartTime?: string
+            mandatorySettings?: Array<{
+              controls: string[]
+              id: string
+              value: string
+            }>
+            maxDateOffset?: number | string
+            maxFileSize?: number | string
             maximum?: number | string
+            maxTimeOffset?: number | string
+            minDateOffset?: number | string
             minimum?: number | string
+            minTimeOffset?: number | string
+            readonlySettings?: Array<{
+              controls: string[]
+              id: string
+              notEqual?: boolean
+              value: string
+            }>
+            timeFormat?: '12' | '24'
+            timeLimitType?: 'MAX_TIME' | 'MIN_TIME' | 'NONE' | 'RANGE'
+            verificationRequired?: boolean
           }
         }
         size: 'SMALL' | 'MEDIUM' | 'LARGE'

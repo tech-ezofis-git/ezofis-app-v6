@@ -3161,6 +3161,10 @@ const QuestionSettings = ({
                   if (!col) return
                   handleUpdateTableColumn(colId, {
                     settings: {
+                      aiSettings: {
+                        ...col.settings?.aiSettings,
+                        ...settingsPatch.aiSettings,
+                      },
                       general: {
                         ...col.settings?.general,
                         ...settingsPatch.general,
@@ -3322,6 +3326,7 @@ const QuestionSettings = ({
                                     <div className='border-t border-gray-2 pt-2'>
                                       <TableColumnSettingsPanel
                                         column={col}
+                                        masterForms={masterForms}
                                         repositories={repositories.map(
                                           (r: any) => ({
                                             id: String(r.id),

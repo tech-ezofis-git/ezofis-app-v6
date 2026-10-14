@@ -2,6 +2,8 @@
 import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
+import { getDateTimeLimits } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import authUserStore from '@/stores/authUserStore'
 import {
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -18,6 +20,13 @@ import {
   resolveRuntimeFieldType,
 } from './runtimeFieldAdapter'
 import { evaluateFormRules } from './ruleEngine'
+import {
+  getColumnCurrencyOptions,
+  getColumnDecimalDigits,
+  hasMeaningfulTableRows,
+} from './tableColumnDefaults'
+import { getStoredFilesError, isFileColumnType } from './tableColumnFiles'
+import { getRowCellRuleStates } from './tableColumnRules'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
@@ -71,14 +80,11 @@ export function isRuntimeValueEmpty(value: any, field?: any): boolean {
   if (Array.isArray(value)) {
     if (value.length === 0) return true
     if (runtimeType === 'TABLE' || runtimeType === 'DYNAMIC_TABLE') {
-      return !value.some((row) =>
-        Object.entries(row || {}).some(
-          ([k, v]) =>
-            !k.startsWith('_') &&
-            v !== undefined &&
-            v !== null &&
-            String(v).trim() !== '',
-        ),
+      // Auto-filled column defaults alone do not make a table "filled"
+      return !hasMeaningfulTableRows(
+        value,
+        field?.settings?.specific?.tableColumns || [],
+        authUserStore.getState().session?.email || '',
       )
     }
     return false
@@ -423,22 +429,33 @@ export function validateFieldValue(
   if (runtimeType === 'TABLE' || runtimeType === 'DYNAMIC_TABLE') {
     if (Array.isArray(value)) {
       const cols = field.settings?.specific?.tableColumns || []
-      const reqCols = cols.filter(
-        (c: any) =>
-          c.settings?.validation?.fieldRule === 'REQUIRED' ||
-          c.isRequired ||
-          c.required,
-      )
 
       for (let rowIdx = 0; rowIdx < value.length; rowIdx += 1) {
         const row = value[rowIdx] || {}
-        for (const reqCol of reqCols) {
-          const colVal = row[reqCol.id] ?? (reqCol.name ? row[reqCol.name] : undefined)
-          if (isRuntimeValueEmpty(colVal, reqCol)) {
-            const colLabel = getEffectiveColumnLabel(reqCol)
-            errors.push(
-              `Row ${rowIdx + 1}: ${colLabel} is required and cannot be empty`,
-            )
+        // Conditional mandatory rules driven by another column in this row
+        const ruleStates = getRowCellRuleStates(cols, row)
+        for (const col of cols) {
+          const colVal = row[col.id] ?? (col.name ? row[col.name] : undefined)
+          const colLabel = getEffectiveColumnLabel(col)
+          const isColRequired =
+            col.settings?.validation?.fieldRule === 'REQUIRED' ||
+            col.isRequired ||
+            col.required ||
+            ruleStates[col.id]?.required
+
+          if (isRuntimeValueEmpty(colVal, col)) {
+            if (isColRequired) {
+              errors.push(
+                `Row ${rowIdx + 1}: ${colLabel} is required and cannot be empty`,
+              )
+            }
+            continue
+          }
+
+          // At most one format/range error per cell
+          const cellError = getTableCellConstraintError(col, colVal)
+          if (cellError) {
+            errors.push(`Row ${rowIdx + 1}: ${colLabel} ${cellError}`)
           }
         }
       }
@@ -537,4 +554,121 @@ export function validateFormModel(
     isValid: Object.keys(errors).length === 0,
     missingFields,
   }
+}
+
+const TABLE_TEXT_COLUMN_TYPES = ['SHORT_TEXT', 'LONG_TEXT']
+const TABLE_NUMERIC_COLUMN_TYPES = ['NUMBER', 'COUNTER']
+
+const TABLE_TEXT_CONTENT_RULES: Record<string, [RegExp, string]> = {
+  ALPHA: [/^[a-zA-Z]+$/, 'should contain only letters'],
+  ALPHA_DASH: [
+    /^[a-zA-Z0-9_-]+$/,
+    'should contain only letters, numbers, hyphens and underscores',
+  ],
+  ALPHA_NUMERIC: [/^[a-zA-Z0-9]+$/, 'should contain only letters and numbers'],
+  ALPHA_SPACES: [/^[a-zA-Z\s]+$/, 'should contain only letters and spaces'],
+  EMAIL: [EMAIL_REGEX, 'email is not valid'],
+  WEB: [URL_REGEX, 'url is not valid'],
+}
+
+/**
+ * Checks a non-empty table cell against its column's content rule and
+ * minimum / maximum (value for NUMBER/COUNTER, length for text columns).
+ * Mirrors the rules the column settings panel exposes: text rules apply to
+ * SHORT_TEXT/LONG_TEXT, INTEGER/DECIMAL apply to NUMBER/COUNTER.
+ * Returns the first violation message, or undefined when the cell is valid.
+ */
+function getTableCellConstraintError(col: any, value: any): string | undefined {
+  const validation = col.settings?.validation || {}
+  const colType = String(col.type || '').toUpperCase()
+  const contentRule = String(validation.contentRule || '').toUpperCase()
+
+  const toBound = (b: any): number | null => {
+    if (b === undefined || b === null || b === '') return null
+    const n = Number(b)
+    return Number.isFinite(n) ? n : null
+  }
+  const min = toBound(validation.minimum)
+  const max = toBound(validation.maximum)
+
+  // File / image columns: allowed types and maximum size (top-level keys)
+  if (isFileColumnType(colType)) {
+    return getStoredFilesError(col, value)
+  }
+
+  // Currency / date / time constraints (same keys top-level fields use)
+  if (colType === 'CURRENCY_AMOUNT') {
+    const allowed = getColumnCurrencyOptions(col)
+    const code =
+      value && typeof value === 'object'
+        ? String((value as Record<string, unknown>).currency ?? '')
+            .trim()
+            .toUpperCase()
+        : ''
+    if (allowed.length > 0 && code && !allowed.includes(code)) {
+      return `currency should be one of ${allowed.join(', ')}`
+    }
+    return undefined
+  }
+  if (colType === 'DATE') {
+    const { maxDate, minDate } = getDateTimeLimits(col)
+    const day = String(value).split(' ')[0]
+    if (minDate && dayjs(day).isBefore(dayjs(minDate), 'day')) {
+      return `should be greater than or equal to ${minDate}`
+    }
+    if (maxDate && dayjs(day).isAfter(dayjs(maxDate), 'day')) {
+      return `should be lesser than or equal to ${maxDate}`
+    }
+    return undefined
+  }
+  if (colType === 'TIME') {
+    const { maxTime, minTime } = getDateTimeLimits(col)
+    const time = String(value).trim().slice(0, 5)
+    if (minTime && time < minTime) {
+      return `should be at or after ${minTime}`
+    }
+    if (maxTime && time > maxTime) {
+      return `should be at or before ${maxTime}`
+    }
+    return undefined
+  }
+
+  // Columns without any configured rule or bound keep their prior behavior
+  if (!contentRule && min === null && max === null) return undefined
+
+  if (TABLE_NUMERIC_COLUMN_TYPES.includes(colType)) {
+    const str = String(value).trim()
+    if (contentRule === 'INTEGER' && !INTEGER_REGEX.test(str)) {
+      return 'should be a number without decimals'
+    }
+    if (contentRule === 'DECIMAL' && !NUMERIC_REGEX.test(str)) {
+      return 'should be a valid number'
+    }
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'should be a valid number'
+    const digits = getColumnDecimalDigits(col)
+    if (
+      digits !== undefined &&
+      (str.split('.')[1]?.length ?? 0) > digits
+    ) {
+      return `decimal places should not exceed ${digits} digits`
+    }
+    if (min !== null && num < min) return `should not be less than ${min}`
+    if (max !== null && num > max) return `should not be more than ${max}`
+    return undefined
+  }
+
+  if (TABLE_TEXT_COLUMN_TYPES.includes(colType)) {
+    const str = String(value).trim()
+    const rule = TABLE_TEXT_CONTENT_RULES[contentRule]
+    if (rule && !rule[0].test(str)) return rule[1]
+    if (min !== null && min > 0 && str.length < min) {
+      return `should not be less than ${min} characters`
+    }
+    if (max !== null && max > 0 && str.length > max) {
+      return `should not be more than ${max} characters`
+    }
+  }
+
+  return undefined
 }

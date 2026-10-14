@@ -208,6 +208,98 @@ describe('Phase 4: Runtime Validation, Defaults & Cascading Options V5 Parity', 
     expect(validateFieldValue(tableField, validRows).isValid).toBe(true)
   })
 
+  describe('5b. table column content rules and min/max', () => {
+    const makeTable = (columns: Array<Record<string, unknown>>) => ({
+      id: 'f_tbl',
+      label: 'Items',
+      type: 'TABLE',
+      settings: { specific: { tableColumns: columns } },
+    })
+    const col = (
+      id: string,
+      type: string,
+      validation: Record<string, unknown> = {},
+    ) => ({
+      id,
+      label: id,
+      type,
+      settings: { validation },
+    })
+
+    it('INTEGER/DECIMAL content rules on NUMBER columns', () => {
+      const t = makeTable([
+        col('qty', 'NUMBER', { contentRule: 'INTEGER' }),
+        col('price', 'NUMBER', { contentRule: 'DECIMAL' }),
+      ])
+      const bad = validateFieldValue(t, [{ price: 'abc', qty: 1.5 }])
+      expect(bad.errors).toEqual([
+        'Row 1: qty should be a number without decimals',
+        'Row 1: price should be a valid number',
+      ])
+      expect(validateFieldValue(t, [{ price: 2.5, qty: 3 }]).isValid).toBe(true)
+    })
+
+    it('EMAIL, WEB and ALPHA rules on text columns, row-specific', () => {
+      const t = makeTable([
+        col('mail', 'SHORT_TEXT', { contentRule: 'EMAIL' }),
+        col('site', 'SHORT_TEXT', { contentRule: 'WEB' }),
+        col('name', 'SHORT_TEXT', { contentRule: 'ALPHA' }),
+      ])
+      const res = validateFieldValue(t, [
+        { mail: 'a@b.com', name: 'Bob', site: 'example.com' },
+        { mail: 'nope', name: 'B0b', site: 'not a url' },
+      ])
+      expect(res.errors).toHaveLength(3)
+      expect(res.errors.every((e) => e.startsWith('Row 2:'))).toBe(true)
+    })
+
+    it('min/max value on NUMBER columns', () => {
+      const t = makeTable([col('qty', 'NUMBER', { maximum: 10, minimum: 2 })])
+      expect(validateFieldValue(t, [{ qty: 1 }]).error).toBe(
+        'Row 1: qty should not be less than 2',
+      )
+      expect(validateFieldValue(t, [{ qty: 11 }]).error).toBe(
+        'Row 1: qty should not be more than 10',
+      )
+      expect(validateFieldValue(t, [{ qty: 5 }]).isValid).toBe(true)
+    })
+
+    it('min/max length on SHORT_TEXT columns', () => {
+      const t = makeTable([
+        col('code', 'SHORT_TEXT', { maximum: 4, minimum: 2 }),
+      ])
+      expect(validateFieldValue(t, [{ code: 'a' }]).error).toBe(
+        'Row 1: code should not be less than 2 characters',
+      )
+      expect(validateFieldValue(t, [{ code: 'abcde' }]).error).toBe(
+        'Row 1: code should not be more than 4 characters',
+      )
+      expect(validateFieldValue(t, [{ code: 'abc' }]).isValid).toBe(true)
+    })
+
+    it('reports one error per invalid cell and skips empty optional cells', () => {
+      const t = makeTable([
+        col('mail', 'SHORT_TEXT', { contentRule: 'EMAIL', maximum: 3 }),
+      ])
+      expect(validateFieldValue(t, [{ mail: 'nope' }]).errors).toHaveLength(1)
+      expect(validateFieldValue(t, [{ mail: '' }]).isValid).toBe(true)
+    })
+
+    it('required still reported once and columns without settings are unaffected', () => {
+      const t = makeTable([
+        {
+          ...col('a', 'SHORT_TEXT', {
+            contentRule: 'EMAIL',
+            fieldRule: 'REQUIRED',
+          }),
+        },
+        { id: 'b', label: 'b', type: 'NUMBER' },
+      ])
+      const res = validateFieldValue(t, [{ a: '', b: 'anything' }])
+      expect(res.errors).toEqual(['Row 1: a is required and cannot be empty'])
+    })
+  })
+
   it('6. validates multi-choice "ALL" requirement and matrix completeness', () => {
     const multiChoiceField = {
       id: 'f_legal',

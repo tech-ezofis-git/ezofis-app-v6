@@ -866,6 +866,10 @@ export function formatRuntimeFieldDisplayValue(
   if (Array.isArray(raw)) {
     if (raw.length === 0) return ''
     if (typeof raw[0] === 'object' && raw[0] !== null) {
+      // A list of uploaded files reads better as its file names
+      if (raw.every((item) => typeof item?.fileName === 'string')) {
+        return raw.map((item) => item.fileName).join(', ')
+      }
       return `${raw.length} ${raw.length === 1 ? 'item' : 'items'}`
     }
     return raw.map((item) => String(item)).join(', ')

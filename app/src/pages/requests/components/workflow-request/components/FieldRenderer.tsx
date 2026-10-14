@@ -1774,6 +1774,7 @@ const FieldRenderer = ({
             masterSyncParentValue={masterSyncParentValue}
             ocrLineItems={ocrLineItems}
             readOnly={readOnly}
+            repositoryId={repositoryId}
             required={required}
             value={Array.isArray(value) ? value : []}
             onChange={onChange}
