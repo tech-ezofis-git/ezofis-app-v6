@@ -332,10 +332,50 @@ export const computeWorkflowStages = ({
   const endBlocks = blocks.filter(
     (block: any) => String(block?.type || '').toUpperCase() === 'END',
   )
-  const endBlock = endBlocks[endBlocks.length - 1] || endBlocks[0] || null
 
   const currentIdStr =
     currentActivityId != null ? String(currentActivityId).trim() : ''
+
+  // Look for the specific END block executed in history (from latest to earliest)
+  let executedEndBlock: any = null
+  let executedEndLabel = ''
+
+  if (Array.isArray(history) && history.length > 0) {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const h = history[i]
+      const actId = h.activityId != null ? String(h.activityId).trim() : ''
+      const typeStr = String(h.stageType || '').toUpperCase()
+
+      if (actId && byId.has(actId)) {
+        const b = byId.get(actId)
+        if (String(b?.type || '').toUpperCase() === 'END') {
+          executedEndBlock = b
+          break
+        }
+      }
+
+      if (typeStr === 'END') {
+        const rawName = String(h.stageName || h.stage || '').toLowerCase().trim()
+        if (rawName && byName.has(rawName)) {
+          executedEndBlock = byName.get(rawName)
+          break
+        }
+        if (h.stageName || h.stage) {
+          executedEndLabel = String(h.stageName || h.stage).trim()
+          break
+        }
+      }
+    }
+  }
+
+  if (!executedEndBlock && currentIdStr && byId.has(currentIdStr)) {
+    const b = byId.get(currentIdStr)
+    if (String(b?.type || '').toUpperCase() === 'END') {
+      executedEndBlock = b
+    }
+  }
+
+  const endBlock = executedEndBlock || endBlocks[0] || null
 
   // 1. Determine if the workflow has completed / reached terminal stage
   const isTerminal =
@@ -473,7 +513,7 @@ export const computeWorkflowStages = ({
     } else {
       result.push({
         id: '__end_success__',
-        label: 'Workflow Success',
+        label: executedEndLabel || 'Workflow Success',
         isEnd: true,
         isSuccess: true,
         status: 'done',
