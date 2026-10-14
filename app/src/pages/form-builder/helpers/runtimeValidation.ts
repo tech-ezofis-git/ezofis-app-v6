@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import { getDateTimeLimits } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import authUserStore from '@/stores/authUserStore'
 import {
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -23,10 +22,12 @@ import { evaluateFormRules } from './ruleEngine'
 import {
   getColumnCurrencyOptions,
   getColumnDecimalDigits,
+  getNumberBounds,
   hasMeaningfulTableRows,
 } from './tableColumnDefaults'
 import { getStoredFilesError, isFileColumnType } from './tableColumnFiles'
 import { getRowCellRuleStates } from './tableColumnRules'
+import { getSessionTableUser } from './tableColumnUser'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
@@ -53,6 +54,34 @@ export interface FormValidationResult {
   fieldErrors: Record<string, string[]> // fieldId -> all error messages
   isValid: boolean
   missingFields: Array<{ id: string; label: string }>
+}
+
+/**
+ * Blocking validation messages for TABLE / DYNAMIC_TABLE fields only (column
+ * required, content rules, ranges, date / time / currency / file limits and
+ * conditional mandatory rules), one entry per invalid table. Screens that
+ * must stop a submit on table problems use this; it reuses the same
+ * evaluation as `validateFormModel`, so hidden and read-only fields are
+ * skipped the same way.
+ */
+export function getTableFieldErrors(
+  panels: any[] = [],
+  formModel: Record<string, any> = {},
+  options?: { formRules?: any[] },
+): string[] {
+  const result = validateFormModel(panels, formModel, options)
+  const messages: string[] = []
+  for (const panel of panels) {
+    for (const field of panel?.fields || []) {
+      const type = resolveRuntimeFieldType(field)
+      if (type !== 'TABLE' && type !== 'DYNAMIC_TABLE') continue
+      const errors = result.fieldErrors[String(field.id)]
+      if (errors?.length) {
+        messages.push(`${getEffectiveFieldLabel(field)}: ${errors.join('; ')}`)
+      }
+    }
+  }
+  return messages
 }
 
 /**
@@ -84,7 +113,7 @@ export function isRuntimeValueEmpty(value: any, field?: any): boolean {
       return !hasMeaningfulTableRows(
         value,
         field?.settings?.specific?.tableColumns || [],
-        authUserStore.getState().session?.email || '',
+        getSessionTableUser(),
       )
     }
     return false
@@ -453,7 +482,7 @@ export function validateFieldValue(
           }
 
           // At most one format/range error per cell
-          const cellError = getTableCellConstraintError(col, colVal)
+          const cellError = getTableCellConstraintError(col, colVal, row)
           if (cellError) {
             errors.push(`Row ${rowIdx + 1}: ${colLabel} ${cellError}`)
           }
@@ -556,6 +585,12 @@ export function validateFormModel(
   }
 }
 
+const CHOICE_COLUMN_TYPES = [
+  'MULTI_SELECT',
+  'MULTIPLE_CHOICE',
+  'SINGLE_CHOICE',
+  'SINGLE_SELECT',
+]
 const TABLE_TEXT_COLUMN_TYPES = ['SHORT_TEXT', 'LONG_TEXT']
 const TABLE_NUMERIC_COLUMN_TYPES = ['NUMBER', 'COUNTER']
 
@@ -578,7 +613,11 @@ const TABLE_TEXT_CONTENT_RULES: Record<string, [RegExp, string]> = {
  * SHORT_TEXT/LONG_TEXT, INTEGER/DECIMAL apply to NUMBER/COUNTER.
  * Returns the first violation message, or undefined when the cell is valid.
  */
-function getTableCellConstraintError(col: any, value: any): string | undefined {
+function getTableCellConstraintError(
+  col: any,
+  value: any,
+  row?: Record<string, any>,
+): string | undefined {
   const validation = col.settings?.validation || {}
   const colType = String(col.type || '').toUpperCase()
   const contentRule = String(validation.contentRule || '').toUpperCase()
@@ -633,15 +672,43 @@ function getTableCellConstraintError(col: any, value: any): string | undefined {
     return undefined
   }
 
+  // Choice columns: Alpha / Integer content rule on the selected value(s)
+  if (CHOICE_COLUMN_TYPES.includes(colType)) {
+    const picked = (Array.isArray(value) ? value : [value])
+      .filter((v) => v !== undefined && v !== null && typeof v !== 'object')
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+    if (contentRule === 'ALPHA') {
+      const rule = TABLE_TEXT_CONTENT_RULES.ALPHA
+      if (picked.some((v) => !rule[0].test(v))) return rule[1]
+    }
+    if (contentRule === 'INTEGER' && picked.some((v) => !INTEGER_REGEX.test(v))) {
+      return 'should be a number without decimals'
+    }
+    return undefined
+  }
+
   // Columns without any configured rule or bound keep their prior behavior
-  if (!contentRule && min === null && max === null) return undefined
+  const hasBoundFromColumn = Boolean(
+    validation.minimumNumberField || validation.maximumNumberField,
+  )
+  if (!contentRule && min === null && max === null && !hasBoundFromColumn) {
+    return undefined
+  }
 
   if (TABLE_NUMERIC_COLUMN_TYPES.includes(colType)) {
     const str = String(value).trim()
-    if (contentRule === 'INTEGER' && !INTEGER_REGEX.test(str)) {
+    // Integer and Commas are whole numbers; Decimal and Both allow decimals
+    if (
+      (contentRule === 'INTEGER' || contentRule === 'COMMAS') &&
+      !INTEGER_REGEX.test(str)
+    ) {
       return 'should be a number without decimals'
     }
-    if (contentRule === 'DECIMAL' && !NUMERIC_REGEX.test(str)) {
+    if (
+      (contentRule === 'DECIMAL' || contentRule === 'BOTH') &&
+      !NUMERIC_REGEX.test(str)
+    ) {
       return 'should be a valid number'
     }
     const num = Number(value)
@@ -653,8 +720,13 @@ function getTableCellConstraintError(col: any, value: any): string | undefined {
     ) {
       return `decimal places should not exceed ${digits} digits`
     }
-    if (min !== null && num < min) return `should not be less than ${min}`
-    if (max !== null && num > max) return `should not be more than ${max}`
+    const bounds = getNumberBounds(col, row)
+    if (bounds.min !== undefined && num < bounds.min) {
+      return `should not be less than ${bounds.min}`
+    }
+    if (bounds.max !== undefined && num > bounds.max) {
+      return `should not be more than ${bounds.max}`
+    }
     return undefined
   }
 

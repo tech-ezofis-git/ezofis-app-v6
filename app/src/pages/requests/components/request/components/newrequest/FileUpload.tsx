@@ -893,7 +893,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       if (lastStubItem && selectedWorkflowStub) {
         requestStore
           .getState()
-          .openRequest(lastStubItem, selectedWorkflowStub, 'Overview')
+          .openRequest(lastStubItem, selectedWorkflowStub, 'Overview', undefined, {
+            isAutoOpened: true,
+          })
       }
 
       // Trigger list refresh

@@ -18,7 +18,9 @@ import {
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import FormulaBuilder from './FormulaBuilder'
 import TableColumnAiSettings from './TableColumnAiSettings'
+import TableColumnChoiceSettings from './TableColumnChoiceSettings'
 import TableColumnFormatSettings from './TableColumnFormatSettings'
+import TableColumnNumberRange from './TableColumnNumberRange'
 import TableColumnRuleSettings from './TableColumnRuleSettings'
 
 const SUMMABLE_COLUMN_TYPES: QuestionType[] = [
@@ -38,6 +40,16 @@ const CONTENT_RULE_OPTIONS = [
   { id: 'WEB', name: 'Web' },
   { id: 'INTEGER', name: 'Integer' },
   { id: 'DECIMAL', name: 'Decimal' },
+  { id: 'COMMAS', name: 'Commas' },
+  { id: 'BOTH', name: 'Both (commas and decimals)' },
+]
+
+const NUMBER_CONTENT_RULES = ['INTEGER', 'DECIMAL', 'COMMAS', 'BOTH']
+
+const CALCULATED_RULE_OPTIONS = [
+  { id: '', name: 'Any result' },
+  { id: 'INTEGER', name: 'Integer (does not accept decimals)' },
+  { id: 'DECIMAL', name: 'Decimal (does accept decimals)' },
 ]
 
 const VALIDATABLE_COLUMN_TYPES: QuestionType[] = [
@@ -62,6 +74,7 @@ const OPTIONS_SOURCE = {
   API: 2,
   LOOKUP: 1,
   MASTER: 3,
+  PREDEFINED: 5,
   USER_LIST: 4,
 } as const
 
@@ -91,6 +104,16 @@ const optionsSourceRadio = [
     id: OPTIONS_SOURCE.USER_LIST,
     name: 'User List',
   },
+  {
+    description: 'Load names from a predefined list (users or folders)',
+    id: OPTIONS_SOURCE.PREDEFINED,
+    name: 'Predefined List',
+  },
+]
+
+const PREDEFINED_TYPE_OPTIONS = [
+  { id: 'USER', name: 'User directory (emails)' },
+  { id: 'FOLDER', name: 'Folders / Repositories (names)' },
 ]
 
 export type TableColumn = NonNullable<
@@ -152,6 +175,7 @@ const TableColumnSettingsPanel = ({
   const defaultValueType = column.settings?.specific?.defaultValueType || 'CUSTOM'
   const showColumnTotal = Boolean(column.settings?.specific?.showColumnTotal)
   const contentRule = column.settings?.validation?.contentRule || 'TEXT'
+  const calculatedRule = column.settings?.validation?.contentRule || ''
   const minimum = column.settings?.validation?.minimum ?? ''
   const maximum = column.settings?.validation?.maximum ?? ''
   const isNumericColumn = column.type === 'NUMBER' || column.type === 'COUNTER'
@@ -173,6 +197,8 @@ const TableColumnSettingsPanel = ({
   const masterFormId = column.settings?.specific?.masterFormId || ''
   const masterFormColumn = column.settings?.specific?.masterFormColumn || ''
   const showAllData = Boolean(column.settings?.specific?.showAllData)
+  const predefinedType =
+    column.settings?.specific?.predefinedType === 'FOLDER' ? 'FOLDER' : 'USER'
 
   const { data: masterColumns = [] } = useQuery({
     enabled: showOptions && optionsSource === 'MASTER' && !!masterFormId,
@@ -305,7 +331,9 @@ const TableColumnSettingsPanel = ({
                       ? 'MASTER'
                       : id === OPTIONS_SOURCE.USER_LIST
                         ? 'USER_LIST'
-                        : 'LOOKUP'
+                        : id === OPTIONS_SOURCE.PREDEFINED
+                          ? 'PREDEFINED'
+                          : 'LOOKUP'
                 onUpdate({
                   lookupSettings: {
                     optionsSource: next,
@@ -446,6 +474,14 @@ const TableColumnSettingsPanel = ({
                     onUpdate({ specific: { showAllData: checked } })
                   }
                 />
+                <InputSwitch
+                  checked={column.settings?.specific?.isSameMaster === true}
+                  description='Saved for V5 parity; not applied when options load yet.'
+                  label='Same Master'
+                  onChange={(checked) =>
+                    onUpdate({ specific: { isSameMaster: checked } })
+                  }
+                />
                 <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
                   Filter by column (cascade, optional)
                 </label>
@@ -478,6 +514,23 @@ const TableColumnSettingsPanel = ({
               <p className='text-11 leading-relaxed text-gray-9'>
                 Options are the system user emails.
               </p>
+            ) : optionsSource === 'PREDEFINED' ? (
+              <InputSelect
+                label='Predefined list'
+                options={PREDEFINED_TYPE_OPTIONS}
+                value={
+                  PREDEFINED_TYPE_OPTIONS.find(
+                    (o) => o.id === predefinedType,
+                  ) || null
+                }
+                onChange={(opt) =>
+                  onUpdate({
+                    specific: {
+                      predefinedType: opt?.id === 'FOLDER' ? 'FOLDER' : 'USER',
+                    },
+                  })
+                }
+              />
             ) : (
               <p className='text-11 leading-relaxed text-gray-9'>
                 On focus, loads Data from API
@@ -497,6 +550,26 @@ const TableColumnSettingsPanel = ({
             fields={pseudoSiblingFields}
             onChange={(tokens) =>
               onUpdate({ specific: { formulaTokens: tokens } })
+            }
+          />
+        </div>
+      )}
+
+      {isCalculated && (
+        <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            Validation
+          </label>
+          <InputSelect
+            description='Integer rounds the calculated result to a whole number; Decimal keeps decimals.'
+            label='Content Rule'
+            options={CALCULATED_RULE_OPTIONS}
+            value={
+              CALCULATED_RULE_OPTIONS.find((o) => o.id === calculatedRule) ||
+              CALCULATED_RULE_OPTIONS[0]
+            }
+            onChange={(opt) =>
+              onUpdate({ validation: { contentRule: String(opt?.id || '') } })
             }
           />
         </div>
@@ -561,10 +634,10 @@ const TableColumnSettingsPanel = ({
             options={
               column.type === 'NUMBER' || column.type === 'COUNTER'
                 ? CONTENT_RULE_OPTIONS.filter((o) =>
-                    ['INTEGER', 'DECIMAL'].includes(o.id),
+                    NUMBER_CONTENT_RULES.includes(o.id),
                   )
                 : CONTENT_RULE_OPTIONS.filter(
-                    (o) => !['INTEGER', 'DECIMAL'].includes(o.id),
+                    (o) => !NUMBER_CONTENT_RULES.includes(o.id),
                   )
             }
             value={
@@ -574,7 +647,8 @@ const TableColumnSettingsPanel = ({
               onUpdate({ validation: { contentRule: String(opt?.id || '') } })
             }
           />
-          {isNumericColumn && contentRule === 'DECIMAL' && (
+          {isNumericColumn &&
+            (contentRule === 'DECIMAL' || contentRule === 'BOTH') && (
             <InputNumber
               description='Maximum digits after the decimal point. Leave empty for no limit.'
               label='Decimal Digits'
@@ -584,26 +658,26 @@ const TableColumnSettingsPanel = ({
               onChange={(v) => onUpdate({ validation: { decimalDigits: v } })}
             />
           )}
-          <div className='grid grid-cols-2 gap-2'>
-            <InputNumber
-              value={minimum}
-              label={
-                column.type === 'NUMBER' || column.type === 'COUNTER'
-                  ? 'Min Value'
-                  : 'Min Length'
-              }
-              onChange={(v) => onUpdate({ validation: { minimum: v } })}
+          {isNumericColumn ? (
+            <TableColumnNumberRange
+              column={column}
+              siblingColumns={siblingColumns}
+              onUpdate={onUpdate}
             />
-            <InputNumber
-              value={maximum}
-              label={
-                column.type === 'NUMBER' || column.type === 'COUNTER'
-                  ? 'Max Value'
-                  : 'Max Length'
-              }
-              onChange={(v) => onUpdate({ validation: { maximum: v } })}
-            />
-          </div>
+          ) : (
+            <div className='grid grid-cols-2 gap-2'>
+              <InputNumber
+                label='Min Length'
+                value={minimum}
+                onChange={(v) => onUpdate({ validation: { minimum: v } })}
+              />
+              <InputNumber
+                label='Max Length'
+                value={maximum}
+                onChange={(v) => onUpdate({ validation: { maximum: v } })}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -618,6 +692,14 @@ const TableColumnSettingsPanel = ({
             min={0}
             value={step}
             onChange={(v) => onUpdate({ specific: { step: v } })}
+          />
+          <InputSwitch
+            checked={column.settings?.specific?.qrValue === true}
+            description='Show a scan button in the cell to read a number from a QR code or barcode.'
+            label='Read Values From QR'
+            onChange={(checked) =>
+              onUpdate({ specific: { qrValue: checked } })
+            }
           />
           <div className='grid grid-cols-2 gap-2'>
             <InputText
@@ -645,6 +727,8 @@ const TableColumnSettingsPanel = ({
         siblingColumns={siblingColumns}
         onUpdate={onUpdate}
       />
+
+      <TableColumnChoiceSettings column={column} onUpdate={onUpdate} />
 
       <TableColumnAiSettings
         column={column}

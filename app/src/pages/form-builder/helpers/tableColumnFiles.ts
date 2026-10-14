@@ -1,4 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+
+dayjs.extend(customParseFormat)
 
 const FILE_COLUMN_TYPES = ['FILE_UPLOAD', 'IMAGE', 'IMAGE_UPLOAD']
 
@@ -19,6 +23,34 @@ export interface ColumnFileInfo {
 
 const isBlank = (v: unknown) =>
   v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)
+
+// Formats a table cell stores: DATE "YYYY-MM-DD", TIME "HH:mm" (24 h),
+// DATE_TIME "YYYY-MM-DD HH:mm".
+const DATE_INPUT_FORMATS = [
+  'YYYY-MM-DD',
+  'YYYY/MM/DD',
+  'DD/MM/YYYY',
+  'DD-MM-YYYY',
+  'DD.MM.YYYY',
+  'D/M/YYYY',
+  'D-M-YYYY',
+  'DD MMM YYYY',
+  'D MMM YYYY',
+  'DD-MMM-YYYY',
+  'DD MMMM YYYY',
+  'D MMMM YYYY',
+  'MMM D, YYYY',
+  'MMMM D, YYYY',
+]
+const TIME_INPUT_FORMATS = [
+  'HH:mm',
+  'HH:mm:ss',
+  'H:mm',
+  'h:mm A',
+  'h:mm a',
+  'hh:mm A',
+  'h:mm:ss A',
+]
 
 // Same normalisation top-level OCR mapping uses: ignore case, asterisks and
 // repeated whitespace so "Bill No *" matches "Bill No".
@@ -197,8 +229,8 @@ export function mapOcrToRowPatch(
   ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined,
   row: Record<string, any> | undefined,
   overwrite: boolean,
-): Record<string, string> {
-  const patch: Record<string, string> = {}
+): Record<string, number | string> {
+  const patch: Record<string, number | string> = {}
   if (!Array.isArray(ocrFieldList)) return patch
   for (const item of ocrFieldList) {
     const rawName = String(item?.name ?? '')
@@ -211,9 +243,52 @@ export function mapOcrToRowPatch(
     if (!target) continue
     const existing = row?.[target.id] ?? (target.name ? row?.[target.name] : '')
     if (!overwrite && !isBlank(existing)) continue
-    patch[target.id] = String(value)
+    const converted = normalizeOcrValue(target, value)
+    if (converted !== undefined) patch[target.id] = converted
   }
   return patch
+}
+
+/**
+ * An extracted document value in the format the target column stores, or
+ * undefined when it cannot be read as that type (it is then left out rather
+ * than written as text the cell would show blank).
+ * Dates are read as day-month-year first (14/10/2026), then year-first and
+ * written-month forms. Numbers ignore currency symbols and thousands commas.
+ */
+export function normalizeOcrValue(
+  col: any,
+  value: unknown,
+): number | string | undefined {
+  const text = String(value ?? '').trim()
+  if (!text) return undefined
+  const type = String(col?.type || '').toUpperCase()
+
+  if (type === 'DATE') {
+    const parsed = dayjs(text, DATE_INPUT_FORMATS, true)
+    return parsed.isValid() ? parsed.format('YYYY-MM-DD') : undefined
+  }
+  if (type === 'TIME') {
+    const parsed = dayjs(text, TIME_INPUT_FORMATS, true)
+    return parsed.isValid() ? parsed.format('HH:mm') : undefined
+  }
+  if (type === 'DATE_TIME') {
+    const combos = DATE_INPUT_FORMATS.flatMap((d) =>
+      TIME_INPUT_FORMATS.map((t) => `${d} ${t}`),
+    )
+    const parsed = dayjs(text, combos, true)
+    if (parsed.isValid()) return parsed.format('YYYY-MM-DD HH:mm')
+    const dateOnly = dayjs(text, DATE_INPUT_FORMATS, true)
+    return dateOnly.isValid()
+      ? dateOnly.format('YYYY-MM-DD') + ' 00:00'
+      : undefined
+  }
+  if (type === 'NUMBER' || type === 'COUNTER' || type === 'CURRENCY_AMOUNT') {
+    const cleaned = text.replace(/[^0-9.,-]/g, '').replace(/,/g, '')
+    const n = Number(cleaned)
+    return cleaned !== '' && Number.isFinite(n) ? n : undefined
+  }
+  return text
 }
 
 /** Removes the file at `index`; an emptied multi-file cell becomes null. */

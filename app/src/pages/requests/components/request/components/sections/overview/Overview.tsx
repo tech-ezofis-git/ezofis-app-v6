@@ -1,7 +1,6 @@
 import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
-import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
-import { searchPlugin } from '@react-pdf-viewer/search'
+import { getFieldSearchVariantStrings } from '@/pages/folders/utils/fieldPdfSearch'
 import dayjs from 'dayjs'
 import {
   Briefcase,
@@ -35,6 +34,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 import {
+  getCanonicalFieldLabel,
   localizeRequestFieldLabel,
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
@@ -1164,7 +1164,11 @@ const normalizeComparable = (val: unknown) => {
     }
   }
 
-  return str.replace(/\s+/g, ' ')
+  // Strip trailing punctuation (like '.' or ',') and condense whitespace
+  return str
+    .replace(/[.,;:]+$/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
 }
 
 const hasComparableValue = (val: unknown) => {
@@ -1320,14 +1324,57 @@ const getValueFromPoRow = (poRow: any, key: string) => {
   return undefined
 }
 
+const getAppliedSuggestionsStorageKey = (item: any, docId?: string) => {
+  const id =
+    item?.transactionId ||
+    item?.requestNo ||
+    item?.reqNo ||
+    item?.id ||
+    docId ||
+    ''
+  return id ? `ezofis_applied_suggestions_${id}` : null
+}
+
+const loadAppliedSuggestions = (
+  item: any,
+  docId?: string,
+): Record<string, boolean> => {
+  const key = getAppliedSuggestionsStorageKey(item, docId)
+  if (!key) return {}
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+const saveAppliedSuggestions = (
+  item: any,
+  docId: string | undefined,
+  data: Record<string, boolean>,
+) => {
+  const storageKey = getAppliedSuggestionsStorageKey(item, docId)
+  if (!storageKey) return
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(data))
+  } catch {
+    // ignore
+  }
+}
+
 const FormCard = ({
   fieldKey,
+  hasAppliedSuggestion = false,
   highlight = false,
   icon: FieldIcon,
   invoiceValue,
+  isAutoOpened = false,
   isLoading = false,
   label,
   missing = false,
+  onApplySuggestion,
+  onDismissSuggestion,
   options = [],
   poSourceLabel = 'PO Master',
   poValue,
@@ -1343,23 +1390,45 @@ const FormCard = ({
   const [localValue, setLocalValue] = useState(value)
   const [userEdited, setUserEdited] = useState(false)
   const [appliedSource, setAppliedSource] = useState<string | null>(null)
+  const [isAppliedLocally, setIsAppliedLocally] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false)
+  const appliedValueRef = useRef<unknown>(undefined)
 
   useEffect(() => {
     setLocalValue(value)
     setUserEdited(false)
-    setAppliedSource(null)
+    if (appliedValueRef.current !== value) {
+      setAppliedSource(null)
+    }
   }, [value])
 
   const isUsingPo =
     hasComparableValue(poValue) &&
     (normalizeComparable(value) === normalizeComparable(poValue) ||
+      normalizeComparable(localValue) === normalizeComparable(poValue) ||
       appliedSource === 'po_master' ||
       appliedSource === 'sap' ||
       !hasComparableValue(value))
+
+  const targetSuggestionValue = isUsingPo ? invoiceValue : poValue
+  const targetSuggestionSource = isUsingPo ? t`Invoice` : poSourceLabel
+
   const canSwitchSources =
     hasComparableValue(poValue) &&
     hasComparableValue(invoiceValue) &&
     normalizeComparable(poValue) !== normalizeComparable(invoiceValue)
+
+  const isSuggestionAlreadyApplied =
+    hasAppliedSuggestion ||
+    isAppliedLocally ||
+    isDismissed ||
+    normalizeComparable(localValue) ===
+      normalizeComparable(targetSuggestionValue) ||
+    normalizeComparable(value) === normalizeComparable(targetSuggestionValue)
+
+  const canShowSuggestion =
+    isAutoOpened && canSwitchSources && !isSuggestionAlreadyApplied
+
   const isPerfectMatch = isUsingPo
   const effectiveScore =
     score !== undefined &&
@@ -1479,17 +1548,19 @@ const FormCard = ({
   }
 
   const applySourceValue = (nextValue: unknown) => {
+    setIsAppliedLocally(true)
+    appliedValueRef.current = nextValue
     setLocalValue(nextValue)
     const isSwitchingToPo = !isUsingPo
-    setAppliedSource(
-      isSwitchingToPo
-        ? poSourceLabel.toLowerCase() === 'sap'
-          ? 'sap'
-          : 'po_master'
-        : 'ocr',
-    )
+    const nextSource = isSwitchingToPo
+      ? poSourceLabel.toLowerCase() === 'sap'
+        ? 'sap'
+        : 'po_master'
+      : 'ocr'
+    setAppliedSource(nextSource)
     setUserEdited(false)
     onChange?.(nextValue)
+    onApplySuggestion?.(nextSource)
   }
 
   const handleBlur = () => {
@@ -1727,20 +1798,20 @@ const FormCard = ({
                 {t`This field is required.`}
               </p>
             ) : null}
-            {canSwitchSources && (
+            {canShowSuggestion && (
               <div
                 className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-start justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
                 role='button'
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation()
-                  applySourceValue(isUsingPo ? invoiceValue : poValue)
+                  applySourceValue(targetSuggestionValue)
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
                     e.stopPropagation()
-                    applySourceValue(isUsingPo ? invoiceValue : poValue)
+                    applySourceValue(targetSuggestionValue)
                   }
                 }}
               >
@@ -1751,17 +1822,31 @@ const FormCard = ({
                       variant='outline-purple'
                     />
                     <span className='font-semibold text-[var(--primary-9)]'>
-                      {isUsingPo ? t`Invoice` : poSourceLabel}
+                      {targetSuggestionSource}
                     </span>
                     <span className='text-[var(--primary-9)]/60'>·</span>
                   </span>{' '}
                   <span className='inline-block max-w-[calc(100%-80px)] truncate align-middle font-bold text-[var(--gray-13)] group-hover/suggest:inline group-hover/suggest:max-w-none group-hover/suggest:break-words group-hover/suggest:whitespace-normal'>
-                    {isUsingPo ? invoiceValue : poValue}
+                    {String(targetSuggestionValue ?? '')}
                   </span>
                 </div>
-                <span className='shrink-0 font-bold text-[var(--primary-9)] transition-colors group-hover/suggest:underline'>
-                  Apply
-                </span>
+                <div className='flex shrink-0 items-center gap-1.5'>
+                  <span className='font-bold text-[var(--primary-9)] transition-colors group-hover/suggest:underline'>
+                    {t`Apply`}
+                  </span>
+                  <button
+                    type='button'
+                    className='rounded p-0.5 text-[var(--primary-9)]/60 hover:bg-[var(--primary-3)] hover:text-[var(--primary-9)]'
+                    title={t`Dismiss suggestion`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsDismissed(true)
+                      onDismissSuggestion?.()
+                    }}
+                  >
+                    <Icon className='h-3 w-3' name='lucide:x' />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1826,7 +1911,7 @@ const formatValueToTwoDecimals = (val: any) => {
 const formatLineItemFields = (item: any, counter: number) => {
   const normalizedItem = normalizeExtractedLineItem(item)
   if (!normalizedItem._id) {
-    normalizedItem._id = `li-${Date.now()}-${counter}`
+    normalizedItem._id = item._id || item.id || `li-${counter}`
   }
 
   // Format Price/Rate
@@ -2010,7 +2095,30 @@ const Overview = (props: any) => {
     setFormModel,
   } = props
 
+  const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
+  const fieldMetaMap = useMemo(
+    () =>
+      buildFieldMetaMap(
+        selectedWorkflow || rawWorkflowData,
+        formDefinition,
+      ),
+    [selectedWorkflow, rawWorkflowData, formDefinition],
+  )
+
+  const getFieldLabel = useCallback(
+    (key: string) => {
+      if (!key) return ''
+      const meta = resolveFieldMeta(fieldMetaMap, key)
+      if (meta?.label && meta.label.trim()) {
+        return localizeRequestFieldLabel(i18n, meta.label.trim())
+      }
+      return localizeRequestFieldLabel(i18n, key)
+    },
+    [fieldMetaMap, i18n],
+  )
+
   const processingProcesses = requestStore((state) => state.processingProcesses)
+  const isAutoOpenedRequest = requestStore((state) => state.isAutoOpenedRequest)
   const kanbanMissingFieldIds = requestStore(
     (state) => state.kanbanMissingFieldIds,
   )
@@ -2203,6 +2311,9 @@ const Overview = (props: any) => {
   }, [selectedItem, agentData, matchingProc])
 
   const getFieldScore = (key: string) => {
+    const metaLabel = resolveFieldMeta(fieldMetaMap, key)?.label
+    const canonicalLabel = getCanonicalFieldLabel(key)
+
     const normalizeName = (name: string) => {
       const normalized = name.toLowerCase().trim()
       if (
@@ -2232,11 +2343,15 @@ const Overview = (props: any) => {
       return normalized
     }
 
-    const cleanK = normalizeName(key)
+    const candidateKeys = [key]
+    if (metaLabel) candidateKeys.push(metaLabel)
+    if (canonicalLabel) candidateKeys.push(canonicalLabel)
+    const cleanKeys = candidateKeys.map(normalizeName)
+
     const matchingFields =
       agentData?.debug?.['Side-by-side Field Matching'] || []
     for (const field of matchingFields) {
-      if (field?.Field && normalizeName(field.Field) === cleanK) {
+      if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return Number(field.Score)
       }
     }
@@ -2244,30 +2359,46 @@ const Overview = (props: any) => {
   }
 
   const getFieldPoValue = (key: string) => {
+    const metaLabel = resolveFieldMeta(fieldMetaMap, key)?.label
+    const canonicalLabel = getCanonicalFieldLabel(key)
     const normKey = String(key || '')
       .toLowerCase()
       .trim()
+    const allNorms = [
+      normKey,
+      String(metaLabel || '').toLowerCase().trim(),
+      String(canonicalLabel || '').toLowerCase().trim(),
+    ]
     if (
-      normKey.includes('invoice amount') ||
-      normKey.includes('invoice date') ||
-      normKey.includes('invoice number') ||
-      normKey.includes('invoice no') ||
-      normKey === 'invoice_amount' ||
-      normKey === 'invoice_date' ||
-      normKey === 'invoice_no' ||
-      normKey === 'invoice_number'
+      allNorms.some(
+        (n) =>
+          n.includes('invoice amount') ||
+          n.includes('invoice date') ||
+          n.includes('invoice number') ||
+          n.includes('invoice no') ||
+          n === 'invoice_amount' ||
+          n === 'invoice_date' ||
+          n === 'invoice_no' ||
+          n === 'invoice_number',
+      )
     ) {
       return undefined
     }
 
     const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
-    const valFromPoRow = getValueFromPoRow(poRow, key)
-    if (
-      valFromPoRow !== undefined &&
-      valFromPoRow !== null &&
-      valFromPoRow !== ''
-    ) {
-      return valFromPoRow
+    const candidateKeys = [key]
+    if (metaLabel) candidateKeys.push(metaLabel)
+    if (canonicalLabel) candidateKeys.push(canonicalLabel)
+
+    for (const cand of candidateKeys) {
+      const valFromPoRow = getValueFromPoRow(poRow, cand)
+      if (
+        valFromPoRow !== undefined &&
+        valFromPoRow !== null &&
+        valFromPoRow !== ''
+      ) {
+        return valFromPoRow
+      }
     }
 
     const normalizeName = (name: string) => {
@@ -2304,12 +2435,12 @@ const Overview = (props: any) => {
       return normalized
     }
 
-    const cleanK = normalizeName(key)
+    const cleanKeys = candidateKeys.map(normalizeName)
 
     const matchingFields =
       agentData?.debug?.['Side-by-side Field Matching'] || []
     for (const field of matchingFields) {
-      if (field?.Field && normalizeName(field.Field) === cleanK) {
+      if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return field['PO Value']
       }
     }
@@ -2317,6 +2448,8 @@ const Overview = (props: any) => {
   }
 
   const getFieldInvoiceValue = (key: string) => {
+    const metaLabel = resolveFieldMeta(fieldMetaMap, key)?.label
+    const canonicalLabel = getCanonicalFieldLabel(key)
     const normalizeName = (name: string) => {
       const normalized = name.toLowerCase().trim()
       if (
@@ -2346,11 +2479,15 @@ const Overview = (props: any) => {
       return normalized
     }
 
-    const cleanK = normalizeName(key)
+    const candidateKeys = [key]
+    if (metaLabel) candidateKeys.push(metaLabel)
+    if (canonicalLabel) candidateKeys.push(canonicalLabel)
+    const cleanKeys = candidateKeys.map(normalizeName)
+
     const matchingFields =
       agentData?.debug?.['Side-by-side Field Matching'] || []
     for (const field of matchingFields) {
-      if (field?.Field && normalizeName(field.Field) === cleanK) {
+      if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return field['Invoice Value']
       }
     }
@@ -2706,6 +2843,43 @@ const Overview = (props: any) => {
   } = useComments(workflowId, resolvedInstanceId, true)
 
   const [lineItems, setLineItems] = useState<any[]>([])
+  const isInternalLineItemSyncRef = useRef(false)
+  const [appliedFieldSuggestions, setAppliedFieldSuggestions] = useState<
+    Record<string, boolean>
+  >(() => loadAppliedSuggestions(selectedItem, docId))
+
+  useEffect(() => {
+    isInternalLineItemSyncRef.current = false
+    setAppliedFieldSuggestions(loadAppliedSuggestions(selectedItem, docId))
+  }, [
+    docId,
+    selectedItem?.id,
+    selectedItem?.requestNo,
+    selectedItem?.reqNo,
+    selectedItem?.transactionId,
+  ])
+
+  const handleApplySuggestion = useCallback(
+    (key: string) => {
+      setAppliedFieldSuggestions((prev) => {
+        const next = { ...prev, [key]: true }
+        saveAppliedSuggestions(selectedItem, docId, next)
+        return next
+      })
+    },
+    [selectedItem, docId],
+  )
+
+  const handleDismissSuggestion = useCallback(
+    (key: string) => {
+      setAppliedFieldSuggestions((prev) => {
+        const next = { ...prev, [key]: true }
+        saveAppliedSuggestions(selectedItem, docId, next)
+        return next
+      })
+    },
+    [selectedItem, docId],
+  )
 
   // --- PO Line Items Setup ---
   const parsedFormData = useMemo(() => {
@@ -2801,7 +2975,7 @@ const Overview = (props: any) => {
   const poLineItems = useMemo(() => {
     return rawPoLineItems.map((item: any, idx: number) => {
       const mappedItem: any = {
-        _id: item._id || `po-li-${idx}-${Date.now()}`,
+        _id: item._id || item.id || `po-li-${idx}`,
       }
 
       Object.entries(item).forEach(([k, v]) => {
@@ -3101,22 +3275,39 @@ const Overview = (props: any) => {
     })
   }
 
-  const currentSearchPluginInstance = searchPlugin()
-  const searchPluginInstanceRef = useRef<any>(null)
-  if (searchPluginInstanceRef.current) {
-    Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
-  } else {
-    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
-  }
-  const searchPluginInstance = searchPluginInstanceRef.current
-  const { clearHighlights, highlight } = searchPluginInstance
+  const [activeHighlightTerm, setActiveHighlightTerm] = useState<string | null>(
+    null,
+  )
+  const [focusRequestId, setFocusRequestId] = useState(0)
+
+  const activeHighlightColors = useMemo(() => {
+    if (!activeHighlightTerm) return undefined
+    const map: Record<string, string> = {
+      [activeHighlightTerm]: 'var(--primary-9)',
+    }
+    for (const variant of getFieldSearchVariantStrings(activeHighlightTerm)) {
+      map[variant] = 'var(--primary-9)'
+    }
+    return map
+  }, [activeHighlightTerm])
 
   const handleFieldFocus = (value: any, _fieldKey?: string) => {
-    const stringVal = String(value || '').trim()
+    let resolved = value
+    if (resolved && typeof resolved === 'object') {
+      if ('Invoice Value' in resolved) {
+        resolved = resolved['Invoice Value']
+      } else if ('value' in resolved) {
+        resolved = resolved.value
+      } else if ('name' in resolved) {
+        resolved = resolved.name
+      }
+    }
+    const stringVal = String(resolved || '').trim()
     if (stringVal && stringVal !== '-') {
-      highlight([stringVal])
+      setActiveHighlightTerm(stringVal)
+      setFocusRequestId((prev) => prev + 1)
     } else {
-      clearHighlights()
+      setActiveHighlightTerm(null)
     }
   }
 
@@ -3233,11 +3424,6 @@ const Overview = (props: any) => {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
-
-  const fieldMetaMap = useMemo(
-    () => buildFieldMetaMap(selectedWorkflow, formDefinition),
-    [selectedWorkflow, formDefinition],
-  )
 
   const lineItemsTable = useMemo(
     () => findPreferredLineItemsTable(fieldMetaMap, formModel || {}),
@@ -3371,6 +3557,10 @@ const Overview = (props: any) => {
   }, [rawLineItems])
 
   useEffect(() => {
+    if (isInternalLineItemSyncRef.current) {
+      isInternalLineItemSyncRef.current = false
+      return
+    }
     if (rawLineItems && rawLineItems.length > 0) {
       const cloned = structuredClone(rawLineItems)
       const formatted = cloned.map((item: any, idx: number) =>
@@ -3557,14 +3747,9 @@ const Overview = (props: any) => {
 
   const syncLineItemsToFormModel = (updatedItems: any[]) => {
     const sanitizeItems = (items: any[]) => {
-      return items.map(({ _id, ...rest }) => rest)
+      return items.map((it) => ({ ...it }))
     }
     const sanitized = sanitizeItems(updatedItems)
-    // const newGrandTotal = sanitized.reduce((sum: number, it: any) => {
-    //   const val = getLineItemAmount(it)
-    //   const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
-    //   return sum + (Number.isNaN(num) ? 0 : num)
-    // }, 0)
 
     setFormModel?.((prevForm: any) => {
       const nextForm = { ...prevForm }
@@ -3589,22 +3774,6 @@ const Overview = (props: any) => {
         nextForm[tableFieldKey] = sanitized
       }
 
-      // const formattedGrandTotal = newGrandTotal.toFixed(2)
-
-      // Object.keys(nextForm).forEach((k) => {
-      //   const lk = k.toLowerCase()
-      //   if (
-      //     lk === 'invoice amount' ||
-      //     lk === 'invoice_amount' ||
-      //     lk === 'total due' ||
-      //     lk === 'total_due' ||
-      //     lk === 'total' ||
-      //     lk === 'total_amount'
-      //   ) {
-      //     nextForm[k] = formattedGrandTotal
-      //   }
-      // })
-
       return nextForm
     })
   }
@@ -3614,6 +3783,7 @@ const Overview = (props: any) => {
     fieldKey: string,
     value: any,
   ) => {
+    isInternalLineItemSyncRef.current = true
     setLineItems((prev) => {
       const updated = [...prev]
       const item = { ...updated[index] }
@@ -3632,6 +3802,7 @@ const Overview = (props: any) => {
   }
 
   const handleAddItem = () => {
+    isInternalLineItemSyncRef.current = true
     const newItem: any = {
       _id: `li-${Date.now()}-${Math.random()}`,
     }
@@ -3661,6 +3832,7 @@ const Overview = (props: any) => {
   }
 
   const handleRemoveItem = (indexToRemove: number) => {
+    isInternalLineItemSyncRef.current = true
     setLineItems((prev) => {
       const updated = prev.filter((_, idx) => idx !== indexToRemove)
       syncLineItemsToFormModel(updated)
@@ -3770,6 +3942,7 @@ const Overview = (props: any) => {
     setFileType(null)
     setScale(1)
     setIsViewerLoading(false)
+    setActiveHighlightTerm(null)
     lastFetchedRef.current = null
   }, [requestFileKey])
 
@@ -3940,8 +4113,14 @@ const Overview = (props: any) => {
         ref={pdfViewerWrapperRef}
       >
         <DocumentPreviewViewer
+          activeHighlightColor='var(--primary-9)'
+          activeHighlightTerm={activeHighlightTerm}
+          enableHighlight={Boolean(activeHighlightTerm)}
           fileName={previewFileName}
           fileUrl={previewUrl}
+          focusRequestId={focusRequestId}
+          highlightColors={activeHighlightColors}
+          highlightTerms={activeHighlightTerm ? [activeHighlightTerm] : []}
           isImage={isImagePreview}
           isLoading={isViewerLoading}
           isPdf={isPdfPreview}
@@ -5957,19 +6136,29 @@ const Overview = (props: any) => {
                               ].map((label) => (
                                 <FormCard
                                   fieldKey={label}
+                                  hasAppliedSuggestion={
+                                    !!appliedFieldSuggestions[label]
+                                  }
                                   icon={getFieldIcon(label)}
+                                  isAutoOpened={Boolean(isAutoOpenedRequest)}
                                   isLoading={isCurrentlyProcessing}
                                   key={label}
-                                  label={localizeRequestFieldLabel(i18n, label)}
+                                  label={getFieldLabel(label)}
+                                  missing={isKanbanMissingMatch(
+                                    kanbanMissingFieldIds,
+                                    label,
+                                  )}
+                                  onApplySuggestion={() =>
+                                    handleApplySuggestion(label)
+                                  }
+                                  onDismissSuggestion={() =>
+                                    handleDismissSuggestion(label)
+                                  }
                                   options={getOptions(label)}
                                   poSourceLabel={poSourceLabel}
                                   poValue={getFieldPoValue(label)}
                                   type={getFieldType(label)}
                                   value={'-'}
-                                  missing={isKanbanMissingMatch(
-                                    kanbanMissingFieldIds,
-                                    label,
-                                  )}
                                   onChange={(newVal: string) =>
                                     handleFieldChange(label, newVal)
                                   }
@@ -5978,7 +6167,9 @@ const Overview = (props: any) => {
                                   }
                                 />
                               ))
-                            : Object.entries(formModel || {})
+                            : (() => {
+                                const seenDisplayLabels = new Set<string>()
+                                return Object.entries(formModel || {})
                                 .filter(([key, val]) => {
                                   if (typeof val === 'object' && val !== null) {
                                     if ('Invoice Value' in val) {
@@ -6022,6 +6213,15 @@ const Overview = (props: any) => {
                                     )
                                   )
                                 })
+                                .filter(([key]) => {
+                                  const displayLabel = getFieldLabel(key)
+                                  const norm = (displayLabel || key)
+                                    .toLowerCase()
+                                    .replace(/[\s_-]+/g, '')
+                                  if (seenDisplayLabels.has(norm)) return false
+                                  seenDisplayLabels.add(norm)
+                                  return true
+                                })
                                 .map(([key, val]) => {
                                   const rawVal =
                                     val &&
@@ -6030,7 +6230,10 @@ const Overview = (props: any) => {
                                       ? val['Invoice Value']
                                       : val
 
-                                  const fieldType = getFieldType(key)
+                                  const displayLabel = getFieldLabel(key)
+                                  const fieldType = getFieldType(
+                                    displayLabel || key,
+                                  )
                                   let displayValue =
                                     fieldType === 'date' &&
                                     (rawVal === null ||
@@ -6042,8 +6245,10 @@ const Overview = (props: any) => {
 
                                   if (
                                     typeof displayValue === 'string' &&
-                                    (key.toLowerCase().includes('invoice no') ||
-                                      key
+                                    ((displayLabel || key)
+                                      .toLowerCase()
+                                      .includes('invoice no') ||
+                                      (displayLabel || key)
                                         .toLowerCase()
                                         .includes('invoice number'))
                                   ) {
@@ -6058,16 +6263,28 @@ const Overview = (props: any) => {
                                   return (
                                     <FormCard
                                       fieldKey={key}
-                                      icon={getFieldIcon(key)}
+                                      hasAppliedSuggestion={
+                                        !!appliedFieldSuggestions[key]
+                                      }
+                                      icon={getFieldIcon(displayLabel || key)}
+                                      isAutoOpened={Boolean(isAutoOpenedRequest)}
                                       key={key}
-                                      options={getOptions(key)}
+                                      onApplySuggestion={() =>
+                                        handleApplySuggestion(key)
+                                      }
+                                      onDismissSuggestion={() =>
+                                        handleDismissSuggestion(key)
+                                      }
+                                      options={getOptions(displayLabel || key)}
                                       poSourceLabel={poSourceLabel}
                                       poValue={getFieldPoValue(key)}
                                       score={getFieldScore(key)}
                                       type={fieldType}
                                       value={displayValue}
                                       highlight={(() => {
-                                        const normalized = key.toLowerCase()
+                                        const normalized = (
+                                          displayLabel || key
+                                        ).toLowerCase()
                                         if (normalized.includes('due date'))
                                           return false
                                         return (
@@ -6087,10 +6304,7 @@ const Overview = (props: any) => {
                                           displayValue === '' ||
                                           displayValue === '-')
                                       }
-                                      label={localizeRequestFieldLabel(
-                                        i18n,
-                                        key,
-                                      )}
+                                      label={displayLabel}
                                       missing={isKanbanMissingMatch(
                                         kanbanMissingFieldIds,
                                         key,
@@ -6103,7 +6317,8 @@ const Overview = (props: any) => {
                                       }
                                     />
                                   )
-                                })}
+                                })
+                            })()}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -6137,11 +6352,9 @@ const Overview = (props: any) => {
                                     hasAnyScore={false}
                                     hideFooter={true}
                                     isDynamicTable={true}
+                                    isReadOnly={true}
                                     lineItems={poLineItems}
                                     skeletonRows={skeletonRows}
-                                    handleLineItemChange={
-                                      handlePoLineItemChange
-                                    }
                                     isCurrentlyProcessing={
                                       isCurrentlyProcessing
                                     }
