@@ -22,6 +22,7 @@ import { evaluateFormRules } from './ruleEngine'
 import {
   getColumnCurrencyOptions,
   getColumnDecimalDigits,
+  getNumberBounds,
   hasMeaningfulTableRows,
 } from './tableColumnDefaults'
 import { getStoredFilesError, isFileColumnType } from './tableColumnFiles'
@@ -453,7 +454,7 @@ export function validateFieldValue(
           }
 
           // At most one format/range error per cell
-          const cellError = getTableCellConstraintError(col, colVal)
+          const cellError = getTableCellConstraintError(col, colVal, row)
           if (cellError) {
             errors.push(`Row ${rowIdx + 1}: ${colLabel} ${cellError}`)
           }
@@ -584,7 +585,11 @@ const TABLE_TEXT_CONTENT_RULES: Record<string, [RegExp, string]> = {
  * SHORT_TEXT/LONG_TEXT, INTEGER/DECIMAL apply to NUMBER/COUNTER.
  * Returns the first violation message, or undefined when the cell is valid.
  */
-function getTableCellConstraintError(col: any, value: any): string | undefined {
+function getTableCellConstraintError(
+  col: any,
+  value: any,
+  row?: Record<string, any>,
+): string | undefined {
   const validation = col.settings?.validation || {}
   const colType = String(col.type || '').toUpperCase()
   const contentRule = String(validation.contentRule || '').toUpperCase()
@@ -656,14 +661,26 @@ function getTableCellConstraintError(col: any, value: any): string | undefined {
   }
 
   // Columns without any configured rule or bound keep their prior behavior
-  if (!contentRule && min === null && max === null) return undefined
+  const hasBoundFromColumn = Boolean(
+    validation.minimumNumberField || validation.maximumNumberField,
+  )
+  if (!contentRule && min === null && max === null && !hasBoundFromColumn) {
+    return undefined
+  }
 
   if (TABLE_NUMERIC_COLUMN_TYPES.includes(colType)) {
     const str = String(value).trim()
-    if (contentRule === 'INTEGER' && !INTEGER_REGEX.test(str)) {
+    // Integer and Commas are whole numbers; Decimal and Both allow decimals
+    if (
+      (contentRule === 'INTEGER' || contentRule === 'COMMAS') &&
+      !INTEGER_REGEX.test(str)
+    ) {
       return 'should be a number without decimals'
     }
-    if (contentRule === 'DECIMAL' && !NUMERIC_REGEX.test(str)) {
+    if (
+      (contentRule === 'DECIMAL' || contentRule === 'BOTH') &&
+      !NUMERIC_REGEX.test(str)
+    ) {
       return 'should be a valid number'
     }
     const num = Number(value)
@@ -675,8 +692,13 @@ function getTableCellConstraintError(col: any, value: any): string | undefined {
     ) {
       return `decimal places should not exceed ${digits} digits`
     }
-    if (min !== null && num < min) return `should not be less than ${min}`
-    if (max !== null && num > max) return `should not be more than ${max}`
+    const bounds = getNumberBounds(col, row)
+    if (bounds.min !== undefined && num < bounds.min) {
+      return `should not be less than ${bounds.min}`
+    }
+    if (bounds.max !== undefined && num > bounds.max) {
+      return `should not be more than ${bounds.max}`
+    }
     return undefined
   }
 

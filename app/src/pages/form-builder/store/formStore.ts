@@ -471,10 +471,13 @@ export interface Question {
             maxDateOffset?: number | string
             maxFileSize?: number | string
             maximum?: number | string
+            maximumNumberField?: string
             maxTimeOffset?: number | string
             minDateOffset?: number | string
             minimum?: number | string
+            minimumNumberField?: string
             minTimeOffset?: number | string
+            rangeType?: 'CUSTOM' | 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED'
             readonlySettings?: Array<{
               controls: string[]
               id: string

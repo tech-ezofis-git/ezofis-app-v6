@@ -20,6 +20,7 @@ import FormulaBuilder from './FormulaBuilder'
 import TableColumnAiSettings from './TableColumnAiSettings'
 import TableColumnChoiceSettings from './TableColumnChoiceSettings'
 import TableColumnFormatSettings from './TableColumnFormatSettings'
+import TableColumnNumberRange from './TableColumnNumberRange'
 import TableColumnRuleSettings from './TableColumnRuleSettings'
 
 const SUMMABLE_COLUMN_TYPES: QuestionType[] = [
@@ -39,6 +40,16 @@ const CONTENT_RULE_OPTIONS = [
   { id: 'WEB', name: 'Web' },
   { id: 'INTEGER', name: 'Integer' },
   { id: 'DECIMAL', name: 'Decimal' },
+  { id: 'COMMAS', name: 'Commas' },
+  { id: 'BOTH', name: 'Both (commas and decimals)' },
+]
+
+const NUMBER_CONTENT_RULES = ['INTEGER', 'DECIMAL', 'COMMAS', 'BOTH']
+
+const CALCULATED_RULE_OPTIONS = [
+  { id: '', name: 'Any result' },
+  { id: 'INTEGER', name: 'Integer (does not accept decimals)' },
+  { id: 'DECIMAL', name: 'Decimal (does accept decimals)' },
 ]
 
 const VALIDATABLE_COLUMN_TYPES: QuestionType[] = [
@@ -164,6 +175,7 @@ const TableColumnSettingsPanel = ({
   const defaultValueType = column.settings?.specific?.defaultValueType || 'CUSTOM'
   const showColumnTotal = Boolean(column.settings?.specific?.showColumnTotal)
   const contentRule = column.settings?.validation?.contentRule || 'TEXT'
+  const calculatedRule = column.settings?.validation?.contentRule || ''
   const minimum = column.settings?.validation?.minimum ?? ''
   const maximum = column.settings?.validation?.maximum ?? ''
   const isNumericColumn = column.type === 'NUMBER' || column.type === 'COUNTER'
@@ -543,6 +555,26 @@ const TableColumnSettingsPanel = ({
         </div>
       )}
 
+      {isCalculated && (
+        <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            Validation
+          </label>
+          <InputSelect
+            description='Integer rounds the calculated result to a whole number; Decimal keeps decimals.'
+            label='Content Rule'
+            options={CALCULATED_RULE_OPTIONS}
+            value={
+              CALCULATED_RULE_OPTIONS.find((o) => o.id === calculatedRule) ||
+              CALCULATED_RULE_OPTIONS[0]
+            }
+            onChange={(opt) =>
+              onUpdate({ validation: { contentRule: String(opt?.id || '') } })
+            }
+          />
+        </div>
+      )}
+
       {!isCalculated && !showOptions && (
         <div className='space-y-2'>
           <InputSelect
@@ -602,10 +634,10 @@ const TableColumnSettingsPanel = ({
             options={
               column.type === 'NUMBER' || column.type === 'COUNTER'
                 ? CONTENT_RULE_OPTIONS.filter((o) =>
-                    ['INTEGER', 'DECIMAL'].includes(o.id),
+                    NUMBER_CONTENT_RULES.includes(o.id),
                   )
                 : CONTENT_RULE_OPTIONS.filter(
-                    (o) => !['INTEGER', 'DECIMAL'].includes(o.id),
+                    (o) => !NUMBER_CONTENT_RULES.includes(o.id),
                   )
             }
             value={
@@ -615,7 +647,8 @@ const TableColumnSettingsPanel = ({
               onUpdate({ validation: { contentRule: String(opt?.id || '') } })
             }
           />
-          {isNumericColumn && contentRule === 'DECIMAL' && (
+          {isNumericColumn &&
+            (contentRule === 'DECIMAL' || contentRule === 'BOTH') && (
             <InputNumber
               description='Maximum digits after the decimal point. Leave empty for no limit.'
               label='Decimal Digits'
@@ -625,26 +658,26 @@ const TableColumnSettingsPanel = ({
               onChange={(v) => onUpdate({ validation: { decimalDigits: v } })}
             />
           )}
-          <div className='grid grid-cols-2 gap-2'>
-            <InputNumber
-              value={minimum}
-              label={
-                column.type === 'NUMBER' || column.type === 'COUNTER'
-                  ? 'Min Value'
-                  : 'Min Length'
-              }
-              onChange={(v) => onUpdate({ validation: { minimum: v } })}
+          {isNumericColumn ? (
+            <TableColumnNumberRange
+              column={column}
+              siblingColumns={siblingColumns}
+              onUpdate={onUpdate}
             />
-            <InputNumber
-              value={maximum}
-              label={
-                column.type === 'NUMBER' || column.type === 'COUNTER'
-                  ? 'Max Value'
-                  : 'Max Length'
-              }
-              onChange={(v) => onUpdate({ validation: { maximum: v } })}
-            />
-          </div>
+          ) : (
+            <div className='grid grid-cols-2 gap-2'>
+              <InputNumber
+                label='Min Length'
+                value={minimum}
+                onChange={(v) => onUpdate({ validation: { minimum: v } })}
+              />
+              <InputNumber
+                label='Max Length'
+                value={maximum}
+                onChange={(v) => onUpdate({ validation: { maximum: v } })}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -659,6 +692,14 @@ const TableColumnSettingsPanel = ({
             min={0}
             value={step}
             onChange={(v) => onUpdate({ specific: { step: v } })}
+          />
+          <InputSwitch
+            checked={column.settings?.specific?.qrValue === true}
+            description='Show a scan button in the cell to read a number from a QR code or barcode.'
+            label='Read Values From QR'
+            onChange={(checked) =>
+              onUpdate({ specific: { qrValue: checked } })
+            }
           />
           <div className='grid grid-cols-2 gap-2'>
             <InputText

@@ -37,12 +37,15 @@ import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScan
 import { extractHeadersAndData } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/utils/fileParser'
 import { evaluateFormula } from '@/pages/form-builder/helpers/formula'
 import {
+  applyCalculatedContentRule,
   buildTableRowDefaults,
   canReplaceUntouchedRow,
   clampTextToMaxLength,
   getColumnCurrencyCode,
   getColumnCurrencyOptions,
+  getNumberBounds,
   getNumberCellProps,
+  parseScannedNumber,
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
 import {
   addFilesToValue,
@@ -170,10 +173,13 @@ export interface TableColumn {
       maxDateOffset?: number | string
       maxFileSize?: number | string
       maximum?: number | string
+      maximumNumberField?: string
       maxTimeOffset?: number | string
       minDateOffset?: number | string
       minimum?: number | string
+      minimumNumberField?: string
       minTimeOffset?: number | string
+      rangeType?: 'CUSTOM' | 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED'
       readonlySettings?: Array<{
         controls: string[]
         id: string
@@ -184,12 +190,6 @@ export interface TableColumn {
       timeLimitType?: 'MAX_TIME' | 'MIN_TIME' | 'NONE' | 'RANGE'
     }
   }
-}
-
-const toFiniteBound = (bound: unknown): number | undefined => {
-  if (bound === undefined || bound === null || bound === '') return undefined
-  const n = Number(bound)
-  return Number.isFinite(n) ? n : undefined
 }
 
 const getColumnPlaceholder = (col: TableColumn) =>
@@ -352,7 +352,10 @@ const resolveCalculatedRow = (
       const context = tableFieldId
         ? { ...next, [tableFieldId]: allRows }
         : { ...next, _rows: allRows }
-      const result = evaluateFormula(tokens as any, context, colRefs as any)
+      const result = applyCalculatedContentRule(
+        col,
+        evaluateFormula(tokens as any, context, colRefs as any),
+      )
       const formatted = result === null ? '' : result
       if (next[col.id] !== formatted) {
         next[col.id] = formatted
@@ -537,8 +540,65 @@ export { ApiCatalogSelect }
 
 interface CellActions {
   siblingColumns: TableColumn[]
+  row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
+}
+
+// NUMBER / COUNTER cell: number input honoring the column's content rule,
+// range (fixed, or taken from another cell of the row), step, prefix/suffix,
+// plus an optional QR / barcode scan button ("Read Values From QR").
+const TableCellNumber = ({
+  col,
+  row,
+  val,
+  onCellChange,
+}: {
+  col: TableColumn
+  row?: Record<string, unknown>
+  val: number | string | null | undefined
+  onCellChange: (newVal: unknown) => void
+}) => {
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const qr = col.settings?.specific?.qrValue === true
+  const bounds = getNumberBounds(col, row)
+  const input = (
+    <InputNumber
+      className='w-full'
+      {...getNumberCellProps(col)}
+      max={bounds.max}
+      min={bounds.min}
+      value={val != null ? val : ''}
+      onChange={(v) => onCellChange(v)}
+    />
+  )
+  if (!qr) return input
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>{input}</div>
+        <button
+          aria-label='Scan QR / Barcode'
+          className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+          title='Scan QR / Barcode'
+          type='button'
+          onClick={() => setScannerOpen((open) => !open)}
+        >
+          <Icon height={14} name='lucide:qr-code' width={14} />
+        </button>
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            const scanned = parseScannedNumber(col, raw)
+            if (scanned !== undefined) onCellChange(scanned)
+            setScannerOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
 }
 
 const TableCellShortText = ({
@@ -965,13 +1025,11 @@ const renderCellInput = (
     case 'NUMBER':
     case 'COUNTER':
       return (
-        <InputNumber
-          className='w-full'
-          {...getNumberCellProps(col)}
-          max={toFiniteBound(col.settings?.validation?.maximum)}
-          min={toFiniteBound(col.settings?.validation?.minimum)}
-          value={val != null ? val : ''}
-          onChange={(v) => onCellChange(v)}
+        <TableCellNumber
+          col={col}
+          row={actions?.row}
+          val={val}
+          onCellChange={onCellChange}
         />
       )
 
@@ -2459,6 +2517,7 @@ const TableFieldRenderer = ({
                                   : undefined,
                                 rowIndex,
                                 {
+                                  row: resolvedRow,
                                   siblingColumns: tableColumns,
                                   onFilesAdded: (files) =>
                                     handleFilesAdded(rowIndex, col, files),
@@ -2666,6 +2725,7 @@ const TableFieldRenderer = ({
                             : undefined,
                           rowIndex,
                           {
+                            row: resolvedRow,
                             siblingColumns: tableColumns,
                             onFilesAdded: (files) =>
                               handleFilesAdded(rowIndex, col, files),

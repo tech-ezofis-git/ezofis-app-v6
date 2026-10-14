@@ -16,6 +16,14 @@ const isSameUserValue = (value: unknown, expected: string) =>
 
 const isBlank = (v: unknown) => v === undefined || v === null || v === ''
 
+const toFiniteNumber = (v: unknown): number | undefined => {
+  const raw =
+    v && typeof v === 'object' ? (v as Record<string, unknown>).value : v
+  if (isBlank(raw)) return undefined
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : undefined
+}
+
 const toPositiveNumber = (v: unknown): number | undefined => {
   if (isBlank(v)) return undefined
   const n = Number(v)
@@ -24,6 +32,23 @@ const toPositiveNumber = (v: unknown): number | undefined => {
 
 const readCell = (row: Record<string, any> | undefined, col: any) =>
   row?.[col.id] ?? (col.name ? row?.[col.name] : undefined)
+
+/**
+ * Content rule of a CALCULATED column, applied to its formula result: Integer
+ * rounds the result to a whole number ("does not accept decimals"); Decimal
+ * and no rule leave it as calculated. Used wherever a column's formula is
+ * evaluated so the cell, totals and other formulas all see the same value.
+ */
+export function applyCalculatedContentRule(
+  col: any,
+  result: number | null,
+): number | null {
+  if (result === null || !Number.isFinite(result)) return result
+  const rule = String(
+    col?.settings?.validation?.contentRule || '',
+  ).toUpperCase()
+  return rule === 'INTEGER' ? Math.round(result) : result
+}
 
 /**
  * Builds the default values for a new / blank row. Columns without a
@@ -126,12 +151,38 @@ export function getColumnDecimalDigits(col: any): number | undefined {
   const rule = String(
     col?.settings?.validation?.contentRule || '',
   ).toUpperCase()
-  if (rule !== 'DECIMAL') return undefined
+  if (rule !== 'DECIMAL' && rule !== 'BOTH') return undefined
   const validation = col?.settings?.validation
   const raw = validation?.decimalDigits ?? validation?.decimalValue
   if (isBlank(raw)) return undefined
   const n = Number(raw)
   return Number.isInteger(n) && n >= 0 ? n : undefined
+}
+
+/**
+ * Minimum / maximum a NUMBER / COUNTER cell must respect in its row.
+ * `rangeType` picks where each bound comes from: both fixed (the default, and
+ * what columns without a range type use), the minimum fixed with the maximum
+ * read from another column of the same row, or the reverse. A bound read from
+ * another column is skipped while that cell is empty.
+ */
+export function getNumberBounds(
+  col: any,
+  row: Record<string, any> | undefined,
+): { max: number | undefined; min: number | undefined } {
+  const validation = col?.settings?.validation || {}
+  const fixedMin = toFiniteNumber(validation.minimum)
+  const fixedMax = toFiniteNumber(validation.maximum)
+  const fromColumn = (id: unknown) =>
+    id ? toFiniteNumber(row?.[String(id)]) : undefined
+  switch (validation.rangeType) {
+    case 'MIN_FIXED_MAX_FLEX':
+      return { max: fromColumn(validation.maximumNumberField), min: fixedMin }
+    case 'MIN_FLEX_MAX_FIXED':
+      return { max: fixedMax, min: fromColumn(validation.minimumNumberField) }
+    default:
+      return { max: fixedMax, min: fixedMin }
+  }
 }
 
 /** Native input props for a NUMBER / COUNTER table cell. */
@@ -142,18 +193,22 @@ export function getNumberCellProps(col: any): {
   prefix: string | undefined
   step: number | undefined
   suffix: string | undefined
+  thousandSeparator: string | undefined
 } {
   const rule = String(
     col?.settings?.validation?.contentRule || '',
   ).toUpperCase()
   const specific = col?.settings?.specific
   return {
-    allowDecimal: rule !== 'INTEGER',
+    // INTEGER and COMMAS are whole numbers; DECIMAL and BOTH allow decimals
+    allowDecimal: rule !== 'INTEGER' && rule !== 'COMMAS',
     decimalScale: getColumnDecimalDigits(col),
     placeholder: specific?.placeholder || '0',
     prefix: specific?.prefixLabel || undefined,
     step: toPositiveNumber(specific?.step),
     suffix: specific?.suffixLabel || undefined,
+    // COMMAS and BOTH show thousands separators (the stored value stays numeric)
+    thousandSeparator: rule === 'COMMAS' || rule === 'BOTH' ? ',' : undefined,
   }
 }
 
@@ -171,8 +226,7 @@ export function hasMeaningfulTableRows(
   return (
     Array.isArray(rows) &&
     rows.some(
-      (row, idx) =>
-        !isDefaultOnlyRow(row, columns, user, rows.slice(0, idx)),
+      (row, idx) => !isDefaultOnlyRow(row, columns, user, rows.slice(0, idx)),
     )
   )
 }
@@ -238,6 +292,27 @@ export function isGeneratedDefaultCell(
         String(value) === String(specific.customDefaultValue)
       )
   }
+}
+
+/**
+ * A QR / barcode scan read as a number for a NUMBER / COUNTER cell. Spaces and
+ * thousands commas are ignored; text, or a decimal on a whole-number rule
+ * (Integer / Commas), is rejected so the cell keeps its value.
+ */
+export function parseScannedNumber(col: any, raw: unknown): number | undefined {
+  const cleaned = String(raw ?? '')
+    .replace(/[\s,]/g, '')
+    .trim()
+  if (!cleaned) return undefined
+  const n = Number(cleaned)
+  if (!Number.isFinite(n)) return undefined
+  const rule = String(
+    col?.settings?.validation?.contentRule || '',
+  ).toUpperCase()
+  if ((rule === 'INTEGER' || rule === 'COMMAS') && !Number.isInteger(n)) {
+    return undefined
+  }
+  return n
 }
 
 /**
