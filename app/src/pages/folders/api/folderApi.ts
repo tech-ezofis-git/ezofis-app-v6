@@ -1234,6 +1234,8 @@ export const folderApi = {
       (request.folderSearch ?? request.search)?.trim() || undefined
     const fileSearchText =
       (request.fileSearch ?? request.search)?.trim() || undefined
+    const hasSearch = Boolean(fileSearchText || folderSearchText)
+    const effectiveSearchText = fileSearchText || folderSearchText
 
     const fetchRepositoryFiles = async (
       itemFilters: Record<string, string | string[]>,
@@ -1272,15 +1274,25 @@ export const folderApi = {
       filters,
     )
 
-    if (listAllFiles) {
+    const shouldFetchFiles =
+      hasSearch ||
+      listAllFiles ||
+      isBrowseLeafNode(decoded, structure) ||
+      (includeFiles &&
+        decoded.kind === 'browse' &&
+        Object.keys(filters).length > 0)
+
+    if (shouldFetchFiles) {
       const fileResult = await fetchRepositoryFiles(
         fileItemFilters,
-        fileSearchText,
+        effectiveSearchText,
       )
       files = fileResult.files
       filePageResult = fileResult.filePage
-    } else if (decoded.kind === 'repository') {
-      folders = (structure?.browsePaths || []).map((browsePath) =>
+    }
+
+    if (decoded.kind === 'repository') {
+      const allBrowsePaths = (structure?.browsePaths || []).map((browsePath) =>
         toBrowsePathItem({
           label: browsePath.label,
           pathId: browsePath.id,
@@ -1288,6 +1300,12 @@ export const folderApi = {
           repositoryName: decoded.label,
         }),
       )
+      const searchLower = (effectiveSearchText || '').toLowerCase()
+      folders = searchLower
+        ? allBrowsePaths.filter((item) =>
+            item.title.toLowerCase().includes(searchLower),
+          )
+        : allBrowsePaths
       folderPage = {
         hasMore: false,
         nextCursor: null,
@@ -1296,15 +1314,9 @@ export const folderApi = {
         totalCount: folders.length,
         totalPages: 1,
       }
-      // Grid at repository root: show browse paths only.
-      // Unscoped /items would return every file in the repository.
     } else if (isBrowseLeafNode(decoded, structure)) {
-      const fileResult = await fetchRepositoryFiles(
-        fileItemFilters,
-        fileSearchText,
-      )
-      files = fileResult.files
-      filePageResult = fileResult.filePage
+      folders = []
+      folderPage = toPage(null)
     } else {
       const childrenResult = await authApiV6.getRepositoryBrowseChildren({
         id: repositoryId,
@@ -1312,7 +1324,7 @@ export const folderApi = {
         pageSize: defaultGroupPageSize,
         parentFilters: folderParentFilters,
         pathId,
-        search: folderSearchText,
+        search: effectiveSearchText,
       } as any)
 
       if ((childrenResult as any).canceled) {
@@ -1336,21 +1348,6 @@ export const folderApi = {
         fieldIconMap,
       )
       folderPage = toPage(childrenResult.data?.groups)
-
-      // Subfolder (browse with parentFilters): load scoped /items.
-      // Skip for repository root and browsePath roots (empty filters).
-      if (
-        includeFiles &&
-        decoded.kind === 'browse' &&
-        Object.keys(filters).length > 0
-      ) {
-        const fileResult = await fetchRepositoryFiles(
-          fileItemFilters,
-          fileSearchText,
-        )
-        files = fileResult.files
-        filePageResult = fileResult.filePage
-      }
     }
 
     return {

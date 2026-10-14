@@ -580,7 +580,7 @@ export function FolderDataTableSection({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  if (!folders.length && !folderSearch && !loadingFolders) return null
+  if (!folders.length && (!folderSearch || hasFiles) && !loadingFolders) return null
 
   const resolvedFolderBodyMaxHeight =
     folderBodyMaxHeight ||
@@ -873,6 +873,8 @@ export default function FolderTableDataTableSplit({
     archivedFiles.length > 0 ||
     loadingArchived
 
+  const isSearching = Boolean((fileSearch || folderSearch)?.trim())
+
   const canResizeSplit =
     folders.length > 0 &&
     (files.length > 0 ||
@@ -881,9 +883,13 @@ export default function FolderTableDataTableSplit({
       effectiveArchivedCount > 0 ||
       archivedFiles.length > 0 ||
       loadingArchived)
-  const showFoldersPane = splitViewMode !== 'files-only'
-  const showFilesPane = splitViewMode !== 'folders-only'
-  const isSplitView = splitViewMode === 'split'
+  const showFoldersPane =
+    splitViewMode !== 'files-only' &&
+    (!isSearching || folders.length > 0 || (!files.length && !loading && !loadingPage))
+  const showFilesPane =
+    splitViewMode !== 'folders-only' &&
+    (!isSearching || files.length > 0 || loading || loadingPage || !folders.length)
+  const isSplitView = canResizeSplit && splitViewMode === 'split'
 
   useEffect(() => {
     if (!canResizeSplit) {
@@ -1031,7 +1037,8 @@ export default function FolderTableDataTableSplit({
         {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
-        (activeDisplayFiles.length > 0 ||
+        (isSearching ||
+          activeDisplayFiles.length > 0 ||
           files.length > 0 ||
           loading ||
           loadingPage ||
@@ -1047,7 +1054,11 @@ export default function FolderTableDataTableSplit({
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
             foldersLength={folders.length}
-            isExpanded={splitViewMode === 'files-only'}
+            isExpanded={
+              splitViewMode === 'files-only' ||
+              folders.length === 0 ||
+              !canResizeSplit
+            }
             isSplitView={isSplitView}
             loading={loading || loadingArchived}
             loadingPage={loadingPage}
@@ -1570,8 +1581,10 @@ function FileDataTableSection({
             filteredFiles.length,
           )
 
+  const isSearching = Boolean(fileSearch?.trim())
   const showFiles =
-    filteredFiles.length || files.length || loading || loadingPage
+    isSearching ||
+    Boolean(filteredFiles.length || files.length || loading || loadingPage)
 
   if (!showFiles) return null
 

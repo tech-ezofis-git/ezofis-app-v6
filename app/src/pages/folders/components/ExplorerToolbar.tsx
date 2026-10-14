@@ -106,6 +106,7 @@ export function ExplorerToolbar({
     if (view === 'list') return 'files'
 
     const visibility = getExplorerSectionVisibility({
+      fileSearch,
       filesLength: files.length,
       folderSearch,
       foldersLength: folders.length,
@@ -120,6 +121,7 @@ export function ExplorerToolbar({
 
     // Empty filter results still keep the matching filter set visible
     if (mode === 'none') {
+      if (Boolean((fileSearch || folderSearch)?.trim())) return 'files'
       if (hasActiveFolderFilters && hasActiveFileFilters) return 'both'
       if (hasActiveFolderFilters || Boolean(folderSearch.trim()))
         return 'folders'
