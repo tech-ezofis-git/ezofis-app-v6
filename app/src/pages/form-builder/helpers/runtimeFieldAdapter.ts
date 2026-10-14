@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { applyCalculatedFields, evaluateFormula } from './formula'
+import { applyCalculatedContentRule } from './tableColumnDefaults'
 import {
   normalizeCurrencyEntryValue,
   normalizePhoneEntryValue,
@@ -819,7 +820,10 @@ export function evaluateTableRows(
         const context = field?.id
           ? { ...next, [field.id]: rows }
           : { ...next, _rows: rows }
-        const result = evaluateFormula(tokens, context, colRefs as any)
+        const result = applyCalculatedContentRule(
+          col,
+          evaluateFormula(tokens, context, colRefs as any),
+        )
         const formatted = result === null ? '' : result
         if (next[col.id] !== formatted) {
           next[col.id] = formatted

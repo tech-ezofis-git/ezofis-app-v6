@@ -9,14 +9,44 @@ export interface ColumnOption {
 export interface ColumnOptionSources {
   masterByColumn?: Record<string, ColumnOption[]>
   masterCascaded?: Record<string, Record<string, ColumnOption[]>>
+  predefinedByColumn?: Record<string, ColumnOption[]>
   repositoryByColumn?: Record<string, ColumnOption[]>
   repositoryCascaded?: Record<string, Record<string, ColumnOption[]>>
   userList?: ColumnOption[]
 }
 
-export type ColumnOptionsSource = 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
+export type ColumnOptionsSource =
+  | 'API'
+  | 'LOOKUP'
+  | 'MASTER'
+  | 'PREDEFINED'
+  | 'USER_LIST'
 
 const isBlank = (v: unknown) => v === undefined || v === null || v === ''
+
+/**
+ * Applies a scanned QR / barcode value to a choice cell. The text is matched
+ * to an option (by id or label, ignoring case). With no match it is only
+ * accepted when users may add new options; otherwise the cell is unchanged.
+ */
+export function applyScannedValue(
+  options: ColumnOption[],
+  current: unknown,
+  scanned: string,
+  settings: { allowNew: boolean; multi: boolean },
+): unknown {
+  const text = String(scanned ?? '').trim()
+  if (!text) return current
+  const wanted = text.toLowerCase()
+  const match = options.find(
+    (o) => o.id.toLowerCase() === wanted || o.name.toLowerCase() === wanted,
+  )
+  const picked = match ? match.id : settings.allowNew ? text : null
+  if (picked === null) return current
+  if (!settings.multi) return picked
+  const list = Array.isArray(current) ? current.map(String) : []
+  return list.includes(picked) ? list : [...list, picked]
+}
 
 /**
  * Adds any currently selected value that is missing from `options` so a saved
@@ -83,9 +113,19 @@ export function getColumnMasterConfig(col: any): {
  */
 export function getColumnOptionsSource(col: any): ColumnOptionsSource {
   const source = col?.settings?.lookupSettings?.optionsSource
-  return source === 'API' || source === 'MASTER' || source === 'USER_LIST'
+  return source === 'API' ||
+    source === 'MASTER' ||
+    source === 'PREDEFINED' ||
+    source === 'USER_LIST'
     ? source
     : 'LOOKUP'
+}
+
+/** The "predefined list" a column reads its options from (default: users). */
+export function getColumnPredefinedType(col: any): 'FOLDER' | 'USER' {
+  return col?.settings?.specific?.predefinedType === 'FOLDER'
+    ? 'FOLDER'
+    : 'USER'
 }
 
 /**
@@ -128,6 +168,8 @@ export function selectColumnCellOptions(
 
   if (source === 'USER_LIST') return sources.userList ?? []
 
+  if (source === 'PREDEFINED') return sources.predefinedByColumn?.[col.id] ?? []
+
   if (source === 'MASTER') {
     if (!getColumnMasterConfig(col)) return undefined
     if (parentColId) {
@@ -146,4 +188,17 @@ export function selectColumnCellOptions(
   }
 
   return undefined
+}
+
+/**
+ * Stored value for an option picked in the cell dropdown. A listed option is
+ * stored by its id; one the user typed in arrives with a generated id, so its
+ * text (`value` / `name`) is stored instead.
+ */
+export function toStoredOptionValue(
+  option: { id: unknown; name?: string; value?: unknown },
+  options: ColumnOption[],
+): string {
+  const listed = options.some((o) => o.id === option.id)
+  return String(listed ? option.id : (option.value ?? option.name ?? option.id))
 }

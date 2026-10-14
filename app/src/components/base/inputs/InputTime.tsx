@@ -49,10 +49,13 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
       dropdown: 'border border-gray-3 bg-surface-raised shadow-md',
       error: classNames.error,
       field: cn(
-        'placeholder:text-gray-8 focus:bg-primary-9 focus:text-white focus:placeholder:text-white',
-        !!error && 'text-gray-12',
+        'text-13 font-medium placeholder:font-normal placeholder:text-gray-8 focus:bg-primary-9 focus:text-white focus:placeholder:text-white',
+        !!error ? 'text-gray-12' : 'text-gray-12',
       ),
-      fieldsGroup: value ? 'text-gray-12' : 'text-gray-8',
+      fieldsGroup: cn(
+        'text-13 font-medium tracking-normal',
+        value ? 'text-gray-12' : 'text-gray-8',
+      ),
       input: classNames.input,
       label: classNames.label,
       wrapper: classNames.wrapper,

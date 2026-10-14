@@ -6,7 +6,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import type { Option } from '@/types/option'
-import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
+import {
+  getRepositoryItemFacets,
+  getRepositorys,
+  uploadForOcr,
+} from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
@@ -33,12 +37,15 @@ import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScan
 import { extractHeadersAndData } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/utils/fileParser'
 import { evaluateFormula } from '@/pages/form-builder/helpers/formula'
 import {
+  applyCalculatedContentRule,
   buildTableRowDefaults,
   canReplaceUntouchedRow,
   clampTextToMaxLength,
   getColumnCurrencyCode,
   getColumnCurrencyOptions,
+  getNumberBounds,
   getNumberCellProps,
+  parseScannedNumber,
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
 import {
   addFilesToValue,
@@ -46,17 +53,21 @@ import {
   getColumnFileError,
   getColumnOcrTargets,
   getFileInputAccept,
+  isFileColumnType,
   isMultiFileColumn,
   mapOcrToRowPatch,
   removeFileFromValue,
   toFileList,
 } from '@/pages/form-builder/helpers/tableColumnFiles'
 import {
+  applyScannedValue,
   ensureSelectedOptions,
   getColumnMasterConfig,
   getColumnOptionsSource,
+  getColumnPredefinedType,
   parseColumnOptions,
   selectColumnCellOptions,
+  toStoredOptionValue,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import { getRowCellRuleStates } from '@/pages/form-builder/helpers/tableColumnRules'
 import {
@@ -66,6 +77,7 @@ import {
   isAddressColumn,
   isQrColumn,
 } from '@/pages/form-builder/helpers/tableColumnShortText'
+import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
 import {
   computeTableColumnTotals,
   extractCurrencyNumericValue,
@@ -109,7 +121,7 @@ export interface TableColumn {
     }
     lookupSettings?: {
       cascadeFromColumn?: string
-      optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'USER_LIST'
+      optionsSource?: 'API' | 'LOOKUP' | 'MASTER' | 'PREDEFINED' | 'USER_LIST'
       repositoryField?: string
       repositoryId?: string
     }
@@ -120,6 +132,7 @@ export interface TableColumn {
         selectFieldColumn: string[]
       }>
       allowMultipleFiles?: boolean
+      allowToAddNewOptions?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       customDefaultValue?: string
       customOptions?: string
@@ -127,9 +140,11 @@ export interface TableColumn {
       defaultValueType?: string
       formulaTokens?: Array<{ type: string; value: string }>
       isAddressField?: boolean
+      isSameMaster?: boolean
       masterFormColumn?: string
       masterFormId?: string
       placeholder?: string
+      predefinedType?: 'FOLDER' | 'USER'
       prefixLabel?: string
       qrValue?: boolean
       separateOptionsUsing?: 'COMMA' | 'NEWLINE'
@@ -138,6 +153,7 @@ export interface TableColumn {
       specificCurrencies?: string[]
       step?: number | string
       suffixLabel?: string
+      yearType?: 'CALENDER_YEAR' | 'FINANCIAL_YEAR'
     }
     validation?: {
       allowedFileTypes?: string[]
@@ -158,10 +174,13 @@ export interface TableColumn {
       maxDateOffset?: number | string
       maxFileSize?: number | string
       maximum?: number | string
+      maximumNumberField?: string
       maxTimeOffset?: number | string
       minDateOffset?: number | string
       minimum?: number | string
+      minimumNumberField?: string
       minTimeOffset?: number | string
+      rangeType?: 'CUSTOM' | 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED'
       readonlySettings?: Array<{
         controls: string[]
         id: string
@@ -172,12 +191,6 @@ export interface TableColumn {
       timeLimitType?: 'MAX_TIME' | 'MIN_TIME' | 'NONE' | 'RANGE'
     }
   }
-}
-
-const toFiniteBound = (bound: unknown): number | undefined => {
-  if (bound === undefined || bound === null || bound === '') return undefined
-  const n = Number(bound)
-  return Number.isFinite(n) ? n : undefined
 }
 
 const getColumnPlaceholder = (col: TableColumn) =>
@@ -340,7 +353,10 @@ const resolveCalculatedRow = (
       const context = tableFieldId
         ? { ...next, [tableFieldId]: allRows }
         : { ...next, _rows: allRows }
-      const result = evaluateFormula(tokens as any, context, colRefs as any)
+      const result = applyCalculatedContentRule(
+        col,
+        evaluateFormula(tokens as any, context, colRefs as any),
+      )
       const formatted = result === null ? '' : result
       if (next[col.id] !== formatted) {
         next[col.id] = formatted
@@ -525,8 +541,71 @@ export { ApiCatalogSelect }
 
 interface CellActions {
   siblingColumns: TableColumn[]
-  onFilesAdded?: (files: File[]) => Promise<void> | void
+  row?: Record<string, unknown>
+  onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
+}
+/** Outcome of reading a document into the row, shown under the file cell. */
+interface OcrStatus {
+  text: string
+  tone: 'error' | 'info'
+}
+
+
+// NUMBER / COUNTER cell: number input honoring the column's content rule,
+// range (fixed, or taken from another cell of the row), step, prefix/suffix,
+// plus an optional QR / barcode scan button ("Read Values From QR").
+const TableCellNumber = ({
+  col,
+  row,
+  val,
+  onCellChange,
+}: {
+  col: TableColumn
+  row?: Record<string, unknown>
+  val: number | string | null | undefined
+  onCellChange: (newVal: unknown) => void
+}) => {
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const qr = col.settings?.specific?.qrValue === true
+  const bounds = getNumberBounds(col, row)
+  const input = (
+    <InputNumber
+      className='w-full'
+      {...getNumberCellProps(col)}
+      max={bounds.max}
+      min={bounds.min}
+      value={val != null ? val : ''}
+      onChange={(v) => onCellChange(v)}
+    />
+  )
+  if (!qr) return input
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>{input}</div>
+        <button
+          aria-label='Scan QR / Barcode'
+          className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+          title='Scan QR / Barcode'
+          type='button'
+          onClick={() => setScannerOpen((open) => !open)}
+        >
+          <Icon height={14} name='lucide:qr-code' width={14} />
+        </button>
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            const scanned = parseScannedNumber(col, raw)
+            if (scanned !== undefined) onCellChange(scanned)
+            setScannerOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
 }
 
 const TableCellShortText = ({
@@ -658,9 +737,10 @@ const TableCellFileInput = ({
   isImageType: boolean
   val: any
   onCellChange: (newVal: any) => void
-  onFilesAdded?: (files: File[]) => Promise<void> | void
+  onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
 }) => {
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<OcrStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const multiple = isMultiFileColumn(col)
   const files = toFileList(val)
@@ -680,6 +760,7 @@ const TableCellFileInput = ({
       else accepted.push(file)
     }
     setError(problem)
+    setStatus(null)
     if (accepted.length === 0) return
 
     onCellChange(
@@ -696,7 +777,8 @@ const TableCellFileInput = ({
     if (onFilesAdded) {
       setBusy(true)
       try {
-        await onFilesAdded(accepted)
+        const result = await onFilesAdded(accepted)
+        if (result) setStatus(result)
       } finally {
         setBusy(false)
       }
@@ -779,6 +861,16 @@ const TableCellFileInput = ({
       {error && (
         <p className='text-[11px] leading-tight text-red-9'>{error}</p>
       )}
+      {status && (
+        <p
+          className={cn(
+            'text-[11px] leading-tight',
+            status.tone === 'error' ? 'text-red-9' : 'text-gray-9',
+          )}
+        >
+          {status.text}
+        </p>
+      )}
     </div>
   )
 }
@@ -815,28 +907,69 @@ const TableCellSelect = ({
   // A saved selection stays visible even if the option list changed or has
   // not loaded yet (the stored value itself is never altered here).
   const displayOptions = ensureSelectedOptions(options, val)
+  const allowNew = col.settings?.specific?.allowToAddNewOptions === true
+  const qr = col.settings?.specific?.qrValue === true
+  const [scannerOpen, setScannerOpen] = useState(false)
 
-  if (isMulti) {
-    const selectedIds: string[] = Array.isArray(val) ? val : []
-    return (
-      <InputSelectMultiple
-        className='w-full'
-        options={displayOptions}
-        placeholder={getColumnPlaceholder(col)}
-        value={displayOptions.filter((opt) => selectedIds.includes(opt.id))}
-        onChange={(opts) => onCellChange(opts.map((opt) => opt.id))}
-      />
-    )
-  }
-
-  return (
+  const select = isMulti ? (
+    <InputSelectMultiple
+      className='w-full'
+      creatable={allowNew}
+      options={displayOptions}
+      placeholder={getColumnPlaceholder(col)}
+      value={displayOptions.filter((opt) =>
+        (Array.isArray(val) ? val : []).includes(opt.id),
+      )}
+      onChange={(opts) =>
+        onCellChange(opts.map((opt) => toStoredOptionValue(opt, displayOptions)))
+      }
+    />
+  ) : (
     <InputSelect
       className='w-full'
+      creatable={allowNew}
       options={displayOptions}
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.find((opt) => opt.id === val) || null}
-      onChange={(opt) => onCellChange(opt ? opt.id : null)}
+      onChange={(opt) =>
+        onCellChange(opt ? toStoredOptionValue(opt, displayOptions) : null)
+      }
     />
+  )
+
+  if (!qr) return select
+
+  // "Read values from QR": a scanned code picks the matching option (or adds
+  // it when users may add new options).
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>{select}</div>
+        <button
+          aria-label='Scan QR / Barcode'
+          className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+          title='Scan QR / Barcode'
+          type='button'
+          onClick={() => setScannerOpen((open) => !open)}
+        >
+          <Icon height={14} name='lucide:qr-code' width={14} />
+        </button>
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            onCellChange(
+              applyScannedValue(displayOptions, val, String(raw), {
+                allowNew,
+                multi: Boolean(isMulti),
+              }),
+            )
+            setScannerOpen(false)
+          }}
+        />
+      )}
+    </div>
   )
 }
 
@@ -912,13 +1045,11 @@ const renderCellInput = (
     case 'NUMBER':
     case 'COUNTER':
       return (
-        <InputNumber
-          className='w-full'
-          {...getNumberCellProps(col)}
-          max={toFiniteBound(col.settings?.validation?.maximum)}
-          min={toFiniteBound(col.settings?.validation?.minimum)}
-          value={val != null ? val : ''}
-          onChange={(v) => onCellChange(v)}
+        <TableCellNumber
+          col={col}
+          row={actions?.row}
+          val={val}
+          onCellChange={onCellChange}
         />
       )
 
@@ -1164,7 +1295,7 @@ const TableFieldRenderer = ({
     ...buildTableRowDefaults(
       tableColumns,
       existingRows,
-      authUserStore.getState().session?.email || '',
+      getSessionTableUser(),
     ),
   })
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
@@ -1446,9 +1577,52 @@ const TableFieldRenderer = ({
     },
   })
 
+  // OCR needs a repository. When the screen did not provide one, use the first
+  // available repository, as the builder's own upload preview does.
+  const needsOcrRepository = tableColumns.some(
+    (c) =>
+      isFileColumnType(c.type) && getColumnOcrTargets(c, tableColumns).length > 0,
+  )
+  const { data: fallbackRepositoryId } = useQuery({
+    enabled: needsOcrRepository && !repositoryId,
+    queryKey: ['tableOcrFallbackRepository'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      const list: Array<{ id?: string | number }> = Array.isArray(res.data)
+        ? res.data
+        : []
+      return list[0]?.id != null ? String(list[0].id) : ''
+    },
+  })
+
+  const predefinedColumns = tableColumns.filter(
+    (col) => getColumnOptionsSource(col) === 'PREDEFINED',
+  )
+  const hasPredefinedUser = predefinedColumns.some(
+    (col) => getColumnPredefinedType(col) === 'USER',
+  )
+  const hasPredefinedFolder = predefinedColumns.some(
+    (col) => getColumnPredefinedType(col) === 'FOLDER',
+  )
+
+  // Folders / repositories (names) for "predefined list: folders" columns
+  const { data: folderOptions = [] } = useQuery({
+    enabled: hasPredefinedFolder,
+    queryKey: ['tableColumnPredefinedFolders'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      const list: Array<{ name?: string }> = Array.isArray(res.data)
+        ? res.data
+        : []
+      return list
+        .filter((r) => r?.name)
+        .map((r) => ({ id: String(r.name), name: String(r.name) }))
+    },
+  })
+
   // System users (emails), as for the top-level "User List" options.
   const { data: userListOptions = [] } = useQuery({
-    enabled: hasUserListColumn,
+    enabled: hasUserListColumn || hasPredefinedUser,
     queryKey: ['tableColumnUserListOptions'],
     queryFn: async () => {
       const res = await getUsers()
@@ -1551,6 +1725,14 @@ const TableFieldRenderer = ({
     selectColumnCellOptions(col, row, {
       masterByColumn: masterOptionsByColumn,
       masterCascaded: masterCascadedOptions,
+      predefinedByColumn: Object.fromEntries(
+        predefinedColumns.map((c) => [
+          c.id,
+          getColumnPredefinedType(c) === 'FOLDER'
+            ? folderOptions
+            : userListOptions,
+        ]),
+      ),
       repositoryByColumn: lookupOptionsByColumn,
       repositoryCascaded: cascadedOptionsByColumn,
       userList: userListOptions,
@@ -1648,18 +1830,27 @@ const TableFieldRenderer = ({
     rowIndex: number,
     col: TableColumn,
     files: File[],
-  ) => {
+  ): Promise<OcrStatus | void> => {
     const targets = getColumnOcrTargets(col, tableColumns)
-    if (!repositoryId || targets.length === 0 || files.length === 0) return
+    if (targets.length === 0 || files.length === 0) return
+    const targetNames = targets.map((t) => t.name || t.label || t.id)
+    // The form's own repository, else the first one (as the builder preview does)
+    const ocrRepositoryId = repositoryId || fallbackRepositoryId
+    if (!ocrRepositoryId) {
+      return {
+        text: t`Text could not be read from the document: no repository is available for this form.`,
+        tone: 'error',
+      }
+    }
     const hints = buildColumnOcrHints(targets)
     const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    const filled = new Set<string>()
+    let failure = ''
     for (const file of files) {
-      const { data, error } = await uploadForOcr(repositoryId, file, hints)
+      const { data, error } = await uploadForOcr(ocrRepositoryId, file, hints)
       if (error || !data?.ocrFieldList) {
-        console.warn(
-          '[table uploadForOcr] OCR extraction warning:',
-          error || 'OCR data unavailable',
-        )
+        failure = String(error || 'no data was returned')
+        console.warn('[table uploadForOcr] OCR extraction warning:', failure)
         continue
       }
       const current = rowsRef.current
@@ -1676,6 +1867,22 @@ const TableFieldRenderer = ({
       const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
       rowsRef.current = next
       onChange(next)
+      for (const id of Object.keys(patch)) {
+        const target = targets.find((tg) => tg.id === id)
+        filled.add(String(target?.name || target?.label || id))
+      }
+    }
+    const filledNames = Array.from(filled).join(', ')
+    const wantedNames = targetNames.join(', ')
+    if (filled.size > 0) {
+      return { text: t`Filled from the document: ${filledNames}`, tone: 'info' }
+    }
+    if (failure) {
+      return { text: t`Could not read the document: ${failure}`, tone: 'error' }
+    }
+    return {
+      text: t`No values were found in the document for: ${wantedNames}`,
+      tone: 'info',
     }
   }
 
@@ -1793,7 +2000,7 @@ const TableFieldRenderer = ({
       canReplaceUntouchedRow(
         rows[0],
         tableColumns,
-        authUserStore.getState().session?.email || '',
+        getSessionTableUser(),
         editedRowKeys.current.has(rowKeyOf(rows[0], 0)),
       )
         ? []
@@ -2373,6 +2580,7 @@ const TableFieldRenderer = ({
                                   : undefined,
                                 rowIndex,
                                 {
+                                  row: resolvedRow,
                                   siblingColumns: tableColumns,
                                   onFilesAdded: (files) =>
                                     handleFilesAdded(rowIndex, col, files),
@@ -2580,6 +2788,7 @@ const TableFieldRenderer = ({
                             : undefined,
                           rowIndex,
                           {
+                            row: resolvedRow,
                             siblingColumns: tableColumns,
                             onFilesAdded: (files) =>
                               handleFilesAdded(rowIndex, col, files),

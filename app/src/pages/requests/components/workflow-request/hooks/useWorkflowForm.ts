@@ -6,6 +6,7 @@ import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
 import folderApi from '@/pages/folders/api/folderApi'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { getTableFieldErrors } from '@/pages/form-builder/helpers/runtimeValidation'
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
@@ -592,6 +593,16 @@ export const useWorkflowForm = (
     )
     if (missing.length > 0) {
       const errorMsg = `Please fill in required field(s): ${missing.join(', ')}`
+      setSubmitError(errorMsg)
+      return { error: errorMsg, success: false }
+    }
+
+    // Table columns have rules beyond "required" (content rules, ranges, date /
+    // time / currency / file limits, conditional mandatory). They are shown
+    // inline after a submit attempt, so they must also stop the submit.
+    const tableErrors = getTableFieldErrors(panels, formModel, { formRules })
+    if (tableErrors.length > 0) {
+      const errorMsg = `Please correct: ${tableErrors.join(' | ')}`
       setSubmitError(errorMsg)
       return { error: errorMsg, success: false }
     }
