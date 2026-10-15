@@ -51,12 +51,12 @@ msgstr ""
 msgid "({0} Folders)"
 msgstr "({0} Folder)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2506
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2507
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2715
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2716
 msgid "(empty row)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2563
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2772
 msgid "(remove column)"
 msgstr ""
 
@@ -183,7 +183,7 @@ msgid "{0} remaining"
 msgstr "{0} yang tinggal"
 
 #. placeholder {0}: selectedRowIds.size
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2066
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2274
 msgid "{0} row(s) selected"
 msgstr ""
 
@@ -282,12 +282,12 @@ msgstr "{activeCard}"
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} aliran kerja aktif"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2107
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2315
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} item baris ditemui dalam dokumen yang dimuat naik."
 
 #. placeholder {0}: box.assigneeName
-#: src/pages/folders/components/DocumentSigningPage.tsx:1091
+#: src/pages/folders/components/DocumentSigningPage.tsx:1114
 msgid "{countForUser} place(s) for {0}. Click again to add another, or Send when done."
 msgstr "{countForUser} tempat untuk __XPH1X__. Klik sekali lagi untuk menambah satu lagi, atau Hantar apabila selesai."
 
@@ -718,14 +718,14 @@ msgid "Action Required"
 msgstr "Tindakan Diperlukan"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
-#: src/pages/forms/FormEntriesPage.tsx:2002
+#: src/pages/forms/FormEntriesPage.tsx:2013
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2123
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:306
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:638
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2290
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2498
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -864,8 +864,8 @@ msgstr "Tambah kad"
 msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 msgstr "Tambah kad untuk mengumpulkan peringkat aliran kerja ke dalam lajur Kanban. Jika tiada kad disimpan, Permintaan memaparkan satu lajur bagi setiap peringkat."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2276
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2599
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2484
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2809
 msgid "Add column"
 msgstr ""
 
@@ -893,7 +893,7 @@ msgstr "Tambah pilihan tersuai"
 msgid "Add Document Rule"
 msgstr "Tambah Peraturan Dokumen"
 
-#: src/pages/forms/FormEntriesPage.tsx:2789
+#: src/pages/forms/FormEntriesPage.tsx:2810
 msgid "Add Entry"
 msgstr "Tambah Entri"
 
@@ -953,8 +953,8 @@ msgstr ""
 msgid "Add Group"
 msgstr "Tambah Kumpulan"
 
-#: src/pages/forms/FormEntriesPage.tsx:833
-#: src/pages/forms/FormEntriesPage.tsx:1140
+#: src/pages/forms/FormEntriesPage.tsx:838
+#: src/pages/forms/FormEntriesPage.tsx:1145
 msgid "Add Line Item"
 msgstr "Tambah Item Baris"
 
@@ -999,8 +999,8 @@ msgstr "Tambah Portal"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:281
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:615
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2042
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2053
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2250
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2261
 msgid "Add Row"
 msgstr "Tambah Baris"
 
@@ -1016,7 +1016,7 @@ msgstr ""
 msgid "Add tab"
 msgstr "Tambah tab"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1893
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2101
 msgid "Add the first column"
 msgstr ""
 
@@ -1186,7 +1186,7 @@ msgstr "Cadangan AI"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2255
 #: src/pages/folders/components/DocumentDetailsView.tsx:2262
 #: src/pages/folders/components/DocumentsListView.tsx:1110
-#: src/pages/folders/components/FolderTable.tsx:1484
+#: src/pages/folders/components/FolderTable.tsx:1495
 msgid "AI Summary"
 msgstr "Ringkasan AI"
 
@@ -1400,7 +1400,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2349
+#: src/pages/requests/components/request/Request.tsx:2365
 msgid "An error occurred: {0}"
 msgstr "Ralat berlaku: {0}"
 
@@ -1546,7 +1546,7 @@ msgid "API URL"
 msgstr "URL API"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2004
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2212
 msgid "Append"
 msgstr "Lampirkan"
 
@@ -1602,13 +1602,13 @@ msgstr "Peta haba kelewatan kelulusan"
 
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:378
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2288
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2410
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2522
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2496
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2619
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2731
 msgid "Approve"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2076
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2284
 msgid "Approve selected"
 msgstr ""
 
@@ -1618,8 +1618,8 @@ msgstr ""
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:366
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:368
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2397
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2513
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2606
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2722
 #: src/pages/requests/utils/localizeRequestUi.ts:43
 msgid "Approved"
 msgstr "Diluluskan"
@@ -1676,7 +1676,7 @@ msgid "Are you sure you want to delete 1 selected staged file?"
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1148
-#: src/pages/folders/components/FolderTable.tsx:1611
+#: src/pages/folders/components/FolderTable.tsx:1624
 msgid "Are you sure you want to delete this document? This action cannot be undone."
 msgstr ""
 
@@ -1725,11 +1725,11 @@ msgstr ""
 #~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2814
+#: src/pages/forms/FormEntriesPage.tsx:2835
 msgid "Are you sure you want to move"
 msgstr "Adakah anda pasti mahu berpindah"
 
-#: src/pages/forms/FormEntriesPage.tsx:2822
+#: src/pages/forms/FormEntriesPage.tsx:2843
 msgid "Are you sure you want to permanently delete"
 msgstr "Adakah anda pasti mahu memadamkan secara kekal"
 
@@ -1983,8 +1983,8 @@ msgstr "Menunggu Pengesahan"
 #: src/pages/folders/components/CollaboraEditor.tsx:265
 #: src/pages/folders/components/DocumentDetailsView.tsx:1883
 #: src/pages/folders/components/DocumentDetailsView.tsx:2169
-#: src/pages/folders/components/DocumentSigningPage.tsx:2765
-#: src/pages/folders/components/DocumentSigningPage.tsx:2771
+#: src/pages/folders/components/DocumentSigningPage.tsx:2836
+#: src/pages/folders/components/DocumentSigningPage.tsx:2842
 #: src/pages/folders/components/EditMetadataView.tsx:395
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:798
 #: src/pages/folders/components/ShareView.tsx:258
@@ -2047,7 +2047,7 @@ msgstr "Kembali ke Pereka Bentuk"
 msgid "Back to Document"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2285
+#: src/pages/forms/FormEntriesPage.tsx:2296
 msgid "Back to Entries"
 msgstr "Kembali ke Entri"
 
@@ -2063,8 +2063,8 @@ msgstr ""
 msgid "Back to folder explorer"
 msgstr "Kembali ke penjelajah folder"
 
-#: src/pages/forms/FormEntriesPage.tsx:2207
-#: src/pages/forms/FormEntriesPage.tsx:2767
+#: src/pages/forms/FormEntriesPage.tsx:2218
+#: src/pages/forms/FormEntriesPage.tsx:2788
 msgid "Back to Forms"
 msgstr "Kembali ke Borang"
 
@@ -2201,7 +2201,7 @@ msgstr "Serbuk roti"
 msgid "browse"
 msgstr "semak imbas"
 
-#: src/pages/forms/FormEntriesPage.tsx:2780
+#: src/pages/forms/FormEntriesPage.tsx:2801
 msgid "Browse"
 msgstr "Semak imbas"
 
@@ -2265,7 +2265,7 @@ msgstr "Storan selamat terbina dalam"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Tindakan pukal \"{0}\" digunakan pada permintaan __XPH1X__ berjaya!"
 
-#: src/pages/forms/FormEntriesPage.tsx:2891
+#: src/pages/forms/FormEntriesPage.tsx:2912
 msgid "Bulk Import"
 msgstr "Import Pukal"
 
@@ -2370,7 +2370,7 @@ msgstr "Boleh Lihat"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2515
 #: src/pages/folders/components/DocumentDetailsView.tsx:3573
 #: src/pages/folders/components/DocumentsListView.tsx:1146
-#: src/pages/folders/components/FolderTable.tsx:1609
+#: src/pages/folders/components/FolderTable.tsx:1622
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1049
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:111
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:169
@@ -2379,9 +2379,9 @@ msgstr "Boleh Lihat"
 #: src/pages/folders/components/Upload/Upload.tsx:4974
 #: src/pages/folders/components/Upload/Upload.tsx:4993
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
-#: src/pages/forms/FormEntriesPage.tsx:945
-#: src/pages/forms/FormEntriesPage.tsx:2740
-#: src/pages/forms/FormEntriesPage.tsx:2839
+#: src/pages/forms/FormEntriesPage.tsx:950
+#: src/pages/forms/FormEntriesPage.tsx:2761
+#: src/pages/forms/FormEntriesPage.tsx:2860
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/reports/components/ReportsListView.tsx:302
@@ -2410,7 +2410,7 @@ msgstr ""
 msgid "Cancel Remaining"
 msgstr "Batal Baki"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2742
+#: src/pages/folders/components/DocumentSigningPage.tsx:2813
 msgid "Cancel signing"
 msgstr "Batalkan tandatangan"
 
@@ -2575,7 +2575,7 @@ msgstr ""
 msgid "Choose a migration strategy"
 msgstr "Pilih strategi migrasi"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1166
+#: src/pages/folders/components/DocumentSigningPage.tsx:1189
 msgid "Choose a signature first, then tap your sign area."
 msgstr "Pilih tandatangan dahulu, kemudian ketik kawasan tanda anda."
 
@@ -2620,7 +2620,7 @@ msgstr "Pilih medan"
 #~ msgid "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2657
+#: src/pages/forms/FormEntriesPage.tsx:2668
 msgid "Choose File"
 msgstr "Pilih Fail"
 
@@ -2648,7 +2648,7 @@ msgstr ""
 #~ msgid "Choose search column"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2686
+#: src/pages/folders/components/DocumentSigningPage.tsx:2757
 msgid "Choose signature"
 msgstr "Pilih tandatangan"
 
@@ -2724,7 +2724,7 @@ msgstr ""
 msgid "Classification failed for this file."
 msgstr "Pengelasan gagal untuk fail ini."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2499
+#: src/pages/folders/components/DocumentSigningPage.tsx:2570
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:854
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:985
 msgid "Clear"
@@ -2793,7 +2793,7 @@ msgstr "Klik mana-mana pratonton untuk proses"
 #~ msgid "Click on a tile to filter workflow records."
 #~ msgstr "Klik jubin untuk menapis rekod aliran kerja."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1899
+#: src/pages/folders/components/DocumentSigningPage.tsx:1962
 msgid "Click on the document to mark signature places."
 msgstr "Klik pada dokumen untuk tandakan tempat tandatangan."
 
@@ -2806,7 +2806,7 @@ msgid "Click or press Enter ↵"
 msgstr ""
 
 #. placeholder {0}: first.name
-#: src/pages/folders/components/DocumentSigningPage.tsx:1898
+#: src/pages/folders/components/DocumentSigningPage.tsx:1961
 msgid "Click the document to mark one or more places for {0}, then Send."
 msgstr "Klik dokumen untuk menandakan satu atau lebih tempat untuk {0}, kemudian Hantar."
 
@@ -2818,7 +2818,7 @@ msgstr ""
 msgid "Click to edit field"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2062
+#: src/pages/folders/components/DocumentSigningPage.tsx:2128
 msgid "Click to mark assignee signature place"
 msgstr "Klik untuk tandakan tempat tandatangan"
 
@@ -2826,7 +2826,7 @@ msgstr "Klik untuk tandakan tempat tandatangan"
 #~ msgid "Click to place signature"
 #~ msgstr "Klik untuk letak tandatangan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2212
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2420
 msgid "Click to rename"
 msgstr ""
 
@@ -2840,7 +2840,7 @@ msgid "Client Number"
 msgstr "Nombor Pelanggan"
 
 #: src/components/base/InfoCard.tsx:240
-#: src/pages/folders/components/DocumentSigningPage.tsx:2326
+#: src/pages/folders/components/DocumentSigningPage.tsx:2397
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:223
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:305
 #: src/pages/folders/components/SignRequestAssignForm.tsx:537
@@ -2893,7 +2893,7 @@ msgstr "Kuncupkan"
 #~ msgid "Collapse All"
 #~ msgstr "Runtuhkan Semua"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2536
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2745
 msgid "Collapse row"
 msgstr ""
 
@@ -2986,7 +2986,7 @@ msgstr "Lengkapkan setiap peringkat, kemudian teruskan"
 msgid "Complete editing session"
 msgstr "Selesai sesi penyuntingan"
 
-#: src/pages/forms/FormEntriesPage.tsx:2304
+#: src/pages/forms/FormEntriesPage.tsx:2315
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Lengkapkan maklumat borang yang diperlukan menggunakan kanvas perusahaan dipacu metadata di bawah."
 
@@ -3034,8 +3034,8 @@ msgstr "Status Dikira"
 #~ msgid "Concentration of invoice liabilities"
 #~ msgstr "Penumpuan liabiliti invois"
 
-#: src/pages/requests/utils/workflow.utils.ts:508
-#: src/pages/requests/utils/workflow.utils.ts:524
+#: src/pages/requests/utils/workflow.utils.ts:548
+#: src/pages/requests/utils/workflow.utils.ts:564
 msgid "Conditional flow"
 msgstr ""
 
@@ -3384,9 +3384,13 @@ msgstr "Tidak dapat menjana medan. Cuba medan Syor sekali lagi."
 msgid "Could not generate folder configuration. Try again."
 msgstr "Tidak dapat menjana konfigurasi folder. Cuba lagi."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1859
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2067
 msgid "Could not read that file."
 msgstr "Tidak dapat membaca fail itu."
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1882
+msgid "Could not read the document: {failure}"
+msgstr ""
 
 #: src/pages/folders/components/FolderExplorer.tsx:260
 #~ msgid "Couldn't delete selected staged files."
@@ -3550,8 +3554,8 @@ msgid "Created by"
 msgstr "Dicipta oleh"
 
 #: src/pages/folders/components/FolderTable.tsx:508
-#: src/pages/forms/FormEntriesPage.tsx:1988
-#: src/pages/forms/FormEntriesPage.tsx:2910
+#: src/pages/forms/FormEntriesPage.tsx:1999
+#: src/pages/forms/FormEntriesPage.tsx:2931
 #: src/pages/forms/FormsPage.tsx:259
 #: src/pages/forms/FormsPage.tsx:651
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2304
@@ -3562,7 +3566,7 @@ msgstr "Dicipta oleh"
 msgid "Created By"
 msgstr "Dicipta Oleh"
 
-#: src/pages/forms/FormEntriesPage.tsx:2918
+#: src/pages/forms/FormEntriesPage.tsx:2939
 #: src/pages/forms/FormsPage.tsx:662
 #: src/pages/settings/components/AuditMonitoring.tsx:361
 #: src/pages/workflows/components/Table.tsx:510
@@ -3674,7 +3678,7 @@ msgid "Current Role"
 msgstr "Peranan Semasa"
 
 #: src/pages/folders/components/DocumentsListView.tsx:534
-#: src/pages/folders/components/FolderTable.tsx:1329
+#: src/pages/folders/components/FolderTable.tsx:1340
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1604
 msgid "Current Stage"
 msgstr "Peringkat Semasa"
@@ -3932,8 +3936,8 @@ msgstr "Tentukan Peraturan"
 #: src/pages/folders/components/DocumentsListView.tsx:1131
 #: src/pages/folders/components/DocumentsListView.tsx:1147
 #: src/pages/folders/components/FolderTable.tsx:558
-#: src/pages/folders/components/FolderTable.tsx:1506
-#: src/pages/folders/components/FolderTable.tsx:1610
+#: src/pages/folders/components/FolderTable.tsx:1517
+#: src/pages/folders/components/FolderTable.tsx:1623
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:98
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:112
 #: src/pages/folders/components/Upload/Upload.tsx:4940
@@ -3968,7 +3972,7 @@ msgstr ""
 msgid "Delete card"
 msgstr "Padam kad"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2250
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2458
 msgid "Delete column"
 msgstr ""
 
@@ -3977,7 +3981,7 @@ msgid "Delete column \"{col}\""
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1151
-#: src/pages/folders/components/FolderTable.tsx:1614
+#: src/pages/folders/components/FolderTable.tsx:1627
 msgid "Delete Document"
 msgstr ""
 
@@ -3997,8 +4001,8 @@ msgstr "Padamkan Kumpulan"
 msgid "Delete Menu"
 msgstr "Padam Menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2048
-#: src/pages/forms/FormEntriesPage.tsx:2857
+#: src/pages/forms/FormEntriesPage.tsx:2059
+#: src/pages/forms/FormEntriesPage.tsx:2878
 msgid "Delete Permanently"
 msgstr "Padam Secara Kekal"
 
@@ -4019,12 +4023,12 @@ msgstr "Padam Peranan"
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:396
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1023
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1025
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2415
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2527
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2624
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2736
 msgid "Delete row"
 msgstr "Padamkan baris"
 
-#: src/pages/forms/FormEntriesPage.tsx:1239
+#: src/pages/forms/FormEntriesPage.tsx:1244
 msgid "Delete Row"
 msgstr "Padam Baris"
 
@@ -4033,7 +4037,7 @@ msgid "Delete Rule"
 msgstr "Padamkan Peraturan"
 
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:264
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2086
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2294
 msgid "Delete selected"
 msgstr ""
 
@@ -4070,11 +4074,11 @@ msgstr ""
 #~ msgid "Delete This Field"
 #~ msgstr "Padam Medan Ini"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2205
+#: src/pages/folders/components/DocumentSigningPage.tsx:2276
 msgid "Delete this signature"
 msgstr "Padamkan tandatangan ini"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3370
+#: src/pages/folders/components/DocumentSigningPage.tsx:3441
 msgid "Delete this signature?"
 msgstr "Padamkan tandatangan ini?"
 
@@ -4548,7 +4552,7 @@ msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:3265
 #: src/pages/folders/components/DocumentDetailsView.tsx:3269
-#: src/pages/folders/components/DocumentSigningPage.tsx:2725
+#: src/pages/folders/components/DocumentSigningPage.tsx:2796
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:876
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:87
 msgid "Download"
@@ -4617,7 +4621,7 @@ msgstr "Draf"
 msgid "Draft Files"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2200
+#: src/pages/forms/FormEntriesPage.tsx:2211
 msgid "Draft forms do not have an entries page. Publish the form to view and collect entries."
 msgstr ""
 
@@ -4647,7 +4651,7 @@ msgstr "Seret dan lepaskan hamparan anda di sini, atau"
 msgid "Drag to reorder"
 msgstr "Seret untuk menyusun semula"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1961
+#: src/pages/folders/components/DocumentSigningPage.tsx:2024
 msgid "Draw"
 msgstr "Lukis"
 
@@ -4659,12 +4663,12 @@ msgstr "Lukis"
 #~ msgid "Draw your signature before using it."
 #~ msgstr "Lukis tandatangan anda sebelum menggunakannya."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:702
-#: src/pages/folders/components/DocumentSigningPage.tsx:707
-#: src/pages/folders/components/DocumentSigningPage.tsx:819
-#: src/pages/folders/components/DocumentSigningPage.tsx:823
-#: src/pages/folders/components/DocumentSigningPage.tsx:1108
-#: src/pages/folders/components/DocumentSigningPage.tsx:1152
+#: src/pages/folders/components/DocumentSigningPage.tsx:725
+#: src/pages/folders/components/DocumentSigningPage.tsx:730
+#: src/pages/folders/components/DocumentSigningPage.tsx:842
+#: src/pages/folders/components/DocumentSigningPage.tsx:846
+#: src/pages/folders/components/DocumentSigningPage.tsx:1131
+#: src/pages/folders/components/DocumentSigningPage.tsx:1175
 msgid "Drawn signature"
 msgstr "Tandatangan dilukis"
 
@@ -4880,7 +4884,7 @@ msgstr "Setiap kelompok memerlukan pengesahan manual sebelum ia dijalankan."
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:534
 #: src/pages/dashboard/DashboardPage.tsx:408
 #: src/pages/dashboard/DashboardPage.tsx:413
-#: src/pages/forms/FormEntriesPage.tsx:2025
+#: src/pages/forms/FormEntriesPage.tsx:2036
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
@@ -4961,11 +4965,11 @@ msgstr "Edit Dasar Keselamatan Folder"
 #~ msgid "Edit Folder Setup"
 #~ msgstr "Edit Persediaan Folder"
 
-#: src/pages/forms/FormEntriesPage.tsx:2213
+#: src/pages/forms/FormEntriesPage.tsx:2224
 msgid "Edit Form"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2299
+#: src/pages/forms/FormEntriesPage.tsx:2310
 msgid "Edit Form Entry"
 msgstr "Edit Entri Borang"
 
@@ -4977,8 +4981,8 @@ msgstr "Edit Kumpulan"
 #~ msgid "Edit Group Setup"
 #~ msgstr "Edit Persediaan Kumpulan"
 
-#: src/pages/forms/FormEntriesPage.tsx:833
-#: src/pages/forms/FormEntriesPage.tsx:1231
+#: src/pages/forms/FormEntriesPage.tsx:838
+#: src/pages/forms/FormEntriesPage.tsx:1236
 msgid "Edit Line Item"
 msgstr "Edit Item Baris"
 
@@ -4992,7 +4996,7 @@ msgstr "Edit Persediaan Menu"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1104
 #: src/pages/folders/components/EditMetadataView.tsx:402
-#: src/pages/folders/components/FolderTable.tsx:1478
+#: src/pages/folders/components/FolderTable.tsx:1489
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:111
 msgid "Edit Metadata"
 msgstr "Edit Metadata"
@@ -5108,8 +5112,8 @@ msgstr "kosong"
 msgid "Empty"
 msgstr "kosong"
 
-#: src/pages/forms/FormEntriesPage.tsx:1968
-#: src/pages/forms/FormEntriesPage.tsx:1978
+#: src/pages/forms/FormEntriesPage.tsx:1979
+#: src/pages/forms/FormEntriesPage.tsx:1989
 msgid "Empty form field"
 msgstr "Medan borang kosong"
 
@@ -5205,7 +5209,7 @@ msgstr "Masukkan nama folder…"
 msgid "Enter IMAP server details for your custom email provider."
 msgstr "Masukkan butiran pelayan IMAP untuk pembekal e-mel tersuai anda."
 
-#: src/pages/forms/FormEntriesPage.tsx:836
+#: src/pages/forms/FormEntriesPage.tsx:841
 msgid "Enter itemized quantity, pricing, and specs inline below."
 msgstr "Masukkan kuantiti terperinci, harga dan spesifikasi sebaris di bawah."
 
@@ -5263,7 +5267,7 @@ msgstr "Masukkan nama pengguna"
 msgid "Enter value"
 msgstr "Masukkan nilai"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2986
+#: src/pages/folders/components/DocumentSigningPage.tsx:3057
 msgid "Enter your full name"
 msgstr "Masukkan nama penuh anda"
 
@@ -5296,7 +5300,7 @@ msgstr "Penyulitan gred perusahaan dalam keadaan rehat"
 msgid "Entity supplying goods"
 msgstr "Entiti membekalkan barangan"
 
-#: src/pages/forms/FormEntriesPage.tsx:2959
+#: src/pages/forms/FormEntriesPage.tsx:2980
 msgid "Entries"
 msgstr "entri"
 
@@ -5440,7 +5444,7 @@ msgstr "Kembangkan"
 msgid "Expand all steps"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2536
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2745
 msgid "Expand row"
 msgstr ""
 
@@ -5511,7 +5515,7 @@ msgstr ""
 msgid "Export staged files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2029
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2237
 msgid "Export to Excel"
 msgstr "Eksport ke Excel"
 
@@ -5809,7 +5813,7 @@ msgid "Failed to proceed request:"
 msgstr "Gagal meneruskan permintaan:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2162
+#: src/pages/requests/components/request/Request.tsx:2178
 msgid "Failed to proceed request: {0}"
 msgstr "Gagal meneruskan permintaan: {0}"
 
@@ -5835,7 +5839,7 @@ msgid "Failed to save report"
 msgstr "Gagal menyimpan laporan"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2287
+#: src/pages/requests/components/request/Request.tsx:2303
 msgid "Failed to save request: {0}"
 msgstr "Gagal menyimpan permintaan: {0}"
 
@@ -5859,7 +5863,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2637
+#: src/pages/requests/components/request/Request.tsx:2653
 msgid "Failed to share request"
 msgstr "Gagal berkongsi permintaan"
 
@@ -5884,7 +5888,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2288
+#: src/pages/requests/components/request/Request.tsx:2304
 msgid "Failed to submit request: {0}"
 msgstr "Gagal menyerahkan permintaan: {0}"
 
@@ -6104,7 +6108,7 @@ msgstr "Fail berjaya dimuat naik"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1054
 #: src/pages/folders/components/FolderTable.tsx:484
-#: src/pages/folders/components/FolderTable.tsx:1638
+#: src/pages/folders/components/FolderTable.tsx:1651
 #: src/pages/folders/components/Upload/Upload.tsx:4023
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
@@ -6115,7 +6119,7 @@ msgstr "Fail"
 msgid "Files & Storage"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:971
+#: src/pages/folders/components/FolderTable.tsx:977
 msgid "FILES IN THIS FOLDER"
 msgstr "FAIL DALAM FOLDER INI"
 
@@ -6126,6 +6130,10 @@ msgstr "FAIL DALAM FOLDER INI"
 #: src/pages/folders/components/Upload/Upload.tsx:2318
 #: src/pages/folders/components/Upload/Upload.tsx:2394
 msgid "Files uploaded successfully."
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1879
+msgid "Filled from the document: {filledNames}"
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:236
@@ -6366,7 +6374,7 @@ msgstr "Folder berjaya dikemas kini."
 msgid "Folders"
 msgstr "Folder"
 
-#: src/pages/folders/components/FolderTable.tsx:960
+#: src/pages/folders/components/FolderTable.tsx:966
 msgid "FOLDERS"
 msgstr "FOLDER"
 
@@ -6427,7 +6435,7 @@ msgstr "Borang berjaya dipadamkan"
 msgid "Form Entries"
 msgstr "Penyertaan Borang"
 
-#: src/pages/forms/FormEntriesPage.tsx:2198
+#: src/pages/forms/FormEntriesPage.tsx:2209
 msgid "Form is in Draft"
 msgstr ""
 
@@ -7023,15 +7031,15 @@ msgstr "Pemprosesan Invois Segera"
 #~ msgid "Import CSV/Excel"
 #~ msgstr "Import CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2018
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2226
 msgid "Import CSV/Excel (adds to existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2017
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2225
 msgid "Import CSV/Excel (replaces existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2116
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2324
 msgid "Import extracted items"
 msgstr "Import item yang diekstrak"
 
@@ -7087,6 +7095,7 @@ msgid "Inactive"
 msgstr "Tidak Aktif"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
+#: src/pages/requests/components/request/Request.tsx:1669
 #: src/pages/requests/RequestsPage.tsx:150
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -7465,6 +7474,7 @@ msgstr "Nilai invois dikurangkan."
 msgid "invoices"
 msgstr "invois"
 
+#: src/pages/requests/components/request/Request.tsx:1668
 #: src/pages/requests/RequestsPage.tsx:149
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -7545,7 +7555,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "PENERANGAN ITEM"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
-#: src/pages/forms/FormEntriesPage.tsx:1945
+#: src/pages/forms/FormEntriesPage.tsx:1956
 msgid "items"
 msgstr "barang"
 
@@ -7601,9 +7611,9 @@ msgstr "Fakta Utama Diekstrak"
 msgid "Keyword / Field"
 msgstr "Kata kunci / Medan"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2442
-#: src/pages/folders/components/DocumentSigningPage.tsx:2457
-#: src/pages/folders/components/DocumentSigningPage.tsx:3109
+#: src/pages/folders/components/DocumentSigningPage.tsx:2513
+#: src/pages/folders/components/DocumentSigningPage.tsx:2528
+#: src/pages/folders/components/DocumentSigningPage.tsx:3180
 msgid "Kindly draw the signature"
 msgstr "Sila lukis tandatangan"
 
@@ -7712,11 +7722,11 @@ msgstr "Nama Keluarga"
 #~ msgid "Launch Workflow"
 #~ msgstr "Lancarkan Aliran Kerja"
 
-#: src/pages/requests/components/request/Request.tsx:1806
+#: src/pages/requests/components/request/Request.tsx:1822
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1805
+#: src/pages/requests/components/request/Request.tsx:1821
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -8354,7 +8364,7 @@ msgstr "Tandai sebagai Berbayar"
 msgid "Mark as read"
 msgstr "Tandakan sebagai dibaca"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1338
+#: src/pages/folders/components/DocumentSigningPage.tsx:1361
 msgid "Mark at least one signature place on the document before sending."
 msgstr "Tandakan sekurang-kurangnya satu tempat tandatangan pada dokumen sebelum menghantar."
 
@@ -8734,7 +8744,7 @@ msgstr "Modified Tarikh"
 msgid "Modify document content"
 msgstr "Ubah suai kandungan dokumen"
 
-#: src/pages/forms/FormEntriesPage.tsx:2305
+#: src/pages/forms/FormEntriesPage.tsx:2316
 msgid "Modify existing form response answers and save changes."
 msgstr "Ubah suai jawapan respons borang sedia ada dan simpan perubahan."
 
@@ -8803,11 +8813,11 @@ msgstr ""
 msgid "Move down"
 msgstr "Alih ke bawah"
 
-#: src/pages/forms/FormEntriesPage.tsx:2808
+#: src/pages/forms/FormEntriesPage.tsx:2829
 msgid "Move Entry to Trash"
 msgstr "Move Entri to Trash"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2222
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2430
 msgid "Move left"
 msgstr ""
 
@@ -8815,7 +8825,7 @@ msgstr ""
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Alihkan dokumen yang dipadankan daripada storan aktif ke dalam arkib."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2234
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2442
 msgid "Move right"
 msgstr ""
 
@@ -8824,8 +8834,8 @@ msgstr ""
 msgid "Move to matched items"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2031
-#: src/pages/forms/FormEntriesPage.tsx:2856
+#: src/pages/forms/FormEntriesPage.tsx:2042
+#: src/pages/forms/FormEntriesPage.tsx:2877
 msgid "Move to Trash"
 msgstr "Beralih ke Sampah"
 
@@ -8885,8 +8895,8 @@ msgstr "N/A (Tiada nilai diperlukan)"
 
 #: src/pages/folders/components/DocumentsListView.tsx:535
 #: src/pages/folders/components/FolderTable.tsx:468
-#: src/pages/folders/components/FolderTable.tsx:1323
-#: src/pages/forms/FormEntriesPage.tsx:2901
+#: src/pages/folders/components/FolderTable.tsx:1334
+#: src/pages/forms/FormEntriesPage.tsx:2922
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
 #: src/pages/reports/components/ReportsListView.tsx:118
@@ -8992,7 +9002,7 @@ msgstr ""
 msgid "New Form"
 msgstr "Borang Baharu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2299
+#: src/pages/forms/FormEntriesPage.tsx:2310
 msgid "New Form Entry"
 msgstr "Kemasukan Borang Baharu"
 
@@ -9362,7 +9372,7 @@ msgstr "Tiada kumpulan lagi"
 msgid "No history found"
 msgstr "Tiada sejarah ditemui"
 
-#: src/pages/requests/components/request/Request.tsx:2613
+#: src/pages/requests/components/request/Request.tsx:2629
 msgid "No instance ID available to share"
 msgstr "Tiada ID contoh tersedia untuk dikongsi"
 
@@ -9384,7 +9394,7 @@ msgstr "Tiada fakta utama diekstrak."
 msgid "No logs found"
 msgstr "Tiada log ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1849
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2057
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Tiada lajur sepadan ditemui — Pengepala CSV/Excel mesti sepadan dengan nama lajur jadual."
 
@@ -9503,7 +9513,7 @@ msgstr "Tiada dokumen berkaitan ditemui."
 msgid "No repository fields configured."
 msgstr "Tiada medan repositori dikonfigurasi."
 
-#: src/pages/folders/components/FolderTable.tsx:1128
+#: src/pages/folders/components/FolderTable.tsx:1139
 msgid "No repository items found"
 msgstr "Tiada item repositori dijumpai"
 
@@ -9536,7 +9546,7 @@ msgstr "Tiada dasar pengekalan dikonfigurasikan lagi. Klik 'Buat Dasar' untuk me
 msgid "No roles yet"
 msgstr "Tiada peranan lagi"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2610
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2820
 msgid "No rows yet."
 msgstr ""
 
@@ -9544,7 +9554,7 @@ msgstr ""
 msgid "No rules yet. Values without a matching rule use the default color below."
 msgstr "Belum ada peraturan. Nilai tanpa peraturan yang sepadan menggunakan warna lalai di bawah."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3311
+#: src/pages/folders/components/DocumentSigningPage.tsx:3382
 msgid "No saved signatures"
 msgstr "Tiada tandatangan disimpan"
 
@@ -9560,7 +9570,7 @@ msgstr "Tiada pautan kongsi untuk pengguna ini"
 msgid "No sign requests for this document yet."
 msgstr "Tiada permintaan tandatangan untuk dokumen ini lagi."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1517
+#: src/pages/folders/components/DocumentSigningPage.tsx:1565
 msgid "No signature place was assigned to your account on this document."
 msgstr "Tiada tempat tandatangan ditugaskan kepada akaun anda."
 
@@ -9597,7 +9607,7 @@ msgstr "Tiada cerapan arah aliran pembekal tersedia."
 msgid "No suppliers found"
 msgstr "Tiada pembekal ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1899
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2107
 msgid "No table columns configured."
 msgstr "Tiada lajur jadual dikonfigurasikan."
 
@@ -9672,6 +9682,10 @@ msgstr "Tiada pengguna lagi"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
 msgid "No valid files selected."
 msgstr "Tiada fail yang sah dipilih."
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1885
+msgid "No values were found in the document for: {wantedNames}"
+msgstr ""
 
 #: src/pages/portal/components/PortalPicker.tsx:76
 #~ msgid "No workflows are connected to this portal yet."
@@ -10049,7 +10063,7 @@ msgstr "Pesanan"
 msgid "Other"
 msgstr "Lain-lain"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2145
+#: src/pages/folders/components/DocumentSigningPage.tsx:2216
 msgid "Other signer"
 msgstr "Penandatangan lain"
 
@@ -10281,7 +10295,7 @@ msgstr "Tempoh Penggunaan Puncak"
 #~ msgid "Peak Week"
 #~ msgstr "Minggu Puncak"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:3161
+#: src/pages/folders/components/DocumentSigningPage.tsx:3232
 msgid "Pen width"
 msgstr "Lebar pen"
 
@@ -10321,7 +10335,7 @@ msgstr "Pengesahan PO yang sempurna."
 msgid "Permanent Delete"
 msgstr "Padam Kekal"
 
-#: src/pages/forms/FormEntriesPage.tsx:2809
+#: src/pages/forms/FormEntriesPage.tsx:2830
 msgid "Permanently Delete Entry"
 msgstr "Padamkan Entri Secara Kekal"
 
@@ -10382,18 +10396,18 @@ msgstr "Saluran paip jatuh merentasi langkah kitaran hayat"
 msgid "Pipeline throughput efficiency and approval metrics"
 msgstr "Metrik kecekapan dan kelulusan saluran paip"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1589
+#: src/pages/folders/components/DocumentSigningPage.tsx:1637
 msgid "Place at least one signature on the document before completing."
 msgstr "Letakkan sekurang-kurangnya satu tandatangan pada dokumen sebelum melengkapkan."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2432
-#: src/pages/folders/components/DocumentSigningPage.tsx:2494
-#: src/pages/folders/components/DocumentSigningPage.tsx:2607
-#: src/pages/folders/components/DocumentSigningPage.tsx:2650
-#: src/pages/folders/components/DocumentSigningPage.tsx:3076
-#: src/pages/folders/components/DocumentSigningPage.tsx:3191
-#: src/pages/folders/components/DocumentSigningPage.tsx:3299
-#: src/pages/folders/components/DocumentSigningPage.tsx:3427
+#: src/pages/folders/components/DocumentSigningPage.tsx:2503
+#: src/pages/folders/components/DocumentSigningPage.tsx:2565
+#: src/pages/folders/components/DocumentSigningPage.tsx:2678
+#: src/pages/folders/components/DocumentSigningPage.tsx:2721
+#: src/pages/folders/components/DocumentSigningPage.tsx:3147
+#: src/pages/folders/components/DocumentSigningPage.tsx:3262
+#: src/pages/folders/components/DocumentSigningPage.tsx:3370
+#: src/pages/folders/components/DocumentSigningPage.tsx:3498
 msgid "Place Signature"
 msgstr "Tandatangan Tempat"
 
@@ -10401,11 +10415,11 @@ msgstr "Tandatangan Tempat"
 #~ msgid "Placeholder"
 #~ msgstr "Pemegang tempat"
 
-#: src/pages/forms/FormEntriesPage.tsx:1964
+#: src/pages/forms/FormEntriesPage.tsx:1975
 msgid "Placeholder Column 1"
 msgstr "Lajur Pemegang Tempat 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:1974
+#: src/pages/forms/FormEntriesPage.tsx:1985
 msgid "Placeholder Column 2"
 msgstr "Lajur Pemegang Tempat 2"
 
@@ -10465,7 +10479,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Sila lampirkan fail untuk meneruskan."
 
-#: src/pages/requests/components/request/Request.tsx:2024
+#: src/pages/requests/components/request/Request.tsx:2040
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -10478,12 +10492,12 @@ msgid "Please click 'Verify' to check if this supplier is legitimate and prevent
 msgstr "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mengelakkan penipuan."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2013
+#: src/pages/requests/components/request/Request.tsx:2029
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:834
-#: src/pages/requests/components/request/Request.tsx:2051
+#: src/pages/requests/components/request/Request.tsx:2067
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -10517,7 +10531,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2032
+#: src/pages/requests/components/request/Request.tsx:2048
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -10541,8 +10555,8 @@ msgstr ""
 #~ msgid "Please describe what workflow you want to create"
 #~ msgstr "Sila terangkan aliran kerja yang ingin anda buat"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:693
-#: src/pages/folders/components/DocumentSigningPage.tsx:813
+#: src/pages/folders/components/DocumentSigningPage.tsx:716
+#: src/pages/folders/components/DocumentSigningPage.tsx:836
 msgid "Please draw your signature before continuing."
 msgstr ""
 
@@ -10672,8 +10686,8 @@ msgstr ""
 msgid "Please enter your email address."
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:667
-#: src/pages/folders/components/DocumentSigningPage.tsx:828
+#: src/pages/folders/components/DocumentSigningPage.tsx:690
+#: src/pages/folders/components/DocumentSigningPage.tsx:851
 msgid "Please enter your full name to create your signature."
 msgstr ""
 
@@ -10834,7 +10848,7 @@ msgstr ""
 msgid "Please select the field that determines when this rule should apply."
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1916
+#: src/pages/folders/components/DocumentSigningPage.tsx:1979
 msgid "Please select the person who needs to sign before placing the signature."
 msgstr ""
 
@@ -10864,7 +10878,7 @@ msgstr "Sila cuba lagi."
 msgid "Please upload a CSV or Excel file."
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:955
+#: src/pages/folders/components/DocumentSigningPage.tsx:978
 msgid "Please upload a PNG or JPG image."
 msgstr ""
 
@@ -10889,8 +10903,8 @@ msgstr "Sila muat naik fail CSV atau XLSX sahaja"
 msgid "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 msgstr "Sila muat naik fail data PO anda (CSV atau XLSX) untuk memulakan konfigurasi."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:718
-#: src/pages/folders/components/DocumentSigningPage.tsx:844
+#: src/pages/folders/components/DocumentSigningPage.tsx:741
+#: src/pages/folders/components/DocumentSigningPage.tsx:867
 msgid "Please upload your signature image before continuing."
 msgstr ""
 
@@ -11732,9 +11746,9 @@ msgstr ""
 msgid "Redaction level"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2712
-#: src/pages/folders/components/DocumentSigningPage.tsx:2831
-#: src/pages/folders/components/DocumentSigningPage.tsx:2838
+#: src/pages/folders/components/DocumentSigningPage.tsx:2783
+#: src/pages/folders/components/DocumentSigningPage.tsx:2902
+#: src/pages/folders/components/DocumentSigningPage.tsx:2909
 msgid "Redo"
 msgstr "Buat semula"
 
@@ -11749,7 +11763,7 @@ msgstr "Nombor Dokumen Rujukan"
 #: src/pages/dashboard/DashboardPage.tsx:403
 #: src/pages/folders/components/FolderFilterBar.tsx:759
 #: src/pages/folders/components/SignRequestAssignForm.tsx:473
-#: src/pages/forms/FormEntriesPage.tsx:2879
+#: src/pages/forms/FormEntriesPage.tsx:2900
 #: src/pages/forms/FormsPage.tsx:626
 #: src/pages/portal/components/PortalHome.tsx:434
 #: src/pages/portal/components/PortalHome.tsx:439
@@ -11911,7 +11925,7 @@ msgstr "Namakan semula"
 #~ msgstr "Memaparkan pratonton papan pemuka..."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2005
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2213
 msgid "Replace"
 msgstr "Gantikan"
 
@@ -12036,15 +12050,15 @@ msgstr "Permintaan {requestNo} telah berjaya dipindahkan."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Permintaan {requestNo} berjaya dipindahkan"
 
-#: src/pages/requests/components/request/Request.tsx:2221
+#: src/pages/requests/components/request/Request.tsx:2237
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Tindakan \"{action}\" bagi permintaan {resolvedRequestNo} berjaya diselesaikan"
 
-#: src/pages/requests/components/request/Request.tsx:2199
+#: src/pages/requests/components/request/Request.tsx:2215
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2220
+#: src/pages/requests/components/request/Request.tsx:2236
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
@@ -12063,7 +12077,7 @@ msgstr "Minta Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Permintaan dibuat. Anda boleh menjejakinya daripada Penyerahan Saya."
 
-#: src/pages/requests/components/request/Request.tsx:2312
+#: src/pages/requests/components/request/Request.tsx:2328
 msgid "Request is being processed."
 msgstr ""
 
@@ -12080,12 +12094,12 @@ msgstr "Permintaan No"
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/Request.tsx:2331
+#: src/pages/requests/components/request/Request.tsx:2347
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
 #: src/pages/requests/components/request/components/Header.tsx:406
-#: src/pages/requests/components/request/Request.tsx:2633
+#: src/pages/requests/components/request/Request.tsx:2649
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
@@ -12096,7 +12110,7 @@ msgid "Request Status"
 msgstr "Permintaan Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2332
+#: src/pages/requests/components/request/Request.tsx:2348
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
@@ -12216,11 +12230,11 @@ msgstr "Tetapkan semula kepada cadangan pemetaan automatik awal."
 msgid "Reset to Suggested"
 msgstr "Tetapkan Semula kepada Cadangan"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2810
+#: src/pages/folders/components/DocumentSigningPage.tsx:2881
 msgid "Reset zoom"
 msgstr "Set semula zum"
 
-#: src/pages/forms/FormEntriesPage.tsx:2042
+#: src/pages/forms/FormEntriesPage.tsx:2053
 msgid "Restore"
 msgstr "Pulihkan"
 
@@ -12274,7 +12288,7 @@ msgstr "Cuba semula"
 msgid "Retry Ingestion"
 msgstr "Cuba Semula Pengambilan"
 
-#: src/pages/forms/FormEntriesPage.tsx:2240
+#: src/pages/forms/FormEntriesPage.tsx:2251
 msgid "Retry Loading"
 msgstr "Retry Memuatkan"
 
@@ -12604,7 +12618,7 @@ msgstr "Pemetaan Medan Jadual SAP"
 msgid "Save"
 msgstr "Simpan"
 
-#: src/pages/forms/FormEntriesPage.tsx:955
+#: src/pages/forms/FormEntriesPage.tsx:960
 msgid "Save & Add Another"
 msgstr "Simpan & Tambah Satu Lagi"
 
@@ -12637,8 +12651,8 @@ msgid "Save Branding"
 msgstr "Simpan Penjenamaan"
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
-#: src/pages/forms/FormEntriesPage.tsx:969
-#: src/pages/forms/FormEntriesPage.tsx:2748
+#: src/pages/forms/FormEntriesPage.tsx:974
+#: src/pages/forms/FormEntriesPage.tsx:2769
 msgid "Save Changes"
 msgstr "Simpan Perubahan"
 
@@ -12647,7 +12661,7 @@ msgstr "Simpan Perubahan"
 msgid "Save Dashboard"
 msgstr "Simpan Papan Pemuka"
 
-#: src/pages/forms/FormEntriesPage.tsx:2748
+#: src/pages/forms/FormEntriesPage.tsx:2769
 msgid "Save Entry"
 msgstr "Simpan Entri"
 
@@ -12668,9 +12682,9 @@ msgstr ""
 msgid "Save Folder"
 msgstr "Simpan Folder"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2424
-#: src/pages/folders/components/DocumentSigningPage.tsx:2485
-#: src/pages/folders/components/DocumentSigningPage.tsx:2599
+#: src/pages/folders/components/DocumentSigningPage.tsx:2495
+#: src/pages/folders/components/DocumentSigningPage.tsx:2556
+#: src/pages/folders/components/DocumentSigningPage.tsx:2670
 msgid "Save for reuse"
 msgstr "Simpan untuk digunakan semula"
 
@@ -12678,7 +12692,7 @@ msgstr "Simpan untuk digunakan semula"
 msgid "Save Group"
 msgstr "Simpan Kumpulan"
 
-#: src/pages/forms/FormEntriesPage.tsx:969
+#: src/pages/forms/FormEntriesPage.tsx:974
 msgid "Save Line Item"
 msgstr "Simpan Item Baris"
 
@@ -12723,7 +12737,7 @@ msgid "Saved"
 msgstr ""
 
 #. placeholder {0}: savedSignatures.length
-#: src/pages/folders/components/DocumentSigningPage.tsx:1964
+#: src/pages/folders/components/DocumentSigningPage.tsx:2027
 msgid "Saved ({0})"
 msgstr "Disimpan ({0})"
 
@@ -12758,7 +12772,7 @@ msgid "Scan QR"
 msgstr "Imbas QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1980
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2188
 msgid "Scan QR / Barcode"
 msgstr "Imbas QR / Kod Bar"
 
@@ -12870,7 +12884,7 @@ msgid "Search by document name, reference number, or keywords..."
 msgstr "Cari mengikut nama dokumen, nombor rujukan atau kata kunci..."
 
 #: src/pages/folders/components/DocumentsListView.tsx:892
-#: src/pages/folders/components/ExplorerToolbar.tsx:269
+#: src/pages/folders/components/ExplorerToolbar.tsx:271
 #: src/pages/folders/components/FolderFilterBar.tsx:399
 msgid "Search by name or metadata..."
 msgstr "Cari mengikut nama atau metadata..."
@@ -12906,7 +12920,7 @@ msgstr "Carian perihalan..."
 msgid "Search email..."
 msgstr "Cari e-mel..."
 
-#: src/pages/forms/FormEntriesPage.tsx:2869
+#: src/pages/forms/FormEntriesPage.tsx:2890
 msgid "Search entries..."
 msgstr "Cari entri..."
 
@@ -12985,7 +12999,7 @@ msgstr "Pengurus carian..."
 msgid "Search media"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2904
+#: src/pages/forms/FormEntriesPage.tsx:2925
 #: src/pages/forms/FormsPage.tsx:637
 #: src/pages/settings/components/GroupManagement.tsx:630
 #: src/pages/settings/components/ManageUser.tsx:1579
@@ -13085,7 +13099,7 @@ msgid "Secondary"
 msgstr "Menengah"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:2315
+#: src/pages/forms/FormEntriesPage.tsx:2326
 msgid "Section {0}"
 msgstr "Bahagian {0}"
 
@@ -13134,7 +13148,7 @@ msgstr "Protokol Keselamatan"
 msgid "See the Attachments section for uploaded files."
 msgstr "Lihat bahagian Lampiran untuk fail yang dimuat naik."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2174
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2382
 #: src/pages/settings/components/ManageUser.tsx:1910
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -13191,11 +13205,11 @@ msgstr "Pilih repositori terlebih dahulu."
 #~ msgid "Select a retention trigger field."
 #~ msgstr "Pilih medan pencetus pengekalan."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:859
+#: src/pages/folders/components/DocumentSigningPage.tsx:882
 msgid "Select a saved signature first."
 msgstr "Pilih tandatangan yang disimpan dahulu."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1897
+#: src/pages/folders/components/DocumentSigningPage.tsx:1960
 msgid "Select a signer below, then click the document to mark one or more places."
 msgstr "Pilih penandatangan di bawah, kemudian klik dokumen untuk menandakan satu atau lebih tempat."
 
@@ -13223,7 +13237,7 @@ msgstr ""
 msgid "Select a target folder before indexing"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1476
+#: src/pages/folders/components/DocumentSigningPage.tsx:1524
 msgid "Select a user and mark at least one signature place on the document."
 msgstr "Pilih pengguna dan tandakan sekurang-kurangnya satu tempat."
 
@@ -13259,7 +13273,7 @@ msgstr "Pilih Semua"
 msgid "Select all files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2149
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2357
 msgid "Select all rows"
 msgstr ""
 
@@ -13447,8 +13461,8 @@ msgstr "Pilih penerima"
 msgid "Select role"
 msgstr "Pilih peranan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2336
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2477
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2544
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2686
 msgid "Select row"
 msgstr "Pilih baris"
 
@@ -13635,7 +13649,7 @@ msgstr "Hantar permintaan"
 msgid "Send sign request"
 msgstr "Hantar permintaan tanda"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2865
+#: src/pages/folders/components/DocumentSigningPage.tsx:2936
 msgid "Send Sign Request"
 msgstr "Hantar permintaan tandatangan"
 
@@ -13678,7 +13692,7 @@ msgstr "September"
 #~ msgstr "Berurutan"
 
 #. placeholder {0}: first.name
-#: src/pages/folders/components/DocumentSigningPage.tsx:1896
+#: src/pages/folders/components/DocumentSigningPage.tsx:1959
 msgid "Sequential: mark place(s) for {0} first, then switch to the next signer."
 msgstr "Berjujukan: tandakan tempat untuk {0} dahulu, kemudian tukar kepada penandatangan seterusnya."
 
@@ -13788,7 +13802,7 @@ msgstr "Keterukan"
 #: src/pages/folders/components/FolderSharePopover.tsx:603
 #: src/pages/folders/components/FolderSharePopover.tsx:1073
 #: src/pages/folders/components/FolderTable.tsx:552
-#: src/pages/folders/components/FolderTable.tsx:1489
+#: src/pages/folders/components/FolderTable.tsx:1500
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
 #: src/pages/requests/components/request/components/Header.tsx:1123
@@ -13878,7 +13892,7 @@ msgstr "Tunjukkan {0} dalam Tetapan"
 #~ msgid "Show all {matchCount} matches"
 #~ msgstr "Tunjukkan semua {matchCount} padanan"
 
-#: src/pages/folders/components/FolderTable.tsx:910
+#: src/pages/folders/components/FolderTable.tsx:916
 msgid "Show both folders and files"
 msgstr "Tunjukkan kedua-dua folder dan fail"
 
@@ -13903,7 +13917,7 @@ msgstr "Tunjukkan cadangan yang kurang"
 msgid "Show file list"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:907
+#: src/pages/folders/components/FolderTable.tsx:913
 msgid "Show files only"
 msgstr "Tunjukkan fail sahaja"
 
@@ -13911,8 +13925,8 @@ msgstr "Tunjukkan fail sahaja"
 msgid "Show Folder Configuration in Settings"
 msgstr "Tunjukkan Konfigurasi Folder dalam Tetapan"
 
-#: src/pages/folders/components/FolderTable.tsx:907
-#: src/pages/folders/components/FolderTable.tsx:909
+#: src/pages/folders/components/FolderTable.tsx:913
+#: src/pages/folders/components/FolderTable.tsx:915
 msgid "Show folders only"
 msgstr "Tunjukkan folder sahaja"
 
@@ -14003,9 +14017,9 @@ msgstr "Tandatangan"
 msgid "Sign Document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1748
-#: src/pages/folders/components/DocumentSigningPage.tsx:2139
-#: src/pages/folders/components/DocumentSigningPage.tsx:2268
+#: src/pages/folders/components/DocumentSigningPage.tsx:1808
+#: src/pages/folders/components/DocumentSigningPage.tsx:2210
+#: src/pages/folders/components/DocumentSigningPage.tsx:2339
 msgid "Sign here"
 msgstr "Tandatangan di sini"
 
@@ -14102,12 +14116,12 @@ msgstr ""
 msgid "Signature box placed on Page {currentPage}"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2336
-#: src/pages/folders/components/DocumentSigningPage.tsx:2941
+#: src/pages/folders/components/DocumentSigningPage.tsx:2407
+#: src/pages/folders/components/DocumentSigningPage.tsx:3012
 msgid "Signature methods"
 msgstr "Kaedah tandatangan"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:943
+#: src/pages/folders/components/DocumentSigningPage.tsx:966
 msgid "Signature placed on document."
 msgstr "Tandatangan diletakkan pada dokumen."
 
@@ -14125,7 +14139,7 @@ msgstr "Tandatangan berjaya dihantar."
 msgid "Signature workflow completed successfully!"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2131
+#: src/pages/folders/components/DocumentSigningPage.tsx:2202
 msgid "Signed"
 msgstr "Ditandatangani"
 
@@ -14356,7 +14370,7 @@ msgstr "Mula menaip untuk mencari"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2245
 #: src/pages/folders/components/DocumentDetailsView.tsx:2251
 #: src/pages/folders/components/DocumentsListView.tsx:1121
-#: src/pages/folders/components/FolderTable.tsx:1495
+#: src/pages/folders/components/FolderTable.tsx:1506
 msgid "Start Workflow"
 msgstr "Mulakan Aliran Kerja"
 
@@ -14783,7 +14797,7 @@ msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 #~ msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1968
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2176
 msgid "Switch to Advance (card) view"
 msgstr ""
 
@@ -14802,7 +14816,7 @@ msgstr ""
 msgid "Switch to JSON view"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1967
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2175
 msgid "Switch to Normal (grid) view"
 msgstr ""
 
@@ -14842,7 +14856,7 @@ msgstr "Segerakkan data Borang Induk dengan medan folder yang sepadan."
 msgid "Sync with existing OneDrive folders"
 msgstr "Segerakkan dengan folder OneDrive sedia ada"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1950
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2158
 msgid "Syncing from master table..."
 msgstr ""
 
@@ -14902,7 +14916,7 @@ msgstr "Bawa ruang kerja anda ke Pengeluaran"
 msgid "Talk to Sales"
 msgstr "Bercakap dengan Bahagian Jualan"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1516
+#: src/pages/folders/components/DocumentSigningPage.tsx:1564
 msgid "Tap your highlighted sign area to place your signature."
 msgstr "Ketik kawasan tanda anda yang diserlahkan untuk meletakkan tandatangan anda."
 
@@ -14974,6 +14988,10 @@ msgstr "Penyewa tiada. Log masuk semula dan cuba lagi."
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3739
 msgid "Test Connection"
 msgstr "Uji Sambungan"
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:1842
+msgid "Text could not be read from the document: no repository is available for this form."
+msgstr ""
 
 #: src/pages/settings/components/license/LicenseSettings.tsx:49
 #~ msgid "Thanks! Our team will reach out within one business day."
@@ -15072,13 +15090,13 @@ msgstr "Sedang berfikir..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "Tindakan ini tidak membawa sebarang kesan pemusnahan — ruang kerja anda diteruskan tepat seperti hari ini, cuma ditandakan sebagai pengeluaran."
 
-#: src/pages/forms/FormEntriesPage.tsx:2826
+#: src/pages/forms/FormEntriesPage.tsx:2847
 #: src/pages/forms/FormsPage.tsx:561
 #: src/pages/reports/components/ReportsListView.tsx:291
 msgid "This action is permanent and cannot be undone."
 msgstr "Tindakan ini kekal dan tidak boleh dibuat asal."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1175
+#: src/pages/folders/components/DocumentSigningPage.tsx:1198
 msgid "This area is already signed."
 msgstr "Kawasan ini telah pun ditandatangani."
 
@@ -15114,8 +15132,8 @@ msgstr "Medan ini diperlukan."
 
 #: src/pages/folders/components/DocumentsListView.tsx:779
 #: src/pages/folders/components/DocumentsListView.tsx:786
-#: src/pages/folders/components/FolderTable.tsx:1433
-#: src/pages/folders/components/FolderTable.tsx:1442
+#: src/pages/folders/components/FolderTable.tsx:1444
+#: src/pages/folders/components/FolderTable.tsx:1453
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:152
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1089
 msgid "this file"
@@ -15151,7 +15169,7 @@ msgid "This file was deleted. Kindly try a new file."
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1008
-#: src/pages/folders/components/FolderTable.tsx:1132
+#: src/pages/folders/components/FolderTable.tsx:1143
 msgid "This folder does not contain any folders or files yet."
 msgstr "Folder ini belum lagi mengandungi sebarang folder atau fail."
 
@@ -15222,7 +15240,7 @@ msgstr "Keputusan ini tidak boleh ditambahkan pada dokumen berkaitan."
 msgid "This result cannot be attached."
 msgstr "Keputusan ini tidak boleh dilampirkan."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1171
+#: src/pages/folders/components/DocumentSigningPage.tsx:1194
 msgid "This sign area belongs to another user."
 msgstr "Kawasan tanda ini kepunyaan pengguna lain."
 
@@ -15315,7 +15333,7 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jelas, pilih contoh di bawah, atau terangkan idea folder penuh untuk jana persediaan lengkap."
 
-#: src/pages/forms/FormEntriesPage.tsx:2818
+#: src/pages/forms/FormEntriesPage.tsx:2839
 msgid "to Trash?"
 msgstr "ke Sampah?"
 
@@ -15353,10 +15371,10 @@ msgstr "Ejen utama mengikut penggunaan kredit · {periodSubtitle}"
 #~ msgid "Top-3 Concentration"
 #~ msgstr "Kepekatan Top-3"
 
-#: src/pages/forms/FormEntriesPage.tsx:1258
+#: src/pages/forms/FormEntriesPage.tsx:1263
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1060
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2433
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2642
 msgid "Total"
 msgstr "Jumlah"
 
@@ -15468,7 +15486,7 @@ msgid "Transactions"
 msgstr "Transaksi"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:92
-#: src/pages/forms/FormEntriesPage.tsx:2781
+#: src/pages/forms/FormEntriesPage.tsx:2802
 msgid "Trash"
 msgstr "Tong sampah"
 
@@ -15518,7 +15536,7 @@ msgstr "Cuba perluaskan carian anda atau pilih kad status lain."
 msgid "Two-Step Verification"
 msgstr "Pengesahan Dua Langkah"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1962
+#: src/pages/folders/components/DocumentSigningPage.tsx:2025
 #: src/pages/forms/FormsPage.tsx:247
 #: src/pages/settings/components/credits/components/CreditsChart.tsx:32
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:694
@@ -15566,7 +15584,7 @@ msgstr ""
 msgid "Type your answer…"
 msgstr "Taip jawapan anda…"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2371
+#: src/pages/folders/components/DocumentSigningPage.tsx:2442
 msgid "Type your name"
 msgstr "Taip nama anda"
 
@@ -15574,11 +15592,11 @@ msgstr "Taip nama anda"
 msgid "Type:"
 msgstr "Jenis:"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1102
+#: src/pages/folders/components/DocumentSigningPage.tsx:1125
 msgid "Typed signature"
 msgstr "Tandatangan ditaip"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1677
+#: src/pages/folders/components/DocumentSigningPage.tsx:1737
 msgid "Unable to complete signing. Please try again."
 msgstr "Tidak dapat selesaikan penandatanganan. Sila cuba lagi."
 
@@ -15590,7 +15608,7 @@ msgstr "Tidak dapat selesaikan log masuk sosial"
 msgid "Unable to copy summary"
 msgstr "Tidak dapat menyalin ringkasan"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1415
+#: src/pages/folders/components/DocumentSigningPage.tsx:1463
 #: src/pages/folders/components/SignRequestAssignForm.tsx:282
 msgid "Unable to create sign request"
 msgstr "Tidak dapat membuat permintaan tandatangan"
@@ -15608,7 +15626,7 @@ msgstr "Tidak dapat membuat permintaan ini."
 msgid "Unable to download file"
 msgstr "Tidak dapat muat turun fail"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1857
+#: src/pages/folders/components/DocumentSigningPage.tsx:1920
 msgid "Unable to download the signed file. Please try again."
 msgstr "Tidak dapat memuat turun fail yang ditandatangani. Sila cuba lagi."
 
@@ -15688,11 +15706,11 @@ msgstr "Tidak dapat mengalih keluar dokumen berkaitan"
 msgid "Unable to resend OTP"
 msgstr "Tidak dapat menghantar semula OTP"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1496
+#: src/pages/folders/components/DocumentSigningPage.tsx:1544
 msgid "Unable to save assignments. Please try again."
 msgstr "Tidak dapat simpan tugasan. Sila cuba lagi."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1467
+#: src/pages/folders/components/DocumentSigningPage.tsx:1515
 msgid "Unable to send sign request. Please try again."
 msgstr "Tidak dapat hantar permintaan tandatangan. Sila cuba lagi."
 
@@ -15715,7 +15733,7 @@ msgstr "Tidak dapat log masuk"
 msgid "Unable to start this workflow."
 msgstr "Tidak dapat memulakan aliran kerja ini."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1580
+#: src/pages/folders/components/DocumentSigningPage.tsx:1628
 msgid "Unable to submit signature. Please try again."
 msgstr "Tidak dapat hantar tandatangan. Sila cuba lagi."
 
@@ -15745,9 +15763,9 @@ msgstr "Tidak diperuntukkan"
 msgid "Undercharged"
 msgstr "Dicaj Kurang"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:2697
-#: src/pages/folders/components/DocumentSigningPage.tsx:2821
-#: src/pages/folders/components/DocumentSigningPage.tsx:2828
+#: src/pages/folders/components/DocumentSigningPage.tsx:2768
+#: src/pages/folders/components/DocumentSigningPage.tsx:2892
+#: src/pages/folders/components/DocumentSigningPage.tsx:2899
 msgid "Undo"
 msgstr "Buat Asal"
 
@@ -15807,7 +15825,7 @@ msgstr "Jenis fail tidak disokong. Sila muat naik fail CSV atau XLSX."
 msgid "Untitled"
 msgstr "Tanpa tajuk"
 
-#: src/pages/forms/FormEntriesPage.tsx:1855
+#: src/pages/forms/FormEntriesPage.tsx:1866
 msgid "Untitled Field"
 msgstr "Tanpa tajuk Medan"
 
@@ -15900,7 +15918,7 @@ msgstr "Menaik taraf ruang kerja anda…"
 msgid "Upgrading…"
 msgstr "Menaik taraf…"
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:1963
+#: src/pages/folders/components/DocumentSigningPage.tsx:2026
 #: src/pages/folders/components/FolderExplorer.tsx:620
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:317
@@ -15943,7 +15961,7 @@ msgid "Upload document"
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1018
-#: src/pages/folders/components/FolderTable.tsx:1143
+#: src/pages/folders/components/FolderTable.tsx:1154
 msgid "Upload Documents"
 msgstr "Muat Naik Dokumen"
 
@@ -16012,12 +16030,12 @@ msgstr "Muat naik logo dan favicon organisasi anda"
 msgid "Uploaded"
 msgstr ""
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:727
-#: src/pages/folders/components/DocumentSigningPage.tsx:732
-#: src/pages/folders/components/DocumentSigningPage.tsx:850
-#: src/pages/folders/components/DocumentSigningPage.tsx:854
-#: src/pages/folders/components/DocumentSigningPage.tsx:1114
-#: src/pages/folders/components/DocumentSigningPage.tsx:1160
+#: src/pages/folders/components/DocumentSigningPage.tsx:750
+#: src/pages/folders/components/DocumentSigningPage.tsx:755
+#: src/pages/folders/components/DocumentSigningPage.tsx:873
+#: src/pages/folders/components/DocumentSigningPage.tsx:877
+#: src/pages/folders/components/DocumentSigningPage.tsx:1137
+#: src/pages/folders/components/DocumentSigningPage.tsx:1183
 msgid "Uploaded signature"
 msgstr "Tandatangan dimuat naik"
 
@@ -16499,7 +16517,7 @@ msgid "View All Versions"
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1098
-#: src/pages/folders/components/FolderTable.tsx:1472
+#: src/pages/folders/components/FolderTable.tsx:1483
 msgid "View Details"
 msgstr "Lihat Butiran"
 
@@ -16515,7 +16533,7 @@ msgstr ""
 msgid "View every document version"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:1934
+#: src/pages/forms/FormEntriesPage.tsx:1945
 msgid "View Line Items Table"
 msgstr "Lihat Jadual Item Baris"
 
@@ -16646,8 +16664,8 @@ msgstr "Kami tidak dapat mengalihkan permintaan {requestNo}. {0}"
 msgid "We couldn’t move this request right now. Please try again."
 msgstr "Kami tidak dapat mengalihkan permintaan ini sekarang. Sila cuba lagi."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:970
-#: src/pages/folders/components/DocumentSigningPage.tsx:979
+#: src/pages/folders/components/DocumentSigningPage.tsx:993
+#: src/pages/folders/components/DocumentSigningPage.tsx:1002
 msgid "We couldn't open this file. Please choose another file and try again."
 msgstr ""
 
@@ -16921,7 +16939,7 @@ msgstr ""
 msgid "Your AI agent will start monitoring your email and processing incoming invoices automatically."
 msgstr "Ejen AI anda akan mula memantau e-mel anda dan memproses invois masuk secara automatik."
 
-#: src/pages/folders/components/DocumentSigningPage.tsx:960
+#: src/pages/folders/components/DocumentSigningPage.tsx:983
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr ""
 
@@ -16970,11 +16988,11 @@ msgid "Zero-Downtime Transition"
 msgstr "Peralihan Tanpa Masa Henti"
 
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:938
-#: src/pages/folders/components/DocumentSigningPage.tsx:2797
+#: src/pages/folders/components/DocumentSigningPage.tsx:2868
 msgid "Zoom in"
 msgstr "Zum masuk"
 
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:926
-#: src/pages/folders/components/DocumentSigningPage.tsx:2781
+#: src/pages/folders/components/DocumentSigningPage.tsx:2852
 msgid "Zoom out"
 msgstr "Zum keluar"
