@@ -942,6 +942,11 @@ export class FormRuleEngine {
 
       // 2. Source-driven readonlySettings: [{ id, value, controls, notEqual }]
       const readonlyRules = Array.isArray(rawReadonly) ? rawReadonly : []
+      // "Is equal to" rules are OR-ed (any match locks). "Is NOT equal to"
+      // rules for the same target are AND-ed: with a single-select, several
+      // "not equal to X/Y/Z" rules would otherwise always lock the target
+      // (the value always differs from at least two of them).
+      const notEqualState = new Map<string, boolean>()
       for (const rule of readonlyRules) {
         if (!Array.isArray(rule?.controls) || !rule.controls.length) continue
         const isValueMatch = isRuleValueMatched(
@@ -949,15 +954,21 @@ export class FormRuleEngine {
           rule.value,
           rule.operator || rule.logic,
         )
-        const shouldLock = rule.notEqual ? !isValueMatch : isValueMatch
-        if (shouldLock) {
-          for (const rawTargetId of rule.controls) {
-            const targetId = this.resolveTargetId(rawTargetId)
-            if (fieldStates[targetId]) {
-              fieldStates[targetId].disabled = true
-            }
+        for (const rawTargetId of rule.controls) {
+          const targetId = this.resolveTargetId(rawTargetId)
+          if (!fieldStates[targetId]) continue
+          if (rule.notEqual) {
+            notEqualState.set(
+              targetId,
+              (notEqualState.get(targetId) ?? true) && !isValueMatch,
+            )
+          } else if (isValueMatch) {
+            fieldStates[targetId].disabled = true
           }
         }
+      }
+      for (const [targetId, lock] of notEqualState) {
+        if (lock) fieldStates[targetId].disabled = true
       }
     }
 

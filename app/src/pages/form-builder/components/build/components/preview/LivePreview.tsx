@@ -62,6 +62,7 @@ import {
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
   resolveRuntimeFieldType,
+  normalizeScannedValue,
   resolveShortTextFillValue,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
@@ -1117,7 +1118,8 @@ const LivePreviewSearchableInput = ({
           <BarcodeScannerPanel
             onClose={() => setIsScannerOpen(false)}
             onScan={(rawValue) => {
-              onChange(field.id, rawValue)
+              const next = normalizeScannedValue(field.type, rawValue)
+              if (next !== undefined) onChange(field.id, next)
               setIsScannerOpen(false)
             }}
           />
@@ -1288,14 +1290,22 @@ const renderPreviewInput = (
       )
     case 'DATE_TIME':
       return (
-        <InputDateTime
-          disabled={disabled}
-          value={fieldValue || null}
-          format={
-            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
-          }
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <InputDateTime
+            disabled={disabled}
+            value={fieldValue || null}
+            format={
+              field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+            }
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'TABLE':
     case 'DYNAMIC_TABLE': {
@@ -1489,19 +1499,27 @@ const renderPreviewInput = (
       )
     case 'DATE':
       return (
-        <TextInput
-          disabled={disabled}
-          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
-          placeholder='YYYY-MM-DD or MM/DD/YYYY'
-          size='sm'
-          value={String(fieldValue)}
-          variant='default'
-          classNames={{
-            input:
-              'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-          }}
-          onChange={(e) => onChange(field.id, e.target.value)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            disabled={disabled}
+            leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+            placeholder='YYYY-MM-DD or MM/DD/YYYY'
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'RATING':
       return (

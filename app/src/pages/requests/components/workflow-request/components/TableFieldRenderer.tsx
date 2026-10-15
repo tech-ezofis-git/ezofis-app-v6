@@ -69,6 +69,11 @@ import {
   selectColumnCellOptions,
   toStoredOptionValue,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
+import {
+  getCopyTargets,
+  getMasterMatchColumn,
+  getMasterTargets,
+} from '@/pages/form-builder/helpers/tableColumnFillSync'
 import { getRowCellRuleStates } from '@/pages/form-builder/helpers/tableColumnRules'
 import {
   type AddressSuggestion,
@@ -88,6 +93,7 @@ import {
   getDateTimeLimits,
   getEffectiveColumnLabel,
   getEffectiveFieldLabel,
+  normalizeScannedValue,
   resolveRuntimeFieldType,
   shouldShowTableSummaryRow,
   updateCurrencyFieldValue,
@@ -143,6 +149,7 @@ export interface TableColumn {
       isSameMaster?: boolean
       masterFormColumn?: string
       masterFormId?: string
+      parentFieldId?: string
       placeholder?: string
       predefinedType?: 'FOLDER' | 'USER'
       prefixLabel?: string
@@ -600,6 +607,47 @@ const TableCellNumber = ({
           onScan={(raw) => {
             const scanned = parseScannedNumber(col, raw)
             if (scanned !== undefined) onCellChange(scanned)
+            setScannerOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// DATE / DATE_TIME cell with the optional QR / barcode scan button
+// ("Read Values From QR"); a scan that isn't a valid date is ignored.
+const TableCellScanWrap = ({
+  children,
+  col,
+  onScan,
+}: {
+  children: ReactNode
+  col: TableColumn
+  onScan: (value: number | string) => void
+}) => {
+  const [scannerOpen, setScannerOpen] = useState(false)
+  if (col.settings?.specific?.qrValue !== true) return <>{children}</>
+  return (
+    <div className='flex w-full min-w-0 flex-col gap-1'>
+      <div className='flex w-full min-w-0 items-center gap-1'>
+        <div className='min-w-0 flex-1'>{children}</div>
+        <button
+          aria-label='Scan QR / Barcode'
+          className='flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-3 bg-primary-1 text-primary-9 transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+          title='Scan QR / Barcode'
+          type='button'
+          onClick={() => setScannerOpen((open) => !open)}
+        >
+          <Icon height={14} name='lucide:qr-code' width={14} />
+        </button>
+      </div>
+      {scannerOpen && (
+        <BarcodeScannerPanel
+          onClose={() => setScannerOpen(false)}
+          onScan={(raw) => {
+            const scanned = normalizeScannedValue(String(col.type), raw)
+            if (scanned !== undefined) onScan(scanned)
             setScannerOpen(false)
           }}
         />
@@ -1102,14 +1150,16 @@ const renderCellInput = (
     case 'DATE': {
       const { maxDate, minDate } = getDateTimeLimits(col)
       return (
-        <InputDate
-          className='w-full'
-          maxDate={maxDate}
-          minDate={minDate}
-          placeholder='YYYY-MM-DD'
-          value={val != null && val !== '' ? String(val) : null}
-          onChange={(v) => onCellChange(v || '')}
-        />
+        <TableCellScanWrap col={col} onScan={onCellChange}>
+          <InputDate
+            className='w-full'
+            maxDate={maxDate}
+            minDate={minDate}
+            placeholder='YYYY-MM-DD'
+            value={val != null && val !== '' ? String(val) : null}
+            onChange={(v) => onCellChange(v || '')}
+          />
+        </TableCellScanWrap>
       )
     }
 
@@ -1129,11 +1179,13 @@ const renderCellInput = (
 
     case 'DATE_TIME':
       return (
-        <InputDateTime
-          className='w-full'
-          value={val != null && val !== '' ? String(val) : null}
-          onChange={(v) => onCellChange(v || '')}
-        />
+        <TableCellScanWrap col={col} onScan={onCellChange}>
+          <InputDateTime
+            className='w-full'
+            value={val != null && val !== '' ? String(val) : null}
+            onChange={(v) => onCellChange(v || '')}
+          />
+        </TableCellScanWrap>
       )
 
     case 'LABEL':
@@ -1792,16 +1844,80 @@ const TableFieldRenderer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(resolvedRows)])
 
+  // NUMBER / DATE / DATE_TIME columns set to "Use values from a master
+  // table": look up the master row matching this row's source-column value and
+  // write the configured master column into the target cell.
+  const fillRowFromMaster = async (
+    rowKey: string,
+    sourceCol: TableColumn,
+    sourceValue: unknown,
+    targets: TableColumn[],
+  ) => {
+    const hasSource = !(
+      sourceValue === undefined ||
+      sourceValue === null ||
+      sourceValue === ''
+    )
+    const patch: Record<string, unknown> = {}
+    await Promise.all(
+      targets.map(async (target) => {
+        const s = target.settings?.specific
+        if (!hasSource) {
+          patch[target.id] = ''
+          return
+        }
+        try {
+          const options = await fetchMasterFormColumnOptions(
+            String(s?.masterFormId),
+            String(s?.masterFormColumn),
+            undefined,
+            undefined,
+            false,
+            [
+              {
+                masterColumn: getMasterMatchColumn(sourceCol),
+                value: sourceValue,
+              },
+            ],
+          )
+          patch[target.id] = options[0]?.name ?? ''
+        } catch {
+          // Leave the cell as it is when the lookup fails
+        }
+      }),
+    )
+    if (Object.keys(patch).length === 0) return
+    const current = rowsRef.current
+    const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
+    if (idx < 0) return
+    const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+    rowsRef.current = next
+    onChange(next)
+  }
+
   const handleCellChange = (rowIndex: number, colId: string, cellVal: any) => {
-    editedRowKeys.current.add(rowKeyOf(rows[rowIndex], rowIndex))
+    const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    editedRowKeys.current.add(rowKey)
+    // Columns that mirror this one ("Use values from another column")
+    const mirrored: Record<string, unknown> = {}
+    for (const target of getCopyTargets(tableColumns, colId)) {
+      mirrored[target.id] = cellVal
+    }
     const next = rows.map((r, i) => {
       if (i !== rowIndex) return r
       return {
         ...r,
+        ...mirrored,
         [colId]: cellVal,
       }
     })
     onChange(next)
+
+    const masterTargets = getMasterTargets(tableColumns, colId)
+    const sourceCol = tableColumns.find((c) => c.id === colId)
+    if (sourceCol && masterTargets.length > 0) {
+      void fillRowFromMaster(rowKey, sourceCol, cellVal, masterTargets)
+    }
   }
 
   // Latest rows, so an OCR result that arrives after the user kept editing

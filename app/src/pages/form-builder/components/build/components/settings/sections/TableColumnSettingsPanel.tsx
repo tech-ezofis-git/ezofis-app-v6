@@ -12,6 +12,7 @@ import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import { FILL_SYNC_COLUMN_TYPES } from '@/pages/form-builder/helpers/tableColumnFillSync'
 import {
   extractFormFieldChoices,
   getColumnOptionsSource,
@@ -65,6 +66,17 @@ const DEFAULT_VALUE_TYPE_OPTIONS = [
   { id: 'CURRENT_DATE', name: 'Current date' },
   { id: 'AUTO_SEQUENCE', name: 'Auto-generated sequence (1, 2, 3...)' },
 ]
+
+// NUMBER / DATE / DATE_TIME columns can also take their value from another
+// column of the row, or from a master table (as the top-level fields can).
+const FILL_SYNC_VALUE_TYPE_OPTIONS = [
+  ...DEFAULT_VALUE_TYPE_OPTIONS,
+  { id: 'ASSIGN_PARENT_FIELD', name: 'Use values from another column' },
+  { id: 'MASTER', name: 'Use values from a master table' },
+]
+
+const NUMBER_SOURCE_TYPES = ['NUMBER', 'COUNTER', 'CALCULATED', 'CURRENCY_AMOUNT']
+const DATE_SOURCE_TYPES = ['DATE', 'DATE_TIME']
 
 function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
   return <InputSelectBase searchable wrapOptions {...props} />
@@ -208,6 +220,45 @@ const TableColumnSettingsPanel = ({
       return extractFormFieldChoices(res.data)
     },
   })
+
+  const hasFillSync = FILL_SYNC_COLUMN_TYPES.includes(String(column.type))
+  const isFillMaster = hasFillSync && defaultValueType === 'MASTER'
+  const isFillCopy = hasFillSync && defaultValueType === 'ASSIGN_PARENT_FIELD'
+  const parentFieldId = column.settings?.specific?.parentFieldId || ''
+  const isDateColumn = column.type === 'DATE' || column.type === 'DATE_TIME'
+
+  const { data: fillMasterColumns = [] } = useQuery({
+    enabled: isFillMaster && !!masterFormId,
+    queryKey: ['tableColumnFillMasterFields', masterFormId],
+    queryFn: async () => {
+      const res = await formApi.getFormDataById(String(masterFormId))
+      return extractFormFieldChoices(res.data)
+    },
+  })
+
+  const fillSourceColumns = siblingColumns
+    .filter((c) => {
+      if (c.id === column.id) return false
+      if (!isFillCopy) return true
+      return (isDateColumn ? DATE_SOURCE_TYPES : NUMBER_SOURCE_TYPES).includes(
+        String(c.type),
+      )
+    })
+    .map((c) => ({ id: c.id, name: c.name || 'Column' }))
+
+  const fillSourceSelect = (label: string) => (
+    <InputSelect
+      label={label}
+      options={fillSourceColumns}
+      placeholder='Select a column'
+      value={fillSourceColumns.find((c) => c.id === parentFieldId) || null}
+      onChange={(opt) =>
+        onUpdate({
+          specific: { parentFieldId: opt?.id != null ? String(opt.id) : '' },
+        })
+      }
+    />
+  )
 
   const { data: repositoryFields = [] } = useQuery({
     enabled: showOptions && optionsSource === 'LOOKUP' && !!repositoryId,
@@ -578,12 +629,18 @@ const TableColumnSettingsPanel = ({
       {!isCalculated && !showOptions && (
         <div className='space-y-2'>
           <InputSelect
-            label='Default Value'
-            options={DEFAULT_VALUE_TYPE_OPTIONS}
+            label={hasFillSync ? 'Fill Value' : 'Default Value'}
+            options={
+              hasFillSync
+                ? FILL_SYNC_VALUE_TYPE_OPTIONS
+                : DEFAULT_VALUE_TYPE_OPTIONS
+            }
             value={
-              DEFAULT_VALUE_TYPE_OPTIONS.find(
-                (o) => o.id === defaultValueType,
-              ) || DEFAULT_VALUE_TYPE_OPTIONS[0]
+              (hasFillSync
+                ? FILL_SYNC_VALUE_TYPE_OPTIONS
+                : DEFAULT_VALUE_TYPE_OPTIONS
+              ).find((o) => o.id === defaultValueType) ||
+              DEFAULT_VALUE_TYPE_OPTIONS[0]
             }
             onChange={(opt) =>
               onUpdate({
@@ -600,7 +657,70 @@ const TableColumnSettingsPanel = ({
               }
             />
           )}
-          {defaultValueType !== 'CUSTOM' && (
+          {isFillCopy && fillSourceSelect('Copy value from column')}
+          {isFillMaster && (
+            <>
+              <InputSelect
+                label='Master Table'
+                options={masterForms}
+                placeholder='Select a master table'
+                value={
+                  masterForms.find((f) => String(f.id) === masterFormId) ||
+                  null
+                }
+                onChange={(opt) =>
+                  onUpdate({
+                    specific: {
+                      masterFormColumn: '',
+                      masterFormId: opt?.id != null ? String(opt.id) : '',
+                    },
+                  })
+                }
+              />
+              <InputSelect
+                disabled={!masterFormId}
+                label='Master column to fill'
+                options={fillMasterColumns}
+                placeholder={
+                  masterFormId
+                    ? 'Select the column'
+                    : 'Select a master table first'
+                }
+                value={
+                  fillMasterColumns.find(
+                    (c) =>
+                      String(c.id) === masterFormColumn ||
+                      c.name === masterFormColumn,
+                  ) || null
+                }
+                onChange={(opt) =>
+                  onUpdate({
+                    specific: {
+                      masterFormColumn: opt?.id != null ? String(opt.id) : '',
+                    },
+                  })
+                }
+              />
+              {fillSourceSelect('Match on column')}
+              <div className='text-[10px] text-gray-6 italic'>
+                The row of the master table whose column equals this row&apos;s
+                value in the chosen column is used.
+              </div>
+            </>
+          )}
+          {isDateColumn && (
+            <InputSwitch
+              checked={column.settings?.specific?.qrValue === true}
+              description='Show a scan button in the cell to read a date from a QR code or barcode.'
+              label='Read Values From QR'
+              onChange={(checked) =>
+                onUpdate({ specific: { qrValue: checked } })
+              }
+            />
+          )}
+          {defaultValueType !== 'CUSTOM' &&
+            defaultValueType !== 'ASSIGN_PARENT_FIELD' &&
+            defaultValueType !== 'MASTER' && (
             <div className='text-[10px] text-gray-6 italic'>
               {
                 DEFAULT_VALUE_TYPE_OPTIONS.find(

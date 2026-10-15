@@ -170,6 +170,37 @@ export const resolveShortTextFillValue = (field: any): string | undefined => {
   }
 }
 
+// True when a field's "Fill Value" pulls its value from a master table or from
+// another field at runtime, so no static default should be seeded for it.
+export const fillsFromElsewhere = (field: any): boolean => {
+  const type = field?.settings?.specific?.fillValueType
+  return type === 'MASTER' || type === 'ASSIGN_PARENT_FIELD'
+}
+
+// Turns a QR / barcode scan into a value valid for the field type
+// (NUMBER/COUNTER -> number, DATE -> YYYY-MM-DD, DATE_TIME -> YYYY-MM-DD HH:mm).
+// Returns undefined when the scan can't be read as that type, so the field
+// keeps its current value instead of taking junk.
+export const normalizeScannedValue = (
+  fieldType: string,
+  raw: unknown,
+): number | string | undefined => {
+  const text = String(raw ?? '').trim()
+  if (!text) return undefined
+  if (fieldType === 'NUMBER' || fieldType === 'COUNTER') {
+    const n = Number(text.replace(/[\s,]/g, ''))
+    return Number.isFinite(n) ? n : undefined
+  }
+  if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+    const parsed = dayjs(text)
+    if (!parsed.isValid()) return undefined
+    return fieldType === 'DATE_TIME'
+      ? parsed.format('YYYY-MM-DD HH:mm')
+      : parsed.format('YYYY-MM-DD')
+  }
+  return text
+}
+
 // Seeds formModel with each DATE/TIME/DATE_TIME field's configured default
 // value (specific.dateDefaultValueType/timeDefaultValueType, set in
 // QuestionSettings.tsx's "Default Value Mode") when a new request form is
@@ -183,7 +214,18 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       const specific = field?.settings?.specific || {}
       const fieldType = resolveRuntimeFieldType(field)
 
-      if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+      if (fieldType === 'NUMBER') {
+        const raw = specific.customDefaultValue
+        if (
+          !fillsFromElsewhere(field) &&
+          raw !== undefined &&
+          raw !== null &&
+          raw !== ''
+        ) {
+          model[field.id] = raw
+        }
+      } else if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+        if (fillsFromElsewhere(field)) continue
         const isToday =
           specific.dateDefaultValueType === 'TODAY' ||
           specific.dateDefaultValueType === 'CURRENT_DATE' ||

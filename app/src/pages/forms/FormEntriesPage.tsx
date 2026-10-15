@@ -21,6 +21,7 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
@@ -35,6 +36,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
+import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import {
@@ -75,6 +77,7 @@ import {
   hydrateFormModel,
   isFieldLabelHidden,
   isFieldReadOnly,
+  normalizeScannedValue,
   resolveRuntimeFieldType,
   shouldShowTableSummaryRow,
   updateCurrencyFieldValue,
@@ -585,7 +588,9 @@ const FormEntriesSearchableInput = ({
   children: React.ReactNode
 }) => {
   const [isSearching, setIsSearching] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
+  const qrEnabled = Boolean(field?.settings?.specific?.qrValue)
 
   const masterFill = (
     <MasterFillSync
@@ -597,7 +602,7 @@ const FormEntriesSearchableInput = ({
     />
   )
 
-  if (!isSearchField)
+  if (!isSearchField && !qrEnabled)
     return (
       <>
         {masterFill}
@@ -617,33 +622,63 @@ const FormEntriesSearchableInput = ({
   }
 
   return (
-    <div className='relative flex items-center w-full gap-2'>
+    <div className='relative w-full'>
       {masterFill}
-      <div
-        className='flex-1 min-w-0'
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            handleSearch()
-          }
-        }}
-      >
-        {children}
-      </div>
-      <Tooltip label='Search & Auto-Sync Fields' withArrow>
-        <button
-          type='button'
-          disabled={isSearching}
-          className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
-          onClick={handleSearch}
+      <div className='flex items-center w-full gap-2'>
+        <div
+          className='flex-1 min-w-0'
+          onKeyDown={(e) => {
+            if (isSearchField && e.key === 'Enter') {
+              e.preventDefault()
+              handleSearch()
+            }
+          }}
         >
-          {isSearching ? (
-            <Icon className='size-4 animate-spin' name='lucide:loader-2' />
-          ) : (
-            <Icon className='size-4' name='lucide:search' />
-          )}
-        </button>
-      </Tooltip>
+          {children}
+        </div>
+        {qrEnabled && (
+          <Tooltip label='Scan QR / Barcode' withArrow>
+            <button
+              type='button'
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all active:scale-95'
+              onClick={() => setIsScannerOpen((prev) => !prev)}
+            >
+              <Icon className='size-4' name='lucide:qr-code' />
+            </button>
+          </Tooltip>
+        )}
+        {isSearchField && (
+          <Tooltip label='Search & Auto-Sync Fields' withArrow>
+            <button
+              type='button'
+              disabled={isSearching}
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+              onClick={handleSearch}
+            >
+              {isSearching ? (
+                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+              ) : (
+                <Icon className='size-4' name='lucide:search' />
+              )}
+            </button>
+          </Tooltip>
+        )}
+      </div>
+      {isScannerOpen && (
+        <div className='absolute top-full z-20 mt-1.5 w-full'>
+          <BarcodeScannerPanel
+            onClose={() => setIsScannerOpen(false)}
+            onScan={(rawValue) => {
+              const next = normalizeScannedValue(
+                String(field.type || '').toUpperCase(),
+                rawValue,
+              )
+              if (next !== undefined) onUpdateModel({ [field.id]: next })
+              setIsScannerOpen(false)
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -2486,15 +2521,45 @@ const FormEntriesPage = () => {
                                 }
                               />
                             </div>
-                          ) : type === 'DATE' ? (
-                            <InputDate
-                              disabled={isReadOnly}
-                              placeholder={getEffectiveFieldPlaceholder(field)}
-                              value={val ? val : null}
-                              onChange={(dateString) =>
-                                handleFieldChange(field.id, dateString)
+                          ) : type === 'DATE' || type === 'DATE_TIME' ? (
+                            <FormEntriesSearchableInput
+                              allFields={renderableFields}
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              {type === 'DATE_TIME' ? (
+                                <InputDateTime
+                                  disabled={isReadOnly}
+                                  value={val ? val : null}
+                                  format={
+                                    field.settings?.validation?.timeFormat ===
+                                    '24'
+                                      ? '24h'
+                                      : '12h'
+                                  }
+                                  onChange={(dateString) =>
+                                    handleFieldChange(field.id, dateString)
+                                  }
+                                />
+                              ) : (
+                                <InputDate
+                                  disabled={isReadOnly}
+                                  placeholder={getEffectiveFieldPlaceholder(field)}
+                                  value={val ? val : null}
+                                  onChange={(dateString) =>
+                                    handleFieldChange(field.id, dateString)
+                                  }
+                                />
+                              )}
+                            </FormEntriesSearchableInput>
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
                             <FormEntriesSearchableInput
                               allFields={renderableFields}

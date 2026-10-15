@@ -17,10 +17,12 @@ interface Props {
 }
 
 /**
- * Renders nothing. For a SHORT_TEXT field configured with
- * "Use values from a master table" (fillValueType === 'MASTER'), finds the
- * master row whose parent-column equals the parent field's value and writes
- * the configured column of that row into this field.
+ * Renders nothing. For a SHORT_TEXT / NUMBER / DATE / DATE_TIME field
+ * configured with "Use values from a master table" (fillValueType ===
+ * 'MASTER'), finds the master row whose parent-column equals the parent
+ * field's value and writes the configured column of that row into this field.
+ * With "Use values from another field" (fillValueType ===
+ * 'ASSIGN_PARENT_FIELD') it mirrors that field's value instead.
  */
 const MasterFillSync = ({
   allFields,
@@ -87,6 +89,24 @@ const MasterFillSync = ({
       onChange(fillValue)
     }
   }, [isActive, parentKey, fillValue, readOnly, value, onChange])
+
+  // "Use values from another field": mirror the chosen field's value.
+  const copyParentId = String(specific.parentFieldId || '').trim()
+  const isParentCopy =
+    specific.fillValueType === 'ASSIGN_PARENT_FIELD' && Boolean(copyParentId)
+  const copySource = isParentCopy
+    ? allFields.find(
+        (f: any) => f.id === copyParentId || f.jsonId === copyParentId,
+      )
+    : undefined
+  const copyValue = copySource
+    ? (extractScalarStrings(formModel?.[copySource.id])[0] ?? '')
+    : ''
+
+  useEffect(() => {
+    if (!isParentCopy || readOnly || !copySource) return
+    if (String(copyValue) !== String(value ?? '')) onChange(copyValue)
+  }, [isParentCopy, copySource, copyValue, readOnly, value, onChange])
 
   return null
 }
