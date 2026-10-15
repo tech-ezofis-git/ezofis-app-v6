@@ -1610,6 +1610,8 @@ const FormEntriesPage = () => {
       const parsedEntries = fetchedEntries.map((e: any) => {
         const metadataKeys = [
           'itemId',
+          'item_id',
+          'entryId',
           'id',
           'uid',
           'createdAt',
@@ -1642,6 +1644,8 @@ const FormEntriesPage = () => {
           })
         }
 
+        const rawEntryId = e.itemId ?? e.item_id ?? e.entryId ?? e.id
+
         const store = authUserStore.getState()
         const loggedInUserEmail =
           store.session?.email ||
@@ -1667,9 +1671,9 @@ const FormEntriesPage = () => {
         return {
           createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
           createdBy,
-          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
-          id: e.itemId
-            ? `Entry #${e.itemId}`
+          entryId: rawEntryId,
+          id: rawEntryId
+            ? `Entry #${rawEntryId}`
             : e.id || e.uid || `Entry #${Math.random()}`,
           isDeleted: !!e.isDeleted,
           values,
@@ -1776,13 +1780,25 @@ const FormEntriesPage = () => {
       let targetEntryId: number | string =
         '00000000-0000-0000-0000-000000000000'
       if (!isAddOpen && selectedEntry) {
-        targetEntryId =
+        const resolvedId =
           selectedEntry.entryId ??
-          selectedEntry.itemId ??
           (typeof selectedEntry.id === 'string'
             ? selectedEntry.id.replace(/^Entry #/, '')
-            : selectedEntry.id) ??
-          '00000000-0000-0000-0000-000000000000'
+            : selectedEntry.id)
+        if (
+          resolvedId === undefined ||
+          resolvedId === null ||
+          resolvedId === '' ||
+          resolvedId === 0
+        ) {
+          showToast({
+            message: 'Could not determine the entry id for update',
+            variant: 'error',
+          })
+          setIsSaving(false)
+          return
+        }
+        targetEntryId = resolvedId
       }
 
       const { data, error } = await formApi.saveFormEntry(
