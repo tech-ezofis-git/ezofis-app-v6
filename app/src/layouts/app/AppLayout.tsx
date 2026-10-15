@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -116,6 +116,26 @@ const AppLayout = ({ children }: Props) => {
     navigate,
   ])
 
+
+  const [isWatchFoxSuccess] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return (
+        new URLSearchParams(window.location.search).get('status') ===
+        'connected'
+      )
+    } catch {
+      return false
+    }
+  })
+
+  if (isWatchFoxSuccess) {
+    return (
+      <div className='flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)]'>
+        {children}
+      </div>
+    )
+  }
 
   if (isMobile) {
     return (
