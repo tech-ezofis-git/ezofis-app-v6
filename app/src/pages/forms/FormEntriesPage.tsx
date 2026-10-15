@@ -83,6 +83,7 @@ import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidatio
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { formatTableCellValue } from '@/utils/formatTableCellValue'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -3041,7 +3042,7 @@ const FormEntriesPage = () => {
                           className='p-3 font-medium whitespace-nowrap text-gray-12'
                           key={k}
                         >
-                          {item[k]}
+                          {formatTableCellValue(item[k])}
                         </td>
                       ))}
                     </tr>

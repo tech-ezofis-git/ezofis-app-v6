@@ -6,6 +6,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { formatTableCellValue } from '@/utils/formatTableCellValue'
 
 const Form = (props: any) => {
   const { formModel, setFormModel } = props
@@ -249,7 +250,7 @@ const Form = (props: any) => {
                             className='px-5 py-4 text-[12px] font-semibold whitespace-nowrap text-[var(--gray-13)]'
                             key={colIndex}
                           >
-                            {row[column.id]}
+                            {formatTableCellValue(row[column.id])}
                           </td>
                         ),
                       )}

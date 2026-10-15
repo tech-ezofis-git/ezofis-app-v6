@@ -2535,10 +2535,8 @@ const QuestionSettings = ({
                       <label className='mb-2 block text-13 font-medium text-gray-11'>
                         Cascading Filter (Parent)
                       </label>
-                      <InputSelect
-                        placeholder='Filter by another field'
-                        value={null}
-                        options={[
+                      {(() => {
+                        const cascadeOptions = [
                           { id: 'none', name: 'No Filter' },
                           ...panels
                             .flatMap((p: any) => p.fields)
@@ -2549,13 +2547,37 @@ const QuestionSettings = ({
                                   f.type,
                                 ),
                             )
-                            .map((f: any) => ({ id: f.id, name: f.label })),
-                        ]}
-                        onChange={(val) =>
-                          val &&
-                          updateNested('specific', { parentFieldId: val.id })
-                        }
-                      />
+                            .map((f: any) => ({
+                              id: f.id,
+                              name: f.label || 'Untitled Field',
+                            })),
+                        ]
+                        const savedParentId =
+                          activeQuestion.settings.specific
+                            .masterFormParentColumn ||
+                          activeQuestion.settings.specific.parentFieldId
+                        return (
+                          <InputSelect
+                            placeholder='Filter by another field'
+                            value={
+                              cascadeOptions.find(
+                                (o) => o.id === savedParentId,
+                              ) || null
+                            }
+                            options={cascadeOptions}
+                            onChange={(val) => {
+                              if (!val) return
+                              const parentId = val.id === 'none' ? '' : val.id
+                              // masterFormParentColumn is what the runtime
+                              // option fetchers read to cascade-filter.
+                              updateNested('specific', {
+                                masterFormParentColumn: parentId,
+                                parentFieldId: parentId,
+                              })
+                            }}
+                          />
+                        )
+                      })()}
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
                         Options will change based on parent selection.
                       </div>

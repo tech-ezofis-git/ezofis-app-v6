@@ -10,6 +10,9 @@ const getFormDataById = async (id: string) => {
       headers: {
         'X-Tenant-Id': tenantId,
       },
+      // Several consumers (settings panel, option fetchers, preview) load the
+      // same form definition at once; don't let one abort the other.
+      skipCancellation: true,
     })
     if (status !== 200) throw new Error('Invalid status code')
 
