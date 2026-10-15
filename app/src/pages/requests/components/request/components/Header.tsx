@@ -228,9 +228,12 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+
+
   const [localActiveAction, setLocalActiveAction] = React.useState<
     string | null
   >(null)
+
 
   React.useEffect(() => {
     if (!approveLoading) {

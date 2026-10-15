@@ -5,6 +5,7 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { IRequestMeta } from '../types'
 
@@ -22,13 +23,16 @@ interface Props {
     icon?: string
     id: string
     label?: string
+    loading?: boolean
     tooltip?: string
     variant?: any
     onClick: () => void
   }[]
+  connectedWatchEmail?: string | null
   exceptionsCount?: number
   hideListTabs?: boolean
   metaData?: IRequestMeta
+  onReconnectWatchEmail?: () => void
   stageCounts?: Record<string, number>
   tabs?: RequestTabDescriptor[]
   totalStageCount?: number | null
@@ -40,10 +44,12 @@ const Header = ({
   actionButtons,
   activeTab,
   allWorkflows,
+  connectedWatchEmail,
   exceptionsCount,
   hideListTabs = false,
   isLoading,
   metaData,
+  onReconnectWatchEmail,
   stageCounts,
   tabs = [],
   totalStageCount,
@@ -120,14 +126,37 @@ const Header = ({
           }
           onChange={setWorkflow}
         />
+        {connectedWatchEmail && (
+          <div className='flex items-center gap-1.5 rounded-lg border border-green-4 bg-green-2 px-3 py-1.5 text-13 font-medium text-green-11 shadow-2xs'>
+            <Icon className='size-4 text-green-9' name='tabler:circle-check-filled' />
+            <span>
+              {t`Connected with`}{' '}
+              <strong className='font-semibold text-green-12'>{connectedWatchEmail}</strong>
+            </span>
+            {onReconnectWatchEmail && (
+              <Tooltip content={t`Reconnect watch email`} position='bottom'>
+                <button
+                  type='button'
+                  aria-label={t`Reconnect`}
+                  className='ml-1 inline-flex size-5 items-center justify-center rounded text-green-10 hover:bg-green-3 hover:text-green-12 active:scale-95 transition-all'
+                  onClick={onReconnectWatchEmail}
+                >
+                  <Icon className='size-3.5' name='tabler:refresh' />
+                </button>
+              </Tooltip>
+            )}
+          </div>
+        )}
         {actionButtons?.map((btn) => (
           <Button
             color={btn.color || 'primary'}
-            disabled={btn.disabled}
+            disabled={btn.disabled || btn.loading}
             icon={btn.icon}
             key={btn.id}
             label={btn.label}
+            loading={btn.loading}
             size='lg'
+            title={btn.tooltip}
             variant={btn.variant || 'solid'}
             onClick={btn.onClick}
           />
@@ -136,6 +165,7 @@ const Header = ({
     </div>
   )
 }
+
 
 Header.displayName = 'Header'
 export default Header

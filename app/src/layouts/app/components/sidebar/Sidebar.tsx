@@ -7,7 +7,6 @@ import SidebarSmall from './sidebar-small/SidebarSmall'
 
 const Sidebar = () => {
   const { t } = useLingui()
-
   const session = authUserStore((state) => state.session)
   const sessionPermissions = session?.permissionKeys
 
@@ -38,18 +37,6 @@ const Sidebar = () => {
           permissionKey: 'report',
           route: '/reports',
         },
-        // {
-        //   icon: 'lucide:git-branch',
-        //   label: t`Workflows`,
-        //   permissionKey: 'workflow',
-        //   route: '/workflows',
-        // },
-        // {
-        //   icon: 'lucide:file-text',
-        //   label: t`Forms`,
-        //   permissionKey: 'form',
-        //   route: '/forms',
-        // },
       ],
       label: t`Insights`,
     },
@@ -92,6 +79,7 @@ const Sidebar = () => {
     </>
   )
 }
+
 
 Sidebar.displayName = 'Sidebar'
 export default Sidebar

@@ -1,5 +1,6 @@
 import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
+import { connectWatchFox } from '../emailIngest'
 
 const createProcessTransaction = async (payload: any) => {
   const response: any = { data: '', error: '' }
@@ -139,6 +140,7 @@ const moveNextWorkflowInstance = async (
 }
 
 const workflowApi = {
+  connectWatchFox,
   createProcessTransaction,
   createWorkflow,
   moveNextWorkflowInstance,
@@ -147,4 +149,6 @@ const workflowApi = {
   getWorkflowById,
 }
 
+export { connectWatchFox }
 export default workflowApi
+

@@ -9,6 +9,7 @@ interface Props {
   offset?: number
   position?: 'left' | 'right'
   width?: number | string
+  zIndex?: number
   onClose: () => void
 }
 
@@ -19,6 +20,7 @@ const Drawer = ({
   opened,
   position = 'right',
   width = 420,
+  zIndex = 30000,
   onClose,
 }: Props) => {
   const classNames = {
@@ -38,12 +40,14 @@ const Drawer = ({
       size={width}
       trapFocus={false}
       withCloseButton={false}
+      zIndex={zIndex}
       onClose={onClose}
     >
       {children}
     </Base>
   )
 }
+
 
 Drawer.displayName = 'Drawer'
 export default Drawer
