@@ -31,7 +31,9 @@ interface Props {
   connectedWatchEmail?: string | null
   exceptionsCount?: number
   hideListTabs?: boolean
+  isConnectingWatchEmail?: boolean
   metaData?: IRequestMeta
+  onCancelConnectWatchEmail?: () => void
   onReconnectWatchEmail?: () => void
   stageCounts?: Record<string, number>
   tabs?: RequestTabDescriptor[]
@@ -47,8 +49,10 @@ const Header = ({
   connectedWatchEmail,
   exceptionsCount,
   hideListTabs = false,
+  isConnectingWatchEmail,
   isLoading,
   metaData,
+  onCancelConnectWatchEmail,
   onReconnectWatchEmail,
   stageCounts,
   tabs = [],
@@ -127,23 +131,45 @@ const Header = ({
           onChange={setWorkflow}
         />
         {connectedWatchEmail && (
-          <div className='flex items-center gap-1.5 rounded-lg border border-green-4 bg-green-2 px-3 py-1.5 text-13 font-medium text-green-11 shadow-2xs'>
+          <div
+            className='flex items-center gap-1.5 rounded-lg border border-green-4 bg-green-2 px-3 py-1.5 text-13 font-medium text-green-11 shadow-2xs'
+            title={connectedWatchEmail}
+          >
             <Icon className='size-4 text-green-9' name='tabler:circle-check-filled' />
-            <span>
-              {t`Connected with`}{' '}
-              <strong className='font-semibold text-green-12'>{connectedWatchEmail}</strong>
-            </span>
-            {onReconnectWatchEmail && (
-              <Tooltip content={t`Reconnect watch email`} position='bottom'>
-                <button
-                  type='button'
-                  aria-label={t`Reconnect`}
-                  className='ml-1 inline-flex size-5 items-center justify-center rounded text-green-10 hover:bg-green-3 hover:text-green-12 active:scale-95 transition-all'
-                  onClick={onReconnectWatchEmail}
-                >
-                  <Icon className='size-3.5' name='tabler:refresh' />
-                </button>
-              </Tooltip>
+            <span className='font-semibold text-green-12'>{t`Connected`}</span>
+            {isConnectingWatchEmail ? (
+              <div className='ml-1 flex items-center gap-1'>
+                <Tooltip content={t`Connecting...`} position='bottom'>
+                  <span className='inline-flex size-5 items-center justify-center text-green-11'>
+                    <Icon className='size-3.5 animate-spin' name='tabler:refresh' />
+                  </span>
+                </Tooltip>
+                {onCancelConnectWatchEmail && (
+                  <Tooltip content={t`Cancel reconnect`} position='bottom'>
+                    <button
+                      type='button'
+                      aria-label={t`Cancel reconnect`}
+                      className='inline-flex size-5 items-center justify-center rounded text-gray-10 hover:bg-red-2 hover:text-red-11 active:scale-95 transition-all'
+                      onClick={onCancelConnectWatchEmail}
+                    >
+                      <Icon className='size-3.5' name='tabler:x' />
+                    </button>
+                  </Tooltip>
+                )}
+              </div>
+            ) : (
+              onReconnectWatchEmail && (
+                <Tooltip content={t`Reconnect watch email`} position='bottom'>
+                  <button
+                    type='button'
+                    aria-label={t`Reconnect`}
+                    className='ml-1 inline-flex size-5 items-center justify-center rounded text-green-10 hover:bg-green-3 hover:text-green-12 active:scale-95 transition-all'
+                    onClick={onReconnectWatchEmail}
+                  >
+                    <Icon className='size-3.5' name='tabler:refresh' />
+                  </button>
+                </Tooltip>
+              )
             )}
           </div>
         )}
