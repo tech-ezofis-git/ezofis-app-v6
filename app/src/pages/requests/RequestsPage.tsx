@@ -1161,9 +1161,12 @@ const RequestsPage = () => {
     selectedWorkflow?.id,
   ])
 
+  const lastToastedConnectedEmailRef = useRef<string | null>(null)
+
   const handleConnectWatchEmail = useCallback(async () => {
     if (isConnectingWatchEmail) return
     setIsConnectingWatchEmail(true)
+    lastToastedConnectedEmailRef.current = null
     // Pre-open tab synchronously on user action to prevent browser popup blockers
     const newWindow =
       typeof window !== 'undefined'
@@ -1342,11 +1345,6 @@ const RequestsPage = () => {
           // ignore
         }
 
-        // 3. Success toast
-        showToast({
-          message: t`Connected with ${accountEmail}`,
-          variant: 'success',
-        })
         console.info('[WatchFox] Mailbox connected successfully:', {
           accountEmail,
           connectionId,
@@ -1421,10 +1419,13 @@ const RequestsPage = () => {
     const updateEmail = (email: string) => {
       if (!email) return
       setConnectedWatchEmail(email)
-      showToast({
-        message: t`Connected with ${email}`,
-        variant: 'success',
-      })
+      if (lastToastedConnectedEmailRef.current !== email) {
+        lastToastedConnectedEmailRef.current = email
+        showToast({
+          message: t`Connected with ${email}`,
+          variant: 'success',
+        })
+      }
     }
 
     // Channel 1: BroadcastChannel
@@ -1474,8 +1475,8 @@ const RequestsPage = () => {
     // Channel 4: window focus & tab visibility change
     const handleFocus = () => {
       const stored = localStorage.getItem('v6_watchfox_connected_email')
-      if (stored && stored !== connectedWatchEmail) {
-        updateEmail(stored)
+      if (stored) {
+        setConnectedWatchEmail(stored)
       }
     }
 
@@ -1556,7 +1557,7 @@ const RequestsPage = () => {
 
   if (watchFoxSuccessState?.isSuccess) {
     return (
-      <div className='flex h-screen w-full items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
+      <div className='fixed inset-0 z-[999999] flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
         <div className='animate-in fade-in zoom-in-95 flex w-full max-w-md flex-col items-center rounded-2xl border border-green-4 bg-surface p-8 text-center shadow-2xl duration-300'>
           <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-green-2 text-green-9 ring-8 ring-green-1'>
             <Icon name='tabler:circle-check-filled' className='size-10 text-green-9' />

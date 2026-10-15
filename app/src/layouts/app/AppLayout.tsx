@@ -117,6 +117,26 @@ const AppLayout = ({ children }: Props) => {
   ])
 
 
+  const [isWatchFoxSuccess] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return (
+        new URLSearchParams(window.location.search).get('status') ===
+        'connected'
+      )
+    } catch {
+      return false
+    }
+  })
+
+  if (isWatchFoxSuccess) {
+    return (
+      <div className='flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)]'>
+        {children}
+      </div>
+    )
+  }
+
   if (isMobile) {
     return (
       <div className='flex min-h-dvh flex-col bg-surface-secondary'>
