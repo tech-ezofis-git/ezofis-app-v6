@@ -30,6 +30,7 @@ import {
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import {
   evaluateFormRules,
+  resetRuleDrivenValues,
   evaluatePanelRules,
 } from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
@@ -196,7 +197,11 @@ const LivePreview = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next, rules)
+      return applyCalculatedFields(
+        panels,
+        resetRuleDrivenValues(panels, prev, next, rules as any),
+        rules,
+      )
     })
   }
 

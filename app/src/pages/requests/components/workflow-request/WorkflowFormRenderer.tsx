@@ -5,7 +5,10 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
-import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import {
+  evaluateFormRules,
+  resetRuleDrivenValues,
+} from '@/pages/form-builder/helpers/ruleEngine'
 import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
 import cn from '@/utils/cn'
 import ExtractedFieldCell from './components/ExtractedFieldCell'
@@ -386,6 +389,19 @@ const WorkflowFormRenderer = ({
         formModel?.[childId] !== ''
       ) {
         onFieldChange(childId, null)
+      }
+    }
+    // Clear fields this change just hid or locked via conditional rules
+    const nextModel = { ...formModel, [fieldId]: value }
+    const cleaned = resetRuleDrivenValues(
+      panels,
+      formModel,
+      nextModel,
+      formRules,
+    )
+    for (const key of Object.keys(cleaned)) {
+      if (key !== fieldId && cleaned[key] !== nextModel[key]) {
+        onFieldChange(key, cleaned[key])
       }
     }
   }

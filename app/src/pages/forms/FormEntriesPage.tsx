@@ -44,7 +44,10 @@ import {
   RuntimeMatrixField,
 } from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import {
+  evaluateFormRules,
+  resetRuleDrivenValues,
+} from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   hasConfiguredTableColumns,
@@ -1687,7 +1690,11 @@ const FormEntriesPage = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next, formRules)
+      return applyCalculatedFields(
+        panels,
+        resetRuleDrivenValues(panels, prev, next, formRules),
+        formRules,
+      )
     })
   }
 
