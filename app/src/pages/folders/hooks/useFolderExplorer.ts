@@ -485,13 +485,7 @@ export function useFolderExplorer() {
         if (appendFolders) {
           return mergeFoldersById(previous, apiFolders)
         }
-        if (!activeFolderSearch) {
-          return apiFolders
-        }
-        const clientMatched = previous.filter((folder) =>
-          matchesSearchText(folder, activeFolderSearch),
-        )
-        return mergeFoldersById(clientMatched, apiFolders)
+        return apiFolders
       })
 
       syncFolderFilterOptionSource(response.folders || [], {
@@ -511,16 +505,7 @@ export function useFolderExplorer() {
         const apiFiles = (response.files || []).filter(
           (file) => !file.isStaged && !file.stageFileId,
         )
-        if (!activeFileSearch) {
-          return apiFiles
-        }
-        const clientMatched = previous.filter(
-          (file) =>
-            !file.isStaged &&
-            !file.stageFileId &&
-            matchesSearchText(file, activeFileSearch),
-        )
-        return mergeFilesById(clientMatched, apiFiles)
+        return apiFiles
       })
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
@@ -541,7 +526,7 @@ export function useFolderExplorer() {
         }
       }
 
-      if (syncTree && !appendFolders) {
+      if (syncTree && !appendFolders && !isSearchCall) {
         setTree((previous) =>
           syncTreeChildren(previous, folderId, response.folders || []),
         )
@@ -824,10 +809,11 @@ export function useFolderExplorer() {
       folderFilters: nextFolderFilters,
       folderId: activeFolder,
       folderSearch: nextFolderSearch,
-      listAllFiles: viewMode === 'list',
+      listAllFiles:
+        viewMode === 'list' || Boolean(nextFileSearch || nextFolderSearch),
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      syncTree: viewMode === 'grid',
+      syncTree: viewMode === 'grid' && !nextFileSearch && !nextFolderSearch,
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder, viewMode])
@@ -862,10 +848,11 @@ export function useFolderExplorer() {
           folderFilters: folderFiltersRef.current,
           folderId: activeFolder,
           folderSearch: trimmedFolder,
-          listAllFiles: viewMode === 'list',
+          listAllFiles:
+            viewMode === 'list' || Boolean(trimmedFile || trimmedFolder),
           page: 1,
           pageSizeValue: pageSizeRef.current,
-          syncTree: viewMode === 'grid',
+          syncTree: viewMode === 'grid' && !trimmedFile && !trimmedFolder,
         })
       } catch {
         // Error is handled safely inside loadFolderContent
@@ -897,7 +884,9 @@ export function useFolderExplorer() {
       folderFilters,
       folderId: activeFolder,
       folderSearch: folderSearchRef.current.trim(),
-      listAllFiles: viewMode === 'list',
+      listAllFiles:
+        viewMode === 'list' ||
+        Boolean(fileSearchRef.current.trim() || folderSearchRef.current.trim()),
       page: 1,
       pageSizeValue: pageSizeRef.current,
       syncTree: viewMode === 'grid',
@@ -932,7 +921,11 @@ export function useFolderExplorer() {
         folderFilters: folderFiltersRef.current,
         folderId: activeFolder,
         folderSearch: folderSearchRef.current.trim(),
-        listAllFiles: viewMode === 'list',
+        listAllFiles:
+          viewMode === 'list' ||
+          Boolean(
+            fileSearchRef.current.trim() || folderSearchRef.current.trim(),
+          ),
         page: 1,
         pageSizeValue: pageSizeRef.current,
         syncTree: viewMode === 'grid',
@@ -1089,7 +1082,9 @@ export function useFolderExplorer() {
       folderFilters: folderFiltersRef.current,
       folderId: activeFolder,
       folderSearch: folderSearchRef.current.trim() || undefined,
-      listAllFiles: viewMode === 'list',
+      listAllFiles:
+        viewMode === 'list' ||
+        Boolean(fileSearchRef.current.trim() || folderSearchRef.current.trim()),
       page: safePage,
       pageOnly: true,
       pageSizeValue: pageSizeRef.current,

@@ -293,6 +293,7 @@ export type ExplorerFilterMode = 'folders' | 'files' | 'both' | 'none'
 export const getExplorerSectionVisibility = ({
   filesLength,
   folderSearch = '',
+  fileSearch = '',
   foldersLength,
   hasActiveFileFilters = false,
   hasActiveFolderFilters = false,
@@ -302,6 +303,7 @@ export const getExplorerSectionVisibility = ({
 }: {
   filesLength: number
   folderSearch?: string
+  fileSearch?: string
   foldersLength: number
   hasActiveFileFilters?: boolean
   hasActiveFolderFilters?: boolean
@@ -309,16 +311,20 @@ export const getExplorerSectionVisibility = ({
   loadingFolders?: boolean
   loadingPage?: boolean
 }) => {
+  const isSearching = Boolean((folderSearch || fileSearch)?.trim())
+
   const showFoldersSection =
     foldersLength > 0 ||
-    Boolean(folderSearch.trim()) ||
     loadingFolders ||
-    hasActiveFolderFilters
+    hasActiveFolderFilters ||
+    (isSearching && filesLength === 0)
 
   const showFilesSection =
-    ((filesLength > 0 || loading || loadingPage) &&
-      foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS) ||
-    (hasActiveFileFilters && foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS)
+    filesLength > 0 ||
+    isSearching ||
+    loading ||
+    loadingPage ||
+    hasActiveFileFilters
 
   return { showFilesSection, showFoldersSection }
 }
@@ -521,11 +527,19 @@ export const syncTreeChildren = (
   childFolders: FolderItem[],
 ) => {
   const childNodes = foldersToTreeNodes(childFolders)
-  return updateTreeNode(tree, folderId, (node) => ({
-    ...node,
-    children: childNodes,
-    hasChildren: childNodes.length > 0,
-    isLoaded: true,
-    isLoading: false,
-  }))
+  return updateTreeNode(tree, folderId, (node) => {
+    const hasNewChildren = childNodes.length > 0
+    const existingChildren = node.children || []
+    const resolvedChildren = hasNewChildren ? childNodes : existingChildren
+    const resolvedHasChildren =
+      hasNewChildren ? true : (node.hasChildren ?? existingChildren.length > 0)
+
+    return {
+      ...node,
+      children: resolvedChildren,
+      hasChildren: resolvedHasChildren,
+      isLoaded: true,
+      isLoading: false,
+    }
+  })
 }

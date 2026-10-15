@@ -56,6 +56,26 @@ import { SignRequestAssignForm } from './SignRequestAssignForm'
 
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
+const PDF_WORKER_URL = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString()
+
+let pdfjsPromise: Promise<typeof import('pdfjs-dist')> | null = null
+const loadPdfJs = async () => {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import('pdfjs-dist').then((mod) => {
+      const pdfjs = mod
+      if (pdfjs.GlobalWorkerOptions) {
+        pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL
+      }
+      return pdfjs
+    })
+  }
+  return pdfjsPromise
+}
+
+
 export interface DocumentSigningActionRef {
   save: () => Promise<void>
 }
@@ -383,10 +403,13 @@ export function DocumentSigningPage({
         return
       }
       try {
-        const pdfjsLib = await import('pdfjs-dist')
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
-        const pdf = await pdfjsLib.getDocument(documentUrl).promise
+        const pdfjsLib = await loadPdfJs()
+        const loadingTask = pdfjsLib.getDocument({
+          url: documentUrl,
+          disableRange: true,
+          disableStream: true,
+        })
+        const pdf = await loadingTask.promise
         const sizes: Array<{ height: number; width: number }> = []
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           const page = await pdf.getPage(pageNumber)
@@ -395,7 +418,7 @@ export function DocumentSigningPage({
         }
         if (!cancelled) setPageSizesPt(sizes)
       } catch (error) {
-        console.error(error)
+        console.error('Failed to load PDF page sizes:', error)
         if (!cancelled) setPageSizesPt([])
       }
     }
@@ -1361,16 +1384,41 @@ export function DocumentSigningPage({
         setValidationMessage('')
         try {
           const pageRects = getPageRects(surfaceRoot, layerHost, zoom)
+          let effectiveSizes = pageSizesPt
+          if (effectiveSizes.length === 0 && isPdf && documentUrl) {
+            try {
+              const pdfjsLib = await loadPdfJs()
+              const loadingTask = pdfjsLib.getDocument({
+                url: documentUrl,
+                disableRange: true,
+                disableStream: true,
+              })
+              const pdf = await loadingTask.promise
+              const sizes: Array<{ height: number; width: number }> = []
+              for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                const page = await pdf.getPage(pageNumber)
+                const viewport = page.getViewport({ scale: 1 })
+                sizes.push({ height: viewport.height, width: viewport.width })
+              }
+              effectiveSizes = sizes
+              setPageSizesPt(sizes)
+            } catch (error) {
+              console.error(error)
+            }
+          }
           const sizes =
-            pageSizesPt.length > 0
-              ? pageSizesPt
-              : pageRects.map((rect) => ({
-                  height: rect.height,
-                  width: rect.width,
-                }))
+            effectiveSizes.length > 0
+              ? effectiveSizes
+              : pageRects.map((rect) => {
+                  const domScale = getViewerScaleFromDom(surfaceRoot) || 1
+                  return {
+                    height: rect.height / domScale,
+                    width: rect.width / domScale,
+                  }
+                })
 
           const fields = assignments.map((item, index) => {
-            const pdf = mapBoxToPdfPoints(item, pageRects, sizes)
+            const pdf = mapBoxToPdfPoints(item, pageRects, sizes, surfaceRoot)
             const signer = pendingRequestPayload.signers.find(
               (entry) =>
                 String(entry.email || '').toLowerCase() ===
@@ -1446,7 +1494,7 @@ export function DocumentSigningPage({
 
           await onSaveAssignment?.(
             assignments.map((item) => {
-              const pdf = mapBoxToPdfPoints(item, pageRects, sizes)
+              const pdf = mapBoxToPdfPoints(item, pageRects, sizes, surfaceRoot)
               return {
                 assigneeEmail: item.assigneeEmail,
                 assigneeName: item.assigneeName,
@@ -1595,32 +1643,44 @@ export function DocumentSigningPage({
     setValidationMessage('')
     try {
       const pageRects = getPageRects(surfaceRoot, layerHost, zoom)
-      let pageSizesPt = pageRects.map((rect) => ({
-        height: rect.height,
-        width: rect.width,
-      }))
+      let effectiveSizes = pageSizesPt
 
-      if (isPdf && documentUrl) {
+      if (effectiveSizes.length === 0 && isPdf && documentUrl) {
         try {
-          const pdfjsLib = await import('pdfjs-dist')
-          pdfjsLib.GlobalWorkerOptions.workerSrc =
-            'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
-          const pdf = await pdfjsLib.getDocument(documentUrl).promise
+          const pdfjsLib = await loadPdfJs()
+          const loadingTask = pdfjsLib.getDocument({
+            url: documentUrl,
+            disableRange: true,
+            disableStream: true,
+          })
+          const pdf = await loadingTask.promise
           const sizes: Array<{ height: number; width: number }> = []
           for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
             const page = await pdf.getPage(pageNumber)
             const viewport = page.getViewport({ scale: 1 })
             sizes.push({ height: viewport.height, width: viewport.width })
           }
-          pageSizesPt = sizes
+          effectiveSizes = sizes
+          setPageSizesPt(sizes)
         } catch (error) {
-          console.error(error)
+          console.error('Failed to load PDF page sizes during complete signing:', error)
         }
       }
 
+      const sizes =
+        effectiveSizes.length > 0
+          ? effectiveSizes
+          : pageRects.map((rect) => {
+              const domScale = getViewerScaleFromDom(surfaceRoot) || 1
+              return {
+                height: rect.height / domScale,
+                width: rect.width / domScale,
+              }
+            })
+
       const payload: SignaturePlacement[] = []
       for (const item of placements) {
-        const pdf = mapBoxToPdfPoints(item, pageRects, pageSizesPt)
+        const pdf = mapBoxToPdfPoints(item, pageRects, sizes, surfaceRoot)
         const imageDataUrl = await toPngDataUrl(item.signature.imageDataUrl)
         payload.push({
           height: pdf.height,
@@ -1751,13 +1811,16 @@ export function DocumentSigningPage({
 
       if (isPdf) {
         const [pdfjsLib, { default: JsPdf }] = await Promise.all([
-          import('pdfjs-dist'),
+          loadPdfJs(),
           import('jspdf'),
         ])
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
 
-        const pdf = await pdfjsLib.getDocument(documentUrl).promise
+        const loadingTask = pdfjsLib.getDocument({
+          url: documentUrl,
+          disableRange: true,
+          disableStream: true,
+        })
+        const pdf = await loadingTask.promise
 
         const surfaceRoot = isInline
           ? externalSurfaceRef?.current
@@ -2014,10 +2077,13 @@ export function DocumentSigningPage({
   const livePageSizes =
     pageSizesPt.length > 0
       ? pageSizesPt
-      : livePageRects.map((rect) => ({
-          height: rect.height,
-          width: rect.width,
-        }))
+      : livePageRects.map((rect) => {
+          const domScale = getViewerScaleFromDom(surfaceRootForFields) || 1
+          return {
+            height: rect.height / domScale,
+            width: rect.width / domScale,
+          }
+        })
 
   const myFilledFieldCount = signatureFields.filter(
     (field, index) =>
@@ -2080,7 +2146,12 @@ export function DocumentSigningPage({
       ) : null}
 
       {signatureFields.map((field, index) => {
-        const screen = mapPdfFieldToScreen(field, livePageRects, livePageSizes)
+        const screen = mapPdfFieldToScreen(
+          field,
+          livePageRects,
+          livePageSizes,
+          surfaceRootForFields,
+        )
         if (!screen) return null
         const key = fieldKey(field, index)
         const mine = isFieldForCurrentSigner(field, currentSignerEmail)
@@ -3480,15 +3551,42 @@ function fieldKey(field: SignRequestFieldDto, index: number) {
   )
 }
 
+function getViewerScaleFromDom(
+  surfaceRoot: HTMLElement | null | undefined,
+): number | null {
+  if (!surfaceRoot) return null
+  const textNodes = surfaceRoot.querySelectorAll('span')
+  for (const span of textNodes) {
+    const match = span.textContent?.trim().match(/^(\d+)%$/)
+    if (match) {
+      const pct = Number(match[1])
+      if (pct >= 10 && pct <= 1000) {
+        return pct / 100
+      }
+    }
+  }
+  return null
+}
+
 function getPageRects(
   surfaceRoot: HTMLElement | null | undefined,
   layerHost: HTMLElement,
   zoom: number,
 ): PageRect[] {
   const hostRect = layerHost.getBoundingClientRect()
-  const pageEls = Array.from(
-    surfaceRoot?.querySelectorAll('.rpv-core__inner-page') || [],
+  let pageEls = Array.from(
+    surfaceRoot?.querySelectorAll('.rpv-core__page-layer') || [],
   ) as HTMLElement[]
+  if (pageEls.length === 0) {
+    pageEls = Array.from(
+      surfaceRoot?.querySelectorAll('[data-testid^="core__page-layer-"]') || [],
+    ) as HTMLElement[]
+  }
+  if (pageEls.length === 0) {
+    pageEls = Array.from(
+      surfaceRoot?.querySelectorAll('.rpv-core__inner-page') || [],
+    ) as HTMLElement[]
+  }
   if (pageEls.length === 0) {
     return [
       {
@@ -3501,7 +3599,10 @@ function getPageRects(
     ]
   }
   return pageEls.map((el, index) => {
-    const r = el.getBoundingClientRect()
+    const pageLayer = (el.querySelector('.rpv-core__page-layer') ||
+      el.querySelector('[data-testid^="core__page-layer-"]') ||
+      el) as HTMLElement
+    const r = pageLayer.getBoundingClientRect()
     return {
       height: r.height / zoom,
       left: (r.left - hostRect.left) / zoom,
@@ -3529,10 +3630,56 @@ function isFieldSigned(field: SignRequestFieldDto) {
   return status === 'SIGNED' || Boolean(field.signedAtUtc)
 }
 
+/**
+ * Full PDF size lists are indexed by page. A list built from the mounted
+ * pages is the same length as `pageRects` and is not page-indexed once the
+ * viewer has virtualized past page 1.
+ */
+function sizeForPage(
+  pageNumber: number,
+  pageSizesPt: Array<{ height: number; width: number }>,
+  pageRects: PageRect[],
+  rect: PageRect,
+  surfaceRoot?: HTMLElement | null,
+) {
+  const size = pageSizesPt[pageNumber - 1]
+  const virtualFallback =
+    pageSizesPt.length === pageRects.length &&
+    pageRects.some((entry, index) => entry.pageNumber !== index + 1)
+  if (
+    size &&
+    pageSizesPt.length >= pageNumber &&
+    !virtualFallback &&
+    size.width > 0 &&
+    size.height > 0
+  ) {
+    return size
+  }
+
+  const domScale = getViewerScaleFromDom(surfaceRoot)
+  if (domScale && domScale > 0) {
+    return {
+      height: rect.height / domScale,
+      width: rect.width / domScale,
+    }
+  }
+
+  if (rect.width > 650 && rect.height > rect.width) {
+    const estimatedScale = rect.width / 612
+    return {
+      height: rect.height / estimatedScale,
+      width: 612,
+    }
+  }
+
+  return { height: rect.height, width: rect.width }
+}
+
 function mapBoxToPdfPoints(
   box: PlacementState,
   pageRects: PageRect[],
   pageSizesPt: Array<{ height: number; width: number }>,
+  surfaceRoot?: HTMLElement | null,
 ) {
   const centerY = box.y + box.height / 2
   const rect =
@@ -3548,7 +3695,13 @@ function mapBoxToPdfPoints(
       y: box.y,
     }
   }
-  const size = sizeForPage(rect.pageNumber, pageSizesPt, pageRects, rect)
+  const size = sizeForPage(
+    rect.pageNumber,
+    pageSizesPt,
+    pageRects,
+    rect,
+    surfaceRoot,
+  )
   const scaleX = size.width / Math.max(1, rect.width)
   const scaleY = size.height / Math.max(1, rect.height)
   return {
@@ -3570,11 +3723,18 @@ function mapPdfFieldToScreen(
   },
   pageRects: PageRect[],
   pageSizesPt: Array<{ height: number; width: number }>,
+  surfaceRoot?: HTMLElement | null,
 ): PlacementState | null {
   const pageNumber = Number(field.pageNumber) || 1
   const rect = pageRects.find((entry) => entry.pageNumber === pageNumber)
   if (!rect) return null
-  const size = sizeForPage(pageNumber, pageSizesPt, pageRects, rect)
+  const size = sizeForPage(
+    pageNumber,
+    pageSizesPt,
+    pageRects,
+    rect,
+    surfaceRoot,
+  )
   const scaleX = rect.width / Math.max(1, size.width)
   const scaleY = rect.height / Math.max(1, size.height)
   return {
@@ -3592,8 +3752,10 @@ function normalizeCoord(value: number, total: number) {
 
 /** react-pdf-viewer only mounts visible pages. Page index lives on the layer. */
 function readViewerPageNumber(el: HTMLElement, fallbackIndex: number) {
-  const layer = el.querySelector('[data-testid^="core__page-layer-"]')
-  const testId = layer?.getAttribute('data-testid') || ''
+  const testId =
+    el.getAttribute('data-testid') ||
+    el.querySelector('[data-testid^="core__page-layer-"]')?.getAttribute('data-testid') ||
+    ''
   const fromTestId = testId.match(/core__page-layer-(\d+)$/)
   if (fromTestId) return Number(fromTestId[1]) + 1
 
@@ -3610,27 +3772,6 @@ function resolveCssColor(token: string) {
   if (token === 'var(--text-muted)') return '#9ca3af'
   if (token.startsWith('var(')) return '#1a1a1a'
   return token || '#1a1a1a'
-}
-
-/**
- * Full PDF size lists are indexed by page. A list built from the mounted
- * pages is the same length as `pageRects` and is not page-indexed once the
- * viewer has virtualized past page 1.
- */
-function sizeForPage(
-  pageNumber: number,
-  pageSizesPt: Array<{ height: number; width: number }>,
-  pageRects: PageRect[],
-  rect: PageRect,
-) {
-  const size = pageSizesPt[pageNumber - 1]
-  const virtualFallback =
-    pageSizesPt.length === pageRects.length &&
-    pageRects.some((entry, index) => entry.pageNumber !== index + 1)
-  if (size && pageSizesPt.length >= pageNumber && !virtualFallback) {
-    return size
-  }
-  return { height: rect.height, width: rect.width }
 }
 
 async function toPngDataUrl(dataUrl: string): Promise<string> {

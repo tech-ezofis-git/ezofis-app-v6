@@ -31,6 +31,7 @@ import {
   Pencil,
   Plus,
   ScanLine,
+  Search,
   Send,
   Store,
   Table2,
@@ -111,19 +112,23 @@ const AI_STATUS_WORDS = [
 
 type ViewMode = 'chat' | 'history'
 
-const suggestions = [
+const suggestions: Array<{
+  icon: LucideIconType
+  label: string
+  query: string
+}> = [
   {
-    description: 'Provide details and send for approval',
+    icon: Workflow,
     label: 'Submit a new request',
     query: 'Initiate workflow',
   },
   {
-    description: "Check status of requests you've submitted",
+    icon: CheckCircle2,
     label: 'Track my requests',
     query: 'Show my pending requests',
   },
   {
-    description: 'Find files by name, folder, or content',
+    icon: Search,
     label: 'Search my documents',
     query: 'Search my documents',
   },
@@ -563,7 +568,32 @@ const AskAI = () => {
   >()
   /** Keep shell mounted after first open so chat state survives close/reopen. */
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false)
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isActionsMenuOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        actionsMenuRef.current &&
+        !actionsMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsActionsMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsActionsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isActionsMenuOpen])
 
   useEffect(() => {
     if (isOpen) setHasOpenedOnce(true)
@@ -644,6 +674,7 @@ const AskAI = () => {
     setView('chat')
     setIsWorkflowMode(false)
     setCurrentWorkflowHistoryData(undefined)
+    setIsActionsMenuOpen(false)
   }
 
   const openHistory = () => {
@@ -1133,7 +1164,7 @@ const AskAI = () => {
             <>
               <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
                 {!hasMessages ? (
-                  <WelcomeView onSend={sendMessage} />
+                  <WelcomeView />
                 ) : (
                   <div className='pb-2'>
                     {messages.map((msg) => (
@@ -1161,8 +1192,8 @@ const AskAI = () => {
               </div>
 
               {view === 'chat' && (
-                <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3.5'>
-                  <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
+                <div className='relative shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3.5'>
+                  <div className='rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
                     <div className='px-3.5 pt-2.5 pb-1'>
                       <textarea
                         className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
@@ -1179,7 +1210,70 @@ const AskAI = () => {
                       />
                     </div>
 
-                    <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
+                    <div className='flex items-center justify-between gap-1.5 px-2 pb-2'>
+                      <div className='relative' ref={actionsMenuRef}>
+                        <Tooltip
+                          content={isActionsMenuOpen ? '' : 'Actions'}
+                          position='top'
+                        >
+                          <button
+                            aria-expanded={isActionsMenuOpen}
+                            aria-label='Open actions menu'
+                            className={`grid size-8 place-items-center rounded-[9px] border transition-all duration-150 ${
+                              isActionsMenuOpen
+                                ? 'border-[var(--spark1)] bg-[var(--purple-light)] text-[var(--purple)] shadow-xs'
+                                : 'border-[var(--border2)] bg-[var(--bg)] text-[var(--text2)] shadow-2xs hover:border-[var(--spark1)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)] active:scale-95'
+                            }`}
+                            type='button'
+                            onClick={() => setIsActionsMenuOpen((prev) => !prev)}
+                          >
+                            <Plus
+                              className={`size-4 transition-transform duration-200 ${
+                                isActionsMenuOpen ? 'rotate-45' : ''
+                              }`}
+                              strokeWidth={2.2}
+                            />
+                          </button>
+                        </Tooltip>
+
+                        <AnimatePresence>
+                          {isActionsMenuOpen && (
+                            <motion.div
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              className='absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] p-1.5 shadow-xl shadow-black/10 z-30'
+                              exit={{ opacity: 0, scale: 0.96, y: 4 }}
+                              initial={{ opacity: 0, scale: 0.96, y: 4 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
+                            >
+                              <div className='flex flex-col gap-0.5'>
+                                {suggestions.map((item) => {
+                                  const IconComp = item.icon
+                                  return (
+                                    <button
+                                      className='group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[var(--text1)] transition-colors hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'
+                                      key={item.label}
+                                      type='button'
+                                      onClick={() => {
+                                        setIsActionsMenuOpen(false)
+                                        sendMessage(item.query)
+                                      }}
+                                    >
+                                      <IconComp
+                                        className='size-4 shrink-0 text-[var(--text2)] transition-colors group-hover:text-[var(--purple)]'
+                                        strokeWidth={1.8}
+                                      />
+                                      <span className='truncate'>
+                                        {item.label}
+                                      </span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
                       <button
                         className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
                         disabled={!canSend}
@@ -1204,7 +1298,7 @@ const AskAI = () => {
   )
 }
 
-const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
+const WelcomeView = () => (
   <div className='px-5 pt-6 pb-4'>
     <div className='mb-4 text-[var(--gray-7)]'>
       <Bot size={36} strokeWidth={1.75} />
@@ -1212,35 +1306,9 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
     <h2 className='mb-1.5 text-[18px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
       How can I help you today?
     </h2>
-    <p className='mb-5 text-[13.5px] leading-[1.5] text-[var(--text2)]'>
+    <p className='text-[13.5px] leading-[1.5] text-[var(--text2)]'>
       Submit requests, track progress, and find documents — all in one place.
     </p>
-    <div className='flex flex-col gap-2'>
-      {suggestions.map((item, index) => (
-        <motion.button
-          animate={{ opacity: 1, x: 0 }}
-          className='group flex items-start gap-3 rounded-xl border border-[var(--border)] bg-surface p-3 text-left transition-colors hover:border-[var(--spark1)] hover:bg-[var(--bg2)]'
-          initial={{ opacity: 0, x: -8 }}
-          key={item.query}
-          transition={{ delay: 0.05 * index, duration: 0.25 }}
-          type='button'
-          onClick={() => onSend(item.query)}
-        >
-          <UiIcon
-            className='mt-0.5 size-[15px] shrink-0 text-[var(--text3)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--purple)]'
-            name='mingcute:arrow-right-line'
-          />
-          <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-            <span className='text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
-              {item.label}
-            </span>
-            <span className='text-[12px] leading-normal font-normal text-[var(--text2)]'>
-              {item.description}
-            </span>
-          </div>
-        </motion.button>
-      ))}
-    </div>
   </div>
 )
 
