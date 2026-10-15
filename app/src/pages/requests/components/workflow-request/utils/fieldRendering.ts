@@ -567,6 +567,40 @@ export const extractScalarStrings = (val: any): string[] => {
   return []
 }
 
+// Several fields (and re-renders) ask for the same master form at once. The
+// axios layer cancels identical in-flight requests, so without sharing, all but
+// the last caller get a cancelled request. Share one promise per call for a
+// short TTL instead.
+const MASTER_CALL_TTL_MS = 30_000
+const masterCallCache = new Map<string, { at: number; promise: Promise<any> }>()
+const cachedMasterCall = <T,>(
+  kind: string,
+  masterFormId: string,
+  call: () => Promise<T>,
+): Promise<T> => {
+  const key = `${kind}:${masterFormId}`
+  const hit = masterCallCache.get(key)
+  if (hit && Date.now() - hit.at < MASTER_CALL_TTL_MS) return hit.promise
+  const promise = call().catch((err) => {
+    masterCallCache.delete(key)
+    throw err
+  })
+  masterCallCache.set(key, { at: Date.now(), promise })
+  return promise
+}
+
+// Resolves a select field's "Condition Mappings" against the live form model.
+export const buildMasterConditions = (
+  field: any,
+  model?: Record<string, any>,
+): Array<{ masterColumn: string; value: any }> =>
+  (field?.settings?.specific?.masterFormConditionColumn || [])
+    .filter((c: any) => (c?.formField || c?.formColumn) && c?.masterColumn)
+    .map((c: any) => ({
+      masterColumn: String(c.masterColumn),
+      value: model?.[c.formField || c.formColumn],
+    }))
+
 export const fetchMasterFormColumnOptions = async (
   masterFormId: string,
   masterFormColumn?: string,
@@ -583,7 +617,7 @@ export const fetchMasterFormColumnOptions = async (
     let columnKeyOrLabel = masterFormColumn || ''
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
-    const formDefRes = await formApi.getFormDataById(masterFormId)
+    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
     console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
       masterFormId,
       masterFormColumn,
@@ -725,8 +759,7 @@ export const fetchMasterFormColumnOptions = async (
     const uniqueValues = new Set<string>()
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
-    console.log('[fetchMasterFormColumnOptions] 2. entriesRes (GET /entries):', entriesRes)
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -752,17 +785,16 @@ export const fetchMasterFormColumnOptions = async (
     rawEntries = parseEntriesData(entriesRes.data)
 
     if (rawEntries.length === 0) {
-      const searchRes = await formApi.searchFormEntries(masterFormId, {
-        currentPage: 1,
-        itemsPerPage: 500,
-      })
-      console.log('[fetchMasterFormColumnOptions] 2b. searchRes (POST /search):', searchRes)
+      const searchRes = await cachedMasterCall('search', masterFormId, () =>
+        formApi.searchFormEntries(masterFormId, {
+          currentPage: 1,
+          itemsPerPage: 500,
+        }),
+      )
       if (searchRes.data) {
         rawEntries = parseEntriesData(searchRes.data)
       }
     }
-
-    console.log('[fetchMasterFormColumnOptions] rawEntries count:', rawEntries.length, rawEntries)
 
     const extractFromDict = (dictionary: any, keys: Set<string>): any => {
       if (!dictionary || typeof dictionary !== 'object') return undefined
@@ -910,7 +942,7 @@ export const fetchMasterTableRows = async (
 
   try {
     let formFields: any[] = []
-    const formDefRes = await formApi.getFormDataById(masterFormId)
+    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -978,13 +1010,15 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
-      const searchRes = await formApi.searchFormEntries(masterFormId, {
-        currentPage: 1,
-        itemsPerPage: 500,
-      })
+      const searchRes = await cachedMasterCall('search', masterFormId, () =>
+        formApi.searchFormEntries(masterFormId, {
+          currentPage: 1,
+          itemsPerPage: 500,
+        }),
+      )
       if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)
     }
 

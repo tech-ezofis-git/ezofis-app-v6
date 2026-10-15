@@ -1037,6 +1037,50 @@ const FieldRenderer = ({
     }
   }, [runtimeType, selectOptions, value, readOnly, onChange])
 
+  // SHORT_TEXT "Use values from a master table": look up the master row whose
+  // parent-column equals the parent field's value and fill this field with
+  // the configured column of that row.
+  const isMasterFill =
+    runtimeType === 'SHORT_TEXT' &&
+    field.settings?.specific?.fillValueType === 'MASTER' &&
+    Boolean(field.settings?.specific?.masterFormId) &&
+    Boolean(masterInfo.masterFormParentColumn)
+  const masterFillParentValue = isMasterFill ? parentValue : undefined
+  const masterFillParentKey = extractScalarStrings(masterFillParentValue)[0]
+
+  const { data: masterFillValue } = useQuery({
+    enabled: isMasterFill && Boolean(masterFillParentKey),
+    queryKey: [
+      'masterFillValue',
+      masterInfo.masterFormId,
+      masterInfo.masterFormColumn,
+      parentMasterColumn,
+      masterFillParentKey,
+    ],
+    queryFn: async () => {
+      const opts = await fetchMasterFormColumnOptions(
+        masterInfo.masterFormId,
+        masterInfo.masterFormColumn,
+        undefined,
+        undefined,
+        false,
+        [{ masterColumn: String(parentMasterColumn), value: masterFillParentValue }],
+      )
+      return opts[0]?.name ?? ''
+    },
+  })
+
+  useEffect(() => {
+    if (!isMasterFill || readOnly) return
+    if (!masterFillParentKey) {
+      if (value) onChange('')
+      return
+    }
+    if (masterFillValue !== undefined && masterFillValue !== value) {
+      onChange(masterFillValue)
+    }
+  }, [isMasterFill, masterFillParentKey, masterFillValue, readOnly, value, onChange])
+
   const common = {
     disabled: readOnly,
     error,

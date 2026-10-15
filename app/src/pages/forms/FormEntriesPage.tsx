@@ -26,6 +26,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -52,6 +53,7 @@ import {
   buildInitialFormModel,
   computeTableColumnTotals,
   ensureNormalizedRuntimeFormJson,
+  buildMasterConditions,
   evaluateTableRows,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -156,6 +158,8 @@ const FormEntriesChoiceInput = ({
     },
   })
 
+  const masterConditions = buildMasterConditions(field, formModel)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -165,6 +169,7 @@ const FormEntriesChoiceInput = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      JSON.stringify(masterConditions),
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -173,6 +178,7 @@ const FormEntriesChoiceInput = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -415,6 +421,8 @@ const FormEntriesSelectInput = ({
     },
   })
 
+  const masterConditions = buildMasterConditions(field, formModel)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -424,6 +432,7 @@ const FormEntriesSelectInput = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      JSON.stringify(masterConditions),
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -432,6 +441,7 @@ const FormEntriesSelectInput = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -562,6 +572,7 @@ const FormEntriesSearchableInput = ({
   val,
   formId,
   editValues,
+  allFields = [],
   onUpdateModel,
   children,
 }: {
@@ -569,13 +580,30 @@ const FormEntriesSearchableInput = ({
   val: any
   formId?: string
   editValues: Record<string, any>
+  allFields?: Question[]
   onUpdateModel: (patch: Record<string, any>) => void
   children: React.ReactNode
 }) => {
   const [isSearching, setIsSearching] = useState(false)
   const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
 
-  if (!isSearchField) return <>{children}</>
+  const masterFill = (
+    <MasterFillSync
+      allFields={allFields}
+      field={field}
+      formModel={editValues}
+      value={editValues?.[field.id]}
+      onChange={(v) => onUpdateModel({ [field.id]: v })}
+    />
+  )
+
+  if (!isSearchField)
+    return (
+      <>
+        {masterFill}
+        {children}
+      </>
+    )
 
   const handleSearch = () => {
     executeSearchFieldSync({
@@ -590,6 +618,7 @@ const FormEntriesSearchableInput = ({
 
   return (
     <div className='relative flex items-center w-full gap-2'>
+      {masterFill}
       <div
         className='flex-1 min-w-0'
         onKeyDown={(e) => {
@@ -2468,6 +2497,7 @@ const FormEntriesPage = () => {
                             />
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2510,6 +2540,7 @@ const FormEntriesPage = () => {
                             </div>
                           ) : type === 'PHONE_NUMBER' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2618,6 +2649,7 @@ const FormEntriesPage = () => {
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2711,6 +2743,7 @@ const FormEntriesPage = () => {
                             />
                           ) : (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}

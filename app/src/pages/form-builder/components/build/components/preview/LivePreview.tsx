@@ -68,6 +68,7 @@ import {
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
+import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
 import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -1031,7 +1032,23 @@ const LivePreviewSearchableInput = ({
   const fieldValue = model[field.id] ?? ''
   const { panels } = useFormStore()
 
-  if (!isSearchField && !qrEnabled) return <>{children}</>
+  const masterFill = (
+    <MasterFillSync
+      allFields={panels.flatMap((p: any) => p.fields || [])}
+      field={field}
+      formModel={model}
+      value={model[field.id]}
+      onChange={(v) => onChange(field.id, v)}
+    />
+  )
+
+  if (!isSearchField && !qrEnabled)
+    return (
+      <>
+        {masterFill}
+        {children}
+      </>
+    )
 
   const handleSearch = (overrideVal?: any) => {
     const valToSearch = overrideVal !== undefined ? overrideVal : fieldValue
@@ -1056,6 +1073,7 @@ const LivePreviewSearchableInput = ({
 
   return (
     <div className='relative w-full'>
+      {masterFill}
       <div className='flex w-full items-end gap-1.5'>
         <div
           className='min-w-0 flex-1'
