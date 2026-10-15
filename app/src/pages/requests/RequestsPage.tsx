@@ -10,7 +10,14 @@ import workflowsApiV6, {
   type V6FilterField,
   type WorkflowOptionItem,
 } from '@/api/v6/workflows'
+import {
+  connectWatchFox,
+  getMailboxes,
+  WATCHFOX_CONFIG,
+} from '@/api/emailIngest'
+import Icon from '@/components/base/icon/Icon'
 import PageEmptyState from '@/components/common/PageEmptyState'
+import showToast from '@/components/base/toast/showToast'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useAuthUserStore from '@/stores/authUserStore'
 import type {
@@ -418,6 +425,7 @@ const RequestsPage = () => {
       setIsLoading(false)
     }
   }, [])
+
 
   const [stageTabCounts, setStageTabCounts] = useState<Record<string, number>>({})
   const [totalStageCount, setTotalStageCount] = useState<number | null>(null)
@@ -1019,6 +1027,8 @@ const RequestsPage = () => {
   const user = useAuthUserStore((s) => s.user)
   const session = useAuthUserStore((s) => s.session)
 
+
+
   const canCreateNewRequest = useMemo(() => {
     if (
       workflow?.id === 'procurement' ||
@@ -1058,7 +1068,484 @@ const RequestsPage = () => {
     }
 
     return true
-  }, [isAccountsPayable, selectedWorkflow, session, user])
+  }, [isAccountsPayable, selectedWorkflow, session, user, workflow?.id])
+
+  const isRfqWorkflow = useMemo(() => {
+    const currentWfId = String(
+      workflow?.id || selectedWorkflow?.id || rawWorkflowData?.id || '',
+    ).toLowerCase()
+    const currentWfName = String(
+      workflow?.name ||
+        (workflow as any)?.label ||
+        selectedWorkflow?.name ||
+        rawWorkflowData?.name ||
+        rawWorkflowData?.workflowJson?.name ||
+        rawWorkflowData?.workflowJson?.settings?.general?.name ||
+        '',
+    ).toLowerCase()
+
+    return (
+      currentWfId === WATCHFOX_CONFIG.workflowId.toLowerCase() ||
+      currentWfName.includes('rfq')
+    )
+  }, [
+    workflow?.id,
+    workflow?.name,
+    (workflow as any)?.label,
+    selectedWorkflow?.id,
+    selectedWorkflow?.name,
+    rawWorkflowData,
+  ])
+
+  const canShowWatchEmail = Boolean(isRfqWorkflow && canCreateNewRequest)
+
+  const [isConnectingWatchEmail, setIsConnectingWatchEmail] = useState(false)
+  const [connectedWatchEmail, setConnectedWatchEmail] = useState<string | null>(
+    () => {
+      try {
+        const stored = localStorage.getItem('v6_watchfox_connected_email')
+        if (stored) return stored
+        const info = localStorage.getItem('v6_watchfox_connection_info')
+        if (info) {
+          const parsed = JSON.parse(info)
+          return parsed?.email || null
+        }
+        return null
+      } catch {
+        return null
+      }
+    },
+  )
+
+  // On mount or workflow change: if watch email can be shown and not yet in local state, check server
+  useEffect(() => {
+    if (!canShowWatchEmail || connectedWatchEmail) return
+    let cancelled = false
+    getMailboxes()
+      .then((res) => {
+        if (cancelled) return
+        const list = res.payload || []
+        const currentWfId = String(
+          workflow?.id || selectedWorkflow?.id || WATCHFOX_CONFIG.workflowId,
+        ).toLowerCase()
+        const match = list.find(
+          (m) =>
+            (String(m.workflowId).toLowerCase() === currentWfId ||
+              String(m.workflowId).toLowerCase() ===
+                WATCHFOX_CONFIG.workflowId.toLowerCase() ||
+              m.isEnabled) &&
+            Boolean(m.externalAccountEmail),
+        )
+        if (match?.externalAccountEmail) {
+          setConnectedWatchEmail(match.externalAccountEmail)
+          try {
+            localStorage.setItem(
+              'v6_watchfox_connected_email',
+              match.externalAccountEmail,
+            )
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch(() => {
+        // ignore
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    canShowWatchEmail,
+    connectedWatchEmail,
+    workflow?.id,
+    selectedWorkflow?.id,
+  ])
+
+  const handleConnectWatchEmail = useCallback(async () => {
+    if (isConnectingWatchEmail) return
+    setIsConnectingWatchEmail(true)
+    // Pre-open tab synchronously on user action to prevent browser popup blockers
+    const newWindow =
+      typeof window !== 'undefined'
+        ? window.open('about:blank', '_blank')
+        : null
+    try {
+      const targetWfId = String(
+        workflow?.id || selectedWorkflow?.id || WATCHFOX_CONFIG.workflowId,
+      )
+      const data = await connectWatchFox({ workflowId: targetWfId })
+      const targetUrl = data?.url || (data as any)?.data?.url
+      if (targetUrl) {
+        if (newWindow) {
+          newWindow.location.href = targetUrl
+        } else {
+          window.open(targetUrl, '_blank')
+        }
+        setIsConnectingWatchEmail(false)
+      } else {
+        if (newWindow) newWindow.close()
+        showToast({
+          message: t`Failed to obtain sign-in URL from server.`,
+          variant: 'error',
+        })
+        setIsConnectingWatchEmail(false)
+      }
+    } catch (err: any) {
+      if (newWindow) newWindow.close()
+      console.error('[WatchFox] Connect error:', err)
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        t`Failed to connect watch email.`
+      showToast({
+        message: String(errorMsg),
+        variant: 'error',
+      })
+      setIsConnectingWatchEmail(false)
+    }
+  }, [isConnectingWatchEmail, t])
+
+  const [watchFoxSuccessState, setWatchFoxSuccessState] = useState<{
+    isSuccess: boolean
+    email: string
+    connectionId: string
+    watchId: string
+  } | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('status') === 'connected') {
+        const initialEmail =
+          params.get('email') ||
+          params.get('accountEmail') ||
+          params.get('mailboxEmail') ||
+          params.get('account') ||
+          params.get('user') ||
+          session?.email ||
+          user?.email ||
+          ''
+        return {
+          isSuccess: true,
+          email: initialEmail,
+          connectionId: params.get('connectionId') || '',
+          watchId: params.get('watchId') || '',
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  })
+
+  // Handle WatchFox post-sign-in redirect (?status=connected / ?status=error)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('status')
+    if (!status) return
+
+    if (status === 'connected') {
+      const connectionId = params.get('connectionId') || ''
+      const watchId = params.get('watchId') || ''
+      const initialEmail =
+        params.get('email') ||
+        params.get('accountEmail') ||
+        params.get('mailboxEmail') ||
+        params.get('account') ||
+        params.get('user')
+
+      let cancelled = false
+      const applyConnectedState = async () => {
+        let accountEmail = initialEmail
+        if (!accountEmail) {
+          try {
+            const res = await getMailboxes()
+            const list = res.payload || []
+            const match = list.find(
+              (m) =>
+                (m.workflowId === WATCHFOX_CONFIG.workflowId || m.isEnabled) &&
+                Boolean(m.externalAccountEmail),
+            )
+            if (match?.externalAccountEmail) {
+              accountEmail = match.externalAccountEmail
+            }
+          } catch {
+            // ignore
+          }
+        }
+        if (!accountEmail) {
+          accountEmail = session?.email || user?.email || ''
+        }
+
+        if (cancelled) return
+
+        try {
+          localStorage.setItem('v6_watchfox_connected_email', accountEmail)
+          localStorage.setItem('v6_watchfox_connected_time', String(Date.now()))
+          localStorage.setItem(
+            'v6_watchfox_connection_info',
+            JSON.stringify({
+              connectionId,
+              watchId,
+              email: accountEmail,
+              connectedAt: Date.now(),
+            }),
+          )
+        } catch {
+          // ignore
+        }
+
+        setConnectedWatchEmail(accountEmail)
+        setWatchFoxSuccessState({
+          isSuccess: true,
+          email: accountEmail,
+          connectionId,
+          watchId,
+        })
+
+        // 1. BroadcastChannel for cross-tab sync even if opener was severed
+        try {
+          const bc = new BroadcastChannel('ezofis_watchfox_channel')
+          bc.postMessage({
+            type: 'WATCHFOX_CONNECTED',
+            accountEmail,
+            connectionId,
+            watchId,
+          })
+          setTimeout(() => {
+            try {
+              bc.close()
+            } catch {
+              // ignore
+            }
+          }, 500)
+        } catch {
+          // ignore
+        }
+
+        // 2. Opener window postMessage
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              {
+                type: 'WATCHFOX_CONNECTED',
+                accountEmail,
+                connectionId,
+                status: 'connected',
+                watchId,
+              },
+              '*',
+            )
+          }
+        } catch {
+          // ignore
+        }
+
+        // 3. Success toast
+        showToast({
+          message: t`Connected with ${accountEmail}`,
+          variant: 'success',
+        })
+        console.info('[WatchFox] Mailbox connected successfully:', {
+          accountEmail,
+          connectionId,
+          watchId,
+        })
+
+        // 4. Automatically close the callback tab
+        setTimeout(() => {
+          try {
+            window.close()
+          } catch {
+            // ignore
+          }
+        }, 1800)
+      }
+
+      void applyConnectedState()
+      return () => {
+        cancelled = true
+      }
+    } else if (status === 'error') {
+      const errorMsg =
+        params.get('error') ||
+        params.get('message') ||
+        t`Sign-in or watch creation failed.`
+      showToast({
+        message: String(errorMsg),
+        variant: 'error',
+      })
+      console.error('[WatchFox] Connection error:', errorMsg)
+
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(
+            {
+              type: 'WATCHFOX_ERROR',
+              error: errorMsg,
+              status: 'error',
+            },
+            '*',
+          )
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Clean up query parameters from browser address bar
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('status')
+    cleanUrl.searchParams.delete('connectionId')
+    cleanUrl.searchParams.delete('watchId')
+    cleanUrl.searchParams.delete('tenantId')
+    cleanUrl.searchParams.delete('workflowId')
+    cleanUrl.searchParams.delete('email')
+    cleanUrl.searchParams.delete('accountEmail')
+    cleanUrl.searchParams.delete('mailboxEmail')
+    cleanUrl.searchParams.delete('account')
+    cleanUrl.searchParams.delete('error')
+    cleanUrl.searchParams.delete('message')
+    window.history.replaceState(
+      {},
+      '',
+      cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : ''),
+    )
+  }, [session?.email, t, user?.email])
+
+  // Multi-channel cross-tab sync: listen for connection events across all channels
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const updateEmail = (email: string) => {
+      if (!email) return
+      setConnectedWatchEmail(email)
+      showToast({
+        message: t`Connected with ${email}`,
+        variant: 'success',
+      })
+    }
+
+    // Channel 1: BroadcastChannel
+    let bc: BroadcastChannel | null = null
+    try {
+      bc = new BroadcastChannel('ezofis_watchfox_channel')
+      bc.onmessage = (event) => {
+        if (
+          event.data?.type === 'WATCHFOX_CONNECTED' &&
+          event.data.accountEmail
+        ) {
+          updateEmail(event.data.accountEmail)
+        }
+      }
+    } catch {
+      // BroadcastChannel not available in environment
+    }
+
+    // Channel 2: window.postMessage (from popup opener)
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'WATCHFOX_CONNECTED') {
+        const accountEmail =
+          event.data.accountEmail ||
+          session?.email ||
+          user?.email ||
+          ''
+        updateEmail(accountEmail)
+      }
+    }
+
+    // Channel 3: localStorage storage event
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        (event.key === 'v6_watchfox_connected_email' ||
+          event.key === 'v6_watchfox_connected_time') &&
+        event.newValue
+      ) {
+        const stored =
+          localStorage.getItem('v6_watchfox_connected_email') ||
+          event.newValue
+        if (stored) {
+          updateEmail(stored)
+        }
+      }
+    }
+
+    // Channel 4: window focus & tab visibility change
+    const handleFocus = () => {
+      const stored = localStorage.getItem('v6_watchfox_connected_email')
+      if (stored && stored !== connectedWatchEmail) {
+        updateEmail(stored)
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        handleFocus()
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    window.addEventListener('storage', handleStorage)
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      try {
+        bc?.close()
+      } catch {
+        // ignore
+      }
+      window.removeEventListener('message', handleMessage)
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [connectedWatchEmail, session?.email, t, user?.email])
+
+  const headerActionButtons = useMemo(() => {
+    const buttons = []
+
+    // Only show "Connect Email Watch" button if RFQ workflow, user has access to New, and not yet connected
+    if (canShowWatchEmail && !connectedWatchEmail) {
+      buttons.push({
+        color: 'primary',
+        disabled: isConnectingWatchEmail,
+        icon: 'tabler:mail',
+        id: 'connect-email-watch',
+        label: t`Connect Email Watch`,
+        loading: isConnectingWatchEmail,
+        variant: 'outline',
+        onClick: handleConnectWatchEmail,
+      })
+    }
+
+    if (canCreateNewRequest) {
+      buttons.push({
+        color: 'primary',
+        icon: 'tabler:plus',
+        id: 'new-request',
+        label: t`New`,
+        variant: 'solid',
+        onClick: () => {
+          console.log('am running')
+          openNewRequest('request')
+        },
+      })
+    }
+
+    return buttons
+  }, [
+    canCreateNewRequest,
+    canShowWatchEmail,
+    connectedWatchEmail,
+    handleConnectWatchEmail,
+    isConnectingWatchEmail,
+    openNewRequest,
+    t,
+  ])
+
+
 
   const isWorkflowReady =
     workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
@@ -1066,6 +1553,38 @@ const RequestsPage = () => {
   const inboxIsLoading =
     workflowLoadStatus === 'loading' ||
     (isWorkflowReady && isPending && !inboxResult)
+
+  if (watchFoxSuccessState?.isSuccess) {
+    return (
+      <div className='flex h-screen w-full items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
+        <div className='animate-in fade-in zoom-in-95 flex w-full max-w-md flex-col items-center rounded-2xl border border-green-4 bg-surface p-8 text-center shadow-2xl duration-300'>
+          <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-green-2 text-green-9 ring-8 ring-green-1'>
+            <Icon name='tabler:circle-check-filled' className='size-10 text-green-9' />
+          </div>
+          <h2 className='text-xl font-bold tracking-tight text-gray-13'>
+            {t`Connected Successfully!`}
+          </h2>
+          <p className='mt-2 text-14 text-gray-11'>
+            {t`Your mailbox has been connected and the enquiry watch is active.`}
+          </p>
+          <div className='mt-4 flex items-center gap-2 rounded-lg border border-green-4 bg-green-2 px-3.5 py-1.5 text-13 font-semibold text-green-12 shadow-2xs'>
+            <Icon name='tabler:mail-check' className='size-4 text-green-9' />
+            <span>{watchFoxSuccessState.email}</span>
+          </div>
+          <p className='mt-5 text-12 text-gray-10'>
+            {t`This tab will close automatically...`}
+          </p>
+          <button
+            type='button'
+            className='mt-4 inline-flex cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-9,#2563eb)] px-6 py-2.5 text-13 font-semibold text-white shadow-sm transition-all hover:bg-[var(--primary-10,#1d4ed8)] active:scale-95'
+            onClick={() => window.close()}
+          >
+            {t`Close Tab`}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -1076,30 +1595,20 @@ const RequestsPage = () => {
               // Pass state and setter to Header
               activeTab={activeTab}
               allWorkflows={allWorkflow}
+              connectedWatchEmail={
+                canShowWatchEmail ? connectedWatchEmail : null
+              }
               exceptionsCount={inboxResult?.exceptionsCount}
               isLoading={isLoading}
               metaData={metaData}
+              onReconnectWatchEmail={
+                canShowWatchEmail ? handleConnectWatchEmail : undefined
+              }
               stageCounts={stageTabCounts}
               tabs={requestTabs}
               totalStageCount={totalStageCount}
               workflow={workflow}
-              actionButtons={
-                canCreateNewRequest
-                  ? [
-                      {
-                        color: 'primary',
-                        icon: 'tabler:plus',
-                        id: 'new-request',
-                        label: t`New`,
-                        variant: 'solid',
-                        onClick: () => {
-                          console.log('am running')
-                          openNewRequest('request')
-                        },
-                      },
-                    ]
-                  : []
-              }
+              actionButtons={headerActionButtons}
               hideListTabs={
                 viewMode === 'kanban' || workflow?.id === 'procurement'
               }
@@ -1107,6 +1616,9 @@ const RequestsPage = () => {
               setWorkflow={handleWorkflowSelect}
             />
           )}
+
+
+
           {selectedItem && (
             <Request
               isFourthItem={selectedIndex === 3}

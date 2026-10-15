@@ -45,7 +45,6 @@ const SidebarSmall = ({ menus }: Props) => {
         </div>
 
         <div className='flex flex-col items-center gap-3'>
-          {/* Request a Demo — highlighted while demo form is open */}
           <Tooltip
             content={t`Automate Your Full AP Workflow — Request a Demo`}
             position='right'
@@ -73,6 +72,7 @@ const SidebarSmall = ({ menus }: Props) => {
     </aside>
   )
 }
+
 
 SidebarSmall.displayName = 'SidebarSmall'
 export default SidebarSmall

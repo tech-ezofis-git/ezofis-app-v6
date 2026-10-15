@@ -249,7 +249,74 @@ export const syncMailboxForWorkflow = async (params: {
   return await createMailbox(payload)
 }
 
+export interface ConnectWatchFoxPayload {
+  tenantId: string
+  workflowId: string
+  redirectUrl: string
+}
+
+export interface ConnectWatchFoxResponse {
+  url: string
+  expiresIn?: number
+}
+
+export const WATCHFOX_CONFIG = {
+  tenantId: 'b843b988-00ec-44e3-aca2-b8470133ef63',
+  workflowId: '1325cf43-3902-426d-800f-ffde5bbfe0da',
+} as const
+
+export const getWatchFoxRedirectUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return 'https://cloud.ezofis.com/requests'
+  }
+  const origin = window.location.origin
+  const pathname = window.location.pathname.startsWith('/requests')
+    ? window.location.pathname
+    : '/requests'
+  if (origin.startsWith('https://')) {
+    return `${origin}${pathname}`
+  }
+  return `https://cloud.ezofis.com${pathname}`
+}
+
+export const connectWatchFox = async (
+  payload?: Partial<ConnectWatchFoxPayload>,
+): Promise<ConnectWatchFoxResponse> => {
+  const store = authUserStore.getState()
+  const token =
+    store.identity?.accessToken ||
+    store.identity?.token ||
+    (store.session as any)?.token ||
+    ''
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const finalPayload: ConnectWatchFoxPayload = {
+    tenantId: payload?.tenantId || WATCHFOX_CONFIG.tenantId,
+    workflowId: payload?.workflowId || WATCHFOX_CONFIG.workflowId,
+    redirectUrl: payload?.redirectUrl || getWatchFoxRedirectUrl(),
+  }
+
+  const { data, status } = await axiosV6.post<ConnectWatchFoxResponse>(
+    '/email-ingest/watchfox/connect',
+    finalPayload,
+    { headers },
+  )
+
+  if (status !== 200 && status !== 201) {
+    throw new Error('Failed to initiate WatchFox connection')
+  }
+
+  return data
+}
+
 export const emailIngestApi = {
+  connectWatchFox,
   createMailbox,
   getMailboxes,
   pollMailbox,
@@ -258,3 +325,4 @@ export const emailIngestApi = {
 }
 
 export default emailIngestApi
+

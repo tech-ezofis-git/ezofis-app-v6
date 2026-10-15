@@ -116,6 +116,7 @@ const AppLayout = ({ children }: Props) => {
     navigate,
   ])
 
+
   if (isMobile) {
     return (
       <div className='flex min-h-dvh flex-col bg-surface-secondary'>
