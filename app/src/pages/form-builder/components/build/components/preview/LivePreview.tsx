@@ -30,6 +30,7 @@ import {
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import {
   evaluateFormRules,
+  resetRuleDrivenValues,
   evaluatePanelRules,
 } from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
@@ -62,12 +63,14 @@ import {
   mapOcrFieldsToModel,
   normalizeStoredMultiSelectValue,
   resolveRuntimeFieldType,
+  normalizeScannedValue,
   resolveShortTextFillValue,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
+import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
 import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -194,7 +197,11 @@ const LivePreview = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next, rules)
+      return applyCalculatedFields(
+        panels,
+        resetRuleDrivenValues(panels, prev, next, rules as any),
+        rules,
+      )
     })
   }
 
@@ -647,6 +654,16 @@ const LivePreviewDropdown = ({
     },
   })
 
+  const masterConditions = (
+    field.settings?.specific?.masterFormConditionColumn || []
+  )
+    .filter((c: any) => c?.formField && c?.masterColumn)
+    .map((c: any) => ({
+      masterColumn: String(c.masterColumn),
+      value: model?.[c.formField],
+    }))
+  const masterConditionsKey = JSON.stringify(masterConditions)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -656,6 +673,7 @@ const LivePreviewDropdown = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      masterConditionsKey,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -664,6 +682,7 @@ const LivePreviewDropdown = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -1019,7 +1038,23 @@ const LivePreviewSearchableInput = ({
   const fieldValue = model[field.id] ?? ''
   const { panels } = useFormStore()
 
-  if (!isSearchField && !qrEnabled) return <>{children}</>
+  const masterFill = (
+    <MasterFillSync
+      allFields={panels.flatMap((p: any) => p.fields || [])}
+      field={field}
+      formModel={model}
+      value={model[field.id]}
+      onChange={(v) => onChange(field.id, v)}
+    />
+  )
+
+  if (!isSearchField && !qrEnabled)
+    return (
+      <>
+        {masterFill}
+        {children}
+      </>
+    )
 
   const handleSearch = (overrideVal?: any) => {
     const valToSearch = overrideVal !== undefined ? overrideVal : fieldValue
@@ -1044,6 +1079,7 @@ const LivePreviewSearchableInput = ({
 
   return (
     <div className='relative w-full'>
+      {masterFill}
       <div className='flex w-full items-end gap-1.5'>
         <div
           className='min-w-0 flex-1'
@@ -1087,7 +1123,8 @@ const LivePreviewSearchableInput = ({
           <BarcodeScannerPanel
             onClose={() => setIsScannerOpen(false)}
             onScan={(rawValue) => {
-              onChange(field.id, rawValue)
+              const next = normalizeScannedValue(field.type, rawValue)
+              if (next !== undefined) onChange(field.id, next)
               setIsScannerOpen(false)
             }}
           />
@@ -1258,14 +1295,22 @@ const renderPreviewInput = (
       )
     case 'DATE_TIME':
       return (
-        <InputDateTime
-          disabled={disabled}
-          value={fieldValue || null}
-          format={
-            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
-          }
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <InputDateTime
+            disabled={disabled}
+            value={fieldValue || null}
+            format={
+              field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+            }
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'TABLE':
     case 'DYNAMIC_TABLE': {
@@ -1459,19 +1504,27 @@ const renderPreviewInput = (
       )
     case 'DATE':
       return (
-        <TextInput
-          disabled={disabled}
-          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
-          placeholder='YYYY-MM-DD or MM/DD/YYYY'
-          size='sm'
-          value={String(fieldValue)}
-          variant='default'
-          classNames={{
-            input:
-              'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-          }}
-          onChange={(e) => onChange(field.id, e.target.value)}
-        />
+        <LivePreviewSearchableInput
+          fallbackRepositoryId={fallbackRepositoryId}
+          field={field}
+          model={model}
+          onChange={onChange}
+          onUpdateModel={onUpdateModel}
+        >
+          <TextInput
+            disabled={disabled}
+            leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+            placeholder='YYYY-MM-DD or MM/DD/YYYY'
+            size='sm'
+            value={String(fieldValue)}
+            variant='default'
+            classNames={{
+              input:
+                'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            }}
+            onChange={(e) => onChange(field.id, e.target.value)}
+          />
+        </LivePreviewSearchableInput>
       )
     case 'RATING':
       return (

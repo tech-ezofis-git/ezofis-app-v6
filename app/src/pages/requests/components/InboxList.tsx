@@ -1,9 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
+import { useQueryClient } from '@tanstack/react-query'
 import React, { useEffect, useMemo, useState } from 'react'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
 // import TableRows from '@/components/base/data-table/actions/TableRows'
 // import type { RowSize } from '@/components/base/data-table/types'
+import { getGroups, getUsers } from '@/api/v6/user'
 import workflowsApiV6, {
   type V6FilterField,
   type V6SearchFilterClause,
@@ -15,6 +17,7 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
 import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
   type DynamicFilterField,
@@ -23,12 +26,20 @@ import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { DUE_DATE_FILTER_OPTIONS } from '@/utils/filterUtils'
 import type { RequestViewMode, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
+import { exportRequestListToExcel } from '../utils/exportRequestList'
+import {
+  assembleExportColumns,
+  buildRequestDetailColumns,
+} from '../utils/requestExportColumns'
 import { buildV6FilterClauses } from '../utils/requestFilterMapper'
 import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 import ExportButton from './buttons/ExportButton'
 import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
-import { useDynamicColumns } from './columns/useDynamicColumns'
+import {
+  buildFormDataExportColumns,
+  useDynamicColumns,
+} from './columns/useDynamicColumns'
 import GridView from './GridView'
 import KanbanView from './KanbanView'
 
@@ -1197,6 +1208,8 @@ const InboxList: React.FC<InboxListProps> = ({
 }) => {
   const { t } = useLingui()
   const openNewRequest = requestStore((state) => state.openNewRequest)
+  const requestListTab = requestStore((state) => state.requestListTab)
+  const queryClient = useQueryClient()
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
   // const [rowSize, setRowSize] = useState<RowSize>('default')
@@ -1893,6 +1906,63 @@ const InboxList: React.FC<InboxListProps> = ({
     }
   }
 
+  const handleExport = async () => {
+    // Names for "Pending With". Fetched on demand (cached app-wide under the
+    // same keys the request screen uses); the export still works without them.
+    const [usersResponse, groupsResponse] = await Promise.all([
+      queryClient
+        .fetchQuery({
+          queryFn: getUsers,
+          queryKey: ['v6-users'],
+          staleTime: 5 * 60 * 1000,
+        })
+        .catch(() => null),
+      queryClient
+        .fetchQuery({
+          queryFn: getGroups,
+          queryKey: ['v6-groups'],
+          staleTime: 5 * 60 * 1000,
+        })
+        .catch(() => null),
+    ])
+
+    const exportColumns = assembleExportColumns({
+      detailColumns: buildRequestDetailColumns({
+        groups: groupsResponse?.data ?? [],
+        rawWorkflowData: requestStore.getState().rawWorkflowData,
+        users: usersResponse?.data ?? [],
+        workflow,
+      }),
+      formColumns: buildFormDataExportColumns(workflow),
+      listColumns: columns,
+      visibleColumnIds: table.getVisibleLeafColumns().map((col) => col.id),
+    })
+
+    const result = exportRequestListToExcel({
+      columns: exportColumns,
+      // requestListTab is the label shown on the tab (e.g. "Invoices",
+      // "Exceptions" or a custom name); activeTab is only the bucket key.
+      fileNameParts: [workflow?.name ?? '', requestListTab || activeTab || ''],
+      rows: flatFinalRows,
+    })
+
+    if (!result) {
+      showToast({
+        message: t`There are no requests to export.`,
+        variant: 'error',
+      })
+      return
+    }
+
+    showToast({
+      message:
+        totalItems > result.rowCount
+          ? t`Exported ${result.rowCount} of ${totalItems} requests (current page).`
+          : t`Exported ${result.rowCount} requests to Excel.`,
+      variant: 'success',
+    })
+  }
+
   const handlePoSheet = () => {
     // alert("hi")
     openNewRequest('po')
@@ -2008,8 +2078,10 @@ const InboxList: React.FC<InboxListProps> = ({
               icon: 'tabler:download',
               id: 'export',
               isIconButton: true,
-              tooltip: t`Export`,
-              onClick: () => {},
+              tooltip: t`Export to Excel`,
+              onClick: () => {
+                void handleExport()
+              },
             },
             {
               icon: 'tabler:table-import',

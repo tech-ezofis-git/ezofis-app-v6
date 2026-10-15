@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { Plus, Trash2 } from 'lucide-react'
-import { type CSSProperties } from 'react'
+import { type CSSProperties, useState } from 'react'
 import cn from '@/utils/cn'
 
 // --- Helpers passed or redefined ---
@@ -78,6 +78,22 @@ const formatHeaderLabel = (key: string) => {
   if (isLineItemAmountColumn(key)) {
     return 'Amount'
   }
+  const norm = key.toLowerCase().replace(/[\s_-]+/g, '')
+  if (
+    norm === 'lineno' ||
+    norm === 'linenumber' ||
+    norm === 'line#' ||
+    norm === 'line' ||
+    norm === 'lin'
+  ) {
+    return 'Line'
+  }
+  if (norm === 'qty' || norm === 'quantity') {
+    return 'Qty'
+  }
+  if (norm === 'rate' || norm === 'price' || norm === 'unitprice') {
+    return 'Price'
+  }
   return key
     .replace(/[_-]+/g, ' ')
     .trim()
@@ -142,16 +158,21 @@ export default function LineItemTable({
   skeletonRows,
 }: LineItemTableProps) {
   const { t } = useLingui()
+  const [editingCell, setEditingCell] = useState<string | null>(null)
   const allColumns: ColumnConfig[] = []
   if (isDynamicTable) {
     dynamicColumns.forEach((colKey, idx) => {
+      const lower = colKey.toLowerCase().trim()
+      if (lower.includes('score')) {
+        return
+      }
       const isNumeric =
-        colKey.toLowerCase().includes('qty') ||
-        colKey.toLowerCase().includes('quantity') ||
-        colKey.toLowerCase().includes('rate') ||
-        colKey.toLowerCase().includes('price') ||
-        colKey.toLowerCase().includes('amount') ||
-        colKey.toLowerCase().includes('total')
+        lower.includes('qty') ||
+        lower.includes('quantity') ||
+        lower.includes('rate') ||
+        lower.includes('price') ||
+        lower.includes('amount') ||
+        lower.includes('total')
       allColumns.push({
         dynamicIndex: idx,
         id: `dynamic-${colKey}-${idx}`,
@@ -207,40 +228,42 @@ export default function LineItemTable({
   }
 
   const getColWidth = (col: ColumnConfig, _idx: number): number => {
-    if (col.type === 'action') return LINE_ITEM_ACTION_WIDTH
-    if (col.type === 'score') return currentScoreWidth
-    if (col.type === 'amount') return 110
+    if (col.type === 'action') return LINE_ITEM_ACTION_WIDTH || 36
+    if (col.type === 'score') return currentScoreWidth || 50
+    if (col.type === 'amount') return Math.max(dynamicWidths[4] || 0, 105)
     if (col.type === 'dynamic') {
       const dynIdx = col.dynamicIndex ?? 0
-      if (dynamicWidths[dynIdx]) return dynamicWidths[dynIdx]
-      return isDescriptionCol(col) ? 220 : col.isNumeric ? 90 : 140
+      if (dynamicWidths[dynIdx]) {
+        return col.isAmount
+          ? Math.max(dynamicWidths[dynIdx], 105)
+          : dynamicWidths[dynIdx]
+      }
+      if (col.isAmount) return 105
+      return isDescriptionCol(col) ? 0 : col.isNumeric ? 70 : 80
     }
-    if (col.type === 'description') return dynamicWidths[1] || 220
-    if (col.type === 'qty') return dynamicWidths[2] || 70
-    if (col.type === 'rate') return dynamicWidths[3] || 90
-    return 100
+    if (col.type === 'description') return 0
+    if (col.type === 'qty') return dynamicWidths[2] || 50
+    if (col.type === 'rate') return dynamicWidths[3] || 70
+    return 75
   }
 
   const getColLayoutStyle = (i: number) => {
     const col = allColumns[i]
     const width = getColWidth(col, i)
     const isDesc = isDescriptionCol(col)
+    const isAmount = col.type === 'amount' || col.isAmount
 
-    const isStickyLeft =
-      allColumns.length > 7 ? i < 2 : i === 0 && allColumns.length > 5
-    const isStickyRight =
-      allColumns.length > 7
-        ? i >= allColumns.length - 2
-        : col.type === 'action'
+    const isStickyLeft = allColumns.length > 7 && i < 2
+    const isStickyRight = allColumns.length > 7 && i >= allColumns.length - 2
 
     const style: CSSProperties = {}
 
     if (isDesc) {
-      style.minWidth = width
+      // In table-fixed layout, Description is flexible and absorbs all remaining space
+    } else if (isAmount) {
+      style.width = width
     } else {
       style.width = width
-      style.minWidth = width
-      style.maxWidth = width
     }
 
     if (isStickyLeft) {
@@ -270,9 +293,10 @@ export default function LineItemTable({
     const { isStickyLeft, isStickyRight, style } = getColLayoutStyle(i)
 
     const className = cn(
+      'overflow-hidden',
       isAction
         ? 'p-1 text-center'
-        : 'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
+        : 'px-2 py-1.5 text-[11px] font-semibold text-[var(--gray-11)]',
       col.isNumeric && 'text-right',
       'border-b border-[var(--gray-3)]',
       !isLastCol && 'border-r border-[var(--gray-3)]',
@@ -293,11 +317,14 @@ export default function LineItemTable({
     const { isStickyLeft, isStickyRight, style } = getColLayoutStyle(i)
 
     const className = cn(
+      'overflow-hidden align-top',
       isAction
         ? 'px-2 py-0.5 text-center'
         : isScore
           ? 'px-3 py-2 font-semibold'
-          : 'px-2 py-0.5 font-semibold',
+          : isAmount
+            ? 'px-1.5 py-0.5 font-semibold'
+            : 'px-2 py-0.5 font-semibold',
       isQtyOrRate ? 'text-[var(--gray-11)]' : 'text-[var(--gray-13)]',
       col.isNumeric && 'text-right',
       borderT
@@ -337,13 +364,21 @@ export default function LineItemTable({
       const keys = [
         'Description',
         'description',
+        'Material Description',
+        'material_description',
+        'materialdescription',
+        'Item Description',
+        'item_description',
+        'Product And Description',
+        'product_and_description',
+        'product_description',
+        'Product Description',
         'item_no',
         'itemNo',
         'descriptior',
-        'item_description',
-        'product_description',
         'details',
         'item',
+        'desc',
       ]
       for (const k of keys) {
         const v = getRawVal(item, k)
@@ -358,9 +393,17 @@ export default function LineItemTable({
         'Quantity',
         'quantity',
         'qty',
+        'Order Quantity',
+        'order_quantity',
+        'orderquantity',
+        'Qty Ordered',
+        'qty_ordered',
+        'Qty Shipped',
+        'qty_shipped',
         'qty_invoiced',
         'invoiced_qty',
         'quantity_invoiced',
+        'poqty',
         'count',
         'units',
       ]
@@ -381,6 +424,14 @@ export default function LineItemTable({
         'rate',
         'unit_price',
         'price',
+        'Net Price',
+        'net_price',
+        'netprice',
+        'Unit Price',
+        'unit_price',
+        'Unit Cost',
+        'unit_cost',
+        'Unit Rate',
         'unit_rate',
         'unitprice',
         'unitcost',
@@ -401,9 +452,17 @@ export default function LineItemTable({
         'LineAmount',
         'total',
         'amount',
+        'Net Value',
+        'net_value',
+        'netvalue',
         'line_amount',
         'lineAmount',
+        'Total Amount',
         'total_amount',
+        'Net Price',
+        'net_price',
+        'Total Price',
+        'total_price',
         'extended',
         'extended_amount',
       ]
@@ -428,11 +487,51 @@ export default function LineItemTable({
         'Line No',
         'Line',
         'line_no',
+        'Line #',
         'line',
+        'Item Number',
+        'item_number',
+        'itemnumber',
         'line_number',
+        'lineNumber',
         'seq_no',
         'sr_no',
         'sl_no',
+        'sno',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // UOM Group
+    if (keyOrType === 'uom' || keyOrType.includes('unit')) {
+      const keys = [
+        'UOM',
+        'uom',
+        'Unit of Measure',
+        'unit_of_measure',
+        'Unit',
+        'unit',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // Part Number Group
+    if (keyOrType.includes('part') || keyOrType.includes('material')) {
+      const keys = [
+        'Part Number',
+        'part_number',
+        'Material Id',
+        'Material ID',
+        'material_id',
+        'Part No',
+        'part_no',
+        'item_code',
       ]
       for (const k of keys) {
         const v = getRawVal(item, k)
@@ -496,7 +595,7 @@ export default function LineItemTable({
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['Currency']
 
   return (
-    <table className='min-w-full border-separate border-spacing-0 text-left text-xs'>
+    <table className='w-full table-fixed border-separate border-spacing-0 text-left text-xs'>
       <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
         <tr>
           {allColumns.map((col, i) => {
@@ -675,8 +774,10 @@ export default function LineItemTable({
                       ) : null
                     } else {
                       const cellVal = getCellVal(item, col)
+                      const displayVal = cellVal ? String(cellVal).replace(/\r?\n+/g, ' ') : ''
                       const changeKey = getColChangeKey(col)
                       const focusKey = getColFocusKey(col)
+                      const isDesc = isDescriptionCol(col)
                       const isGray11 =
                         col.type === 'qty' ||
                         col.type === 'rate' ||
@@ -684,11 +785,73 @@ export default function LineItemTable({
                           col.isNumeric &&
                           !col.isAmount)
 
-                      if (isReadOnly || !handleLineItemChange) {
+                      if (isDesc) {
+                        const cellId = `${index}-${col.id}`
+                        const isEditingThis = editingCell === cellId
+
+                        if (isEditingThis && !isReadOnly && handleLineItemChange) {
+                          cellContent = (
+                            <div className='relative h-full min-h-[24px] w-full min-w-0'>
+                              <input
+                                autoFocus
+                                type='text'
+                                value={displayVal}
+                                className='w-full rounded border border-[var(--primary-7)] bg-surface px-1 py-1 text-xs font-semibold whitespace-nowrap text-[var(--gray-13)] shadow-xs focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                onBlur={(e) => {
+                                  setEditingCell(null)
+                                  handleLineItemChange?.(
+                                    index,
+                                    changeKey,
+                                    e.target.value,
+                                  )
+                                }}
+                                onChange={(e) =>
+                                  handleLineItemChange?.(
+                                    index,
+                                    changeKey,
+                                    e.target.value,
+                                  )
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                    e.preventDefault()
+                                    setEditingCell(null)
+                                  }
+                                }}
+                              />
+                            </div>
+                          )
+                        } else {
+                          cellContent = (
+                            <div
+                              className={cn(
+                                'w-full min-w-0 truncate px-1 py-1 text-xs font-semibold whitespace-nowrap rounded transition-all text-[var(--gray-13)]',
+                                'hover:whitespace-normal hover:break-words hover:bg-[var(--gray-2)]/50',
+                                !isReadOnly && handleLineItemChange
+                                  ? 'cursor-text'
+                                  : 'cursor-default select-text',
+                              )}
+                              tabIndex={0}
+                              onClick={() => {
+                                handleFieldFocus?.(cellVal, focusKey)
+                                if (!isReadOnly && handleLineItemChange) {
+                                  setEditingCell(cellId)
+                                }
+                              }}
+                              onFocus={() =>
+                                handleFieldFocus?.(cellVal, focusKey)
+                              }
+                            >
+                              {displayVal || ' '}
+                            </div>
+                          )
+                        }
+                      } else if (isReadOnly || !handleLineItemChange) {
                         cellContent = (
                           <div
                             className={cn(
-                              'w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap rounded transition-colors select-text cursor-default hover:bg-[var(--gray-2)]/30',
+                              'w-full min-w-0 px-1 py-1 text-xs font-semibold whitespace-nowrap rounded transition-colors select-text cursor-default hover:bg-[var(--gray-2)]/30',
+                              col.type !== 'amount' && !col.isAmount && 'truncate break-words',
                               col.isNumeric && 'text-right',
                               isGray11
                                 ? 'text-right text-[var(--gray-11)]'
@@ -696,6 +859,7 @@ export default function LineItemTable({
                                   ? 'text-right text-[var(--gray-13)]'
                                   : 'text-[var(--gray-13)]',
                             )}
+                            title={isDesc ? undefined : cellVal}
                             tabIndex={0}
                             onClick={() =>
                               handleFieldFocus?.(cellVal, focusKey)
@@ -704,25 +868,26 @@ export default function LineItemTable({
                               handleFieldFocus?.(cellVal, focusKey)
                             }
                           >
-                            {cellVal || ' '}
+                            {displayVal || ' '}
                           </div>
                         )
                       } else {
                         cellContent = (
-                          <div className='group/cell relative h-full min-h-[24px] w-full'>
+                          <div className='group/cell relative h-full min-h-[24px] w-full min-w-0 overflow-hidden'>
                             <div
                               className={cn(
-                                'invisible w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap group-hover/cell:whitespace-normal',
+                                'invisible w-full min-w-0 truncate px-1 py-1 text-xs font-semibold',
                                 col.isNumeric && 'text-right',
                               )}
                             >
-                              {cellVal || ' '}
+                              {displayVal || ' '}
                             </div>
                             <textarea
                               rows={1}
-                              value={cellVal}
+                              value={displayVal}
+                              title={isDesc ? undefined : cellVal}
                               className={cn(
-                                'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold whitespace-nowrap transition-all group-hover/cell:break-words group-hover/cell:whitespace-normal hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden rounded border-none bg-transparent px-1 py-1 text-xs font-semibold whitespace-nowrap transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
                                 isGray11
                                   ? 'text-right text-[var(--gray-11)]'
                                   : col.isNumeric
@@ -815,7 +980,7 @@ export default function LineItemTable({
               )
               const isTotalCell = amountIdx !== -1 && i === amountIdx - 1
 
-              if (isTotalCell) {
+              if (isTotalCell && allColumns.length > 7) {
                 // Calculate right offset for Total cell so it sticks right next to the Amount column
                 let rightOffset = 0
                 for (let j = amountIdx; j < allColumns.length; j++) {
@@ -839,34 +1004,40 @@ export default function LineItemTable({
               let cellContent: React.ReactNode = null
               if (isTotalCell) {
                 cellContent = (
-                  <span className='block w-full px-1.5 text-right text-xs font-bold text-[var(--gray-13)]'>
-                    Total
+                  <span className='block w-full px-1 text-right text-xs font-bold text-[var(--gray-13)]'>
+                    {t`Total`}
                   </span>
                 )
               } else if (
                 col.type === 'amount' ||
                 (col.type === 'dynamic' && col.isAmount)
               ) {
+                footerStyle.maxWidth = undefined
+                const totalFormatted = lineItems
+                  .reduce((sum: number, item: any) => {
+                    const rawDisplayedVal = getCellVal(item, col)
+                    const val =
+                      rawDisplayedVal !== undefined &&
+                      rawDisplayedVal !== null &&
+                      rawDisplayedVal !== ''
+                        ? rawDisplayedVal
+                        : getLineItemAmount(item)
+                    const num = Number.parseFloat(
+                      String(val).replace(/[^0-9.-]+/g, ''),
+                    )
+                    return sum + (Number.isNaN(num) ? 0 : num)
+                  }, 0)
+                  .toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2,
+                  })
+
                 cellContent = (
-                  <span className='block w-full overflow-hidden px-1.5 text-right text-xs font-bold text-ellipsis whitespace-nowrap text-[var(--gray-13)]'>
-                    {lineItems
-                      .reduce((sum: number, item: any) => {
-                        const rawDisplayedVal = getCellVal(item, col)
-                        const val =
-                          rawDisplayedVal !== undefined &&
-                          rawDisplayedVal !== null &&
-                          rawDisplayedVal !== ''
-                            ? rawDisplayedVal
-                            : getLineItemAmount(item)
-                        const num = Number.parseFloat(
-                          String(val).replace(/[^0-9.-]+/g, ''),
-                        )
-                        return sum + (Number.isNaN(num) ? 0 : num)
-                      }, 0)
-                      .toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}
+                  <span
+                    className='block w-full px-1 text-right text-xs font-bold whitespace-nowrap text-[var(--gray-13)]'
+                    title={totalFormatted}
+                  >
+                    {totalFormatted}
                   </span>
                 )
               }

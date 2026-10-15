@@ -571,6 +571,7 @@ const AskAI = () => {
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     if (!isActionsMenuOpen) return
@@ -1193,12 +1194,17 @@ const AskAI = () => {
 
               {view === 'chat' && (
                 <div className='relative shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3.5'>
-                  <div className='rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
-                    <div className='px-3.5 pt-2.5 pb-1'>
+                  <div
+                    className='flex items-stretch rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] p-2 transition-all focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'
+                    onClick={() => textareaRef.current?.focus()}
+                  >
+                    {/* Text input area - takes up the entire space to the left of the right action column */}
+                    <div className='flex min-w-0 flex-1 flex-col'>
                       <textarea
-                        className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
+                        ref={textareaRef}
+                        className='max-h-[140px] min-h-[72px] w-full resize-none bg-transparent px-2 py-1 text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
                         placeholder='Ask me anything about your documents or requests...'
-                        rows={1}
+                        rows={2}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -1210,11 +1216,17 @@ const AskAI = () => {
                       />
                     </div>
 
-                    <div className='flex items-center justify-between gap-1.5 px-2 pb-2'>
+                    {/* Right column: top allocated for plus action, down allocated for post action */}
+                    <div
+                      className='flex shrink-0 self-stretch flex-col items-center justify-between gap-2 pl-1.5'
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Top: Plus Action */}
                       <div className='relative' ref={actionsMenuRef}>
                         <Tooltip
-                          content={isActionsMenuOpen ? '' : 'Actions'}
-                          position='top'
+                          content='Actions'
+                          disabled={isActionsMenuOpen}
+                          position='left'
                         >
                           <button
                             aria-expanded={isActionsMenuOpen}
@@ -1240,7 +1252,7 @@ const AskAI = () => {
                           {isActionsMenuOpen && (
                             <motion.div
                               animate={{ opacity: 1, scale: 1, y: 0 }}
-                              className='absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] p-1.5 shadow-xl shadow-black/10 z-30'
+                              className='absolute bottom-full right-0 mb-2 w-56 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] p-1.5 shadow-xl shadow-black/10 z-30'
                               exit={{ opacity: 0, scale: 0.96, y: 4 }}
                               initial={{ opacity: 0, scale: 0.96, y: 4 }}
                               transition={{ duration: 0.15, ease: 'easeOut' }}
@@ -1274,8 +1286,13 @@ const AskAI = () => {
                         </AnimatePresence>
                       </div>
 
+                      {/* Down: Post Action */}
                       <button
-                        className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
+                        className={`grid size-8 place-items-center rounded-[9px] border transition ${
+                          canSend
+                            ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white shadow-xs hover:opacity-90 active:scale-95'
+                            : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'
+                        }`}
                         disabled={!canSend}
                         title='Send'
                         type='button'

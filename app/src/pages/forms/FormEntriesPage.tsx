@@ -21,11 +21,13 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -34,6 +36,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
+import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import {
@@ -41,7 +44,10 @@ import {
   RuntimeMatrixField,
 } from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import {
+  evaluateFormRules,
+  resetRuleDrivenValues,
+} from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
 import {
   hasConfiguredTableColumns,
@@ -52,6 +58,7 @@ import {
   buildInitialFormModel,
   computeTableColumnTotals,
   ensureNormalizedRuntimeFormJson,
+  buildMasterConditions,
   evaluateTableRows,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -73,6 +80,7 @@ import {
   hydrateFormModel,
   isFieldLabelHidden,
   isFieldReadOnly,
+  normalizeScannedValue,
   resolveRuntimeFieldType,
   shouldShowTableSummaryRow,
   updateCurrencyFieldValue,
@@ -83,6 +91,7 @@ import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidatio
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { formatTableCellValue } from '@/utils/formatTableCellValue'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -155,6 +164,8 @@ const FormEntriesChoiceInput = ({
     },
   })
 
+  const masterConditions = buildMasterConditions(field, formModel)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -164,6 +175,7 @@ const FormEntriesChoiceInput = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      JSON.stringify(masterConditions),
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -172,6 +184,7 @@ const FormEntriesChoiceInput = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -414,6 +427,8 @@ const FormEntriesSelectInput = ({
     },
   })
 
+  const masterConditions = buildMasterConditions(field, formModel)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -423,6 +438,7 @@ const FormEntriesSelectInput = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      JSON.stringify(masterConditions),
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -431,6 +447,7 @@ const FormEntriesSelectInput = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -561,6 +578,7 @@ const FormEntriesSearchableInput = ({
   val,
   formId,
   editValues,
+  allFields = [],
   onUpdateModel,
   children,
 }: {
@@ -568,13 +586,32 @@ const FormEntriesSearchableInput = ({
   val: any
   formId?: string
   editValues: Record<string, any>
+  allFields?: Question[]
   onUpdateModel: (patch: Record<string, any>) => void
   children: React.ReactNode
 }) => {
   const [isSearching, setIsSearching] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const isSearchField = field?.settings?.specific?.isSearchField === 'YES'
+  const qrEnabled = Boolean(field?.settings?.specific?.qrValue)
 
-  if (!isSearchField) return <>{children}</>
+  const masterFill = (
+    <MasterFillSync
+      allFields={allFields}
+      field={field}
+      formModel={editValues}
+      value={editValues?.[field.id]}
+      onChange={(v) => onUpdateModel({ [field.id]: v })}
+    />
+  )
+
+  if (!isSearchField && !qrEnabled)
+    return (
+      <>
+        {masterFill}
+        {children}
+      </>
+    )
 
   const handleSearch = () => {
     executeSearchFieldSync({
@@ -588,32 +625,63 @@ const FormEntriesSearchableInput = ({
   }
 
   return (
-    <div className='relative flex items-center w-full gap-2'>
-      <div
-        className='flex-1 min-w-0'
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            handleSearch()
-          }
-        }}
-      >
-        {children}
-      </div>
-      <Tooltip label='Search & Auto-Sync Fields' withArrow>
-        <button
-          type='button'
-          disabled={isSearching}
-          className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
-          onClick={handleSearch}
+    <div className='relative w-full'>
+      {masterFill}
+      <div className='flex items-center w-full gap-2'>
+        <div
+          className='flex-1 min-w-0'
+          onKeyDown={(e) => {
+            if (isSearchField && e.key === 'Enter') {
+              e.preventDefault()
+              handleSearch()
+            }
+          }}
         >
-          {isSearching ? (
-            <Icon className='size-4 animate-spin' name='lucide:loader-2' />
-          ) : (
-            <Icon className='size-4' name='lucide:search' />
-          )}
-        </button>
-      </Tooltip>
+          {children}
+        </div>
+        {qrEnabled && (
+          <Tooltip label='Scan QR / Barcode' withArrow>
+            <button
+              type='button'
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all active:scale-95'
+              onClick={() => setIsScannerOpen((prev) => !prev)}
+            >
+              <Icon className='size-4' name='lucide:qr-code' />
+            </button>
+          </Tooltip>
+        )}
+        {isSearchField && (
+          <Tooltip label='Search & Auto-Sync Fields' withArrow>
+            <button
+              type='button'
+              disabled={isSearching}
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+              onClick={handleSearch}
+            >
+              {isSearching ? (
+                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+              ) : (
+                <Icon className='size-4' name='lucide:search' />
+              )}
+            </button>
+          </Tooltip>
+        )}
+      </div>
+      {isScannerOpen && (
+        <div className='absolute top-full z-20 mt-1.5 w-full'>
+          <BarcodeScannerPanel
+            onClose={() => setIsScannerOpen(false)}
+            onScan={(rawValue) => {
+              const next = normalizeScannedValue(
+                String(field.type || '').toUpperCase(),
+                rawValue,
+              )
+              if (next !== undefined) onUpdateModel({ [field.id]: next })
+              setIsScannerOpen(false)
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -1542,6 +1610,8 @@ const FormEntriesPage = () => {
       const parsedEntries = fetchedEntries.map((e: any) => {
         const metadataKeys = [
           'itemId',
+          'item_id',
+          'entryId',
           'id',
           'uid',
           'createdAt',
@@ -1574,6 +1644,8 @@ const FormEntriesPage = () => {
           })
         }
 
+        const rawEntryId = e.itemId ?? e.item_id ?? e.entryId ?? e.id
+
         const store = authUserStore.getState()
         const loggedInUserEmail =
           store.session?.email ||
@@ -1599,9 +1671,9 @@ const FormEntriesPage = () => {
         return {
           createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
           createdBy,
-          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
-          id: e.itemId
-            ? `Entry #${e.itemId}`
+          entryId: rawEntryId,
+          id: rawEntryId
+            ? `Entry #${rawEntryId}`
             : e.id || e.uid || `Entry #${Math.random()}`,
           isDeleted: !!e.isDeleted,
           values,
@@ -1622,7 +1694,11 @@ const FormEntriesPage = () => {
       for (const childId of dependentChildIds) {
         delete next[childId]
       }
-      return applyCalculatedFields(panels, next, formRules)
+      return applyCalculatedFields(
+        panels,
+        resetRuleDrivenValues(panels, prev, next, formRules),
+        formRules,
+      )
     })
   }
 
@@ -1704,13 +1780,25 @@ const FormEntriesPage = () => {
       let targetEntryId: number | string =
         '00000000-0000-0000-0000-000000000000'
       if (!isAddOpen && selectedEntry) {
-        targetEntryId =
+        const resolvedId =
           selectedEntry.entryId ??
-          selectedEntry.itemId ??
           (typeof selectedEntry.id === 'string'
             ? selectedEntry.id.replace(/^Entry #/, '')
-            : selectedEntry.id) ??
-          '00000000-0000-0000-0000-000000000000'
+            : selectedEntry.id)
+        if (
+          resolvedId === undefined ||
+          resolvedId === null ||
+          resolvedId === '' ||
+          resolvedId === 0
+        ) {
+          showToast({
+            message: 'Could not determine the entry id for update',
+            variant: 'error',
+          })
+          setIsSaving(false)
+          return
+        }
+        targetEntryId = resolvedId
       }
 
       const { data, error } = await formApi.saveFormEntry(
@@ -2456,17 +2544,48 @@ const FormEntriesPage = () => {
                                 }
                               />
                             </div>
-                          ) : type === 'DATE' ? (
-                            <InputDate
-                              disabled={isReadOnly}
-                              placeholder={getEffectiveFieldPlaceholder(field)}
-                              value={val ? val : null}
-                              onChange={(dateString) =>
-                                handleFieldChange(field.id, dateString)
+                          ) : type === 'DATE' || type === 'DATE_TIME' ? (
+                            <FormEntriesSearchableInput
+                              allFields={renderableFields}
+                              editValues={editValues}
+                              field={field}
+                              formId={formId}
+                              val={val}
+                              onUpdateModel={(patch) =>
+                                setEditValues((prev: any) => ({
+                                  ...prev,
+                                  ...patch,
+                                }))
                               }
-                            />
+                            >
+                              {type === 'DATE_TIME' ? (
+                                <InputDateTime
+                                  disabled={isReadOnly}
+                                  value={val ? val : null}
+                                  format={
+                                    field.settings?.validation?.timeFormat ===
+                                    '24'
+                                      ? '24h'
+                                      : '12h'
+                                  }
+                                  onChange={(dateString) =>
+                                    handleFieldChange(field.id, dateString)
+                                  }
+                                />
+                              ) : (
+                                <InputDate
+                                  disabled={isReadOnly}
+                                  placeholder={getEffectiveFieldPlaceholder(field)}
+                                  value={val ? val : null}
+                                  onChange={(dateString) =>
+                                    handleFieldChange(field.id, dateString)
+                                  }
+                                />
+                              )}
+                            </FormEntriesSearchableInput>
                           ) : type === 'NUMBER' || type === 'COUNTER' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2509,6 +2628,7 @@ const FormEntriesPage = () => {
                             </div>
                           ) : type === 'PHONE_NUMBER' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2617,6 +2737,7 @@ const FormEntriesPage = () => {
                           ) : type === 'SINGLE_SELECT' ||
                             type === 'MULTI_SELECT' ? (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -2710,6 +2831,7 @@ const FormEntriesPage = () => {
                             />
                           ) : (
                             <FormEntriesSearchableInput
+                              allFields={renderableFields}
                               editValues={editValues}
                               field={field}
                               formId={formId}
@@ -3041,7 +3163,7 @@ const FormEntriesPage = () => {
                           className='p-3 font-medium whitespace-nowrap text-gray-12'
                           key={k}
                         >
-                          {item[k]}
+                          {formatTableCellValue(item[k])}
                         </td>
                       ))}
                     </tr>

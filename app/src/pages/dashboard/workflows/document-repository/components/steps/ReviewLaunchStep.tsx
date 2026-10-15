@@ -92,13 +92,6 @@ const ReviewLaunchStep = () => {
     navigate({ replace: true, to: '/folders' })
   }
 
-  useEffect(() => {
-    if (!showCelebration) return
-    const timer = setTimeout(() => {
-      handleFinishDmsSetup()
-    }, 4500)
-    return () => clearTimeout(timer)
-  }, [showCelebration])
 
   const selectedStorage =
     dmsStorageOptions.find((item) => item.id === storageId) ??
@@ -200,10 +193,11 @@ const ReviewLaunchStep = () => {
       <SuccessCelebration
         buttonIcon='tabler:folder'
         buttonLabel='Go to Folders'
-        description='Your folder is ready. Documents can now be stored and organized with your configured fields and storage.'
+        description={'Your DMS folder workspace is ready.\nStart storing, organizing, and managing your documents with your configured storage.'}
         loadingLabel='Opening folders...'
-        title='DMS folder setup successful!'
+        title='DMS Folder Setup Completed!'
         onCreateRequest={handleFinishDmsSetup}
+        onClose={() => setShowCelebration(false)}
       />
     )
   }

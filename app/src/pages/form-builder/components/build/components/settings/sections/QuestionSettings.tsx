@@ -461,6 +461,8 @@ const QuestionSettings = ({
   const isSearchableSupported =
     isShortText ||
     activeQuestion.type === 'NUMBER' ||
+    activeQuestion.type === 'DATE' ||
+    activeQuestion.type === 'DATE_TIME' ||
     activeQuestion.type === 'SINGLE_SELECT'
 
   const optionsPerLineOptions = [
@@ -589,6 +591,181 @@ const QuestionSettings = ({
     { id: 'DATE', name: 'Date' },
     { id: 'TIME', name: 'Time' },
   ]
+
+  // NUMBER / DATE / DATE_TIME share V5's "Fill Value" choice: take the value
+  // from a master table, from another field, or a custom default.
+  const hasFillSource =
+    activeQuestion.type === 'NUMBER' || isDate || isDateTime
+  const fillSourceType =
+    activeQuestion.settings.specific.fillValueType || 'CUSTOM'
+  const isFillCustom = !hasFillSource || fillSourceType === 'CUSTOM'
+
+  const fillSourceOptions = [
+    { id: 'MASTER', name: 'Use values from a master table' },
+    { id: 'ASSIGN_PARENT_FIELD', name: 'Use values from another field' },
+    { id: 'CUSTOM', name: 'Custom' },
+  ]
+
+  const renderFillSourceSelector = (parentTypes: string[]) => (
+    <div className='space-y-3'>
+      <div>
+        <label className='mb-2 block text-13 font-medium text-gray-11'>
+          Fill Value
+        </label>
+        <InputSelect
+          options={fillSourceOptions}
+          placeholder='How this field is pre-filled'
+          value={
+            fillSourceOptions.find((o) => o.id === fillSourceType) ||
+            fillSourceOptions[2]
+          }
+          onChange={(val) =>
+            val && updateNested('specific', { fillValueType: val.id })
+          }
+        />
+      </div>
+      {fillSourceType === 'MASTER' && renderMasterFillConfig()}
+      {fillSourceType === 'ASSIGN_PARENT_FIELD' &&
+        renderParentFieldFillConfig(parentTypes)}
+    </div>
+  )
+
+  const renderQrToggle = () => (
+    <div>
+      <label className='mb-1.5 block text-13 font-medium text-gray-11'>
+        Read Values From QR
+      </label>
+      <SegmentedControl
+        size='xs'
+        fullWidth
+        data={[
+          { label: 'Yes', value: 'YES' },
+          { label: 'No', value: 'NO' },
+        ]}
+        value={activeQuestion.settings.specific.qrValue ? 'YES' : 'NO'}
+        onChange={(val) =>
+          updateNested('specific', { qrValue: val === 'YES' })
+        }
+      />
+    </div>
+  )
+
+  const renderMasterFillConfig = () => (
+          <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-gray-11'>
+                Parent Field
+              </label>
+              <InputSelect
+                placeholder='Field that selects the master row'
+                options={allQuestions
+                  .filter((q) => q.id !== activeQuestion.id)
+                  .map((q) => ({
+                    id: q.id,
+                    name: q.label || 'Untitled Field',
+                  }))}
+                value={
+                  allQuestions
+                    .map((q) => ({
+                      id: q.id,
+                      name: q.label || 'Untitled Field',
+                    }))
+                    .find(
+                      (q) =>
+                        q.id ===
+                        activeQuestion.settings.specific
+                          .masterFormParentColumn,
+                    ) || null
+                }
+                onChange={(val) =>
+                  updateNested('specific', {
+                    masterFormParentColumn: val?.id || '',
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-gray-11'>
+                Master Table
+              </label>
+              <InputSelect
+                options={masterForms}
+                placeholder='Select master form'
+                value={
+                  masterForms.find(
+                    (f: any) =>
+                      String(f.id) === String(currentMasterFormId),
+                  ) || null
+                }
+                onChange={(val) =>
+                  updateNested('specific', {
+                    masterFormColumn: '',
+                    masterFormId: val?.id || '',
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-gray-11'>
+                Column
+              </label>
+              <InputSelect
+                options={masterColumns}
+                placeholder='Master column to bind'
+                value={
+                  masterColumns.find(
+                    (c: any) =>
+                      c.id ===
+                      activeQuestion.settings.specific.masterFormColumn,
+                  ) || null
+                }
+                onChange={(val) =>
+                  updateNested('specific', {
+                    masterFormColumn: val?.id || '',
+                  })
+                }
+              />
+            </div>
+          </div>
+  )
+
+  const renderParentFieldFillConfig = (allowedTypes: string[]) => (
+          <div>
+            <label className='mb-1 block text-xs font-medium text-gray-11'>
+              Parent Field
+            </label>
+            <InputSelect
+              placeholder='Copy value from this field'
+              options={allQuestions
+                .filter(
+                  (q) =>
+                    q.id !== activeQuestion.id &&
+                    allowedTypes.includes(q.type),
+                )
+                .map((q) => ({
+                  id: q.id,
+                  name: q.label || 'Untitled Field',
+                }))}
+              value={
+                allQuestions
+                  .map((q) => ({
+                    id: q.id,
+                    name: q.label || 'Untitled Field',
+                  }))
+                  .find(
+                    (q) =>
+                      q.id ===
+                      activeQuestion.settings.specific.parentFieldId,
+                  ) || null
+              }
+              onChange={(val) =>
+                updateNested('specific', {
+                  parentFieldId: val?.id || '',
+                })
+              }
+            />
+          </div>
+  )
 
   return (
     <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-surface p-4 duration-500'>
@@ -1072,123 +1249,11 @@ const QuestionSettings = ({
                 )}
 
                 {activeQuestion.settings.specific.fillValueType ===
-                  'MASTER' && (
-                  <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
-                    <div>
-                      <label className='mb-1 block text-xs font-medium text-gray-11'>
-                        Parent Field
-                      </label>
-                      <InputSelect
-                        placeholder='Field that selects the master row'
-                        options={allQuestions
-                          .filter((q) => q.id !== activeQuestion.id)
-                          .map((q) => ({
-                            id: q.id,
-                            name: q.label || 'Untitled Field',
-                          }))}
-                        value={
-                          allQuestions
-                            .map((q) => ({
-                              id: q.id,
-                              name: q.label || 'Untitled Field',
-                            }))
-                            .find(
-                              (q) =>
-                                q.id ===
-                                activeQuestion.settings.specific
-                                  .masterFormParentColumn,
-                            ) || null
-                        }
-                        onChange={(val) =>
-                          updateNested('specific', {
-                            masterFormParentColumn: val?.id || '',
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className='mb-1 block text-xs font-medium text-gray-11'>
-                        Master Table
-                      </label>
-                      <InputSelect
-                        options={masterForms}
-                        placeholder='Select master form'
-                        value={
-                          masterForms.find(
-                            (f: any) =>
-                              String(f.id) === String(currentMasterFormId),
-                          ) || null
-                        }
-                        onChange={(val) =>
-                          updateNested('specific', {
-                            masterFormColumn: '',
-                            masterFormId: val?.id || '',
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className='mb-1 block text-xs font-medium text-gray-11'>
-                        Column
-                      </label>
-                      <InputSelect
-                        options={masterColumns}
-                        placeholder='Master column to bind'
-                        value={
-                          masterColumns.find(
-                            (c: any) =>
-                              c.id ===
-                              activeQuestion.settings.specific.masterFormColumn,
-                          ) || null
-                        }
-                        onChange={(val) =>
-                          updateNested('specific', {
-                            masterFormColumn: val?.id || '',
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
+                  'MASTER' && renderMasterFillConfig()}
 
                 {activeQuestion.settings.specific.fillValueType ===
-                  'ASSIGN_PARENT_FIELD' && (
-                  <div>
-                    <label className='mb-1 block text-xs font-medium text-gray-11'>
-                      Parent Field
-                    </label>
-                    <InputSelect
-                      placeholder='Copy value from this field'
-                      options={allQuestions
-                        .filter(
-                          (q) =>
-                            q.id !== activeQuestion.id &&
-                            ['SHORT_TEXT', 'SINGLE_SELECT'].includes(q.type),
-                        )
-                        .map((q) => ({
-                          id: q.id,
-                          name: q.label || 'Untitled Field',
-                        }))}
-                      value={
-                        allQuestions
-                          .map((q) => ({
-                            id: q.id,
-                            name: q.label || 'Untitled Field',
-                          }))
-                          .find(
-                            (q) =>
-                              q.id ===
-                              activeQuestion.settings.specific.parentFieldId,
-                          ) || null
-                      }
-                      onChange={(val) =>
-                        updateNested('specific', {
-                          parentFieldId: val?.id || '',
-                        })
-                      }
-                    />
-                  </div>
-                )}
+                  'ASSIGN_PARENT_FIELD' &&
+                  renderParentFieldFillConfig(['SHORT_TEXT', 'SINGLE_SELECT'])}
 
                 {[
                   'USER_EMAIL',
@@ -2535,10 +2600,8 @@ const QuestionSettings = ({
                       <label className='mb-2 block text-13 font-medium text-gray-11'>
                         Cascading Filter (Parent)
                       </label>
-                      <InputSelect
-                        placeholder='Filter by another field'
-                        value={null}
-                        options={[
+                      {(() => {
+                        const cascadeOptions = [
                           { id: 'none', name: 'No Filter' },
                           ...panels
                             .flatMap((p: any) => p.fields)
@@ -2549,13 +2612,37 @@ const QuestionSettings = ({
                                   f.type,
                                 ),
                             )
-                            .map((f: any) => ({ id: f.id, name: f.label })),
-                        ]}
-                        onChange={(val) =>
-                          val &&
-                          updateNested('specific', { parentFieldId: val.id })
-                        }
-                      />
+                            .map((f: any) => ({
+                              id: f.id,
+                              name: f.label || 'Untitled Field',
+                            })),
+                        ]
+                        const savedParentId =
+                          activeQuestion.settings.specific
+                            .masterFormParentColumn ||
+                          activeQuestion.settings.specific.parentFieldId
+                        return (
+                          <InputSelect
+                            placeholder='Filter by another field'
+                            value={
+                              cascadeOptions.find(
+                                (o) => o.id === savedParentId,
+                              ) || null
+                            }
+                            options={cascadeOptions}
+                            onChange={(val) => {
+                              if (!val) return
+                              const parentId = val.id === 'none' ? '' : val.id
+                              // masterFormParentColumn is what the runtime
+                              // option fetchers read to cascade-filter.
+                              updateNested('specific', {
+                                masterFormParentColumn: parentId,
+                                parentFieldId: parentId,
+                              })
+                            }}
+                          />
+                        )
+                      })()}
                       <div className='mt-1 text-[10px] text-gray-6 italic'>
                         Options will change based on parent selection.
                       </div>
@@ -2812,6 +2899,15 @@ const QuestionSettings = ({
                   )}
                 </div>
 
+                {activeQuestion.type === 'NUMBER' &&
+                  renderFillSourceSelector([
+                    'NUMBER',
+                    'COUNTER',
+                    'CALCULATED',
+                    'CURRENCY_AMOUNT',
+                  ])}
+
+                {isFillCustom && (
                 <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
                   <div className='flex items-center justify-between'>
                     <div className='text-xs font-bold text-gray-12'>
@@ -2886,6 +2982,7 @@ const QuestionSettings = ({
                     />
                   )}
                 </div>
+                )}
 
                 <div className='grid grid-cols-2 gap-3'>
                   <InputText
@@ -2905,11 +3002,17 @@ const QuestionSettings = ({
                     }
                   />
                 </div>
+
+                {activeQuestion.type === 'NUMBER' && renderQrToggle()}
               </div>
             )}
 
             {(isDate || isDateTime) && (
               <div className='space-y-4'>
+                {renderFillSourceSelector(['DATE', 'DATE_TIME'])}
+
+                {isFillCustom && (
+                  <>
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
                     Default Value Mode
@@ -2988,6 +3091,10 @@ const QuestionSettings = ({
                     </div>
                   </div>
                 )}
+                  </>
+                )}
+
+                {renderQrToggle()}
               </div>
             )}
 

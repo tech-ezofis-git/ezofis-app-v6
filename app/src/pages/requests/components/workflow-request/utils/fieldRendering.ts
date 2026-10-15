@@ -170,6 +170,37 @@ export const resolveShortTextFillValue = (field: any): string | undefined => {
   }
 }
 
+// True when a field's "Fill Value" pulls its value from a master table or from
+// another field at runtime, so no static default should be seeded for it.
+export const fillsFromElsewhere = (field: any): boolean => {
+  const type = field?.settings?.specific?.fillValueType
+  return type === 'MASTER' || type === 'ASSIGN_PARENT_FIELD'
+}
+
+// Turns a QR / barcode scan into a value valid for the field type
+// (NUMBER/COUNTER -> number, DATE -> YYYY-MM-DD, DATE_TIME -> YYYY-MM-DD HH:mm).
+// Returns undefined when the scan can't be read as that type, so the field
+// keeps its current value instead of taking junk.
+export const normalizeScannedValue = (
+  fieldType: string,
+  raw: unknown,
+): number | string | undefined => {
+  const text = String(raw ?? '').trim()
+  if (!text) return undefined
+  if (fieldType === 'NUMBER' || fieldType === 'COUNTER') {
+    const n = Number(text.replace(/[\s,]/g, ''))
+    return Number.isFinite(n) ? n : undefined
+  }
+  if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+    const parsed = dayjs(text)
+    if (!parsed.isValid()) return undefined
+    return fieldType === 'DATE_TIME'
+      ? parsed.format('YYYY-MM-DD HH:mm')
+      : parsed.format('YYYY-MM-DD')
+  }
+  return text
+}
+
 // Seeds formModel with each DATE/TIME/DATE_TIME field's configured default
 // value (specific.dateDefaultValueType/timeDefaultValueType, set in
 // QuestionSettings.tsx's "Default Value Mode") when a new request form is
@@ -183,7 +214,18 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       const specific = field?.settings?.specific || {}
       const fieldType = resolveRuntimeFieldType(field)
 
-      if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+      if (fieldType === 'NUMBER') {
+        const raw = specific.customDefaultValue
+        if (
+          !fillsFromElsewhere(field) &&
+          raw !== undefined &&
+          raw !== null &&
+          raw !== ''
+        ) {
+          model[field.id] = raw
+        }
+      } else if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+        if (fillsFromElsewhere(field)) continue
         const isToday =
           specific.dateDefaultValueType === 'TODAY' ||
           specific.dateDefaultValueType === 'CURRENT_DATE' ||
@@ -567,12 +609,47 @@ export const extractScalarStrings = (val: any): string[] => {
   return []
 }
 
+// Several fields (and re-renders) ask for the same master form at once. The
+// axios layer cancels identical in-flight requests, so without sharing, all but
+// the last caller get a cancelled request. Share one promise per call for a
+// short TTL instead.
+const MASTER_CALL_TTL_MS = 30_000
+const masterCallCache = new Map<string, { at: number; promise: Promise<any> }>()
+const cachedMasterCall = <T,>(
+  kind: string,
+  masterFormId: string,
+  call: () => Promise<T>,
+): Promise<T> => {
+  const key = `${kind}:${masterFormId}`
+  const hit = masterCallCache.get(key)
+  if (hit && Date.now() - hit.at < MASTER_CALL_TTL_MS) return hit.promise
+  const promise = call().catch((err) => {
+    masterCallCache.delete(key)
+    throw err
+  })
+  masterCallCache.set(key, { at: Date.now(), promise })
+  return promise
+}
+
+// Resolves a select field's "Condition Mappings" against the live form model.
+export const buildMasterConditions = (
+  field: any,
+  model?: Record<string, any>,
+): Array<{ masterColumn: string; value: any }> =>
+  (field?.settings?.specific?.masterFormConditionColumn || [])
+    .filter((c: any) => (c?.formField || c?.formColumn) && c?.masterColumn)
+    .map((c: any) => ({
+      masterColumn: String(c.masterColumn),
+      value: model?.[c.formField || c.formColumn],
+    }))
+
 export const fetchMasterFormColumnOptions = async (
   masterFormId: string,
   masterFormColumn?: string,
   parentValue?: any,
   parentMasterColumn?: string,
   showAllData?: boolean,
+  conditions?: Array<{ masterColumn: string; value: any }>,
 ): Promise<FieldOption[]> => {
   if (!masterFormId) return []
 
@@ -582,7 +659,7 @@ export const fetchMasterFormColumnOptions = async (
     let columnKeyOrLabel = masterFormColumn || ''
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
-    const formDefRes = await formApi.getFormDataById(masterFormId)
+    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
     console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
       masterFormId,
       masterFormColumn,
@@ -674,9 +751,41 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    const hasParentFilter = Boolean(
-      parentMasterColumn && String(parentMasterColumn).trim(),
-    )
+    // Explicit "Condition Mappings" (form field -> master column) take
+    // precedence over the legacy single-parent cascade.
+    const activeConditions = (conditions || [])
+      .filter((c) => c.masterColumn)
+      .map((c) => {
+        const keys = new Set<string>()
+        const addKeys = (s?: string) => {
+          if (!s) return
+          keys.add(s)
+          keys.add(s.trim())
+          keys.add(s.trim().toLowerCase())
+        }
+        addKeys(c.masterColumn)
+        const f = formFields.find(
+          (ff: any) =>
+            ff.id === c.masterColumn ||
+            ff.label?.trim().toLowerCase() ===
+              c.masterColumn.trim().toLowerCase(),
+        )
+        addKeys(f?.id)
+        addKeys(f?.label)
+        addKeys(f?.name)
+        return {
+          keys,
+          values: new Set(
+            extractScalarStrings(c.value).map((s) => s.trim().toLowerCase()),
+          ),
+        }
+      })
+    const hasConditions = activeConditions.length > 0
+    const conditionsToApply = activeConditions.filter((c) => c.values.size > 0)
+
+    const hasParentFilter =
+      !hasConditions &&
+      Boolean(parentMasterColumn && String(parentMasterColumn).trim())
     const targetParentVals = extractScalarStrings(parentValue)
     const targetParentSet = new Set(
       targetParentVals.map((s) => s.trim().toLowerCase()),
@@ -685,12 +794,14 @@ export const fetchMasterFormColumnOptions = async (
     if (hasParentFilter && targetParentSet.size === 0 && !showAllData) {
       return []
     }
+    if (hasConditions && conditionsToApply.length === 0 && !showAllData) {
+      return []
+    }
 
     const uniqueValues = new Set<string>()
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
-    console.log('[fetchMasterFormColumnOptions] 2. entriesRes (GET /entries):', entriesRes)
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -716,17 +827,16 @@ export const fetchMasterFormColumnOptions = async (
     rawEntries = parseEntriesData(entriesRes.data)
 
     if (rawEntries.length === 0) {
-      const searchRes = await formApi.searchFormEntries(masterFormId, {
-        currentPage: 1,
-        itemsPerPage: 500,
-      })
-      console.log('[fetchMasterFormColumnOptions] 2b. searchRes (POST /search):', searchRes)
+      const searchRes = await cachedMasterCall('search', masterFormId, () =>
+        formApi.searchFormEntries(masterFormId, {
+          currentPage: 1,
+          itemsPerPage: 500,
+        }),
+      )
       if (searchRes.data) {
         rawEntries = parseEntriesData(searchRes.data)
       }
     }
-
-    console.log('[fetchMasterFormColumnOptions] rawEntries count:', rawEntries.length, rawEntries)
 
     const extractFromDict = (dictionary: any, keys: Set<string>): any => {
       if (!dictionary || typeof dictionary !== 'object') return undefined
@@ -781,6 +891,21 @@ export const fetchMasterFormColumnOptions = async (
         ...normalizeDictList(entry.fields),
         ...normalizeDictList(entry),
       ]
+
+      if (conditionsToApply.length > 0) {
+        const allMatch = conditionsToApply.every((cond) => {
+          let entryVal: any = undefined
+          for (const dict of dicts) {
+            entryVal = extractFromDict(dict, cond.keys)
+            if (entryVal !== undefined && entryVal !== null && entryVal !== '')
+              break
+          }
+          return extractScalarStrings(entryVal).some((s) =>
+            cond.values.has(s.trim().toLowerCase()),
+          )
+        })
+        if (!allMatch) continue
+      }
 
       if (hasParentFilter && targetParentSet.size > 0) {
         let entryParentVal: any = undefined
@@ -859,7 +984,7 @@ export const fetchMasterTableRows = async (
 
   try {
     let formFields: any[] = []
-    const formDefRes = await formApi.getFormDataById(masterFormId)
+    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -927,13 +1052,15 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await formApi.getFormEntries(masterFormId, 1, 500)
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
-      const searchRes = await formApi.searchFormEntries(masterFormId, {
-        currentPage: 1,
-        itemsPerPage: 500,
-      })
+      const searchRes = await cachedMasterCall('search', masterFormId, () =>
+        formApi.searchFormEntries(masterFormId, {
+          currentPage: 1,
+          itemsPerPage: 500,
+        }),
+      )
       if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)
     }
 

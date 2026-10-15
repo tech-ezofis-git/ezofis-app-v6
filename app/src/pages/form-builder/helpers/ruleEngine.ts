@@ -13,6 +13,8 @@ export interface DeclarativeRule {
 
 export interface FieldComputedState {
   disabled: boolean
+  /** True when a conditional read-only rule (validation.readonlySettings) is locking this field. */
+  lockedByRule?: boolean
   required: boolean
   visible: boolean
 }
@@ -903,6 +905,7 @@ export class FormRuleEngine {
         const targetId = this.resolveTargetId(src.id)
         if (shouldLock && fieldStates[targetId]) {
           fieldStates[targetId].disabled = true
+          fieldStates[targetId].lockedByRule = true
         }
       }
 
@@ -942,6 +945,11 @@ export class FormRuleEngine {
 
       // 2. Source-driven readonlySettings: [{ id, value, controls, notEqual }]
       const readonlyRules = Array.isArray(rawReadonly) ? rawReadonly : []
+      // "Is equal to" rules are OR-ed (any match locks). "Is NOT equal to"
+      // rules for the same target are AND-ed: with a single-select, several
+      // "not equal to X/Y/Z" rules would otherwise always lock the target
+      // (the value always differs from at least two of them).
+      const notEqualState = new Map<string, boolean>()
       for (const rule of readonlyRules) {
         if (!Array.isArray(rule?.controls) || !rule.controls.length) continue
         const isValueMatch = isRuleValueMatched(
@@ -949,14 +957,24 @@ export class FormRuleEngine {
           rule.value,
           rule.operator || rule.logic,
         )
-        const shouldLock = rule.notEqual ? !isValueMatch : isValueMatch
-        if (shouldLock) {
-          for (const rawTargetId of rule.controls) {
-            const targetId = this.resolveTargetId(rawTargetId)
-            if (fieldStates[targetId]) {
-              fieldStates[targetId].disabled = true
-            }
+        for (const rawTargetId of rule.controls) {
+          const targetId = this.resolveTargetId(rawTargetId)
+          if (!fieldStates[targetId]) continue
+          if (rule.notEqual) {
+            notEqualState.set(
+              targetId,
+              (notEqualState.get(targetId) ?? true) && !isValueMatch,
+            )
+          } else if (isValueMatch) {
+            fieldStates[targetId].disabled = true
+            fieldStates[targetId].lockedByRule = true
           }
+        }
+      }
+      for (const [targetId, lock] of notEqualState) {
+        if (lock) {
+          fieldStates[targetId].disabled = true
+          fieldStates[targetId].lockedByRule = true
         }
       }
     }
@@ -1326,6 +1344,46 @@ export function sanitizeHiddenFieldValues(
     }
   }
   return next
+}
+
+/**
+ * Call after a user edit. Clears the value of every field that the edit just
+ * hid or locked via a conditional read-only rule, repeating so fields that
+ * only appeared because of a now-cleared value (e.g. extra sections shown by
+ * a checkbox selection) are hidden and cleared too.
+ * Fields that were already hidden/locked before the edit keep their values.
+ */
+export function resetRuleDrivenValues(
+  panels: any[],
+  prevModel: Record<string, any>,
+  nextModel: Record<string, any>,
+  declarativeRules: DeclarativeRule[] = [],
+): Record<string, any> {
+  const before = evaluateFormRules(panels, prevModel, declarativeRules)
+  const allFields: Question[] = (panels || []).flatMap((p) => p?.fields || [])
+  let model = nextModel
+
+  for (let pass = 0; pass < allFields.length + 1; pass += 1) {
+    const after = evaluateFormRules(panels, model, declarativeRules)
+    let changed = false
+    const cleaned = { ...model }
+    for (const field of allFields) {
+      const b = before[field.id]
+      const a = after[field.id]
+      if (!b || !a || !(field.id in cleaned)) continue
+      const newlyHidden = b.visible && !a.visible
+      const newlyLocked = !b.lockedByRule && Boolean(a.lockedByRule)
+      if (!newlyHidden && !newlyLocked) continue
+      const cur = cleaned[field.id]
+      const empty = Array.isArray(cur) ? [] : ''
+      if (JSON.stringify(cur) === JSON.stringify(empty)) continue
+      cleaned[field.id] = empty
+      changed = true
+    }
+    model = cleaned
+    if (!changed) break
+  }
+  return model
 }
 
 function buildFieldAliasMap(fields: Question[] = []): Map<string, string> {

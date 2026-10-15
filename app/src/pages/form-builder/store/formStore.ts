@@ -423,9 +423,11 @@ export interface Question {
             customOptions?: string
             defaultCurrency?: string
             defaultValueType?:
+              | 'ASSIGN_PARENT_FIELD'
               | 'AUTO_SEQUENCE'
               | 'CURRENT_DATE'
               | 'CUSTOM'
+              | 'MASTER'
               | 'USER_EMAIL'
               | 'USER_FIRST_NAME'
               | 'USER_NAME'
@@ -438,6 +440,7 @@ export interface Question {
             isSameMaster?: boolean
             masterFormColumn?: string
             masterFormId?: string
+            parentFieldId?: string
             placeholder?: string
             predefinedType?: 'FOLDER' | 'USER'
             prefixLabel?: string

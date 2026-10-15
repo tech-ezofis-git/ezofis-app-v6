@@ -33,6 +33,9 @@ const OCRAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const ManualUserNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/ManualUserNodeSettings'),
 )
+const EndNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/EndNodeSettings'),
+)
 const EmailNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/EmailNodeSettings'),
 )
@@ -625,6 +628,25 @@ function PropertiesPanel({
             }
           >
             <ManualUserNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render End node settings panel (post-completion sync)
+  if (toolType === NODE_TOOL_TYPE.END) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <EndNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

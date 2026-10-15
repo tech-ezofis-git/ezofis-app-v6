@@ -34,12 +34,14 @@ interface HeaderProps {
   enableAIInsights?: boolean
   hideActions?: boolean
   isEditing?: boolean
+  isFourthItem?: boolean
   isProcessing?: boolean
   lastActionAt?: any
   percent?: number
   poNumber?: string
   poValue?: string | number
   raisedBy?: any
+  selectedItem?: any
   showApprove?: boolean
   /** Generic (non-Accounts-Payable) requests: show only the ticket number
    * and action buttons — no PO/currency badges, status pill, AI Insights,
@@ -158,6 +160,7 @@ const Header: React.FC<HeaderProps> = ({
   enableAIInsights = true,
   hideActions: _hideActions,
   isEditing = false,
+  isFourthItem,
   isLoading: _isLoading,
   isProcessing = false,
   lastActionAt,
@@ -168,6 +171,7 @@ const Header: React.FC<HeaderProps> = ({
   raisedBy,
   requestNo,
   rightView,
+  selectedItem,
   showApprove: _showApprove,
   simple = false,
   stage,
@@ -185,6 +189,45 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+  const [showStageInfo, setShowStageInfo] = React.useState(false)
+  const stageInfoTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const stageInfoRef = React.useRef<HTMLDivElement>(null)
+
+  const handleStageInfoMouseEnter = () => {
+    if (stageInfoTimeoutRef.current) {
+      clearTimeout(stageInfoTimeoutRef.current)
+      stageInfoTimeoutRef.current = null
+    }
+    setShowStageInfo(true)
+  }
+
+  const handleStageInfoMouseLeave = () => {
+    stageInfoTimeoutRef.current = setTimeout(() => {
+      setShowStageInfo(false)
+    }, 250)
+  }
+
+  React.useEffect(() => {
+    return () => {
+      if (stageInfoTimeoutRef.current) {
+        clearTimeout(stageInfoTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        stageInfoRef.current &&
+        !stageInfoRef.current.contains(event.target as Node)
+      ) {
+        setShowStageInfo(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const [localActiveAction, setLocalActiveAction] = React.useState<
     string | null
   >(null)
@@ -203,6 +246,52 @@ const Header: React.FC<HeaderProps> = ({
       : raisedBy
         ? String(raisedBy)
         : null
+
+  const duplicateStatus = String(
+    agentData?.duplicate_check?.status ||
+      agentData?.duplicateCheck?.status ||
+      selectedItem?.duplicateStatus ||
+      '',
+  ).toUpperCase()
+
+  const isDuplicate =
+    Boolean(selectedItem?.isDuplicateInvoice) ||
+    Boolean(selectedItem?.is_duplicate_invoice) ||
+    Boolean(agentData?.is_duplicate_invoice) ||
+    Boolean(agentData?.isDuplicateInvoice) ||
+    duplicateStatus === 'DUPLICATE' ||
+    duplicateStatus === 'DUPLICATED' ||
+    duplicateStatus === 'DETECTED'
+
+  const duplicateMessage =
+    agentData?.duplicate_check?.message ||
+    agentData?.duplicateCheck?.message ||
+    selectedItem?.duplicateMessage ||
+    ''
+
+  const backOrder =
+    agentData?.back_order ||
+    agentData?.backorder ||
+    selectedItem?.back_order ||
+    selectedItem?.backorder
+
+  const isBackOrder =
+    Boolean(isFourthItem) ||
+    backOrder?.detected === true ||
+    String(backOrder?.status || '').toUpperCase() === 'DETECTED' ||
+    String(agentData?.back_order_detection?.status || '').toUpperCase() ===
+      'DETECTED' ||
+    String(agentData?.backOrderDetection?.status || '').toUpperCase() ===
+      'DETECTED' ||
+    Boolean(selectedItem?.isBackOrder) ||
+    Boolean(selectedItem?.backOrderDetected)
+
+  const backOrderMessage =
+    backOrder?.recommendation ||
+    (backOrder?.missing_qty_by_item?.length
+      ? `${backOrder.missing_qty_by_item.length} item(s) affected`
+      : '')
+
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
   const [shareMessage, setShareMessage] = React.useState('')
@@ -472,6 +561,202 @@ const Header: React.FC<HeaderProps> = ({
     return 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
   }
 
+  const renderStageInfoGroup = () => {
+    if (!stage && !assigneeLabel && !requestNo) return null
+
+    const assigneeDisplay = assigneeLabel
+      ? assigneeLabel.replace(/^Pending with\s*/i, '').trim()
+      : ''
+
+    return (
+      <div
+        className='relative inline-flex shrink-0 items-center'
+        ref={stageInfoRef}
+        onMouseEnter={handleStageInfoMouseEnter}
+        onMouseLeave={handleStageInfoMouseLeave}
+      >
+        <Tooltip
+          content={t`Request & Stage Details`}
+          disabled={showStageInfo}
+          position='bottom'
+        >
+          <IconButton
+            className={cn(
+              'size-7 shrink-0 cursor-pointer transition-all hover:bg-surface',
+              showStageInfo
+                ? 'bg-[var(--primary-2)] text-[var(--primary-10)] shadow-xs ring-1 ring-[var(--primary-5)]'
+                : 'text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+            )}
+            color={showStageInfo ? 'primary' : 'gray'}
+            icon='tabler:info-circle'
+            size='sm'
+            variant={showStageInfo ? 'subtle' : 'ghost'}
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowStageInfo((prev) => !prev)
+            }}
+          />
+        </Tooltip>
+
+        <AnimatePresence>
+          {showStageInfo && (
+            <motion.div
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className='absolute top-full left-0 z-[100] mt-2.5 w-[380px] sm:w-[420px] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--gray-3)] bg-surface/98 p-4 shadow-2xl backdrop-blur-md'
+              exit={{ opacity: 0, scale: 0.95, y: 6 }}
+              initial={{ opacity: 0, scale: 0.95, y: 6 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              <div className='flex flex-col gap-3.5'>
+                {/* Header */}
+                <div className='flex items-center justify-between border-b border-[var(--gray-2)] pb-2.5'>
+                  <div className='flex items-center gap-2'>
+                    <div className='flex size-6 items-center justify-center rounded-full bg-[var(--primary-2)] text-[var(--primary-9)]'>
+                      <Icon className='size-3.5' name='tabler:info-circle' />
+                    </div>
+                    <span className='text-[13px] font-bold tracking-tight text-[var(--gray-13)]'>
+                      {t`Request & Stage Details`}
+                    </span>
+                  </div>
+                  <button
+                    aria-label={t`Close`}
+                    type='button'
+                    className='flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowStageInfo(false)
+                    }}
+                  >
+                    <Icon className='size-3.5' name='lucide:x' />
+                  </button>
+                </div>
+
+                {/* Stage & User Quick Badges */}
+                <div className='grid grid-cols-2 gap-2.5'>
+                  <div className='flex flex-col gap-1 rounded-lg border border-purple-2 bg-purple-1/40 p-2.5'>
+                    <span className='flex items-center gap-1 text-[10px] font-semibold text-purple-9'>
+                      <Icon className='size-3' name='tabler:git-branch' />
+                      {t`Current Stage`}
+                    </span>
+                    <span
+                      className='break-words text-xs font-bold text-purple-11'
+                      title={String(stage || '')}
+                    >
+                      {stage ? String(stage) : t`Not specified`}
+                    </span>
+                  </div>
+
+                  <div className='flex flex-col gap-1 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)]/60 p-2.5'>
+                    <span className='flex items-center gap-1 text-[10px] font-semibold text-[var(--gray-10)]'>
+                      <Icon className='size-3' name='lucide:user' />
+                      {t`Assigned User`}
+                    </span>
+                    <span
+                      className='break-words text-xs font-bold text-[var(--gray-13)]'
+                      title={assigneeDisplay || ''}
+                    >
+                      {assigneeDisplay || t`Unassigned`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed Metadata Rows */}
+                <div className='flex flex-col divide-y divide-[var(--gray-2)] rounded-lg border border-[var(--gray-3)] bg-surface text-xs'>
+                  <div className='flex items-center justify-between px-3 py-2'>
+                    <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                      {t`Request Number`}
+                    </span>
+                    <span className='font-semibold text-[var(--gray-13)]'>
+                      {requestNo || '-'}
+                    </span>
+                  </div>
+
+                  {raisedByDisplay && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Raised By`}
+                      </span>
+                      <span
+                        className='max-w-[220px] truncate font-semibold text-[var(--gray-13)]'
+                        title={raisedByDisplay}
+                      >
+                        {raisedByDisplay}
+                      </span>
+                    </div>
+                  )}
+
+                  {raisedAt && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Raised On`}
+                      </span>
+                      <div className='flex items-center gap-1.5'>
+                        <span className='font-semibold text-[var(--gray-13)]'>
+                          {formatRaisedDate(raisedAt)}
+                        </span>
+                        {formatElapsedTime(raisedAt) && (
+                          <span className='text-[10px] font-medium text-[var(--gray-10)]'>
+                            ({formatElapsedTime(raisedAt)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {lastActionAt && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Last Activity`}
+                      </span>
+                      <span className='font-semibold text-[var(--gray-12)]'>
+                        {formatRaisedDate(lastActionAt)}
+                      </span>
+                    </div>
+                  )}
+
+                  {status && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Status`}
+                      </span>
+                      <span className='font-semibold text-[var(--primary-9)]'>
+                        {localizeRequestStatus(i18n, status)}
+                      </span>
+                    </div>
+                  )}
+
+                  {isDuplicate && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Duplicate Check`}
+                      </span>
+                      <span className='flex items-center gap-1 font-semibold text-[var(--red-9)]'>
+                        <Icon className='size-3.5' name='lucide:copy-check' />
+                        {t`Duplicate Detected`}
+                      </span>
+                    </div>
+                  )}
+
+                  {isBackOrder && (
+                    <div className='flex items-center justify-between px-3 py-2'>
+                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                        {t`Backorder Check`}
+                      </span>
+                      <span className='flex items-center gap-1 font-semibold text-[var(--orange-9)]'>
+                        <Icon className='size-3.5' name='lucide:package-x' />
+                        {t`Backorder Detected`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
   console.log('Action value', actions)
 
   if (simple) {
@@ -498,57 +783,54 @@ const Header: React.FC<HeaderProps> = ({
 
     return (
       <OverlayHeaderWrapper className='min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
-        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2'>
-          <IconButton
-            className='-ml-2 shrink-0 cursor-pointer hover:bg-gray-2'
-            color='gray'
-            icon='tabler:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={onBack}
-          />
-          <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-hidden'>
-            <Tooltip content={t`Previous Request`} position='bottom'>
+        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-2.5'>
+          {/* Navigation & Request Group */}
+          <div className='flex min-w-0 items-center gap-1 sm:gap-1.5'>
+            {/* Back Icon + Previous Request Icon (tight spacing) */}
+            <div className='flex shrink-0 items-center gap-0.5'>
               <IconButton
-                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                className='-ml-1 size-7 shrink-0 cursor-pointer hover:bg-gray-2'
                 color='gray'
-                disabled={!onPrev}
-                icon='tabler:chevron-left'
+                icon='tabler:arrow-left'
                 size='sm'
                 variant='ghost'
-                onClick={onPrev}
+                onClick={onBack}
               />
-            </Tooltip>
+              <Tooltip content={t`Previous Request`} position='bottom'>
+                <IconButton
+                  className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                  color='gray'
+                  disabled={!onPrev}
+                  icon='tabler:chevron-left'
+                  size='sm'
+                  variant='ghost'
+                  onClick={onPrev}
+                />
+              </Tooltip>
+            </div>
+
             <TruncatedExpandText
               as='h1'
               className='text-[15px] font-semibold tracking-tight text-gray-13'
               value={requestNo}
               fit
             />
-            <Tooltip content={t`Next Request`} position='bottom'>
-              <IconButton
-                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
-                color='gray'
-                disabled={!onNext}
-                icon='tabler:chevron-right'
-                size='sm'
-                variant='ghost'
-                onClick={onNext}
-              />
-            </Tooltip>
 
-            {stage && (
-              <span className='inline-flex min-w-0 shrink items-center overflow-hidden rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-                <TruncatedExpandText value={String(stage)} fit />
-              </span>
-            )}
-
-            {assigneeLabel && (
-              <span className='inline-flex min-w-0 shrink items-center gap-1 overflow-hidden rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
-                <Icon className='size-3 shrink-0' name='lucide:user' />
-                <TruncatedExpandText value={assigneeLabel} fit />
-              </span>
-            )}
+            {/* Next Request Icon + Info Icon (tight spacing) */}
+            <div className='flex shrink-0 items-center gap-0.5'>
+              <Tooltip content={t`Next Request`} position='bottom'>
+                <IconButton
+                  className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                  color='gray'
+                  disabled={!onNext}
+                  icon='tabler:chevron-right'
+                  size='sm'
+                  variant='ghost'
+                  onClick={onNext}
+                />
+              </Tooltip>
+              {renderStageInfoGroup()}
+            </div>
           </div>
         </div>
 
@@ -767,56 +1049,56 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <OverlayHeaderWrapper className='min-h-14 w-full min-w-0 flex-nowrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3'>
-        <IconButton
-          className='-ml-2 shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
-          color='gray'
-          icon='tabler:arrow-left'
-          size='sm'
-          variant='ghost'
-          onClick={onBack}
-        />
-
-        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden sm:gap-2'>
-          <Tooltip content={t`Previous Request`} position='bottom'>
+      <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-2.5'>
+        {/* Navigation & Request Group */}
+        <div className='flex min-w-0 items-center gap-1 sm:gap-1.5'>
+          {/* Back Icon + Previous Request Icon (tight spacing) */}
+          <div className='flex shrink-0 items-center gap-0.5'>
             <IconButton
-              className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+              className='-ml-1 size-7 shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
               color='gray'
-              disabled={!onPrev}
-              icon='tabler:chevron-left'
+              icon='tabler:arrow-left'
               size='sm'
               variant='ghost'
-              onClick={onPrev}
+              onClick={onBack}
             />
-          </Tooltip>
+            <Tooltip content={t`Previous Request`} position='bottom'>
+              <IconButton
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onPrev}
+                icon='tabler:chevron-left'
+                size='sm'
+                variant='ghost'
+                onClick={onPrev}
+              />
+            </Tooltip>
+          </div>
+
+          {/* Request Number */}
           <TruncatedExpandText
             as='h1'
             className='text-[13px] font-semibold tracking-tight text-[var(--gray-13)] sm:text-[14px] md:text-[15px]'
             value={requestNo}
             fit
           />
-          <Tooltip content={t`Next Request`} position='bottom'>
-            <IconButton
-              className='size-7 shrink-0 cursor-pointer hover:bg-surface'
-              color='gray'
-              disabled={!onNext}
-              icon='tabler:chevron-right'
-              size='sm'
-              variant='ghost'
-              onClick={onNext}
-            />
-          </Tooltip>
-          {stage && (
-            <span className='inline-flex min-w-0 shrink items-center overflow-hidden rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
-              <TruncatedExpandText value={String(stage)} fit />
-            </span>
-          )}
-          {assigneeLabel && (
-            <span className='inline-flex min-w-0 shrink items-center gap-1 overflow-hidden rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
-              <Icon className='size-3 shrink-0' name='lucide:user' />
-              <TruncatedExpandText value={assigneeLabel} fit />
-            </span>
-          )}
+
+          {/* Next Request Icon + Info Icon (tight spacing) */}
+          <div className='flex shrink-0 items-center gap-0.5'>
+            <Tooltip content={t`Next Request`} position='bottom'>
+              <IconButton
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onNext}
+                icon='tabler:chevron-right'
+                size='sm'
+                variant='ghost'
+                onClick={onNext}
+              />
+            </Tooltip>
+            {renderStageInfoGroup()}
+          </div>
+        </div>
           <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
             {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
               <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
@@ -925,12 +1207,43 @@ const Header: React.FC<HeaderProps> = ({
                       </span>
                     )
                   })())}
+
+            {/* Duplicate Detection Badge */}
+            {isDuplicate && (
+              <Tooltip
+                content={
+                  duplicateMessage ||
+                  t`Potential duplicate invoice detected in ERP records`
+                }
+                position='bottom'
+              >
+                <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--red-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
+                  <Icon name='lucide:copy-check' className='h-3.5 w-3.5' />
+                  <span>{t`Duplicate`}</span>
+                </span>
+              </Tooltip>
+            )}
+
+            {/* BackOrder Detection Badge */}
+            {isBackOrder && (
+              <Tooltip
+                content={
+                  backOrderMessage ||
+                  t`Backorder detected on purchase order fulfillment`
+                }
+                position='bottom'
+              >
+                <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--orange-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
+                  <Icon name='lucide:package-x' className='h-3.5 w-3.5' />
+                  <span>{t`Backorder`}</span>
+                </span>
+              </Tooltip>
+            )}
           </div>
         </div>
-      </div>
 
       {/* Right Side Group: Total Amount + Actions */}
-      <div className='ml-auto flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
+      <div className='ml-auto flex shrink-0 flex-wrap items-center gap-2 sm:gap-2.5'>
         {(() => {
           const getCurrencyDisplay = (curr: string) => {
             if (!curr) return '$'
@@ -994,8 +1307,8 @@ const Header: React.FC<HeaderProps> = ({
           }
 
           return (
-            <div className='flex shrink-0 items-center gap-2 pr-1 sm:gap-3 sm:pr-3'>
-              <div className='flex flex-col border-[var(--gray-3)] pl-2 text-right sm:pl-3'>
+            <div className='flex shrink-0 items-center gap-2 sm:gap-2.5'>
+              <div className='flex flex-col border-[var(--gray-3)] pl-2 text-right sm:pl-2.5'>
                 <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
                   {t`Invoice Value`}
                 </span>
@@ -1014,7 +1327,7 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
               </div>
-              <div className='flex flex-col border-l border-[var(--gray-3)] pl-2 text-right sm:pl-3'>
+              <div className='flex flex-col border-l border-[var(--gray-3)] pl-2 text-right sm:pl-2.5'>
                 <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
                   {t`PO Value`}
                 </span>

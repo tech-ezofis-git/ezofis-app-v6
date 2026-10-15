@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { Button, Rating } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -48,6 +49,7 @@ import {
   isFieldReadOnly,
   isFieldRequired,
   isStructuredCurrencyValue,
+  normalizeScannedValue,
   normalizeStoredMultiSelectValue,
   resolveRuntimeFieldType,
   selectOptionStoredValue,
@@ -56,6 +58,7 @@ import {
   withExtraFieldOptions,
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
+import MasterFillSync from './MasterFillSync'
 import TableFieldRenderer from './TableFieldRenderer'
 
 interface ChoiceFieldProps {
@@ -700,6 +703,97 @@ const ShortTextSmartInput = ({
   )
 }
 
+interface FieldAddonsProps {
+  children: ReactNode
+  fieldType: string
+  specific: Record<string, any>
+  isSearching?: boolean
+  readOnly?: boolean
+  onScan: (value: number | string) => void
+  onTriggerSearch: () => void
+}
+
+// "Read Values From QR" scan button and "Search Field" lookup button beside a
+// NUMBER / DATE / DATE_TIME input (specific.qrValue / specific.isSearchField).
+const FieldAddons = ({
+  children,
+  fieldType,
+  isSearching,
+  readOnly,
+  specific,
+  onScan,
+  onTriggerSearch,
+}: FieldAddonsProps) => {
+  const qrEnabled = Boolean(specific.qrValue) && !readOnly
+  const searchEnabled = specific.isSearchField === 'YES' && !readOnly
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+
+  if (!qrEnabled && !searchEnabled) return <>{children}</>
+
+  return (
+    <div className='relative w-full'>
+      <div
+        className='flex w-full items-end gap-1.5'
+        onKeyDown={(e) => {
+          if (searchEnabled && e.key === 'Enter') {
+            e.preventDefault()
+            onTriggerSearch()
+          }
+        }}
+      >
+        <div className='min-w-0 flex-1'>{children}</div>
+
+        {qrEnabled && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95'
+            title='Scan QR / Barcode'
+            type='button'
+            onClick={() => setIsScannerOpen((prev) => !prev)}
+          >
+            <Icon className='size-4' name='lucide:qr-code' />
+          </button>
+        )}
+
+        {searchEnabled && (
+          <button
+            className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
+            disabled={isSearching}
+            title='Search & Auto-Sync'
+            type='button'
+            onClick={onTriggerSearch}
+          >
+            {isSearching ? (
+              <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+            ) : (
+              <Icon className='size-4' name='lucide:search' />
+            )}
+          </button>
+        )}
+      </div>
+
+      {isScannerOpen && (
+        <div className='absolute top-full z-20 mt-1.5 w-full'>
+          <BarcodeScannerPanel
+            onClose={() => setIsScannerOpen(false)}
+            onScan={(rawValue) => {
+              const next = normalizeScannedValue(fieldType, rawValue)
+              if (next === undefined) {
+                showToast({
+                  message: `Scanned value "${rawValue}" is not a valid ${fieldType.toLowerCase().replace('_', ' ')}`,
+                  variant: 'error',
+                })
+              } else {
+                onScan(next)
+              }
+              setIsScannerOpen(false)
+            }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface EmailOtpVerificationProps {
   email: string
   disabled?: boolean
@@ -956,6 +1050,16 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
+  const masterConditions = (
+    field.settings?.specific?.masterFormConditionColumn || []
+  )
+    .filter((c: any) => c?.formField && c?.masterColumn)
+    .map((c: any) => ({
+      masterColumn: String(c.masterColumn),
+      value: formModel?.[c.formField],
+    }))
+  const masterConditionsKey = JSON.stringify(masterConditions)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -965,6 +1069,7 @@ const FieldRenderer = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      masterConditionsKey,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -973,6 +1078,7 @@ const FieldRenderer = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
@@ -1024,6 +1130,21 @@ const FieldRenderer = ({
       }
     }
   }, [runtimeType, selectOptions, value, readOnly, onChange])
+
+  // "Fill Value" from a master table / another field (SHORT_TEXT, NUMBER,
+  // DATE, DATE_TIME). Renders nothing; writes the resolved value via onChange.
+  const fillSync = ['SHORT_TEXT', 'NUMBER', 'DATE', 'DATE_TIME'].includes(
+    runtimeType,
+  ) ? (
+    <MasterFillSync
+      allFields={allFields}
+      field={field}
+      formModel={formModel || {}}
+      readOnly={readOnly}
+      value={value}
+      onChange={onChange}
+    />
+  ) : null
 
   const common = {
     disabled: readOnly,
@@ -1099,16 +1220,19 @@ const FieldRenderer = ({
     case 'FULL_NAME':
     case 'SHORT_TEXT':
       return (
-        <ShortTextSmartInput
-          common={common}
-          field={field}
-          isSearching={isSearching}
-          readOnly={readOnly}
-          value={value}
-          onChange={onChange}
-          onMultiFieldChange={onMultiFieldChange}
-          onTriggerSearch={handleTriggerSearch}
-        />
+        <>
+          {fillSync}
+          <ShortTextSmartInput
+            common={common}
+            field={field}
+            isSearching={isSearching}
+            readOnly={readOnly}
+            value={value}
+            onChange={onChange}
+            onMultiFieldChange={onMultiFieldChange}
+            onTriggerSearch={handleTriggerSearch}
+          />
+        </>
       )
 
     case 'HTML_EDITOR':
@@ -1146,47 +1270,25 @@ const FieldRenderer = ({
           onChange(nextVal)
         }
       }
-      const isSearchField = field.settings?.specific?.isSearchField === 'YES'
-      if (isSearchField) {
-        return (
-          <div className='flex w-full items-end gap-1.5'>
-            <div className='min-w-0 flex-1'>
-              <InputNumber
-                {...common}
-                prefix={currencyPrefix}
-                value={numericInputValue}
-                onChange={handleNumericChange}
-                onKeyDown={(e: any) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleTriggerSearch()
-                  }
-                }}
-              />
-            </div>
-            <button
-              className='flex size-[38px] shrink-0 items-center justify-center rounded-lg border border-gray-3 bg-primary-1 text-primary-9 shadow-2xs transition-all hover:border-primary-5 hover:bg-primary-2 active:scale-95 disabled:opacity-50'
-              disabled={readOnly || isSearching}
-              title='Search & Auto-Sync'
-              type='button'
-              onClick={() => handleTriggerSearch()}
-            >
-              {isSearching ? (
-                <Icon className='size-4 animate-spin' name='lucide:loader-2' />
-              ) : (
-                <Icon className='size-4' name='lucide:search' />
-              )}
-            </button>
-          </div>
-        )
-      }
       return (
-        <InputNumber
-          {...common}
-          prefix={currencyPrefix}
-          value={numericInputValue}
-          onChange={handleNumericChange}
-        />
+        <>
+          {fillSync}
+          <FieldAddons
+            fieldType={runtimeType}
+            isSearching={isSearching}
+            readOnly={readOnly}
+            specific={field.settings?.specific || {}}
+            onScan={handleNumericChange}
+            onTriggerSearch={handleTriggerSearch}
+          >
+            <InputNumber
+              {...common}
+              prefix={currencyPrefix}
+              value={numericInputValue}
+              onChange={handleNumericChange}
+            />
+          </FieldAddons>
+        </>
       )
     }
 
@@ -1205,13 +1307,25 @@ const FieldRenderer = ({
     case 'DATE': {
       const { maxDate, minDate } = getDateTimeLimits(field)
       return (
-        <InputDate
-          {...common}
-          maxDate={maxDate}
-          minDate={minDate}
-          value={value ?? null}
-          onChange={onChange}
-        />
+        <>
+          {fillSync}
+          <FieldAddons
+            fieldType={runtimeType}
+            isSearching={isSearching}
+            readOnly={readOnly}
+            specific={field.settings?.specific || {}}
+            onScan={onChange}
+            onTriggerSearch={handleTriggerSearch}
+          >
+            <InputDate
+              {...common}
+              maxDate={maxDate}
+              minDate={minDate}
+              value={value ?? null}
+              onChange={onChange}
+            />
+          </FieldAddons>
+        </>
       )
     }
     case 'DATE_TIME': {
@@ -1219,14 +1333,26 @@ const FieldRenderer = ({
       const timeFormat =
         field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
       return (
-        <InputDateTime
-          {...common}
-          format={timeFormat}
-          maxDate={maxDate}
-          minDate={minDate}
-          value={value ?? null}
-          onChange={onChange}
-        />
+        <>
+          {fillSync}
+          <FieldAddons
+            fieldType={runtimeType}
+            isSearching={isSearching}
+            readOnly={readOnly}
+            specific={field.settings?.specific || {}}
+            onScan={onChange}
+            onTriggerSearch={handleTriggerSearch}
+          >
+            <InputDateTime
+              {...common}
+              format={timeFormat}
+              maxDate={maxDate}
+              minDate={minDate}
+              value={value ?? null}
+              onChange={onChange}
+            />
+          </FieldAddons>
+        </>
       )
     }
     case 'TIME': {

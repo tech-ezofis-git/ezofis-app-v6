@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
 import { getGroups, getUsers } from '@/api/v6/user'
@@ -40,6 +40,7 @@ import {
   isTableType,
 } from '../../utils/dynamicTable.utils'
 import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
+import { loadAppliedValues } from '../../utils/appliedSuggestions'
 import {
   extractWorkflowGeneral,
   extractWorkflowGraph,
@@ -553,6 +554,70 @@ const mapFormModelToPayloadFields = (
   })
 
   return fieldsPayload
+}
+
+const parseFormDataObject = (formData: unknown): any => {
+  if (!formData) return null
+  if (typeof formData === 'object') return formData
+  if (typeof formData === 'string') {
+    try {
+      return JSON.parse(formData)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+export const resolveWorkflowFormContext = (
+  selectedItem: any,
+  request: any,
+  rawWorkflowData: any,
+  workflowFormId?: any,
+) => {
+  const itemFormDataObj = parseFormDataObject(selectedItem?.formData)
+  const reqFormDataObj = parseFormDataObject(request?.formData)
+
+  const resolvedFormId =
+    selectedItem?.formId ||
+    request?.formId ||
+    itemFormDataObj?.formId ||
+    reqFormDataObj?.formId ||
+    rawWorkflowData?.formId ||
+    rawWorkflowData?.wFormId ||
+    rawWorkflowData?.settings?.general?.initiateUsing?.formId ||
+    workflowFormId ||
+    null
+
+  const rawEntryId =
+    selectedItem?.formEntryId ??
+    request?.formEntryId ??
+    itemFormDataObj?.formEntryId ??
+    reqFormDataObj?.formEntryId ??
+    selectedItem?.entryId ??
+    request?.entryId ??
+    0
+
+  const resolvedFormEntryId =
+    Number(rawEntryId) || (rawEntryId ? String(rawEntryId) : 0)
+
+  const resolvedTransactionId =
+    selectedItem?.transactionId || request?.transactionId || null
+
+  const resolvedWorkflowId =
+    rawWorkflowData?.id ||
+    selectedItem?.workflowId ||
+    request?.workflowId ||
+    null
+
+  return {
+    resolvedFormId,
+    resolvedFormEntryId,
+    resolvedTransactionId,
+    resolvedWorkflowId,
+    itemFormDataObj,
+    reqFormDataObj,
+  }
 }
 
 const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
@@ -1233,12 +1298,29 @@ const Request = ({
         ...qualifyResponse.qualifier_result,
       }
     }
-    return (
+    const fromList =
       agentDataList.find((a: any) => a.id === selectedAgentId) ||
-      agentDataList[0] ||
-      {}
-    )
-  }, [agentDataList, selectedAgentId, request, selectedItem])
+      agentDataList[0]
+    if (fromList && Object.keys(fromList).length > 0) return fromList
+
+    // If request or selectedItem has agentResponse or _agentResponse directly (e.g. opened from inbox)
+    const directAgentResponse =
+      request?.agentResponse ||
+      request?._agentResponse ||
+      selectedItem?.agentResponse ||
+      selectedItem?._agentResponse
+    if (directAgentResponse) {
+      if (typeof directAgentResponse === 'string') {
+        try {
+          return JSON.parse(directAgentResponse)
+        } catch {}
+      } else if (typeof directAgentResponse === 'object') {
+        return directAgentResponse
+      }
+    }
+
+    return fromList || {}
+  }, [agentDataList, selectedAgentId, request, selectedItem, qualifyResponse])
 
   const invoiceHeader =
     currentAgentData?.['Extracted Invoice JSON']?.invoice_header
@@ -1980,7 +2062,23 @@ const Request = ({
         request?._formDefinition,
         invoiceHeader,
       )
-      setFormModel(cleanFields)
+      const appliedValues = loadAppliedValues(activeItem, genericInstanceId)
+      const mergedFields = { ...cleanFields }
+      if (appliedValues && Object.keys(appliedValues).length > 0) {
+        Object.entries(appliedValues).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') {
+            const matchingKey = Object.keys(cleanFields).find(
+              (ck) => ck.toLowerCase().trim() === k.toLowerCase().trim(),
+            )
+            if (matchingKey) {
+              mergedFields[matchingKey] = v
+            } else {
+              mergedFields[k] = v
+            }
+          }
+        })
+      }
+      setFormModel(mergedFields)
     } else {
       setFormModel({})
     }
@@ -1992,6 +2090,7 @@ const Request = ({
     request?.formData,
     invoiceHeader,
     request,
+    genericInstanceId,
   ])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
@@ -2272,26 +2371,45 @@ const Request = ({
 
     try {
       setSubmitting(true)
-      console.log(rawWorkflowData)
+      const {
+        resolvedFormId,
+        resolvedFormEntryId,
+        resolvedTransactionId,
+        resolvedWorkflowId,
+        itemFormDataObj,
+      } = resolveWorkflowFormContext(
+        selectedItem,
+        request,
+        rawWorkflowData,
+        workflowFormId,
+      )
+
+      let fields: any = {}
+      if (isGenericWorkflow) {
+        fields = genericFormModel
+      } else if (Object.keys(formModel).length > 0) {
+        fields = mapFormModelToPayloadFields(
+          formModel,
+          selectedWorkflow,
+          request?._formDefinition,
+        )
+      } else {
+        fields = itemFormDataObj?.fields || selectedItem?.formData?.fields || {}
+      }
+
       const payload = {
         formData: {
-          fields: isGenericWorkflow
-            ? genericFormModel
-            : Object.keys(formModel).length > 0
-              ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
-              : selectedItem?.formData?.fields || {},
-          formEntryId: selectedItem?.formData?.formEntryId,
-          formId: rawWorkflowData?.wFormId,
+          fields,
+          formEntryId: resolvedFormEntryId,
+          formId: resolvedFormId,
         },
+        formEntryId: resolvedFormEntryId,
+        formId: resolvedFormId,
         review: action === 'Save' ? '' : action,
-        transactionId: selectedItem?.transactionId,
-        workflowId: rawWorkflowData?.id,
+        transactionId: resolvedTransactionId,
+        workflowId: resolvedWorkflowId,
       }
-      console.log('Submit Payload:', payload, 'formModel:', formModel)
+      console.log('Submit/Save Payload:', payload, 'formModel:', formModel)
 
       const response = await workflowApi?.createProcessTransaction(payload)
       console.log(response)
@@ -2669,6 +2787,7 @@ const Request = ({
           enableAIInsights={hasAgentData}
           hideActions={hideActions}
           isEditing={isEditing}
+          isFourthItem={isFourthItem}
           isLoading={isLoading}
           isProcessing={isCurrentlyProcessing && isAutoRoutedAgentStage}
           percent={jobStatus?.percent}
@@ -2676,6 +2795,7 @@ const Request = ({
           poValue={poValue}
           requestNo={resolvedRequestNo}
           rightView={rightView}
+          selectedItem={selectedItem}
           showApprove={isInboxTab}
           simple={isGenericWorkflow}
           status={statusBadge}

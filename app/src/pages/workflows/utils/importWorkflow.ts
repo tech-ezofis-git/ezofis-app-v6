@@ -522,6 +522,8 @@ export const importWorkflow = (
       data: {
         // Map condition-specific settings for legacy import
         conditions: block.settings?.conditions,
+        // End node - post-completion sync (SAP / QuickBooks / Master Form)
+        endSync: block.settings?.endSync,
         connection: connectorId ? String(connectorId) : undefined,
         connectorId: connectorId,
         fromDomainName,

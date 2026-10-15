@@ -23,6 +23,13 @@ export interface Column {
   enablePinning?: boolean
   enableResizing?: boolean
   enableSorting?: boolean
+  /** Header used in exports when it should differ from the on-screen label. */
+  exportLabel?: string
+  /**
+   * Plain-text/number value for exports. Columns without it are left out of
+   * exports, since their cells render pills, icons or menus.
+   */
+  exportValue?: (row: any) => string | number | null | undefined
   hideHeader?: boolean
   isDisplayColumn?: boolean
   minSize?: number
