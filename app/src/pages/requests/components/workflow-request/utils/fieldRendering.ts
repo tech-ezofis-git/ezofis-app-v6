@@ -573,6 +573,7 @@ export const fetchMasterFormColumnOptions = async (
   parentValue?: any,
   parentMasterColumn?: string,
   showAllData?: boolean,
+  conditions?: Array<{ masterColumn: string; value: any }>,
 ): Promise<FieldOption[]> => {
   if (!masterFormId) return []
 
@@ -674,15 +675,50 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    const hasParentFilter = Boolean(
-      parentMasterColumn && String(parentMasterColumn).trim(),
-    )
+    // Explicit "Condition Mappings" (form field -> master column) take
+    // precedence over the legacy single-parent cascade.
+    const activeConditions = (conditions || [])
+      .filter((c) => c.masterColumn)
+      .map((c) => {
+        const keys = new Set<string>()
+        const addKeys = (s?: string) => {
+          if (!s) return
+          keys.add(s)
+          keys.add(s.trim())
+          keys.add(s.trim().toLowerCase())
+        }
+        addKeys(c.masterColumn)
+        const f = formFields.find(
+          (ff: any) =>
+            ff.id === c.masterColumn ||
+            ff.label?.trim().toLowerCase() ===
+              c.masterColumn.trim().toLowerCase(),
+        )
+        addKeys(f?.id)
+        addKeys(f?.label)
+        addKeys(f?.name)
+        return {
+          keys,
+          values: new Set(
+            extractScalarStrings(c.value).map((s) => s.trim().toLowerCase()),
+          ),
+        }
+      })
+    const hasConditions = activeConditions.length > 0
+    const conditionsToApply = activeConditions.filter((c) => c.values.size > 0)
+
+    const hasParentFilter =
+      !hasConditions &&
+      Boolean(parentMasterColumn && String(parentMasterColumn).trim())
     const targetParentVals = extractScalarStrings(parentValue)
     const targetParentSet = new Set(
       targetParentVals.map((s) => s.trim().toLowerCase()),
     )
 
     if (hasParentFilter && targetParentSet.size === 0 && !showAllData) {
+      return []
+    }
+    if (hasConditions && conditionsToApply.length === 0 && !showAllData) {
       return []
     }
 
@@ -781,6 +817,21 @@ export const fetchMasterFormColumnOptions = async (
         ...normalizeDictList(entry.fields),
         ...normalizeDictList(entry),
       ]
+
+      if (conditionsToApply.length > 0) {
+        const allMatch = conditionsToApply.every((cond) => {
+          let entryVal: any = undefined
+          for (const dict of dicts) {
+            entryVal = extractFromDict(dict, cond.keys)
+            if (entryVal !== undefined && entryVal !== null && entryVal !== '')
+              break
+          }
+          return extractScalarStrings(entryVal).some((s) =>
+            cond.values.has(s.trim().toLowerCase()),
+          )
+        })
+        if (!allMatch) continue
+      }
 
       if (hasParentFilter && targetParentSet.size > 0) {
         let entryParentVal: any = undefined

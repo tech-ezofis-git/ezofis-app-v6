@@ -956,6 +956,16 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
+  const masterConditions = (
+    field.settings?.specific?.masterFormConditionColumn || []
+  )
+    .filter((c: any) => c?.formField && c?.masterColumn)
+    .map((c: any) => ({
+      masterColumn: String(c.masterColumn),
+      value: formModel?.[c.formField],
+    }))
+  const masterConditionsKey = JSON.stringify(masterConditions)
+
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
     queryKey: [
@@ -965,6 +975,7 @@ const FieldRenderer = ({
       parentValue,
       parentMasterColumn,
       masterInfo.showAllData,
+      masterConditionsKey,
     ],
     queryFn: () =>
       fetchMasterFormColumnOptions(
@@ -973,6 +984,7 @@ const FieldRenderer = ({
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
+        masterConditions,
       ),
   })
 
