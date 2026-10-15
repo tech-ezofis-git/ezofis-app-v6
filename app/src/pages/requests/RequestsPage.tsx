@@ -83,6 +83,24 @@ function flattenRows(groups: any[]): any[] {
   return out
 }
 
+const isValidWatchEmail = (
+  val?: string | null,
+  userEmail?: string | null,
+): boolean => {
+  if (!val) return false
+  const trimmed = String(val).trim()
+  if (!trimmed) return false
+  // Never allow the old default ftluser@gmail.com
+  if (trimmed.toLowerCase() === 'ftluser@gmail.com') return false
+  // Connector ID (e.g. cn_1c66f60d787e) is a valid connection identifier
+  if (trimmed.startsWith('cn_') || trimmed.startsWith('wt_')) return true
+  // If email, must contain @ and must not be the EZOFIS app login email
+  if (!trimmed.includes('@')) return false
+  const uEmail = String(userEmail || '').toLowerCase().trim()
+  if (uEmail && trimmed.toLowerCase() === uEmail) return false
+  return true
+}
+
 const getStoredConnectionForUser = (
   userId?: string | null,
   userEmail?: string | null,
@@ -96,21 +114,28 @@ const getStoredConnectionForUser = (
     // 1. User-scoped keys
     if (uId) {
       const stored = localStorage.getItem(`v6_watchfox_connected_email_${uId}`)
-      if (stored) return stored
+      if (isValidWatchEmail(stored, uEmail)) return stored!.trim()
     }
     if (uEmail) {
       const stored = localStorage.getItem(
         `v6_watchfox_connected_email_${uEmail}`,
       )
-      if (stored) return stored
+      if (isValidWatchEmail(stored, uEmail)) return stored!.trim()
     }
 
     // 2. Multi-user connection map
     const mapStr = localStorage.getItem('v6_watchfox_user_connections')
     if (mapStr) {
       const map = JSON.parse(mapStr)
-      if (uId && map[uId]?.email) return map[uId].email
-      if (uEmail && map[uEmail]?.email) return map[uEmail].email
+      const entry = (uId && map[uId]) || (uEmail && map[uEmail])
+      if (entry) {
+        if (isValidWatchEmail(entry.email, uEmail)) {
+          return String(entry.email).trim()
+        }
+        if (entry.connectionId) {
+          return String(entry.connectionId).trim()
+        }
+      }
     }
 
     // 3. Shared connection info object with linked user identity
@@ -120,12 +145,53 @@ const getStoredConnectionForUser = (
       const linkedUserId = String(parsed?.userId || '').toLowerCase().trim()
       const linkedUserEmail = String(parsed?.userEmail || '').toLowerCase().trim()
       const accountEmail = String(parsed?.email || '').trim()
+      const connectionId = String(parsed?.connectionId || '').trim()
 
       if (
         (uId && linkedUserId && uId === linkedUserId) ||
         (uEmail && linkedUserEmail && uEmail === linkedUserEmail)
       ) {
-        return accountEmail || null
+        if (isValidWatchEmail(accountEmail, uEmail)) {
+          return accountEmail
+        }
+        if (connectionId) {
+          return connectionId
+        }
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const getStoredConnectionInfoForUser = (
+  userId?: string | null,
+  userEmail?: string | null,
+): { email?: string; connectionId?: string; watchId?: string } | null => {
+  if (typeof window === 'undefined') return null
+  const uId = String(userId || '').toLowerCase().trim()
+  const uEmail = String(userEmail || '').toLowerCase().trim()
+  if (!uId && !uEmail) return null
+
+  try {
+    const mapStr = localStorage.getItem('v6_watchfox_user_connections')
+    if (mapStr) {
+      const map = JSON.parse(mapStr)
+      if (uId && map[uId]) return map[uId]
+      if (uEmail && map[uEmail]) return map[uEmail]
+    }
+
+    const info = localStorage.getItem('v6_watchfox_connection_info')
+    if (info) {
+      const parsed = JSON.parse(info)
+      const linkedUserId = String(parsed?.userId || '').toLowerCase().trim()
+      const linkedUserEmail = String(parsed?.userEmail || '').toLowerCase().trim()
+      if (
+        (uId && linkedUserId && uId === linkedUserId) ||
+        (uEmail && linkedUserEmail && uEmail === linkedUserEmail)
+      ) {
+        return parsed
       }
     }
     return null
@@ -144,13 +210,28 @@ const saveStoredConnectionForUser = (
   if (typeof window === 'undefined') return
   const uId = String(userId || '').toLowerCase().trim()
   const uEmail = String(userEmail || '').toLowerCase().trim()
+  let aEmail = String(accountEmail || '').trim()
+
+  // Guard: NEVER save login user email or the default ftluser@gmail.com
+  if (aEmail.toLowerCase() === 'ftluser@gmail.com') {
+    aEmail = ''
+  }
+  if (uEmail && aEmail.toLowerCase() === uEmail) {
+    aEmail = ''
+  }
+  if (!aEmail.includes('@') && !aEmail.startsWith('cn_')) {
+    aEmail = ''
+  }
+
+  const storedIdentifier = aEmail || connectionId || ''
+  if (!storedIdentifier) return
 
   try {
     if (uId) {
-      localStorage.setItem(`v6_watchfox_connected_email_${uId}`, accountEmail)
+      localStorage.setItem(`v6_watchfox_connected_email_${uId}`, storedIdentifier)
     }
     if (uEmail) {
-      localStorage.setItem(`v6_watchfox_connected_email_${uEmail}`, accountEmail)
+      localStorage.setItem(`v6_watchfox_connected_email_${uEmail}`, storedIdentifier)
     }
 
     const mapStr = localStorage.getItem('v6_watchfox_user_connections')
@@ -158,7 +239,7 @@ const saveStoredConnectionForUser = (
     const entry = {
       connectedAt: Date.now(),
       connectionId: connectionId || '',
-      email: accountEmail,
+      email: aEmail,
       userId: uId,
       userEmail: uEmail,
       watchId: watchId || '',
@@ -1217,7 +1298,22 @@ const RequestsPage = () => {
 
   const canShowWatchEmail = Boolean(isRfqWorkflow && canCreateNewRequest)
 
-  const [isConnectingWatchEmail, setIsConnectingWatchEmail] = useState(false)
+  const [isConnectingWatchEmail, setIsConnectingWatchEmailState] =
+    useState<boolean>(() => {
+      if (typeof window === 'undefined') return false
+      return sessionStorage.getItem('v6_watchfox_connecting') === 'true'
+    })
+
+  const setIsConnectingWatchEmail = useCallback((connecting: boolean) => {
+    setIsConnectingWatchEmailState(connecting)
+    if (typeof window === 'undefined') return
+    if (connecting) {
+      sessionStorage.setItem('v6_watchfox_connecting', 'true')
+    } else {
+      sessionStorage.removeItem('v6_watchfox_connecting')
+    }
+  }, [])
+
   const [connectedWatchEmail, setConnectedWatchEmail] = useState<string | null>(
     () => getStoredConnectionForUser(currentUserId, currentUserEmail),
   )
@@ -1243,6 +1339,17 @@ const RequestsPage = () => {
       return
     }
 
+    // Only look up mailboxes if THIS user initiated or has a connection record
+    const userInfo = getStoredConnectionInfoForUser(
+      currentUserId,
+      currentUserEmail,
+    )
+    if (!userInfo) {
+      // Different user who hasn't connected - show connect button
+      setConnectedWatchEmail(null)
+      return
+    }
+
     let cancelled = false
     getMailboxes()
       .then((res) => {
@@ -1252,42 +1359,43 @@ const RequestsPage = () => {
           workflow?.id || selectedWorkflow?.id || WATCHFOX_CONFIG.workflowId,
         ).toLowerCase()
 
-        // Match only mailboxes linked to THIS user:
+        // Match mailbox for this user's connection
         const match = list.find((m: any) => {
-          const wfMatches =
-            String(m.workflowId).toLowerCase() === currentWfId ||
-            String(m.workflowId).toLowerCase() ===
-              WATCHFOX_CONFIG.workflowId.toLowerCase() ||
-            m.isEnabled
-
-          if (!wfMatches || !m.externalAccountEmail) return false
-
-          const mailboxEmail = String(m.externalAccountEmail)
-            .toLowerCase()
-            .trim()
-          const mailboxUserId = String(
-            m.userId || m.createdBy || m.creatorId || m.createdById || '',
-          )
-            .toLowerCase()
-            .trim()
-
-          if (currentUserId && mailboxUserId && mailboxUserId === currentUserId) {
+          if (!m.externalAccountEmail) return false
+          if (m.externalAccountEmail.toLowerCase() === 'ftluser@gmail.com') {
+            return false
+          }
+          if (
+            userInfo.connectionId &&
+            (m.connectorId === userInfo.connectionId || m.id === userInfo.connectionId)
+          ) {
             return true
           }
-          if (currentUserEmail && mailboxEmail === currentUserEmail) {
+          if (
+            userInfo.watchId &&
+            (m.id === userInfo.watchId || m.connectorId === userInfo.watchId)
+          ) {
             return true
           }
           return false
         })
 
-        if (match?.externalAccountEmail) {
-          setConnectedWatchEmail(match.externalAccountEmail)
+        const validEmail =
+          match?.externalAccountEmail &&
+          match.externalAccountEmail.toLowerCase() !== 'ftluser@gmail.com'
+            ? match.externalAccountEmail
+            : ''
+        const displayIdentifier = validEmail || userInfo.connectionId || ''
+
+        if (displayIdentifier) {
           saveStoredConnectionForUser(
-            match.externalAccountEmail,
+            validEmail,
             currentUserId,
             currentUserEmail,
-            match.connectorId || match.id,
+            userInfo.connectionId || match?.connectorId || match?.id,
+            userInfo.watchId || match?.id,
           )
+          setConnectedWatchEmail(displayIdentifier)
         } else {
           setConnectedWatchEmail(null)
         }
@@ -1307,6 +1415,19 @@ const RequestsPage = () => {
   ])
 
   const lastToastedConnectedEmailRef = useRef<string | null>(null)
+  const connectingWindowRef = useRef<Window | null>(null)
+
+  const handleCancelConnectWatchEmail = useCallback(() => {
+    setIsConnectingWatchEmail(false)
+    if (connectingWindowRef.current && !connectingWindowRef.current.closed) {
+      try {
+        connectingWindowRef.current.close()
+      } catch {
+        // ignore
+      }
+    }
+    connectingWindowRef.current = null
+  }, [setIsConnectingWatchEmail])
 
   const handleConnectWatchEmail = useCallback(async () => {
     if (isConnectingWatchEmail) return
@@ -1317,6 +1438,7 @@ const RequestsPage = () => {
       typeof window !== 'undefined'
         ? window.open('about:blank', '_blank')
         : null
+    connectingWindowRef.current = newWindow
     try {
       const targetWfId = String(
         workflow?.id || selectedWorkflow?.id || WATCHFOX_CONFIG.workflowId,
@@ -1327,11 +1449,12 @@ const RequestsPage = () => {
         if (newWindow) {
           newWindow.location.href = targetUrl
         } else {
-          window.open(targetUrl, '_blank')
+          connectingWindowRef.current = window.open(targetUrl, '_blank')
         }
-        setIsConnectingWatchEmail(false)
+        // Keep isConnectingWatchEmail as true until connection succeeds or cancelled!
       } else {
         if (newWindow) newWindow.close()
+        connectingWindowRef.current = null
         showToast({
           message: t`Failed to obtain sign-in URL from server.`,
           variant: 'error',
@@ -1340,6 +1463,7 @@ const RequestsPage = () => {
       }
     } catch (err: any) {
       if (newWindow) newWindow.close()
+      connectingWindowRef.current = null
       console.error('[WatchFox] Connect error:', err)
       const errorMsg =
         err?.response?.data?.message ||
@@ -1352,7 +1476,13 @@ const RequestsPage = () => {
       })
       setIsConnectingWatchEmail(false)
     }
-  }, [isConnectingWatchEmail, t])
+  }, [
+    isConnectingWatchEmail,
+    selectedWorkflow?.id,
+    setIsConnectingWatchEmail,
+    t,
+    workflow?.id,
+  ])
 
   const [watchFoxSuccessState, setWatchFoxSuccessState] = useState<{
     isSuccess: boolean
@@ -1370,8 +1500,6 @@ const RequestsPage = () => {
           params.get('mailboxEmail') ||
           params.get('account') ||
           params.get('user') ||
-          session?.email ||
-          user?.email ||
           ''
         return {
           isSuccess: true,
@@ -1396,60 +1524,102 @@ const RequestsPage = () => {
     if (status === 'connected') {
       const connectionId = params.get('connectionId') || ''
       const watchId = params.get('watchId') || ''
+      const targetWorkflowId =
+        params.get('workflowId') || WATCHFOX_CONFIG.workflowId
       const initialEmail =
         params.get('email') ||
         params.get('accountEmail') ||
         params.get('mailboxEmail') ||
         params.get('account') ||
-        params.get('user')
+        params.get('user') ||
+        ''
 
       let cancelled = false
       const applyConnectedState = async () => {
-        let accountEmail = initialEmail
+        let accountEmail =
+          initialEmail &&
+          initialEmail.includes('@') &&
+          initialEmail.toLowerCase() !== 'ftluser@gmail.com'
+            ? initialEmail.trim()
+            : ''
+
+        // If redirect URL did not contain the email, look up the mailbox from the backend
         if (!accountEmail) {
-          try {
-            const res = await getMailboxes()
-            const list = res.payload || []
-            const match = list.find(
-              (m) =>
-                (m.workflowId === WATCHFOX_CONFIG.workflowId || m.isEnabled) &&
-                Boolean(m.externalAccountEmail),
-            )
-            if (match?.externalAccountEmail) {
-              accountEmail = match.externalAccountEmail
+          // Attempt lookup with retries in case webhook registration is asynchronous
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 800))
             }
-          } catch {
-            // ignore
+            if (cancelled) return
+            try {
+              const res = await getMailboxes()
+              const list = res.payload || []
+              const match = list.find((m: any) => {
+                if (!m.externalAccountEmail) return false
+                if (
+                  m.externalAccountEmail.toLowerCase() === 'ftluser@gmail.com'
+                ) {
+                  return false
+                }
+                if (
+                  connectionId &&
+                  (m.connectorId === connectionId || m.id === connectionId)
+                ) {
+                  return true
+                }
+                if (
+                  watchId &&
+                  (m.id === watchId || m.connectorId === watchId)
+                ) {
+                  return true
+                }
+                return false
+              })
+              if (match?.externalAccountEmail) {
+                accountEmail = match.externalAccountEmail.trim()
+                break
+              }
+            } catch (err) {
+              console.warn('[WatchFox] Mailbox lookup error:', err)
+            }
           }
-        }
-        if (!accountEmail) {
-          accountEmail = session?.email || user?.email || ''
         }
 
         if (cancelled) return
 
-        saveStoredConnectionForUser(
-          accountEmail,
-          currentUserId,
-          currentUserEmail,
-          connectionId,
-          watchId,
-        )
+        const validEmail =
+          accountEmail &&
+          accountEmail.toLowerCase() !== 'ftluser@gmail.com' &&
+          accountEmail.includes('@')
+            ? accountEmail.trim()
+            : ''
 
-        setConnectedWatchEmail(accountEmail)
-        setWatchFoxSuccessState({
-          isSuccess: true,
-          email: accountEmail,
-          connectionId,
-          watchId,
-        })
+        const displayIdentifier = validEmail || connectionId || ''
+
+        if (displayIdentifier) {
+          saveStoredConnectionForUser(
+            validEmail,
+            currentUserId,
+            currentUserEmail,
+            connectionId,
+            watchId,
+          )
+
+          setConnectedWatchEmail(displayIdentifier)
+          setWatchFoxSuccessState({
+            isSuccess: true,
+            email: validEmail,
+            connectionId,
+            watchId,
+          })
+        }
 
         // 1. BroadcastChannel for cross-tab sync even if opener was severed
         try {
           const bc = new BroadcastChannel('ezofis_watchfox_channel')
           bc.postMessage({
             type: 'WATCHFOX_CONNECTED',
-            accountEmail,
+            accountEmail: displayIdentifier,
             connectionId,
             userId: currentUserId,
             userEmail: currentUserEmail,
@@ -1472,7 +1642,7 @@ const RequestsPage = () => {
             window.opener.postMessage(
               {
                 type: 'WATCHFOX_CONNECTED',
-                accountEmail,
+                accountEmail: displayIdentifier,
                 connectionId,
                 status: 'connected',
                 userId: currentUserId,
@@ -1491,15 +1661,6 @@ const RequestsPage = () => {
           connectionId,
           watchId,
         })
-
-        // 4. Automatically close the callback tab
-        setTimeout(() => {
-          try {
-            window.close()
-          } catch {
-            // ignore
-          }
-        }, 1800)
       }
 
       void applyConnectedState()
@@ -1551,7 +1712,7 @@ const RequestsPage = () => {
       '',
       cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : ''),
     )
-  }, [session?.email, t, user?.email])
+  }, [currentUserEmail, currentUserId, t])
 
   // Multi-channel cross-tab sync: listen for connection events across all channels
   useEffect(() => {
@@ -1559,11 +1720,13 @@ const RequestsPage = () => {
 
     const updateEmail = (email: string) => {
       if (!email) return
+      setIsConnectingWatchEmail(false)
+      connectingWindowRef.current = null
       setConnectedWatchEmail(email)
       if (lastToastedConnectedEmailRef.current !== email) {
         lastToastedConnectedEmailRef.current = email
         showToast({
-          message: t`Connected with ${email}`,
+          message: t`Connected successfully`,
           variant: 'success',
         })
       }
@@ -1599,16 +1762,16 @@ const RequestsPage = () => {
 
     // Channel 2: window.postMessage (from popup opener)
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'WATCHFOX_CONNECTED') {
+      if (
+        event.data?.type === 'WATCHFOX_CONNECTED' &&
+        event.data.accountEmail
+      ) {
         const msgUserId = String(event.data.userId || '').toLowerCase().trim()
         const msgUserEmail = String(event.data.userEmail || '').toLowerCase().trim()
         if (msgUserId && currentUserId && msgUserId !== currentUserId) return
         if (msgUserEmail && currentUserEmail && msgUserEmail !== currentUserEmail) return
 
-        const accountEmail =
-          event.data.accountEmail ||
-          currentUserEmail ||
-          ''
+        const accountEmail = String(event.data.accountEmail).trim()
         if (!accountEmail) return
 
         saveStoredConnectionForUser(
@@ -1619,6 +1782,9 @@ const RequestsPage = () => {
           event.data.watchId,
         )
         updateEmail(accountEmail)
+      } else if (event.data?.type === 'WATCHFOX_ERROR') {
+        setIsConnectingWatchEmail(false)
+        connectingWindowRef.current = null
       }
     }
 
@@ -1647,7 +1813,11 @@ const RequestsPage = () => {
     // Channel 4: window focus & tab visibility change
     const handleFocus = () => {
       const stored = getStoredConnectionForUser(currentUserId, currentUserEmail)
-      setConnectedWatchEmail(stored)
+      if (stored) {
+        setIsConnectingWatchEmail(false)
+        connectingWindowRef.current = null
+        setConnectedWatchEmail(stored)
+      }
     }
 
     const handleVisibility = () => {
@@ -1672,23 +1842,45 @@ const RequestsPage = () => {
       window.removeEventListener('focus', handleFocus)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [connectedWatchEmail, session?.email, t, user?.email])
+  }, [connectedWatchEmail, currentUserEmail, currentUserId, t])
 
   const headerActionButtons = useMemo(() => {
     const buttons = []
 
     // Only show "Connect Email Watch" button if RFQ workflow, user has access to New, and not yet connected
     if (canShowWatchEmail && !connectedWatchEmail) {
-      buttons.push({
-        color: 'primary',
-        disabled: isConnectingWatchEmail,
-        icon: 'tabler:mail',
-        id: 'connect-email-watch',
-        label: t`Connect Email Watch`,
-        loading: isConnectingWatchEmail,
-        variant: 'outline',
-        onClick: handleConnectWatchEmail,
-      })
+      if (isConnectingWatchEmail) {
+        buttons.push({
+          color: 'primary',
+          disabled: true,
+          icon: 'tabler:mail',
+          id: 'connect-email-watch',
+          label: t`Connecting...`,
+          loading: true,
+          variant: 'outline',
+          onClick: () => {},
+        })
+        buttons.push({
+          color: 'gray',
+          disabled: false,
+          icon: 'tabler:x',
+          id: 'cancel-connect-email-watch',
+          label: t`Cancel`,
+          variant: 'outline',
+          onClick: handleCancelConnectWatchEmail,
+        })
+      } else {
+        buttons.push({
+          color: 'primary',
+          disabled: false,
+          icon: 'tabler:mail',
+          id: 'connect-email-watch',
+          label: t`Connect Email Watch`,
+          loading: false,
+          variant: 'outline',
+          onClick: handleConnectWatchEmail,
+        })
+      }
     }
 
     if (canCreateNewRequest) {
@@ -1710,6 +1902,7 @@ const RequestsPage = () => {
     canCreateNewRequest,
     canShowWatchEmail,
     connectedWatchEmail,
+    handleCancelConnectWatchEmail,
     handleConnectWatchEmail,
     isConnectingWatchEmail,
     openNewRequest,
@@ -1726,6 +1919,18 @@ const RequestsPage = () => {
     (isWorkflowReady && isPending && !inboxResult)
 
   if (watchFoxSuccessState?.isSuccess) {
+    const displayConnectorId =
+      watchFoxSuccessState.connectionId ||
+      (typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('connectionId') || ''
+        : '')
+
+    const displayEmail =
+      watchFoxSuccessState.email &&
+      watchFoxSuccessState.email.toLowerCase() !== 'ftluser@gmail.com'
+        ? watchFoxSuccessState.email
+        : ''
+
     return (
       <div className='fixed inset-0 z-[999999] flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
         <div className='animate-in fade-in zoom-in-95 flex w-full max-w-md flex-col items-center rounded-2xl border border-green-4 bg-surface p-8 text-center shadow-2xl duration-300'>
@@ -1738,12 +1943,22 @@ const RequestsPage = () => {
           <p className='mt-2 text-14 text-gray-11'>
             {t`Your mailbox has been connected and the enquiry watch is active.`}
           </p>
-          <div className='mt-4 flex items-center gap-2 rounded-lg border border-green-4 bg-green-2 px-3.5 py-1.5 text-13 font-semibold text-green-12 shadow-2xs'>
-            <Icon name='tabler:mail-check' className='size-4 text-green-9' />
-            <span>{watchFoxSuccessState.email}</span>
+          <div className='mt-4 flex flex-col items-center gap-2'>
+            <div className='flex items-center gap-2 rounded-lg border border-green-4 bg-green-2 px-3.5 py-1.5 text-13 font-semibold text-green-12 shadow-2xs'>
+              <Icon name='tabler:circle-check-filled' className='size-4 text-green-9' />
+              <span>{t`Connected`}</span>
+            </div>
+            {displayConnectorId && (
+              <div className='text-12 font-medium text-gray-10'>
+                <span>
+                  {t`Connector ID:`}{' '}
+                  <code className='font-mono text-gray-12'>{displayConnectorId}</code>
+                </span>
+              </div>
+            )}
           </div>
-          <p className='mt-5 text-12 text-gray-10'>
-            {t`This tab will close automatically...`}
+          <p className='mt-5 text-13 text-gray-11'>
+            {t`You can close this tab or return to the main window.`}
           </p>
           <button
             type='button'
@@ -1770,8 +1985,10 @@ const RequestsPage = () => {
                 canShowWatchEmail ? connectedWatchEmail : null
               }
               exceptionsCount={inboxResult?.exceptionsCount}
+              isConnectingWatchEmail={isConnectingWatchEmail}
               isLoading={isLoading}
               metaData={metaData}
+              onCancelConnectWatchEmail={handleCancelConnectWatchEmail}
               onReconnectWatchEmail={
                 canShowWatchEmail ? handleConnectWatchEmail : undefined
               }
