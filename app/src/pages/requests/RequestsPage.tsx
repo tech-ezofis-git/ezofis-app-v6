@@ -83,6 +83,102 @@ function flattenRows(groups: any[]): any[] {
   return out
 }
 
+const getStoredConnectionForUser = (
+  userId?: string | null,
+  userEmail?: string | null,
+): string | null => {
+  if (typeof window === 'undefined') return null
+  const uId = String(userId || '').toLowerCase().trim()
+  const uEmail = String(userEmail || '').toLowerCase().trim()
+  if (!uId && !uEmail) return null
+
+  try {
+    // 1. User-scoped keys
+    if (uId) {
+      const stored = localStorage.getItem(`v6_watchfox_connected_email_${uId}`)
+      if (stored) return stored
+    }
+    if (uEmail) {
+      const stored = localStorage.getItem(
+        `v6_watchfox_connected_email_${uEmail}`,
+      )
+      if (stored) return stored
+    }
+
+    // 2. Multi-user connection map
+    const mapStr = localStorage.getItem('v6_watchfox_user_connections')
+    if (mapStr) {
+      const map = JSON.parse(mapStr)
+      if (uId && map[uId]?.email) return map[uId].email
+      if (uEmail && map[uEmail]?.email) return map[uEmail].email
+    }
+
+    // 3. Shared connection info object with linked user identity
+    const info = localStorage.getItem('v6_watchfox_connection_info')
+    if (info) {
+      const parsed = JSON.parse(info)
+      const linkedUserId = String(parsed?.userId || '').toLowerCase().trim()
+      const linkedUserEmail = String(parsed?.userEmail || '').toLowerCase().trim()
+      const accountEmail = String(parsed?.email || '').trim()
+
+      if (
+        (uId && linkedUserId && uId === linkedUserId) ||
+        (uEmail && linkedUserEmail && uEmail === linkedUserEmail)
+      ) {
+        return accountEmail || null
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const saveStoredConnectionForUser = (
+  accountEmail: string,
+  userId?: string | null,
+  userEmail?: string | null,
+  connectionId?: string,
+  watchId?: string,
+) => {
+  if (typeof window === 'undefined') return
+  const uId = String(userId || '').toLowerCase().trim()
+  const uEmail = String(userEmail || '').toLowerCase().trim()
+
+  try {
+    if (uId) {
+      localStorage.setItem(`v6_watchfox_connected_email_${uId}`, accountEmail)
+    }
+    if (uEmail) {
+      localStorage.setItem(`v6_watchfox_connected_email_${uEmail}`, accountEmail)
+    }
+
+    const mapStr = localStorage.getItem('v6_watchfox_user_connections')
+    const map = mapStr ? JSON.parse(mapStr) : {}
+    const entry = {
+      connectedAt: Date.now(),
+      connectionId: connectionId || '',
+      email: accountEmail,
+      userId: uId,
+      userEmail: uEmail,
+      watchId: watchId || '',
+    }
+    if (uId) map[uId] = entry
+    if (uEmail) map[uEmail] = entry
+    localStorage.setItem('v6_watchfox_user_connections', JSON.stringify(map))
+
+    localStorage.setItem(
+      'v6_watchfox_connection_info',
+      JSON.stringify(entry),
+    )
+    localStorage.setItem('v6_watchfox_connected_time', String(Date.now()))
+    // Remove global unlinked key so it cannot leak to other users
+    localStorage.removeItem('v6_watchfox_connected_email')
+  } catch {
+    // ignore
+  }
+}
+
 const SESSION_KEY = 'ezofis_requests_page_state'
 
 function getStoredState() {
@@ -1027,6 +1123,28 @@ const RequestsPage = () => {
   const user = useAuthUserStore((s) => s.user)
   const session = useAuthUserStore((s) => s.session)
 
+  const currentUserId = useMemo(() => {
+    return String(
+      session?.id ||
+        (session as any)?.userId ||
+        (typeof user?.id === 'string' ? user.id : '') ||
+        '',
+    )
+      .toLowerCase()
+      .trim()
+  }, [session, user?.id])
+
+  const currentUserEmail = useMemo(() => {
+    return (
+      session?.email ||
+      user?.email ||
+      (user as any)?.Email ||
+      ''
+    )
+      .toLowerCase()
+      .trim()
+  }, [session?.email, user?.email, (user as any)?.Email])
+
 
 
   const canCreateNewRequest = useMemo(() => {
@@ -1101,25 +1219,30 @@ const RequestsPage = () => {
 
   const [isConnectingWatchEmail, setIsConnectingWatchEmail] = useState(false)
   const [connectedWatchEmail, setConnectedWatchEmail] = useState<string | null>(
-    () => {
-      try {
-        const stored = localStorage.getItem('v6_watchfox_connected_email')
-        if (stored) return stored
-        const info = localStorage.getItem('v6_watchfox_connection_info')
-        if (info) {
-          const parsed = JSON.parse(info)
-          return parsed?.email || null
-        }
-        return null
-      } catch {
-        return null
-      }
-    },
+    () => getStoredConnectionForUser(currentUserId, currentUserEmail),
   )
 
-  // On mount or workflow change: if watch email can be shown and not yet in local state, check server
+  // Sync state whenever logged-in user changes (switching users / logging in)
   useEffect(() => {
-    if (!canShowWatchEmail || connectedWatchEmail) return
+    const userStored = getStoredConnectionForUser(
+      currentUserId,
+      currentUserEmail,
+    )
+    setConnectedWatchEmail(userStored)
+  }, [currentUserId, currentUserEmail])
+
+  // On mount or workflow change: if watch email can be shown, verify server connection for this user
+  useEffect(() => {
+    if (!canShowWatchEmail) return
+    const userStored = getStoredConnectionForUser(
+      currentUserId,
+      currentUserEmail,
+    )
+    if (userStored) {
+      setConnectedWatchEmail(userStored)
+      return
+    }
+
     let cancelled = false
     getMailboxes()
       .then((res) => {
@@ -1128,24 +1251,45 @@ const RequestsPage = () => {
         const currentWfId = String(
           workflow?.id || selectedWorkflow?.id || WATCHFOX_CONFIG.workflowId,
         ).toLowerCase()
-        const match = list.find(
-          (m) =>
-            (String(m.workflowId).toLowerCase() === currentWfId ||
-              String(m.workflowId).toLowerCase() ===
-                WATCHFOX_CONFIG.workflowId.toLowerCase() ||
-              m.isEnabled) &&
-            Boolean(m.externalAccountEmail),
-        )
+
+        // Match only mailboxes linked to THIS user:
+        const match = list.find((m: any) => {
+          const wfMatches =
+            String(m.workflowId).toLowerCase() === currentWfId ||
+            String(m.workflowId).toLowerCase() ===
+              WATCHFOX_CONFIG.workflowId.toLowerCase() ||
+            m.isEnabled
+
+          if (!wfMatches || !m.externalAccountEmail) return false
+
+          const mailboxEmail = String(m.externalAccountEmail)
+            .toLowerCase()
+            .trim()
+          const mailboxUserId = String(
+            m.userId || m.createdBy || m.creatorId || m.createdById || '',
+          )
+            .toLowerCase()
+            .trim()
+
+          if (currentUserId && mailboxUserId && mailboxUserId === currentUserId) {
+            return true
+          }
+          if (currentUserEmail && mailboxEmail === currentUserEmail) {
+            return true
+          }
+          return false
+        })
+
         if (match?.externalAccountEmail) {
           setConnectedWatchEmail(match.externalAccountEmail)
-          try {
-            localStorage.setItem(
-              'v6_watchfox_connected_email',
-              match.externalAccountEmail,
-            )
-          } catch {
-            // ignore
-          }
+          saveStoredConnectionForUser(
+            match.externalAccountEmail,
+            currentUserId,
+            currentUserEmail,
+            match.connectorId || match.id,
+          )
+        } else {
+          setConnectedWatchEmail(null)
         }
       })
       .catch(() => {
@@ -1156,7 +1300,8 @@ const RequestsPage = () => {
     }
   }, [
     canShowWatchEmail,
-    connectedWatchEmail,
+    currentUserEmail,
+    currentUserId,
     workflow?.id,
     selectedWorkflow?.id,
   ])
@@ -1283,21 +1428,13 @@ const RequestsPage = () => {
 
         if (cancelled) return
 
-        try {
-          localStorage.setItem('v6_watchfox_connected_email', accountEmail)
-          localStorage.setItem('v6_watchfox_connected_time', String(Date.now()))
-          localStorage.setItem(
-            'v6_watchfox_connection_info',
-            JSON.stringify({
-              connectionId,
-              watchId,
-              email: accountEmail,
-              connectedAt: Date.now(),
-            }),
-          )
-        } catch {
-          // ignore
-        }
+        saveStoredConnectionForUser(
+          accountEmail,
+          currentUserId,
+          currentUserEmail,
+          connectionId,
+          watchId,
+        )
 
         setConnectedWatchEmail(accountEmail)
         setWatchFoxSuccessState({
@@ -1314,6 +1451,8 @@ const RequestsPage = () => {
             type: 'WATCHFOX_CONNECTED',
             accountEmail,
             connectionId,
+            userId: currentUserId,
+            userEmail: currentUserEmail,
             watchId,
           })
           setTimeout(() => {
@@ -1336,6 +1475,8 @@ const RequestsPage = () => {
                 accountEmail,
                 connectionId,
                 status: 'connected',
+                userId: currentUserId,
+                userEmail: currentUserEmail,
                 watchId,
               },
               '*',
@@ -1437,6 +1578,18 @@ const RequestsPage = () => {
           event.data?.type === 'WATCHFOX_CONNECTED' &&
           event.data.accountEmail
         ) {
+          const msgUserId = String(event.data.userId || '').toLowerCase().trim()
+          const msgUserEmail = String(event.data.userEmail || '').toLowerCase().trim()
+          if (msgUserId && currentUserId && msgUserId !== currentUserId) return
+          if (msgUserEmail && currentUserEmail && msgUserEmail !== currentUserEmail) return
+
+          saveStoredConnectionForUser(
+            event.data.accountEmail,
+            currentUserId,
+            currentUserEmail,
+            event.data.connectionId,
+            event.data.watchId,
+          )
           updateEmail(event.data.accountEmail)
         }
       }
@@ -1447,11 +1600,24 @@ const RequestsPage = () => {
     // Channel 2: window.postMessage (from popup opener)
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'WATCHFOX_CONNECTED') {
+        const msgUserId = String(event.data.userId || '').toLowerCase().trim()
+        const msgUserEmail = String(event.data.userEmail || '').toLowerCase().trim()
+        if (msgUserId && currentUserId && msgUserId !== currentUserId) return
+        if (msgUserEmail && currentUserEmail && msgUserEmail !== currentUserEmail) return
+
         const accountEmail =
           event.data.accountEmail ||
-          session?.email ||
-          user?.email ||
+          currentUserEmail ||
           ''
+        if (!accountEmail) return
+
+        saveStoredConnectionForUser(
+          accountEmail,
+          currentUserId,
+          currentUserEmail,
+          event.data.connectionId,
+          event.data.watchId,
+        )
         updateEmail(accountEmail)
       }
     }
@@ -1459,25 +1625,29 @@ const RequestsPage = () => {
     // Channel 3: localStorage storage event
     const handleStorage = (event: StorageEvent) => {
       if (
-        (event.key === 'v6_watchfox_connected_email' ||
-          event.key === 'v6_watchfox_connected_time') &&
-        event.newValue
+        event.key === 'v6_watchfox_user_connections' ||
+        event.key === 'v6_watchfox_connection_info' ||
+        (currentUserId &&
+          event.key === `v6_watchfox_connected_email_${currentUserId}`) ||
+        (currentUserEmail &&
+          event.key === `v6_watchfox_connected_email_${currentUserEmail}`)
       ) {
-        const stored =
-          localStorage.getItem('v6_watchfox_connected_email') ||
-          event.newValue
+        const stored = getStoredConnectionForUser(
+          currentUserId,
+          currentUserEmail,
+        )
         if (stored) {
           updateEmail(stored)
+        } else {
+          setConnectedWatchEmail(null)
         }
       }
     }
 
     // Channel 4: window focus & tab visibility change
     const handleFocus = () => {
-      const stored = localStorage.getItem('v6_watchfox_connected_email')
-      if (stored) {
-        setConnectedWatchEmail(stored)
-      }
+      const stored = getStoredConnectionForUser(currentUserId, currentUserEmail)
+      setConnectedWatchEmail(stored)
     }
 
     const handleVisibility = () => {
