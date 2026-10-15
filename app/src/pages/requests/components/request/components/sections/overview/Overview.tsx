@@ -38,6 +38,12 @@ import {
   localizeRequestFieldLabel,
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
+import {
+  loadAppliedSuggestions,
+  saveAppliedSuggestions,
+  loadAppliedValues,
+  saveAppliedValues,
+} from '@/pages/requests/utils/appliedSuggestions'
 import { getMockDB, startSupplierVerification } from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
@@ -244,12 +250,41 @@ const normalizeExtractedLineItem = (item: any) => {
   const descVal = getFieldValueWithFallback(normalized, [
     'Description',
     'description',
+    'Item Description',
+    'item_description',
+    'Material Description',
+    'material_description',
+    'materialdescription',
+    'Product And Description',
+    'product_and_description',
+    'product_description',
     'item_no',
     'itemNo',
+    'details',
+    'desc',
+    'item',
   ])
   updateFieldIfValid(normalized, 'Description', 'description', descVal)
 
-  const qtyVal = getFieldValueWithFallback(normalized, ['Quantity', 'quantity'])
+  const qtyVal = getFieldValueWithFallback(normalized, [
+    'Quantity',
+    'quantity',
+    'Qty',
+    'qty',
+    'Order Quantity',
+    'order_quantity',
+    'orderquantity',
+    'Qty Ordered',
+    'qty_ordered',
+    'Qty Shipped',
+    'qty_shipped',
+    'qty_invoiced',
+    'invoiced_qty',
+    'quantity_invoiced',
+    'poqty',
+    'count',
+    'units',
+  ])
   updateFieldIfValid(normalized, 'Quantity', 'quantity', qtyVal)
 
   const priceVal = getFieldValueWithFallback(normalized, [
@@ -257,6 +292,16 @@ const normalizeExtractedLineItem = (item: any) => {
     'rate',
     'unit_price',
     'price',
+    'Net Price',
+    'net_price',
+    'netprice',
+    'Unit Price',
+    'unit_rate',
+    'Unit Cost',
+    'unit_cost',
+    'unitprice',
+    'unitcost',
+    'cost',
   ])
   updateFieldIfValid(normalized, 'Price', 'rate', priceVal)
 
@@ -267,10 +312,69 @@ const normalizeExtractedLineItem = (item: any) => {
     'LineAmount',
     'total',
     'amount',
+    'Net Value',
+    'net_value',
+    'netvalue',
     'line_amount',
     'lineAmount',
+    'Total Amount',
+    'total_amount',
+    'Net Price',
+    'net_price',
+    'extended',
+    'extended_amount',
+    'total_price',
   ])
   updateFieldIfValid(normalized, 'Amount', 'amount', amtVal)
+
+  const lineNoVal = getFieldValueWithFallback(normalized, [
+    'Line No',
+    'Line #',
+    'line_no',
+    'Line',
+    'line',
+    'Item Number',
+    'item_number',
+    'itemnumber',
+    'line_number',
+    'lineNumber',
+    'seq_no',
+    'sr_no',
+    'sl_no',
+    'sno',
+  ])
+  if (lineNoVal !== undefined && lineNoVal !== null && lineNoVal !== '') {
+    normalized['Line No'] = lineNoVal
+    normalized['Line'] = lineNoVal
+  }
+
+  // Auto-calculate Amount if missing or zero but Qty & Price are present
+  const currentAmt = getFieldValueWithFallback(normalized, [
+    'Amount',
+    'amount',
+    'total',
+    'Line Amount',
+  ])
+  if (!currentAmt || currentAmt === '0' || currentAmt === '0.00') {
+    const q = Number.parseFloat(
+      String(
+        getRawVal(normalized, 'Quantity') ??
+          getRawVal(normalized, 'Qty') ??
+          '',
+      ).replace(/[^0-9.-]+/g, ''),
+    )
+    const p = Number.parseFloat(
+      String(
+        getRawVal(normalized, 'Price') ??
+          getRawVal(normalized, 'rate') ??
+          '',
+      ).replace(/[^0-9.-]+/g, ''),
+    )
+    if (!Number.isNaN(q) && !Number.isNaN(p) && q > 0 && p > 0) {
+      const calc = (q * p).toFixed(2)
+      updateFieldIfValid(normalized, 'Amount', 'amount', calc)
+    }
+  }
 
   return normalized
 }
@@ -286,11 +390,14 @@ const getCanonicalColumnKey = (rawKey: string): string => {
     normalized === 'description' ||
     normalized === 'descriptior' ||
     normalized === 'itemdescription' ||
+    normalized === 'materialdescription' ||
     normalized === 'productdescription' ||
+    normalized === 'productanddescription' ||
     normalized === 'details' ||
     normalized === 'desc' ||
     normalized === 'itemno' ||
-    normalized === 'item_no'
+    normalized === 'item_no' ||
+    normalized === 'item'
   ) {
     return 'Description'
   }
@@ -301,6 +408,11 @@ const getCanonicalColumnKey = (rawKey: string): string => {
     normalized === 'qtyinvoiced' ||
     normalized === 'quantityinvoiced' ||
     normalized === 'invoicedqty' ||
+    normalized === 'qtyordered' ||
+    normalized === 'orderquantity' ||
+    normalized === 'qtyshipped' ||
+    normalized === 'orderqty' ||
+    normalized === 'poqty' ||
     normalized === 'count' ||
     normalized === 'units'
   ) {
@@ -314,6 +426,7 @@ const getCanonicalColumnKey = (rawKey: string): string => {
     normalized === 'unitrate' ||
     normalized === 'priceunit' ||
     normalized === 'unitcost' ||
+    normalized === 'netprice' ||
     normalized === 'cost'
   ) {
     return 'Price'
@@ -323,6 +436,9 @@ const getCanonicalColumnKey = (rawKey: string): string => {
     normalized === 'lineno' ||
     normalized === 'linenumber' ||
     normalized === 'line' ||
+    normalized === 'line#' ||
+    normalized === 'itemnumber' ||
+    normalized === 'itemno' ||
     normalized === 'seqno' ||
     normalized === 'srno' ||
     normalized === 'slno' ||
@@ -338,10 +454,30 @@ const getCanonicalColumnKey = (rawKey: string): string => {
     normalized === 'total' ||
     normalized === 'netamount' ||
     normalized === 'grossamount' ||
+    normalized === 'netprice' ||
+    normalized === 'netvalue' ||
+    normalized === 'totalprice' ||
     normalized === 'extended' ||
     normalized === 'extendedamount'
   ) {
     return 'Amount'
+  }
+
+  if (
+    normalized === 'uom' ||
+    normalized === 'unit' ||
+    normalized === 'unitofmeasure'
+  ) {
+    return 'UOM'
+  }
+
+  if (
+    normalized === 'partnumber' ||
+    normalized === 'materialid' ||
+    normalized === 'partno' ||
+    normalized === 'itemcode'
+  ) {
+    return 'Part Number'
   }
 
   return rawKey.trim()
@@ -913,7 +1049,14 @@ const normalizeColumnLabel = (label: string): string => {
     norm === 'quantity' ||
     norm === 'quantities' ||
     norm === 'orderqty' ||
-    norm === 'poqty'
+    norm === 'orderquantity' ||
+    norm === 'poqty' ||
+    norm === 'qtyordered' ||
+    norm === 'qtyshipped' ||
+    norm === 'qtyinvoiced' ||
+    norm === 'invoicedqty' ||
+    norm === 'count' ||
+    norm === 'units'
   ) {
     return 'Qty'
   }
@@ -923,9 +1066,15 @@ const normalizeColumnLabel = (label: string): string => {
     norm === 'lineitem' ||
     norm === 'lineno' ||
     norm === 'lineid' ||
+    norm === 'line#' ||
     norm === 'itemno' ||
     norm === 'itemid' ||
-    norm === 'pos'
+    norm === 'itemnumber' ||
+    norm === 'pos' ||
+    norm === 'seqno' ||
+    norm === 'srno' ||
+    norm === 'slno' ||
+    norm === 'sno'
   ) {
     return 'Line'
   }
@@ -937,6 +1086,10 @@ const normalizeColumnLabel = (label: string): string => {
     norm === 'extended' ||
     norm === 'extendedamount' ||
     norm === 'total' ||
+    norm === 'netvalue' ||
+    norm === 'netamount' ||
+    norm === 'grossamount' ||
+    norm === 'totalprice' ||
     norm.startsWith('amount')
   ) {
     return 'Amount'
@@ -945,20 +1098,35 @@ const normalizeColumnLabel = (label: string): string => {
     norm === 'price' ||
     norm === 'rate' ||
     norm === 'unitprice' ||
-    norm === 'unitcost'
+    norm === 'unitcost' ||
+    norm === 'netprice' ||
+    norm === 'unitrate' ||
+    norm === 'cost'
   ) {
     return 'Price'
   }
   if (
     norm === 'description' ||
     norm === 'itemdescription' ||
+    norm === 'materialdescription' ||
+    norm === 'productdescription' ||
+    norm === 'productanddescription' ||
     norm === 'desc' ||
-    norm === 'item'
+    norm === 'item' ||
+    norm === 'details'
   ) {
     return 'Description'
   }
   if (norm === 'uom' || norm === 'unit' || norm === 'unitofmeasure') {
     return 'UOM'
+  }
+  if (
+    norm === 'partnumber' ||
+    norm === 'materialid' ||
+    norm === 'partno' ||
+    norm === 'itemcode'
+  ) {
+    return 'Part Number'
   }
   return label.trim()
 }
@@ -1178,37 +1346,24 @@ const hasComparableValue = (val: unknown) => {
 }
 
 const getPoRowObj = (agentData: any, selectedItem: any, matchingProc: any) => {
-  const candidates = [
+  // 1. Direct po_row objects from agent data, selectedItem or matchingProc
+  const directPoRows = [
     agentData?.po_row,
     agentData?.agentResponse?.po_row,
     agentData?._agentResponse?.po_row,
-    agentData,
-    agentData?.agentResponse,
-    agentData?._agentResponse,
     selectedItem?.po_row,
     selectedItem?.agentResponse?.po_row,
     selectedItem?._agentResponse?.po_row,
-    selectedItem,
     matchingProc?.po_row,
     matchingProc?.agentResponse?.po_row,
     matchingProc?._agentResponse?.po_row,
   ]
 
-  for (const cand of candidates) {
+  for (const cand of directPoRows) {
     if (!cand) continue
     if (typeof cand === 'object' && !Array.isArray(cand)) {
       if (cand.po_row && typeof cand.po_row === 'object') return cand.po_row
-      if (
-        cand['PO Number'] ||
-        cand['PO Amount'] ||
-        cand['PO Date'] ||
-        cand['Supplier'] ||
-        cand['po_number'] ||
-        cand['po_amount'] ||
-        cand['source']
-      ) {
-        return cand
-      }
+      return cand
     }
     if (typeof cand === 'string') {
       try {
@@ -1216,21 +1371,53 @@ const getPoRowObj = (agentData: any, selectedItem: any, matchingProc: any) => {
         if (parsed && typeof parsed === 'object') {
           if (parsed.po_row && typeof parsed.po_row === 'object')
             return parsed.po_row
-          if (
-            parsed['PO Number'] ||
-            parsed['PO Amount'] ||
-            parsed['PO Date'] ||
-            parsed['Supplier'] ||
-            parsed['po_number'] ||
-            parsed['po_amount'] ||
-            parsed['source']
-          ) {
-            return parsed
-          }
+          return parsed
         }
       } catch {}
     }
   }
+
+  // 2. Check if agentData or agentResponse itself contains PO row data
+  const agentCandidates = [
+    agentData,
+    agentData?.agentResponse,
+    agentData?._agentResponse,
+    selectedItem?.agentResponse,
+    selectedItem?._agentResponse,
+    matchingProc?.agentResponse,
+    matchingProc?._agentResponse,
+  ]
+
+  for (const cand of agentCandidates) {
+    if (!cand) continue
+    const parseObj = (obj: any) => {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null
+      if (obj.po_row && typeof obj.po_row === 'object') return obj.po_row
+      if (
+        (obj['PO Number'] || obj['po_number']) &&
+        (obj['Supplier'] ||
+          obj['Vendor Name'] ||
+          obj['supplier'] ||
+          obj['source'])
+      ) {
+        return obj
+      }
+      return null
+    }
+
+    if (typeof cand === 'object') {
+      const match = parseObj(cand)
+      if (match) return match
+    }
+    if (typeof cand === 'string') {
+      try {
+        const parsed = JSON.parse(cand)
+        const match = parseObj(parsed)
+        if (match) return match
+      } catch {}
+    }
+  }
+
   return null
 }
 
@@ -1324,44 +1511,6 @@ const getValueFromPoRow = (poRow: any, key: string) => {
   return undefined
 }
 
-const getAppliedSuggestionsStorageKey = (item: any, docId?: string) => {
-  const id =
-    item?.transactionId ||
-    item?.requestNo ||
-    item?.reqNo ||
-    item?.id ||
-    docId ||
-    ''
-  return id ? `ezofis_applied_suggestions_${id}` : null
-}
-
-const loadAppliedSuggestions = (
-  item: any,
-  docId?: string,
-): Record<string, boolean> => {
-  const key = getAppliedSuggestionsStorageKey(item, docId)
-  if (!key) return {}
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
-
-const saveAppliedSuggestions = (
-  item: any,
-  docId: string | undefined,
-  data: Record<string, boolean>,
-) => {
-  const storageKey = getAppliedSuggestionsStorageKey(item, docId)
-  if (!storageKey) return
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(data))
-  } catch {
-    // ignore
-  }
-}
 
 const FormCard = ({
   fieldKey,
@@ -1410,24 +1559,32 @@ const FormCard = ({
       appliedSource === 'sap' ||
       !hasComparableValue(value))
 
-  const targetSuggestionValue = isUsingPo ? invoiceValue : poValue
-  const targetSuggestionSource = isUsingPo ? t`Invoice` : poSourceLabel
+  const effectiveInvoiceVal = hasComparableValue(invoiceValue)
+    ? invoiceValue
+    : hasComparableValue(value)
+      ? value
+      : localValue
 
-  const canSwitchSources =
+  const hasPoDifference =
     hasComparableValue(poValue) &&
-    hasComparableValue(invoiceValue) &&
-    normalizeComparable(poValue) !== normalizeComparable(invoiceValue)
+    hasComparableValue(effectiveInvoiceVal) &&
+    normalizeComparable(poValue) !==
+      normalizeComparable(effectiveInvoiceVal) &&
+    normalizeComparable(value) !== normalizeComparable(poValue) &&
+    normalizeComparable(localValue) !== normalizeComparable(poValue)
 
   const isSuggestionAlreadyApplied =
     hasAppliedSuggestion ||
     isAppliedLocally ||
     isDismissed ||
-    normalizeComparable(localValue) ===
-      normalizeComparable(targetSuggestionValue) ||
-    normalizeComparable(value) === normalizeComparable(targetSuggestionValue)
+    normalizeComparable(localValue) === normalizeComparable(poValue) ||
+    normalizeComparable(value) === normalizeComparable(poValue)
 
   const canShowSuggestion =
-    isAutoOpened && canSwitchSources && !isSuggestionAlreadyApplied
+    hasPoDifference && !isSuggestionAlreadyApplied
+
+  const targetSuggestionValue = poValue
+  const targetSuggestionSource = poSourceLabel
 
   const isPerfectMatch = isUsingPo
   const effectiveScore =
@@ -1551,16 +1708,12 @@ const FormCard = ({
     setIsAppliedLocally(true)
     appliedValueRef.current = nextValue
     setLocalValue(nextValue)
-    const isSwitchingToPo = !isUsingPo
-    const nextSource = isSwitchingToPo
-      ? poSourceLabel.toLowerCase() === 'sap'
-        ? 'sap'
-        : 'po_master'
-      : 'ocr'
+    const nextSource =
+      poSourceLabel.toLowerCase() === 'sap' ? 'sap' : 'po_master'
     setAppliedSource(nextSource)
     setUserEdited(false)
     onChange?.(nextValue)
-    onApplySuggestion?.(nextSource)
+    onApplySuggestion?.(nextSource, nextValue)
   }
 
   const handleBlur = () => {
@@ -1898,7 +2051,16 @@ const isLineItemAmountColumn = (key: string) => {
   return (
     normalizedKey === 'lineamount' ||
     normalizedKey === 'amount' ||
-    normalizedKey === 'totalamount'
+    normalizedKey === 'totalamount' ||
+    normalizedKey === 'total' ||
+    normalizedKey === 'netamount' ||
+    normalizedKey === 'grossamount' ||
+    normalizedKey === 'netprice' ||
+    normalizedKey === 'totalprice' ||
+    normalizedKey === 'extended' ||
+    normalizedKey === 'extendedamount' ||
+    normalizedKey.includes('amount') ||
+    normalizedKey.includes('total')
   )
 }
 
@@ -1912,6 +2074,11 @@ const formatLineItemFields = (item: any, counter: number) => {
   const normalizedItem = normalizeExtractedLineItem(item)
   if (!normalizedItem._id) {
     normalizedItem._id = item._id || item.id || `li-${counter}`
+  }
+
+  if (!normalizedItem['Line No'] && !normalizedItem['Line']) {
+    normalizedItem['Line No'] = counter + 1
+    normalizedItem['Line'] = counter + 1
   }
 
   // Format Price/Rate
@@ -1961,6 +2128,34 @@ const formatLineItemFields = (item: any, counter: number) => {
     normalizedItem.amount = formatValueToTwoDecimals(
       getRawVal(normalizedItem, 'line_amount'),
     )
+
+  // Ensure Amount is calculated if missing/zero
+  const finalAmt =
+    getRawVal(normalizedItem, 'Amount') ??
+    getRawVal(normalizedItem, 'amount') ??
+    getRawVal(normalizedItem, 'total')
+  if (!finalAmt || finalAmt === '0' || finalAmt === '0.00') {
+    const q = Number.parseFloat(
+      String(
+        getRawVal(normalizedItem, 'Quantity') ??
+          getRawVal(normalizedItem, 'Qty') ??
+          getRawVal(normalizedItem, 'quantity') ??
+          '',
+      ).replace(/[^0-9.-]+/g, ''),
+    )
+    const p = Number.parseFloat(
+      String(
+        getRawVal(normalizedItem, 'Price') ??
+          getRawVal(normalizedItem, 'rate') ??
+          getRawVal(normalizedItem, 'unit_price') ??
+          '',
+      ).replace(/[^0-9.-]+/g, ''),
+    )
+    if (!Number.isNaN(q) && !Number.isNaN(p) && q > 0 && p > 0) {
+      const calc = (q * p).toFixed(2)
+      updateFieldIfValid(normalizedItem, 'Amount', 'amount', calc)
+    }
+  }
 
   return normalizedItem
 }
@@ -2185,7 +2380,7 @@ const Overview = (props: any) => {
       : isProcessing
 
   const poSourceType = useMemo(() => {
-    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
+    const poRow = getPoRowObj(resolvedAgentData || agentData, selectedItem, matchingProc)
     if (poRow?.source) return String(poRow.source).trim()
     if (poRow?.source_type) return String(poRow.source_type).trim()
     if (poRow?.sourceType) return String(poRow.sourceType).trim()
@@ -2226,6 +2421,7 @@ const Overview = (props: any) => {
     }
 
     const candidates = [
+      resolvedAgentData,
       agentData,
       agentData?._agentResponse,
       agentData?.agentResponse,
@@ -2349,7 +2545,9 @@ const Overview = (props: any) => {
     const cleanKeys = candidateKeys.map(normalizeName)
 
     const matchingFields =
-      agentData?.debug?.['Side-by-side Field Matching'] || []
+      (resolvedAgentData || agentData)?.debug?.[
+        'Side-by-side Field Matching'
+      ] || []
     for (const field of matchingFields) {
       if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return Number(field.Score)
@@ -2385,7 +2583,7 @@ const Overview = (props: any) => {
       return undefined
     }
 
-    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
+    const poRow = getPoRowObj(resolvedAgentData || agentData, selectedItem, matchingProc)
     const candidateKeys = [key]
     if (metaLabel) candidateKeys.push(metaLabel)
     if (canonicalLabel) candidateKeys.push(canonicalLabel)
@@ -2438,7 +2636,9 @@ const Overview = (props: any) => {
     const cleanKeys = candidateKeys.map(normalizeName)
 
     const matchingFields =
-      agentData?.debug?.['Side-by-side Field Matching'] || []
+      (resolvedAgentData || agentData)?.debug?.[
+        'Side-by-side Field Matching'
+      ] || []
     for (const field of matchingFields) {
       if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return field['PO Value']
@@ -2485,7 +2685,9 @@ const Overview = (props: any) => {
     const cleanKeys = candidateKeys.map(normalizeName)
 
     const matchingFields =
-      agentData?.debug?.['Side-by-side Field Matching'] || []
+      (resolvedAgentData || agentData)?.debug?.[
+        'Side-by-side Field Matching'
+      ] || []
     for (const field of matchingFields) {
       if (field?.Field && cleanKeys.includes(normalizeName(field.Field))) {
         return field['Invoice Value']
@@ -2860,26 +3062,116 @@ const Overview = (props: any) => {
   ])
 
   const handleApplySuggestion = useCallback(
-    (key: string) => {
+    (key: string, appliedVal?: unknown) => {
+      const displayLabel = getFieldLabel(key)
+      const valToSave =
+        appliedVal !== undefined && appliedVal !== null
+          ? appliedVal
+          : getFieldPoValue(key)
+
       setAppliedFieldSuggestions((prev) => {
-        const next = { ...prev, [key]: true }
+        const next = {
+          ...prev,
+          [key]: true,
+          [key.toLowerCase().trim()]: true,
+          ...(displayLabel
+            ? {
+                [displayLabel]: true,
+                [displayLabel.toLowerCase().trim()]: true,
+              }
+            : {}),
+        }
         saveAppliedSuggestions(selectedItem, docId, next)
         return next
       })
+
+      if (valToSave !== undefined && valToSave !== null) {
+        saveAppliedValues(selectedItem, docId, {
+          [key]: valToSave,
+          [key.toLowerCase().trim()]: valToSave,
+          ...(displayLabel
+            ? {
+                [displayLabel]: valToSave,
+                [displayLabel.toLowerCase().trim()]: valToSave,
+              }
+            : {}),
+        })
+
+        const nextModel = { ...(formModel || {}) }
+        updateValueInStructure(nextModel, key, valToSave)
+        if (displayLabel) {
+          updateValueInStructure(nextModel, displayLabel, valToSave)
+        }
+        setFormModel?.(nextModel)
+      }
     },
-    [selectedItem, docId],
+    [
+      selectedItem,
+      docId,
+      getFieldLabel,
+      getFieldPoValue,
+      formModel,
+      setFormModel,
+    ],
   )
+
+  useEffect(() => {
+    const appliedValues = loadAppliedValues(selectedItem, docId)
+    if (appliedValues && Object.keys(appliedValues).length > 0) {
+      setFormModel?.((prev: any) => {
+        let changed = false
+        const next = { ...prev }
+        Object.entries(appliedValues).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') {
+            const matchingKey = Object.keys(next).find(
+              (ck) => ck.toLowerCase().trim() === k.toLowerCase().trim(),
+            )
+            const targetKey = matchingKey || k
+            const currentVal =
+              next[targetKey] &&
+              typeof next[targetKey] === 'object' &&
+              'Invoice Value' in next[targetKey]
+                ? next[targetKey]['Invoice Value']
+                : next[targetKey]
+            if (currentVal !== v) {
+              updateValueInStructure(next, targetKey, v)
+              changed = true
+            }
+          }
+        })
+        return changed ? next : prev
+      })
+    }
+  }, [docId, selectedItem?.transactionId, selectedItem?.id, setFormModel])
 
   const handleDismissSuggestion = useCallback(
     (key: string) => {
+      const displayLabel = getFieldLabel(key)
       setAppliedFieldSuggestions((prev) => {
-        const next = { ...prev, [key]: true }
+        const next = {
+          ...prev,
+          [key]: true,
+          [key.toLowerCase().trim()]: true,
+          ...(displayLabel
+            ? {
+                [displayLabel]: true,
+                [displayLabel.toLowerCase().trim()]: true,
+              }
+            : {}),
+        }
         saveAppliedSuggestions(selectedItem, docId, next)
         return next
       })
     },
-    [selectedItem, docId],
+    [selectedItem, docId, getFieldLabel],
   )
+
+  const lineItemsTable = useMemo(
+    () => findPreferredLineItemsTable(fieldMetaMap, formModel || {}),
+    [fieldMetaMap, formModel],
+  )
+
+  const tableFieldKey = lineItemsTable?.label ?? null
 
   // --- PO Line Items Setup ---
   const parsedFormData = useMemo(() => {
@@ -2887,22 +3179,69 @@ const Overview = (props: any) => {
   }, [selectedItem])
 
   const poLineItemsKey = useMemo(() => {
-    let key = formModel
-      ? Object.keys(formModel).find((k) => k.toLowerCase().startsWith('awai'))
-      : null
+    const isPoKey = (k: string) => {
+      const lk = k.toLowerCase()
+      return (
+        (lk.includes('po') && lk.includes('item')) ||
+        (lk.includes('po') && lk.includes('line')) ||
+        lk === 'po_line_items' ||
+        lk === 'polineitems'
+      )
+    }
+    let key = formModel ? Object.keys(formModel).find(isPoKey) : null
     if (key) return key
 
     if (parsedFormData) {
-      key = Object.keys(parsedFormData).find((k) =>
-        k.toLowerCase().startsWith('awai'),
-      )
+      key = Object.keys(parsedFormData).find(isPoKey)
     }
     return key || null
   }, [formModel, parsedFormData])
 
   const rawPoLineItems = useMemo(() => {
-    // 1. Check formModel / parsedFormData by key starting with 'awai'
-    if (poLineItemsKey) {
+    // 1. Check po_row in agentData / selectedItem / matchingProc FIRST (ERP Purchase Order data)
+    const poRow = getPoRowObj(resolvedAgentData || agentData, selectedItem, matchingProc)
+    if (poRow && typeof poRow === 'object') {
+      const lineItemCandidates = [
+        poRow['PO Line Item Mapped'],
+        poRow['po_line_item_mapped'],
+        poRow['po_line_items'],
+        poRow['PO Line Items'],
+        poRow['line_items'],
+        poRow['po_items'],
+        poRow['items'],
+      ]
+      for (const cand of lineItemCandidates) {
+        if (Array.isArray(cand) && cand.length > 0) return cand
+        if (typeof cand === 'string') {
+          try {
+            const parsed = JSON.parse(cand)
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed
+          } catch {}
+        }
+      }
+    }
+
+    // 2. Check agentData / selectedItem directly for PO line items
+    const agentCandidates = [
+      agentData?.po_line_items,
+      agentData?.po_items,
+      agentData?.po_row?.['PO Line Item Mapped'],
+      selectedItem?.po_line_items,
+      selectedItem?.po_items,
+      selectedItem?.po_row?.['PO Line Item Mapped'],
+    ]
+    for (const cand of agentCandidates) {
+      if (Array.isArray(cand) && cand.length > 0) return cand
+      if (typeof cand === 'string') {
+        try {
+          const parsed = JSON.parse(cand)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
+    }
+
+    // 3. Fallback to formModel / parsedFormData ONLY if explicitly a PO table key (NOT the generic invoice lineItemsTable)
+    if (poLineItemsKey && poLineItemsKey !== tableFieldKey) {
       let val = formModel ? formModel[poLineItemsKey] : undefined
       if (val === undefined && parsedFormData) {
         val = parsedFormData[poLineItemsKey]
@@ -2916,54 +3255,15 @@ const Overview = (props: any) => {
       }
     }
 
-    // 2. Check po_row in agentData / selectedItem / matchingProc
-    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
-    if (poRow && typeof poRow === 'object') {
-      const lineItemCandidates = [
-        poRow['PO Line Item Mapped'],
-        poRow['po_line_items'],
-        poRow['PO Line Items'],
-        poRow['line_items'],
-        poRow['items'],
-        poRow['po_items'],
-      ]
-      for (const cand of lineItemCandidates) {
-        if (Array.isArray(cand) && cand.length > 0) return cand
-        if (typeof cand === 'string') {
-          try {
-            const parsed = JSON.parse(cand)
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed
-          } catch {}
-        }
-      }
-    }
-
-    // 3. Check agentData directly
-    const agentCandidates = [
-      agentData?.po_line_items,
-      agentData?.po_items,
-      agentData?.['Extracted Invoice JSON']?.line_items,
-      agentData?.['Extracted Invoice JSON']?.invoice_items,
-      selectedItem?.po_line_items,
-    ]
-    for (const cand of agentCandidates) {
-      if (Array.isArray(cand) && cand.length > 0) return cand
-      if (typeof cand === 'string') {
-        try {
-          const parsed = JSON.parse(cand)
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        } catch {}
-      }
-    }
-
     return []
   }, [
-    formModel,
-    parsedFormData,
-    poLineItemsKey,
     agentData,
     selectedItem,
     matchingProc,
+    poLineItemsKey,
+    tableFieldKey,
+    formModel,
+    parsedFormData,
   ])
 
   const poColMap = useMemo(() => {
@@ -2979,7 +3279,7 @@ const Overview = (props: any) => {
       }
 
       Object.entries(item).forEach(([k, v]) => {
-        if (k === '_id') return
+        if (k === '_id' || k === '_localFileUrl' || k === 'localUrl') return
         const rawLabel = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
         const label = normalizeColumnLabel(rawLabel)
         if (
@@ -2993,76 +3293,115 @@ const Overview = (props: any) => {
         }
       })
 
+      // Ensure standard core fields are populated from item fallbacks
+      if (!mappedItem.Line && !mappedItem['Line No']) {
+        const lineVal =
+          item.Line ??
+          item['Line No'] ??
+          item['Item Number'] ??
+          item.item_no ??
+          idx + 1
+        mappedItem.Line = lineVal
+        mappedItem['Line No'] = lineVal
+      }
+
+      if (!mappedItem.Description) {
+        mappedItem.Description =
+          item.Description ||
+          item.description ||
+          item['Material Description'] ||
+          item.material_description ||
+          item['Item Description'] ||
+          ''
+      }
+
+      if (
+        mappedItem.Qty === undefined ||
+        mappedItem.Qty === null ||
+        mappedItem.Qty === ''
+      ) {
+        mappedItem.Qty =
+          item.Qty ??
+          item.quantity ??
+          item['Order Quantity'] ??
+          item.order_quantity ??
+          ''
+      }
+
+      if (
+        mappedItem.Price === undefined ||
+        mappedItem.Price === null ||
+        mappedItem.Price === ''
+      ) {
+        mappedItem.Price =
+          item.Price ??
+          item.rate ??
+          item['Net Price'] ??
+          item.net_price ??
+          item['Unit Cost'] ??
+          ''
+      }
+
+      if (!mappedItem.UOM) {
+        mappedItem.UOM =
+          item.UOM ||
+          item.uom ||
+          item['Unit of Measure'] ||
+          item.unit_of_measure ||
+          ''
+      }
+
+      if (
+        !mappedItem.Amount ||
+        mappedItem.Amount === '0' ||
+        mappedItem.Amount === '0.00'
+      ) {
+        mappedItem.Amount =
+          item.Amount ??
+          item.amount ??
+          item['Net Value'] ??
+          item.net_value ??
+          item.line_amount ??
+          ''
+      }
+
+      // Auto-calculate Amount if missing or zero
+      if (
+        !mappedItem.Amount ||
+        mappedItem.Amount === '0' ||
+        mappedItem.Amount === '0.00'
+      ) {
+        const q = Number.parseFloat(
+          String(mappedItem.Qty || '').replace(/[^0-9.-]+/g, ''),
+        )
+        const p = Number.parseFloat(
+          String(mappedItem.Price || '').replace(/[^0-9.-]+/g, ''),
+        )
+        if (!Number.isNaN(q) && !Number.isNaN(p) && q > 0 && p > 0) {
+          mappedItem.Amount = (q * p).toFixed(2)
+        }
+      }
+
+      // Purge any score properties from PO line items
+      delete mappedItem.Score
+      delete mappedItem.score
+      delete mappedItem['Line Score']
+      delete mappedItem['line_score']
+      delete mappedItem.matches
+
       return mappedItem
     })
   }, [rawPoLineItems, poColMap])
 
   const poDynamicColumns = useMemo(() => {
     if (!poLineItems || poLineItems.length === 0) return []
-
-    const canonicalKeyMap = new Map<string, string>()
-
-    poLineItems.forEach((item: any) => {
-      if (item && typeof item === 'object') {
-        Object.keys(item).forEach((k) => {
-          if (
-            !k ||
-            !k.trim() ||
-            k === '_id' ||
-            k === '_localFileUrl' ||
-            k === 'localUrl' ||
-            k === 'score' ||
-            k === 'Line Score' ||
-            k === 'status'
-          ) {
-            return
-          }
-
-          const canonical = getCanonicalColumnKey(k)
-          if (!canonical) return
-
-          const groupKey = canonical.toLowerCase()
-          if (!canonicalKeyMap.has(groupKey)) {
-            canonicalKeyMap.set(groupKey, canonical)
-          }
-        })
-      }
-    })
-
-    const columns = Array.from(canonicalKeyMap.values())
-    const standardOrder = [
-      'Line No',
-      'Description',
-      'Qty',
-      'Price',
-      'UOM',
-      'Tax Rate',
-      'Class',
-      'Part Number',
-      'Ref Code',
-      'Date',
-    ]
-
-    const result: string[] = []
-    const colSet = new Set(columns)
-
-    standardOrder.forEach((std) => {
-      if (colSet.has(std)) {
-        result.push(std)
-        colSet.delete(std)
-      }
-    })
-
-    const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
-    const otherCols = Array.from(colSet).filter(
-      (k) => !isLineItemAmountColumn(k),
-    )
-
-    return [...result, ...otherCols, ...amountCols]
+    // The PO Line Items table purpose is matching items with Invoice Line Items.
+    // Display only the essential required matching columns: Line No, Description, Qty, Price, Amount.
+    return ['Line No', 'Description', 'Qty', 'Price', 'Amount']
   }, [poLineItems])
 
   const poDynamicWidths = useMemo(() => {
-    if (!poLineItems || poLineItems.length === 0) return [60, 100, 100]
+    if (!poLineItems || poLineItems.length === 0) return [45, 160, 55]
     const widths: number[] = []
 
     const totalsByKey: Record<string, string> = {}
@@ -3104,47 +3443,31 @@ const Overview = (props: any) => {
 
       const lowerKey = colKey.toLowerCase()
       if (lowerKey.includes('line') || lowerKey === 'no') {
-        widths[index] = Math.min(
-          70,
-          Math.max(45, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 45
       } else if (
         lowerKey.includes('desc') ||
         lowerKey.includes('item') ||
         lowerKey.includes('product') ||
         lowerKey.includes('detail')
       ) {
-        widths[index] = Math.max(
-          220,
-          Math.min(450, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 0
       } else if (lowerKey.includes('qty') || lowerKey.includes('quantity')) {
-        widths[index] = Math.min(
-          80,
-          Math.max(60, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 52
       } else if (
         lowerKey.includes('price') ||
         lowerKey.includes('rate') ||
         lowerKey.includes('cost')
       ) {
-        widths[index] = Math.min(
-          120,
-          Math.max(85, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 72
       } else if (
         lowerKey.includes('amount') ||
         lowerKey.includes('total')
       ) {
-        widths[index] = Math.min(
-          140,
-          Math.max(100, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 105
+      } else if (lowerKey === 'uom' || lowerKey.includes('unit')) {
+        widths[index] = 48
       } else {
-        widths[index] = Math.min(
-          150,
-          Math.max(80, Math.ceil(maxChars * 8.0) + 24),
-        )
+        widths[index] = 75
       }
     })
 
@@ -3425,13 +3748,6 @@ const Overview = (props: any) => {
     }
   }, [])
 
-  const lineItemsTable = useMemo(
-    () => findPreferredLineItemsTable(fieldMetaMap, formModel || {}),
-    [fieldMetaMap, formModel],
-  )
-
-  const tableFieldKey = lineItemsTable?.label ?? null
-
   const rawLineItems = useMemo(() => {
     const hasMeaningfulLineData = (rows: any[]) => {
       if (!Array.isArray(rows) || rows.length === 0) return false
@@ -3461,27 +3777,44 @@ const Overview = (props: any) => {
       })
     }
 
-    if (
-      lineItemsTable?.rows?.length &&
-      hasMeaningfulLineData(lineItemsTable.rows)
-    ) {
-      return lineItemsTable.rows
-    }
-
     const candidates = [
       agentData?.debug?.['Side-by-side Line Item matching'],
-      agentData?.line_items,
-      agentData?.['Extracted Invoice JSON']?.invoice_items,
+      agentData?.['Extracted Invoice JSON']?.['Line Item'],
+      agentData?.['Extracted Invoice JSON']?.['Line Items'],
+      agentData?.['Extracted Invoice JSON']?.['line_item'],
       agentData?.['Extracted Invoice JSON']?.line_items,
+      agentData?.['Extracted Invoice JSON']?.invoice_items,
+      agentData?.line_items,
       agentData?.invoice_items,
       selectedItem?.line_items,
       selectedItem?.invoice_items,
     ]
 
-    for (const cand of candidates) {
-      if (hasMeaningfulLineData(cand)) {
-        return cand
+    const meaningfulCandidate = candidates.find((cand) =>
+      hasMeaningfulLineData(cand),
+    )
+
+    if (
+      lineItemsTable?.rows?.length &&
+      hasMeaningfulLineData(lineItemsTable.rows)
+    ) {
+      if (meaningfulCandidate && Array.isArray(meaningfulCandidate)) {
+        return lineItemsTable.rows.map((row: any, idx: number) => {
+          const cand = meaningfulCandidate[idx] || {}
+          const merged = { ...cand, ...row }
+          Object.keys(cand).forEach((k) => {
+            if (row[k] === undefined || row[k] === null || row[k] === '') {
+              merged[k] = cand[k]
+            }
+          })
+          return merged
+        })
       }
+      return lineItemsTable.rows
+    }
+
+    if (meaningfulCandidate) {
+      return meaningfulCandidate
     }
 
     return (
@@ -3503,57 +3836,22 @@ const Overview = (props: any) => {
   const dynamicColumns = useMemo(() => {
     if (!rawLineItems || rawLineItems.length === 0) return []
 
-    const canonicalKeyMap = new Map<string, string>()
-
-    rawLineItems.forEach((item: any) => {
-      if (item && typeof item === 'object') {
-        Object.keys(item).forEach((k) => {
-          if (
-            !k ||
-            !k.trim() ||
-            k === '_id' ||
-            k === '_localFileUrl' ||
-            k === 'localUrl' ||
-            k === 'score' ||
-            k === 'Line Score' ||
-            k === 'status'
-          ) {
-            return
-          }
-
-          const canonical = getCanonicalColumnKey(k)
-          if (!canonical) return
-
-          const groupKey = canonical.toLowerCase()
-          if (!canonicalKeyMap.has(groupKey)) {
-            canonicalKeyMap.set(groupKey, canonical)
-          }
-        })
-      }
-    })
-
-    const columns = Array.from(canonicalKeyMap.values())
-    const standardOrder = ['Description', 'Qty', 'Price', 'Line No']
-    const result: string[] = []
-    const colSet = new Set(columns)
-
-    if (colSet.has('Line No')) {
-      result.push('Line No')
-      colSet.delete('Line No')
-    }
-    standardOrder.forEach((std) => {
-      if (colSet.has(std)) {
-        result.push(std)
-        colSet.delete(std)
-      }
-    })
-
-    const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
-    const otherCols = Array.from(colSet).filter(
-      (k) => !isLineItemAmountColumn(k),
+    // Standard required matching columns for Invoice Line Items:
+    // Line No, Description, Qty, Price, Amount (plus UOM if present)
+    const hasUom = rawLineItems.some(
+      (it: any) =>
+        it &&
+        typeof it === 'object' &&
+        (it.UOM || it.uom || it['Unit of Measure']) &&
+        String(it.UOM || it.uom || it['Unit of Measure']).trim() !== '' &&
+        String(it.UOM || it.uom || it['Unit of Measure']) !== '-',
     )
 
-    return [...result, ...otherCols, ...amountCols]
+    if (hasUom) {
+      return ['Line No', 'Description', 'Qty', 'UOM', 'Price', 'Amount']
+    }
+
+    return ['Line No', 'Description', 'Qty', 'Price', 'Amount']
   }, [rawLineItems])
 
   useEffect(() => {
@@ -3573,7 +3871,7 @@ const Overview = (props: any) => {
   }, [rawLineItems])
 
   const dynamicWidths = useMemo(() => {
-    if (!lineItems || lineItems.length === 0) return [60, 100, 100]
+    if (!lineItems || lineItems.length === 0) return [45, 160, 55]
     const widths: number[] = []
 
     // 1. Compute totals first for amount columns
@@ -3628,90 +3926,48 @@ const Overview = (props: any) => {
 
         const lowerKey = colKey.toLowerCase()
         if (lowerKey.includes('line') || lowerKey === 'no') {
-          widths[index] = Math.min(
-            70,
-            Math.max(45, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 45
         } else if (
           lowerKey.includes('desc') ||
           lowerKey.includes('item') ||
           lowerKey.includes('product') ||
           lowerKey.includes('detail')
         ) {
-          widths[index] = Math.max(
-            220,
-            Math.min(450, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 0
         } else if (lowerKey.includes('qty') || lowerKey.includes('quantity')) {
-          widths[index] = Math.min(
-            80,
-            Math.max(60, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 52
         } else if (
           lowerKey.includes('price') ||
           lowerKey.includes('rate') ||
           lowerKey.includes('cost')
         ) {
-          widths[index] = Math.min(
-            120,
-            Math.max(85, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 72
         } else if (
           lowerKey.includes('amount') ||
           lowerKey.includes('total')
         ) {
-          widths[index] = Math.min(
-            140,
-            Math.max(100, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 105
+        } else if (lowerKey === 'uom' || lowerKey.includes('unit')) {
+          widths[index] = 48
         } else {
-          widths[index] = Math.min(
-            150,
-            Math.max(80, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 75
         }
       })
     } else {
       const cols = ['no', 'description', 'quantity', 'rate', 'amount']
       cols.forEach((col: string, index: number) => {
-        let maxChars = col.length
-        if (col === 'no') maxChars = 2 // Keep line no smaller
-        lineItems.forEach((item: any) => {
-          let val = ''
-          if (col === 'description')
-            val =
-              item.Description?.['Invoice Value'] ??
-              item.description ??
-              item.item_no ??
-              item.itemNo ??
-              ''
-          else if (col === 'quantity')
-            val = item.Quantity?.['Invoice Value'] ?? item.quantity ?? ''
-          else if (col === 'rate')
-            val =
-              item.Price?.['Invoice Value'] ??
-              item.rate ??
-              item.unit_price ??
-              item.price ??
-              ''
-          else if (col === 'amount')
-            val =
-              item.Amount?.['Invoice Value'] ?? item.amount ?? item.Amount ?? ''
-          const str = String(val)
-          if (str.length > maxChars) maxChars = str.length
-        })
-        if (col === 'amount' && totalsByKey['amount']) {
-          if (totalsByKey['amount'].length > maxChars)
-            maxChars = totalsByKey['amount'].length
-        }
-
         if (col === 'description') {
-          widths[index] = Math.max(120, Math.ceil(maxChars * 8.0) + 24)
+          widths[index] = 0
+        } else if (col === 'no') {
+          widths[index] = 45
+        } else if (col === 'quantity') {
+          widths[index] = 52
+        } else if (col === 'rate') {
+          widths[index] = 72
+        } else if (col === 'amount') {
+          widths[index] = 105
         } else {
-          widths[index] = Math.min(
-            80,
-            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
-          )
+          widths[index] = 75
         }
       })
     }
@@ -4375,6 +4631,7 @@ const Overview = (props: any) => {
                           <button
                             className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[10px] font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
                             type='button'
+                            title={t`Validate supplier credentials and ensure vendor compliance`}
                             onClick={(e) => {
                               e.stopPropagation() // don't also fire the card's onClick
                               handleVerifySupplierClick()
@@ -4386,7 +4643,7 @@ const Overview = (props: any) => {
                         }
                         onClick={() => {
                           showToast({
-                            message: t`Please click 'Verify' to check if this supplier is legitimate and prevent fraud.`,
+                            message: t`Please click 'Verify' to validate this supplier and ensure vendor compliance.`,
                           })
                         }}
                       />
@@ -5750,96 +6007,21 @@ const Overview = (props: any) => {
                         </DetailReportView>
                       )}
                       {activeDetailView === 'back_order' && (
-                        <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
-                          {/* Header */}
-                          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] bg-[var(--gray-1)] px-4 py-2.5'>
-                            <div className='flex items-center gap-2.5'>
-                              <button
-                                className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
-                                onClick={() => setActiveDetailView(null)}
-                              >
-                                <Icon
-                                  className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
-                                  name='tabler:arrow-left'
-                                />
-                                <span>{t`Back`}</span>
-                              </button>
-                              <div className='mx-1 h-4 w-[1px] bg-[var(--gray-2)]' />
-                              <div className='flex items-center gap-2'>
-                                <div className='rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] p-1 text-[var(--orange-9)]'>
-                                  <Icon
-                                    className='h-4 w-4'
-                                    name='tabler:list-check'
-                                  />
-                                </div>
-                                <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
-                                  {t`PO Line Items vs Invoices`}
-                                </h3>
-                              </div>
-                            </div>
-                            <div className='flex items-center gap-2'>
-                              {/* Recommendation badge in header */}
-                              {(() => {
-                                const currentRec =
-                                  activeBackOrderTab === 'current'
-                                    ? backOrder?.recommendation
-                                    : MOCK_PREVIOUS_BACKORDERS[
-                                        activeBackOrderTab
-                                      ]?.recommendation
-                                const recMeta =
-                                  getRecommendationMeta(currentRec)
-                                return (
-                                  <span
-                                    className={cn(
-                                      'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-semibold shadow-xs',
-                                      recMeta.chip,
-                                    )}
-                                  >
-                                    <Icon
-                                      className='h-3 w-3 animate-pulse'
-                                      name={recMeta.icon}
-                                    />
-                                    {recMeta.label}
-                                  </span>
-                                )
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* Sub-header with active tabs */}
-                          <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-2)] bg-[var(--gray-1)] px-4'>
-                            <div className='flex items-center gap-4'>
-                              {/* Current Invoice tab */}
-                              <button
-                                className={cn(
-                                  '-mb-[1px] border-b-2 px-1 pt-2 pb-2 text-xs font-semibold transition-all',
-                                  activeBackOrderTab === 'current'
-                                    ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
-                                    : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                                )}
-                                onClick={() => setActiveBackOrderTab('current')}
-                              >
-                                INV-4402 (Current)
-                              </button>
-                              {/* Previous tickets mapped as tabs */}
-                              {backOrder?.previous_id?.map((prevId: string) => (
-                                <button
-                                  key={prevId}
-                                  className={cn(
-                                    '-mb-[1px] border-b-2 px-1 pt-2 pb-2 text-xs font-semibold transition-all',
-                                    activeBackOrderTab === prevId
-                                      ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
-                                      : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                                  )}
-                                  onClick={() => setActiveBackOrderTab(prevId)}
-                                >
-                                  INV-4401 ({prevId})
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Metrics Summary Row - 4 equal columns split by lines */}
+                        <DetailReportView
+                          icon={PackageX}
+                          title={t`Back Order Reconciliation`}
+                          status={
+                            backOrder?.recommendation
+                              ? formatAgentStatusLabel(backOrder.recommendation)
+                              : backOrderDisplay?.status || t`Detected`
+                          }
+                          statusType={
+                            backOrder?.recommendation === 'REJECT_TRANSACTION'
+                              ? 'danger'
+                              : 'warning'
+                          }
+                          onClose={() => setActiveDetailView(null)}
+                        >
                           {(() => {
                             const currentData =
                               activeBackOrderTab === 'current'
@@ -5848,14 +6030,20 @@ const Overview = (props: any) => {
                                     activeBackOrderTab
                                   ] || {}
                             const items = currentData?.missing_qty_by_item || []
-
                             const currencySymbol =
                               agentData?.po_row?.Currency || '$'
-                            const invoiceAmount = items.reduce(
-                              (sum: number, r: any) =>
-                                sum + (r.invoice_qty || 0) * (r.price || 0),
+
+                            const totalInvoiceAmt = items.reduce(
+                              (sum: number, r: any) => {
+                                const val =
+                                  r.amount !== undefined && r.amount > 0
+                                    ? r.amount
+                                    : (r.invoice_qty || 0) * (r.price || 0)
+                                return sum + val
+                              },
                               0,
                             )
+                            const invoiceAmount = totalInvoiceAmt
                             const linesReceivedCount = items.filter(
                               (r: any) => (r.invoice_qty || 0) > 0,
                             ).length
@@ -5863,245 +6051,401 @@ const Overview = (props: any) => {
                             const pendingItemsCount = items.filter(
                               (r: any) => (r.remaining || 0) > 0,
                             ).length
+                            const totalPoQty = items.reduce(
+                              (sum: number, r: any) => {
+                                const rowPo =
+                                  r.po_qty !== undefined && r.po_qty !== null
+                                    ? r.po_qty
+                                    : (r.invoice_qty || 0) + (r.remaining || 0) || 1
+                                return sum + rowPo
+                              },
+                              0,
+                            )
+                            const totalReceivedUnits = items.reduce(
+                              (sum: number, r: any) =>
+                                sum + (r.invoice_qty || 0),
+                              0,
+                            )
+                            const totalRemainingUnits = items.reduce(
+                              (sum: number, r: any) =>
+                                sum + (r.remaining || 0),
+                              0,
+                            )
                             const stillPendingVal = items.reduce(
                               (sum: number, r: any) =>
                                 sum + (r.remaining || 0) * (r.price || 0),
                               0,
                             )
+                            const overallPct =
+                              totalPoQty > 0
+                                ? Math.max(
+                                    0,
+                                    Math.min(
+                                      100,
+                                      Math.round(
+                                        ((totalPoQty - totalRemainingUnits) /
+                                          totalPoQty) *
+                                          100,
+                                      ),
+                                    ),
+                                  )
+                                : 100
+
+                            const currentRec =
+                              activeBackOrderTab === 'current'
+                                ? backOrder?.recommendation
+                                : MOCK_PREVIOUS_BACKORDERS[
+                                    activeBackOrderTab
+                                  ]?.recommendation
+
+                            const statusExplanation = (() => {
+                              if (
+                                currentData?.reason &&
+                                String(currentData.reason).trim()
+                              ) {
+                                return String(currentData.reason).trim()
+                              }
+                              if (totalRemainingUnits > 0) {
+                                return t`PO fulfillment is partial: ${totalRemainingUnits} unit${totalRemainingUnits === 1 ? '' : 's'} across ${pendingItemsCount} line item${pendingItemsCount === 1 ? '' : 's'} remain unfulfilled. This invoice accounts for ${totalReceivedUnits} of ${totalPoQty} ordered units.`
+                              }
+                              return t`All purchase order quantities match this invoice. No outstanding back orders detected.`
+                            })()
+
+                            const recommendationGuidance = (() => {
+                              const r = String(currentRec || '').toUpperCase()
+                              if (r.includes('WAIT')) {
+                                return t`Hold balance or keep PO open. Track remaining units under backorder until the supplemental shipment and invoice arrive.`
+                              }
+                              if (r.includes('REJECT')) {
+                                return t`Flag or reject transaction. Short shipment deviates from the vendor purchase agreement without prior authorization.`
+                              }
+                              if (r.includes('CONTACT')) {
+                                return t`Contact vendor for estimated delivery schedule on remaining backordered quantities.`
+                              }
+                              if (r.includes('CANCEL')) {
+                                return t`Close out remaining purchase order quantities and request a credit memo or amended PO.`
+                              }
+                              return t`Review line item fulfillment against purchase order terms and vendor delivery schedule.`
+                            })()
+
+                            const currentInvoiceNo =
+                              firstPlaygroundValue(
+                                formModel?.['Invoice Number'],
+                                formModel?.['Invoice No'],
+                                formModel?.['invoice_number'],
+                                formModel?.['invoice_no'],
+                                selectedItem?.invoiceNumber,
+                              ) || 'INV-4402'
 
                             return (
-                              <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-2)] border-b border-[var(--gray-2)] bg-surface text-xs'>
-                                <div className='space-y-0.5 p-3'>
-                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Invoice Amount`}
-                                  </p>
-                                  <p className='text-sm font-bold text-[var(--gray-13)]'>
-                                    {currencySymbol}
-                                    {invoiceAmount.toFixed(2)}
-                                  </p>
-                                </div>
-                                <div className='space-y-0.5 p-3'>
-                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Lines Received`}
-                                  </p>
-                                  <p className='text-sm font-bold text-[var(--teal-9)]'>
-                                    {linesReceivedCount} of {totalLines}
-                                  </p>
-                                </div>
-                                <div className='space-y-0.5 p-3'>
-                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Pending Items`}
-                                  </p>
-                                  <p className='text-sm font-bold text-[var(--orange-9)]'>
-                                    {pendingItemsCount} item
-                                    {pendingItemsCount === 1 ? '' : 's'}
-                                  </p>
-                                </div>
-                                <div className='space-y-0.5 p-3'>
-                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Still Pending`}
-                                  </p>
-                                  <p className='text-sm font-bold text-[var(--orange-9)]'>
-                                    {currencySymbol}
-                                    {stillPendingVal.toFixed(2)}
-                                  </p>
-                                </div>
-                              </div>
-                            )
-                          })()}
-
-                          {/* Main Content Area */}
-                          <div className='scrollbar flex-1 space-y-4 overflow-y-auto bg-[var(--gray-1)] p-4'>
-                            {/* Status/Explanation banner */}
-                            {(() => {
-                              const currentData =
-                                activeBackOrderTab === 'current'
-                                  ? backOrder
-                                  : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
-
-                              return (
-                                <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-3.5 shadow-xs duration-300'>
-                                  <div className='flex items-start gap-3'>
-                                    <div className='mt-0.5 shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
-                                      <Icon
-                                        className='h-4 w-4'
-                                        name='tabler:info-circle'
-                                      />
+                              <div className='space-y-4'>
+                                {/* AI Insight & Back Order Analysis Banner */}
+                                <div className='flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs'>
+                                  <AiBrandIcon
+                                    className='mt-0.5 size-4.5 shrink-0 text-[var(--purple-9)]'
+                                    variant='outline-purple'
+                                  />
+                                  <div className='space-y-1'>
+                                    <div className='flex items-center gap-1.5 text-xs font-semibold text-[var(--purple-12)]'>
+                                      {t`AI Insight & Back Order Analysis`}
                                     </div>
-                                    <div className='space-y-1'>
-                                      <h4 className='text-xs font-semibold text-[var(--orange-10)]'>
-                                        {activeBackOrderTab === 'current'
-                                          ? t`Current Invoice Back Order Status`
-                                          : t`Prior Ticket ${activeBackOrderTab} Details`}
-                                      </h4>
-                                      <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
-                                        {currentData?.reason}
+                                    <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
+                                      {statusExplanation}
+                                    </p>
+                                    {recommendationGuidance && (
+                                      <p className='border-t border-[var(--purple-3)]/60 pt-1 text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90'>
+                                        <span className='font-semibold text-[var(--purple-12)]'>
+                                          {t`Recommended Action`}:{' '}
+                                        </span>
+                                        {recommendationGuidance}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Previous tickets tabs if history exists */}
+                                {Boolean(backOrder?.previous_id?.length) && (
+                                  <div className='flex items-center gap-2 border-b border-[var(--gray-2)] pb-2 text-xs'>
+                                    <button
+                                      className={cn(
+                                        'rounded-md px-2.5 py-1 font-semibold transition-all',
+                                        activeBackOrderTab === 'current'
+                                          ? 'border border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-10)]'
+                                          : 'text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]',
+                                      )}
+                                      onClick={() => setActiveBackOrderTab('current')}
+                                    >
+                                      {currentInvoiceNo} ({t`Current`})
+                                    </button>
+                                    {backOrder.previous_id.map((prevId: string) => (
+                                      <button
+                                        key={prevId}
+                                        className={cn(
+                                          'rounded-md px-2.5 py-1 font-semibold transition-all',
+                                          activeBackOrderTab === prevId
+                                            ? 'border border-[var(--primary-4)] bg-[var(--primary-2)] text-[var(--primary-10)]'
+                                            : 'text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]',
+                                        )}
+                                        onClick={() => setActiveBackOrderTab(prevId)}
+                                      >
+                                        {prevId} ({t`Prior Ticket`})
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Fulfillment & Ledger Summary Cards */}
+                                <div className='space-y-2.5'>
+                                  <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                    {t`Fulfillment & Ledger Summary`}
+                                  </h4>
+                                  <div className='grid grid-cols-2 gap-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs sm:grid-cols-4'>
+                                    <div className='space-y-0.5'>
+                                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                        {t`Invoice Amount`}
+                                      </span>
+                                      <p className='text-sm font-bold text-[var(--gray-13)]'>
+                                        {currencySymbol} {invoiceAmount.toFixed(2)}
+                                      </p>
+                                    </div>
+                                    <div className='space-y-0.5'>
+                                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                        {t`Lines Invoiced`}
+                                      </span>
+                                      <p className='text-sm font-bold text-[var(--green-9)]'>
+                                        {linesReceivedCount} of {totalLines}
+                                      </p>
+                                    </div>
+                                    <div className='space-y-0.5'>
+                                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                        {t`Pending Items`}
+                                      </span>
+                                      <p
+                                        className={cn(
+                                          'text-sm font-bold',
+                                          pendingItemsCount > 0
+                                            ? 'text-[var(--orange-9)]'
+                                            : 'text-[var(--green-9)]',
+                                        )}
+                                      >
+                                        {pendingItemsCount}{' '}
+                                        {pendingItemsCount === 1
+                                          ? t`item`
+                                          : t`items`}{' '}
+                                        ({totalRemainingUnits} {t`units`})
+                                      </p>
+                                    </div>
+                                    <div className='space-y-0.5'>
+                                      <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                        {t`Pending PO Balance`}
+                                      </span>
+                                      <p
+                                        className={cn(
+                                          'text-sm font-bold',
+                                          stillPendingVal > 0
+                                            ? 'text-[var(--orange-9)]'
+                                            : 'text-[var(--gray-13)]',
+                                        )}
+                                      >
+                                        {currencySymbol} {stillPendingVal.toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
                                 </div>
-                              )
-                            })()}
 
-                            {/* Items Table */}
-                            {(() => {
-                              const currentData =
-                                activeBackOrderTab === 'current'
-                                  ? backOrder
-                                  : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                {/* Line Items Reconciliation Table */}
+                                <div className='space-y-2.5'>
+                                  <div className='flex items-center justify-between'>
+                                    <h4 className='flex items-center gap-2 text-xs font-semibold text-[var(--gray-12)]'>
+                                      <Icon
+                                        className='h-4 w-4 text-[var(--gray-11)]'
+                                        name='tabler:list-check'
+                                      />
+                                      <span>{t`PO Line Items & Backorder Reconciliation`}</span>
+                                    </h4>
+                                    <span className='inline-flex items-center gap-1 rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-10)]'>
+                                      <Icon
+                                        className='h-3 w-3 shrink-0 text-[var(--primary-9)]'
+                                        name='tabler:list-check'
+                                      />
+                                      <span>
+                                        {items.length}{' '}
+                                        {items.length === 1
+                                          ? t`Line Item`
+                                          : t`Line Items`}
+                                      </span>
+                                    </span>
+                                  </div>
 
-                              const items =
-                                currentData?.missing_qty_by_item || []
-                              const currencySymbol =
-                                agentData?.po_row?.Currency || '$'
-
-                              // Totals
-                              const totalRemaining = items.reduce(
-                                (sum: number, r: any) =>
-                                  sum + (r.remaining || 0),
-                                0,
-                              )
-                              const totalInvoiceAmt = items.reduce(
-                                (sum: number, r: any) =>
-                                  sum + (r.invoice_qty || 0) * (r.price || 0),
-                                0,
-                              )
-
-                              return (
-                                <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface shadow-xs duration-300'>
-                                  <div className='overflow-x-auto'>
+                                  <div className='overflow-x-auto rounded-xl border border-[var(--gray-2)] bg-surface'>
                                     <table className='w-full border-collapse text-left text-xs'>
-                                      <thead className='border-b border-[var(--gray-2)] bg-[var(--gray-1)]'>
-                                        <tr className='text-[11px] font-semibold text-[var(--gray-11)]'>
-                                          <th className='px-3 py-2.5'>
-                                            {t`Line Item`}
+                                      <thead>
+                                        <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                          <th className='w-12 px-3 py-2 text-center'>
+                                            #
                                           </th>
-                                          <th className='px-3 py-2.5 text-center'>
+                                          <th className='px-3 py-2'>
+                                            {t`Line Item Description`}
+                                          </th>
+                                          <th className='px-3 py-2 text-center'>
                                             {t`PO Qty`}
                                           </th>
-                                          <th className='px-3 py-2.5 text-center'>
-                                            {t`Recv Qty`}
+                                          <th className='px-3 py-2 text-center'>
+                                            {t`Invoiced Qty`}
                                           </th>
-                                          <th className='px-3 py-2.5 text-center'>
+                                          <th className='px-3 py-2 text-center'>
                                             {t`Balance Qty`}
                                           </th>
-                                          <th className='px-3 py-2.5 text-right'>
-                                            {t`Inv Amount`}
+                                          <th className='px-3 py-2 text-center'>
+                                            {t`Fulfillment`}
+                                          </th>
+                                          <th className='px-3 py-2 text-right'>
+                                            {t`Unit Price`}
+                                          </th>
+                                          <th className='px-3 py-2 text-right'>
+                                            {t`Invoice Total`}
                                           </th>
                                         </tr>
                                       </thead>
-                                      <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
-                                        {items.map((row: any) => {
-                                          const desc =
-                                            row.description?.trim() ||
-                                            'Unmapped item'
-                                          const invQty = row.invoice_qty ?? 0
-                                          const poQty = row.po_qty ?? 1
-                                          const price = row.price ?? 0
-                                          const receivedVal = invQty * price
-                                          const remaining = row.remaining ?? 0
-
-                                          // Dynamic percent calculation
-                                          const totalReceived =
-                                            poQty - remaining
-                                          const pct = Math.max(
-                                            0,
-                                            Math.min(
-                                              100,
-                                              Math.round(
-                                                (totalReceived / poQty) * 100,
-                                              ),
-                                            ),
-                                          )
-
-                                          return (
-                                            <tr
-                                              className='transition-colors hover:bg-[var(--gray-1)]/50'
-                                              key={`${row.po_line_id || 'line'}-${desc}`}
+                                      <tbody className='divide-y divide-[var(--gray-2)]'>
+                                        {items.length === 0 ? (
+                                          <tr>
+                                            <td
+                                              className='py-8 text-center text-[var(--gray-10)]'
+                                              colSpan={8}
                                             >
-                                              <td className='flex items-center gap-3.5 px-4 py-3 font-semibold text-[var(--gray-13)]'>
-                                                {/* Circular Progress Badge */}
-                                                <div
+                                              {t`No line items found for this back order record`}
+                                            </td>
+                                          </tr>
+                                        ) : (
+                                          items.map((row: any, idx: number) => {
+                                            const desc =
+                                              row.description?.trim() ||
+                                              'Unmapped item'
+                                            const invQty = row.invoice_qty ?? 0
+                                            const poQty =
+                                              row.po_qty !== undefined &&
+                                              row.po_qty !== null
+                                                ? row.po_qty
+                                                : (invQty + (row.remaining ?? 0)) || 1
+                                            const price = row.price ?? 0
+                                            const receivedVal =
+                                              row.amount !== undefined &&
+                                              row.amount > 0
+                                                ? row.amount
+                                                : invQty * price
+                                            const remaining = row.remaining ?? 0
+                                            const totalReceived =
+                                              poQty - remaining
+                                            const pct = Math.max(
+                                              0,
+                                              Math.min(
+                                                100,
+                                                Math.round(
+                                                  (totalReceived / poQty) * 100,
+                                                ),
+                                              ),
+                                            )
+
+                                            return (
+                                              <tr
+                                                className='transition-colors hover:bg-[var(--gray-1)]'
+                                                key={`${row.po_line_id || idx}-${desc}`}
+                                              >
+                                                <td className='px-3 py-2 text-center font-mono text-[11px] text-[var(--gray-10)]'>
+                                                  {row.po_line_id || idx + 1}
+                                                </td>
+                                                <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
+                                                  <div className='flex items-center gap-2'>
+                                                    <span className='font-semibold text-[var(--gray-13)]'>
+                                                      {desc}
+                                                    </span>
+                                                    {row.reason && (
+                                                      <span className='inline-flex items-center rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-1.5 py-0.2 text-[10px] font-semibold text-[var(--orange-9)]'>
+                                                        {row.reason ===
+                                                        'SHORT_SHIP'
+                                                          ? t`Short Ship`
+                                                          : row.reason}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </td>
+                                                <td className='px-3 py-2 text-center font-bold text-[var(--gray-13)]'>
+                                                  {poQty}
+                                                </td>
+                                                <td
                                                   className={cn(
-                                                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-black transition-colors',
-                                                    getPctColorClass(pct),
+                                                    'px-3 py-2 text-center font-bold',
+                                                    invQty > 0
+                                                      ? 'text-[var(--green-9)]'
+                                                      : 'text-[var(--gray-9)]',
                                                   )}
                                                 >
-                                                  {pct}%
-                                                </div>
-                                                <div>
-                                                  <div className='text-xs font-bold text-[var(--gray-13)]'>
-                                                    {desc}
-                                                  </div>
-                                                  <div className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
-                                                    PO Line:{' '}
-                                                    {row.po_line_id || '—'} •
-                                                    Price: {currencySymbol}
-                                                    {price.toFixed(2)}
-                                                  </div>
-                                                </div>
-                                              </td>
-                                              <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
-                                                {poQty}
-                                              </td>
-                                              <td
-                                                className={cn(
-                                                  'px-4 py-3 text-center font-bold',
-                                                  invQty > 0
-                                                    ? 'text-[var(--teal-9)]'
-                                                    : 'font-medium text-[var(--gray-9)]',
-                                                )}
-                                              >
-                                                {invQty > 0 ? invQty : '—'}
-                                              </td>
-                                              <td className='px-4 py-3 text-center font-bold'>
-                                                {remaining > 0 ? (
-                                                  <span className='text-[var(--orange-9)]'>
-                                                    {remaining} pending
+                                                  {invQty > 0 ? invQty : '—'}
+                                                </td>
+                                                <td className='px-3 py-2 text-center font-bold'>
+                                                  {remaining > 0 ? (
+                                                    <span className='text-[var(--orange-9)]'>
+                                                      {remaining} {t`pending`}
+                                                    </span>
+                                                  ) : (
+                                                    <span className='text-[var(--gray-10)]'>
+                                                      0
+                                                    </span>
+                                                  )}
+                                                </td>
+                                                <td className='px-3 py-2 text-center'>
+                                                  <span
+                                                    className={cn(
+                                                      'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold',
+                                                      getPctColorClass(pct),
+                                                    )}
+                                                  >
+                                                    {pct}%
                                                   </span>
-                                                ) : (
-                                                  <span className='text-[var(--gray-11)]'>
-                                                    0
-                                                  </span>
-                                                )}
-                                              </td>
-                                              <td
-                                                className={cn(
-                                                  'px-4 py-3 text-right font-bold',
-                                                  receivedVal > 0
-                                                    ? 'text-[var(--teal-10)]'
-                                                    : 'font-medium text-[var(--gray-9)]',
-                                                )}
-                                              >
-                                                {receivedVal > 0
-                                                  ? `${currencySymbol}${receivedVal.toFixed(2)}`
-                                                  : '—'}
-                                              </td>
-                                            </tr>
-                                          )
-                                        })}
+                                                </td>
+                                                <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
+                                                  {currencySymbol}{' '}
+                                                  {price.toFixed(2)}
+                                                </td>
+                                                <td className='px-3 py-2 text-right font-bold text-[var(--gray-13)]'>
+                                                  {receivedVal > 0
+                                                    ? `${currencySymbol} ${receivedVal.toFixed(2)}`
+                                                    : '—'}
+                                                </td>
+                                              </tr>
+                                            )
+                                          })
+                                        )}
                                       </tbody>
-                                      <tfoot className='border-t border-[var(--gray-2)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
-                                        <tr className='h-11'>
-                                          <td className='px-4 py-3 font-medium'>
-                                            {items.length} line items
-                                          </td>
+                                      <tfoot className='border-t border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        <tr>
                                           <td
-                                            className='px-4 py-3'
+                                            className='px-3 py-2 font-medium'
                                             colSpan={2}
-                                          />
-                                          <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
-                                            Total pending qty:{' '}
-                                            <span className='underline decoration-[var(--orange-4)] decoration-2 underline-offset-4'>
-                                              {totalRemaining}
-                                            </span>
+                                          >
+                                            {items.length}{' '}
+                                            {items.length === 1
+                                              ? t`line item reconciled`
+                                              : t`line items reconciled`}
                                           </td>
-                                          <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
-                                            Inv total: {currencySymbol}
+                                          <td className='px-3 py-2 text-center font-bold text-[var(--gray-13)]'>
+                                            {totalPoQty}
+                                          </td>
+                                          <td className='px-3 py-2 text-center font-bold text-[var(--green-9)]'>
+                                            {totalReceivedUnits}
+                                          </td>
+                                          <td className='px-3 py-2 text-center font-bold text-[var(--orange-9)]'>
+                                            {totalRemainingUnits > 0
+                                              ? `${totalRemainingUnits} pending`
+                                              : '0'}
+                                          </td>
+                                          <td className='px-3 py-2 text-center font-bold'>
+                                            {overallPct}%
+                                          </td>
+                                          <td className='px-3 py-2' />
+                                          <td className='px-3 py-2 text-right font-black text-[var(--gray-13)]'>
+                                            {currencySymbol}{' '}
                                             {totalInvoiceAmt.toFixed(2)}
                                           </td>
                                         </tr>
@@ -6109,10 +6453,10 @@ const Overview = (props: any) => {
                                     </table>
                                   </div>
                                 </div>
-                              )
-                            })()}
-                          </div>
-                        </div>
+                              </div>
+                            )
+                          })()}
+                        </DetailReportView>
                       )}
                     </>
                   ) : (
@@ -6136,9 +6480,10 @@ const Overview = (props: any) => {
                               ].map((label) => (
                                 <FormCard
                                   fieldKey={label}
-                                  hasAppliedSuggestion={
-                                    !!appliedFieldSuggestions[label]
-                                  }
+                                  hasAppliedSuggestion={Boolean(
+                                    appliedFieldSuggestions[label] ||
+                                    appliedFieldSuggestions[label?.toLowerCase()?.trim()]
+                                  )}
                                   icon={getFieldIcon(label)}
                                   isAutoOpened={Boolean(isAutoOpenedRequest)}
                                   isLoading={isCurrentlyProcessing}
@@ -6148,8 +6493,11 @@ const Overview = (props: any) => {
                                     kanbanMissingFieldIds,
                                     label,
                                   )}
-                                  onApplySuggestion={() =>
-                                    handleApplySuggestion(label)
+                                  onApplySuggestion={(_source: string, appliedVal?: unknown) =>
+                                    handleApplySuggestion(
+                                      label,
+                                      appliedVal ?? getFieldPoValue(label),
+                                    )
                                   }
                                   onDismissSuggestion={() =>
                                     handleDismissSuggestion(label)
@@ -6263,14 +6611,20 @@ const Overview = (props: any) => {
                                   return (
                                     <FormCard
                                       fieldKey={key}
-                                      hasAppliedSuggestion={
-                                        !!appliedFieldSuggestions[key]
-                                      }
+                                      hasAppliedSuggestion={Boolean(
+                                        appliedFieldSuggestions[key] ||
+                                        appliedFieldSuggestions[key?.toLowerCase()?.trim()] ||
+                                        appliedFieldSuggestions[displayLabel] ||
+                                        appliedFieldSuggestions[displayLabel?.toLowerCase()?.trim()]
+                                      )}
                                       icon={getFieldIcon(displayLabel || key)}
                                       isAutoOpened={Boolean(isAutoOpenedRequest)}
                                       key={key}
-                                      onApplySuggestion={() =>
-                                        handleApplySuggestion(key)
+                                      onApplySuggestion={(_source: string, appliedVal?: unknown) =>
+                                        handleApplySuggestion(
+                                          key,
+                                          appliedVal ?? getFieldPoValue(key),
+                                        )
                                       }
                                       onDismissSuggestion={() =>
                                         handleDismissSuggestion(key)
@@ -6350,7 +6704,7 @@ const Overview = (props: any) => {
                                     formModel={formModel}
                                     handleFieldFocus={handleFieldFocus}
                                     hasAnyScore={false}
-                                    hideFooter={true}
+                                    hideFooter={false}
                                     isDynamicTable={true}
                                     isReadOnly={true}
                                     lineItems={poLineItems}

@@ -15,9 +15,11 @@ import {
   suggestDashboardPrompt,
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
+import EmptyState from '@/components/base/EmptyState'
 import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
 import {
@@ -61,8 +63,10 @@ export default function DashboardApiBuilder({
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isFullDashboardView, setIsFullDashboardView] = useState(false)
+  const [isConfiguring, setIsConfiguring] = useState(false)
   const [html, setHtml] = useState('')
 
+  const isWorkflow = Boolean(workflowId && !repositoryId)
   const tenantId = authUserStore.getState().session?.tenantId || ''
   const activeWorkflowId = resolvedWorkflowId || workflowId || ''
 
@@ -224,6 +228,7 @@ export default function DashboardApiBuilder({
     const initialize = async () => {
       setIsLoadingSaved(true)
       setIsFullDashboardView(false)
+      setIsConfiguring(false)
       setActiveStep(1)
       setSchema(null)
       setHtml('')
@@ -233,8 +238,7 @@ export default function DashboardApiBuilder({
 
       const currentTenantId = authUserStore.getState().session?.tenantId || ''
       if (!currentTenantId || (!repositoryId && !workflowId)) {
-        await startSuggestedPrompt(isActive)
-        if (active) setIsLoadingSaved(false)
+        setIsLoadingSaved(false)
         return
       }
 
@@ -272,8 +276,7 @@ export default function DashboardApiBuilder({
         return
       }
 
-      await startSuggestedPrompt(isActive)
-      if (active) setIsLoadingSaved(false)
+      setIsLoadingSaved(false)
     }
 
     void initialize()
@@ -282,6 +285,15 @@ export default function DashboardApiBuilder({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repositoryId, repositoryName, workflowId])
+
+  const handleStartConfiguring = () => {
+    setIsConfiguring(true)
+    if (schema) {
+      setActiveStep(2)
+    } else {
+      void startSuggestedPrompt(() => true)
+    }
+  }
 
   const toggleKpi = (id: string) => {
     if (!schema) return
@@ -396,6 +408,7 @@ export default function DashboardApiBuilder({
       }
     }
     setIsFullDashboardView(false)
+    setIsConfiguring(true)
     setActiveStep(html ? 3 : 2)
   }
 
@@ -574,6 +587,31 @@ export default function DashboardApiBuilder({
     )
   }
 
+  if (!html && !isConfiguring) {
+    return (
+      <AnimateFadeIn delay={0.1}>
+        <div className='flex min-h-[420px] w-full items-center justify-center rounded-2xl border border-gray-3 bg-surface p-8 text-center sm:p-12'>
+          <EmptyState
+            description={
+              isWorkflow
+                ? t`A dashboard has not been configured for the "${repositoryName}" workflow yet. Build a dashboard to track requests, statuses, and performance analytics.`
+                : t`A dashboard has not been configured for the "${repositoryName}" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity.`
+            }
+            icon={isWorkflow ? 'lucide:workflow' : 'lucide:folder'}
+            primaryActionIcon='tabler:arrow-right'
+            primaryActionLabel={
+              isWorkflow
+                ? t`Configure Workflow Dashboard`
+                : t`Configure Folder Dashboard`
+            }
+            title={t`No Dashboard Configured`}
+            onPrimaryAction={handleStartConfiguring}
+          />
+        </div>
+      </AnimateFadeIn>
+    )
+  }
+
   return (
     <motion.div
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -630,17 +668,28 @@ export default function DashboardApiBuilder({
             )}
           </div>
 
-          <div className='flex justify-end pt-2'>
-            <Button
-              disabled={isGeneratingDesc || !editableDesc.trim()}
-              label={t`Continue to Dashboard Designer`}
-              size='md'
-              suffixIcon='lucide:arrow-right'
-              onClick={() => {
-                setActiveStep(2)
-                void runSchema(editableDesc)
-              }}
-            />
+          <div className='flex items-center justify-between pt-2'>
+            {!html && (
+              <Button
+                color='gray'
+                label={t`Cancel`}
+                size='md'
+                variant='outline'
+                onClick={() => setIsConfiguring(false)}
+              />
+            )}
+            <div className='ml-auto'>
+              <Button
+                disabled={isGeneratingDesc || !editableDesc.trim()}
+                label={t`Continue to Dashboard Designer`}
+                size='md'
+                suffixIcon='lucide:arrow-right'
+                onClick={() => {
+                  setActiveStep(2)
+                  void runSchema(editableDesc)
+                }}
+              />
+            </div>
           </div>
         </div>
       </BuilderTimelineStep>

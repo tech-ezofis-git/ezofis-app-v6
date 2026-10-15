@@ -24,7 +24,6 @@ import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
 import DocumentRepositorySetup from './workflows/document-repository/DocumentRepositorySetup'
 import useDmsSetupStore from './workflows/document-repository/stores/useDmsSetupStore'
-import { openApSetupPreview } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
 type DashboardSourceKind = 'repository' | 'workflow'
 
@@ -416,14 +415,6 @@ const DashboardPage = () => {
                       />
                     </>
                   ) : null}
-                  {isAdminUser && (
-                    <Button
-                      label={t`Get Started`}
-                      size='md'
-                      suffixIcon='lucide:arrow-right'
-                      onClick={openApSetupPreview}
-                    />
-                  )}
                 </div>
               </div>
             </AnimateFadeIn>

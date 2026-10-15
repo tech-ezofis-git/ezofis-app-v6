@@ -1391,6 +1391,35 @@ const renderDynamicCell = (
   return renderCellByType(type, rawVal, row)
 }
 
+const getDynamicCellText = (
+  row: any,
+  fieldKey: string,
+  label: string,
+  field: any,
+) => {
+  let rawVal = readListFieldValue(
+    row,
+    fieldKey,
+    field?.jsonId,
+    field?.id,
+    field?.name,
+    label,
+  )
+
+  const extracted = extractStandardFieldValue(row, fieldKey, label)
+  if (extracted !== null) {
+    rawVal = extracted
+  }
+
+  if (rawVal === undefined || rawVal === null || rawVal === '') return ''
+  if (typeof rawVal === 'object') return ''
+
+  const type = String(field?.type ?? '').toUpperCase()
+  return type === 'DATE'
+    ? formatDatetime(rawVal as string, 'date')
+    : String(rawVal)
+}
+
 export const getFormPanels = (form: any) => {
   if (!form) return []
   const nested =
@@ -1489,6 +1518,103 @@ export const resolveConfiguredTitle = (
   return null
 }
 
+const getRequestNoText = (
+  row: any,
+  workflow: WorkflowOption | null,
+  isAccountsPayable: boolean,
+  isDocumentApproval: boolean,
+) => {
+  const jobId = String(row?.apAgentJobId || row?.jobId || '').trim()
+  if (row?.isProcessing && jobId) {
+    return `JOB-${jobId}`
+  }
+  const configuredTitle = resolveConfiguredTitle(
+    row,
+    workflow,
+    isDocumentApproval,
+  )
+  return (
+    configuredTitle ||
+    (isAccountsPayable
+      ? extractInvoiceNumber(row)
+      : isDocumentApproval
+        ? row?.repositoryItem?.fileName || extractGenericRequestNumber(row)
+        : extractGenericRequestNumber(row))
+  )
+}
+
+const getRaisedByText = (row: any) =>
+  row?.transactionCreatedByEmail ||
+  row?.createdByName ||
+  row?.createdByEmail ||
+  row?.raisedBy ||
+  row?.createdBy ||
+  row?.userName ||
+  ''
+
+const getLastActionText = (row: any) => {
+  const lastActionAt =
+    row?.lastActionDate ||
+    row?.lastAction?.createdAt ||
+    row?.updatedAt ||
+    row?.transactionCreatedAt ||
+    row?.createdAtUtc ||
+    row?.raisedAt ||
+    row?.createdAt
+  const parsed = parseUtcDate(lastActionAt)
+  return parsed ? formatDatetime(parsed.toISOString(), 'datetime') : ''
+}
+
+const getDecisionText = (row: any, activeTab: string | undefined) => {
+  if (activeTab === 'Processed') return 'Paid'
+  if (row?.isProcessing) return 'Processing'
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+  const rawDecision =
+    parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    ''
+  return rawDecision ? formatDecision(String(rawDecision)) : ''
+}
+
+const getAiInsightText = (row: any) => {
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const qualify = row?.qualifyAgentResponse?.qualifier_result
+  return String(
+    agentData?.ai_insight ||
+      agentData?.aiInsight ||
+      agentData?.ai_insect ||
+      qualify?.['AI Insight'] ||
+      qualify?.['Ai Insight'] ||
+      qualify?.aiInsight ||
+      '',
+  )
+    .replace(/^[✨✨✩✰\s]+/, '')
+    .trim()
+}
+
+const getInvoiceAmountNumber = (row: any) => {
+  const amtStr = findInvoiceAmount(row)
+  const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
+  return amount !== null && !Number.isNaN(amount) ? amount : null
+}
+
+const getInvoiceDateText = (row: any) => {
+  const rawDate = extractInvoiceDate(row)
+  if (!rawDate || rawDate === '-') return ''
+  const parsed = new Date(rawDate)
+  return Number.isNaN(parsed.getTime())
+    ? String(rawDate)
+    : parsed.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+}
+
 const getBaseColumns = (
   selectedItem: any,
   activeTab: string | undefined,
@@ -1507,6 +1633,8 @@ const getBaseColumns = (
           ? t`File Name`
           : t`Request No`,
       size: 260,
+      exportValue: (row: any) =>
+        getRequestNoText(row, workflow, isAccountsPayable, isDocumentApproval),
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
           <StatusCell originalIndex={index} row={row} />
@@ -1531,28 +1659,12 @@ const getBaseColumns = (
                     }
                   }}
                 >
-                  {(() => {
-                    const jobId = String(
-                      row?.apAgentJobId || row?.jobId || '',
-                    ).trim()
-                    if (row?.isProcessing && jobId) {
-                      return `JOB-${jobId}`
-                    }
-                    const configuredTitle = resolveConfiguredTitle(
-                      row,
-                      workflow,
-                      isDocumentApproval,
-                    )
-                    return (
-                      configuredTitle ||
-                      (isAccountsPayable
-                        ? extractInvoiceNumber(row)
-                        : isDocumentApproval
-                          ? row?.repositoryItem?.fileName ||
-                            extractGenericRequestNumber(row)
-                          : extractGenericRequestNumber(row))
-                    )
-                  })()}
+                  {getRequestNoText(
+                    row,
+                    workflow,
+                    isAccountsPayable,
+                    isDocumentApproval,
+                  )}
                 </button>
               }
             />
@@ -1575,6 +1687,10 @@ const getBaseColumns = (
         id: 'poNumber',
         label: t`PO Number`,
         size: 140,
+        exportValue: (row: any) => {
+          const poNumber = extractPONumber(row)
+          return poNumber === 'N/A' ? '' : poNumber
+        },
         renderCell: (row: any) => {
           const poNumber = extractPONumber(row)
           return <WrapOnHoverCell value={poNumber} />
@@ -1584,6 +1700,7 @@ const getBaseColumns = (
         id: 'supplier',
         label: t`Supplier`,
         size: 200,
+        exportValue: (row: any) => findSupplierName(row) || '',
         renderCell: (row: any) => {
           const supplier = findSupplierName(row) || '-'
           return (
@@ -1603,6 +1720,11 @@ const getBaseColumns = (
         id: 'status',
         label: t`Current Stage`,
         size: 220,
+        exportValue: (row: any) => {
+          const jobId = String(row?.apAgentJobId || row?.jobId || '').trim()
+          if (row?.isProcessing && jobId) return `JOB-${jobId}`
+          return getGenericStageInfo(workflow, row).currentLabel
+        },
         renderCell: (row: any) => {
           const jobId = String(row?.apAgentJobId || row?.jobId || '').trim()
           if (row?.isProcessing && jobId) {
@@ -1627,6 +1749,7 @@ const getBaseColumns = (
         id: 'raisedBy',
         label: t`Raised By`,
         size: 180,
+        exportValue: (row: any) => getRaisedByText(row),
         renderCell: (row: any) => (
           <HoverExpandableText
             className='text-[13px] font-medium text-[var(--gray-11)]'
@@ -1648,6 +1771,9 @@ const getBaseColumns = (
         id: 'lastActionAt',
         label: t`Time Running`,
         size: 160,
+        // "2h ago" goes stale inside a file; export the actual timestamp.
+        exportLabel: t`Last Action`,
+        exportValue: (row: any) => getLastActionText(row),
         renderCell: (row: any) => {
           const lastActionAt =
             row?.lastActionDate ||
@@ -1691,6 +1817,7 @@ const getBaseColumns = (
       id: 'matchStatus',
       label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
       size: 140,
+      exportValue: (row: any) => getDecisionText(row, activeTab),
       renderCell: (row: any, _index = 0) => {
         if (activeTab === 'Processed') {
           return (
@@ -1789,6 +1916,12 @@ const getBaseColumns = (
       id: 'raisedBy',
       label: t`Raised By`,
       size: 200,
+      exportValue: (row: any) =>
+        findSupplierName(row) ||
+        row?.vendor ||
+        row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+        row?.raisedBy ||
+        '',
       renderCell: (row: any) => {
         const supplierName =
           findSupplierName(row) ||
@@ -1841,6 +1974,7 @@ const getBaseColumns = (
       id: 'aiInsight',
       label: t`AI Insight`,
       size: 260,
+      exportValue: (row: any) => getAiInsightText(row),
       renderCell: (_row: any) => {
         const agentData =
           _row._agentResponse || _row._agentData?.[0] || _row._agentData || {}
@@ -1889,6 +2023,10 @@ const getBaseColumns = (
       id: 'poNumber',
       label: t`PO Number`,
       size: 160,
+      exportValue: (row: any) => {
+        const poNum = extractPONumber(row)
+        return poNum === 'N/A' ? '' : poNum
+      },
       renderCell: (row: any) => {
         const poNum = extractPONumber(row)
         return (
@@ -1903,6 +2041,16 @@ const getBaseColumns = (
       id: 'termsDueDate',
       label: t`Due & Terms`,
       size: 120,
+      exportValue: (row: any) => {
+        const terms = extractPaymentTerms(row)
+        const dueDate = extractDueDate(row)
+        const { calculationText, termsDisplay } = computeDueDateInfo(
+          row,
+          terms,
+          dueDate,
+        )
+        return `${termsDisplay} (${calculationText})`
+      },
       renderCell: (row: any) => {
         const terms = extractPaymentTerms(row)
         const dueDate = extractDueDate(row)
@@ -1930,6 +2078,8 @@ const getBaseColumns = (
       id: 'amount',
       label: t`Total Value`,
       size: 110,
+      // Numeric so Excel can sum/sort it.
+      exportValue: (row: any) => getInvoiceAmountNumber(row),
       renderCell: (row: any) => {
         const amtStr = findInvoiceAmount(row)
         const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
@@ -1953,6 +2103,7 @@ const getBaseColumns = (
       id: 'invoiceDate',
       label: t`Invoice Date`,
       size: 140,
+      exportValue: (row: any) => getInvoiceDateText(row),
       renderCell: (row: any) => {
         const rawDate = extractInvoiceDate(row)
         let dateDisplay = 'May 19, 2026'
@@ -2016,6 +2167,8 @@ export const buildDynamicColumns = (
           id: fieldKey,
           label,
           size: 200,
+          exportValue: (row: any) =>
+            getDynamicCellText(row, fieldKey, label, field),
           renderCell: (row: any) =>
             renderDynamicCell(row, fieldKey, label, field, tableMetaByParentId),
         })
@@ -2023,6 +2176,22 @@ export const buildDynamicColumns = (
     }
   }
   return dynamicCols
+}
+
+/**
+ * Every form field of the workflow (tables and file uploads excluded) as an
+ * export-only column set, including fields the list treats as "standard".
+ */
+export const buildFormDataExportColumns = (
+  workflow: WorkflowOption | null,
+): Column[] => {
+  const form = resolveFormJson(workflow)
+  if (!form) return []
+  const allPanels = getFormPanels(form)
+  if (!allPanels.length) return []
+  return buildDynamicColumns(allPanels, null, buildTableMeta(allPanels), {
+    includeStandard: true,
+  })
 }
 
 export const resolvePreviewFieldColumns = (

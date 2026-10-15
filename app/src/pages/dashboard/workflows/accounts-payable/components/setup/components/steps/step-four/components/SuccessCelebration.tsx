@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -12,15 +13,17 @@ type SuccessCelebrationProps = {
   loadingLabel?: string
   title?: string
   onCreateRequest?: () => void
+  onClose?: () => void
 }
 
 export default function SuccessCelebration({
-  buttonIcon = 'tabler:plus',
-  buttonLabel = 'Start Process',
-  description = 'Your Accounts Payable workspace is ready.\nStart by creating your first request.',
+  buttonIcon = 'tabler:file-invoice',
+  buttonLabel = 'Try with Sample Invoice',
+  description = 'Your Accounts Payable workspace is ready.\nSelect from the listed sample invoices or upload your own to test automated processing.',
   loadingLabel = 'Loading request workspace...',
-  title = "You're All Set!",
+  title = 'Accounts Payable Setup Completed!',
   onCreateRequest,
+  onClose,
 }: SuccessCelebrationProps = {}) {
   const primaryButtonRef = useRef<HTMLButtonElement>(null)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
@@ -73,15 +76,22 @@ export default function SuccessCelebration({
     }
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <motion.div
       animate={{ opacity: 1 }}
-      className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/5 p-4 backdrop-blur-sm'
+      className='fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'
       initial={{ opacity: 0 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) {
+          onClose()
+        }
+      }}
       transition={{ duration: prefersReducedMotion ? 0.2 : 0.3 }}
     >
       <motion.div
-        className='relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-md dark:bg-surface-secondary/90'
+        className='relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/95 p-8 text-center shadow-2xl backdrop-blur-md dark:bg-surface-secondary/95'
         animate={
           prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }
         }
@@ -93,6 +103,16 @@ export default function SuccessCelebration({
           ease: 'easeOut',
         }}
       >
+        {onClose && (
+          <button
+            aria-label='Close'
+            className='absolute top-3.5 right-3.5 z-30 inline-flex size-8 items-center justify-center rounded-lg text-gray-10 transition-colors hover:bg-gray-3 hover:text-gray-13 focus-visible:outline-none'
+            type='button'
+            onClick={onClose}
+          >
+            <Icon className='size-4' name='tabler:x' />
+          </button>
+        )}
         <div className='relative z-[2] flex w-full flex-col items-center'>
           <style>{`
             @keyframes drawCircle { to { stroke-dashoffset: 0; } }
@@ -175,7 +195,7 @@ export default function SuccessCelebration({
             {/* Subtext */}
             <motion.p
               animate={{ opacity: 1, y: 0 }}
-              className='mt-3 max-w-md text-14/5 text-gray-11'
+              className='mt-3 max-w-md whitespace-pre-line text-14/5 text-gray-11'
               initial={
                 prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }
               }
@@ -214,7 +234,8 @@ export default function SuccessCelebration({
           </motion.div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   )
 }
 

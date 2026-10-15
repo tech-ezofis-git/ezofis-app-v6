@@ -808,7 +808,7 @@ const StepFour = () => {
   }
 
   if (showCelebration) {
-    return <SuccessCelebration />
+    return <SuccessCelebration onClose={() => setShowCelebration(false)} />
   }
 
   return (
