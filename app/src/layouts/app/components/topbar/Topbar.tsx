@@ -30,7 +30,11 @@ const Topbar = () => {
   const isSearchPage = pathname.startsWith('/search')
 
   return (
-    <header className='relative z-30 flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
+    // z-30 normally. While the global search is open the topbar's stacking
+    // context is lifted to z-50 so its dropdown clears page toolbars (e.g.
+    // DynamicFilter, z-40) but stays below the sidebar (z-60), modals and
+    // other overlays.
+    <header className='relative z-30 flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4 has-[[data-global-search-open]]:z-50'>
       <div className='flex items-center gap-2'>
         <div className='flex items-center xl:hidden'>
           <SidebarToggle />

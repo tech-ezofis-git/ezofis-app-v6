@@ -35,6 +35,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import {
   Button,
   Card,
@@ -2825,6 +2826,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                 <Send className='h-4 w-4' />
               </button>
             </div>
+            <AiDisclaimer className='mt-2 px-1' />
           </div>
         </div>
 

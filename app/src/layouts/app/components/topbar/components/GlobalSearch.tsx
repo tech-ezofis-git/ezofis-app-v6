@@ -353,7 +353,11 @@ const GlobalSearch = () => {
   const searchLabel = query.trim()
 
   return (
-    <div className='relative inline-flex' ref={rootRef}>
+    <div
+      className='relative inline-flex'
+      data-global-search-open={opened ? 'true' : undefined}
+      ref={rootRef}
+    >
       {!opened ? (
         <IconButton
           ariaLabel={t`Search`}

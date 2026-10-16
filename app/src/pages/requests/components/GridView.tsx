@@ -1560,8 +1560,17 @@ const GridView = <TData,>({
     content = (
       <div className='flex flex-col gap-3 pt-3 pb-4'>
         {data.map((group: any) => {
-          const groupId = group.groupId || 'root'
-          const isRealGroup = Boolean(group.groupKey && group.groupValue)
+          const groupId = group.groupId || 'no-group'
+          const isSingleFlatGroup =
+            data.length === 1 &&
+            (!group.groupKey ||
+              !group.groupValue ||
+              String(group.groupValue).trim().toLowerCase() === 'root' ||
+              group.groupId === 'root' ||
+              group.groupId === 'all')
+          const isRealGroup =
+            data.length > 1 ||
+            (!isSingleFlatGroup && Boolean(group.groupKey && group.groupValue))
           const isCollapsed = isRealGroup && collapsedGroupIds.has(groupId)
           const groupItems: any[] = Array.isArray(group.items)
             ? group.items
@@ -1636,7 +1645,14 @@ const GridView = <TData,>({
                   name='tabler:stack-2'
                 />
                 <span className='text-15 font-semibold whitespace-nowrap text-[var(--gray-13)]'>
-                  {group.groupValue} ({group.groupCount})
+                  {(() => {
+                    const raw = group.groupValue || group.groupKey
+                    if (!raw) return 'No Group'
+                    const str = String(raw).trim()
+                    if (str.toLowerCase() === 'root') return 'No Group'
+                    return str
+                  })()}{' '}
+                  ({group.groupCount})
                 </span>
                 {showAmounts && (
                   <div

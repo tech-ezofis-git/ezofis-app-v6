@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 
 const FORM_AI_STATUS_WORDS = [
@@ -203,6 +204,7 @@ const FormAIPanel = () => {
             >
               Generate
             </Button>
+            <AiDisclaimer />
           </>
         )}
       </div>

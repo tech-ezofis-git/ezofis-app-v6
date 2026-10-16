@@ -20,9 +20,20 @@ import {
  * grouped inbox-list endpoint is not used (see useInboxData's queryFn).
  */
 const getGroupableFieldValue = (item: any, columnId: string): string => {
-  if (columnId === 'poNumber') return extractPONumber(item)
+  if (columnId === 'poNumber') {
+    const po = extractPONumber(item)
+    return !po || po === '-' || po.toLowerCase() === 'root' ? 'No Group' : po
+  }
   const raw = item?.[columnId]
-  return raw == null || raw === '' ? 'N/A' : String(raw)
+  if (
+    raw == null ||
+    raw === '' ||
+    raw === '-' ||
+    String(raw).trim().toLowerCase() === 'root'
+  ) {
+    return 'No Group'
+  }
+  return String(raw).trim()
 }
 
 const applyClientGrouping = (
@@ -33,7 +44,9 @@ const applyClientGrouping = (
   const byGroup = new Map<string, InboxItem[]>()
 
   for (const item of items) {
-    const key = getGroupableFieldValue(item, columnId) || 'N/A'
+    const rawKey = getGroupableFieldValue(item, columnId)
+    const key =
+      !rawKey || rawKey.toLowerCase() === 'root' ? 'No Group' : rawKey
     if (!byGroup.has(key)) {
       byGroup.set(key, [])
       order.push(key)
@@ -45,7 +58,7 @@ const applyClientGrouping = (
     const groupItems = byGroup.get(key)!
     return {
       groupCount: groupItems.length,
-      groupId: key,
+      groupId: key === 'No Group' ? 'no-group' : key,
       groupKey: key,
       groupValue: key,
       items: groupItems,
@@ -352,7 +365,11 @@ export const transformProcess = (
     _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
     _agentResponse: parsedAgentResponse,
     _canMove: canMove,
-    _groupKey: groupKey || listTab,
+    _groupKey: groupKey
+      ? groupKey.toLowerCase() === 'root'
+        ? 'No Group'
+        : groupKey
+      : listTab,
     _listTab: listTab,
     _originalIndex: originalIndex,
     documentNumber: requestNo,
@@ -678,10 +695,17 @@ const handleGroupedInner = (
     }
   }
 
+  const rawKey = inner.key
+  const isRootOrMissing =
+    !rawKey ||
+    rawKey === '-' ||
+    String(rawKey).trim().toLowerCase() === 'root'
+  const displayKey = isRootOrMissing ? 'No Group' : String(rawKey).trim()
+
   const groupItems = validItems.map((p) => {
     const item = transformProcess(
       p,
-      inner.key,
+      displayKey,
       tracker.value,
       activeTab,
       selectedWorkflow,
@@ -693,9 +717,9 @@ const handleGroupedInner = (
   if (groupItems.length > 0) {
     groupedData.push({
       groupCount: groupItems.length,
-      groupId: inner.key || `group-${idx}`,
-      groupKey: inner.key,
-      groupValue: inner.key,
+      groupId: isRootOrMissing ? 'no-group' : (inner.key || `group-${idx}`),
+      groupKey: displayKey,
+      groupValue: displayKey,
       items: groupItems,
     })
   }
