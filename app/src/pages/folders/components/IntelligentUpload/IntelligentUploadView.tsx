@@ -141,7 +141,10 @@ export default function IntelligentUploadView({
       }
 
       if (newItems.length > 0) {
-        setFiles((prev) => [...prev, ...newItems])
+        setFiles((prev) => [
+          ...prev.filter((f) => f.status !== 'uploaded'),
+          ...newItems,
+        ])
       }
     },
     [t],
@@ -726,28 +729,13 @@ export default function IntelligentUploadView({
       })
 
       if (processedCount > 0 && processedCount === totalPending) {
-        if (successfullyIndexedRepoIds.size === 1) {
-          const singleTargetRepoId = Array.from(successfullyIndexedRepoIds)[0]
-          console.log(
-            '[IntelligentUpload] Calling onDone with single targetRepoId:',
-            singleTargetRepoId,
-          )
-          showToast({
-            message:
-              processedCount === 1
-                ? t`Document successfully ingested and indexed.`
-                : t`All ${processedCount} documents successfully ingested and indexed.`,
-            variant: 'success',
-          })
-          await onDone(singleTargetRepoId)
-        } else {
-          console.log('[IntelligentUpload] Calling onDone for multiple folders')
-          showToast({
-            message: t`All ${processedCount} documents successfully ingested and indexed.`,
-            variant: 'success',
-          })
-          await onDone()
-        }
+        showToast({
+          message:
+            processedCount === 1
+              ? t`Document successfully ingested and indexed.`
+              : t`All ${processedCount} documents successfully ingested and indexed.`,
+          variant: 'success',
+        })
       } else if (processedCount > 0) {
         showToast({
           message: t`Indexed ${processedCount} of ${totalPending} document(s). Please review failed files.`,
