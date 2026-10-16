@@ -40,6 +40,7 @@ import {
 } from '@/pages/form-builder/store/formStore'
 import {
   buildInitialFormModel,
+  buildMasterConditions,
   buildMergedOcrFieldHints,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -72,6 +73,7 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
+import MasterPreselectSync from '@/pages/requests/components/workflow-request/components/MasterPreselectSync'
 import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -525,23 +527,11 @@ const getFieldOptions = (field: Question): string[] => {
   return []
 }
 
-const LivePreviewDropdown = ({
-  disabled,
-  fallbackRepositoryId,
-  field,
-  model,
-  multiple,
-  value,
-  onChange,
-}: {
-  disabled?: boolean
-  fallbackRepositoryId?: string
-  field: Question
-  model?: Record<string, any>
-  multiple?: boolean
-  value: any
-  onChange: (val: any) => void
-}) => {
+const useLivePreviewFieldOptions = (
+  field: Question,
+  model?: Record<string, any>,
+  fallbackRepositoryId?: string,
+) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
   const { panels } = useFormStore()
@@ -655,14 +645,7 @@ const LivePreviewDropdown = ({
     },
   })
 
-  const masterConditions = (
-    field.settings?.specific?.masterFormConditionColumn || []
-  )
-    .filter((c: any) => c?.formField && c?.masterColumn)
-    .map((c: any) => ({
-      masterColumn: String(c.masterColumn),
-      value: model?.[c.formField],
-    }))
+  const masterConditions = buildMasterConditions(field, model)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [] } = useQuery({
@@ -709,6 +692,32 @@ const LivePreviewDropdown = ({
     uniqueFieldOptions,
     field,
   ])
+
+  return selectOptions
+}
+
+const LivePreviewDropdown = ({
+  disabled,
+  fallbackRepositoryId,
+  field,
+  model,
+  multiple,
+  value,
+  onChange,
+}: {
+  disabled?: boolean
+  fallbackRepositoryId?: string
+  field: Question
+  model?: Record<string, any>
+  multiple?: boolean
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const selectOptions = useLivePreviewFieldOptions(
+    field,
+    model,
+    fallbackRepositoryId,
+  )
 
   useEffect(() => {
     if (selectOptions.length === 1) {
@@ -785,12 +794,16 @@ const LivePreviewDropdown = ({
 
 const LivePreviewChoiceGroup = ({
   disabled,
+  fallbackRepositoryId,
   field,
+  model,
   value,
   onChange,
 }: {
   disabled?: boolean
+  fallbackRepositoryId?: string
   field: Question
+  model?: Record<string, any>
   value: any
   onChange: (val: any) => void
 }) => {
@@ -800,7 +813,19 @@ const LivePreviewChoiceGroup = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field)
+  const selectOptions = useLivePreviewFieldOptions(
+    field,
+    model,
+    fallbackRepositoryId,
+  )
+
+  const baseOptions = useMemo(() => {
+    if (selectOptions && selectOptions.length > 0) {
+      return selectOptions.map((o) => o.name || String(o.id))
+    }
+    return getSharedFieldOptions(field)
+  }, [selectOptions, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 3
@@ -1029,6 +1054,30 @@ const LivePreviewChoiceGroup = ({
           </div>
         )}
     </div>
+  )
+}
+
+const LivePreviewPreselect = ({
+  field,
+  model,
+  onChange,
+  value,
+}: {
+  field: Question
+  model: Record<string, any>
+  onChange: (value: any) => void
+  value: any
+}) => {
+  const { panels } = useFormStore()
+  if (!field.settings?.specific?.masterPreselectEnabled) return null
+  return (
+    <MasterPreselectSync
+      allFields={panels.flatMap((p: any) => p.fields || [])}
+      field={field}
+      formModel={model}
+      value={value}
+      onChange={onChange}
+    />
   )
 }
 
@@ -1641,25 +1690,43 @@ const renderPreviewInput = (
       )
     case 'MULTI_SELECT':
       return (
-        <LivePreviewDropdown
-          disabled={disabled}
-          fallbackRepositoryId={fallbackRepositoryId}
-          field={field}
-          model={model}
-          value={fieldValue}
-          multiple
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewDropdown
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            multiple
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
       return (
-        <LivePreviewChoiceGroup
-          disabled={disabled}
-          field={field}
-          value={fieldValue}
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewChoiceGroup
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     default:
       return (

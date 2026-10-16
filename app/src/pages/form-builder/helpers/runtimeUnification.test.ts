@@ -792,4 +792,45 @@ describe('Phase 3: Core Field Renderers & Runtime Unification', () => {
     )
     expect(byId.fld_login_auth.settings.specific.loginType).toBe('EMAIL_OTP')
   })
+
+  it('9. Unpacks and normalizes forms whether provided directly, wrapped in _json, wrapped in formJson, or stringified', () => {
+    // Wrapped in _json (as returned by /form/:id in V6)
+    const fromUnderscoreJson = ensureNormalizedRuntimeFormJson({
+      id: 'form_123',
+      name: 'Packaging Form',
+      _json: MIGRATED_V5_FORM_FIXTURE,
+    })
+    expect(fromUnderscoreJson.panels).toHaveLength(1)
+    expect(fromUnderscoreJson.panels[0].fields.length).toBeGreaterThan(0)
+
+    // Wrapped in formJson
+    const fromFormJson = ensureNormalizedRuntimeFormJson({
+      id: 'form_123',
+      name: 'Packaging Form',
+      formJson: MIGRATED_V5_FORM_FIXTURE,
+    })
+    expect(fromFormJson.panels).toHaveLength(1)
+
+    // Stringified _json
+    const fromStringifiedUnderscoreJson = ensureNormalizedRuntimeFormJson({
+      id: 'form_123',
+      _json: JSON.stringify(MIGRATED_V5_FORM_FIXTURE),
+    })
+    expect(fromStringifiedUnderscoreJson.panels).toHaveLength(1)
+
+    // Entirely stringified
+    const fromStringifiedRoot = ensureNormalizedRuntimeFormJson(
+      JSON.stringify({ _json: MIGRATED_V5_FORM_FIXTURE }),
+    )
+    expect(fromStringifiedRoot.panels).toHaveLength(1)
+
+    // Wrapped in data._json
+    const fromNestedData = ensureNormalizedRuntimeFormJson({
+      data: {
+        _json: MIGRATED_V5_FORM_FIXTURE,
+      },
+    })
+    expect(fromNestedData.panels).toHaveLength(1)
+  })
 })
+

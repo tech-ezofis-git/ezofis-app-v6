@@ -37,6 +37,7 @@ import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
 import FormulaBuilder from './FormulaBuilder'
+import MasterPreselectSettings from './MasterPreselectSettings'
 import TableColumnSettingsPanel from './TableColumnSettingsPanel'
 
 function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
@@ -2647,6 +2648,16 @@ const QuestionSettings = ({
                         Options will change based on parent selection.
                       </div>
                     </div>
+
+                    {isMulti && (
+                      <MasterPreselectSettings
+                        activeQuestion={activeQuestion}
+                        allQuestions={allQuestions}
+                        onUpdate={(updates) =>
+                          updateNested('specific', updates)
+                        }
+                      />
+                    )}
 
                     <div>
                       <label className='mb-2 block text-13 font-medium text-gray-11'>

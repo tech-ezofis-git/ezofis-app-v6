@@ -162,8 +162,7 @@ export default function IntelligentUploadFileCard({
                 <div className='flex items-center gap-1.5 font-medium text-success-main'>
                   <Icon className='size-4' name='lucide:check-circle-2' />
                   <span>
-                    {t`Successfully uploaded to`}{' '}
-                    <strong>{selectedRepoName}</strong>
+                    {t`File moved to`} <strong>{selectedRepoName}</strong>
                   </span>
                 </div>
               )}

@@ -31,6 +31,7 @@ import {
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
+  buildMasterConditions,
   buildMergedOcrFieldHints,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -38,6 +39,7 @@ import {
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
+  type FieldOption,
   findFieldOption,
   getConfiguredFieldOptions,
   getDateTimeLimits,
@@ -59,12 +61,14 @@ import {
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 import MasterFillSync from './MasterFillSync'
+import MasterPreselectSync from './MasterPreselectSync'
 import TableFieldRenderer from './TableFieldRenderer'
 
 interface ChoiceFieldProps {
   field: any
   value: any
   error?: string
+  options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
   onChange: (val: any) => void
@@ -109,6 +113,7 @@ interface StagedFileValue {
 const ChoiceRadioGroupField = ({
   error,
   field,
+  options,
   readOnly,
   required,
   value,
@@ -121,7 +126,13 @@ const ChoiceRadioGroupField = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const baseOptions = useMemo(() => {
+    if (options && options.length > 0) {
+      return options.map((o) => o.name || String(o.id))
+    }
+    return getFieldOptions(field).map((o) => o.name)
+  }, [options, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 0
@@ -299,6 +310,7 @@ const ChoiceRadioGroupField = ({
 const ChoiceCheckboxGroupField = ({
   error,
   field,
+  options,
   readOnly,
   required,
   value,
@@ -312,7 +324,13 @@ const ChoiceCheckboxGroupField = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const baseOptions = useMemo(() => {
+    if (options && options.length > 0) {
+      return options.map((o) => o.name || String(o.id))
+    }
+    return getFieldOptions(field).map((o) => o.name)
+  }, [options, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 0
@@ -1050,14 +1068,7 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
-  const masterConditions = (
-    field.settings?.specific?.masterFormConditionColumn || []
-  )
-    .filter((c: any) => c?.formField && c?.masterColumn)
-    .map((c: any) => ({
-      masterColumn: String(c.masterColumn),
-      value: formModel?.[c.formField],
-    }))
+  const masterConditions = buildMasterConditions(field, formModel)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [] } = useQuery({
@@ -1145,6 +1156,19 @@ const FieldRenderer = ({
       onChange={onChange}
     />
   ) : null
+
+  // "Pre-select from Master" (MULTIPLE_CHOICE / MULTI_SELECT). Renders nothing.
+  const preselectSync =
+    (runtimeType === 'MULTIPLE_CHOICE' || runtimeType === 'MULTI_SELECT') &&
+    field.settings?.specific?.masterPreselectEnabled ? (
+      <MasterPreselectSync
+        allFields={allFields}
+        field={field}
+        formModel={formModel || {}}
+        value={value}
+        onChange={onChange}
+      />
+    ) : null
 
   const common = {
     disabled: readOnly,
@@ -1376,6 +1400,7 @@ const FieldRenderer = ({
         <ChoiceRadioGroupField
           error={error}
           field={field}
+          options={selectOptions}
           readOnly={readOnly}
           required={required}
           value={value}
@@ -1454,14 +1479,17 @@ const FieldRenderer = ({
 
     case 'MULTIPLE_CHOICE':
       return (
-        <ChoiceCheckboxGroupField
-          error={error}
-          field={field}
-          readOnly={readOnly}
-          required={required}
-          value={value}
-          onChange={onChange}
-        />
+        <>
+          {preselectSync}
+          <ChoiceCheckboxGroupField
+            error={error}
+            field={field}
+            readOnly={readOnly}
+            required={required}
+            value={value}
+            onChange={onChange}
+          />
+        </>
       )
 
     case 'MULTI_SELECT': {
@@ -1479,19 +1507,22 @@ const FieldRenderer = ({
         return [opt]
       })
       return (
-        <InputSelectMultiple
-          {...common}
-          createOptionLabel={(query) => t`Add "${query}"`}
-          options={withExtraFieldOptions(selectOptions, selected)}
-          value={selected}
-          creatable={allowAddNew}
-          searchable
-          onChange={(opts: Option[]) =>
-            onChange(
-              opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
-            )
-          }
-        />
+        <>
+          {preselectSync}
+          <InputSelectMultiple
+            {...common}
+            createOptionLabel={(query) => t`Add "${query}"`}
+            options={withExtraFieldOptions(selectOptions, selected)}
+            value={selected}
+            creatable={allowAddNew}
+            searchable
+            onChange={(opts: Option[]) =>
+              onChange(
+                opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
+              )
+            }
+          />
+        </>
       )
     }
 

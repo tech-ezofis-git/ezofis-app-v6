@@ -1497,6 +1497,9 @@ function remapFieldReferences(field: any, idMap: Map<string, string>): any {
 
   if (spec) {
     if (spec.parentFieldId) spec.parentFieldId = remap(spec.parentFieldId)
+    if (spec.masterPreselectSourceFieldId) {
+      spec.masterPreselectSourceFieldId = remap(spec.masterPreselectSourceFieldId)
+    }
     if (spec.parentDateField) spec.parentDateField = remap(spec.parentDateField)
     if (spec.parentDateFieldId) {
       spec.parentDateFieldId = remap(spec.parentDateFieldId)
