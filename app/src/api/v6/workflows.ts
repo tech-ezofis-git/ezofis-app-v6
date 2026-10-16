@@ -141,6 +141,7 @@ export const mapPublishedWorkflowListToOptions = (
 
 export interface V6WorkflowDetail {
   flowJson?: any
+  form?: any
   formId?: string | number
   formJson?: any
   id?: string
