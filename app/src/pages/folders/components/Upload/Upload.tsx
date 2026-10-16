@@ -2764,7 +2764,9 @@ export default function Upload({
   useEffect(() => {
     if (initialFilesAppliedRef.current) return
     initialFilesAppliedRef.current = true
-    if (!initialFiles?.length) return
+    // If a staged file ID is provided (e.g. from Intelligent Upload indexing or staging),
+    // skip passing initialFiles to handleInvoiceFiles so we don't re-trigger OCR/uploadWithOcr or loop.
+    if (!initialFiles?.length || initialStagedFileId) return
     handleInvoiceFiles(initialFiles)
     // Apply once when Upload mounts with preselected files from the empty-state dropzone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2794,12 +2796,15 @@ export default function Upload({
           repositoryFields,
         )
 
+        const fallbackFile = initialFiles?.[0]
         const blob = await fetchStageFileBlob(stageId)
         let previewUrl: string | null = null
-        let fileObj: File | null = null
+        let fileObj: File | null = fallbackFile || null
         if (blob) {
           fileObj = new File([blob], data.name || 'file', { type: blob.type })
           previewUrl = URL.createObjectURL(blob)
+        } else if (fallbackFile) {
+          previewUrl = URL.createObjectURL(fallbackFile)
         }
 
         const entry: QueuedUploadFile = {
