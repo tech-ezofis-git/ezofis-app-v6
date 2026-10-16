@@ -1806,7 +1806,7 @@ const InboxList: React.FC<InboxListProps> = ({
           '_agentData': parsedAgentResponse ? [parsedAgentResponse] : [],
           '_agentResponse': parsedAgentResponse,
           '_canMove': true,
-          '_groupKey': 'root',
+          '_groupKey': 'No Group',
           '_listTab': 'Inbox',
           'Currency': currency,
           'documentNumber':
@@ -1830,16 +1830,18 @@ const InboxList: React.FC<InboxListProps> = ({
       })
 
     if (newProcessingItems.length > 0) {
-      const rootGroup = outData.find((g) => g.groupId === 'root')
+      const rootGroup = outData.find(
+        (g) => g.groupId === 'root' || g.groupId === 'no-group',
+      )
       if (rootGroup) {
         rootGroup.items.unshift(...newProcessingItems)
         rootGroup.groupCount = rootGroup.items.length
       } else {
         outData.unshift({
           groupCount: newProcessingItems.length,
-          groupId: 'root',
-          groupKey: 'root',
-          groupValue: 'root',
+          groupId: 'no-group',
+          groupKey: 'No Group',
+          groupValue: 'No Group',
           items: newProcessingItems,
         })
       }

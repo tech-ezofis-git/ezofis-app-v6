@@ -8,6 +8,7 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import {
   generateWorkflowConfigViaQwen,
   shortenDescription,
@@ -181,6 +182,8 @@ export default function AiWorkflowBuilder({
               />
             </div>
           </div>
+
+          <AiDisclaimer className='px-1' />
 
           <div className='flex w-full flex-wrap items-center justify-center gap-2'>
             {SAMPLE_PROMPTS.map((sample) => {

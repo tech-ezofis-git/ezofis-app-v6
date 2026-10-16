@@ -25,6 +25,7 @@ import SortableItem from '@/components/base/sortable/SortableItem'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import {
   type FolderConfigField,
   type FolderConfigSuggestion,
@@ -2366,6 +2367,7 @@ export default function AiFolderBuilder({
                   ) : null}
                 </div>
               </div>
+              {aiDescriptionGenerated ? <AiDisclaimer /> : null}
             </div>
           </div>
         ) : null}
@@ -2378,6 +2380,7 @@ export default function AiFolderBuilder({
               onChange={setEditableFields}
               onUserToggledRequired={() => setHasToggledRequired(true)}
             />
+            <AiDisclaimer className='mt-2' />
           </div>
         ) : null}
 
