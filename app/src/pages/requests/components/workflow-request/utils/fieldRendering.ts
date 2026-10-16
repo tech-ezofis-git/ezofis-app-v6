@@ -454,11 +454,7 @@ export const getFieldOptions = (field: any): FieldOption[] => {
         },
       ]
     }
-    return [
-      { id: 'Option 1', name: 'Option 1' },
-      { id: 'Option 2', name: 'Option 2' },
-      { id: 'Option 3', name: 'Option 3' },
-    ]
+    return []
   }
 
   const parts =

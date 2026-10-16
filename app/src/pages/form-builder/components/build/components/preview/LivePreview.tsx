@@ -522,7 +522,7 @@ const LivePreview = () => {
 const getFieldOptions = (field: Question): string[] => {
   const shared = getSharedFieldOptions(field)
   if (shared.length > 0) return shared.map((o) => o.name)
-  return ['Option A', 'Option B', 'Option C']
+  return []
 }
 
 const LivePreviewDropdown = ({

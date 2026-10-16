@@ -201,11 +201,7 @@ const FormEntriesChoiceInput = ({
   }, [masterInfo.enabled, masterFieldOptions, optionsType, userFieldOptions, field])
 
   const opts =
-    rawOptions.length > 0
-      ? rawOptions.map((o) => o.name)
-      : masterInfo.enabled || optionsType === 'USER_LIST'
-        ? []
-        : ['Option 1', 'Option 2', 'Option 3']
+    rawOptions.length > 0 ? rawOptions.map((o) => o.name) : []
 
   useEffect(() => {
     if (rawOptions.length === 1) {
