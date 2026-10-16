@@ -324,6 +324,9 @@ export interface Question {
         masterColumn: string
         tableColumn: string
       }>
+      masterPreselectColumn?: string
+      masterPreselectEnabled?: boolean
+      masterPreselectSourceFieldId?: string
       masterSyncField?: string
       matrixColumnLabels?: string[]
       matrixColumns?: string[]

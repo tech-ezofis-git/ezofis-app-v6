@@ -61,6 +61,7 @@ import {
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 import MasterFillSync from './MasterFillSync'
+import MasterPreselectSync from './MasterPreselectSync'
 import TableFieldRenderer from './TableFieldRenderer'
 
 interface ChoiceFieldProps {
@@ -1156,6 +1157,19 @@ const FieldRenderer = ({
     />
   ) : null
 
+  // "Pre-select from Master" (MULTIPLE_CHOICE / MULTI_SELECT). Renders nothing.
+  const preselectSync =
+    (runtimeType === 'MULTIPLE_CHOICE' || runtimeType === 'MULTI_SELECT') &&
+    field.settings?.specific?.masterPreselectEnabled ? (
+      <MasterPreselectSync
+        allFields={allFields}
+        field={field}
+        formModel={formModel || {}}
+        value={value}
+        onChange={onChange}
+      />
+    ) : null
+
   const common = {
     disabled: readOnly,
     error,
@@ -1465,15 +1479,17 @@ const FieldRenderer = ({
 
     case 'MULTIPLE_CHOICE':
       return (
-        <ChoiceCheckboxGroupField
-          error={error}
-          field={field}
-          options={selectOptions}
-          readOnly={readOnly}
-          required={required}
-          value={value}
-          onChange={onChange}
-        />
+        <>
+          {preselectSync}
+          <ChoiceCheckboxGroupField
+            error={error}
+            field={field}
+            readOnly={readOnly}
+            required={required}
+            value={value}
+            onChange={onChange}
+          />
+        </>
       )
 
     case 'MULTI_SELECT': {
@@ -1491,19 +1507,22 @@ const FieldRenderer = ({
         return [opt]
       })
       return (
-        <InputSelectMultiple
-          {...common}
-          createOptionLabel={(query) => t`Add "${query}"`}
-          options={withExtraFieldOptions(selectOptions, selected)}
-          value={selected}
-          creatable={allowAddNew}
-          searchable
-          onChange={(opts: Option[]) =>
-            onChange(
-              opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
-            )
-          }
-        />
+        <>
+          {preselectSync}
+          <InputSelectMultiple
+            {...common}
+            createOptionLabel={(query) => t`Add "${query}"`}
+            options={withExtraFieldOptions(selectOptions, selected)}
+            value={selected}
+            creatable={allowAddNew}
+            searchable
+            onChange={(opts: Option[]) =>
+              onChange(
+                opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
+              )
+            }
+          />
+        </>
       )
     }
 

@@ -73,6 +73,7 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
+import MasterPreselectSync from '@/pages/requests/components/workflow-request/components/MasterPreselectSync'
 import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -1056,6 +1057,30 @@ const LivePreviewChoiceGroup = ({
   )
 }
 
+const LivePreviewPreselect = ({
+  field,
+  model,
+  onChange,
+  value,
+}: {
+  field: Question
+  model: Record<string, any>
+  onChange: (value: any) => void
+  value: any
+}) => {
+  const { panels } = useFormStore()
+  if (!field.settings?.specific?.masterPreselectEnabled) return null
+  return (
+    <MasterPreselectSync
+      allFields={panels.flatMap((p: any) => p.fields || [])}
+      field={field}
+      formModel={model}
+      value={value}
+      onChange={onChange}
+    />
+  )
+}
+
 const LivePreviewSearchableInput = ({
   children,
   fallbackRepositoryId,
@@ -1665,27 +1690,43 @@ const renderPreviewInput = (
       )
     case 'MULTI_SELECT':
       return (
-        <LivePreviewDropdown
-          disabled={disabled}
-          fallbackRepositoryId={fallbackRepositoryId}
-          field={field}
-          model={model}
-          value={fieldValue}
-          multiple
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewDropdown
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            multiple
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
       return (
-        <LivePreviewChoiceGroup
-          disabled={disabled}
-          fallbackRepositoryId={fallbackRepositoryId}
-          field={field}
-          model={model}
-          value={fieldValue}
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewChoiceGroup
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     default:
       return (
