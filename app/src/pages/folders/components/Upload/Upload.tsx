@@ -11,7 +11,7 @@ import type {
   StageFileSummary,
 } from '@/api/v6/uploadAndIndex'
 import formApi from '@/api/form/form'
-import { uploadForOcr } from '@/api/v6/folder/folder'
+import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
   deleteStagedFiles,
@@ -2785,15 +2785,33 @@ export default function Upload({
         const { data } = await loadStageFile(stageId)
         if (!data) return
 
+        let fieldsToMapWith = repositoryFields
+        const targetRepoId =
+          activeRepositoryId ||
+          (data.repository?.id ? String(data.repository.id) : '')
+        if (
+          (!fieldsToMapWith || fieldsToMapWith.length === 0) &&
+          targetRepoId
+        ) {
+          try {
+            const { data: repoDetail } = await getRepositoryById(targetRepoId)
+            if (repoDetail?.fields && Array.isArray(repoDetail.fields)) {
+              fieldsToMapWith = repoDetail.fields
+            }
+          } catch {
+            // ignore fallback fetch error
+          }
+        }
+
         const { ocrJson, ocrText } = extractOcrJsonAndText(data)
         const mappedValues = mapOcrResponseToFieldValues(
           data,
-          repositoryFields,
+          fieldsToMapWith,
           data.name,
         )
         const fieldStatuses = mapOcrResponseToFieldStatuses(
           data,
-          repositoryFields,
+          fieldsToMapWith,
         )
 
         const fallbackFile = initialFiles?.[0]
@@ -2825,7 +2843,10 @@ export default function Upload({
           ocrExtractedValues: mappedValues,
           ocrStatus: 'complete',
           previewUrl,
-          rawOcrJson: ocrJson,
+          rawOcrJson:
+            Array.isArray(ocrJson) && ocrJson.length === 0 && data.fields
+              ? data.fields
+              : ocrJson,
           rawOcrText: ocrText,
           restoredFromServer: true,
           stageFileId: data.id || stageId,

@@ -104,6 +104,7 @@ export function FolderExplorer() {
   const [pendingStagedFileId, setPendingStagedFileId] = useState<
     string | undefined
   >(undefined)
+  const [pendingRepositoryData, setPendingRepositoryData] = useState<any>(null)
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     fileName?: string
@@ -130,6 +131,7 @@ export function FolderExplorer() {
 
     setPendingUploadFiles([])
     setPendingStagedFileId(undefined)
+    setPendingRepositoryData(null)
 
     if (folderToSelect) selectFolder(folderToSelect)
     else setAppView('explorer')
@@ -782,8 +784,10 @@ export function FolderExplorer() {
         folderId={activeFolder}
         initialFiles={pendingUploadFiles}
         initialStagedFileId={pendingStagedFileId}
-        repositoryData={selectedRepository}
-        repositoryId={resolvedRepositoryId || null}
+        repositoryData={pendingRepositoryData || selectedRepository}
+        repositoryId={
+          pendingRepositoryData?.id || resolvedRepositoryId || null
+        }
         onBack={exitUpload}
         onIntelligentUpload={(files) => {
           intelligentOpenedFromUploadRef.current = true
@@ -854,6 +858,11 @@ export function FolderExplorer() {
 
           folderBeforeUploadRef.current = activeFolder || targetNodeId
           selectFolder(targetNodeId)
+
+          // Preload repository metadata immediately so Upload has full schema fields without waiting
+          void folderApi.getRepositoryFullData(repositoryId).then((repo) => {
+            if (repo) setPendingRepositoryData(repo)
+          })
 
           setPendingUploadFiles([file])
           if (stagedFileId) {
