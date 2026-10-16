@@ -90,8 +90,7 @@ const isValidWatchEmail = (
   if (!val) return false
   const trimmed = String(val).trim()
   if (!trimmed) return false
-  // Never allow the old default ftluser@gmail.com
-  if (trimmed.toLowerCase() === 'ftluser@gmail.com') return false
+
   // Connector ID (e.g. cn_1c66f60d787e) is a valid connection identifier
   if (trimmed.startsWith('cn_') || trimmed.startsWith('wt_')) return true
   // If email, must contain @ and must not be the EZOFIS app login email
@@ -212,10 +211,7 @@ const saveStoredConnectionForUser = (
   const uEmail = String(userEmail || '').toLowerCase().trim()
   let aEmail = String(accountEmail || '').trim()
 
-  // Guard: NEVER save login user email or the default ftluser@gmail.com
-  if (aEmail.toLowerCase() === 'ftluser@gmail.com') {
-    aEmail = ''
-  }
+
   if (uEmail && aEmail.toLowerCase() === uEmail) {
     aEmail = ''
   }
@@ -1362,9 +1358,7 @@ const RequestsPage = () => {
         // Match mailbox for this user's connection
         const match = list.find((m: any) => {
           if (!m.externalAccountEmail) return false
-          if (m.externalAccountEmail.toLowerCase() === 'ftluser@gmail.com') {
-            return false
-          }
+
           if (
             userInfo.connectionId &&
             (m.connectorId === userInfo.connectionId || m.id === userInfo.connectionId)
@@ -1380,11 +1374,7 @@ const RequestsPage = () => {
           return false
         })
 
-        const validEmail =
-          match?.externalAccountEmail &&
-          match.externalAccountEmail.toLowerCase() !== 'ftluser@gmail.com'
-            ? match.externalAccountEmail
-            : ''
+        const validEmail = match?.externalAccountEmail ? match.externalAccountEmail : ''
         const displayIdentifier = validEmail || userInfo.connectionId || ''
 
         if (displayIdentifier) {
@@ -1537,9 +1527,7 @@ const RequestsPage = () => {
       let cancelled = false
       const applyConnectedState = async () => {
         let accountEmail =
-          initialEmail &&
-          initialEmail.includes('@') &&
-          initialEmail.toLowerCase() !== 'ftluser@gmail.com'
+          initialEmail && initialEmail.includes('@')
             ? initialEmail.trim()
             : ''
 
@@ -1556,11 +1544,7 @@ const RequestsPage = () => {
               const list = res.payload || []
               const match = list.find((m: any) => {
                 if (!m.externalAccountEmail) return false
-                if (
-                  m.externalAccountEmail.toLowerCase() === 'ftluser@gmail.com'
-                ) {
-                  return false
-                }
+
                 if (
                   connectionId &&
                   (m.connectorId === connectionId || m.id === connectionId)
@@ -1587,12 +1571,9 @@ const RequestsPage = () => {
 
         if (cancelled) return
 
-        const validEmail =
-          accountEmail &&
-          accountEmail.toLowerCase() !== 'ftluser@gmail.com' &&
-          accountEmail.includes('@')
-            ? accountEmail.trim()
-            : ''
+        const validEmail = accountEmail && accountEmail.includes('@')
+          ? accountEmail.trim()
+          : ''
 
         const displayIdentifier = validEmail || connectionId || ''
 
@@ -1925,11 +1906,7 @@ const RequestsPage = () => {
         ? new URLSearchParams(window.location.search).get('connectionId') || ''
         : '')
 
-    const displayEmail =
-      watchFoxSuccessState.email &&
-      watchFoxSuccessState.email.toLowerCase() !== 'ftluser@gmail.com'
-        ? watchFoxSuccessState.email
-        : ''
+    const displayEmail = watchFoxSuccessState.email ? watchFoxSuccessState.email : ''
 
     return (
       <div className='fixed inset-0 z-[999999] flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
