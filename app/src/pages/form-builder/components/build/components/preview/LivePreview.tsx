@@ -4,7 +4,6 @@ import {
   Divider,
   Rating,
   SegmentedControl,
-  Select,
   TextInput,
   Tooltip,
 } from '@mantine/core'
@@ -19,6 +18,7 @@ import {
 import { getUsers } from '@/api/v6/user'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
@@ -65,6 +65,7 @@ import {
   resolveRuntimeFieldType,
   normalizeScannedValue,
   resolveShortTextFillValue,
+  selectOptionStoredValue,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
   withExtraFieldOptions,
@@ -725,6 +726,11 @@ const LivePreviewDropdown = ({
     }
   }, [selectOptions, value, multiple, onChange])
 
+  const allowAddNew = Boolean(
+    field.settings?.specific?.allowToAddNewOptions ||
+      field.settings?.specific?.allowCustomEntries,
+  )
+
   if (multiple) {
     const seen = new Set<string>()
     const selectedOptions = normalizeStoredMultiSelectValue(value).flatMap(
@@ -740,29 +746,39 @@ const LivePreviewDropdown = ({
 
     return (
       <InputSelectMultiple
+        creatable={allowAddNew}
         disabled={disabled}
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
-        value={selectedOptions}
         placeholder={
           getEffectiveFieldPlaceholder(field) || 'Select options...'
         }
+        searchable
+        value={selectedOptions}
         onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
       />
     )
   }
 
+  const selectedOpt =
+    findFieldOption(selectOptions, value) ||
+    (value !== undefined && value !== null && value !== ''
+      ? { id: String(value), name: String(value) }
+      : null)
+
   return (
-    <Select
-      data={selectOptions.map((opt) => opt.name)}
+    <InputSelect
+      creatable={allowAddNew}
       disabled={disabled}
+      options={withExtraFieldOptions(
+        selectOptions,
+        selectedOpt ? [selectedOpt] : [],
+      )}
       placeholder={getEffectiveFieldPlaceholder(field) || 'Select an option'}
-      size='sm'
-      value={String(value) || null}
-      classNames={{
-        input:
-          'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-      }}
-      onChange={(val) => onChange(val)}
+      searchable
+      value={selectedOpt}
+      onChange={(opt) =>
+        onChange(opt ? selectOptionStoredValue(opt, selectOptions) : '')
+      }
     />
   )
 }

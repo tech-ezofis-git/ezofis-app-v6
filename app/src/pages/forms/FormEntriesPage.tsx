@@ -529,6 +529,11 @@ const FormEntriesSelectInput = ({
     }
   }, [selectOptions, val, isMulti, onChange])
 
+  const allowAddNew = Boolean(
+    field.settings?.specific?.allowToAddNewOptions ||
+      field.settings?.specific?.allowCustomEntries,
+  )
+
   if (isMulti) {
     const selectedValues = val
       ? String(val)
@@ -542,7 +547,7 @@ const FormEntriesSelectInput = ({
       <InputSelectMultiple
         options={withExtraFieldOptions(selectOptions, selectedOpts)}
         value={selectedOpts}
-        creatable
+        creatable={allowAddNew}
         searchable
         placeholder={
           field.settings?.general?.placeholder || 'Select options...'
@@ -560,7 +565,7 @@ const FormEntriesSelectInput = ({
     <InputSelect
       placeholder={field.settings?.general?.placeholder || 'Select an option'}
       value={selectedOpt}
-      creatable
+      creatable={allowAddNew}
       searchable
       options={withExtraFieldOptions(
         selectOptions,
