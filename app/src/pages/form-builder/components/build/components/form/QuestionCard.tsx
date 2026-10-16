@@ -789,18 +789,16 @@ const QuestionCard = ({
             question.type === 'MULTIPLE_CHOICE' ? (
             (() => {
               const specific = question.settings?.specific || {}
-              const raw =
-                specific.customOptions || 'Option 1, Option 2, Option 3'
+              const raw = specific.customOptions || ''
               const sep =
-                specific.separateOptionsUsing === 'NEWLINE' ? '\n' : ','
+                specific.separateOptionsUsing === 'NEWLINE' ? /\r?\n/ : ','
               const options = raw
-                .split(sep)
-                .map((s: string) => s.trim())
-                .filter(Boolean)
-              const displayOptions =
-                options.length > 0
-                  ? options
-                  : ['Option 1', 'Option 2', 'Option 3']
+                ? raw
+                    .split(sep)
+                    .map((s: string) => s.trim())
+                    .filter(Boolean)
+                : []
+              const displayOptions = options
               const optionsPerLine = specific.optionsPerLine ?? 3
               const showWrapper = Boolean(specific.showOptionsWrapper)
 
@@ -814,19 +812,20 @@ const QuestionCard = ({
                       'bg-surface-muted/50 rounded-xl border border-gray-2 p-2.5 shadow-2xs',
                   )}
                 >
-                  <div
-                    className={cn(
-                      'gap-2',
-                      isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
-                    )}
-                    style={
-                      !isAutoFlex
-                        ? {
-                            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-                          }
-                        : undefined
-                    }
-                  >
+                  {displayOptions.length > 0 ? (
+                    <div
+                      className={cn(
+                        'gap-2',
+                        isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+                      )}
+                      style={
+                        !isAutoFlex
+                          ? {
+                              gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                            }
+                          : undefined
+                      }
+                    >
                     {displayOptions.map((opt: string, i: number) => (
                       <div
                         key={i}
@@ -852,6 +851,11 @@ const QuestionCard = ({
                       </div>
                     ))}
                   </div>
+                  ) : (
+                    <div className='flex h-10 w-full items-center justify-between rounded-lg border border-dashed border-gray-3 bg-surface px-4 text-xs font-medium text-gray-7'>
+                      <span>{question.settings.general.placeholder || 'No options configured...'}</span>
+                    </div>
+                  )}
                   {specific.allowCustomEntries && (
                     <div className='mt-2 text-[10px] text-gray-5 italic'>
                       + Custom user entries allowed
@@ -1051,32 +1055,15 @@ const QuestionCard = ({
           ) : (question.type as string) === 'MULTI_SELECT' ? (
             <div
               className={cn(
-                'flex h-11 w-full items-center justify-between rounded-lg border px-3 transition-colors',
+                'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
                 isActive
                   ? 'border-accent-primary/50 bg-surface'
                   : 'border-gray-2 bg-surface group-hover:border-gray-3',
               )}
             >
-              <div className='flex items-center gap-1.5 overflow-hidden'>
-                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
-                  Option 1
-                  <Icon
-                    className='text-gray-7'
-                    height={12}
-                    name='lucide:x'
-                    width={12}
-                  />
-                </span>
-                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
-                  Option 2
-                  <Icon
-                    className='text-gray-7'
-                    height={12}
-                    name='lucide:x'
-                    width={12}
-                  />
-                </span>
-              </div>
+              <span className='truncate text-[13px] font-medium text-gray-8'>
+                {question.settings.general.placeholder || 'Select options...'}
+              </span>
               <div className='flex items-center gap-1.5 text-gray-5'>
                 <Icon height={14} name='lucide:search' width={14} />
                 <Icon height={16} name='lucide:chevron-down' width={16} />

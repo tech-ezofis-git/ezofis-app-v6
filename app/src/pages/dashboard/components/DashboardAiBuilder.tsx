@@ -39,6 +39,7 @@ import {
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import CustomFilter from '@/components/common/CustomFilter'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
@@ -1010,6 +1011,7 @@ export default function DashboardAiBuilder({
             </div>
           ) : schemaResult ? (
             <>
+              <AiDisclaimer />
               <div className='space-y-3'>
                 <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>
                   {t`KPIs`}
@@ -1124,6 +1126,7 @@ export default function DashboardAiBuilder({
         showTopConnector
       >
         <div className='space-y-6 p-5'>
+          <AiDisclaimer />
           {/* Header Action Bar */}
           <div className='flex items-center justify-between rounded-[14px] border border-border-default bg-gray-2 px-4 py-3'>
             <div className='flex items-center gap-3'>

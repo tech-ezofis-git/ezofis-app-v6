@@ -64,6 +64,7 @@ import type {
   AskAiTextBlock as TextBlock,
 } from './types'
 import AiBrandIcon from '../AiBrandIcon'
+import AiDisclaimer from '../AiDisclaimer'
 import {
   browseFilterByToUiFiltersAndSearch,
   hasBrowsableAction,
@@ -1305,6 +1306,7 @@ const AskAI = () => {
                       </button>
                     </div>
                   </div>
+                  <AiDisclaimer className='mt-2' />
                 </div>
               )}
             </>

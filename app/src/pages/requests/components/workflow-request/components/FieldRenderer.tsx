@@ -1386,6 +1386,10 @@ const FieldRenderer = ({
     case 'SINGLE_SELECT': {
       const selected = findFieldOption(selectOptions, value)
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+      const allowAddNew = Boolean(
+        field.settings?.specific?.allowToAddNewOptions ||
+          field.settings?.specific?.allowCustomEntries,
+      )
       if (isSearchField) {
         return (
           <div className='flex w-full items-end gap-1.5'>
@@ -1394,7 +1398,7 @@ const FieldRenderer = ({
                 {...common}
                 createOptionLabel={(query) => t`Add "${query}"`}
                 value={selected}
-                creatable
+                creatable={allowAddNew}
                 searchable
                 options={withExtraFieldOptions(
                   selectOptions,
@@ -1435,7 +1439,7 @@ const FieldRenderer = ({
           {...common}
           createOptionLabel={(query) => t`Add "${query}"`}
           value={selected}
-          creatable
+          creatable={allowAddNew}
           searchable
           options={withExtraFieldOptions(
             selectOptions,
@@ -1461,6 +1465,10 @@ const FieldRenderer = ({
       )
 
     case 'MULTI_SELECT': {
+      const allowAddNew = Boolean(
+        field.settings?.specific?.allowToAddNewOptions ||
+          field.settings?.specific?.allowCustomEntries,
+      )
       const seen = new Set<string>()
       const selected = normalizeStoredMultiSelectValue(value).flatMap((id) => {
         const opt = findFieldOption(selectOptions, id)
@@ -1476,7 +1484,7 @@ const FieldRenderer = ({
           createOptionLabel={(query) => t`Add "${query}"`}
           options={withExtraFieldOptions(selectOptions, selected)}
           value={selected}
-          creatable
+          creatable={allowAddNew}
           searchable
           onChange={(opts: Option[]) =>
             onChange(

@@ -454,14 +454,17 @@ export const getFieldOptions = (field: any): FieldOption[] => {
         },
       ]
     }
-    return [
-      { id: 'Option 1', name: 'Option 1' },
-      { id: 'Option 2', name: 'Option 2' },
-      { id: 'Option 3', name: 'Option 3' },
-    ]
+    return []
   }
 
-  const parts = splitType === 'NEWLINE' ? raw.split('\n') : raw.split(',')
+  const parts =
+    splitType === 'NEWLINE'
+      ? raw.split(/\r?\n/)
+      : splitType === 'COMMA'
+        ? raw.split(',')
+        : raw.includes('\n')
+          ? raw.split(/\r?\n/)
+          : raw.split(',')
   return parts
     .map((opt: string) => opt.trim())
     .filter(Boolean)
@@ -477,7 +480,12 @@ export const getConfiguredFieldOptions = (field: any): FieldOption[] => {
     specific?.optionsSource || optionsType,
   ).toUpperCase()
 
-  if (optionsType !== 'CUSTOM' || optionsSource !== 'CUSTOM') {
+  const isCustom =
+    optionsType === 'CUSTOM' ||
+    optionsSource === 'CUSTOM' ||
+    (!specific?.optionsType && !specific?.optionsSource)
+
+  if (!isCustom) {
     if (optionsType === 'DYNAMIC') return getFieldOptions(field)
     return []
   }
@@ -1219,14 +1227,20 @@ export const getDropdownFacetSource = (
     fieldType === 'SINGLE_CHOICE' ||
     fieldType === 'MULTIPLE_CHOICE'
   const specific = field?.settings?.specific || {}
-  const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+  const optionsType = String(specific.optionsType || '').toUpperCase()
   const optionsSource = String(
     specific.optionsSource || optionsType,
   ).toUpperCase()
   const isRepo = optionsType === 'REPOSITORY' || optionsSource === 'REPOSITORY'
+  const isSyntheticRepoField = String(field?.id || '').startsWith('repo_field__')
+  const hasExplicitRepo = Boolean(
+    specific.repositoryId && (isRepo || specific.repositoryField),
+  )
 
   const repositoryId = String(
-    specific.repositoryId || fallbackRepositoryId || '',
+    specific.repositoryId ||
+      (isRepo || isSyntheticRepoField ? fallbackRepositoryId : '') ||
+      '',
   ).trim()
   const fieldName = String(
     isRepo ? specific.repositoryField || '' : field?.label || '',
@@ -1237,7 +1251,10 @@ export const getDropdownFacetSource = (
 
   return {
     enabled:
-      isSelect && optionsType !== 'DYNAMIC' && !!repositoryId && !!fieldName,
+      isSelect &&
+      (isRepo || isSyntheticRepoField || hasExplicitRepo) &&
+      !!repositoryId &&
+      !!fieldName,
     fieldName,
     repositoryFieldParent,
     repositoryId,
