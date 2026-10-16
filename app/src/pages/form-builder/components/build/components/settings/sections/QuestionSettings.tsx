@@ -2232,29 +2232,6 @@ const QuestionSettings = ({
                         of submitted entries for this field.
                       </div>
                     </div>
-
-                    {/* Allow to Add New Options */}
-                    <div className='flex items-center justify-between border-t border-gray-2/70 pt-2'>
-                      <div>
-                        <div className='text-xs font-medium text-gray-11'>
-                          Allow Users to Add New Options
-                        </div>
-                        <div className='text-11 text-gray-9'>
-                          Users can type and add custom new values dynamically
-                        </div>
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.allowToAddNewOptions ||
-                          false
-                        }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            allowToAddNewOptions: checked,
-                          })
-                        }
-                      />
-                    </div>
                   </div>
                 )}
 
@@ -2377,31 +2354,31 @@ const QuestionSettings = ({
                         }
                       />
                     </div>
-
-                    {/* Allow to Add New Options */}
-                    <div className='flex items-center justify-between py-1'>
-                      <div>
-                        <div className='text-xs font-medium text-gray-11'>
-                          Allow to Add New Options
-                        </div>
-                        <div className='text-11 text-gray-9'>
-                          Users can type and add custom new values dynamically
-                        </div>
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.allowToAddNewOptions ||
-                          false
-                        }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            allowToAddNewOptions: checked,
-                          })
-                        }
-                      />
-                    </div>
                   </div>
                 )}
+
+                {/* Allow to Add New Options (Available for all option sources) */}
+                <div className='flex items-center justify-between py-1'>
+                  <div>
+                    <div className='text-xs font-medium text-gray-11'>
+                      Allow to Add New Options
+                    </div>
+                    <div className='text-11 text-gray-9'>
+                      Users can type and add custom new values dynamically
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={
+                      activeQuestion.settings.specific.allowToAddNewOptions ||
+                      false
+                    }
+                    onChange={(checked) =>
+                      updateNested('specific', {
+                        allowToAddNewOptions: checked,
+                      })
+                    }
+                  />
+                </div>
 
                 <button
                   className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'

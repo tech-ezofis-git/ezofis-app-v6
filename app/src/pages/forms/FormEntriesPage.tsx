@@ -544,6 +544,7 @@ const FormEntriesSelectInput = ({
         options={withExtraFieldOptions(selectOptions, selectedOpts)}
         value={selectedOpts}
         creatable={allowAddNew}
+        createOptionLabel={(query) => `Add "${query}"`}
         searchable
         placeholder={
           field.settings?.general?.placeholder || 'Select options...'
@@ -562,6 +563,7 @@ const FormEntriesSelectInput = ({
       placeholder={field.settings?.general?.placeholder || 'Select an option'}
       value={selectedOpt}
       creatable={allowAddNew}
+      createOptionLabel={(query) => `Add "${query}"`}
       searchable
       options={withExtraFieldOptions(
         selectOptions,

@@ -756,6 +756,7 @@ const LivePreviewDropdown = ({
     return (
       <InputSelectMultiple
         creatable={allowAddNew}
+        createOptionLabel={(query) => `Add "${query}"`}
         disabled={disabled}
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
         placeholder={
@@ -777,6 +778,7 @@ const LivePreviewDropdown = ({
   return (
     <InputSelect
       creatable={allowAddNew}
+      createOptionLabel={(query) => `Add "${query}"`}
       disabled={disabled}
       options={withExtraFieldOptions(
         selectOptions,
