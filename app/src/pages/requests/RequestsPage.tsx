@@ -749,10 +749,28 @@ const RequestsPage = () => {
           })
         }
 
+        const parseJsonSafe = (val: any) => {
+          if (!val) return null
+          if (typeof val === 'object') return val
+          if (typeof val === 'string') {
+            try {
+              return JSON.parse(val)
+            } catch {
+              return null
+            }
+          }
+          return null
+        }
+        const wfJson = parseJsonSafe(wf.workflowJson)
+        const flowJsonParsed = parseJsonSafe(wf.flowJson)
+
         const wFormId =
           wf.formId ??
           wf.wFormId ??
           wf.settings?.general?.initiateUsing?.formId ??
+          wfJson?.settings?.general?.initiateUsing?.formId ??
+          flowJsonParsed?.settings?.general?.initiateUsing?.formId ??
+          wf.form ??
           ''
 
         let formJson = wf.formJson
@@ -760,7 +778,8 @@ const RequestsPage = () => {
           try {
             const formRes = await formApi.getFormDataById(String(wFormId))
             if (formRes?.data) {
-              formJson = formRes.data.formJson ?? formRes.data
+              formJson =
+                formRes.data._json ?? formRes.data.formJson ?? formRes.data
             }
           } catch (e) {
             console.warn('Failed to fetch form schema for workflow', e)
