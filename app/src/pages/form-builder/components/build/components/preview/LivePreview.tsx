@@ -825,7 +825,7 @@ const LivePreviewChoiceGroup = ({
     if (selectOptions && selectOptions.length > 0) {
       return selectOptions.map((o) => o.name || String(o.id))
     }
-    return getSharedFieldOptions(field)
+    return getFieldOptions(field)
   }, [selectOptions, field])
 
   const allOptions = [...baseOptions, ...customList]
