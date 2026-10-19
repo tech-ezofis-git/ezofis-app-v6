@@ -86,6 +86,9 @@ interface Props {
   preparePhase?: 'extracting' | 'uploading' | null
   repoFieldHints?: string[]
   viewOnly?: boolean
+  // Extra files picked on a multiple-files upload field; the first file stays
+  // in the field, the rest join the request's attachments.
+  onAddAttachments?: (files: File[]) => void
   onChange: (value: any) => void
   onMultiFieldChange?: (patch: Record<string, any>) => void
   onOcrFieldList?: (
@@ -917,6 +920,7 @@ const FieldRenderer = ({
   repositoryId,
   value,
   viewOnly,
+  onAddAttachments,
   onChange,
   onMultiFieldChange,
   onOcrFieldList,
@@ -1755,9 +1759,18 @@ const FieldRenderer = ({
           </div>
         ) : null
 
+      const allowMultipleFiles =
+        runtimeType === 'FILE_UPLOAD' &&
+        field.settings?.specific?.allowMultipleFiles === true
+
       const handleFiles = async (files: FileList | null) => {
         const file = files?.[0]
         if (!file) return
+
+        const extraFiles =
+          allowMultipleFiles && onAddAttachments && !onRequestUpload
+            ? Array.from(files ?? []).slice(1)
+            : []
 
         if (!repositoryId) {
           showToast({
@@ -1789,6 +1802,7 @@ const FieldRenderer = ({
           repositoryId,
         }
         onChange(fileEntry)
+        if (extraFiles.length > 0) onAddAttachments?.(extraFiles)
 
         setIsUploading(true)
         const ocrHints = buildMergedOcrFieldHints(
@@ -1830,6 +1844,7 @@ const FieldRenderer = ({
               accept={runtimeType === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
               disabled={readOnly}
               isLoading={isUploading || Boolean(isPreparing)}
+              multiple={allowMultipleFiles && Boolean(onAddAttachments)}
               loadingText={
                 preparePhase === 'uploading'
                   ? t`Uploading the document…`

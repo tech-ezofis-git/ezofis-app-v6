@@ -692,6 +692,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         repoFieldHints={repoFieldHints}
                         repositoryId={workflow?.repositoryId}
                         onFieldChange={setFieldValue}
+                        onAddAttachments={addAttachment}
                         onOcrFieldList={applyOcrFieldList}
                       />
                     </div>
@@ -710,6 +711,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         repoFieldHints={repoFieldHints}
                         repositoryId={workflow?.repositoryId}
                         onFieldChange={setFieldValue}
+                        onAddAttachments={addAttachment}
                         onOcrFieldList={applyOcrFieldList}
                       />
                     </div>
@@ -756,6 +758,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 repoFieldHints={repoFieldHints}
                 repositoryId={workflow?.repositoryId}
                 onFieldChange={setFieldValue}
+                onAddAttachments={addAttachment}
                 onOcrFieldList={applyOcrFieldList}
               />
             </div>
