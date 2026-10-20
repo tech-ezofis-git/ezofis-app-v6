@@ -237,6 +237,19 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
     if (!fileIdRef.current) return
     setIsSaving(true)
 
+    // Commit active cell edits in spreadsheets (e.g. XLSX/Calc) before saving
+    postToCollabora({
+      MessageId: 'Action_UnoCommand',
+      Values: { Command: '.uno:Enter' },
+    })
+    postToCollabora({
+      MessageId: 'Send_UnoCommand',
+      Values: { Command: '.uno:Enter' },
+    })
+
+    // Brief delay to allow Collabora/Calc core to commit cell edits into the document model
+    await new Promise((resolve) => setTimeout(resolve, 150))
+
     // All types go through Collabora's save. PDFs are edited as ODG
     // server-side and emit Action_Save_Resp like any other document.
     postToCollabora({
