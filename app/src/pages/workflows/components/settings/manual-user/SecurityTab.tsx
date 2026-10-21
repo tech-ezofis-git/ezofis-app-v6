@@ -10,12 +10,18 @@ interface AccessRule {
   formFields: string[]
   id: string
   userId: string
+  visibilityMode?: 'HIDE' | 'SHOW'
 }
 
 const accessModeOptions: Option[] = [
   { id: 'ALL', name: 'All fields' },
   { id: 'NONE', name: 'No fields' },
   { id: 'CUSTOM', name: 'Custom' },
+]
+
+const visibilityActionOptions: Option[] = [
+  { id: 'HIDE', name: 'Hide selected fields' },
+  { id: 'SHOW', name: 'Show only selected fields' },
 ]
 
 interface SecurityTabProps {
@@ -127,6 +133,7 @@ export default function SecurityTab({
             <AccessRuleEditor
               assignedUsers={effectiveAssignedUsers}
               fieldOptions={fieldOptions}
+              isVisibilityRules
               rules={formSecureControls}
               userOptions={userOptions}
               onChange={(rules) => updateNodeData('formSecureControls', rules)}
@@ -165,12 +172,14 @@ function AccessRuleEditor({
   fieldOptions,
   rules,
   userOptions,
+  isVisibilityRules = false,
   onChange,
 }: {
   assignedUsers?: Option[]
   fieldOptions: Option[]
   rules: AccessRule[]
   userOptions: Option[]
+  isVisibilityRules?: boolean
   onChange: (rules: AccessRule[]) => void
 }) {
   const isSingleUser = assignedUsers.length === 1
@@ -184,6 +193,7 @@ function AccessRuleEditor({
         formFields: [],
         id: generateId(),
         userId: singleUser ? String(singleUser.id) : '',
+        visibilityMode: 'HIDE',
       },
     ])
 
@@ -194,85 +204,143 @@ function AccessRuleEditor({
 
   return (
     <div className='space-y-2'>
-      {rules.map((rule) => (
-        <div
-          className='flex items-start gap-2 rounded-xl bg-surface p-3 shadow-sm'
-          key={rule.id}
-        >
-          {isSingleUser ? (
-            <div className='min-w-0 flex-1'>
-              <InputSelectMultiple
-                className='bg-surface'
-                maxDisplayCount={3}
-                options={fieldOptions}
-                placeholder='Select form fields...'
-                clearable
-                searchable
-                value={fieldOptions.filter((f) =>
-                  rule.formFields.includes(String(f.id)),
-                )}
-                onChange={(val) =>
-                  updateRule(rule.id, {
-                    formFields: val.map((v) => String(v.id)),
-                    userId: String(singleUser?.id || ''),
-                  })
-                }
-              />
-            </div>
-          ) : (
-            <div className='flex min-w-0 flex-1 flex-col gap-2'>
-              <div className='space-y-1'>
-                <span className='text-[11px] font-medium text-gray-10'>
-                  User
-                </span>
-                <InputSelect
-                  className='bg-surface'
-                  options={availableUsers}
-                  placeholder='Select user...'
-                  searchable
-                  value={
-                    availableUsers.find((o) => String(o.id) === rule.userId) ||
-                    userOptions.find((o) => String(o.id) === rule.userId) ||
-                    null
-                  }
-                  onChange={(val) =>
-                    updateRule(rule.id, { userId: val ? String(val.id) : '' })
-                  }
-                />
-              </div>
-              <div className='space-y-1'>
-                <span className='text-[11px] font-medium text-gray-10'>
-                  Form Fields
-                </span>
-                <InputSelectMultiple
-                  className='bg-surface'
-                  maxDisplayCount={3}
-                  options={fieldOptions}
-                  placeholder='Select form fields...'
-                  clearable
-                  searchable
-                  value={fieldOptions.filter((f) =>
-                    rule.formFields.includes(String(f.id)),
-                  )}
-                  onChange={(val) =>
-                    updateRule(rule.id, {
-                      formFields: val.map((v) => String(v.id)),
-                    })
-                  }
-                />
-              </div>
-            </div>
-          )}
-          <button
-            className='text-gray-8 hover:text-red-9 mt-1 shrink-0 p-1.5 transition-colors'
-            title='Remove rule'
-            type='button'
-            onClick={() => removeRule(rule.id)}
+      {rules.map((rule) => {
+        const currentMode = rule.visibilityMode || 'HIDE'
+        return (
+          <div
+            className='flex items-start gap-2 rounded-xl bg-surface p-3 shadow-sm'
+            key={rule.id}
           >
-            <Icon className='h-4 w-4' name='lucide:x' />
-          </button>
-        </div>
-      ))}
+            {isSingleUser ? (
+              <div className='flex min-w-0 flex-1 flex-col gap-2'>
+                {isVisibilityRules && (
+                  <div className='space-y-1'>
+                    <span className='text-[11px] font-medium text-gray-10'>
+                      Action
+                    </span>
+                    <InputSelect
+                      className='bg-surface'
+                      options={visibilityActionOptions}
+                      value={
+                        visibilityActionOptions.find(
+                          (o) => o.id === currentMode,
+                        ) || visibilityActionOptions[0]
+                      }
+                      onChange={(val) =>
+                        updateRule(rule.id, {
+                          visibilityMode: (val?.id as 'HIDE' | 'SHOW') ?? 'HIDE',
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                <div className='space-y-1'>
+                  {isVisibilityRules && (
+                    <span className='text-[11px] font-medium text-gray-10'>
+                      {currentMode === 'HIDE'
+                        ? 'Fields to Hide'
+                        : 'Fields to Show'}
+                    </span>
+                  )}
+                  <InputSelectMultiple
+                    className='bg-surface'
+                    maxDisplayCount={3}
+                    options={fieldOptions}
+                    placeholder='Select form fields...'
+                    clearable
+                    searchable
+                    value={fieldOptions.filter((f) =>
+                      rule.formFields.includes(String(f.id)),
+                    )}
+                    onChange={(val) =>
+                      updateRule(rule.id, {
+                        formFields: val.map((v) => String(v.id)),
+                        userId: String(singleUser?.id || ''),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className='flex min-w-0 flex-1 flex-col gap-2'>
+                <div className='space-y-1'>
+                  <span className='text-[11px] font-medium text-gray-10'>
+                    User
+                  </span>
+                  <InputSelect
+                    className='bg-surface'
+                    options={availableUsers}
+                    placeholder='Select user...'
+                    searchable
+                    value={
+                      availableUsers.find((o) => String(o.id) === rule.userId) ||
+                      userOptions.find((o) => String(o.id) === rule.userId) ||
+                      null
+                    }
+                    onChange={(val) =>
+                      updateRule(rule.id, { userId: val ? String(val.id) : '' })
+                    }
+                  />
+                </div>
+                {isVisibilityRules && (
+                  <div className='space-y-1'>
+                    <span className='text-[11px] font-medium text-gray-10'>
+                      Action
+                    </span>
+                    <InputSelect
+                      className='bg-surface'
+                      options={visibilityActionOptions}
+                      value={
+                        visibilityActionOptions.find(
+                          (o) => o.id === currentMode,
+                        ) || visibilityActionOptions[0]
+                      }
+                      onChange={(val) =>
+                        updateRule(rule.id, {
+                          visibilityMode: (val?.id as 'HIDE' | 'SHOW') ?? 'HIDE',
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                <div className='space-y-1'>
+                  <span className='text-[11px] font-medium text-gray-10'>
+                    {isVisibilityRules
+                      ? currentMode === 'HIDE'
+                        ? 'Fields to Hide'
+                        : 'Fields to Show'
+                      : 'Form Fields'}
+                  </span>
+                  <InputSelectMultiple
+                    className='bg-surface'
+                    maxDisplayCount={3}
+                    options={fieldOptions}
+                    placeholder='Select form fields...'
+                    clearable
+                    searchable
+                    value={fieldOptions.filter((f) =>
+                      rule.formFields.includes(String(f.id)),
+                    )}
+                    onChange={(val) =>
+                      updateRule(rule.id, {
+                        formFields: val.map((v) => String(v.id)),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              className='text-gray-8 hover:text-red-9 mt-1 shrink-0 p-1.5 transition-colors'
+              title='Remove rule'
+              type='button'
+              onClick={() => removeRule(rule.id)}
+            >
+              <Icon className='h-4 w-4' name='lucide:x' />
+            </button>
+          </div>
+        )
+      })}
       <button
         className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-12 font-medium transition-all hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
         type='button'

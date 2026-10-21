@@ -1574,11 +1574,11 @@ export function DocumentDetailsView({
         const rowKey = `${card.id}:${row.label}`
         if (rowKey !== activeFieldKey) continue
         const value = getFieldDisplayValue(row.value)
-        return value && matchedFieldValues.has(value) ? value : null
+        return value || null
       }
     }
     return null
-  }, [activeFieldKey, infoCards, matchedFieldValues])
+  }, [activeFieldKey, infoCards])
 
   const activeHighlightColor = useMemo(() => {
     if (!activeFieldKey) return undefined
@@ -3514,9 +3514,9 @@ export function DocumentDetailsView({
                             isActive
                               ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
                               : 'hover:bg-gray-1'
-                          } ${hasPdfMatch ? '' : 'cursor-default'}`}
+                          } ${fieldValue && !maskField ? 'cursor-pointer' : 'cursor-default'}`}
                           onClick={() => {
-                            if (!hasPdfMatch) return
+                            if (maskField || !fieldValue) return
                             setActiveFieldKey(rowKey)
                             setFieldFocusRequestId((previous) => previous + 1)
                           }}

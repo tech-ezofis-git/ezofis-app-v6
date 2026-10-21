@@ -11,6 +11,11 @@ import {
   type QualifierScalarEntry,
   type QualifierTableEntry,
 } from './qualifierResultUtils'
+import {
+  resolveLineItemTableVariant,
+  resolveQuoteFieldVariant,
+  type QuoteVariantId,
+} from './quoteVariants'
 
 export type QuoteScalarEntry = QualifierScalarEntry
 export type QuoteTableEntry = QualifierTableEntry
@@ -21,9 +26,17 @@ export type QuoteTotalEntry = {
   label: string
   resultKey: string
   value: number
+  /** Main / Alt / Opt — from labels like ALT Freight, OPT HST. */
+  variant?: QuoteVariantId
 }
 
-export type QuoteTotalKind = 'subtotal' | 'freight' | 'tax' | 'total' | 'other'
+export type QuoteTotalKind =
+  | 'subtotal'
+  | 'discount'
+  | 'freight'
+  | 'tax'
+  | 'total'
+  | 'other'
 
 export type QuoteViewModel = {
   grandTotal: QuoteTotalEntry | null
@@ -68,25 +81,56 @@ const isLongTextValue = (field: any | null, value: unknown) => {
 export const classifyQuoteTotalKey = (key: string): QuoteTotalKind | null => {
   const normalized = normalizeQualifierKey(key)
   const singular = singularizeKey(key)
-  if (normalized === 'subtotal') return 'subtotal'
-  if (normalized === 'total' || singular === 'grand total') return 'total'
-  if (normalized.includes('freight')) return 'freight'
+  // Strip Main/Alt/Opt / quote_2 / quote_3 prefixes so totals still classify.
+  const stripVariantPrefix = (value: string) =>
+    value
+      .replace(/^(alt|opt|optional|alternative|main|base|primary)\s+/, '')
+      .replace(/^quote\s*[23]\s+/, '')
+      .trim()
+  const stripped = stripVariantPrefix(normalized)
+  const strippedSingular = stripVariantPrefix(singular)
+  if (stripped === 'subtotal' || normalized.endsWith('subtotal')) return 'subtotal'
   if (
-    normalized === 'hst' ||
-    normalized === 'hts' ||
+    stripped === 'discount' ||
+    stripped === 'disc' ||
+    normalized.endsWith('discount')
+  ) {
+    return 'discount'
+  }
+  if (
+    stripped === 'total' ||
+    strippedSingular === 'grand total' ||
+    (normalized.endsWith('total') && !normalized.includes('subtotal'))
+  ) {
+    return 'total'
+  }
+  if (stripped.includes('freight') || normalized.includes('freight')) {
+    return 'freight'
+  }
+  if (
+    stripped === 'hst' ||
+    stripped === 'hts' ||
+    normalized.includes('hst') ||
     normalized.includes('hts') ||
-    normalized === 'gst' ||
-    normalized === 'vat' ||
-    normalized.includes('tax')
+    stripped === 'gst' ||
+    stripped === 'vat' ||
+    stripped.includes('tax')
   ) {
     return 'tax'
   }
   return null
 }
 
-const isLineItemTableKey = (key: string, field?: any) => {
-  if (field && isLineItemHeading(getFieldHeading(field))) return true
-  return isLineItemHeading(key)
+/** Primary Line Item only — ALT / OPT Line Item are separate quote variants. */
+const isPrimaryLineItemTableKey = (key: string, field?: any) => {
+  const heading = field ? getFieldHeading(field) : key
+  if (resolveLineItemTableVariant(heading) === 'main') return true
+  if (resolveLineItemTableVariant(key) === 'main') return true
+  // Bare "Line Item" without alt/opt tokens
+  if (field && isLineItemHeading(getFieldHeading(field))) {
+    return resolveLineItemTableVariant(getFieldHeading(field)) === 'main'
+  }
+  return isLineItemHeading(key) && resolveLineItemTableVariant(key) === 'main'
 }
 
 const toNumber = (value: unknown) => {
@@ -98,11 +142,25 @@ const displayTotalLabel = (label: string) =>
   label.trim().toLowerCase() === 'hst' ? 'HST' : label
 
 const TOTAL_SORT: Record<QuoteTotalKind, number> = {
-  freight: 1,
-  other: 4,
+  discount: 1,
+  freight: 2,
+  other: 5,
   subtotal: 0,
-  tax: 2,
-  total: 3,
+  tax: 3,
+  total: 4,
+}
+
+/** Clean tab breakdown labels: "ALT Freight" → "Freight". */
+export const displayQuoteTotalLabel = (
+  kind: QuoteTotalKind,
+  fallback = '',
+) => {
+  if (kind === 'subtotal') return 'Gross'
+  if (kind === 'discount') return 'Discount'
+  if (kind === 'freight') return 'Freight'
+  if (kind === 'tax') return 'HST'
+  if (kind === 'total') return 'Total'
+  return fallback
 }
 
 const findResultKeyByKind = (
@@ -151,26 +209,36 @@ export const buildQuoteViewModel = (
   }
 
   const pushTotal = (resultKey: string, value: unknown, field: any | null) => {
-    const kind = classifyQuoteTotalKey(resultKey)
+    const label = field ? getFieldHeading(field) : resultKey
+    const kind =
+      classifyQuoteTotalKey(resultKey) || classifyQuoteTotalKey(label)
     if (!kind) return
     usedKeys.add(resultKey)
     totals.push({
       field,
       kind,
-      label: displayTotalLabel(field ? getFieldHeading(field) : resultKey),
+      label: displayTotalLabel(label),
       resultKey,
       value: toNumber(value),
+      variant: resolveQuoteFieldVariant(label || resultKey),
     })
   }
 
   for (const field of scalarFormFields) {
-    const resultKey = findResultKeyForFormField(result, field)
-    if (!resultKey || usedKeys.has(resultKey)) continue
-    const totalKind = classifyQuoteTotalKey(resultKey)
+    const heading = getFieldHeading(field)
+    const matchedKey = findResultKeyForFormField(result, field)
+    const resultKey = matchedKey || getFieldId(field)
+    if (usedKeys.has(resultKey)) continue
+    const totalKind =
+      classifyQuoteTotalKey(resultKey) || classifyQuoteTotalKey(heading)
     if (totalKind) {
-      pushTotal(resultKey, result[resultKey], field)
+      const value = matchedKey
+        ? result[matchedKey]
+        : (result[heading] ?? result[getFieldId(field)])
+      pushTotal(resultKey, value ?? 0, field)
       continue
     }
+    if (!matchedKey) continue
     usedKeys.add(resultKey)
     pushScalar(resultKey, result[resultKey], field)
   }
@@ -229,8 +297,9 @@ export const buildQuoteViewModel = (
   }
 
   const lineItemTable =
-    tables.find((table) => isLineItemTableKey(table.resultKey, table.field)) ||
-    null
+    tables.find((table) =>
+      isPrimaryLineItemTableKey(table.resultKey, table.field),
+    ) || null
   const otherTables = tables.filter((table) => table !== lineItemTable)
 
   const shortScalars = scalars.filter(
@@ -239,19 +308,21 @@ export const buildQuoteViewModel = (
 
   totals.sort((a, b) => TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind])
 
-  // Prefer form-mapped totals, then keep a single entry per kind so keys like
-  // "Freight" / "Freight Amount" don't render as three identical Freights.
+  // Prefer form-mapped totals; keep one entry per kind × variant so Main /
+  // ALT / OPT Freight (etc.) all survive for tab switching.
   const preferredTotals = [...totals].sort((a, b) => {
     const fieldRank = Number(Boolean(b.field)) - Number(Boolean(a.field))
     if (fieldRank !== 0) return fieldRank
     return TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind]
   })
-  const seenKinds = new Set<QuoteTotalKind>()
+  const seenKindVariant = new Set<string>()
   const uniqueTotals: QuoteTotalEntry[] = []
   for (const entry of preferredTotals) {
-    if (entry.kind !== 'other' && seenKinds.has(entry.kind)) continue
-    seenKinds.add(entry.kind)
-    uniqueTotals.push(entry)
+    const variant = entry.variant || 'main'
+    const dedupeKey = `${variant}:${entry.kind}`
+    if (entry.kind !== 'other' && seenKindVariant.has(dedupeKey)) continue
+    seenKindVariant.add(dedupeKey)
+    uniqueTotals.push({ ...entry, variant })
   }
   uniqueTotals.sort((a, b) => TOTAL_SORT[a.kind] - TOTAL_SORT[b.kind])
 
@@ -272,7 +343,12 @@ export const buildQuoteViewModel = (
   })
 
   return {
-    grandTotal: labeledTotals.find((entry) => entry.kind === 'total') || null,
+    grandTotal:
+      labeledTotals.find(
+        (entry) => entry.kind === 'total' && (entry.variant || 'main') === 'main',
+      ) ||
+      labeledTotals.find((entry) => entry.kind === 'total') ||
+      null,
     lineItemTable,
     listEntries: scalars.filter((entry) => entry.isStringList),
     longTextEntries: scalars.filter(

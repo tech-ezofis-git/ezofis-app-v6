@@ -339,11 +339,36 @@ export const summarizeQualifierResult = (
     return { qualify: '', title: '' }
   }
   const vm = buildQualifierViewModel(result, formFields, tableFields)
-  const titleValue = vm.titleEntry?.value
-  const title =
-    titleValue !== null && titleValue !== undefined && String(titleValue).trim()
-      ? String(titleValue)
-      : 'Completed'
+  const compactLabel = (value: string) =>
+    value.toLowerCase().replace(/[\s._-]+/g, '')
+  const isBlankTitle = (value: string) => {
+    const trimmed = value.trim().toLowerCase()
+    return (
+      !trimmed ||
+      trimmed === '—' ||
+      trimmed === 'unknown' ||
+      trimmed === 'unknown project' ||
+      trimmed === 'na'
+    )
+  }
+  const scalars = [vm.titleEntry, ...vm.metaEntries].filter(
+    (entry): entry is NonNullable<typeof vm.titleEntry> => !!entry,
+  )
+  const projectType = scalars.find(
+    (entry) => compactLabel(entry.label || entry.resultKey) === 'projecttype',
+  )
+  const project = scalars.find(
+    (entry) => compactLabel(entry.label || entry.resultKey) === 'project',
+  )
+  const titleSource = projectType?.value ?? vm.titleEntry?.value
+  let title =
+    titleSource !== null && titleSource !== undefined
+      ? String(titleSource).trim()
+      : ''
+  if (isBlankTitle(title)) {
+    const projectText = String(project?.value ?? '').trim()
+    title = projectText || title || 'Completed'
+  }
   return { qualify: vm.qualify, title }
 }
 

@@ -37,7 +37,9 @@ export function buildFieldSearchKeywords(value: string): SingleKeyword[] {
       pushFlag(trimmed, { matchCase: true, wholeWords: false })
       pushFlag(trimmed, { matchCase: true, wholeWords: true })
       const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      pushRegExp(new RegExp(escaped))
+      // Global flag is required. The PDF search walks matches with exec(),
+      // and a non-global pattern never advances lastIndex.
+      pushRegExp(new RegExp(escaped, 'g'))
     } else {
       pushFlag(trimmed, { matchCase: false, wholeWords: true })
     }
@@ -168,6 +170,20 @@ export function buildFieldSearchKeywords(value: string): SingleKeyword[] {
       pushFlag(
         `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}/${year}`,
         { matchCase: false, wholeWords: false },
+      )
+
+      const dayPadded = String(day).padStart(2, '0')
+      const monthPadded = String(month).padStart(2, '0')
+      const yearShort = String(year).slice(-2)
+      const dayPattern = day < 10 ? `0?${day}` : dayPadded
+      const monthPattern = [shortMonth, longMonth, monthPadded]
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|')
+      pushRegExp(
+        new RegExp(
+          `${dayPattern}[.,/\\s-]+(?:${monthPattern})[.,/\\s-]+(?:${year}|${yearShort})`,
+          'gi',
+        ),
       )
     }
   }

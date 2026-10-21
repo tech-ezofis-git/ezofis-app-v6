@@ -980,19 +980,28 @@ const GenericRequestOverview = ({
     return new Set([...(base || []), ...requestNumberFieldIds])
   }, [blockSettings, allFieldIds, currentUserId, requestNumberFieldIds])
 
-  const hiddenFieldIds = useMemo(() => {
+  const hiddenFieldIds = useMemo<Set<string> | undefined>(() => {
     const access = formAccessMode(blockSettings.formVisibilityAccess)
     if (access === 'ALL') return undefined
     if (access === 'NONE') return new Set(allFieldIds)
     const rules = Array.isArray(blockSettings.formSecureControls)
       ? blockSettings.formSecureControls
       : []
-    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    // Match rule for current user, or fallback to rule without userId (single user node)
+    const rule =
+      rules.find((r: any) => String(r.userId) === currentUserId) ||
+      rules.find((r: any) => !r.userId) ||
+      (rules.length === 1 ? rules[0] : null)
     // No rule for this user under a CUSTOM policy - default to visible
     // rather than surprising the user by hiding fields nobody configured.
     if (!rule) return undefined
-    const visible = new Set((rule.formFields || []).map(String))
-    return new Set(allFieldIds.filter((id) => !visible.has(id)))
+    const specifiedFields = new Set<string>((rule.formFields || []).map(String))
+    const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
+    if (mode === 'SHOW') {
+      return new Set<string>(allFieldIds.filter((id) => !specifiedFields.has(id)))
+    }
+    // HIDE mode (default): the selected fields are hidden
+    return specifiedFields
   }, [blockSettings, allFieldIds, currentUserId])
 
   const summaryHiddenFieldIds = useMemo(() => {
