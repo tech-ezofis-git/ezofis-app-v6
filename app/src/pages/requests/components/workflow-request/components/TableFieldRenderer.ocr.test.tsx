@@ -132,18 +132,19 @@ describe('file column: fill other columns from the document', () => {
     expect(latest[0].merchant).toBe('Acme Stores')
   })
 
-  it('shows what was filled from the document', async () => {
+  it('shows no status line once the row is filled (the info icon lists the columns)', async () => {
     uploadForOcr.mockResolvedValue({
       data: { ocrFieldList: [{ name: 'bill', value: 'B-7' }] },
       error: '',
     })
+    let latest: Row[] = []
     const { container } = renderWithProviders(
-      <Host repositoryId='repo-1' onValue={() => undefined} />,
+      <Host repositoryId='repo-1' onValue={(r) => (latest = r)} />,
     )
     pickFile(container, new File(['x'], 'r.pdf', { type: 'application/pdf' }))
-    expect(
-      await screen.findByText(/Filled from the document: bill/),
-    ).toBeTruthy()
+    await waitFor(() => expect(latest[0].bill).toBe('B-7'))
+    expect(screen.queryByText(/Filled from the document/)).toBeNull()
+    expect(screen.queryByText(/Reading document/)).toBeNull()
   })
 
   it('says so when the document has none of the selected values', async () => {

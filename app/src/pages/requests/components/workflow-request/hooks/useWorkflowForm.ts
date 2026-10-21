@@ -164,16 +164,20 @@ export const useWorkflowForm = (
 
       if (!formId) {
         if (fallbackWorkflowForm) {
-          const normalizedJson = ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
+          const normalizedJson =
+            ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
           if (normalizedJson.panels?.length > 0) {
             const normalizedForm: FormRecord = {
               ...workflow,
               formJson: {
-                ...((typeof fallbackWorkflowForm === 'object' && fallbackWorkflowForm) || {}),
+                ...((typeof fallbackWorkflowForm === 'object' &&
+                  fallbackWorkflowForm) ||
+                  {}),
                 panels: normalizedJson.panels,
                 settings: {
                   ...((typeof fallbackWorkflowForm === 'object' &&
-                    fallbackWorkflowForm?.settings) || {}),
+                    fallbackWorkflowForm?.settings) ||
+                    {}),
                   rules: normalizedJson.rules,
                 },
               },
@@ -203,16 +207,20 @@ export const useWorkflowForm = (
 
       if (error || !data) {
         if (fallbackWorkflowForm) {
-          const normalizedJson = ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
+          const normalizedJson =
+            ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
           if (normalizedJson.panels?.length > 0) {
             const normalizedForm: FormRecord = {
               ...workflow,
               formJson: {
-                ...((typeof fallbackWorkflowForm === 'object' && fallbackWorkflowForm) || {}),
+                ...((typeof fallbackWorkflowForm === 'object' &&
+                  fallbackWorkflowForm) ||
+                  {}),
                 panels: normalizedJson.panels,
                 settings: {
                   ...((typeof fallbackWorkflowForm === 'object' &&
-                    fallbackWorkflowForm?.settings) || {}),
+                    fallbackWorkflowForm?.settings) ||
+                    {}),
                   rules: normalizedJson.rules,
                 },
               },
@@ -241,7 +249,9 @@ export const useWorkflowForm = (
           ...((typeof rawFormSource === 'object' && rawFormSource) || {}),
           panels: normalizedJson.panels,
           settings: {
-            ...((typeof rawFormSource === 'object' && rawFormSource?.settings) || {}),
+            ...((typeof rawFormSource === 'object' &&
+              rawFormSource?.settings) ||
+              {}),
             rules: normalizedJson.rules,
           },
         },
@@ -331,6 +341,18 @@ export const useWorkflowForm = (
       getMissingMandatoryFieldIds(repoFieldDescriptors, panels, formModel, {
         formRules,
         hasUploadedFile,
+      }),
+    [repoFieldDescriptors, panels, formModel, hasUploadedFile, formRules],
+  )
+
+  // The Upload step only indexes the file, so it checks the repository
+  // (folder) fields alone; the form's own required fields are checked on submit.
+  const missingRepoMandatoryFieldIds = useMemo(
+    () =>
+      getMissingMandatoryFieldIds(repoFieldDescriptors, panels, formModel, {
+        formRules,
+        hasUploadedFile,
+        repoOnly: true,
       }),
     [repoFieldDescriptors, panels, formModel, hasUploadedFile, formRules],
   )
@@ -619,7 +641,7 @@ export const useWorkflowForm = (
 
     decidedForCurrentBatchRef.current = true
 
-    if (missingMandatoryFieldIds.size > 0) {
+    if (missingRepoMandatoryFieldIds.size > 0) {
       setNeedsManualUpload(true)
       return
     }
@@ -635,12 +657,12 @@ export const useWorkflowForm = (
         setSubmitError(message)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExtractingOcr, missingMandatoryFieldIds, attachments, formModel])
+  }, [isExtractingOcr, missingRepoMandatoryFieldIds, attachments, formModel])
 
   // Manual counterpart to the auto-stage path above — called from the
   // Upload button once the user has filled in whatever OCR missed.
   const confirmUpload = async (): Promise<{ success: boolean }> => {
-    if (missingMandatoryFieldIds.size > 0) return { success: false }
+    if (missingRepoMandatoryFieldIds.size > 0) return { success: false }
     try {
       const staged = await stageAllPendingFiles()
       setAttachments(staged.attachments)
@@ -830,6 +852,7 @@ export const useWorkflowForm = (
     isUploadingAttachment,
     loadError,
     missingMandatoryFieldIds,
+    missingRepoMandatoryFieldIds,
     needsManualUpload,
     panels,
     removeAttachment,

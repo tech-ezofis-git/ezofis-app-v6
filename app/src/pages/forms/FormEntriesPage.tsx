@@ -168,7 +168,7 @@ const FormEntriesChoiceInput = ({
     },
   })
 
-  const masterConditions = buildMasterConditions(field, formModel)
+  const masterConditions = buildMasterConditions(field, formModel, allFields)
 
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,
@@ -427,7 +427,7 @@ const FormEntriesSelectInput = ({
     },
   })
 
-  const masterConditions = buildMasterConditions(field, formModel)
+  const masterConditions = buildMasterConditions(field, formModel, allFields)
 
   const { data: masterFieldOptions = [] } = useQuery({
     enabled: masterInfo.enabled,

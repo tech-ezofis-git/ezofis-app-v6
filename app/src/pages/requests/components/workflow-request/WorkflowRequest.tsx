@@ -32,6 +32,7 @@ import RepoFieldsPanel from './components/RepoFieldsPanel'
 import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
+import { WorkflowNameContext } from './WorkflowNameContext'
 import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
 interface Props {
@@ -139,7 +140,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     Boolean(requestData?.isCompleted) ||
     Boolean(requestData?.completedAtUtc) ||
     Boolean(requestData?.completedAt) ||
-    ['completed', 'approved', 'closed', 'paid', 'success', 'succeeded'].includes(
+    [
+      'completed',
+      'approved',
+      'closed',
+      'paid',
+      'success',
+      'succeeded',
+    ].includes(
       String(requestData?.status || '')
         .toLowerCase()
         .trim(),
@@ -360,6 +368,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     isUploadingAttachment,
     loadError,
     missingMandatoryFieldIds,
+    missingRepoMandatoryFieldIds,
     needsManualUpload,
     panels,
     removeAttachment,
@@ -583,298 +592,318 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   }
 
   return (
-    <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-      <Header
-        activePanel={activePanel}
-        attachmentCount={attachments.length}
-        commentCount={comments.length}
-        isSubmitDisabled={isLoadingForm || !!loadError}
-        isSubmitting={isSubmitting}
-        title={t`New Request`}
-        onClose={onClose}
-        onTogglePanel={(panel) =>
-          setActivePanel((current) => (current === panel ? null : panel))
-        }
-        onSubmit={
-          createdInstanceId || (isDocumentForm && hasAgents)
-            ? undefined
-            : handleSubmit
-        }
-      />
+    <WorkflowNameContext.Provider value={String(workflow?.name || '')}>
+      <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
+        <Header
+          activePanel={activePanel}
+          attachmentCount={attachments.length}
+          commentCount={comments.length}
+          isSubmitDisabled={isLoadingForm || !!loadError}
+          isSubmitting={isSubmitting}
+          title={t`New Request`}
+          onClose={onClose}
+          onTogglePanel={(panel) =>
+            setActivePanel((current) => (current === panel ? null : panel))
+          }
+          onSubmit={
+            createdInstanceId || (isDocumentForm && hasAgents)
+              ? undefined
+              : handleSubmit
+          }
+        />
 
-      {isLoadingForm ? (
-        <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3'>
-          <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm'>
-            <Icon
-              className='size-7 animate-spin text-[var(--primary-9)]'
-              name='tabler:loader-2'
-            />
-          </div>
-          <p className='text-14 font-medium text-gray-11'>{t`Loading form…`}</p>
-        </AnimateFadeIn>
-      ) : loadError ? (
-        <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
-          <div className='flex size-14 items-center justify-center rounded-2xl bg-gray-2 shadow-sm'>
-            <Icon className='size-7 text-gray-8' name='tabler:file-off' />
-          </div>
-          <p className='text-14 font-medium text-gray-12'>{loadError}</p>
-        </AnimateFadeIn>
-      ) : (
-        <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
-          {isDocumentForm &&
-          uploadedFiles.length === 0 &&
-          !createdInstanceId &&
-          !isStartingAgentWorkflow ? (
-            <DocumentFormUpload
-              workflow={workflow}
-              isUploading={
-                isUploadingAttachment ||
-                isExtractingOcr ||
-                isStartingAgentWorkflow
-              }
-              onFilesSelected={(files) => {
-                if (agentBlocks.length > 0) {
-                  startAgentWorkflow(files)
-                } else {
-                  addAttachment(files)
-                }
-              }}
-            />
-          ) : isDocumentForm &&
-            (uploadedFiles.length > 0 ||
-              createdInstanceId ||
-              isStartingAgentWorkflow) ? (
-            <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-gray-1'>
-              <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1 p-4'>
-                <UploadedFilePreview
-                  activeHighlightTerm={activeHighlightTerm}
-                  activeKey={activeFileKey}
-                  focusRequestId={focusRequestId}
-                  files={
-                    agentUploadedFile
-                      ? [
-                          {
-                            fileName: agentUploadedFile.name,
-                            key: 'agent-file',
-                            rawFile: agentUploadedFile,
-                          },
-                        ]
-                      : uploadedFiles
-                  }
-                  onSelectKey={setActiveFileKey}
-                />
-              </div>
-              <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-1'>
-                {agentBlocks.length > 0 && (
-                  <div className='px-4 pt-4 pb-3'>
-                    <AgentSummaryBoxes
-                      agentBlocks={agentBlocks}
-                      requestData={requestData || null}
-                      workflow={workflow}
-                    />
-                  </div>
-                )}
-                <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-gray-3 bg-surface px-4 pt-2'>
-                  <div className='flex items-center justify-between gap-4'>
-                    <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
-                      {tabs.map((tab) => (
-                        <button
-                          key={tab.id}
-                          className={cn(
-                            '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
-                            activeTab === tab.id
-                              ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                              : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                          )}
-                          onClick={() => selectTab(tab.id)}
-                        >
-                          <Icon className='h-4 w-4 shrink-0' name={tab.icon} />
-                          <span>{tab.label}</span>
-                          {'count' in tab && tab.count !== undefined && (
-                            <span className='flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12'>
-                              {tab.count}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-                  {activeTab.startsWith('agent:') && selectedAgentBlock ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
-                      <AgentDetailPlaceholder
-                        agentBlock={selectedAgentBlock}
-                        formModel={formModel}
-                        hideBack={hasAgentResponseTabs}
-                        rawWorkflowData={workflow}
-                        requestData={requestData || null}
-                        onBack={() => {
-                          setSelectedAgentBlockId(null)
-                          setActiveTab(
-                            hasAgentResponseTabs
-                              ? `agent:${agentResponseTabs[0]?.id}`
-                              : 'summary',
-                          )
-                        }}
-                        onFieldChange={setFieldValue}
-                      />
-                    </div>
-                  ) : activeTab === 'summary' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
-                      <WorkflowFormRenderer
-                        currentActivityId={currentActivityId}
-                        formModel={formModel}
-                        hasAttemptedSubmit={hasAttemptedSubmit}
-                        hiddenFieldIds={summaryHiddenFieldIds}
-                        stages={workflowStages}
-                        hidePanels={agentBlocks.length > 0}
-                        missingMandatoryFieldIds={missingMandatoryFieldIds}
-                        panels={panels}
-                        presentation='extracted'
-                        repoFieldHints={repoFieldHints}
-                        repositoryId={workflow?.repositoryId}
-                        onFieldChange={setFieldValue}
-                        onAddAttachments={addAttachment}
-                        onOcrFieldList={applyOcrFieldList}
-                      />
-                    </div>
-                  ) : activeTab === 'line_items' &&
-                    lineItemsHiddenFieldIds.hasLineItems ? (
-                    <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
-                      <WorkflowFormRenderer
-                        currentActivityId={currentActivityId}
-                        formModel={formModel}
-                        hasAttemptedSubmit={hasAttemptedSubmit}
-                        hiddenFieldIds={lineItemsHiddenFieldIds.ids}
-                        stages={workflowStages}
-                        hidePanels={agentBlocks.length > 0}
-                        missingMandatoryFieldIds={missingMandatoryFieldIds}
-                        panels={panels}
-                        repoFieldHints={repoFieldHints}
-                        repositoryId={workflow?.repositoryId}
-                        onFieldChange={setFieldValue}
-                        onAddAttachments={addAttachment}
-                        onOcrFieldList={applyOcrFieldList}
-                      />
-                    </div>
-                  ) : activeTab === 'attachments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4'>
-                      <AttachmentsPanel
-                        attachments={attachments}
-                        isUploading={isUploadingAttachment}
-                        onAdd={addAttachment}
-                        onRemove={removeAttachment}
-                      />
-                    </div>
-                  ) : activeTab === 'comments' ? (
-                    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4 pb-0'>
-                      <CommentsPanel
-                        comments={comments}
-                        draft={commentDraft}
-                        onDraftChange={setCommentDraft}
-                        onSend={addComment}
-                      />
-                    </div>
-                  ) : (
-                    <div className='flex h-32 items-center justify-center text-sm text-[var(--gray-9)]'>
-                      {t`No data available yet.`}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : !needsManualUpload ? (
-            // Plain form view — covers "no file yet", "still extracting"
-            // (the dropzone/field itself shows its own loading state), and
-            // "OCR filled everything, auto-staged" alike. The file-preview +
-            // repository-fields screen is reserved solely for the case
-            // below, where the user still has to supply missing data.
-            <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-              <WorkflowFormRenderer
-                currentActivityId={currentActivityId}
-                formModel={formModel}
-                hasAttemptedSubmit={hasAttemptedSubmit}
-                hiddenFieldIds={stageHiddenFieldIds}
-                missingMandatoryFieldIds={missingMandatoryFieldIds}
-                panels={panels}
-                stages={workflowStages}
-                repoFieldHints={repoFieldHints}
-                repositoryId={workflow?.repositoryId}
-                onFieldChange={setFieldValue}
-                onAddAttachments={addAttachment}
-                onOcrFieldList={applyOcrFieldList}
+        {isLoadingForm ? (
+          <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3'>
+            <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm'>
+              <Icon
+                className='size-7 animate-spin text-[var(--primary-9)]'
+                name='tabler:loader-2'
               />
             </div>
-          ) : (
-            <div className='flex min-w-0 flex-1 gap-4 overflow-hidden p-4'>
-              <div className='min-w-0 flex-1'>
-                <UploadedFilePreview
-                  activeHighlightTerm={activeHighlightTerm}
-                  activeKey={activeFileKey}
-                  focusRequestId={focusRequestId}
-                  files={
-                    agentUploadedFile
-                      ? [
-                          {
-                            fileName: agentUploadedFile.name,
-                            key: 'agent-file',
-                            rawFile: agentUploadedFile,
-                          },
-                        ]
-                      : uploadedFiles
+            <p className='text-14 font-medium text-gray-11'>{t`Loading form…`}</p>
+          </AnimateFadeIn>
+        ) : loadError ? (
+          <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
+            <div className='flex size-14 items-center justify-center rounded-2xl bg-gray-2 shadow-sm'>
+              <Icon className='size-7 text-gray-8' name='tabler:file-off' />
+            </div>
+            <p className='text-14 font-medium text-gray-12'>{loadError}</p>
+          </AnimateFadeIn>
+        ) : (
+          <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
+            {isDocumentForm &&
+            uploadedFiles.length === 0 &&
+            !createdInstanceId &&
+            !isStartingAgentWorkflow ? (
+              <DocumentFormUpload
+                workflow={workflow}
+                isUploading={
+                  isUploadingAttachment ||
+                  isExtractingOcr ||
+                  isStartingAgentWorkflow
+                }
+                onFilesSelected={(files) => {
+                  if (agentBlocks.length > 0) {
+                    startAgentWorkflow(files)
+                  } else {
+                    addAttachment(files)
                   }
-                  onSelectKey={setActiveFileKey}
+                }}
+              />
+            ) : isDocumentForm &&
+              (uploadedFiles.length > 0 ||
+                createdInstanceId ||
+                isStartingAgentWorkflow) ? (
+              <div className='flex min-w-0 flex-1 gap-0 overflow-hidden bg-gray-1'>
+                <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1 p-4'>
+                  <UploadedFilePreview
+                    activeHighlightTerm={activeHighlightTerm}
+                    activeKey={activeFileKey}
+                    focusRequestId={focusRequestId}
+                    files={
+                      agentUploadedFile
+                        ? [
+                            {
+                              fileName: agentUploadedFile.name,
+                              key: 'agent-file',
+                              rawFile: agentUploadedFile,
+                            },
+                          ]
+                        : uploadedFiles
+                    }
+                    onSelectKey={setActiveFileKey}
+                  />
+                </div>
+                <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-1'>
+                  {agentBlocks.length > 0 && (
+                    <div className='px-4 pt-4 pb-3'>
+                      <AgentSummaryBoxes
+                        agentBlocks={agentBlocks}
+                        requestData={requestData || null}
+                        workflow={workflow}
+                      />
+                    </div>
+                  )}
+                  <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-gray-3 bg-surface px-4 pt-2'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
+                        {tabs.map((tab) => (
+                          <button
+                            key={tab.id}
+                            className={cn(
+                              '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-3.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
+                              activeTab === tab.id
+                                ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                                : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                            )}
+                            onClick={() => selectTab(tab.id)}
+                          >
+                            <Icon
+                              className='h-4 w-4 shrink-0'
+                              name={tab.icon}
+                            />
+                            <span>{tab.label}</span>
+                            {'count' in tab && tab.count !== undefined && (
+                              <span className='flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12'>
+                                {tab.count}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+                    {activeTab.startsWith('agent:') && selectedAgentBlock ? (
+                      <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
+                        <AgentDetailPlaceholder
+                          agentBlock={selectedAgentBlock}
+                          formModel={formModel}
+                          hideBack={hasAgentResponseTabs}
+                          rawWorkflowData={workflow}
+                          requestData={requestData || null}
+                          onBack={() => {
+                            setSelectedAgentBlockId(null)
+                            setActiveTab(
+                              hasAgentResponseTabs
+                                ? `agent:${agentResponseTabs[0]?.id}`
+                                : 'summary',
+                            )
+                          }}
+                          onFieldChange={setFieldValue}
+                        />
+                      </div>
+                    ) : activeTab === 'summary' ? (
+                      <div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4'>
+                        <WorkflowFormRenderer
+                          currentActivityId={currentActivityId}
+                          formModel={formModel}
+                          hasAttemptedSubmit={hasAttemptedSubmit}
+                          hiddenFieldIds={summaryHiddenFieldIds}
+                          stages={workflowStages}
+                          hidePanels={agentBlocks.length > 0}
+                          missingMandatoryFieldIds={missingMandatoryFieldIds}
+                          panels={panels}
+                          presentation='extracted'
+                          repoFieldHints={repoFieldHints}
+                          repositoryId={workflow?.repositoryId}
+                          onFieldChange={setFieldValue}
+                          onAddAttachments={addAttachment}
+                          onOcrFieldList={applyOcrFieldList}
+                        />
+                      </div>
+                    ) : activeTab === 'line_items' &&
+                      lineItemsHiddenFieldIds.hasLineItems ? (
+                      <div className='flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-4'>
+                        <WorkflowFormRenderer
+                          currentActivityId={currentActivityId}
+                          formModel={formModel}
+                          hasAttemptedSubmit={hasAttemptedSubmit}
+                          hiddenFieldIds={lineItemsHiddenFieldIds.ids}
+                          stages={workflowStages}
+                          hidePanels={agentBlocks.length > 0}
+                          missingMandatoryFieldIds={missingMandatoryFieldIds}
+                          panels={panels}
+                          repoFieldHints={repoFieldHints}
+                          repositoryId={workflow?.repositoryId}
+                          onFieldChange={setFieldValue}
+                          onAddAttachments={addAttachment}
+                          onOcrFieldList={applyOcrFieldList}
+                        />
+                      </div>
+                    ) : activeTab === 'attachments' ? (
+                      <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4'>
+                        <AttachmentsPanel
+                          attachments={attachments}
+                          isUploading={isUploadingAttachment}
+                          onAdd={addAttachment}
+                          onRemove={removeAttachment}
+                        />
+                      </div>
+                    ) : activeTab === 'comments' ? (
+                      <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4 pb-0'>
+                        <CommentsPanel
+                          comments={comments}
+                          draft={commentDraft}
+                          onDraftChange={setCommentDraft}
+                          onSend={addComment}
+                        />
+                      </div>
+                    ) : (
+                      <div className='flex h-32 items-center justify-center text-sm text-[var(--gray-9)]'>
+                        {t`No data available yet.`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : !needsManualUpload ? (
+              // Plain form view — covers "no file yet", "still extracting"
+              // (the dropzone/field itself shows its own loading state), and
+              // "OCR filled everything, auto-staged" alike. The file-preview +
+              // repository-fields screen is reserved solely for the case
+              // below, where the user still has to supply missing data.
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                <WorkflowFormRenderer
+                  currentActivityId={currentActivityId}
+                  formModel={formModel}
+                  hasAttemptedSubmit={hasAttemptedSubmit}
+                  hiddenFieldIds={stageHiddenFieldIds}
+                  missingMandatoryFieldIds={missingMandatoryFieldIds}
+                  panels={panels}
+                  stages={workflowStages}
+                  repoFieldHints={repoFieldHints}
+                  repositoryId={workflow?.repositoryId}
+                  onFieldChange={setFieldValue}
+                  onAddAttachments={addAttachment}
+                  onOcrFieldList={applyOcrFieldList}
                 />
               </div>
+            ) : (
               <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-                <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
-                  <RepoFieldsPanel
-                    descriptors={repoFieldDescriptors}
-                    formModel={formModel}
-                    hasAttemptedSubmit={hasAttemptedSubmit}
-                    missingMandatoryFieldIds={missingMandatoryFieldIds}
-                    repoFieldHints={repoFieldHints}
-                    repositoryId={workflow?.repositoryId}
-                    onFieldChange={setFieldValue}
-                    onFieldFocus={handleFieldFocus}
-                    onOcrFieldList={applyOcrFieldList}
-                  />
-                </div>
-                <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
-                  <Button
-                    label={t`Cancel`}
-                    variant='outline'
+                <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+                  <button
+                    className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+                    type='button'
                     onClick={cancelPendingUpload}
-                  />
-                  <Button
-                    disabled={missingMandatoryFieldIds.size > 0}
-                    label={t`Upload`}
-                    loading={isConfirmingUpload}
-                    variant='solid'
-                    onClick={handleConfirmUpload}
-                  />
+                  >
+                    <Icon
+                      className='size-4 transition-transform group-hover:-translate-x-0.5'
+                      name='tabler:arrow-left'
+                    />
+                    <span>{t`Back`}</span>
+                  </button>
+                </div>
+                <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+                  <div className='min-w-0 flex-1'>
+                    <UploadedFilePreview
+                      activeHighlightTerm={activeHighlightTerm}
+                      activeKey={activeFileKey}
+                      focusRequestId={focusRequestId}
+                      files={
+                        agentUploadedFile
+                          ? [
+                              {
+                                fileName: agentUploadedFile.name,
+                                key: 'agent-file',
+                                rawFile: agentUploadedFile,
+                              },
+                            ]
+                          : uploadedFiles
+                      }
+                      onSelectKey={setActiveFileKey}
+                    />
+                  </div>
+                  <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                    <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                      <RepoFieldsPanel
+                        descriptors={repoFieldDescriptors}
+                        formModel={formModel}
+                        hasAttemptedSubmit={hasAttemptedSubmit}
+                        missingMandatoryFieldIds={missingMandatoryFieldIds}
+                        repoFieldHints={repoFieldHints}
+                        repositoryId={workflow?.repositoryId}
+                        onFieldChange={setFieldValue}
+                        onFieldFocus={handleFieldFocus}
+                        onOcrFieldList={applyOcrFieldList}
+                      />
+                    </div>
+                    <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+                      <Button
+                        label={t`Cancel`}
+                        variant='outline'
+                        onClick={cancelPendingUpload}
+                      />
+                      <Button
+                        disabled={missingRepoMandatoryFieldIds.size > 0}
+                        label={t`Upload`}
+                        loading={isConfirmingUpload}
+                        variant='solid'
+                        onClick={handleConfirmUpload}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          {activePanel ? (
-            <WorkflowRequestSidebar
-              activePanel={activePanel}
-              attachments={attachments}
-              commentDraft={commentDraft}
-              comments={comments}
-              isUploadingAttachment={isUploadingAttachment}
-              onAddAttachment={addAttachment}
-              onClose={() => setActivePanel(null)}
-              onCommentDraftChange={setCommentDraft}
-              onRemoveAttachment={removeAttachment}
-              onSendComment={addComment}
-            />
-          ) : null}
-        </div>
-      )}
-    </div>
+            )}
+            {activePanel ? (
+              <WorkflowRequestSidebar
+                activePanel={activePanel}
+                attachments={attachments}
+                commentDraft={commentDraft}
+                comments={comments}
+                isUploadingAttachment={isUploadingAttachment}
+                onAddAttachment={addAttachment}
+                onClose={() => setActivePanel(null)}
+                onCommentDraftChange={setCommentDraft}
+                onRemoveAttachment={removeAttachment}
+                onSendComment={addComment}
+              />
+            ) : null}
+          </div>
+        )}
+      </div>
+    </WorkflowNameContext.Provider>
   )
 }
 

@@ -151,6 +151,32 @@ export function parseColumnOptions(col: any): ColumnOption[] {
   )
 }
 
+const YEAR_CHOICE_TYPES = [
+  'SINGLE_SELECT',
+  'MULTI_SELECT',
+  'SINGLE_CHOICE',
+  'MULTIPLE_CHOICE',
+]
+
+/**
+ * Year options for a Year-Based choice column: the previous 10 years, this
+ * year and next year, newest first. Calendar years read "2026"; financial
+ * years (April to March) read "2026-2027", as the Current Year fill value does.
+ */
+export function buildYearOptions(
+  yearType: unknown,
+  now: Date = new Date(),
+): ColumnOption[] {
+  const financial = yearType === 'FINANCIAL_YEAR'
+  const current = now.getFullYear()
+  const options: ColumnOption[] = []
+  for (let year = current + 1; year >= current - 10; year--) {
+    const label = financial ? `${year}-${year + 1}` : String(year)
+    options.push({ id: label, name: label })
+  }
+  return options
+}
+
 /**
  * Picks the options a single cell should offer, from whichever source the
  * column uses. Returns undefined when the column has no dynamic source (the
@@ -162,6 +188,13 @@ export function selectColumnCellOptions(
   row: Record<string, any>,
   sources: ColumnOptionSources,
 ): ColumnOption[] | undefined {
+  if (
+    col?.settings?.specific?.yearType &&
+    YEAR_CHOICE_TYPES.includes(String(col.type))
+  ) {
+    return buildYearOptions(col.settings.specific.yearType)
+  }
+
   const source = getColumnOptionsSource(col)
   const parentColId = col?.settings?.lookupSettings?.cascadeFromColumn
   const parentVal = parentColId ? row?.[parentColId] : undefined

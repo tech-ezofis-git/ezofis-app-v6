@@ -10,14 +10,17 @@ import {
   getRepositoryItemFacets,
   getRepositorys,
   uploadForOcr,
+  uploadForStaticMetadata,
 } from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
 import { getUsers } from '@/api/v6/user'
+import { useWorkflowName } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -56,6 +59,7 @@ import {
   buildColumnOcrHints,
   getColumnFileError,
   getColumnOcrTargets,
+  getAwaitingColumnFile,
   getFileInputAccept,
   isFileColumnType,
   isMultiFileColumn,
@@ -565,6 +569,8 @@ export { ApiCatalogSelect }
 
 interface CellActions {
   siblingColumns: TableColumn[]
+  /** Label of the row's file column the cell waits on (disabled until then). */
+  awaitingFile?: string
   row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
@@ -792,12 +798,15 @@ const TableCellShortText = ({
 
 const TableCellFileInput = ({
   col,
+  fillTargetNames,
   isImageType,
   val,
   onCellChange,
   onFilesAdded,
 }: {
   col: TableColumn
+  /** Names of the columns this file fills, listed in the info tooltip. */
+  fillTargetNames?: string[]
   isImageType: boolean
   val: any
   onCellChange: (newVal: any) => void
@@ -809,6 +818,19 @@ const TableCellFileInput = ({
   const multiple = isMultiFileColumn(col)
   const files = toFileList(val)
   const fileName: string | undefined = files[0]?.fileName
+
+  const handleRemove = (index: number) => {
+    setError(null)
+    onCellChange(removeFileFromValue(col, val, index))
+    setStatus(
+      fillTargetNames?.length && files.length <= 1
+        ? {
+            text: 'File removed. Please upload the file again.',
+            tone: 'info',
+          }
+        : null,
+    )
+  }
 
   const handlePick = async (picked: File[]) => {
     // The picker's accept list can be bypassed (e.g. "All files"), so every
@@ -873,57 +895,78 @@ const TableCellFileInput = ({
               aria-label='Remove file'
               className='flex size-4 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
               type='button'
-              onClick={() => {
-                setError(null)
-                onCellChange(removeFileFromValue(col, val, index))
-              }}
+              onClick={() => handleRemove(index)}
             >
               <Icon height={10} name='lucide:x' width={10} />
             </button>
           </div>
         ))}
-      <label
-        className={cn(
-          'flex min-w-0 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
-          busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+      <div className='flex min-w-0 items-center gap-1'>
+        <label
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
+            busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+          )}
+        >
+          <Icon
+            className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
+            height={12}
+            width={12}
+            name={
+              busy
+                ? 'lucide:loader-2'
+                : fileName && !multiple
+                  ? 'lucide:paperclip'
+                  : 'lucide:upload'
+            }
+          />
+          <span className='min-w-0 flex-1 truncate'>
+            {busy
+              ? 'Reading document…'
+              : multiple
+                ? files.length > 0
+                  ? 'Add more files'
+                  : 'Add files'
+                : fileName ||
+                  col.settings?.specific?.placeholder ||
+                  (isImageType ? 'Upload image' : 'Upload file')}
+          </span>
+          <input
+            accept={getFileInputAccept(col, isImageType)}
+            className='hidden'
+            disabled={busy}
+            multiple={multiple}
+            type='file'
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? [])
+              e.target.value = ''
+              if (picked.length > 0) void handlePick(picked)
+            }}
+          />
+        </label>
+        {fillTargetNames && fillTargetNames.length > 0 && (
+          <Tooltip
+            content={`${files.length > 0 ? 'Filled from the file' : 'Upload a file to fill'}: ${fillTargetNames.join(', ')}`}
+            position='top'
+            width={220}
+          >
+            <span className='flex size-6 shrink-0 cursor-help items-center justify-center rounded-md text-gray-8 transition-colors hover:bg-gray-2 hover:text-primary-9'>
+              <Icon height={14} name='lucide:info' width={14} />
+            </span>
+          </Tooltip>
         )}
-      >
-        <Icon
-          className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
-          height={12}
-          width={12}
-          name={
-            busy
-              ? 'lucide:loader-2'
-              : fileName && !multiple
-                ? 'lucide:paperclip'
-                : 'lucide:upload'
-          }
-        />
-        <span className='min-w-0 flex-1 truncate'>
-          {busy
-            ? 'Reading document…'
-            : multiple
-              ? files.length > 0
-                ? 'Add more files'
-                : 'Add files'
-              : fileName ||
-                col.settings?.specific?.placeholder ||
-                (isImageType ? 'Upload image' : 'Upload file')}
-        </span>
-        <input
-          accept={getFileInputAccept(col, isImageType)}
-          className='hidden'
-          disabled={busy}
-          multiple={multiple}
-          type='file'
-          onChange={(e) => {
-            const picked = Array.from(e.target.files ?? [])
-            e.target.value = ''
-            if (picked.length > 0) void handlePick(picked)
-          }}
-        />
-      </label>
+        {!multiple && fileName && !busy && (
+          <button
+            aria-label='Remove file'
+            className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+            title='Remove file'
+            type='button'
+            onClick={() => handleRemove(0)}
+          >
+            <Icon height={12} name='lucide:x' width={12} />
+          </button>
+        )}
+      </div>
       {error && <p className='text-[11px] leading-tight text-red-9'>{error}</p>}
       {status && (
         <p
@@ -980,6 +1023,7 @@ const TableCellSelect = ({
       className='w-full'
       creatable={allowNew}
       options={displayOptions}
+      searchable
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.filter((opt) =>
         (Array.isArray(val) ? val : []).includes(opt.id),
@@ -995,6 +1039,7 @@ const TableCellSelect = ({
       className='w-full'
       creatable={allowNew}
       options={displayOptions}
+      searchable
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.find((opt) => opt.id === val) || null}
       onChange={(opt) =>
@@ -1083,6 +1128,23 @@ const renderCellInput = (
           }
         />
       </div>
+    )
+  }
+
+  if (readOnly && actions?.awaitingFile) {
+    return (
+      <Tooltip
+        className='flex w-full'
+        content={`Please upload "${actions.awaitingFile}" first`}
+        position='top'
+      >
+        <div
+          aria-disabled='true'
+          className='flex h-9 min-h-9 w-full min-w-0 cursor-not-allowed items-center truncate rounded-[var(--mantine-radius-default)] border border-gray-4 bg-gray-3 px-3 text-13 font-normal text-gray-9 select-none'
+        >
+          {getColumnPlaceholder(col)}
+        </div>
+      </Tooltip>
     )
   }
 
@@ -1247,6 +1309,13 @@ const renderCellInput = (
       return (
         <TableCellFileInput
           col={col}
+          fillTargetNames={
+            actions
+              ? getColumnOcrTargets(col, actions.siblingColumns).map((target) =>
+                  getColumnLabel(target),
+                )
+              : undefined
+          }
           isImageType={cellType === 'IMAGE_UPLOAD'}
           val={val}
           onCellChange={onCellChange}
@@ -1350,6 +1419,9 @@ const TableFieldRenderer = ({
   onChange,
 }: Props) => {
   const { t } = useLingui()
+  const workflowName = useWorkflowName()
+  const isExpenseReimbursement =
+    workflowName.trim().toLowerCase() === 'expense reimbursement'
   const isFlat = variant !== 'form'
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
@@ -1861,6 +1933,16 @@ const TableFieldRenderer = ({
   ): boolean =>
     Boolean(getRowCellRuleStates(tableColumns, row)[col.id]?.readOnly)
 
+  // Label of the file column a cell is still waiting on (undefined once the
+  // row has its document).
+  const awaitingFileLabel = (
+    col: TableColumn,
+    row: Record<string, unknown>,
+  ): string | undefined => {
+    const source = getAwaitingColumnFile(col, row, tableColumns)
+    return source ? getColumnLabel(source) : undefined
+  }
+
   const getLookupOptionsForCell = (
     col: TableColumn,
     row: Record<string, any>,
@@ -2052,7 +2134,7 @@ const TableFieldRenderer = ({
     const targetNames = targets.map((t) => t.name || t.label || t.id)
     // The form's own repository, else the first one (as the builder preview does)
     const ocrRepositoryId = repositoryId || fallbackRepositoryId
-    if (!ocrRepositoryId) {
+    if (!ocrRepositoryId && !isExpenseReimbursement) {
       return {
         text: t`Text could not be read from the document: no repository is available for this form.`,
         tone: 'error',
@@ -2063,8 +2145,29 @@ const TableFieldRenderer = ({
     const filled = new Set<string>()
     let failure = ''
     for (const file of files) {
-      const { data, error } = await uploadForOcr(ocrRepositoryId, file, hints)
-      if (error || !data?.ocrFieldList) {
+      let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
+      let error: unknown
+      if (isExpenseReimbursement) {
+        const res = await uploadForStaticMetadata(
+          file,
+          hints.map((h) => h.replace(',', ', ')),
+        )
+        error = res.error
+        let payload = res.data
+        if (typeof payload === 'string') {
+          try {
+            payload = JSON.parse(payload)
+          } catch {
+            payload = null
+          }
+        }
+        ocrFieldList = payload?.ocrResult
+      } else {
+        const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
+        error = res.error
+        ocrFieldList = res.data?.ocrFieldList
+      }
+      if (error || !ocrFieldList) {
         failure = String(error || 'no data was returned')
         console.warn('[table uploadForOcr] OCR extraction warning:', failure)
         continue
@@ -2074,7 +2177,7 @@ const TableFieldRenderer = ({
       if (idx < 0) continue
       const patch = mapOcrToRowPatch(
         targets,
-        data.ocrFieldList,
+        ocrFieldList,
         current[idx],
         !isMultiFileColumn(col),
       )
@@ -2088,11 +2191,10 @@ const TableFieldRenderer = ({
         filled.add(String(target?.name || target?.label || id))
       }
     }
-    const filledNames = Array.from(filled).join(', ')
     const wantedNames = targetNames.join(', ')
-    if (filled.size > 0) {
-      return { text: t`Filled from the document: ${filledNames}`, tone: 'info' }
-    }
+    // Success needs no line under the cell: the info icon already lists the
+    // columns the file fills.
+    if (filled.size > 0) return
     if (failure) {
       return { text: t`Could not read the document: ${failure}`, tone: 'error' }
     }
@@ -2882,7 +2984,8 @@ const TableFieldRenderer = ({
                                   handleCellChange(rowIndex, col.id, cellVal),
                                 readOnly ||
                                   isColumnReadOnly(col) ||
-                                  isCellRuleReadOnly(col, resolvedRow),
+                                  isCellRuleReadOnly(col, resolvedRow) ||
+                                  Boolean(awaitingFileLabel(col, resolvedRow)),
                                 getLookupOptionsForCell(col, resolvedRow),
                                 isApiOptionsColumn(col)
                                   ? (code) =>
@@ -2894,6 +2997,10 @@ const TableFieldRenderer = ({
                                   : undefined,
                                 rowIndex,
                                 {
+                                  awaitingFile: awaitingFileLabel(
+                                    col,
+                                    resolvedRow,
+                                  ),
                                   row: resolvedRow,
                                   siblingColumns: tableColumns,
                                   onFilesAdded: (files) =>
@@ -3094,7 +3201,8 @@ const TableFieldRenderer = ({
                             handleCellChange(rowIndex, col.id, cellVal),
                           readOnly ||
                             isColumnReadOnly(col) ||
-                            isCellRuleReadOnly(col, resolvedRow),
+                            isCellRuleReadOnly(col, resolvedRow) ||
+                            Boolean(awaitingFileLabel(col, resolvedRow)),
                           getLookupOptionsForCell(col, resolvedRow),
                           isApiOptionsColumn(col)
                             ? (code) =>
@@ -3102,6 +3210,7 @@ const TableFieldRenderer = ({
                             : undefined,
                           rowIndex,
                           {
+                            awaitingFile: awaitingFileLabel(col, resolvedRow),
                             row: resolvedRow,
                             siblingColumns: tableColumns,
                             onFilesAdded: (files) =>

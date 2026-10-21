@@ -158,6 +158,40 @@ export function getColumnOcrTargets(col: any, siblings: any[]): any[] {
 }
 
 /**
+ * The file column a cell is waiting on: one in the same row that is set to
+ * fill `col` and holds no file yet. The cell stays disabled until the
+ * document is uploaded. A cell that already has a value (a saved row) is never
+ * locked. Null when the cell is free to edit.
+ */
+export function getAwaitingColumnFile(
+  col: any,
+  row: Record<string, any> | undefined,
+  siblings: any[],
+): any | null {
+  if (!col?.id || isFileColumnType(col.type)) return null
+  const cellValue = (c: any) =>
+    row?.[c.id] ?? (c.name ? row?.[c.name] : undefined)
+  if (!isBlank(cellValue(col))) return null
+  const sources = siblings.filter(
+    (c) =>
+      c?.id !== col.id &&
+      isFileColumnType(c?.type) &&
+      getColumnOcrTargets(c, siblings).some((t) => t.id === col.id),
+  )
+  if (sources.length === 0) return null
+  return sources.every((src) => isBlank(cellValue(src))) ? sources[0] : null
+}
+
+/** True while `getAwaitingColumnFile` finds a file column still to upload. */
+export function isAwaitingColumnFile(
+  col: any,
+  row: Record<string, any> | undefined,
+  siblings: any[],
+): boolean {
+  return getAwaitingColumnFile(col, row, siblings) !== null
+}
+
+/**
  * Value for the picker's `accept` attribute. Configured types win; otherwise
  * image columns keep their `image/*` filter and plain file columns stay open.
  */

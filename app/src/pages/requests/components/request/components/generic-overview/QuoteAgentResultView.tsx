@@ -103,6 +103,16 @@ const dynamicCellFilled = (value: unknown) => {
 const compactControl = (value: string) =>
   value.toLowerCase().replace(/[\s._-]+/g, '')
 
+const isInternalNotesHeading = (heading: string) =>
+  compactControl(stripQuoteVariantLabel(heading)) === 'internalnotes'
+
+const INTERNAL_NOTE_COLUMN = {
+  id: 'Note',
+  label: 'Note',
+  name: 'Note',
+  type: 'LONG_TEXT',
+}
+
 const lineValueSignature = (rows: Record<string, any>[] | undefined) =>
   JSON.stringify(
     (Array.isArray(rows) ? rows : []).map((row) => [
@@ -890,22 +900,33 @@ const QuoteAgentResultView = ({
         const compact = heading.toLowerCase().replace(/[\s_-]+/g, '')
         if (compact === 'compare' || compact.endsWith('compare')) return null
         const fieldId = getFieldId(field)
+        const notes = isInternalNotesHeading(heading)
         const stored = formModel?.[fieldId]
         const fromResult = result?.[heading] ?? result?.[fieldId]
-        const sourceRows = Array.isArray(stored) && stored.length
-          ? (stored as Record<string, any>[])
-          : Array.isArray(fromResult)
-            ? (fromResult as Record<string, any>[])
-            : []
+        const noteRows = (value: unknown): Record<string, any>[] => {
+          if (Array.isArray(value)) return value as Record<string, any>[]
+          if (notes && value != null && typeof value !== 'object' && String(value).trim()) {
+            return [{ Note: String(value) }]
+          }
+          return []
+        }
+        const storedRows = noteRows(stored)
+        const sourceRows = storedRows.length ? storedRows : noteRows(fromResult)
         const schemaColumns = effectiveDynamicColumns(field, sourceRows)
         // An empty form array still renders the builder columns with one blank row.
         // Filled rows drop unused default columns and keep the keys that have values.
+        // Internal Notes has no builder columns, so an empty table stays empty
+        // and still shows beside remarks.
         const rows = sourceRows.length
           ? sourceRows
-          : [{ _rowId: `${fieldId}-empty` }]
+          : notes
+            ? []
+            : [{ _rowId: `${fieldId}-empty` }]
+        const columns = columnsForFilledDynamicTable(schemaColumns, rows)
         return {
-          columns: columnsForFilledDynamicTable(schemaColumns, rows),
+          columns: notes && !columns.length ? [INTERNAL_NOTE_COLUMN] : columns,
           fieldId,
+          notes,
           rows,
           title: stripQuoteVariantLabel(heading),
           variantId: resolveQuoteFieldVariant(heading),
@@ -914,6 +935,7 @@ const QuoteAgentResultView = ({
       .filter(Boolean) as {
       columns: ReturnType<typeof effectiveDynamicColumns>
       fieldId: string
+      notes: boolean
       rows: Record<string, any>[]
       title: string
       variantId: QuoteVariantId
@@ -990,7 +1012,7 @@ const QuoteAgentResultView = ({
     setPreviewLoading(true)
     try {
       const { data, error } = await previewDocument({
-        formData: buildDocumentPreviewFormData(formModel),
+        formData: buildPreviewFormData(),
         quoteType,
         templateJson: documentTemplateJson,
         ...(workflowFormId ? { formId: workflowFormId } : {}),
@@ -1138,6 +1160,64 @@ const QuoteAgentResultView = ({
     taxRate,
     viewModel.totals,
   ])
+
+  /**
+   * formData for the document preview. A quote's Subtotal / Freight / HST /
+   * Total fields are often Calculated fields; when their formula cannot be
+   * evaluated they are saved blank even though the screen shows the totals
+   * worked out from the line items. Blank ones are filled from those shown
+   * totals so the PDF matches the screen. Filled values are never overwritten.
+   */
+  const buildPreviewFormData = () => {
+    const data = buildDocumentPreviewFormData(formModel)
+    if (isCompareTab || isEmptyActiveVariant) return data
+
+    const shown: Record<
+      'discount' | 'freight' | 'subtotal' | 'tax' | 'total',
+      number
+    > = {
+      discount: activeVariantTotals.discount,
+      freight: activeVariantTotals.freight,
+      subtotal: activeVariantTotals.subtotal,
+      tax: activeVariantTotals.hst,
+      total: activeVariantTotals.total,
+    }
+
+    ;(['subtotal', 'discount', 'freight', 'tax', 'total'] as const).forEach(
+      (kind) => {
+        const entry = viewModel.totals.find(
+          (item) =>
+            item.kind === kind && (item.variant || 'main') === activeVariantId,
+        )
+        const field =
+          entry?.field ||
+          formFields.find((item) => {
+            const heading = getFieldHeading(item)
+            if (resolveQuoteFieldVariant(heading) !== activeVariantId) {
+              return false
+            }
+            const compact = compactControl(stripQuoteVariantLabel(heading))
+            if (kind === 'total' && compact.includes('subtotal')) return false
+            const names = kind === 'tax' ? ['hst', 'gst', 'tax'] : [kind]
+            return names.some(
+              (name) => compact === name || compact.endsWith(name),
+            )
+          }) ||
+          null
+        if (!field) return
+
+        const id = getFieldId(field)
+        const current = data[id]
+        const isBlank =
+          current == null ||
+          (typeof current === 'string' && current.trim() === '')
+        const value = shown[kind]
+        if (isBlank && Number.isFinite(value)) data[id] = value
+      },
+    )
+
+    return data
+  }
 
   const [computedTotals, setComputedTotals] =
     useState<QuoteTotals>(initialTotals)
@@ -1470,8 +1550,18 @@ const QuoteAgentResultView = ({
       const stored = formModel?.[id]
       if (Array.isArray(stored) && stored.length > 0) return
       const fromResult = result?.[heading] ?? result?.[id]
-      if (!Array.isArray(fromResult) || fromResult.length === 0) return
-      patch[id] = fromResult
+      if (Array.isArray(fromResult) && fromResult.length > 0) {
+        patch[id] = fromResult
+        return
+      }
+      if (
+        isInternalNotesHeading(heading) &&
+        fromResult != null &&
+        typeof fromResult !== 'object' &&
+        String(fromResult).trim() !== ''
+      ) {
+        patch[id] = [{ Note: String(fromResult) }]
+      }
     })
 
     const keys = Object.keys(patch)
@@ -1727,6 +1817,7 @@ const QuoteAgentResultView = ({
       if (!isDynamicTableField(field)) return false
       const heading = getFieldHeading(field)
       if (resolveLineItemTableVariant(heading)) return false
+      if (isInternalNotesHeading(heading)) return false
       const base = dynamicTableBase(field)
       if (!base || base === 'compare' || base.endsWith('compare')) return false
       return resolveQuoteFieldVariant(heading) === sourceId
@@ -1769,6 +1860,59 @@ const QuoteAgentResultView = ({
       const traceFieldId = getFieldId(targetField)
       if (traceFieldId) onFieldChange(traceFieldId, copied)
     })
+
+    // Internal Notes is a per-quote dynamic table with no builder columns.
+    // Copy the source rows onto the child quote's own control id.
+    const sourceNotes = tableFields.find((field) => {
+      const heading = getFieldHeading(field)
+      return (
+        isInternalNotesHeading(heading) &&
+        resolveQuoteFieldVariant(heading) === sourceId
+      )
+    })
+    const targetNotes = tableFields.find((field) => {
+      const heading = getFieldHeading(field)
+      return (
+        isInternalNotesHeading(heading) &&
+        resolveQuoteFieldVariant(heading) === targetId
+      )
+    })
+    const targetNotesId = targetNotes ? getFieldId(targetNotes) : ''
+    if (sourceNotes && targetNotesId) {
+      const noteKeys = [
+        sourceNotes.id,
+        sourceNotes.jsonId,
+        getFieldId(sourceNotes),
+        getFieldHeading(sourceNotes),
+      ].filter(Boolean)
+      const noteText = noteKeys
+        .flatMap((key) => [formModel?.[key], result?.[key]])
+        .find(
+          (value) =>
+            value != null &&
+            typeof value !== 'object' &&
+            String(value).trim() !== '',
+        )
+      const copiedNotes = (
+        readStoredRows(sourceNotes).length
+          ? readStoredRows(sourceNotes)
+          : noteText != null
+            ? [{ Note: String(noteText) }]
+            : []
+      )
+        .filter((row) =>
+          Object.entries(row || {}).some(
+            ([key, value]) =>
+              !String(key).startsWith('_') && dynamicCellFilled(value),
+          ),
+        )
+        .map((row) => {
+          const next = { ...row }
+          delete next._rowId
+          return next
+        })
+      if (copiedNotes.length) onFieldChange(targetNotesId, copiedNotes)
+    }
 
     totalsFromEditRef.current = true
     setComputedTotals(withSourceTotal)
@@ -2257,7 +2401,7 @@ const QuoteAgentResultView = ({
                 <div className='flex flex-wrap items-center justify-between gap-3'>
                   {!isCompareTab && activeOrderNumber ? (
                     <div className='flex min-w-0 items-baseline gap-1.5 text-left text-sm text-gray-12'>
-                      <span className='shrink-0 font-bold'>{t`Order Number`}:</span>
+                      <span className='shrink-0 font-bold'>{t`Quote Number`}:</span>
                       <HoverEditShell
                         activeEditId={activeEditId}
                         canEdit={
@@ -2284,7 +2428,7 @@ const QuoteAgentResultView = ({
                           />
                         }
                         fieldId={activeOrderNumber.fieldId}
-                        label={t`Order Number`}
+                        label={t`Quote Number`}
                         onActivate={setActiveEditId}
                       >
                         <span className='truncate'>
@@ -2445,57 +2589,80 @@ const QuoteAgentResultView = ({
             </div>
           )}
 
-          {!isCompareTab &&
-            !isEmptyActiveVariant &&
-            viewModel.longTextEntries
-            .filter((entry) => {
-              if (entry.field && !canViewField(entry.field)) return false
-              const label = entry.label || entry.resultKey || ''
-              const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
-              const variant = resolveQuoteFieldVariant(label)
-              const isVariantScoped =
-                compact.startsWith('quote') ||
-                compact.startsWith('alt') ||
-                compact.startsWith('opt') ||
-                compact.startsWith('optional') ||
-                compact === 'remarks' ||
-                compact === 'remark'
-              if (!isVariantScoped) return true
-              return variant === activeVariantId
-            })
-            .map((entry) => {
-              const { canEdit, display, raw } = resolveScalarEntry(entry)
-              const fieldId = entry.field
-                ? getFieldId(entry.field)
-                : entry.resultKey
-              return (
-                <div className='flex flex-col gap-1.5' key={entry.resultKey}>
-                  <HoverEditShell
-                    activeEditId={activeEditId}
-                    canEdit={canEdit}
-                    editor={renderScalarEditor(entry, raw)}
-                    fieldId={fieldId}
-                    heading={
-                      <h4 className='text-sm font-semibold text-gray-12'>
-                        {/remark/i.test(entry.label || '')
-                          ? t`Remarks`
-                          : stripQuoteVariantLabel(entry.label || '')}
-                      </h4>
-                    }
-                    label={controlLabel(entry.field, entry.label)}
-                    onActivate={setActiveEditId}
-                  >
-                    <span className='text-sm leading-relaxed text-gray-12'>
-                      {display || raw}
-                    </span>
-                  </HoverEditShell>
-                </div>
-              )
-            })}
+          {!isCompareTab && !isEmptyActiveVariant && (
+            <div className='flex flex-col gap-4'>
+              <div className='flex flex-col gap-3'>
+                {viewModel.longTextEntries
+                  .filter((entry) => {
+                    if (entry.field && !canViewField(entry.field)) return false
+                    const label = entry.label || entry.resultKey || ''
+                    const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
+                    const variant = resolveQuoteFieldVariant(label)
+                    const isVariantScoped =
+                      compact.startsWith('quote') ||
+                      compact.startsWith('alt') ||
+                      compact.startsWith('opt') ||
+                      compact.startsWith('optional') ||
+                      compact === 'remarks' ||
+                      compact === 'remark'
+                    if (!isVariantScoped) return true
+                    return variant === activeVariantId
+                  })
+                  .map((entry) => {
+                    const { canEdit, display, raw } = resolveScalarEntry(entry)
+                    const fieldId = entry.field
+                      ? getFieldId(entry.field)
+                      : entry.resultKey
+                    return (
+                      <div className='flex flex-col gap-1.5' key={entry.resultKey}>
+                        <HoverEditShell
+                          activeEditId={activeEditId}
+                          canEdit={canEdit}
+                          editor={renderScalarEditor(entry, raw)}
+                          fieldId={fieldId}
+                          heading={
+                            <h4 className='text-sm font-semibold text-gray-12'>
+                              {/remark/i.test(entry.label || '')
+                                ? t`Remarks`
+                                : stripQuoteVariantLabel(entry.label || '')}
+                            </h4>
+                          }
+                          label={controlLabel(entry.field, entry.label)}
+                          onActivate={setActiveEditId}
+                        >
+                          <span className='text-sm leading-relaxed text-gray-12'>
+                            {display || raw}
+                          </span>
+                        </HoverEditShell>
+                      </div>
+                    )
+                  })}
+              </div>
+              {quoteDynamicTables
+                .filter(
+                  (table) => table.notes && table.variantId === activeVariantId,
+                )
+                .map((table) => (
+                  <AgentFlatTable
+                    allowAddRow={false}
+                    allowDelete={false}
+                    columns={table.columns}
+                    icon='tabler:notes'
+                    key={table.fieldId}
+                    readOnly
+                    rows={normalizeAgentTableRows(table.rows, table.columns)}
+                    title={t`Internal Notes`}
+                    onChange={() => {}}
+                  />
+                ))}
+            </div>
+          )}
 
           {!isCompareTab &&
             quoteDynamicTables
-              .filter((table) => table.variantId === activeVariantId)
+              .filter(
+                (table) => !table.notes && table.variantId === activeVariantId,
+              )
               .map((table) => (
                 <AgentFlatTable
                   allowAddRow={false}

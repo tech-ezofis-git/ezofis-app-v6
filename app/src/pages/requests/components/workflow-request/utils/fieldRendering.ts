@@ -237,7 +237,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
               ? dayjs().format('YYYY-MM-DD HH:mm')
               : dayjs().format('YYYY-MM-DD')
         } else if (
-          (specific.dateDefaultValueType === 'CUSTOM' || specific.defaultValue) &&
+          (specific.dateDefaultValueType === 'CUSTOM' ||
+            specific.defaultValue) &&
           specific.defaultValue
         ) {
           model[field.id] = String(specific.defaultValue).replace('T', ' ')
@@ -265,7 +266,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           }
         } else if (defaultMode === 'USER_NAME') {
           const s = authUserStore.getState().session
-          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          const name = s
+            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
+            : ''
           if (name) {
             model[field.id] = name
           }
@@ -285,7 +288,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValueInSelectField
         } else {
-          const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+          const optionsType = String(
+            specific.optionsType || 'CUSTOM',
+          ).toUpperCase()
           if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
             const opts = getFieldOptions(field)
             if (opts.length === 1) {
@@ -306,7 +311,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           }
         } else if (defaultMode === 'USER_NAME') {
           const s = authUserStore.getState().session
-          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          const name = s
+            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
+            : ''
           if (name) {
             model[field.id] = name
           }
@@ -323,7 +330,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       } else if (fieldType === 'COUNTER' || fieldType === 'RATING') {
         model[field.id] = 0
       } else if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
-        const rowsType = specific.rowsType || specific.tableRowsType || 'ON_DEMAND'
+        const rowsType =
+          specific.rowsType || specific.tableRowsType || 'ON_DEMAND'
         const fixedRowCount =
           specific.fixedRowCount || specific.tableFixedRowCount || 5
         if (rowsType === 'FIXED') {
@@ -340,7 +348,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
               if (typeof labelEntry === 'string') {
                 rowObj[labelCol.id] = labelEntry
               } else if (labelEntry && typeof labelEntry === 'object') {
-                rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
+                rowObj[labelCol.id] =
+                  labelEntry[labelCol.id] ?? labelEntry.label ?? ''
               }
             }
             // Column defaults fill only cells the label seeding left empty
@@ -623,7 +632,7 @@ export const extractScalarStrings = (val: any): string[] => {
 // short TTL instead.
 const MASTER_CALL_TTL_MS = 30_000
 const masterCallCache = new Map<string, { at: number; promise: Promise<any> }>()
-const cachedMasterCall = <T,>(
+const cachedMasterCall = <T>(
   kind: string,
   masterFormId: string,
   call: () => Promise<T>,
@@ -639,17 +648,120 @@ const cachedMasterCall = <T,>(
   return promise
 }
 
-// Resolves a select field's "Condition Mappings" against the live form model.
+// Resolves a select field's "Condition Mappings" and chained cascading ancestors against the live form model.
 export const buildMasterConditions = (
   field: any,
   model?: Record<string, any>,
-): Array<{ masterColumn: string; value: any }> =>
-  (field?.settings?.specific?.masterFormConditionColumn || [])
+  allFields?: any[],
+): Array<{ masterColumn: string; value: any }> => {
+  const cleanStr = (s?: string) =>
+    s ? String(s).replace(/\*/g, ' ').replace(/\s+/g, ' ').trim() : ''
+
+  const explicit: Array<{ masterColumn: string; value: any }> = (
+    field?.settings?.specific?.masterFormConditionColumn || []
+  )
     .filter((c: any) => (c?.formField || c?.formColumn) && c?.masterColumn)
     .map((c: any) => ({
       masterColumn: String(c.masterColumn),
       value: model?.[c.formField || c.formColumn],
     }))
+
+  if (!allFields || allFields.length === 0) return explicit
+
+  const chained: Array<{ masterColumn: string; value: any }> = []
+  const visited = new Set<string>()
+  if (field?.id) visited.add(String(field.id))
+  if (field?.jsonId) visited.add(String(field.jsonId))
+
+  let curr = field
+  while (curr) {
+    const parentRef =
+      curr.settings?.specific?.masterFormParentColumn ||
+      curr.settings?.specific?.parentFieldId ||
+      curr.settings?.specific?.repositoryFieldParent
+    if (!parentRef) break
+
+    const refStr = String(parentRef).trim()
+    const target = refStr.toLowerCase()
+    const targetClean = cleanStr(refStr).toLowerCase()
+
+    const pField = allFields.find((f: any) => {
+      if (!f || f.id === curr.id) return false
+      const fId = String(f.id || '')
+      const fJsonId = String(f.jsonId || '')
+      if (visited.has(fId) || (fJsonId && visited.has(fJsonId))) return false
+
+      const fLabel = String(f.label || '')
+      const fName = String(f.name || '')
+      const fMasterCol = String(f.settings?.specific?.masterFormColumn || '')
+
+      return (
+        fId === refStr ||
+        fId.toLowerCase() === target ||
+        (fJsonId && (fJsonId === refStr || fJsonId.toLowerCase() === target)) ||
+        fMasterCol.trim().toLowerCase() === target ||
+        (fLabel && fLabel.trim().toLowerCase() === target) ||
+        (fName && fName.trim().toLowerCase() === target) ||
+        (fLabel && cleanStr(fLabel).toLowerCase() === targetClean) ||
+        (fName && cleanStr(fName).toLowerCase() === targetClean)
+      )
+    })
+
+    if (!pField || !pField.id || visited.has(String(pField.id))) break
+    visited.add(String(pField.id))
+    if (pField.jsonId) visited.add(String(pField.jsonId))
+
+    const val =
+      model?.[pField.id] ??
+      (pField.jsonId ? model?.[pField.jsonId] : undefined) ??
+      (pField.label ? model?.[pField.label] : undefined) ??
+      (pField.name ? model?.[pField.name] : undefined)
+
+    const masterCol =
+      getMasterFormInfo(pField).masterFormColumn ||
+      pField.settings?.specific?.masterFormColumn ||
+      cleanStr(pField.label) ||
+      pField.label ||
+      pField.id
+
+    if (
+      masterCol &&
+      val !== undefined &&
+      val !== null &&
+      String(val).trim() !== ''
+    ) {
+      const colStr = String(masterCol).trim()
+      const colLower = colStr.toLowerCase()
+      const colClean = cleanStr(colStr).toLowerCase()
+      const alreadyInExplicit = explicit.some(
+        (c: { masterColumn: string; value?: any }) => {
+          const mcLower = c.masterColumn.trim().toLowerCase()
+          return (
+            mcLower === colLower ||
+            cleanStr(c.masterColumn).toLowerCase() === colClean
+          )
+        },
+      )
+      const alreadyInChained = chained.some((c) => {
+        const mcLower = c.masterColumn.trim().toLowerCase()
+        return mcLower === colLower || cleanStr(c.masterColumn).toLowerCase() === colClean
+      })
+      if (!alreadyInExplicit && !alreadyInChained) {
+        chained.push({ masterColumn: colStr, value: val })
+      }
+    }
+
+    curr = pField
+  }
+
+  console.log('[buildMasterConditions] for field:', field.label || field.id, {
+    explicit,
+    chained,
+    result: [...explicit, ...chained],
+  })
+
+  return [...explicit, ...chained]
+}
 
 export const fetchMasterFormColumnOptions = async (
   masterFormId: string,
@@ -667,7 +779,9 @@ export const fetchMasterFormColumnOptions = async (
     let columnKeyOrLabel = masterFormColumn || ''
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
-    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
+    const formDefRes = await cachedMasterCall('def', masterFormId, () =>
+      formApi.getFormDataById(masterFormId),
+    )
     console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
       masterFormId,
       masterFormColumn,
@@ -725,12 +839,18 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
+    const cleanStr = (s?: string) =>
+      s ? String(s).replace(/\*/g, ' ').replace(/\s+/g, ' ').trim() : ''
+
     // Prepare parent column candidate keys if parent filtering is active
     const parentCandidateKeys = new Set<string>()
     if (parentMasterColumn) {
       parentCandidateKeys.add(parentMasterColumn)
       parentCandidateKeys.add(parentMasterColumn.trim())
       parentCandidateKeys.add(parentMasterColumn.trim().toLowerCase())
+      const pClean = cleanStr(parentMasterColumn).toLowerCase()
+      if (pClean) parentCandidateKeys.add(pClean)
+
       const matchedParentField = formFields.find(
         (f: any) =>
           f.id === parentMasterColumn ||
@@ -738,7 +858,9 @@ export const fetchMasterFormColumnOptions = async (
           f.label?.trim().toLowerCase() ===
             parentMasterColumn?.trim().toLowerCase() ||
           f.name?.trim().toLowerCase() ===
-            parentMasterColumn?.trim().toLowerCase(),
+            parentMasterColumn?.trim().toLowerCase() ||
+          cleanStr(f.label).toLowerCase() === pClean ||
+          cleanStr(f.name).toLowerCase() === pClean,
       )
       if (matchedParentField) {
         if (matchedParentField.id) {
@@ -750,17 +872,20 @@ export const fetchMasterFormColumnOptions = async (
           parentCandidateKeys.add(matchedParentField.label)
           parentCandidateKeys.add(matchedParentField.label.trim())
           parentCandidateKeys.add(matchedParentField.label.trim().toLowerCase())
+          const lClean = cleanStr(matchedParentField.label).toLowerCase()
+          if (lClean) parentCandidateKeys.add(lClean)
         }
         if (matchedParentField.name) {
           parentCandidateKeys.add(matchedParentField.name)
           parentCandidateKeys.add(matchedParentField.name.trim())
           parentCandidateKeys.add(matchedParentField.name.trim().toLowerCase())
+          const nClean = cleanStr(matchedParentField.name).toLowerCase()
+          if (nClean) parentCandidateKeys.add(nClean)
         }
       }
     }
 
-    // Explicit "Condition Mappings" (form field -> master column) take
-    // precedence over the legacy single-parent cascade.
+    // Explicit "Condition Mappings" and chained ancestors take precedence
     const activeConditions = (conditions || [])
       .filter((c) => c.masterColumn)
       .map((c) => {
@@ -770,13 +895,17 @@ export const fetchMasterFormColumnOptions = async (
           keys.add(s)
           keys.add(s.trim())
           keys.add(s.trim().toLowerCase())
+          const cClean = cleanStr(s).toLowerCase()
+          if (cClean) keys.add(cClean)
         }
         addKeys(c.masterColumn)
+        const colClean = cleanStr(c.masterColumn).toLowerCase()
         const f = formFields.find(
           (ff: any) =>
             ff.id === c.masterColumn ||
             ff.label?.trim().toLowerCase() ===
-              c.masterColumn.trim().toLowerCase(),
+              c.masterColumn.trim().toLowerCase() ||
+            cleanStr(ff.label).toLowerCase() === colClean,
         )
         addKeys(f?.id)
         addKeys(f?.label)
@@ -791,9 +920,9 @@ export const fetchMasterFormColumnOptions = async (
     const hasConditions = activeConditions.length > 0
     const conditionsToApply = activeConditions.filter((c) => c.values.size > 0)
 
-    const hasParentFilter =
-      !hasConditions &&
-      Boolean(parentMasterColumn && String(parentMasterColumn).trim())
+    const hasParentFilter = Boolean(
+      parentMasterColumn && String(parentMasterColumn).trim(),
+    )
     const targetParentVals = extractScalarStrings(parentValue)
     const targetParentSet = new Set(
       targetParentVals.map((s) => s.trim().toLowerCase()),
@@ -802,14 +931,21 @@ export const fetchMasterFormColumnOptions = async (
     if (hasParentFilter && targetParentSet.size === 0 && !showAllData) {
       return []
     }
-    if (hasConditions && conditionsToApply.length === 0 && !showAllData) {
+    if (
+      !hasParentFilter &&
+      hasConditions &&
+      conditionsToApply.length === 0 &&
+      !showAllData
+    ) {
       return []
     }
 
     const uniqueValues = new Set<string>()
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+      formApi.getFormEntries(masterFormId, 1, 10000),
+    )
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -838,7 +974,7 @@ export const fetchMasterFormColumnOptions = async (
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) {
@@ -965,8 +1101,14 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    const finalOptions = Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
-    console.log('[fetchMasterFormColumnOptions] Final extracted options:', finalOptions)
+    const finalOptions = Array.from(uniqueValues).map((v) => ({
+      id: v,
+      name: v,
+    }))
+    console.log(
+      '[fetchMasterFormColumnOptions] Final extracted options:',
+      finalOptions,
+    )
     return finalOptions
   } catch (err) {
     console.error('Error fetching master form column options:', err)
@@ -992,7 +1134,9 @@ export const fetchMasterTableRows = async (
 
   try {
     let formFields: any[] = []
-    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
+    const formDefRes = await cachedMasterCall('def', masterFormId, () =>
+      formApi.getFormDataById(masterFormId),
+    )
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -1060,13 +1204,15 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+      formApi.getFormEntries(masterFormId, 1, 10000),
+    )
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)
@@ -1232,7 +1378,9 @@ export const getDropdownFacetSource = (
     specific.optionsSource || optionsType,
   ).toUpperCase()
   const isRepo = optionsType === 'REPOSITORY' || optionsSource === 'REPOSITORY'
-  const isSyntheticRepoField = String(field?.id || '').startsWith('repo_field__')
+  const isSyntheticRepoField = String(field?.id || '').startsWith(
+    'repo_field__',
+  )
   const hasExplicitRepo = Boolean(
     specific.repositoryId && (isRepo || specific.repositoryField),
   )
@@ -1815,7 +1963,13 @@ export const getMissingMandatoryFieldsList = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { formRules?: any[]; hasUploadedFile?: boolean },
+  options?: {
+    formRules?: any[]
+    hasUploadedFile?: boolean
+    // Only the repository (folder) fields — skips the form's own mandatory
+    // fields. Used by the Upload step, which only indexes the file.
+    repoOnly?: boolean
+  },
 ): MissingMandatoryField[] => {
   let panels: any[] = []
   let formModel: Record<string, any> = {}
@@ -1829,7 +1983,11 @@ export const getMissingMandatoryFieldsList = (
 
   const missing: MissingMandatoryField[] = []
   const processedIds = new Set<string>()
-  const computedStates = evaluateFormRules(panels, formModel, options?.formRules)
+  const computedStates = evaluateFormRules(
+    panels,
+    formModel,
+    options?.formRules,
+  )
 
   // 1. Process repository fields (unmatched repo fields are only required when indexing an uploaded file)
   for (const descriptor of descriptors || []) {
@@ -1872,6 +2030,8 @@ export const getMissingMandatoryFieldsList = (
     }
   }
 
+  if (options?.repoOnly) return missing
+
   // 2. Process form panel fields
   for (const panel of panels || []) {
     if (panel?.id && computedStates[panel.id]?.visible === false) continue
@@ -1891,7 +2051,9 @@ export const getMissingMandatoryFieldsList = (
 
       if (isHidden || isReadOnly) continue
 
-      const isReq = dynamicState ? dynamicState.required : isFieldRequired(field)
+      const isReq = dynamicState
+        ? dynamicState.required
+        : isFieldRequired(field)
       if (isReq) {
         const val =
           formModel[field.id] ??
@@ -1935,7 +2097,11 @@ export const getMissingMandatoryFieldIds = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { formRules?: any[]; hasUploadedFile?: boolean },
+  options?: {
+    formRules?: any[]
+    hasUploadedFile?: boolean
+    repoOnly?: boolean
+  },
 ): Set<string> => {
   const list = getMissingMandatoryFieldsList(
     descriptors,
