@@ -1222,6 +1222,66 @@ export const uploadForOcr = async (
   return response
 }
 
+// Static-metadata OCR used by the "expense reimbursement" workflow's table
+// file columns. `formFields` hints use the "Name, TYPE" shape; the response's
+// `ocrResult` (possibly a JSON string) is returned as `data.ocrResult`.
+const STATIC_METADATA_TOKEN = 'TenantId 7'
+// Fixed repository for now, to confirm whether the endpoint needs one.
+const STATIC_METADATA_REPOSITORY_ID = '3'
+// Lives on a different host than the rest of V6, so the absolute URL bypasses
+// axiosV6's baseURL.
+const STATIC_METADATA_URL =
+  'https://api.ezofis.com/api/uploadAndIndex/uploadforStaticMetadata'
+
+export const uploadForStaticMetadata = async (
+  file: File,
+  formFields: string[],
+  signal?: AbortSignal,
+) => {
+  const response: any = { data: null, error: '' }
+
+  const formData = new FormData()
+  formData.append('repositoryId', STATIC_METADATA_REPOSITORY_ID)
+  formData.append('file', file, file.name)
+  formData.append('formFields', JSON.stringify(formFields))
+  formData.append('isReturnJson', 'false')
+  formData.append('validateType', '1')
+
+  try {
+    const { data, status } = await axiosV6({
+      data: formData,
+      headers: {
+        'Content-Type': undefined,
+        // This endpoint rejects the V6 session token; it reads its own `token`
+        // header, whose value is the tenant id.
+        token: STATIC_METADATA_TOKEN,
+      },
+      method: 'POST',
+      signal,
+      skipAuthToken: true,
+      transformRequest: [(payload) => payload],
+      url: STATIC_METADATA_URL,
+    })
+
+    if (status !== 200 && status !== 201) {
+      response.error = 'invalid status code'
+      return response
+    }
+
+    response.data = typeof data === 'string' ? JSON.parse(data) : data
+  } catch (e: any) {
+    if (!isRequestCanceled(e) && !signal?.aborted) console.error(e)
+    const payload = e?.response?.data
+    response.error =
+      (typeof payload === 'string' ? payload : null) ||
+      payload?.message ||
+      e?.message ||
+      'error running OCR extraction'
+  }
+
+  return response
+}
+
 export const UploadFiles = async (repositoryId: string, formData: FormData) => {
   const response: any = { data: null, error: '' }
 

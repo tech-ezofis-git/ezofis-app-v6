@@ -10,12 +10,14 @@ import {
   getRepositoryItemFacets,
   getRepositorys,
   uploadForOcr,
+  uploadForStaticMetadata,
 } from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
 import { getUsers } from '@/api/v6/user'
+import { useWorkflowName } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
@@ -1417,6 +1419,9 @@ const TableFieldRenderer = ({
   onChange,
 }: Props) => {
   const { t } = useLingui()
+  const workflowName = useWorkflowName()
+  const isExpenseReimbursement =
+    workflowName.trim().toLowerCase() === 'expense reimbursement'
   const isFlat = variant !== 'form'
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
@@ -2129,7 +2134,7 @@ const TableFieldRenderer = ({
     const targetNames = targets.map((t) => t.name || t.label || t.id)
     // The form's own repository, else the first one (as the builder preview does)
     const ocrRepositoryId = repositoryId || fallbackRepositoryId
-    if (!ocrRepositoryId) {
+    if (!ocrRepositoryId && !isExpenseReimbursement) {
       return {
         text: t`Text could not be read from the document: no repository is available for this form.`,
         tone: 'error',
@@ -2140,8 +2145,29 @@ const TableFieldRenderer = ({
     const filled = new Set<string>()
     let failure = ''
     for (const file of files) {
-      const { data, error } = await uploadForOcr(ocrRepositoryId, file, hints)
-      if (error || !data?.ocrFieldList) {
+      let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
+      let error: unknown
+      if (isExpenseReimbursement) {
+        const res = await uploadForStaticMetadata(
+          file,
+          hints.map((h) => h.replace(',', ', ')),
+        )
+        error = res.error
+        let payload = res.data
+        if (typeof payload === 'string') {
+          try {
+            payload = JSON.parse(payload)
+          } catch {
+            payload = null
+          }
+        }
+        ocrFieldList = payload?.ocrResult
+      } else {
+        const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
+        error = res.error
+        ocrFieldList = res.data?.ocrFieldList
+      }
+      if (error || !ocrFieldList) {
         failure = String(error || 'no data was returned')
         console.warn('[table uploadForOcr] OCR extraction warning:', failure)
         continue
@@ -2151,7 +2177,7 @@ const TableFieldRenderer = ({
       if (idx < 0) continue
       const patch = mapOcrToRowPatch(
         targets,
-        data.ocrFieldList,
+        ocrFieldList,
         current[idx],
         !isMultiFileColumn(col),
       )
@@ -2165,11 +2191,10 @@ const TableFieldRenderer = ({
         filled.add(String(target?.name || target?.label || id))
       }
     }
-    const filledNames = Array.from(filled).join(', ')
     const wantedNames = targetNames.join(', ')
-    if (filled.size > 0) {
-      return { text: t`Filled from the document: ${filledNames}`, tone: 'info' }
-    }
+    // Success needs no line under the cell: the info icon already lists the
+    // columns the file fills.
+    if (filled.size > 0) return
     if (failure) {
       return { text: t`Could not read the document: ${failure}`, tone: 'error' }
     }
