@@ -566,7 +566,7 @@ interface CellActions {
   row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
-}
+}
 /** Outcome of reading a document into the row, shown under the file cell. */
 interface OcrStatus {
   text: string
@@ -1395,7 +1395,7 @@ const TableFieldRenderer = ({
   )
   const activeView: 'ADVANCE' | 'NORMAL' =
     viewOverride ||
-    (hasUploadColumn || specific.tableViewMode === 'ADVANCE'
+    ((hasUploadColumn && isFlat) || specific.tableViewMode === 'ADVANCE'
       ? 'ADVANCE'
       : 'NORMAL')
 
@@ -2328,7 +2328,7 @@ const TableFieldRenderer = ({
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
-          {!hasUploadColumn && (
+          {(!hasUploadColumn || !isFlat) && (
             <IconButton
               color='gray'
               size='xs'
@@ -2527,13 +2527,12 @@ const TableFieldRenderer = ({
           <div
             className={cn(
               'h-full w-full overflow-x-auto overflow-y-hidden overscroll-x-contain',
-              // Spreadsheet-like borderless inputs
-              '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent',
-              '[&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1',
-              '[&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-surface',
               '[&_.mantine-Input-input]:shadow-none [&_.mantine-Input-input]:focus:ring-0',
-              !isFlat &&
-                '[&_td]:border-r [&_td]:border-gray-2 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',
+              isFlat
+                ? // Spreadsheet-like borderless inputs
+                  '[&_.mantine-Input-input]:border-transparent [&_.mantine-Input-input]:bg-transparent [&_.mantine-Input-input]:hover:border-gray-4 [&_.mantine-Input-input]:hover:bg-gray-1 [&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_.mantine-Input-input]:focus:bg-surface'
+                : // Editable grid: visible input boxes + cell gridlines
+                  '[&_.mantine-Input-input]:border-gray-4 [&_.mantine-Input-input]:bg-surface [&_.mantine-Input-input]:hover:border-primary-6 [&_.mantine-Input-input]:focus:border-[var(--primary-6)] [&_td]:border-r [&_td]:border-gray-3 [&_td:last-child]:border-r-0 [&_th]:border-r [&_th]:border-gray-3 [&_th:last-child]:border-r-0',
             )}
           >
             <Table className='w-max min-w-full border-collapse'>
