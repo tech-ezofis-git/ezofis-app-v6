@@ -6,6 +6,7 @@ import {
   getColumnOptionsSource,
   parseColumnOptionList,
   parseColumnOptions,
+  buildYearOptions,
   selectColumnCellOptions,
 } from './tableColumnOptions'
 import { normalizeV5FormJson, serializeFormPayload } from './v5SchemaAdapter'
@@ -256,5 +257,34 @@ describe('Batch 4: schema save / reload', () => {
     expect(staticCol.settings.specific.separateOptionsUsing).toBeUndefined()
     expect(staticCol.settings.lookupSettings.optionsSource).toBeUndefined()
     expect(parseColumnOptions(staticCol)).toEqual(opts('x', 'y'))
+  })
+})
+
+describe('Year-Based choice columns', () => {
+  const now = new Date(2026, 5, 1)
+
+  it('lists calendar years newest first', () => {
+    const years = buildYearOptions('CALENDER_YEAR', now)
+    expect(years[0].name).toBe('2027')
+    expect(years[1].name).toBe('2026')
+    expect(years.at(-1)?.name).toBe('2016')
+    expect(years).toHaveLength(12)
+  })
+
+  it('lists financial years as start-end', () => {
+    expect(buildYearOptions('FINANCIAL_YEAR', now)[1]).toEqual({
+      id: '2026-2027',
+      name: '2026-2027',
+    })
+  })
+
+  it('replaces a choice column’s options but ignores other types', () => {
+    const settings = { specific: { yearType: 'CALENDER_YEAR' } }
+    expect(
+      selectColumnCellOptions({ settings, type: 'SINGLE_SELECT' }, {}, {}),
+    ).toHaveLength(12)
+    expect(
+      selectColumnCellOptions({ settings, type: 'SHORT_TEXT' }, {}, {}),
+    ).toBeUndefined()
   })
 })
