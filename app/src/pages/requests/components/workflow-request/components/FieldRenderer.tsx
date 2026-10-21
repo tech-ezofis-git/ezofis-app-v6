@@ -1,8 +1,8 @@
+import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { Button, Rating } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -68,6 +68,7 @@ interface ChoiceFieldProps {
   field: any
   value: any
   error?: string
+  loading?: boolean
   options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
@@ -116,6 +117,7 @@ interface StagedFileValue {
 const ChoiceRadioGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -198,11 +200,19 @@ const ChoiceRadioGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -313,6 +323,7 @@ const ChoiceRadioGroupField = ({
 const ChoiceCheckboxGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -409,11 +420,19 @@ const ChoiceCheckboxGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -1412,6 +1431,7 @@ const FieldRenderer = ({
         <ChoiceRadioGroupField
           error={error}
           field={field}
+          loading={isOptionsLoading}
           options={selectOptions}
           readOnly={readOnly}
           required={required}
@@ -1433,11 +1453,11 @@ const FieldRenderer = ({
             <div className='min-w-0 flex-1'>
               <InputSelect
                 {...common}
-                createOptionLabel={(query) => t`Add "${query}"`}
-                value={selected}
                 clearable={!readOnly}
                 creatable={allowAddNew}
+                createOptionLabel={(query) => t`Add "${query}"`}
                 loading={isOptionsLoading}
+                value={selected}
                 searchable
                 options={withExtraFieldOptions(
                   selectOptions,
@@ -1476,11 +1496,11 @@ const FieldRenderer = ({
       return (
         <InputSelect
           {...common}
-          createOptionLabel={(query) => t`Add "${query}"`}
-          value={selected}
           clearable={!readOnly}
           creatable={allowAddNew}
+          createOptionLabel={(query) => t`Add "${query}"`}
           loading={isOptionsLoading}
+          value={selected}
           searchable
           options={withExtraFieldOptions(
             selectOptions,
@@ -1500,6 +1520,8 @@ const FieldRenderer = ({
           <ChoiceCheckboxGroupField
             error={error}
             field={field}
+            loading={isOptionsLoading}
+            options={selectOptions}
             readOnly={readOnly}
             required={required}
             value={value}
@@ -1527,11 +1549,11 @@ const FieldRenderer = ({
           {preselectSync}
           <InputSelectMultiple
             {...common}
+            creatable={allowAddNew}
             createOptionLabel={(query) => t`Add "${query}"`}
+            loading={isOptionsLoading}
             options={withExtraFieldOptions(selectOptions, selected)}
             value={selected}
-            creatable={allowAddNew}
-            loading={isOptionsLoading}
             searchable
             onChange={(opts: Option[]) =>
               onChange(
@@ -1572,15 +1594,15 @@ const FieldRenderer = ({
           )}
           <Rating
             color='yellow'
+            fractions={field.settings?.specific?.allowHalfRating ? 2 : 1}
+            readOnly={readOnly}
+            size='md'
+            value={Number(value) || 0}
             count={
               field.settings?.specific?.iconCount ||
               field.settings?.specific?.ratingIconCount ||
               5
             }
-            fractions={field.settings?.specific?.allowHalfRating ? 2 : 1}
-            readOnly={readOnly}
-            size='md'
-            value={Number(value) || 0}
             onChange={onChange}
           />
           {error && (
@@ -1607,8 +1629,8 @@ const FieldRenderer = ({
                 Number(value) === i
               return (
                 <button
-                  key={i}
                   disabled={readOnly}
+                  key={i}
                   type='button'
                   className={cn(
                     'size-8 rounded-lg border text-xs font-bold transition-all active:scale-95 disabled:opacity-50',
@@ -1962,7 +1984,9 @@ const FieldRenderer = ({
       return (
         <div className='w-full'>
           <TableFieldRenderer
+            allFields={allFields}
             field={field}
+            formModel={formModel}
             masterSyncParentColumnKey={masterSyncParentColumnKey}
             masterSyncParentValue={masterSyncParentValue}
             ocrLineItems={ocrLineItems}

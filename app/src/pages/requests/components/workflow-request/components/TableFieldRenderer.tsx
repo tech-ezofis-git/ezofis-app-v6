@@ -64,6 +64,11 @@ import {
   toFileList,
 } from '@/pages/form-builder/helpers/tableColumnFiles'
 import {
+  getCopyTargets,
+  getMasterMatchColumn,
+  getMasterTargets,
+} from '@/pages/form-builder/helpers/tableColumnFillSync'
+import {
   applyScannedValue,
   ensureSelectedOptions,
   getColumnMasterConfig,
@@ -73,11 +78,6 @@ import {
   selectColumnCellOptions,
   toStoredOptionValue,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
-import {
-  getCopyTargets,
-  getMasterMatchColumn,
-  getMasterTargets,
-} from '@/pages/form-builder/helpers/tableColumnFillSync'
 import { getRowCellRuleStates } from '@/pages/form-builder/helpers/tableColumnRules'
 import {
   type AddressSuggestion,
@@ -314,6 +314,8 @@ export const mapExternalRowsToTableColumns = (
 
 interface Props {
   field: any
+  allFields?: any[]
+  formModel?: Record<string, any>
   /** The resolved master-form column key the parent field matches against (see fetchMasterTableRows). */
   masterSyncParentColumnKey?: string
   /** The current form's parent field live value — triggers a master-table re-sync when it changes. */
@@ -363,8 +365,8 @@ const resolveCalculatedRow = (
     id: c.id,
     label: c.name,
     name: c.name,
-    settings: c.settings,
     type: c.type,
+    settings: c.settings,
   }))
 
   for (let pass = 0; pass <= calculatedColumns.length; pass += 1) {
@@ -572,7 +574,6 @@ interface OcrStatus {
   text: string
   tone: 'error' | 'info'
 }
-
 
 // NUMBER / COUNTER cell: number input honoring the column's content rule,
 // range (fixed, or taken from another cell of the row), step, prefix/suffix,
@@ -906,7 +907,9 @@ const TableCellFileInput = ({
               ? files.length > 0
                 ? 'Add more files'
                 : 'Add files'
-              : fileName || '...'}
+              : fileName ||
+                col.settings?.specific?.placeholder ||
+                (isImageType ? 'Upload image' : 'Upload file')}
         </span>
         <input
           accept={getFileInputAccept(col, isImageType)}
@@ -921,9 +924,7 @@ const TableCellFileInput = ({
           }}
         />
       </label>
-      {error && (
-        <p className='text-[11px] leading-tight text-red-9'>{error}</p>
-      )}
+      {error && <p className='text-[11px] leading-tight text-red-9'>{error}</p>}
       {status && (
         <p
           className={cn(
@@ -984,7 +985,9 @@ const TableCellSelect = ({
         (Array.isArray(val) ? val : []).includes(opt.id),
       )}
       onChange={(opts) =>
-        onCellChange(opts.map((opt) => toStoredOptionValue(opt, displayOptions)))
+        onCellChange(
+          opts.map((opt) => toStoredOptionValue(opt, displayOptions)),
+        )
       }
     />
   ) : (
@@ -1127,9 +1130,11 @@ const renderCellInput = (
         <InputNumber
           className='w-full'
           placeholder='0.00'
-          prefix={showPicker ? undefined : currencyCode ? `${currencyCode} ` : '$'}
           thousandSeparator=','
           value={extractCurrencyNumericValue(val)}
+          prefix={
+            showPicker ? undefined : currencyCode ? `${currencyCode} ` : '$'
+          }
           onChange={(v) =>
             // With a configured currency the shown code is stored with the
             // amount ({ currency, value }); otherwise the cell is unchanged.
@@ -1330,7 +1335,9 @@ const renderCellInput = (
 }
 
 const TableFieldRenderer = ({
+  allFields,
   field,
+  formModel,
   masterSyncParentColumnKey,
   masterSyncParentValue,
   ocrLineItems,
@@ -1359,11 +1366,7 @@ const TableFieldRenderer = ({
 
   const createBlankRow = (existingRows: Array<Record<string, unknown>>) => ({
     _rowId: generateRowId(),
-    ...buildTableRowDefaults(
-      tableColumns,
-      existingRows,
-      getSessionTableUser(),
-    ),
+    ...buildTableRowDefaults(tableColumns, existingRows, getSessionTableUser()),
   })
   const rowsType: 'ON_DEMAND' | 'FIXED' = specific.rowsType || 'ON_DEMAND'
   const fixedRowCount: number = specific.fixedRowCount || 5
@@ -1451,7 +1454,8 @@ const TableFieldRenderer = ({
           if (typeof labelEntry === 'string') {
             rowObj[labelCol.id] = labelEntry
           } else if (labelEntry && typeof labelEntry === 'object') {
-            rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
+            rowObj[labelCol.id] =
+              labelEntry[labelCol.id] ?? labelEntry.label ?? ''
           }
         }
         backfilled.push(rowObj)
@@ -1626,13 +1630,20 @@ const TableFieldRenderer = ({
       masterCascadeColumns.map((c) => {
         const cfg = getColumnMasterConfig(c)
         const parentColId = c.settings?.lookupSettings?.cascadeFromColumn
-        const distinct = Array.from(
-          new Set(
-            rows
-              .map((r) => r[parentColId || ''])
-              .filter((v) => v !== undefined && v !== null && v !== ''),
-          ),
-        )
+        const topField = allFields?.find((f: any) => f.id === parentColId)
+        const distinct = topField
+          ? formModel?.[topField.id] !== undefined &&
+            formModel?.[topField.id] !== null &&
+            formModel?.[topField.id] !== ''
+            ? [formModel[topField.id]]
+            : []
+          : Array.from(
+              new Set(
+                rows
+                  .map((r) => r[parentColId || ''])
+                  .filter((v) => v !== undefined && v !== null && v !== ''),
+              ),
+            )
         return `${c.id}:${cfg?.masterFormId}:${cfg?.masterFormColumn}:${cfg?.showAllData}:${distinct.join(',')}`
       }),
     ],
@@ -1647,18 +1658,27 @@ const TableFieldRenderer = ({
           const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
           if (!cfg || !parentColId) return
           const parentCol = tableColumns.find((c) => c.id === parentColId)
+          const topField = allFields?.find((f: any) => f.id === parentColId)
           // Same rule as top-level fields: the parent's master column, else its label
           const parentMasterColumn =
             parentCol?.settings?.specific?.masterFormColumn ||
             parentCol?.name ||
+            topField?.settings?.specific?.masterFormColumn ||
+            topField?.label ||
             parentColId
-          const distinct = Array.from(
-            new Set(
-              rows
-                .map((r) => r[parentColId])
-                .filter((v) => v !== undefined && v !== null && v !== ''),
-            ),
-          )
+          const distinct = topField
+            ? formModel?.[topField.id] !== undefined &&
+              formModel?.[topField.id] !== null &&
+              formModel?.[topField.id] !== ''
+              ? [formModel[topField.id]]
+              : []
+            : Array.from(
+                new Set(
+                  rows
+                    .map((r) => r[parentColId])
+                    .filter((v) => v !== undefined && v !== null && v !== ''),
+                ),
+              )
           const byValue: Record<string, { id: string; name: string }[]> = {}
           await Promise.all(
             distinct.map(async (val) => {
@@ -1686,7 +1706,8 @@ const TableFieldRenderer = ({
   // available repository, as the builder's own upload preview does.
   const needsOcrRepository = tableColumns.some(
     (c) =>
-      isFileColumnType(c.type) && getColumnOcrTargets(c, tableColumns).length > 0,
+      isFileColumnType(c.type) &&
+      getColumnOcrTargets(c, tableColumns).length > 0,
   )
   const { data: fallbackRepositoryId } = useQuery({
     enabled: needsOcrRepository && !repositoryId,
@@ -1758,13 +1779,20 @@ const TableFieldRenderer = ({
       field?.id,
       cascadeColumns.map((c) => {
         const parentColId = c.settings?.lookupSettings?.cascadeFromColumn
-        const distinctValues = Array.from(
-          new Set(
-            rows
-              .map((r) => r[parentColId || ''])
-              .filter((v) => v !== undefined && v !== null && v !== ''),
-          ),
-        )
+        const topField = allFields?.find((f: any) => f.id === parentColId)
+        const distinctValues = topField
+          ? formModel?.[topField.id] !== undefined &&
+            formModel?.[topField.id] !== null &&
+            formModel?.[topField.id] !== ''
+            ? [formModel[topField.id]]
+            : []
+          : Array.from(
+              new Set(
+                rows
+                  .map((r) => r[parentColId || ''])
+                  .filter((v) => v !== undefined && v !== null && v !== ''),
+              ),
+            )
         return `${c.id}:${c.settings?.lookupSettings?.repositoryId}:${c.settings?.lookupSettings?.repositoryField}:${distinctValues.join(',')}`
       }),
     ],
@@ -1779,19 +1807,28 @@ const TableFieldRenderer = ({
           const repositoryField = col.settings?.lookupSettings?.repositoryField
           const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
           const parentCol = tableColumns.find((c) => c.id === parentColId)
+          const topField = allFields?.find((f: any) => f.id === parentColId)
           const parentFieldName =
             parentCol?.settings?.lookupSettings?.repositoryField ||
             parentCol?.name ||
+            topField?.settings?.lookupSettings?.repositoryField ||
+            topField?.label ||
             parentColId
           if (!repositoryId || !repositoryField || !parentColId) return
 
-          const distinctValues = Array.from(
-            new Set(
-              rows
-                .map((r) => r[parentColId])
-                .filter((v) => v !== undefined && v !== null && v !== ''),
-            ),
-          )
+          const distinctValues = topField
+            ? formModel?.[topField.id] !== undefined &&
+              formModel?.[topField.id] !== null &&
+              formModel?.[topField.id] !== ''
+              ? [formModel[topField.id]]
+              : []
+            : Array.from(
+                new Set(
+                  rows
+                    .map((r) => r[parentColId])
+                    .filter((v) => v !== undefined && v !== null && v !== ''),
+                ),
+              )
           const byValue: Record<string, { id: string; name: string }[]> = {}
           await Promise.all(
             distinctValues.map(async (val) => {
@@ -1821,13 +1858,22 @@ const TableFieldRenderer = ({
   const isCellRuleReadOnly = (
     col: TableColumn,
     row: Record<string, unknown>,
-  ): boolean => Boolean(getRowCellRuleStates(tableColumns, row)[col.id]?.readOnly)
+  ): boolean =>
+    Boolean(getRowCellRuleStates(tableColumns, row)[col.id]?.readOnly)
 
   const getLookupOptionsForCell = (
     col: TableColumn,
     row: Record<string, any>,
-  ): { id: string; name: string }[] | undefined =>
-    selectColumnCellOptions(col, row, {
+  ): { id: string; name: string }[] | undefined => {
+    const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
+    let effectiveRow = row
+    if (parentColId && allFields?.some((f: any) => f.id === parentColId)) {
+      effectiveRow = {
+        ...row,
+        [parentColId]: formModel?.[parentColId],
+      }
+    }
+    return selectColumnCellOptions(col, effectiveRow, {
       masterByColumn: masterOptionsByColumn,
       masterCascaded: masterCascadedOptions,
       predefinedByColumn: Object.fromEntries(
@@ -1842,6 +1888,7 @@ const TableFieldRenderer = ({
       repositoryCascaded: cascadedOptionsByColumn,
       userList: userListOptions,
     })
+  }
 
   const { data: lookupOptionsByColumn = {} } = useQuery({
     enabled: lookupColumns.length > 0,
@@ -2592,8 +2639,10 @@ const TableFieldRenderer = ({
                           }}
                           onDrop={(e) => {
                             e.preventDefault()
-                            const sourceId = e.dataTransfer.getData('text/plain')
-                            if (sourceId) handleReorderDynamicColumn(sourceId, col.id)
+                            const sourceId =
+                              e.dataTransfer.getData('text/plain')
+                            if (sourceId)
+                              handleReorderDynamicColumn(sourceId, col.id)
                           }}
                         >
                           {editingColumnId === col.id ? (
@@ -2626,7 +2675,7 @@ const TableFieldRenderer = ({
                                 {col.name || 'Column'}
                               </span>
                               <span
-                                className='rounded bg-gray-2 px-1 py-0.2 text-[9px] font-semibold text-gray-9 uppercase'
+                                className='py-0.2 rounded bg-gray-2 px-1 text-[9px] font-semibold text-gray-9 uppercase'
                                 title={t`Type: ${col.type || 'SHORT_TEXT'}`}
                               >
                                 {col.type || 'SHORT_TEXT'}
@@ -2640,7 +2689,9 @@ const TableFieldRenderer = ({
                               disabled={dynamicColumns[0]?.id === col.id}
                               title={t`Move left`}
                               type='button'
-                              onClick={() => handleMoveDynamicColumn(col.id, -1)}
+                              onClick={() =>
+                                handleMoveDynamicColumn(col.id, -1)
+                              }
                             >
                               <Icon
                                 height={11}
@@ -2653,8 +2704,8 @@ const TableFieldRenderer = ({
                               title={t`Move right`}
                               type='button'
                               disabled={
-                                dynamicColumns[dynamicColumns.length - 1]?.id ===
-                                col.id
+                                dynamicColumns[dynamicColumns.length - 1]
+                                  ?.id === col.id
                               }
                               onClick={() => handleMoveDynamicColumn(col.id, 1)}
                             >
@@ -2667,34 +2718,48 @@ const TableFieldRenderer = ({
 
                             <Menu
                               position='bottom-end'
+                              width={180}
                               target={
                                 <button
                                   className='flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 hover:bg-gray-3 hover:text-gray-12'
                                   title={t`Column options`}
                                   type='button'
                                 >
-                                  <Icon height={12} name='lucide:more-vertical' width={12} />
+                                  <Icon
+                                    height={12}
+                                    name='lucide:more-vertical'
+                                    width={12}
+                                  />
                                 </button>
                               }
-                              width={180}
                             >
                               <MenuItem
                                 icon='lucide:pencil'
                                 label={t`Edit Name`}
                                 onClick={() => setEditingColumnId(col.id)}
                               />
-                              <MenuSub icon='lucide:arrow-right-left' label={t`Change Type`}>
+                              <MenuSub
+                                icon='lucide:arrow-right-left'
+                                label={t`Change Type`}
+                              >
                                 {DYNAMIC_COLUMN_TYPES.map((tItem) => (
                                   <MenuItem
-                                    key={tItem.type}
                                     icon={tItem.icon}
+                                    key={tItem.type}
                                     label={tItem.label}
                                     rightSection={
                                       col.type === tItem.type ? (
-                                        <Icon className='text-primary-9' height={12} name='lucide:check' width={12} />
+                                        <Icon
+                                          className='text-primary-9'
+                                          height={12}
+                                          name='lucide:check'
+                                          width={12}
+                                        />
                                       ) : null
                                     }
-                                    onClick={() => handleUpdateColumnType(col.id, tItem.type)}
+                                    onClick={() =>
+                                      handleUpdateColumnType(col.id, tItem.type)
+                                    }
                                   />
                                 ))}
                               </MenuSub>
@@ -2703,7 +2768,9 @@ const TableFieldRenderer = ({
                                 className='text-red-9 hover:bg-red-2'
                                 icon='lucide:trash-2'
                                 label={t`Delete Column`}
-                                onClick={() => handleDeleteDynamicColumn(col.id)}
+                                onClick={() =>
+                                  handleDeleteDynamicColumn(col.id)
+                                }
                               />
                             </Menu>
                           </div>
@@ -2814,8 +2881,8 @@ const TableFieldRenderer = ({
                                 (cellVal) =>
                                   handleCellChange(rowIndex, col.id, cellVal),
                                 readOnly ||
- isColumnReadOnly(col) ||
- isCellRuleReadOnly(col, resolvedRow),
+                                  isColumnReadOnly(col) ||
+                                  isCellRuleReadOnly(col, resolvedRow),
                                 getLookupOptionsForCell(col, resolvedRow),
                                 isApiOptionsColumn(col)
                                   ? (code) =>
@@ -3026,8 +3093,8 @@ const TableFieldRenderer = ({
                           (cellVal) =>
                             handleCellChange(rowIndex, col.id, cellVal),
                           readOnly ||
- isColumnReadOnly(col) ||
- isCellRuleReadOnly(col, resolvedRow),
+                            isColumnReadOnly(col) ||
+                            isCellRuleReadOnly(col, resolvedRow),
                           getLookupOptionsForCell(col, resolvedRow),
                           isApiOptionsColumn(col)
                             ? (code) =>

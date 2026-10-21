@@ -967,6 +967,90 @@ const parseCleanFields = (
   return cleanFields
 }
 
+const CONTROL_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const ROW_ALIAS_KEYS = new Set([
+  '#',
+  'Description',
+  'Discount',
+  'Price',
+  'Product',
+  'Qty',
+  'Subtotal',
+])
+
+const columnTitle = (column: any) =>
+  String(column?.label || column?.name || '')
+    .trim()
+    .toLowerCase()
+
+/** Drop label copies. Line values stay on the column control id. */
+const storeFormValues = (
+  panels: any[] | undefined,
+  values: Record<string, unknown>,
+) => {
+  const calculated = applyCalculatedFields(panels, values) as Record<string, any>
+  const fields = (panels || []).flatMap((panel) => panel?.fields || [])
+  const headings = new Set<string>()
+  const columnsByFieldId = new Map<string, any[]>()
+  for (const field of fields) {
+    const label = String(field?.label || '').trim()
+    if (label) headings.add(label)
+    const columns = field?.settings?.specific?.tableColumns
+    if (field?.id && Array.isArray(columns)) columnsByFieldId.set(field.id, columns)
+  }
+
+  const next: Record<string, any> = {}
+  for (const [key, value] of Object.entries(calculated)) {
+    if (
+      !CONTROL_ID.test(key) &&
+      (headings.has(key) || /^(quote_[23]|ALT|OPT)\b/i.test(key))
+    ) {
+      continue
+    }
+    if (Array.isArray(value) && columnsByFieldId.has(key)) {
+      const columns = columnsByFieldId.get(key) || []
+      const qtyCol = columns.find((col) => columnTitle(col) === 'qty')
+      const priceCol = columns.find((col) => columnTitle(col) === 'price')
+      const discountCol = columns.find((col) => columnTitle(col) === 'discount')
+      const subtotalCol = columns.find((col) => columnTitle(col) === 'subtotal')
+      next[key] = value.map((row) => {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) return row
+        const hasControlId = Object.keys(row).some((cell) => CONTROL_ID.test(cell))
+        if (!hasControlId) return row
+        const stored: Record<string, any> = {}
+        for (const [cell, cellValue] of Object.entries(row)) {
+          if (ROW_ALIAS_KEYS.has(cell)) continue
+          stored[cell] = cellValue
+        }
+        if (qtyCol?.id && priceCol?.id && subtotalCol?.id) {
+          const asNumber = (value: unknown) => {
+            if (value == null || String(value).trim() === '') return 0
+            const parsed = Number(String(value).replace(/[$,%\s]/g, ''))
+            return Number.isFinite(parsed) ? parsed : 0
+          }
+          const qty = asNumber(row[qtyCol.id] ?? row.Qty)
+          const price = asNumber(row[priceCol.id] ?? row.Price)
+          const discount = discountCol?.id
+            ? asNumber(row[discountCol.id] ?? row.Discount)
+            : 0
+          const base = qty * price
+          const subtotal =
+            String(row._discountMode || '').toLowerCase() === 'amount'
+              ? Math.max(0, base - discount)
+              : base * (1 - discount / 100)
+          stored[subtotalCol.id] = Math.round(subtotal * 100) / 100
+        }
+        return stored
+      })
+      continue
+    }
+    next[key] = value
+  }
+  return next
+}
+
 const normalizeAssigneeEmail = (value: unknown) => {
   const raw = String(value || '')
     .trim()
@@ -1940,7 +2024,7 @@ const Request = ({
           next[key] = value
         }
       }
-      return applyCalculatedFields(
+      return storeFormValues(
         getFormPanels(rawWorkflowData),
         seedGmailFirstFileUpload(
           next,
@@ -1987,7 +2071,7 @@ const Request = ({
     if (!stored) return
 
     setGenericFormModel((prev) =>
-      applyCalculatedFields(
+      storeFormValues(
         getFormPanels(rawWorkflowData),
         seedGmailFirstFileUpload(
           prev,
@@ -2014,11 +2098,26 @@ const Request = ({
 
   const handleGenericFieldChange = (fieldId: string, value: any) =>
     setGenericFormModel((prev) =>
-      applyCalculatedFields(getFormPanels(rawWorkflowData), {
+      storeFormValues(getFormPanels(rawWorkflowData), {
         ...prev,
         [fieldId]: value,
       }),
     )
+
+  // Quote 2/3 totals are calculated fields. A batch write restores the tab
+  // values after formulas run so Quote 1's operands cannot replace them.
+  const handleGenericFieldsChange = (patch: Record<string, any>) =>
+    setGenericFormModel((prev) => {
+      const next = storeFormValues(getFormPanels(rawWorkflowData), {
+        ...prev,
+        ...patch,
+      })
+      for (const [key, value] of Object.entries(patch)) {
+        if (Array.isArray(value) || !CONTROL_ID.test(key)) continue
+        next[key] = value
+      }
+      return next
+    })
 
   const allowedLabels = useMemo(() => {
     const activeItem = request || selectedItem
@@ -2963,6 +3062,7 @@ const Request = ({
                 }
                 onCommentsChanged={refetchGenericComments}
                 onFieldChange={handleGenericFieldChange}
+                onFieldsChange={handleGenericFieldsChange}
                 onSignatureToggle={setSignatureConfirmed}
               />
             ) : (
