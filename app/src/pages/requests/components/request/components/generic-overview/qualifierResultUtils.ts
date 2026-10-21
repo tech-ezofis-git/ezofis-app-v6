@@ -21,6 +21,14 @@ export const getFieldHeading = (field: any) =>
 export const getFieldId = (field: any) =>
   String(field?.id || field?.jsonId || field?.name || '')
 
+/** quote_2 / quote_3 labels must not bind to the unprefixed main control. */
+const quoteScope = (value: string) => {
+  const compact = value.toLowerCase().replace(/[\s._-]+/g, '')
+  if (compact.includes('quote3') || compact.startsWith('opt')) return 'opt'
+  if (compact.includes('quote2') || compact.startsWith('alt')) return 'alt'
+  return 'main'
+}
+
 const isTableFieldType = (field: any) => {
   const type = String(field?.type || '')
     .toUpperCase()
@@ -40,17 +48,21 @@ export const findResultKeyForFormField = (
   field: any,
 ): string | null => {
   if (!result || !field) return null
-  const want = normalizeQualifierKey(getFieldHeading(field))
+  const heading = getFieldHeading(field)
+  const want = normalizeQualifierKey(heading)
   if (!want) return null
+  const scope = quoteScope(heading)
 
   const exact = Object.keys(result).find(
-    (key) => normalizeQualifierKey(key) === want,
+    (key) =>
+      quoteScope(key) === scope && normalizeQualifierKey(key) === want,
   )
   if (exact) return exact
 
   const wantSingular = singularizeKey(want)
   return (
     Object.keys(result).find((key) => {
+      if (quoteScope(key) !== scope) return false
       const got = normalizeQualifierKey(key)
       const gotSingular = singularizeKey(key)
       if (got === want || gotSingular === wantSingular) return true
@@ -67,16 +79,21 @@ export const findFormFieldForResultKey = (
   resultKey: string,
 ): any | null => {
   const want = normalizeQualifierKey(resultKey)
+  const scope = quoteScope(resultKey)
   const exact = fields.find(
-    (field) => normalizeQualifierKey(getFieldHeading(field)) === want,
+    (field) =>
+      quoteScope(getFieldHeading(field)) === scope &&
+      normalizeQualifierKey(getFieldHeading(field)) === want,
   )
   if (exact) return exact
 
   const wantSingular = singularizeKey(resultKey)
   return (
     fields.find((field) => {
-      const heading = normalizeQualifierKey(getFieldHeading(field))
-      const headingSingular = singularizeKey(getFieldHeading(field))
+      const rawHeading = getFieldHeading(field)
+      if (quoteScope(rawHeading) !== scope) return false
+      const heading = normalizeQualifierKey(rawHeading)
+      const headingSingular = singularizeKey(rawHeading)
       return (
         heading === want ||
         headingSingular === wantSingular ||

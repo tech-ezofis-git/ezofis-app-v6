@@ -40,6 +40,7 @@ interface AgentDetailPlaceholderProps {
   viewOnly?: boolean
   onBack: () => void
   onFieldChange?: (fieldId: string, value: any) => void
+  onFieldsChange?: (patch: Record<string, any>) => void
   onQuoteTotalChange?: (total: number | null) => void
 }
 
@@ -66,6 +67,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   viewOnly,
   onBack,
   onFieldChange,
+  onFieldsChange,
   onQuoteTotalChange,
 }) => {
   const { t } = useLingui()
@@ -432,6 +434,7 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             result={requestData.quoteAgentResponse.quote_result}
             workflow={rawWorkflowData}
             onFieldChange={onFieldChange}
+            onFieldsChange={onFieldsChange}
             onQuoteTotalChange={onQuoteTotalChange}
           />
         ) : (

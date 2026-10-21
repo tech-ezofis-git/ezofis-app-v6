@@ -409,7 +409,17 @@ export const remapLineItemRows = (
   })
 }
 
-/** Persist form column ids + canonical keys so copy survives UUID mismatches. */
+const ROW_ALIAS_KEYS = new Set([
+  'Product',
+  'Description',
+  'Qty',
+  'Price',
+  'Discount',
+  'Subtotal',
+  '#',
+])
+
+/** Persist a line on its column control ids. Names stay in memory for display. */
 export const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
   rows.map((row) => {
     const mapped: Record<string, any> = {
@@ -418,35 +428,19 @@ export const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
     if (row._approved != null) mapped._approved = row._approved
     if (row._hideNote != null) mapped._hideNote = row._hideNote
     if (row._discountMode) mapped._discountMode = row._discountMode
-    // Keep warning payload so Approve can hide it after reload/sync.
-    if (!isEmptyValue(row.Note)) mapped.Note = row.Note
     if (row['Needs Engineering Review'] != null) {
       mapped['Needs Engineering Review'] = row['Needs Engineering Review']
     }
+    if (!isEmptyValue(row.Note)) mapped.Note = row.Note
     if (!isEmptyValue(row.Category)) mapped.Category = row.Category
 
-    // Always keep canonical Product/Qty/Price (etc.) on the row. Quote 2/3
-    // tables use different column UUIDs than Quote 1; named keys let normalize
-    // recover values even when column defs are missing or mismatched on read.
-    ;(
-      [
-        'Product',
-        'Description',
-        'Qty',
-        'Price',
-        'Discount',
-        'Subtotal',
-        'Note',
-      ] as const
-    ).forEach((key) => {
-      if (key === 'Discount') {
-        mapped[key] = isEmptyValue(row[key]) ? '' : row[key]
-        return
-      }
-      if (!isEmptyValue(row[key])) mapped[key] = row[key]
-    })
-
-    if (!columns.length) return mapped
+    if (!columns.length) {
+      Object.entries(row || {}).forEach(([key, value]) => {
+        if (key.startsWith('_') || ROW_ALIAS_KEYS.has(key)) return
+        if (!isEmptyValue(value)) mapped[key] = value
+      })
+      return mapped
+    }
 
     columns.forEach((col) => {
       if (col?.id == null || col.id === '') return
@@ -461,21 +455,14 @@ export const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
       if (canonical) {
         const namedValue = row[canonical]
         const columnValue = row[col.id]
-        const value = !isEmptyValue(namedValue)
+        mapped[col.id] = !isEmptyValue(namedValue)
           ? namedValue
           : !isEmptyValue(columnValue)
             ? columnValue
             : ''
-        mapped[col.id] = value
-        // Mirror onto canonical when UUID had the only copy of the value.
-        if (isEmptyValue(mapped[canonical]) && !isEmptyValue(value)) {
-          mapped[canonical] = value
-        }
-      } else if (!isEmptyValue(row[col.id])) {
-        mapped[col.id] = row[col.id]
-      } else {
-        mapped[col.id] = ''
+        return
       }
+      mapped[col.id] = isEmptyValue(row[col.id]) ? '' : row[col.id]
     })
     return mapped
   })

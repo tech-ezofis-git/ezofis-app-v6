@@ -146,6 +146,7 @@ interface Props {
   onChecklistToggle?: (id: string, checked: boolean) => void
   onCommentsChanged?: () => Promise<void>
   onFieldChange: (fieldId: string, value: any) => void
+  onFieldsChange?: (patch: Record<string, any>) => void
   onSignatureToggle?: (confirmed: boolean) => void
 }
 
@@ -341,6 +342,7 @@ const DocumentFormSplitLayout = ({
   taskNode,
   viewOnly,
   onFieldChange,
+  onFieldsChange,
 }: {
   attachments: AttachmentItem[]
   attachmentsCount?: number
@@ -359,6 +361,7 @@ const DocumentFormSplitLayout = ({
   taskNode: ReactNode
   viewOnly?: boolean
   onFieldChange?: (fieldId: string, value: any) => void
+  onFieldsChange?: (patch: Record<string, any>) => void
 }) => {
   const { t } = useLingui()
   // Default left-pane doc: newest real document (skip .eml/.msg so email UI is not shown).
@@ -746,6 +749,7 @@ const DocumentFormSplitLayout = ({
                   )
                 }}
                 onFieldChange={onFieldChange}
+                onFieldsChange={onFieldsChange}
               />
             </div>
           ) : activeTab === 'summary' ||
@@ -806,6 +810,7 @@ const GenericRequestOverview = ({
   onChecklistToggle,
   onCommentsChanged,
   onFieldChange,
+  onFieldsChange,
   onSignatureToggle,
 }: Props) => {
   const { t } = useLingui()
@@ -1512,6 +1517,7 @@ const GenericRequestOverview = ({
               />
             }
             onFieldChange={onFieldChange}
+            onFieldsChange={onFieldsChange}
           />
         ) : (
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
@@ -1540,6 +1546,7 @@ const GenericRequestOverview = ({
                     viewOnly={viewOnly}
                     onBack={() => setSelectedAgentBlockId(null)}
                     onFieldChange={onFieldChange}
+                    onFieldsChange={onFieldsChange}
                   />
                 </div>
               ) : (
