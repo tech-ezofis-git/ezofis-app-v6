@@ -54,8 +54,8 @@ const sectionClass =
  * `qrValue`, `validation.contentRule`); the fill value uses the column
  * `defaultValueType`.
  *
- * Year-Based is stored only: top-level V6 does not generate year options at
- * runtime either, and the V5 range is not known.
+ * Year-Based replaces the option list with generated years (see
+ * buildYearOptions).
  */
 const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
   if (!CHOICE_TYPES.includes(String(column.type))) return null
@@ -102,7 +102,7 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
       />
       <InputSwitch
         checked={yearBased}
-        description='Saved for V5 parity; years are not generated as options yet.'
+        description='Replaces the option list with years: the last 10, this year and next.'
         label='Option Type: Year-Based'
         onChange={(checked) =>
           onUpdate({
