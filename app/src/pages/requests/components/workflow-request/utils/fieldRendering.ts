@@ -944,7 +944,7 @@ export const fetchMasterFormColumnOptions = async (
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
     const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 500),
+      formApi.getFormEntries(masterFormId, 1, 10000),
     )
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
@@ -974,7 +974,7 @@ export const fetchMasterFormColumnOptions = async (
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) {
@@ -1205,14 +1205,14 @@ export const fetchMasterTableRows = async (
     }
 
     const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 500),
+      formApi.getFormEntries(masterFormId, 1, 10000),
     )
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)

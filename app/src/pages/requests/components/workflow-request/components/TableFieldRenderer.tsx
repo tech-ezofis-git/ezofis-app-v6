@@ -10,14 +10,17 @@ import {
   getRepositoryItemFacets,
   getRepositorys,
   uploadForOcr,
+  uploadForStaticMetadata,
 } from '@/api/v6/folder/folder'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
 import { getUsers } from '@/api/v6/user'
+import { useWorkflowName } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -56,8 +59,8 @@ import {
   buildColumnOcrHints,
   getColumnFileError,
   getColumnOcrTargets,
+  getAwaitingColumnFile,
   getFileInputAccept,
-  isAwaitingColumnFile,
   isFileColumnType,
   isMultiFileColumn,
   mapOcrToRowPatch,
@@ -566,6 +569,8 @@ export { ApiCatalogSelect }
 
 interface CellActions {
   siblingColumns: TableColumn[]
+  /** Label of the row's file column the cell waits on (disabled until then). */
+  awaitingFile?: string
   row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
@@ -793,14 +798,15 @@ const TableCellShortText = ({
 
 const TableCellFileInput = ({
   col,
-  fillsOtherColumns,
+  fillTargetNames,
   isImageType,
   val,
   onCellChange,
   onFilesAdded,
 }: {
   col: TableColumn
-  fillsOtherColumns?: boolean
+  /** Names of the columns this file fills, listed in the info tooltip. */
+  fillTargetNames?: string[]
   isImageType: boolean
   val: any
   onCellChange: (newVal: any) => void
@@ -817,7 +823,7 @@ const TableCellFileInput = ({
     setError(null)
     onCellChange(removeFileFromValue(col, val, index))
     setStatus(
-      fillsOtherColumns && files.length <= 1
+      fillTargetNames?.length && files.length <= 1
         ? {
             text: 'File removed. Please upload the file again.',
             tone: 'info',
@@ -938,6 +944,17 @@ const TableCellFileInput = ({
             }}
           />
         </label>
+        {fillTargetNames && fillTargetNames.length > 0 && (
+          <Tooltip
+            content={`${files.length > 0 ? 'Filled from the file' : 'Upload a file to fill'}: ${fillTargetNames.join(', ')}`}
+            position='top'
+            width={220}
+          >
+            <span className='flex size-6 shrink-0 cursor-help items-center justify-center rounded-md text-gray-8 transition-colors hover:bg-gray-2 hover:text-primary-9'>
+              <Icon height={14} name='lucide:info' width={14} />
+            </span>
+          </Tooltip>
+        )}
         {!multiple && fileName && !busy && (
           <button
             aria-label='Remove file'
@@ -950,11 +967,6 @@ const TableCellFileInput = ({
           </button>
         )}
       </div>
-      {fillsOtherColumns && files.length === 0 && !busy && !status && (
-        <p className='text-[11px] leading-tight text-gray-9'>
-          Upload a file first to fill the other columns.
-        </p>
-      )}
       {error && <p className='text-[11px] leading-tight text-red-9'>{error}</p>}
       {status && (
         <p
@@ -1119,6 +1131,23 @@ const renderCellInput = (
     )
   }
 
+  if (readOnly && actions?.awaitingFile) {
+    return (
+      <Tooltip
+        className='flex w-full'
+        content={`Please upload "${actions.awaitingFile}" first`}
+        position='top'
+      >
+        <div
+          aria-disabled='true'
+          className='flex h-9 min-h-9 w-full min-w-0 cursor-not-allowed items-center truncate rounded-[var(--mantine-radius-default)] border border-gray-4 bg-gray-3 px-3 text-13 font-normal text-gray-9 select-none'
+        >
+          {getColumnPlaceholder(col)}
+        </div>
+      </Tooltip>
+    )
+  }
+
   if (readOnly) {
     return (
       <div className='truncate px-2 py-1 text-xs text-gray-12'>
@@ -1280,10 +1309,12 @@ const renderCellInput = (
       return (
         <TableCellFileInput
           col={col}
-          fillsOtherColumns={
+          fillTargetNames={
             actions
-              ? getColumnOcrTargets(col, actions.siblingColumns).length > 0
-              : false
+              ? getColumnOcrTargets(col, actions.siblingColumns).map((target) =>
+                  getColumnLabel(target),
+                )
+              : undefined
           }
           isImageType={cellType === 'IMAGE_UPLOAD'}
           val={val}
@@ -1388,6 +1419,9 @@ const TableFieldRenderer = ({
   onChange,
 }: Props) => {
   const { t } = useLingui()
+  const workflowName = useWorkflowName()
+  const isExpenseReimbursement =
+    workflowName.trim().toLowerCase() === 'expense reimbursement'
   const isFlat = variant !== 'form'
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
@@ -1899,6 +1933,16 @@ const TableFieldRenderer = ({
   ): boolean =>
     Boolean(getRowCellRuleStates(tableColumns, row)[col.id]?.readOnly)
 
+  // Label of the file column a cell is still waiting on (undefined once the
+  // row has its document).
+  const awaitingFileLabel = (
+    col: TableColumn,
+    row: Record<string, unknown>,
+  ): string | undefined => {
+    const source = getAwaitingColumnFile(col, row, tableColumns)
+    return source ? getColumnLabel(source) : undefined
+  }
+
   const getLookupOptionsForCell = (
     col: TableColumn,
     row: Record<string, any>,
@@ -2090,7 +2134,7 @@ const TableFieldRenderer = ({
     const targetNames = targets.map((t) => t.name || t.label || t.id)
     // The form's own repository, else the first one (as the builder preview does)
     const ocrRepositoryId = repositoryId || fallbackRepositoryId
-    if (!ocrRepositoryId) {
+    if (!ocrRepositoryId && !isExpenseReimbursement) {
       return {
         text: t`Text could not be read from the document: no repository is available for this form.`,
         tone: 'error',
@@ -2101,8 +2145,29 @@ const TableFieldRenderer = ({
     const filled = new Set<string>()
     let failure = ''
     for (const file of files) {
-      const { data, error } = await uploadForOcr(ocrRepositoryId, file, hints)
-      if (error || !data?.ocrFieldList) {
+      let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
+      let error: unknown
+      if (isExpenseReimbursement) {
+        const res = await uploadForStaticMetadata(
+          file,
+          hints.map((h) => h.replace(',', ', ')),
+        )
+        error = res.error
+        let payload = res.data
+        if (typeof payload === 'string') {
+          try {
+            payload = JSON.parse(payload)
+          } catch {
+            payload = null
+          }
+        }
+        ocrFieldList = payload?.ocrResult
+      } else {
+        const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
+        error = res.error
+        ocrFieldList = res.data?.ocrFieldList
+      }
+      if (error || !ocrFieldList) {
         failure = String(error || 'no data was returned')
         console.warn('[table uploadForOcr] OCR extraction warning:', failure)
         continue
@@ -2112,7 +2177,7 @@ const TableFieldRenderer = ({
       if (idx < 0) continue
       const patch = mapOcrToRowPatch(
         targets,
-        data.ocrFieldList,
+        ocrFieldList,
         current[idx],
         !isMultiFileColumn(col),
       )
@@ -2126,11 +2191,10 @@ const TableFieldRenderer = ({
         filled.add(String(target?.name || target?.label || id))
       }
     }
-    const filledNames = Array.from(filled).join(', ')
     const wantedNames = targetNames.join(', ')
-    if (filled.size > 0) {
-      return { text: t`Filled from the document: ${filledNames}`, tone: 'info' }
-    }
+    // Success needs no line under the cell: the info icon already lists the
+    // columns the file fills.
+    if (filled.size > 0) return
     if (failure) {
       return { text: t`Could not read the document: ${failure}`, tone: 'error' }
     }
@@ -2921,11 +2985,7 @@ const TableFieldRenderer = ({
                                 readOnly ||
                                   isColumnReadOnly(col) ||
                                   isCellRuleReadOnly(col, resolvedRow) ||
-                                  isAwaitingColumnFile(
-                                    col,
-                                    resolvedRow,
-                                    tableColumns,
-                                  ),
+                                  Boolean(awaitingFileLabel(col, resolvedRow)),
                                 getLookupOptionsForCell(col, resolvedRow),
                                 isApiOptionsColumn(col)
                                   ? (code) =>
@@ -2937,6 +2997,10 @@ const TableFieldRenderer = ({
                                   : undefined,
                                 rowIndex,
                                 {
+                                  awaitingFile: awaitingFileLabel(
+                                    col,
+                                    resolvedRow,
+                                  ),
                                   row: resolvedRow,
                                   siblingColumns: tableColumns,
                                   onFilesAdded: (files) =>
@@ -3138,11 +3202,7 @@ const TableFieldRenderer = ({
                           readOnly ||
                             isColumnReadOnly(col) ||
                             isCellRuleReadOnly(col, resolvedRow) ||
-                            isAwaitingColumnFile(
-                              col,
-                              resolvedRow,
-                              tableColumns,
-                            ),
+                            Boolean(awaitingFileLabel(col, resolvedRow)),
                           getLookupOptionsForCell(col, resolvedRow),
                           isApiOptionsColumn(col)
                             ? (code) =>
@@ -3150,6 +3210,7 @@ const TableFieldRenderer = ({
                             : undefined,
                           rowIndex,
                           {
+                            awaitingFile: awaitingFileLabel(col, resolvedRow),
                             row: resolvedRow,
                             siblingColumns: tableColumns,
                             onFilesAdded: (files) =>
