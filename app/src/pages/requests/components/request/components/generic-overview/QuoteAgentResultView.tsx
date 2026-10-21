@@ -1395,11 +1395,13 @@ const QuoteAgentResultView = ({
           const targetDiscountId = discountColumnId(targetColumns)
           if (targetDiscountId) next[targetDiscountId] = discount
         }
+        const sourceRecord = sourceRow as Record<string, any>
+        const rawRecord = rawRow as Record<string, any>
         const mode =
-          sourceRow._discountMode ||
-          sourceRow.DiscountMode ||
-          rawRow._discountMode ||
-          rawRow.DiscountMode
+          sourceRecord._discountMode ||
+          sourceRecord.DiscountMode ||
+          rawRecord._discountMode ||
+          rawRecord.DiscountMode
         if (mode) next._discountMode = mode
         return next
       }),
