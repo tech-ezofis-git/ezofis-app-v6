@@ -512,7 +512,7 @@ export const extractQuoteVariants = (args: {
         resultKey:
           source.resultKey || source.fieldId || existing?.resultKey,
         // buildVariant ignores 0 and recomputes from rows when needed
-        total: apiTotal > 0 ? apiTotal : undefined,
+        total: apiTotal != null && apiTotal > 0 ? apiTotal : undefined,
       }),
     )
   })
