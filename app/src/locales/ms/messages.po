@@ -51,12 +51,12 @@ msgstr ""
 msgid "({0} Folders)"
 msgstr "({0} Folder)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2963
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2964
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2961
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2962
 msgid "(empty row)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3020
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3018
 msgid "(remove column)"
 msgstr ""
 
@@ -190,7 +190,7 @@ msgid "{0} remaining"
 msgstr "{0} yang tinggal"
 
 #. placeholder {0}: selectedRowIds.size
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2464
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2463
 msgid "{0} row(s) selected"
 msgstr ""
 
@@ -289,7 +289,7 @@ msgstr ""
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} aliran kerja aktif"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2505
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2504
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} item baris ditemui dalam dokumen yang dimuat naik."
 
@@ -740,7 +740,7 @@ msgstr "Tindakan Diperlukan"
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:306
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:887
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2746
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2744
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -816,9 +816,9 @@ msgstr "Sebenar vs diunjurkan"
 msgid "Add"
 msgstr "Tambah"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1428
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1469
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1518
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1436
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1479
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1530
 msgid "Add \"{query}\""
 msgstr "Tambah \"{query}\""
 
@@ -879,15 +879,15 @@ msgstr "Tambah kad"
 msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 msgstr "Tambah kad untuk mengumpulkan peringkat aliran kerja ke dalam lajur Kanban. Jika tiada kad disimpan, Permintaan memaparkan satu lajur bagi setiap peringkat."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2732
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3057
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2730
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3055
 msgid "Add column"
 msgstr ""
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:269
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:339
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2419
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2430
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2418
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2429
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:89
 msgid "Add Column"
 msgstr ""
@@ -1015,13 +1015,9 @@ msgstr "Tambah Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:281
-<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:859
-=======
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:615
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2440
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2451
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2439
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2450
 msgid "Add Row"
 msgstr "Tambah Baris"
 
@@ -1037,7 +1033,7 @@ msgstr ""
 msgid "Add tab"
 msgstr "Tambah tab"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2270
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2269
 msgid "Add the first column"
 msgstr ""
 
@@ -1583,7 +1579,7 @@ msgid "API URL"
 msgstr "URL API"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2381
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2380
 msgid "Append"
 msgstr "Lampirkan"
 
@@ -1639,13 +1635,13 @@ msgstr "Peta haba kelewatan kelulusan"
 
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:378
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2744
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2867
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2979
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2742
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2865
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2977
 msgid "Approve"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2474
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2473
 msgid "Approve selected"
 msgstr ""
 
@@ -1655,8 +1651,8 @@ msgstr ""
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:366
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:368
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2854
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2970
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2852
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2968
 #: src/pages/requests/utils/localizeRequestUi.ts:43
 msgid "Approved"
 msgstr "Diluluskan"
@@ -2450,11 +2446,7 @@ msgstr "Boleh Lihat"
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:291
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:502
-<<<<<<< HEAD
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:802
-=======
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:846
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/RequestsPage.tsx:1868
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:797
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:845
@@ -2588,7 +2580,7 @@ msgstr "Tukar Tema"
 #~ msgid "Change to normal field"
 #~ msgstr "Tukar ke medan biasa"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2688
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2686
 msgid "Change Type"
 msgstr ""
 
@@ -2973,7 +2965,7 @@ msgstr "Kuncupkan"
 #~ msgid "Collapse All"
 #~ msgstr "Runtuhkan Semua"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2993
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2991
 msgid "Collapse row"
 msgstr ""
 
@@ -2999,7 +2991,7 @@ msgstr ""
 msgid "Column Name"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2675
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2673
 msgid "Column options"
 msgstr ""
 
@@ -3524,11 +3516,11 @@ msgstr "Tidak dapat menjana medan. Cuba medan Syor sekali lagi."
 msgid "Could not generate folder configuration. Try again."
 msgstr "Tidak dapat menjana konfigurasi folder. Cuba lagi."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2236
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2235
 msgid "Could not read that file."
 msgstr "Tidak dapat membaca fail itu."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2051
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2050
 msgid "Could not read the document: {failure}"
 msgstr ""
 
@@ -4118,7 +4110,7 @@ msgstr "Padam kad"
 #~ msgid "Delete column"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2707
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2705
 msgid "Delete Column"
 msgstr ""
 
@@ -4167,15 +4159,10 @@ msgstr "Padam Peranan"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:472
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:394
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:396
-<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1370
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1372
-=======
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1023
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1025
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2872
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2984
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2870
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2982
 msgid "Delete row"
 msgstr "Padamkan baris"
 
@@ -4188,7 +4175,7 @@ msgid "Delete Rule"
 msgstr "Padamkan Peraturan"
 
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:264
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2484
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2483
 msgid "Delete selected"
 msgstr ""
 
@@ -4710,7 +4697,7 @@ msgstr "Selesai Menyesuaikan"
 #~ msgid "Done editing"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2626
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2624
 msgid "Double click to rename or drag to reorder"
 msgstr ""
 
@@ -5186,7 +5173,7 @@ msgstr "Edit Metadata"
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Mod Edit Aktif — Klik bulatan semak pada mana-mana bahagian, jubin KPI, garis cerapan AI atau kad carta untuk menyahpilih item yang tidak diingini. Tukar kepada Mod Paparan untuk melihat reka letak tersuai anda."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2685
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2683
 msgid "Edit Name"
 msgstr ""
 
@@ -5629,7 +5616,7 @@ msgstr "Kembangkan"
 msgid "Expand all steps"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2993
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2991
 msgid "Expand row"
 msgstr ""
 
@@ -5700,7 +5687,7 @@ msgid "Export staged files"
 msgstr ""
 
 #: src/pages/requests/components/InboxList.tsx:2083
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2406
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2405
 msgid "Export to Excel"
 msgstr "Eksport ke Excel"
 
@@ -5764,7 +5751,7 @@ msgstr "Mengekstrak data daripada dokumen..."
 #: src/pages/portal/components/PortalWizard.tsx:1072
 #: src/pages/portal/components/PortalWizard.tsx:1079
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:194
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1851
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1864
 msgid "Extracting data from the document…"
 msgstr "Mengekstrak data daripada dokumen…"
 
@@ -6301,7 +6288,7 @@ msgid "File Upload"
 msgstr "Muat Naik Fail"
 
 #: src/pages/portal/components/PortalWizard.tsx:681
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1777
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1790
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr ""
 
@@ -6339,7 +6326,7 @@ msgstr "FAIL DALAM FOLDER INI"
 msgid "Files uploaded successfully."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2048
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2047
 msgid "Filled from the document: {filledNames}"
 msgstr ""
 
@@ -7252,15 +7239,15 @@ msgstr "Pemprosesan Invois Segera"
 #~ msgid "Import CSV/Excel"
 #~ msgstr "Import CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2395
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2394
 msgid "Import CSV/Excel (adds to existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2394
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2393
 msgid "Import CSV/Excel (replaces existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2514
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2513
 msgid "Import extracted items"
 msgstr "Import item yang diekstrak"
 
@@ -9076,7 +9063,7 @@ msgstr "Alih ke bawah"
 msgid "Move Entry to Trash"
 msgstr "Move Entri to Trash"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2643
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2641
 msgid "Move left"
 msgstr ""
 
@@ -9084,7 +9071,7 @@ msgstr ""
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Alihkan dokumen yang dipadankan daripada storan aktif ke dalam arkib."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2655
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2653
 msgid "Move right"
 msgstr ""
 
@@ -9473,11 +9460,7 @@ msgid "No Data Available"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:775
-<<<<<<< HEAD
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:738
-=======
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:781
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 msgid "No data available yet."
 msgstr ""
 
@@ -9685,7 +9668,7 @@ msgstr ""
 msgid "No logs found"
 msgstr "Tiada log ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2226
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2225
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Tiada lajur sepadan ditemui — Pengepala CSV/Excel mesti sepadan dengan nama lajur jadual."
 
@@ -9837,7 +9820,7 @@ msgstr "Tiada dasar pengekalan dikonfigurasikan lagi. Klik 'Buat Dasar' untuk me
 msgid "No roles yet"
 msgstr "Tiada peranan lagi"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3068
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3066
 msgid "No rows yet."
 msgstr ""
 
@@ -9898,7 +9881,7 @@ msgstr "Tiada cerapan arah aliran pembekal tersedia."
 msgid "No suppliers found"
 msgstr "Tiada pembekal ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2276
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2275
 msgid "No table columns configured."
 msgstr "Tiada lajur jadual dikonfigurasikan."
 
@@ -9974,7 +9957,7 @@ msgstr "Tiada pengguna lagi"
 msgid "No valid files selected."
 msgstr "Tiada fail yang sah dipilih."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2054
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2053
 msgid "No values were found in the document for: {wantedNames}"
 msgstr ""
 
@@ -12257,8 +12240,8 @@ msgstr ""
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1747
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1893
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1760
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1906
 msgid "Remove file"
 msgstr "Buang fail"
 
@@ -12297,7 +12280,7 @@ msgstr "Namakan semula"
 #~ msgstr "Memaparkan pratonton papan pemuka..."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2382
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2381
 msgid "Replace"
 msgstr "Gantikan"
 
@@ -13158,7 +13141,7 @@ msgid "Scan QR"
 msgstr "Imbas QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2357
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2356
 msgid "Scan QR / Barcode"
 msgstr "Imbas QR / Kod Bar"
 
@@ -13529,11 +13512,11 @@ msgstr "Protokol Keselamatan"
 #~ msgid "Security Summary"
 #~ msgstr "Ringkasan Keselamatan"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1858
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1871
 msgid "See the Attachments section for uploaded files."
 msgstr "Lihat bahagian Lampiran untuk fail yang dimuat naik."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2572
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2570
 #: src/pages/settings/components/ManageUser.tsx:1910
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -13658,7 +13641,7 @@ msgstr "Pilih Semua"
 msgid "Select all files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2547
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2545
 msgid "Select all rows"
 msgstr ""
 
@@ -13854,8 +13837,8 @@ msgstr ""
 msgid "Select role"
 msgstr "Pilih peranan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2792
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2934
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2790
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2932
 msgid "Select row"
 msgstr "Pilih baris"
 
@@ -15203,7 +15186,7 @@ msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 #~ msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2345
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2344
 msgid "Switch to Advance (card) view"
 msgstr ""
 
@@ -15222,7 +15205,7 @@ msgstr ""
 msgid "Switch to JSON view"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2344
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2343
 msgid "Switch to Normal (grid) view"
 msgstr ""
 
@@ -15262,7 +15245,7 @@ msgstr "Segerakkan data Borang Induk dengan medan folder yang sepadan."
 msgid "Sync with existing OneDrive folders"
 msgstr "Segerakkan dengan folder OneDrive sedia ada"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2327
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2326
 msgid "Syncing from master table..."
 msgstr ""
 
@@ -15395,7 +15378,7 @@ msgstr "Penyewa tiada. Log masuk semula dan cuba lagi."
 msgid "Test Connection"
 msgstr "Uji Sambungan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2011
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2010
 msgid "Text could not be read from the document: no repository is available for this form."
 msgstr ""
 
@@ -15790,14 +15773,10 @@ msgstr "Ejen utama mengikut penggunaan kredit · {periodSubtitle}"
 #~ msgstr "Kepekatan Top-3"
 
 #: src/pages/forms/FormEntriesPage.tsx:1334
-<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2149
-=======
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1060
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:1008
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2890
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2888
 msgid "Total"
 msgstr "Jumlah"
 
@@ -16016,7 +15995,7 @@ msgid "Type:"
 msgstr "Jenis:"
 
 #. placeholder {0}: col.type || 'SHORT_TEXT'
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2632
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2630
 msgid "Type: {0}"
 msgstr ""
 
@@ -16364,11 +16343,7 @@ msgstr "Menaik taraf…"
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:714
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:764
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
-<<<<<<< HEAD
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:808
-=======
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:852
->>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:81
 msgid "Upload"
 msgstr "Muat naik"
@@ -16524,7 +16499,7 @@ msgstr "Memuat naik fail..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Memuat naik fail induk untuk memproses entri di latar belakang..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1850
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1863
 msgid "Uploading the document…"
 msgstr "Memuat naik dokumen…"
 
