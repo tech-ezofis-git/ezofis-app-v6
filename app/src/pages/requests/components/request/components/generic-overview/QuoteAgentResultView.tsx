@@ -100,6 +100,26 @@ const dynamicCellFilled = (value: unknown) => {
   return text !== '' && text.toUpperCase() !== 'NA'
 }
 
+const compactControl = (value: string) =>
+  value.toLowerCase().replace(/[\s._-]+/g, '')
+
+const lineValueSignature = (rows: Record<string, any>[] | undefined) =>
+  JSON.stringify(
+    (Array.isArray(rows) ? rows : []).map((row) => [
+      String(row?.Product ?? '').trim(),
+      String(row?.Description ?? '').trim(),
+      String(row?.Qty ?? ''),
+      String(row?.Price ?? ''),
+      String(row?.Discount ?? ''),
+    ]),
+  )
+
+const sameStoredNumber = (stored: unknown, next: number) => {
+  if (stored == null || stored === '') return false
+  const current = Number(String(stored).replace(/[$,%\s]/g, ''))
+  return Number.isFinite(current) && Math.abs(current - next) < 0.02
+}
+
 /** When rows carry their own keys, hide unused builder columns such as "Traceability". */
 const columnsForFilledDynamicTable = (
   schema: { id: string; label?: string; name?: string; type?: string; settings?: any }[],
@@ -452,6 +472,8 @@ interface Props {
   requestData?: any
   workflow?: any
   onFieldChange?: (fieldId: string, value: any) => void
+  /** Writes every quote tab's displayed values in one save payload. */
+  onFieldsChange?: (patch: Record<string, any>) => void
   /** Live grand total for the agent-tab header (before Attachments). */
   onQuoteTotalChange?: (total: number | null) => void
 }
@@ -502,6 +524,7 @@ const QuoteAgentResultView = ({
   result,
   workflow,
   onFieldChange,
+  onFieldsChange,
   onQuoteTotalChange,
 }: Props) => {
   const { t } = useLingui()
@@ -868,9 +891,12 @@ const QuoteAgentResultView = ({
         if (compact === 'compare' || compact.endsWith('compare')) return null
         const fieldId = getFieldId(field)
         const stored = formModel?.[fieldId]
-        const sourceRows = Array.isArray(stored)
+        const fromResult = result?.[heading] ?? result?.[fieldId]
+        const sourceRows = Array.isArray(stored) && stored.length
           ? (stored as Record<string, any>[])
-          : []
+          : Array.isArray(fromResult)
+            ? (fromResult as Record<string, any>[])
+            : []
         const schemaColumns = effectiveDynamicColumns(field, sourceRows)
         // An empty form array still renders the builder columns with one blank row.
         // Filled rows drop unused default columns and keep the keys that have values.
@@ -892,7 +918,7 @@ const QuoteAgentResultView = ({
       title: string
       variantId: QuoteVariantId
     }[]
-  }, [formModel, tableFields])
+  }, [formModel, result, tableFields])
 
   useEffect(() => {
     if (activeQuoteTabId === 'compare') return
@@ -1167,15 +1193,12 @@ const QuoteAgentResultView = ({
 
   const writeField = (field: any | null, value: any, resultKey?: string) => {
     if (!onFieldChange) return
-    const keys = new Set<string>()
-    if (field) {
-      ;[field.id, field.jsonId, field.name, getFieldId(field), getFieldHeading(field)]
-        .filter(Boolean)
-        .forEach((key) => keys.add(String(key)))
+    const id = field ? getFieldId(field) : ''
+    if (id) {
+      onFieldChange(id, value)
+      return
     }
-    if (resultKey) keys.add(String(resultKey))
-    if (keys.size === 0) return
-    keys.forEach((key) => onFieldChange(key, value))
+    if (resultKey && /^[0-9a-f-]{36}$/i.test(resultKey)) onFieldChange(resultKey, value)
   }
 
   const readScalarText = (field: any | null, extraKeys: string[] = []) => {
@@ -1277,16 +1300,196 @@ const QuoteAgentResultView = ({
         (item) =>
           item.kind === kind && (item.variant || 'main') === variantId,
       )
-      const resultKey =
-        entry?.resultKey || variantScalarResultKey(variantId, kind)
-      if (!resultKey && !entry?.field) return
-      writeField(entry?.field || null, value, resultKey)
+      const field =
+        entry?.field ||
+        formFields.find((item) => {
+          const heading = getFieldHeading(item)
+          if (resolveQuoteFieldVariant(heading) !== variantId) return false
+          const compact = compactControl(stripQuoteVariantLabel(heading))
+          if (kind === 'total' && compact.includes('subtotal')) return false
+          const names =
+            kind === 'tax' ? ['hst', 'gst', 'tax'] : [kind]
+          return names.some(
+            (name) => compact === name || compact.endsWith(name),
+          )
+        }) ||
+        null
+      // Write the variant's own field id. A loose result key such as
+      // "Subtotal" would overwrite Quote 1.
+      const resultKey = field
+        ? undefined
+        : entry?.resultKey || variantScalarResultKey(variantId, kind)
+      if (!field && !resultKey) return
+      writeField(field, value, resultKey)
     })
   }
 
   const persistTotals = (totals: QuoteTotals) => {
     writeVariantTotals(activeVariantId, totals)
   }
+
+  const quoteSyncRef = useRef('')
+
+  useEffect(() => {
+    if (readOnly || !onFieldsChange) return
+    const patch: Record<string, any> = {}
+
+    const findScalarField = (
+      variantId: QuoteVariantId,
+      kind: 'discount' | 'freight' | 'subtotal' | 'tax' | 'total',
+    ) =>
+      formFields.find((field) => {
+        const heading = getFieldHeading(field)
+        if (resolveQuoteFieldVariant(heading) !== variantId) return false
+        const compact = compactControl(stripQuoteVariantLabel(heading))
+        if (kind === 'total' && compact.includes('subtotal')) return false
+        const names = kind === 'tax' ? ['hst', 'gst', 'tax'] : [kind]
+        return names.some((name) => compact === name || compact.endsWith(name))
+      }) || null
+
+    const readShownText = (field: any, extraKeys: string[] = []) => {
+      const keys = [
+        field?.id,
+        field?.jsonId,
+        field?.name,
+        getFieldId(field),
+        getFieldHeading(field),
+        ...extraKeys,
+      ].filter(Boolean)
+      for (const key of keys) {
+        const picked = [formModel?.[key], result?.[key]].find(
+          (item) =>
+            item != null &&
+            typeof item !== 'object' &&
+            String(item).trim() !== '',
+        )
+        if (picked != null) return String(picked)
+      }
+      return ''
+    }
+
+    quoteVariants.forEach((variant) => {
+      const columns = variant.columns || []
+      if (variant.fieldId && variant.itemCount > 0) {
+        const stored = formModel?.[variant.fieldId]
+        const storedSig = lineValueSignature(
+          normalizeLineItemRows(Array.isArray(stored) ? stored : [], columns),
+        )
+        const shownSig = lineValueSignature(variant.rows)
+        if (storedSig !== shownSig) {
+          patch[variant.fieldId] = toFormTableRows(variant.rows, columns)
+        }
+      }
+
+      if (variant.itemCount > 0) {
+        const totals = buildQuoteTotals(
+          variant.rows,
+          variant.freight,
+          taxRate,
+          columns,
+          variant.discount,
+        )
+        const mainTotalField = findScalarField('main', 'total')
+        const mainTotal = mainTotalField
+          ? Number(formModel?.[getFieldId(mainTotalField)])
+          : NaN
+        // Quote 2/3 formulas add Quote 1's subtotal, so a stored total can
+        // equal Quote 1 while the tab is showing this quote's lines.
+        const shownTotal =
+          variant.id !== 'main' &&
+          variant.total > 0 &&
+          !sameStoredNumber(variant.total, mainTotal)
+            ? variant.total
+            : totals.total
+        const shown: Record<string, number> = {
+          discount: totals.discount,
+          freight: variant.freight,
+          subtotal: totals.subtotal,
+          tax: totals.hst,
+          total: shownTotal,
+        }
+        ;(['subtotal', 'discount', 'freight', 'tax', 'total'] as const).forEach(
+          (kind) => {
+            const field = findScalarField(variant.id, kind)
+            if (!field) return
+            const id = getFieldId(field)
+            const next = shown[kind]
+            if (!Number.isFinite(next) || sameStoredNumber(formModel?.[id], next)) {
+              return
+            }
+            patch[id] = next
+          },
+        )
+      }
+
+      const orderField = formFields.find((field) => {
+        const heading = getFieldHeading(field)
+        return (
+          compactControl(stripQuoteVariantLabel(heading)) === 'ordernumber' &&
+          resolveQuoteFieldVariant(heading) === variant.id
+        )
+      })
+      if (orderField) {
+        const drafted = draftOrderByVariant[variant.id]
+        const shown =
+          drafted != null && drafted.trim() !== ''
+            ? drafted
+            : readShownText(orderField)
+        const id = getFieldId(orderField)
+        if (shown && String(formModel?.[id] ?? '') !== shown) patch[id] = shown
+      }
+
+      const remarksField = formFields.find((field) => {
+        const heading = getFieldHeading(field)
+        return (
+          /remark/i.test(heading) &&
+          resolveQuoteFieldVariant(heading) === variant.id
+        )
+      })
+      if (remarksField) {
+        const shown = readShownText(
+          remarksField,
+          VARIANT_REMARKS_KEYS[variant.id] || [],
+        )
+        const id = getFieldId(remarksField)
+        if (shown && String(formModel?.[id] ?? '') !== shown) patch[id] = shown
+      }
+    })
+
+    tableFields.forEach((field) => {
+      const type = String(field?.type || '')
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_')
+      if (type !== 'DYNAMIC_TABLE') return
+      const heading = getFieldHeading(field)
+      if (resolveLineItemTableVariant(heading)) return
+      const compact = compactControl(heading)
+      if (compact === 'compare' || compact.endsWith('compare')) return
+      const id = getFieldId(field)
+      const stored = formModel?.[id]
+      if (Array.isArray(stored) && stored.length > 0) return
+      const fromResult = result?.[heading] ?? result?.[id]
+      if (!Array.isArray(fromResult) || fromResult.length === 0) return
+      patch[id] = fromResult
+    })
+
+    const keys = Object.keys(patch)
+    if (!keys.length) return
+    const signature = JSON.stringify(patch)
+    if (quoteSyncRef.current === signature) return
+    quoteSyncRef.current = signature
+    onFieldsChange(patch)
+  }, [
+    draftOrderByVariant,
+    formFields,
+    formModel,
+    onFieldsChange,
+    quoteVariants,
+    readOnly,
+    result,
+    tableFields,
+    taxRate,
+  ])
 
   /** Copy line items + totals (+ remarks) from one quote tab into another. */
   const copyVariantFrom = (
@@ -1409,26 +1612,14 @@ const QuoteAgentResultView = ({
     )
     // Keep a local draft so the empty panel swaps to the table immediately.
     setDraftRowsByVariant((prev) => ({ ...prev, [targetId]: formRows }))
-    // Write under every known field key (id / jsonId / label) — form storage
-    // and applyCalculatedFields may key off field.id only.
-    const writeKeys = new Set<string>()
-    if (targetField) {
-      ;[targetField.id, targetField.jsonId, targetField.name, getFieldId(targetField)]
-        .filter(Boolean)
-        .forEach((key) => writeKeys.add(String(key)))
+    const lineFieldId =
+      (targetField ? getFieldId(targetField) : '') ||
+      targetForm?.fieldId ||
+      target.fieldId ||
+      ''
+    if (lineFieldId) {
+      onFieldChange(lineFieldId, toFormTableRows(formRows, targetColumns))
     }
-    if (targetForm?.fieldId) writeKeys.add(String(targetForm.fieldId))
-    if (target.fieldId) writeKeys.add(String(target.fieldId))
-    if (target.resultKey) writeKeys.add(String(target.resultKey))
-    ;['quote_2 Line Item', 'ALT Line Item', 'quote_3 Line Item', 'OPT Line Item']
-      .filter((key) => resolveLineItemTableVariant(key) === targetId)
-      .forEach((key) => writeKeys.add(key))
-    if (writeKeys.size === 0 && target.resultKey) {
-      writeKeys.add(String(target.resultKey))
-    }
-    writeKeys.forEach((key) => {
-      if (key) onFieldChange(key, formRows)
-    })
 
     const freight = Number(source.freight ?? 0)
     const totals = buildQuoteTotals(
@@ -1459,14 +1650,7 @@ const QuoteAgentResultView = ({
           : ['Order Number']
     const copiedOrder = readScalarText(sourceOrderField, orderFallbacks)
     if (targetOrderField && copiedOrder) {
-      const targetFallbacks =
-        targetId === 'alt'
-          ? ['quote_2 Order Number', 'ALT Order Number']
-          : targetId === 'opt'
-            ? ['quote_3 Order Number', 'OPT Order Number']
-            : ['Order Number']
-      writeField(targetOrderField, copiedOrder, targetFallbacks[0])
-      targetFallbacks.forEach((key) => onFieldChange(key, copiedOrder))
+      writeField(targetOrderField, copiedOrder)
       setDraftOrderByVariant((prev) => ({ ...prev, [targetId]: copiedOrder }))
     }
 
@@ -1581,17 +1765,8 @@ const QuoteAgentResultView = ({
         })
         return next
       })
-      const writeKeys = new Set<string>()
-      ;[
-        targetField.id,
-        targetField.jsonId,
-        targetField.name,
-        getFieldId(targetField),
-        getFieldHeading(targetField),
-      ]
-        .filter(Boolean)
-        .forEach((key) => writeKeys.add(String(key)))
-      writeKeys.forEach((key) => onFieldChange(key, copied))
+      const traceFieldId = getFieldId(targetField)
+      if (traceFieldId) onFieldChange(traceFieldId, copied)
     })
 
     totalsFromEditRef.current = true
@@ -2207,7 +2382,10 @@ const QuoteAgentResultView = ({
                         (activeQuoteVariant?.resultKey &&
                           activeQuoteVariant.id !== 'main')
                       ) {
-                        onFieldChange(targetId, rows)
+                        onFieldChange(
+                          targetId,
+                          toFormTableRows(rows, activeColumns),
+                        )
                         return
                       }
 
@@ -2226,11 +2404,14 @@ const QuoteAgentResultView = ({
                         const kept = lineItems.filter(
                           (row) => resolveRowQuoteVariant(row) !== activeId,
                         )
-                        onFieldChange(fieldId, [...kept, ...tagged])
+                        onFieldChange(
+                          fieldId,
+                          toFormTableRows([...kept, ...tagged], activeColumns),
+                        )
                         return
                       }
 
-                      onFieldChange(fieldId, value)
+                      onFieldChange(fieldId, toFormTableRows(rows, activeColumns))
                     }}
                     onTotalsChange={(totals) => {
                       totalsFromEditRef.current = true

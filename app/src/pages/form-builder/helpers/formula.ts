@@ -600,7 +600,15 @@ export const evaluateFormula = (
     }
 
     const parsed = extractNumericValue(rawVal)
-    if (parsed === null) throw new Error('Missing or invalid field value')
+    if (parsed === null) {
+      // A blank Qty / Price / Discount is 0. Throwing here wipes the
+      // calculated Subtotal column back to "" on save.
+      const blank =
+        rawVal == null ||
+        (typeof rawVal === 'string' && rawVal.trim() === '')
+      if (blank && meta.isTableColumn) return 0
+      throw new Error('Missing or invalid field value')
+    }
     return parsed
   }
 
@@ -846,6 +854,62 @@ function resolveActiveFormulaTokens(
   return activeTokens
 }
 
+const compactFormulaLabel = (value: string) =>
+  value.toLowerCase().replace(/[\s._-]+/g, '')
+
+const formulaQuoteScope = (label: string) => {
+  const compact = compactFormulaLabel(label)
+  if (compact.includes('quote3') || compact.startsWith('opt')) return 'opt'
+  if (compact.includes('quote2') || compact.startsWith('alt')) return 'alt'
+  return 'main'
+}
+
+const formulaBaseLabel = (label: string) => {
+  let compact = compactFormulaLabel(label)
+  if (compact.startsWith('quote3')) compact = compact.slice('quote3'.length)
+  else if (compact.startsWith('quote2')) compact = compact.slice('quote2'.length)
+  else if (compact.startsWith('optional')) compact = compact.slice('optional'.length)
+  else if (compact.startsWith('opt')) compact = compact.slice('opt'.length)
+  else if (compact.startsWith('alternative'))
+    compact = compact.slice('alternative'.length)
+  else if (compact.startsWith('alt')) compact = compact.slice('alt'.length)
+  return compact
+}
+
+const formulaFieldLabel = (field: FormulaFieldRef) =>
+  String(field.label || field.name || '')
+
+/** Retarget Quote 1 operands inside a quote_2 / quote_3 formula onto that quote. */
+const remapCrossVariantFormulaTokens = (
+  rawTokens: Array<FormulaToken | Record<string, any>> | undefined,
+  target: FormulaFieldRef,
+  fields: FormulaFieldRef[],
+) => {
+  if (!rawTokens?.length) return rawTokens
+  const targetScope = formulaQuoteScope(formulaFieldLabel(target))
+  if (targetScope === 'main') return rawTokens
+  return rawTokens.map((token) => {
+    const type = String((token as FormulaToken).type || '')
+    const value = String((token as FormulaToken).value || '')
+    if (type !== 'FIELD' || !value) return token
+    const ref = fields.find(
+      (field) =>
+        field.id === value || field.jsonId === value || field.name === value,
+    )
+    if (!ref || formulaQuoteScope(formulaFieldLabel(ref)) === targetScope) {
+      return token
+    }
+    const base = formulaBaseLabel(formulaFieldLabel(ref))
+    const replacement = fields.find(
+      (field) =>
+        formulaQuoteScope(formulaFieldLabel(field)) === targetScope &&
+        formulaBaseLabel(formulaFieldLabel(field)) === base,
+    )
+    if (!replacement) return token
+    return { ...token, value: replacement.id }
+  })
+}
+
 export const applyCalculatedFields = (
   panels: Panel[] | undefined,
   values: Record<string, unknown>,
@@ -936,7 +1000,9 @@ export const applyCalculatedFields = (
     next[field.id] = updatedRows
   }
 
-  // Step 2: Evaluate top-level CALCULATED fields and fields targeted by calculation rules
+  // Step 2: Evaluate top-level CALCULATED fields and fields targeted by calculation rules.
+  // quote_2 / quote_3 totals are often saved with Quote 1's Subtotal/Freight/HST
+  // ids in the formula. Point those operands at the same quote before evaluating.
   const targetFields = fields.filter((field) => {
     if (!isCalculationEnabled(field)) return false
     const hasRule = calcEntries.some(
@@ -951,10 +1017,14 @@ export const applyCalculatedFields = (
       const fieldEntries = calcEntries.filter(
         (e) => e.fieldId === field.id && !e.columnId,
       )
-      const activeTokens = resolveActiveFormulaTokens(
-        field.settings?.specific?.formulaTokens,
-        fieldEntries,
-        next,
+      const activeTokens = remapCrossVariantFormulaTokens(
+        resolveActiveFormulaTokens(
+          field.settings?.specific?.formulaTokens,
+          fieldEntries,
+          next,
+          fields,
+        ),
+        field,
         fields,
       )
       const result = evaluateFormula(activeTokens, next, fields)
