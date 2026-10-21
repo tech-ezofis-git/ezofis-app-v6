@@ -657,7 +657,9 @@ export const buildMasterConditions = (
   const cleanStr = (s?: string) =>
     s ? String(s).replace(/\*/g, ' ').replace(/\s+/g, ' ').trim() : ''
 
-  const explicit = (field?.settings?.specific?.masterFormConditionColumn || [])
+  const explicit: Array<{ masterColumn: string; value: any }> = (
+    field?.settings?.specific?.masterFormConditionColumn || []
+  )
     .filter((c: any) => (c?.formField || c?.formColumn) && c?.masterColumn)
     .map((c: any) => ({
       masterColumn: String(c.masterColumn),
@@ -731,10 +733,15 @@ export const buildMasterConditions = (
       const colStr = String(masterCol).trim()
       const colLower = colStr.toLowerCase()
       const colClean = cleanStr(colStr).toLowerCase()
-      const alreadyInExplicit = explicit.some((c) => {
-        const mcLower = c.masterColumn.trim().toLowerCase()
-        return mcLower === colLower || cleanStr(c.masterColumn).toLowerCase() === colClean
-      })
+      const alreadyInExplicit = explicit.some(
+        (c: { masterColumn: string; value?: any }) => {
+          const mcLower = c.masterColumn.trim().toLowerCase()
+          return (
+            mcLower === colLower ||
+            cleanStr(c.masterColumn).toLowerCase() === colClean
+          )
+        },
+      )
       const alreadyInChained = chained.some((c) => {
         const mcLower = c.masterColumn.trim().toLowerCase()
         return mcLower === colLower || cleanStr(c.masterColumn).toLowerCase() === colClean
