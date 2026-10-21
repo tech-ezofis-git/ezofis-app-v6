@@ -1396,7 +1396,8 @@ const renderPreviewInput = (
       // column setting behaves here exactly as it will for end users.
       const configured = field.settings.specific.tableColumns
       const previewField =
-        Array.isArray(configured) && configured.length > 0
+        (Array.isArray(configured) && configured.length > 0) ||
+        field.type === 'DYNAMIC_TABLE'
           ? field
           : {
               ...field,

@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import { useMemo, type ComponentProps } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type {
   Question,
@@ -75,7 +75,12 @@ const FILL_SYNC_VALUE_TYPE_OPTIONS = [
   { id: 'MASTER', name: 'Use values from a master table' },
 ]
 
-const NUMBER_SOURCE_TYPES = ['NUMBER', 'COUNTER', 'CALCULATED', 'CURRENCY_AMOUNT']
+const NUMBER_SOURCE_TYPES = [
+  'NUMBER',
+  'COUNTER',
+  'CALCULATED',
+  'CURRENCY_AMOUNT',
+]
 const DATE_SOURCE_TYPES = ['DATE', 'DATE_TIME']
 
 function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
@@ -136,6 +141,7 @@ type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 
 interface Props {
   column: TableColumn
+  formFields?: Question[]
   masterForms?: { id: string; name: string }[]
   repositories?: { id: string; name: string }[]
   siblingColumns?: TableColumn[]
@@ -168,6 +174,7 @@ const toPseudoQuestion = (col: TableColumn): Question =>
 
 const TableColumnSettingsPanel = ({
   column,
+  formFields = [],
   masterForms = [],
   repositories = [],
   siblingColumns = [],
@@ -184,7 +191,8 @@ const TableColumnSettingsPanel = ({
   const isSummable = SUMMABLE_COLUMN_TYPES.includes(column.type)
   const isValidatable = VALIDATABLE_COLUMN_TYPES.includes(column.type)
   const customDefaultValue = column.settings?.specific?.customDefaultValue || ''
-  const defaultValueType = column.settings?.specific?.defaultValueType || 'CUSTOM'
+  const defaultValueType =
+    column.settings?.specific?.defaultValueType || 'CUSTOM'
   const showColumnTotal = Boolean(column.settings?.specific?.showColumnTotal)
   const contentRule = column.settings?.validation?.contentRule || 'TEXT'
   const calculatedRule = column.settings?.validation?.contentRule || ''
@@ -236,22 +244,47 @@ const TableColumnSettingsPanel = ({
     },
   })
 
-  const fillSourceColumns = siblingColumns
-    .filter((c) => {
-      if (c.id === column.id) return false
-      if (!isFillCopy) return true
-      return (isDateColumn ? DATE_SOURCE_TYPES : NUMBER_SOURCE_TYPES).includes(
-        String(c.type),
-      )
-    })
-    .map((c) => ({ id: c.id, name: c.name || 'Column' }))
+  const cascadeOptions = useMemo(() => {
+    const tableOpts = siblingColumns.map((c) => ({
+      id: c.id,
+      name: `Table Column: ${c.name || 'Column'}`,
+    }))
+    const formOpts = formFields
+      .filter((f) => f.id !== column.id)
+      .map((f) => ({
+        id: f.id,
+        name: `Form Field: ${f.label || 'Field'}`,
+      }))
+    return [...tableOpts, ...formOpts]
+  }, [siblingColumns, formFields, column.id])
+
+  const fillSourceOptions = useMemo(() => {
+    const tableOpts = siblingColumns
+      .filter((c) => {
+        if (c.id === column.id) return false
+        if (!isFillCopy) return true
+        return (
+          isDateColumn ? DATE_SOURCE_TYPES : NUMBER_SOURCE_TYPES
+        ).includes(String(c.type))
+      })
+      .map((c) => ({ id: c.id, name: `Table Column: ${c.name || 'Column'}` }))
+
+    const formOpts = formFields
+      .filter((f) => f.id !== column.id)
+      .map((f) => ({ id: f.id, name: `Form Field: ${f.label || 'Field'}` }))
+
+    return [...tableOpts, ...formOpts]
+  }, [siblingColumns, formFields, column.id, isFillCopy, isDateColumn])
 
   const fillSourceSelect = (label: string) => (
     <InputSelect
       label={label}
-      options={fillSourceColumns}
-      placeholder='Select a column'
-      value={fillSourceColumns.find((c) => c.id === parentFieldId) || null}
+      options={fillSourceOptions}
+      placeholder='Select a column or field'
+      value={
+        fillSourceOptions.find((c: { id: string }) => c.id === parentFieldId) ||
+        null
+      }
       onChange={(opt) =>
         onUpdate({
           specific: { parentFieldId: opt?.id != null ? String(opt.id) : '' },
@@ -294,10 +327,13 @@ const TableColumnSettingsPanel = ({
         ]}
         value={
           {
-            NORMAL: { id: 'NORMAL', name: 'Normal (Editable)' },
-            READ_ONLY: { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
             DISABLE: { id: 'DISABLE', name: 'Disable (Grayed out)' },
             HIDDEN: { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
+            NORMAL: { id: 'NORMAL', name: 'Normal (Editable)' },
+            READ_ONLY: {
+              id: 'READ_ONLY',
+              name: 'Read Only (Visible but locked)',
+            },
           }[visibility] || { id: 'NORMAL', name: 'Normal (Editable)' }
         }
         onChange={(opt) =>
@@ -342,7 +378,8 @@ const TableColumnSettingsPanel = ({
             onChange={(opt) =>
               onUpdate({
                 specific: {
-                  separateOptionsUsing: opt?.id === 'NEWLINE' ? 'NEWLINE' : 'COMMA',
+                  separateOptionsUsing:
+                    opt?.id === 'NEWLINE' ? 'NEWLINE' : 'COMMA',
                 },
               })
             }
@@ -449,12 +486,12 @@ const TableColumnSettingsPanel = ({
                   Filter by column (cascade, optional)
                 </label>
                 <InputSelect
+                  placeholder='No cascade — show all options'
                   clearable
                   options={siblingColumns.map((c) => ({
                     id: c.id,
                     name: c.name || 'Column',
                   }))}
-                  placeholder='No cascade — show all options'
                   value={
                     siblingColumns
                       .map((c) => ({ id: c.id, name: c.name || 'Column' }))
@@ -469,8 +506,8 @@ const TableColumnSettingsPanel = ({
                   }
                 />
                 <div className='text-[10px] text-gray-6 italic'>
-                  When set, this column only shows options matching the
-                  selected row&apos;s value in that other column.
+                  When set, this column only shows options matching the selected
+                  row&apos;s value in that other column.
                 </div>
               </>
             ) : optionsSource === 'MASTER' ? (
@@ -665,8 +702,7 @@ const TableColumnSettingsPanel = ({
                 options={masterForms}
                 placeholder='Select a master table'
                 value={
-                  masterForms.find((f) => String(f.id) === masterFormId) ||
-                  null
+                  masterForms.find((f) => String(f.id) === masterFormId) || null
                 }
                 onChange={(opt) =>
                   onUpdate({
@@ -721,15 +757,15 @@ const TableColumnSettingsPanel = ({
           {defaultValueType !== 'CUSTOM' &&
             defaultValueType !== 'ASSIGN_PARENT_FIELD' &&
             defaultValueType !== 'MASTER' && (
-            <div className='text-[10px] text-gray-6 italic'>
-              {
-                DEFAULT_VALUE_TYPE_OPTIONS.find(
-                  (o) => o.id === defaultValueType,
-                )?.name
-              }{' '}
-              is filled in automatically when a new row is added.
-            </div>
-          )}
+              <div className='text-[10px] text-gray-6 italic'>
+                {
+                  DEFAULT_VALUE_TYPE_OPTIONS.find(
+                    (o) => o.id === defaultValueType,
+                  )?.name
+                }{' '}
+                is filled in automatically when a new row is added.
+              </div>
+            )}
         </div>
       )}
 
@@ -769,15 +805,15 @@ const TableColumnSettingsPanel = ({
           />
           {isNumericColumn &&
             (contentRule === 'DECIMAL' || contentRule === 'BOTH') && (
-            <InputNumber
-              description='Maximum digits after the decimal point. Leave empty for no limit.'
-              label='Decimal Digits'
-              max={10}
-              min={0}
-              value={decimalDigits}
-              onChange={(v) => onUpdate({ validation: { decimalDigits: v } })}
-            />
-          )}
+              <InputNumber
+                description='Maximum digits after the decimal point. Leave empty for no limit.'
+                label='Decimal Digits'
+                max={10}
+                min={0}
+                value={decimalDigits}
+                onChange={(v) => onUpdate({ validation: { decimalDigits: v } })}
+              />
+            )}
           {isNumericColumn ? (
             <TableColumnNumberRange
               column={column}
@@ -817,9 +853,7 @@ const TableColumnSettingsPanel = ({
             checked={column.settings?.specific?.qrValue === true}
             description='Show a scan button in the cell to read a number from a QR code or barcode.'
             label='Read Values From QR'
-            onChange={(checked) =>
-              onUpdate({ specific: { qrValue: checked } })
-            }
+            onChange={(checked) => onUpdate({ specific: { qrValue: checked } })}
           />
           <div className='grid grid-cols-2 gap-2'>
             <InputText

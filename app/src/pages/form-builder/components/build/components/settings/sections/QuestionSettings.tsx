@@ -20,10 +20,6 @@ import {
   getRepositoryItemFilterFields,
   getRepositorys,
 } from '@/api/v6/folder/folder'
-import {
-  fetchMasterFormColumnOptions,
-  getFieldOptions,
-} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
@@ -34,6 +30,10 @@ import { classNames as baseInputClassNames } from '@/components/base/inputs/shar
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
 import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
+import {
+  fetchMasterFormColumnOptions,
+  getFieldOptions,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
 import FormulaBuilder from './FormulaBuilder'
@@ -275,7 +275,8 @@ const QuestionSettings = ({
     activeQuestion.settings.specific.masterFormColumn || ''
 
   const { data: activeMasterOptions = [] } = useQuery({
-    enabled: isMasterSource && Boolean(currentMasterFormId && currentMasterColumn),
+    enabled:
+      isMasterSource && Boolean(currentMasterFormId && currentMasterColumn),
     queryKey: [
       'activeFieldMasterOptions',
       currentMasterFormId,
@@ -595,8 +596,7 @@ const QuestionSettings = ({
 
   // NUMBER / DATE / DATE_TIME share V5's "Fill Value" choice: take the value
   // from a master table, from another field, or a custom default.
-  const hasFillSource =
-    activeQuestion.type === 'NUMBER' || isDate || isDateTime
+  const hasFillSource = activeQuestion.type === 'NUMBER' || isDate || isDateTime
   const fillSourceType =
     activeQuestion.settings.specific.fillValueType || 'CUSTOM'
   const isFillCustom = !hasFillSource || fillSourceType === 'CUSTOM'
@@ -638,135 +638,249 @@ const QuestionSettings = ({
       </label>
       <SegmentedControl
         size='xs'
+        value={activeQuestion.settings.specific.qrValue ? 'YES' : 'NO'}
         fullWidth
         data={[
           { label: 'Yes', value: 'YES' },
           { label: 'No', value: 'NO' },
         ]}
-        value={activeQuestion.settings.specific.qrValue ? 'YES' : 'NO'}
-        onChange={(val) =>
-          updateNested('specific', { qrValue: val === 'YES' })
-        }
+        onChange={(val) => updateNested('specific', { qrValue: val === 'YES' })}
       />
     </div>
   )
 
   const renderMasterFillConfig = () => (
-          <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
-            <div>
-              <label className='mb-1 block text-xs font-medium text-gray-11'>
-                Parent Field
-              </label>
-              <InputSelect
-                placeholder='Field that selects the master row'
-                options={allQuestions
-                  .filter((q) => q.id !== activeQuestion.id)
-                  .map((q) => ({
-                    id: q.id,
-                    name: q.label || 'Untitled Field',
-                  }))}
-                value={
-                  allQuestions
-                    .map((q) => ({
-                      id: q.id,
-                      name: q.label || 'Untitled Field',
-                    }))
-                    .find(
-                      (q) =>
-                        q.id ===
-                        activeQuestion.settings.specific
-                          .masterFormParentColumn,
-                    ) || null
-                }
-                onChange={(val) =>
-                  updateNested('specific', {
-                    masterFormParentColumn: val?.id || '',
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className='mb-1 block text-xs font-medium text-gray-11'>
-                Master Table
-              </label>
-              <InputSelect
-                options={masterForms}
-                placeholder='Select master form'
-                value={
-                  masterForms.find(
-                    (f: any) =>
-                      String(f.id) === String(currentMasterFormId),
-                  ) || null
-                }
-                onChange={(val) =>
-                  updateNested('specific', {
-                    masterFormColumn: '',
-                    masterFormId: val?.id || '',
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className='mb-1 block text-xs font-medium text-gray-11'>
-                Column
-              </label>
-              <InputSelect
-                options={masterColumns}
-                placeholder='Master column to bind'
-                value={
-                  masterColumns.find(
-                    (c: any) =>
-                      c.id ===
-                      activeQuestion.settings.specific.masterFormColumn,
-                  ) || null
-                }
-                onChange={(val) =>
-                  updateNested('specific', {
-                    masterFormColumn: val?.id || '',
-                  })
-                }
-              />
-            </div>
-          </div>
+    <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+      <div>
+        <label className='mb-1 block text-xs font-medium text-gray-11'>
+          Parent Field
+        </label>
+        <InputSelect
+          placeholder='Field that selects the master row'
+          options={allQuestions
+            .filter((q) => q.id !== activeQuestion.id)
+            .map((q) => ({
+              id: q.id,
+              name: q.label || 'Untitled Field',
+            }))}
+          value={
+            allQuestions
+              .map((q) => ({
+                id: q.id,
+                name: q.label || 'Untitled Field',
+              }))
+              .find(
+                (q) =>
+                  q.id ===
+                  activeQuestion.settings.specific.masterFormParentColumn,
+              ) || null
+          }
+          onChange={(val) =>
+            updateNested('specific', {
+              masterFormParentColumn: val?.id || '',
+            })
+          }
+        />
+      </div>
+      <div>
+        <label className='mb-1 block text-xs font-medium text-gray-11'>
+          Master Table
+        </label>
+        <InputSelect
+          options={masterForms}
+          placeholder='Select master form'
+          value={
+            masterForms.find(
+              (f: any) => String(f.id) === String(currentMasterFormId),
+            ) || null
+          }
+          onChange={(val) =>
+            updateNested('specific', {
+              masterFormColumn: '',
+              masterFormId: val?.id || '',
+            })
+          }
+        />
+      </div>
+      <div>
+        <label className='mb-1 block text-xs font-medium text-gray-11'>
+          Column
+        </label>
+        <InputSelect
+          options={masterColumns}
+          placeholder='Master column to bind'
+          value={
+            masterColumns.find(
+              (c: any) =>
+                c.id === activeQuestion.settings.specific.masterFormColumn,
+            ) || null
+          }
+          onChange={(val) =>
+            updateNested('specific', {
+              masterFormColumn: val?.id || '',
+            })
+          }
+        />
+      </div>
+    </div>
   )
 
   const renderParentFieldFillConfig = (allowedTypes: string[]) => (
-          <div>
-            <label className='mb-1 block text-xs font-medium text-gray-11'>
-              Parent Field
+    <div>
+      <label className='mb-1 block text-xs font-medium text-gray-11'>
+        Parent Field
+      </label>
+      <InputSelect
+        placeholder='Copy value from this field'
+        options={allQuestions
+          .filter(
+            (q) => q.id !== activeQuestion.id && allowedTypes.includes(q.type),
+          )
+          .map((q) => ({
+            id: q.id,
+            name: q.label || 'Untitled Field',
+          }))}
+        value={
+          allQuestions
+            .map((q) => ({
+              id: q.id,
+              name: q.label || 'Untitled Field',
+            }))
+            .find(
+              (q) => q.id === activeQuestion.settings.specific.parentFieldId,
+            ) || null
+        }
+        onChange={(val) =>
+          updateNested('specific', {
+            parentFieldId: val?.id || '',
+          })
+        }
+      />
+    </div>
+  )
+
+  const tableColumns = activeQuestion.settings.specific.tableColumns || []
+  const handleUpdateTableColumn = (
+    colId: string,
+    patch: Partial<{
+      name: string
+      settings: (typeof tableColumns)[number]['settings']
+      size: 'SMALL' | 'MEDIUM' | 'LARGE'
+      type: QuestionType
+    }>,
+  ) => {
+    updateNested('specific', {
+      tableColumns: tableColumns.map((c) =>
+        c.id === colId ? { ...c, ...patch } : c,
+      ),
+    })
+  }
+
+  const handleUpdateTableColumnSettings = (
+    colId: string,
+    settingsPatch: NonNullable<
+      (typeof tableColumns)[number]['settings']
+    >,
+  ) => {
+    const col = tableColumns.find((c) => c.id === colId)
+    if (!col) return
+    handleUpdateTableColumn(colId, {
+      settings: {
+        aiSettings: {
+          ...col.settings?.aiSettings,
+          ...settingsPatch.aiSettings,
+        },
+        general: {
+          ...col.settings?.general,
+          ...settingsPatch.general,
+        },
+        lookupSettings: {
+          ...col.settings?.lookupSettings,
+          ...settingsPatch.lookupSettings,
+        },
+        specific: {
+          ...col.settings?.specific,
+          ...settingsPatch.specific,
+        },
+        validation: {
+          ...col.settings?.validation,
+          ...settingsPatch.validation,
+        },
+      },
+    })
+  }
+
+  const activeTableColumn = isTable
+    ? tableColumns.find((c) => c.id === expandedColumnId)
+    : undefined
+
+  if (activeTableColumn) {
+    return (
+      <div className='custom-scrollbar content-scrollbar animate-in fade-in slide-in-from-right-4 flex-1 overflow-y-auto bg-surface duration-200'>
+        <div className='sticky top-0 z-10 flex items-center gap-2 border-b border-gray-2 bg-surface px-3 py-2.5'>
+          <IconButton
+            aria-label='Back to table columns'
+            color='gray'
+            icon='lucide:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={() => setExpandedColumnId(null)}
+          />
+          <div className='min-w-0 flex-1'>
+            <div className='truncate text-13 font-bold text-gray-12'>
+              {activeTableColumn.name || 'Column'}
+            </div>
+            <div className='truncate text-[11px] text-gray-8'>
+              Column settings · {activeQuestion.label || 'Table'}
+            </div>
+          </div>
+          <button
+            className='cursor-pointer rounded-md bg-primary-9 px-3 py-1 text-xs font-bold text-white transition-all hover:bg-primary-10 active:scale-95'
+            type='button'
+            onClick={() => setExpandedColumnId(null)}
+          >
+            Done
+          </button>
+        </div>
+        <div className='space-y-4 p-4'>
+          <div className='space-y-1'>
+            <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+              Column width
             </label>
-            <InputSelect
-              placeholder='Copy value from this field'
-              options={allQuestions
-                .filter(
-                  (q) =>
-                    q.id !== activeQuestion.id &&
-                    allowedTypes.includes(q.type),
-                )
-                .map((q) => ({
-                  id: q.id,
-                  name: q.label || 'Untitled Field',
-                }))}
-              value={
-                allQuestions
-                  .map((q) => ({
-                    id: q.id,
-                    name: q.label || 'Untitled Field',
-                  }))
-                  .find(
-                    (q) =>
-                      q.id ===
-                      activeQuestion.settings.specific.parentFieldId,
-                  ) || null
-              }
+            <SegmentedControl
+              size='xs'
+              value={activeTableColumn.size || 'MEDIUM'}
+              fullWidth
+              data={[
+                { label: 'Small', value: 'SMALL' },
+                { label: 'Medium', value: 'MEDIUM' },
+                { label: 'Large', value: 'LARGE' },
+              ]}
               onChange={(val) =>
-                updateNested('specific', {
-                  parentFieldId: val?.id || '',
+                handleUpdateTableColumn(activeTableColumn.id, {
+                  size: val as any,
                 })
               }
             />
           </div>
-  )
+          <TableColumnSettingsPanel
+            column={activeTableColumn}
+            masterForms={masterForms}
+            repositories={repositories.map((r: any) => ({
+              id: String(r.id),
+              name: r.name,
+            }))}
+            siblingColumns={tableColumns.filter(
+              (c) => c.id !== activeTableColumn.id,
+            )}
+            onUpdate={(patch) =>
+              handleUpdateTableColumnSettings(activeTableColumn.id, patch)
+            }
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-surface p-4 duration-500'>
@@ -965,7 +1079,8 @@ const QuestionSettings = ({
                 isNumber ||
                 isDate ||
                 isTime ||
-                isDateTime || isSelect ||
+                isDateTime ||
+                isSelect ||
                 isTable) && (
                 <InputText
                   label='Tooltip (Hover Text)'
@@ -1249,8 +1364,8 @@ const QuestionSettings = ({
                   </div>
                 )}
 
-                {activeQuestion.settings.specific.fillValueType ===
-                  'MASTER' && renderMasterFillConfig()}
+                {activeQuestion.settings.specific.fillValueType === 'MASTER' &&
+                  renderMasterFillConfig()}
 
                 {activeQuestion.settings.specific.fillValueType ===
                   'ASSIGN_PARENT_FIELD' &&
@@ -1528,7 +1643,7 @@ const QuestionSettings = ({
                 {(activeQuestion.settings.specific.optionsType === 'MASTER' ||
                   activeQuestion.settings.specific.optionsType ===
                     'MASTER_TABLE') && (
-                  <div className='bg-surface-muted/40 border-gray-2 space-y-4 rounded-lg border p-3.5'>
+                  <div className='space-y-4 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
                     <label className='block text-xs font-semibold tracking-wider text-primary-9 uppercase'>
                       Master Table Configuration
                     </label>
@@ -1611,118 +1726,121 @@ const QuestionSettings = ({
                         <div className='flex items-center justify-between'>
                           <div>
                             <label className='block text-xs font-medium text-gray-11'>
-                              Condition Mappings (Form Field &rarr; Master Column)
+                              Condition Mappings (Form Field &rarr; Master
+                              Column)
                             </label>
                             <span className='text-11 text-gray-9'>
                               Filter master records using another form field
                             </span>
                           </div>
                           <button
-                            className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:underline hover:text-primary-10'
+                            className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:text-primary-10 hover:underline'
                             type='button'
-                          onClick={() => {
-                            const current =
-                              activeQuestion.settings.specific
-                                .masterFormConditionColumn || []
-                            updateNested('specific', {
-                              masterFormConditionColumn: [
-                                ...current,
-                                { formField: '', masterColumn: '' },
-                              ],
-                            })
-                          }}
-                        >
-                          <Icon height={10} name='lucide:plus' width={10} />
-                          Add Condition
-                        </button>
-                      </div>
-
-                      {(
-                        activeQuestion.settings.specific
-                          .masterFormConditionColumn || []
-                      ).map((cond, cIdx) => (
-                        <div className='flex items-center gap-2' key={cIdx}>
-                          <div className='flex-1'>
-                            <InputSelect
-                              placeholder='Form Field'
-                              options={allQuestions
-                                .filter((q) => q.id !== activeQuestion.id)
-                                .map((q) => ({ id: q.id, name: q.label }))}
-                              value={
-                                allQuestions
-                                  .filter((q) => q.id !== activeQuestion.id)
-                                  .map((q) => ({ id: q.id, name: q.label }))
-                                  .find((q) => q.id === cond.formField) || null
-                              }
-                              onChange={(val) => {
-                                const current = [
-                                  ...(activeQuestion.settings.specific
-                                    .masterFormConditionColumn || []),
-                                ]
-                                current[cIdx] = {
-                                  ...current[cIdx],
-                                  formField: val?.id ? String(val.id) : '',
-                                }
-                                updateNested('specific', {
-                                  masterFormConditionColumn: current,
-                                })
-                              }}
-                            />
-                          </div>
-                          <span className='text-xs font-bold text-gray-5'>
-                            &rarr;
-                          </span>
-                          <div className='flex-1'>
-                            <InputSelect
-                              placeholder='Master Column'
-                              options={masterColumns.map((col: any) => ({
-                                id: col.id || col.label,
-                                name: col.label || col.name || col.id,
-                              }))}
-                              value={
-                                masterColumns
-                                  .map((col: any) => ({
-                                    id: col.id || col.label,
-                                    name: col.label || col.name || col.id,
-                                  }))
-                                  .find(
-                                    (col: any) => col.id === cond.masterColumn,
-                                  ) || null
-                              }
-                              onChange={(val) => {
-                                const current = [
-                                  ...(activeQuestion.settings.specific
-                                    .masterFormConditionColumn || []),
-                                ]
-                                current[cIdx] = {
-                                  ...current[cIdx],
-                                  masterColumn: val?.id ? String(val.id) : '',
-                                }
-                                updateNested('specific', {
-                                  masterFormConditionColumn: current,
-                                })
-                              }}
-                            />
-                          </div>
-                          <IconButton
-                            color='red'
-                            icon='lucide:trash-2'
-                            size='xs'
-                            variant='ghost'
                             onClick={() => {
-                              const current = (
+                              const current =
                                 activeQuestion.settings.specific
                                   .masterFormConditionColumn || []
-                              ).filter((_, idx) => idx !== cIdx)
                               updateNested('specific', {
-                                masterFormConditionColumn: current,
+                                masterFormConditionColumn: [
+                                  ...current,
+                                  { formField: '', masterColumn: '' },
+                                ],
                               })
                             }}
-                          />
+                          >
+                            <Icon height={10} name='lucide:plus' width={10} />
+                            Add Condition
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
+
+                        {(
+                          activeQuestion.settings.specific
+                            .masterFormConditionColumn || []
+                        ).map((cond, cIdx) => (
+                          <div className='flex items-center gap-2' key={cIdx}>
+                            <div className='flex-1'>
+                              <InputSelect
+                                placeholder='Form Field'
+                                options={allQuestions
+                                  .filter((q) => q.id !== activeQuestion.id)
+                                  .map((q) => ({ id: q.id, name: q.label }))}
+                                value={
+                                  allQuestions
+                                    .filter((q) => q.id !== activeQuestion.id)
+                                    .map((q) => ({ id: q.id, name: q.label }))
+                                    .find((q) => q.id === cond.formField) ||
+                                  null
+                                }
+                                onChange={(val) => {
+                                  const current = [
+                                    ...(activeQuestion.settings.specific
+                                      .masterFormConditionColumn || []),
+                                  ]
+                                  current[cIdx] = {
+                                    ...current[cIdx],
+                                    formField: val?.id ? String(val.id) : '',
+                                  }
+                                  updateNested('specific', {
+                                    masterFormConditionColumn: current,
+                                  })
+                                }}
+                              />
+                            </div>
+                            <span className='text-xs font-bold text-gray-5'>
+                              &rarr;
+                            </span>
+                            <div className='flex-1'>
+                              <InputSelect
+                                placeholder='Master Column'
+                                options={masterColumns.map((col: any) => ({
+                                  id: col.id || col.label,
+                                  name: col.label || col.name || col.id,
+                                }))}
+                                value={
+                                  masterColumns
+                                    .map((col: any) => ({
+                                      id: col.id || col.label,
+                                      name: col.label || col.name || col.id,
+                                    }))
+                                    .find(
+                                      (col: any) =>
+                                        col.id === cond.masterColumn,
+                                    ) || null
+                                }
+                                onChange={(val) => {
+                                  const current = [
+                                    ...(activeQuestion.settings.specific
+                                      .masterFormConditionColumn || []),
+                                  ]
+                                  current[cIdx] = {
+                                    ...current[cIdx],
+                                    masterColumn: val?.id ? String(val.id) : '',
+                                  }
+                                  updateNested('specific', {
+                                    masterFormConditionColumn: current,
+                                  })
+                                }}
+                              />
+                            </div>
+                            <IconButton
+                              color='red'
+                              icon='lucide:trash-2'
+                              size='xs'
+                              variant='ghost'
+                              onClick={() => {
+                                const current = (
+                                  activeQuestion.settings.specific
+                                    .masterFormConditionColumn || []
+                                ).filter((_, idx) => idx !== cIdx)
+                                updateNested('specific', {
+                                  masterFormConditionColumn: current,
+                                })
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Cascading Parent Field (shown ONLY when Same Master is ON / YES) */}
                     {Boolean(activeQuestion.settings.specific.isSameMaster) && (
@@ -1761,7 +1879,8 @@ const QuestionSettings = ({
                               Display All Data When Parent Empty
                             </div>
                             <div className='text-11 text-gray-9'>
-                              Show all options without filtering if parent field is empty
+                              Show all options without filtering if parent field
+                              is empty
                             </div>
                           </div>
                           <InputSwitch
@@ -1854,8 +1973,8 @@ const QuestionSettings = ({
                             ].find(
                               (o) =>
                                 o.id ===
-                                (activeQuestion.settings.specific
-                                  .loginType || 'EZOFIS_LOGIN'),
+                                (activeQuestion.settings.specific.loginType ||
+                                  'EZOFIS_LOGIN'),
                             ) || { id: 'EZOFIS_LOGIN', name: 'EZOFIS Login' }
                           }
                           onChange={(val) =>
@@ -1895,7 +2014,9 @@ const QuestionSettings = ({
                           )}
                           onChange={(vals) =>
                             updateNested('specific', {
-                              additionalLoginTypes: vals.map((v) => String(v.id)),
+                              additionalLoginTypes: vals.map((v) =>
+                                String(v.id),
+                              ),
                             })
                           }
                         />
@@ -2169,14 +2290,23 @@ const QuestionSettings = ({
                         options={[
                           { id: 'NONE', name: 'None' },
                           { id: 'USER_EMAIL', name: "Logged in user's email" },
-                          { id: 'USER_NAME', name: "Logged in user's full name" },
+                          {
+                            id: 'USER_NAME',
+                            name: "Logged in user's full name",
+                          },
                           { id: 'LOGIN_NAME', name: 'Login Username' },
                         ]}
                         value={
                           [
                             { id: 'NONE', name: 'None' },
-                            { id: 'USER_EMAIL', name: "Logged in user's email" },
-                            { id: 'USER_NAME', name: "Logged in user's full name" },
+                            {
+                              id: 'USER_EMAIL',
+                              name: "Logged in user's email",
+                            },
+                            {
+                              id: 'USER_NAME',
+                              name: "Logged in user's full name",
+                            },
                             { id: 'LOGIN_NAME', name: 'Login Username' },
                           ].find(
                             (o) =>
@@ -2328,22 +2458,28 @@ const QuestionSettings = ({
                         placeholder='Select default value (Optional)'
                         options={[
                           { id: '', name: 'None' },
-                          ...(
-                            activeQuestion.settings.specific.customOptions
-                              ? (activeQuestion.settings.specific.separateOptionsUsing === 'COMMA'
-                                  ? activeQuestion.settings.specific.customOptions.split(',')
-                                  : activeQuestion.settings.specific.customOptions.split('\n'))
-                                  .map((opt) => opt.trim())
-                                  .filter(Boolean)
-                                  .map((opt) => ({ id: opt, name: opt }))
-                              : []
-                          ),
+                          ...(activeQuestion.settings.specific.customOptions
+                            ? (activeQuestion.settings.specific
+                                .separateOptionsUsing === 'COMMA'
+                                ? activeQuestion.settings.specific.customOptions.split(
+                                    ',',
+                                  )
+                                : activeQuestion.settings.specific.customOptions.split(
+                                    '\n',
+                                  )
+                              )
+                                .map((opt) => opt.trim())
+                                .filter(Boolean)
+                                .map((opt) => ({ id: opt, name: opt }))
+                            : []),
                         ]}
                         value={
                           activeQuestion.settings.specific.customDefaultValue
                             ? {
-                                id: activeQuestion.settings.specific.customDefaultValue,
-                                name: activeQuestion.settings.specific.customDefaultValue,
+                                id: activeQuestion.settings.specific
+                                  .customDefaultValue,
+                                name: activeQuestion.settings.specific
+                                  .customDefaultValue,
                               }
                             : { id: '', name: 'None' }
                         }
@@ -2601,13 +2737,13 @@ const QuestionSettings = ({
                           activeQuestion.settings.specific.parentFieldId
                         return (
                           <InputSelect
+                            options={cascadeOptions}
                             placeholder='Filter by another field'
                             value={
                               cascadeOptions.find(
                                 (o) => o.id === savedParentId,
                               ) || null
                             }
-                            options={cascadeOptions}
                             onChange={(val) => {
                               if (!val) return
                               const parentId = val.id === 'none' ? '' : val.id
@@ -2740,18 +2876,16 @@ const QuestionSettings = ({
                               </div>
                             </div>
                             <InputSwitch
-                              checked={
-                                Boolean(
-                                  activeQuestion.settings.specific.hasYearType ||
-                                    activeQuestion.settings.specific.yearType,
-                                )
-                              }
+                              checked={Boolean(
+                                activeQuestion.settings.specific.hasYearType ||
+                                activeQuestion.settings.specific.yearType,
+                              )}
                               onChange={(checked) =>
                                 updateNested('specific', {
                                   hasYearType: checked,
                                   yearType: checked
-                                    ? activeQuestion.settings.specific.yearType ||
-                                      'CALENDER_YEAR'
+                                    ? activeQuestion.settings.specific
+                                        .yearType || 'CALENDER_YEAR'
                                     : '',
                                 })
                               }
@@ -2765,6 +2899,7 @@ const QuestionSettings = ({
                                 Year Types
                               </label>
                               <InputSelect
+                                placeholder='Select Year Type'
                                 options={[
                                   {
                                     id: 'CALENDER_YEAR',
@@ -2775,7 +2910,6 @@ const QuestionSettings = ({
                                     name: 'Financial Year [Apr to Mar]',
                                   },
                                 ]}
-                                placeholder='Select Year Type'
                                 value={
                                   [
                                     {
@@ -2795,8 +2929,8 @@ const QuestionSettings = ({
                                 }
                                 onChange={(val) =>
                                   updateNested('specific', {
-                                    yearType: val?.id || 'CALENDER_YEAR',
                                     hasYearType: true,
+                                    yearType: val?.id || 'CALENDER_YEAR',
                                   })
                                 }
                               />
@@ -2809,21 +2943,19 @@ const QuestionSettings = ({
                                 Read Values From QR
                               </div>
                               <div className='text-11 text-gray-9'>
-                                Allow populating selection by scanning QR / Barcode
+                                Allow populating selection by scanning QR /
+                                Barcode
                               </div>
                             </div>
                             <InputSwitch
-                              checked={
-                                Boolean(
-                                  activeQuestion.settings.specific.qrValue ??
-                                    activeQuestion.settings.specific
-                                      .qrCodeEnabled,
-                                )
-                              }
+                              checked={Boolean(
+                                activeQuestion.settings.specific.qrValue ??
+                                activeQuestion.settings.specific.qrCodeEnabled,
+                              )}
                               onChange={(checked) =>
                                 updateNested('specific', {
-                                  qrValue: checked,
                                   qrCodeEnabled: checked,
+                                  qrValue: checked,
                                 })
                               }
                             />
@@ -2896,80 +3028,83 @@ const QuestionSettings = ({
                   ])}
 
                 {isFillCustom && (
-                <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
-                  <div className='flex items-center justify-between'>
-                    <div className='text-xs font-bold text-gray-12'>
-                      Auto-Generate Number
+                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
+                    <div className='flex items-center justify-between'>
+                      <div className='text-xs font-bold text-gray-12'>
+                        Auto-Generate Number
+                      </div>
+                      <InputSwitch
+                        checked={
+                          activeQuestion.settings.specific.autoGenerateValue
+                            ?.enabled || false
+                        }
+                        onChange={(checked) =>
+                          updateNested('specific', {
+                            autoGenerateValue: {
+                              ...(activeQuestion.settings.specific
+                                .autoGenerateValue || {
+                                prefix: '',
+                                suffix: '',
+                              }),
+                              enabled: checked,
+                            },
+                          })
+                        }
+                      />
                     </div>
-                    <InputSwitch
-                      checked={
-                        activeQuestion.settings.specific.autoGenerateValue
-                          ?.enabled || false
-                      }
-                      onChange={(checked) =>
-                        updateNested('specific', {
-                          autoGenerateValue: {
-                            ...(activeQuestion.settings.specific
-                              .autoGenerateValue || { prefix: '', suffix: '' }),
-                            enabled: checked,
-                          },
-                        })
-                      }
-                    />
+                    {activeQuestion.settings.specific.autoGenerateValue
+                      ?.enabled ? (
+                      <div className='mt-2 grid grid-cols-2 gap-2'>
+                        <InputText
+                          label='Prefix'
+                          placeholder='e.g. INV-'
+                          value={
+                            activeQuestion.settings.specific.autoGenerateValue
+                              ?.prefix || ''
+                          }
+                          onChange={(v) =>
+                            updateNested('specific', {
+                              autoGenerateValue: {
+                                ...activeQuestion.settings.specific
+                                  .autoGenerateValue,
+                                prefix: v,
+                              },
+                            })
+                          }
+                        />
+                        <InputText
+                          label='Suffix'
+                          placeholder='e.g. -2024'
+                          value={
+                            activeQuestion.settings.specific.autoGenerateValue
+                              ?.suffix || ''
+                          }
+                          onChange={(v) =>
+                            updateNested('specific', {
+                              autoGenerateValue: {
+                                ...activeQuestion.settings.specific
+                                  .autoGenerateValue,
+                                suffix: v,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <NumberInput
+                        label='Default Value'
+                        placeholder='Enter starting value'
+                        size='xs'
+                        value={
+                          activeQuestion.settings.specific.customDefaultValue ||
+                          undefined
+                        }
+                        onChange={(v) =>
+                          updateNested('specific', { customDefaultValue: v })
+                        }
+                      />
+                    )}
                   </div>
-                  {activeQuestion.settings.specific.autoGenerateValue
-                    ?.enabled ? (
-                    <div className='mt-2 grid grid-cols-2 gap-2'>
-                      <InputText
-                        label='Prefix'
-                        placeholder='e.g. INV-'
-                        value={
-                          activeQuestion.settings.specific.autoGenerateValue
-                            ?.prefix || ''
-                        }
-                        onChange={(v) =>
-                          updateNested('specific', {
-                            autoGenerateValue: {
-                              ...activeQuestion.settings.specific
-                                .autoGenerateValue,
-                              prefix: v,
-                            },
-                          })
-                        }
-                      />
-                      <InputText
-                        label='Suffix'
-                        placeholder='e.g. -2024'
-                        value={
-                          activeQuestion.settings.specific.autoGenerateValue
-                            ?.suffix || ''
-                        }
-                        onChange={(v) =>
-                          updateNested('specific', {
-                            autoGenerateValue: {
-                              ...activeQuestion.settings.specific
-                                .autoGenerateValue,
-                              suffix: v,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <NumberInput
-                      label='Default Value'
-                      placeholder='Enter starting value'
-                      size='xs'
-                      value={
-                        activeQuestion.settings.specific.customDefaultValue ||
-                        undefined
-                      }
-                      onChange={(v) =>
-                        updateNested('specific', { customDefaultValue: v })
-                      }
-                    />
-                  )}
-                </div>
                 )}
 
                 <div className='grid grid-cols-2 gap-3'>
@@ -3001,84 +3136,88 @@ const QuestionSettings = ({
 
                 {isFillCustom && (
                   <>
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Default Value Mode
-                  </label>
-                  <InputSelect
-                    options={dateDefaultOptions}
-                    placeholder='Select mode'
-                    value={
-                      dateDefaultOptions.find(
-                        (o) =>
-                          o.id ===
-                          activeQuestion.settings.specific.dateDefaultValueType,
-                      ) || dateDefaultOptions[0]
-                    }
-                    onChange={(val) =>
-                      val &&
-                      updateNested('specific', { dateDefaultValueType: val.id })
-                    }
-                  />
-                </div>
-
-                {activeQuestion.settings.specific.dateDefaultValueType ===
-                  'CUSTOM' && (
-                  <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
-                    <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
-                      {isDateTime
-                        ? 'Pick Fixed Date & Time'
-                        : 'Pick Fixed Date'}
-                    </label>
-                    <input
-                      className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
-                      type={isDateTime ? 'datetime-local' : 'date'}
-                      value={
-                        activeQuestion.settings.specific.defaultValue || ''
-                      }
-                      onChange={(e) =>
-                        updateNested('specific', {
-                          defaultValue: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                )}
-
-                {activeQuestion.settings.specific.dateDefaultValueType ===
-                  'PARENT_FIELD' && (
-                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
-                    <label className='block text-[11px] font-bold text-gray-12 uppercase'>
-                      Parent Date Link
-                    </label>
-                    <InputSelect
-                      placeholder='Select source field'
-                      value={null}
-                      options={[
-                        { id: '1', name: 'Field: Request Date' },
-                        { id: '2', name: 'Field: Submission Date' },
-                      ]}
-                      onChange={() => {}}
-                    />
-                    <div className='flex items-center gap-2'>
-                      <NumberInput
-                        className='flex-1'
-                        label='Days Offset'
-                        placeholder='0'
-                        size='xs'
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Default Value Mode
+                      </label>
+                      <InputSelect
+                        options={dateDefaultOptions}
+                        placeholder='Select mode'
                         value={
-                          activeQuestion.settings.specific.parentDateOffset || 0
+                          dateDefaultOptions.find(
+                            (o) =>
+                              o.id ===
+                              activeQuestion.settings.specific
+                                .dateDefaultValueType,
+                          ) || dateDefaultOptions[0]
                         }
-                        onChange={(v) =>
-                          updateNested('specific', { parentDateOffset: v })
+                        onChange={(val) =>
+                          val &&
+                          updateNested('specific', {
+                            dateDefaultValueType: val.id,
+                          })
                         }
                       />
-                      <div className='mt-5 text-xs text-gray-6 italic'>
-                        (+ For Future, - For Past)
-                      </div>
                     </div>
-                  </div>
-                )}
+
+                    {activeQuestion.settings.specific.dateDefaultValueType ===
+                      'CUSTOM' && (
+                      <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
+                        <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
+                          {isDateTime
+                            ? 'Pick Fixed Date & Time'
+                            : 'Pick Fixed Date'}
+                        </label>
+                        <input
+                          className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
+                          type={isDateTime ? 'datetime-local' : 'date'}
+                          value={
+                            activeQuestion.settings.specific.defaultValue || ''
+                          }
+                          onChange={(e) =>
+                            updateNested('specific', {
+                              defaultValue: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {activeQuestion.settings.specific.dateDefaultValueType ===
+                      'PARENT_FIELD' && (
+                      <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
+                        <label className='block text-[11px] font-bold text-gray-12 uppercase'>
+                          Parent Date Link
+                        </label>
+                        <InputSelect
+                          placeholder='Select source field'
+                          value={null}
+                          options={[
+                            { id: '1', name: 'Field: Request Date' },
+                            { id: '2', name: 'Field: Submission Date' },
+                          ]}
+                          onChange={() => {}}
+                        />
+                        <div className='flex items-center gap-2'>
+                          <NumberInput
+                            className='flex-1'
+                            label='Days Offset'
+                            placeholder='0'
+                            size='xs'
+                            value={
+                              activeQuestion.settings.specific
+                                .parentDateOffset || 0
+                            }
+                            onChange={(v) =>
+                              updateNested('specific', { parentDateOffset: v })
+                            }
+                          />
+                          <div className='mt-5 text-xs text-gray-6 italic'>
+                            (+ For Future, - For Past)
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -3211,9 +3350,6 @@ const QuestionSettings = ({
 
             {isTable &&
               (() => {
-                const tableColumns =
-                  activeQuestion.settings.specific.tableColumns || []
-
                 const handleAddTableColumn = () => {
                   const newColNumber = tableColumns.length + 1
                   updateNested('specific', {
@@ -3227,56 +3363,6 @@ const QuestionSettings = ({
                         settings: { specific: {}, validation: {} },
                       },
                     ],
-                  })
-                }
-
-                const handleUpdateTableColumn = (
-                  colId: string,
-                  patch: Partial<{
-                    name: string
-                    settings: (typeof tableColumns)[number]['settings']
-                    size: 'SMALL' | 'MEDIUM' | 'LARGE'
-                    type: QuestionType
-                  }>,
-                ) => {
-                  updateNested('specific', {
-                    tableColumns: tableColumns.map((c) =>
-                      c.id === colId ? { ...c, ...patch } : c,
-                    ),
-                  })
-                }
-
-                const handleUpdateTableColumnSettings = (
-                  colId: string,
-                  settingsPatch: NonNullable<
-                    (typeof tableColumns)[number]['settings']
-                  >,
-                ) => {
-                  const col = tableColumns.find((c) => c.id === colId)
-                  if (!col) return
-                  handleUpdateTableColumn(colId, {
-                    settings: {
-                      aiSettings: {
-                        ...col.settings?.aiSettings,
-                        ...settingsPatch.aiSettings,
-                      },
-                      general: {
-                        ...col.settings?.general,
-                        ...settingsPatch.general,
-                      },
-                      lookupSettings: {
-                        ...col.settings?.lookupSettings,
-                        ...settingsPatch.lookupSettings,
-                      },
-                      specific: {
-                        ...col.settings?.specific,
-                        ...settingsPatch.specific,
-                      },
-                      validation: {
-                        ...col.settings?.validation,
-                        ...settingsPatch.validation,
-                      },
-                    },
                   })
                 }
 
@@ -3330,116 +3416,78 @@ const QuestionSettings = ({
                                 id={col.id}
                                 key={col.id}
                               >
-                                <div className='group/col flex-1 space-y-2 rounded-lg border border-gray-2 bg-surface-muted/80 p-2.5 transition-colors hover:border-gray-3'>
-                                  <div className='flex items-center justify-between gap-2'>
-                                    <input
-                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
-                                      placeholder='Column name...'
-                                      type='text'
-                                      value={col.name}
-                                      onChange={(e) =>
+                                <div
+                                  className={cn(
+                                    'group/col flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-surface-muted/80 p-1.5 transition-colors',
+                                    expandedColumnId === col.id
+                                      ? 'border-primary-5 bg-primary-1/40'
+                                      : 'border-gray-2 hover:border-gray-3',
+                                  )}
+                                >
+                                  <input
+                                    className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
+                                    placeholder='Column name...'
+                                    type='text'
+                                    value={col.name}
+                                    onChange={(e) =>
+                                      handleUpdateTableColumn(col.id, {
+                                        name: e.target.value,
+                                      })
+                                    }
+                                  />
+                                  <div className='w-32 shrink-0'>
+                                    <Select
+                                      comboboxProps={{ width: 340 }}
+                                      data={TABLE_COLUMN_TYPES}
+                                      size='xs'
+                                      value={col.type || 'SHORT_TEXT'}
+                                      searchable
+                                      classNames={{
+                                        input:
+                                          'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
+                                        option: 'break-words whitespace-normal',
+                                      }}
+                                      onChange={(val) =>
+                                        val &&
                                         handleUpdateTableColumn(col.id, {
-                                          name: e.target.value,
+                                          type: val as QuestionType,
                                         })
                                       }
                                     />
-                                    <div className='flex shrink-0 items-center gap-0.5'>
-                                      <IconButton
-                                        icon='lucide:settings'
-                                        size='xs'
-                                        color={
-                                          expandedColumnId === col.id
-                                            ? 'primary'
-                                            : 'gray'
-                                        }
-                                        variant={
-                                          expandedColumnId === col.id
-                                            ? 'subtle'
-                                            : 'ghost'
-                                        }
-                                        onClick={() =>
-                                          setExpandedColumnId(
-                                            expandedColumnId === col.id
-                                              ? null
-                                              : col.id,
-                                          )
-                                        }
-                                      />
-                                      <IconButton
-                                        color='red'
-                                        disabled={tableColumns.length <= 1}
-                                        icon='lucide:trash-2'
-                                        size='xs'
-                                        variant='ghost'
-                                        onClick={() =>
-                                          handleDeleteTableColumn(col.id)
-                                        }
-                                      />
-                                    </div>
                                   </div>
-                                  <div className='flex items-center gap-2'>
-                                    <div className='flex-1'>
-                                      <Select
-                                        comboboxProps={{ width: 340 }}
-                                        data={TABLE_COLUMN_TYPES}
-                                        size='xs'
-                                        value={col.type || 'SHORT_TEXT'}
-                                        searchable
-                                        classNames={{
-                                          input:
-                                            'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
-                                          option:
-                                            'break-words whitespace-normal',
-                                        }}
-                                        onChange={(val) =>
-                                          val &&
-                                          handleUpdateTableColumn(col.id, {
-                                            type: val as QuestionType,
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                    <div className='w-28 shrink-0'>
-                                      <SegmentedControl
-                                        size='xs'
-                                        value={col.size || 'MEDIUM'}
-                                        fullWidth
-                                        data={[
-                                          { label: 'S', value: 'SMALL' },
-                                          { label: 'M', value: 'MEDIUM' },
-                                          { label: 'L', value: 'LARGE' },
-                                        ]}
-                                        onChange={(val) =>
-                                          handleUpdateTableColumn(col.id, {
-                                            size: val as any,
-                                          })
-                                        }
-                                      />
-                                    </div>
+                                  <div className='flex shrink-0 items-center gap-0.5'>
+                                    <IconButton
+                                      icon='lucide:settings'
+                                      size='xs'
+                                      color={
+                                        expandedColumnId === col.id
+                                          ? 'primary'
+                                          : 'gray'
+                                      }
+                                      variant={
+                                        expandedColumnId === col.id
+                                          ? 'subtle'
+                                          : 'ghost'
+                                      }
+                                      onClick={() =>
+                                        setExpandedColumnId(
+                                          expandedColumnId === col.id
+                                            ? null
+                                            : col.id,
+                                        )
+                                      }
+                                    />
+                                    <IconButton
+                                      color='red'
+                                      disabled={tableColumns.length <= 1}
+                                      icon='lucide:trash-2'
+                                      size='xs'
+                                      variant='ghost'
+                                      onClick={() =>
+                                        handleDeleteTableColumn(col.id)
+                                      }
+                                    />
                                   </div>
-                                  {expandedColumnId === col.id && (
-                                    <div className='border-t border-gray-2 pt-2'>
-                                      <TableColumnSettingsPanel
-                                        column={col}
-                                        masterForms={masterForms}
-                                        repositories={repositories.map(
-                                          (r: any) => ({
-                                            id: String(r.id),
-                                            name: r.name,
-                                          }),
-                                        )}
-                                        siblingColumns={tableColumns.filter(
-                                          (c) => c.id !== col.id,
-                                        )}
-                                        onUpdate={(patch) =>
-                                          handleUpdateTableColumnSettings(
-                                            col.id,
-                                            patch,
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                  )}
                                 </div>
                               </SortableItem>
                             ))}
@@ -3520,8 +3568,8 @@ const QuestionSettings = ({
                                 </label>
                                 <div className='text-[10px] text-gray-6 italic'>
                                   Pre-fill a static label for each frozen row
-                                  (e.g. "Director Approval", "Finance
-                                  Review") instead of just a row number.
+                                  (e.g. "Director Approval", "Finance Review")
+                                  instead of just a row number.
                                 </div>
                                 {Array.from({
                                   length:
@@ -3532,12 +3580,17 @@ const QuestionSettings = ({
                                     activeQuestion.settings.specific
                                       .tableFixedRowLabels || []
                                   const currentEntry = labels[rowLabelIdx]
-                                  const labelCol = tableColumns.find((c) => c.type === 'LABEL')
+                                  const labelCol = tableColumns.find(
+                                    (c) => c.type === 'LABEL',
+                                  )
                                   const labelVal =
                                     typeof currentEntry === 'string'
                                       ? currentEntry
-                                      : currentEntry && typeof currentEntry === 'object'
-                                        ? (labelCol ? currentEntry[labelCol.id] : currentEntry.label) || ''
+                                      : currentEntry &&
+                                          typeof currentEntry === 'object'
+                                        ? (labelCol
+                                            ? currentEntry[labelCol.id]
+                                            : currentEntry.label) || ''
                                         : ''
 
                                   return (
@@ -3547,8 +3600,15 @@ const QuestionSettings = ({
                                       value={labelVal}
                                       onChange={(val: string) => {
                                         const next = [...labels]
-                                        if (currentEntry && typeof currentEntry === 'object' && labelCol) {
-                                          next[rowLabelIdx] = { ...currentEntry, [labelCol.id]: val }
+                                        if (
+                                          currentEntry &&
+                                          typeof currentEntry === 'object' &&
+                                          labelCol
+                                        ) {
+                                          next[rowLabelIdx] = {
+                                            ...currentEntry,
+                                            [labelCol.id]: val,
+                                          }
                                         } else {
                                           next[rowLabelIdx] = val
                                         }
@@ -4362,35 +4422,36 @@ const QuestionSettings = ({
                       })
                     }
                   />
-                {activeQuestion.settings.validation.fieldRule === 'REQUIRED' && (
-                  <>
-                    <Divider className='border-dashed border-gray-1' />
-                    <div className='flex items-center justify-between py-1'>
-                      <div>
-                        <div className='text-xs font-medium text-gray-11'>
-                          Answer Indicator
+                  {activeQuestion.settings.validation.fieldRule ===
+                    'REQUIRED' && (
+                    <>
+                      <Divider className='border-dashed border-gray-1' />
+                      <div className='flex items-center justify-between py-1'>
+                        <div>
+                          <div className='text-xs font-medium text-gray-11'>
+                            Answer Indicator
+                          </div>
+                          <div className='text-11 text-gray-9'>
+                            Displays unanswered question prompt to user
+                          </div>
                         </div>
-                        <div className='text-11 text-gray-9'>
-                          Displays unanswered question prompt to user
-                        </div>
+                        <InputSwitch
+                          checked={
+                            activeQuestion.settings.validation
+                              .answerIndicator === 'YES' ||
+                            activeQuestion.settings.validation
+                              .answerIndicator === (true as any)
+                          }
+                          onChange={(checked) =>
+                            updateNested('validation', {
+                              answerIndicator: checked ? 'YES' : 'NO',
+                            })
+                          }
+                        />
                       </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.validation.answerIndicator ===
-                            'YES' ||
-                          activeQuestion.settings.validation.answerIndicator ===
-                            (true as any)
-                        }
-                        onChange={(checked) =>
-                          updateNested('validation', {
-                            answerIndicator: checked ? 'YES' : 'NO',
-                          })
-                        }
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
+                    </>
+                  )}
+                </div>
 
                 {activeQuestion.type === 'MULTIPLE_CHOICE' &&
                   activeQuestion.settings.validation.fieldRule ===
@@ -4508,7 +4569,10 @@ const QuestionSettings = ({
                           : activeQuestion.type === 'SINGLE_SELECT'
                             ? [
                                 { id: '', name: 'Standard (Any / Text)' },
-                                { id: 'INTEGER', name: 'Integer (Numbers only)' },
+                                {
+                                  id: 'INTEGER',
+                                  name: 'Integer (Numbers only)',
+                                },
                               ]
                             : validationOptions
                       }
@@ -4532,23 +4596,29 @@ const QuestionSettings = ({
                                 name: timeFormatOptions.find(
                                   (o) =>
                                     o.value ===
-                                    activeQuestion.settings.validation.timeFormat,
+                                    activeQuestion.settings.validation
+                                      .timeFormat,
                                 )!.label,
                               }
                             : { id: '12', name: '12 Hour' }
                           : activeQuestion.type === 'SINGLE_SELECT'
                             ? [
                                 { id: '', name: 'Standard (Any / Text)' },
-                                { id: 'INTEGER', name: 'Integer (Numbers only)' },
+                                {
+                                  id: 'INTEGER',
+                                  name: 'Integer (Numbers only)',
+                                },
                               ].find(
                                 (o) =>
                                   o.id ===
-                                  (activeQuestion.settings.validation.contentRule || ''),
+                                  (activeQuestion.settings.validation
+                                    .contentRule || ''),
                               ) || { id: '', name: 'Standard (Any / Text)' }
                             : validationOptions.find(
                                 (o) =>
                                   o.id ===
-                                  activeQuestion.settings.validation.contentRule,
+                                  activeQuestion.settings.validation
+                                    .contentRule,
                               ) || validationOptions[0]
                       }
                       onChange={(val) =>
@@ -4564,20 +4634,22 @@ const QuestionSettings = ({
                   </div>
 
                   {activeQuestion.type === 'SINGLE_SELECT' &&
-                    activeQuestion.settings.validation.contentRule === 'INTEGER' && (
+                    activeQuestion.settings.validation.contentRule ===
+                      'INTEGER' && (
                       <div className='flex items-center justify-between py-1'>
                         <div>
                           <div className='text-xs font-medium text-gray-11'>
                             Calculated Field Participation
                           </div>
                           <div className='text-11 text-gray-9'>
-                            Allow numeric value of this dropdown to participate in formulas
+                            Allow numeric value of this dropdown to participate
+                            in formulas
                           </div>
                         </div>
                         <InputSwitch
                           checked={
-                            activeQuestion.settings.validation.hasCalculatedField ||
-                            false
+                            activeQuestion.settings.validation
+                              .hasCalculatedField || false
                           }
                           onChange={(checked) =>
                             updateNested('validation', {
@@ -5107,7 +5179,7 @@ const QuestionSettings = ({
                       </div>
                     </div>
                     <button
-                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:underline hover:text-primary-10'
+                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:text-primary-10 hover:underline'
                       type='button'
                       onClick={() => {
                         const current =
@@ -5130,9 +5202,8 @@ const QuestionSettings = ({
                     </button>
                   </div>
 
-                  {(
-                    activeQuestion.settings.validation.mandatorySettings || []
-                  ).length === 0 ? (
+                  {(activeQuestion.settings.validation.mandatorySettings || [])
+                    .length === 0 ? (
                     <div className='text-11 text-gray-9 italic'>
                       No conditional mandatory rules configured.
                     </div>
@@ -5168,8 +5239,8 @@ const QuestionSettings = ({
                           </div>
                           {activeFieldOptions.length > 0 ? (
                             <InputSelect
-                              creatable
                               placeholder='Select or type value (e.g. jbaldanza@belltemple.com)'
+                              creatable
                               options={
                                 rule.value &&
                                 !activeFieldOptions.some(
@@ -5274,12 +5345,12 @@ const QuestionSettings = ({
                       </div>
                     </div>
                     <button
-                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:underline hover:text-primary-10'
+                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:text-primary-10 hover:underline'
                       type='button'
                       onClick={() => {
                         const current =
-                          activeQuestion.settings.validation
-                            .readonlySettings || []
+                          activeQuestion.settings.validation.readonlySettings ||
+                          []
                         updateNested('validation', {
                           readonlySettings: [
                             ...current,
@@ -5298,9 +5369,8 @@ const QuestionSettings = ({
                     </button>
                   </div>
 
-                  {(
-                    activeQuestion.settings.validation.readonlySettings || []
-                  ).length === 0 ? (
+                  {(activeQuestion.settings.validation.readonlySettings || [])
+                    .length === 0 ? (
                     <div className='text-11 text-gray-9 italic'>
                       No conditional read-only rules configured.
                     </div>
@@ -5359,8 +5429,8 @@ const QuestionSettings = ({
                           </div>
                           {activeFieldOptions.length > 0 ? (
                             <InputSelect
-                              creatable
                               placeholder='Select or type value (e.g. jbaldanza@belltemple.com)'
+                              creatable
                               options={
                                 rule.value &&
                                 !activeFieldOptions.some(
@@ -5465,11 +5535,12 @@ const QuestionSettings = ({
                       </div>
                     </div>
                     <button
-                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:underline hover:text-primary-10'
+                      className='flex cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:text-primary-10 hover:underline'
                       type='button'
                       onClick={() => {
                         const current =
-                          activeQuestion.settings.validation.enableSettings || []
+                          activeQuestion.settings.validation.enableSettings ||
+                          []
                         updateNested('validation', {
                           enableSettings: [
                             ...current,
@@ -5487,9 +5558,8 @@ const QuestionSettings = ({
                     </button>
                   </div>
 
-                  {(
-                    activeQuestion.settings.validation.enableSettings || []
-                  ).length === 0 ? (
+                  {(activeQuestion.settings.validation.enableSettings || [])
+                    .length === 0 ? (
                     <div className='text-11 text-gray-9 italic'>
                       No conditional show rules configured.
                     </div>
@@ -5524,8 +5594,8 @@ const QuestionSettings = ({
                           </div>
                           {activeFieldOptions.length > 0 ? (
                             <InputSelect
-                              creatable
                               placeholder='Select or type trigger value'
+                              creatable
                               options={
                                 rule.value &&
                                 !activeFieldOptions.some(
