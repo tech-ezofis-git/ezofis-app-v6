@@ -375,8 +375,14 @@ const LeftSidebar = () => {
     setActiveQuestionId,
     setLeftSidebarCollapsed,
     setPanels,
+    setSidebarView,
   } = useFormStore()
   const [searchQuery, setSearchQuery] = useState('')
+
+  const openFieldLibrary = () => {
+    setLeftSidebarCollapsed(false)
+    setSidebarView('fields')
+  }
   const [isFormExpanded, setIsFormExpanded] = useState(true)
 
   const sensors = useSensors(
@@ -524,6 +530,16 @@ const LeftSidebar = () => {
               isLeftSidebarCollapsed && 'px-2',
             )}
           >
+            {!isLeftSidebarCollapsed && (
+              <button
+                className='animate-in fade-in flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary-5 bg-primary-1 px-3 py-2 text-xs font-bold text-primary-10 transition-all hover:bg-primary-2 active:scale-[0.98]'
+                type='button'
+                onClick={openFieldLibrary}
+              >
+                <Icon height={14} name='lucide:layout-grid' width={14} />
+                Go to Field Library
+              </button>
+            )}
             <div className='space-y-1'>
               {!isLeftSidebarCollapsed && (
                 <div className='group mb-2 flex items-center justify-between rounded-lg px-1 py-1 transition-colors'>
@@ -552,21 +568,23 @@ const LeftSidebar = () => {
                     </span>
                   </div>
 
-                  {/* Plus button directly on Section header row */}
-                  <Tooltip label='Add Section' position='top' withArrow>
-                    <ActionIcon
-                      className='text-primary-9 hover:bg-primary-3'
-                      color='primary'
-                      size='xs'
-                      variant='subtle'
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        useFormStore.getState().addPanel()
-                      }}
-                    >
-                      <Icon height={14} name='lucide:plus' width={14} />
-                    </ActionIcon>
-                  </Tooltip>
+                  <div className='flex shrink-0 items-center gap-0.5'>
+                    {/* Plus button directly on Section header row */}
+                    <Tooltip label='Add Section' position='top' withArrow>
+                      <ActionIcon
+                        className='text-primary-9 hover:bg-primary-3'
+                        color='primary'
+                        size='xs'
+                        variant='subtle'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          useFormStore.getState().addPanel()
+                        }}
+                      >
+                        <Icon height={14} name='lucide:plus' width={14} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </div>
                 </div>
               )}
 
@@ -611,6 +629,15 @@ const LeftSidebar = () => {
                         No results
                       </div>
                     </div>
+                  )}
+                  {isLeftSidebarCollapsed && (
+                    <button
+                      className='mt-2 flex size-9 items-center justify-center rounded-lg border border-gray-3 text-primary-9 transition-all hover:border-primary-9 hover:bg-primary-1 active:scale-95'
+                      title='Field Library'
+                      onClick={openFieldLibrary}
+                    >
+                      <Icon height={16} name='lucide:layout-grid' width={16} />
+                    </button>
                   )}
                   {isLeftSidebarCollapsed && !searchQuery && (
                     <button
