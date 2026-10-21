@@ -768,6 +768,129 @@ const QuestionSettings = ({
           </div>
   )
 
+  const tableColumns = activeQuestion.settings.specific.tableColumns || []
+  const handleUpdateTableColumn = (
+    colId: string,
+    patch: Partial<{
+      name: string
+      settings: (typeof tableColumns)[number]['settings']
+      size: 'SMALL' | 'MEDIUM' | 'LARGE'
+      type: QuestionType
+    }>,
+  ) => {
+    updateNested('specific', {
+      tableColumns: tableColumns.map((c) =>
+        c.id === colId ? { ...c, ...patch } : c,
+      ),
+    })
+  }
+
+  const handleUpdateTableColumnSettings = (
+    colId: string,
+    settingsPatch: NonNullable<
+      (typeof tableColumns)[number]['settings']
+    >,
+  ) => {
+    const col = tableColumns.find((c) => c.id === colId)
+    if (!col) return
+    handleUpdateTableColumn(colId, {
+      settings: {
+        aiSettings: {
+          ...col.settings?.aiSettings,
+          ...settingsPatch.aiSettings,
+        },
+        general: {
+          ...col.settings?.general,
+          ...settingsPatch.general,
+        },
+        lookupSettings: {
+          ...col.settings?.lookupSettings,
+          ...settingsPatch.lookupSettings,
+        },
+        specific: {
+          ...col.settings?.specific,
+          ...settingsPatch.specific,
+        },
+        validation: {
+          ...col.settings?.validation,
+          ...settingsPatch.validation,
+        },
+      },
+    })
+  }
+
+  const activeTableColumn = isTable
+    ? tableColumns.find((c) => c.id === expandedColumnId)
+    : undefined
+
+  if (activeTableColumn) {
+    return (
+      <div className='custom-scrollbar content-scrollbar animate-in fade-in slide-in-from-right-4 flex-1 overflow-y-auto bg-surface duration-200'>
+        <div className='sticky top-0 z-10 flex items-center gap-2 border-b border-gray-2 bg-surface px-3 py-2.5'>
+          <IconButton
+            aria-label='Back to table columns'
+            color='gray'
+            icon='lucide:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={() => setExpandedColumnId(null)}
+          />
+          <div className='min-w-0 flex-1'>
+            <div className='truncate text-13 font-bold text-gray-12'>
+              {activeTableColumn.name || 'Column'}
+            </div>
+            <div className='truncate text-[11px] text-gray-8'>
+              Column settings · {activeQuestion.label || 'Table'}
+            </div>
+          </div>
+          <button
+            className='cursor-pointer rounded-md bg-primary-9 px-3 py-1 text-xs font-bold text-white transition-all hover:bg-primary-10 active:scale-95'
+            type='button'
+            onClick={() => setExpandedColumnId(null)}
+          >
+            Done
+          </button>
+        </div>
+        <div className='space-y-4 p-4'>
+          <div className='space-y-1'>
+            <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+              Column width
+            </label>
+            <SegmentedControl
+              size='xs'
+              value={activeTableColumn.size || 'MEDIUM'}
+              fullWidth
+              data={[
+                { label: 'Small', value: 'SMALL' },
+                { label: 'Medium', value: 'MEDIUM' },
+                { label: 'Large', value: 'LARGE' },
+              ]}
+              onChange={(val) =>
+                handleUpdateTableColumn(activeTableColumn.id, {
+                  size: val as any,
+                })
+              }
+            />
+          </div>
+          <TableColumnSettingsPanel
+            column={activeTableColumn}
+            masterForms={masterForms}
+            repositories={repositories.map((r: any) => ({
+              id: String(r.id),
+              name: r.name,
+            }))}
+            siblingColumns={tableColumns.filter(
+              (c) => c.id !== activeTableColumn.id,
+            )}
+            onUpdate={(patch) =>
+              handleUpdateTableColumnSettings(activeTableColumn.id, patch)
+            }
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='custom-scrollbar content-scrollbar animate-in fade-in flex-1 space-y-1 overflow-y-auto bg-surface p-4 duration-500'>
       {/* 1. GENERAL SETUP SECTION */}
@@ -3211,9 +3334,6 @@ const QuestionSettings = ({
 
             {isTable &&
               (() => {
-                const tableColumns =
-                  activeQuestion.settings.specific.tableColumns || []
-
                 const handleAddTableColumn = () => {
                   const newColNumber = tableColumns.length + 1
                   updateNested('specific', {
@@ -3227,56 +3347,6 @@ const QuestionSettings = ({
                         settings: { specific: {}, validation: {} },
                       },
                     ],
-                  })
-                }
-
-                const handleUpdateTableColumn = (
-                  colId: string,
-                  patch: Partial<{
-                    name: string
-                    settings: (typeof tableColumns)[number]['settings']
-                    size: 'SMALL' | 'MEDIUM' | 'LARGE'
-                    type: QuestionType
-                  }>,
-                ) => {
-                  updateNested('specific', {
-                    tableColumns: tableColumns.map((c) =>
-                      c.id === colId ? { ...c, ...patch } : c,
-                    ),
-                  })
-                }
-
-                const handleUpdateTableColumnSettings = (
-                  colId: string,
-                  settingsPatch: NonNullable<
-                    (typeof tableColumns)[number]['settings']
-                  >,
-                ) => {
-                  const col = tableColumns.find((c) => c.id === colId)
-                  if (!col) return
-                  handleUpdateTableColumn(colId, {
-                    settings: {
-                      aiSettings: {
-                        ...col.settings?.aiSettings,
-                        ...settingsPatch.aiSettings,
-                      },
-                      general: {
-                        ...col.settings?.general,
-                        ...settingsPatch.general,
-                      },
-                      lookupSettings: {
-                        ...col.settings?.lookupSettings,
-                        ...settingsPatch.lookupSettings,
-                      },
-                      specific: {
-                        ...col.settings?.specific,
-                        ...settingsPatch.specific,
-                      },
-                      validation: {
-                        ...col.settings?.validation,
-                        ...settingsPatch.validation,
-                      },
-                    },
                   })
                 }
 
@@ -3330,116 +3400,78 @@ const QuestionSettings = ({
                                 id={col.id}
                                 key={col.id}
                               >
-                                <div className='group/col flex-1 space-y-2 rounded-lg border border-gray-2 bg-surface-muted/80 p-2.5 transition-colors hover:border-gray-3'>
-                                  <div className='flex items-center justify-between gap-2'>
-                                    <input
-                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
-                                      placeholder='Column name...'
-                                      type='text'
-                                      value={col.name}
-                                      onChange={(e) =>
+                                <div
+                                  className={cn(
+                                    'group/col flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-surface-muted/80 p-1.5 transition-colors',
+                                    expandedColumnId === col.id
+                                      ? 'border-primary-5 bg-primary-1/40'
+                                      : 'border-gray-2 hover:border-gray-3',
+                                  )}
+                                >
+                                  <input
+                                    className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
+                                    placeholder='Column name...'
+                                    type='text'
+                                    value={col.name}
+                                    onChange={(e) =>
+                                      handleUpdateTableColumn(col.id, {
+                                        name: e.target.value,
+                                      })
+                                    }
+                                  />
+                                  <div className='w-32 shrink-0'>
+                                    <Select
+                                      comboboxProps={{ width: 340 }}
+                                      data={TABLE_COLUMN_TYPES}
+                                      size='xs'
+                                      value={col.type || 'SHORT_TEXT'}
+                                      searchable
+                                      classNames={{
+                                        input:
+                                          'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
+                                        option: 'break-words whitespace-normal',
+                                      }}
+                                      onChange={(val) =>
+                                        val &&
                                         handleUpdateTableColumn(col.id, {
-                                          name: e.target.value,
+                                          type: val as QuestionType,
                                         })
                                       }
                                     />
-                                    <div className='flex shrink-0 items-center gap-0.5'>
-                                      <IconButton
-                                        icon='lucide:settings'
-                                        size='xs'
-                                        color={
-                                          expandedColumnId === col.id
-                                            ? 'primary'
-                                            : 'gray'
-                                        }
-                                        variant={
-                                          expandedColumnId === col.id
-                                            ? 'subtle'
-                                            : 'ghost'
-                                        }
-                                        onClick={() =>
-                                          setExpandedColumnId(
-                                            expandedColumnId === col.id
-                                              ? null
-                                              : col.id,
-                                          )
-                                        }
-                                      />
-                                      <IconButton
-                                        color='red'
-                                        disabled={tableColumns.length <= 1}
-                                        icon='lucide:trash-2'
-                                        size='xs'
-                                        variant='ghost'
-                                        onClick={() =>
-                                          handleDeleteTableColumn(col.id)
-                                        }
-                                      />
-                                    </div>
                                   </div>
-                                  <div className='flex items-center gap-2'>
-                                    <div className='flex-1'>
-                                      <Select
-                                        comboboxProps={{ width: 340 }}
-                                        data={TABLE_COLUMN_TYPES}
-                                        size='xs'
-                                        value={col.type || 'SHORT_TEXT'}
-                                        searchable
-                                        classNames={{
-                                          input:
-                                            'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
-                                          option:
-                                            'break-words whitespace-normal',
-                                        }}
-                                        onChange={(val) =>
-                                          val &&
-                                          handleUpdateTableColumn(col.id, {
-                                            type: val as QuestionType,
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                    <div className='w-28 shrink-0'>
-                                      <SegmentedControl
-                                        size='xs'
-                                        value={col.size || 'MEDIUM'}
-                                        fullWidth
-                                        data={[
-                                          { label: 'S', value: 'SMALL' },
-                                          { label: 'M', value: 'MEDIUM' },
-                                          { label: 'L', value: 'LARGE' },
-                                        ]}
-                                        onChange={(val) =>
-                                          handleUpdateTableColumn(col.id, {
-                                            size: val as any,
-                                          })
-                                        }
-                                      />
-                                    </div>
+                                  <div className='flex shrink-0 items-center gap-0.5'>
+                                    <IconButton
+                                      icon='lucide:settings'
+                                      size='xs'
+                                      color={
+                                        expandedColumnId === col.id
+                                          ? 'primary'
+                                          : 'gray'
+                                      }
+                                      variant={
+                                        expandedColumnId === col.id
+                                          ? 'subtle'
+                                          : 'ghost'
+                                      }
+                                      onClick={() =>
+                                        setExpandedColumnId(
+                                          expandedColumnId === col.id
+                                            ? null
+                                            : col.id,
+                                        )
+                                      }
+                                    />
+                                    <IconButton
+                                      color='red'
+                                      disabled={tableColumns.length <= 1}
+                                      icon='lucide:trash-2'
+                                      size='xs'
+                                      variant='ghost'
+                                      onClick={() =>
+                                        handleDeleteTableColumn(col.id)
+                                      }
+                                    />
                                   </div>
-                                  {expandedColumnId === col.id && (
-                                    <div className='border-t border-gray-2 pt-2'>
-                                      <TableColumnSettingsPanel
-                                        column={col}
-                                        masterForms={masterForms}
-                                        repositories={repositories.map(
-                                          (r: any) => ({
-                                            id: String(r.id),
-                                            name: r.name,
-                                          }),
-                                        )}
-                                        siblingColumns={tableColumns.filter(
-                                          (c) => c.id !== col.id,
-                                        )}
-                                        onUpdate={(patch) =>
-                                          handleUpdateTableColumnSettings(
-                                            col.id,
-                                            patch,
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                  )}
                                 </div>
                               </SortableItem>
                             ))}
