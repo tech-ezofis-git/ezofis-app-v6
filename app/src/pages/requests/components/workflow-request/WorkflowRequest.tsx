@@ -17,6 +17,7 @@ import {
   extractBlocks,
   listWorkflowStages,
 } from '@/pages/requests/utils/workflow.utils'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import AgentSummaryBoxes, {
@@ -371,8 +372,50 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setFieldValue,
   } = useWorkflowForm(workflow)
 
+  const stageHiddenFieldIds = useMemo(() => {
+    const blocks = extractBlocks(workflow)
+    // Find the first trigger / start / manual user block for New Request
+    const startBlock =
+      blocks.find((b: any) => {
+        const type = String(b.type || b.toolType || '').toUpperCase()
+        return (
+          type === 'START' ||
+          type === 'INITIATOR' ||
+          type === 'TRIGGER' ||
+          type === 'MANUAL_USER' ||
+          type === 'FORM_SUBMISSION'
+        )
+      }) || blocks[0]
+
+    const settings = startBlock?.settings || {}
+    const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
+    const allFieldIds = panels.flatMap((p: any) =>
+      (p.fields || []).map((f: any) => String(f.id)),
+    )
+    if (access === 'ALL') return new Set<string>()
+    if (access === 'NONE') return new Set(allFieldIds)
+
+    const rules = Array.isArray(settings.formSecureControls)
+      ? settings.formSecureControls
+      : []
+    const currentUserId = String(authUserStore.getState().session?.id || '')
+    const rule =
+      rules.find((r: any) => String(r.userId) === currentUserId) ||
+      rules.find((r: any) => !r.userId) ||
+      (rules.length === 1 ? rules[0] : null)
+
+    if (!rule) return new Set<string>()
+    const specifiedFields = new Set((rule.formFields || []).map(String))
+    const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
+    if (mode === 'SHOW') {
+      return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
+    }
+    // HIDE mode (default)
+    return specifiedFields
+  }, [workflow, panels])
+
   const summaryHiddenFieldIds = useMemo(() => {
-    const ids = new Set<string>()
+    const ids = new Set<string>(stageHiddenFieldIds)
     panels
       .flatMap((p: any) => p.fields || [])
       .forEach((field: any) => {
@@ -381,10 +424,10 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         }
       })
     return ids
-  }, [panels])
+  }, [panels, stageHiddenFieldIds])
 
   const lineItemsHiddenFieldIds = useMemo(() => {
-    const ids = new Set<string>()
+    const ids = new Set<string>(stageHiddenFieldIds)
     let hasLineItems = false
     panels
       .flatMap((p: any) => p.fields || [])
@@ -396,7 +439,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         }
       })
     return { hasLineItems, ids }
-  }, [panels])
+  }, [panels, stageHiddenFieldIds])
 
   const standardTabs = useMemo(
     () =>
@@ -752,6 +795,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 currentActivityId={currentActivityId}
                 formModel={formModel}
                 hasAttemptedSubmit={hasAttemptedSubmit}
+                hiddenFieldIds={stageHiddenFieldIds}
                 missingMandatoryFieldIds={missingMandatoryFieldIds}
                 panels={panels}
                 stages={workflowStages}
