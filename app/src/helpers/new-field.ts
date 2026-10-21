@@ -76,8 +76,11 @@ export const getField = (fieldType: string) => {
   const s = baseField.settings.specific as any
   const v = baseField.settings.validation as any
   switch (fieldType.toUpperCase()) {
-    case 'TABLE':
     case 'DYNAMIC_TABLE':
+      // End-users define the columns at fill-time; nothing is predefined.
+      s.tableColumns = []
+      break
+    case 'TABLE':
       s.tableColumns = [
         {
           id: generateId(),
