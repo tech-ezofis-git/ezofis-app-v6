@@ -1,8 +1,8 @@
+import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { Button, Rating } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
@@ -1433,11 +1433,11 @@ const FieldRenderer = ({
             <div className='min-w-0 flex-1'>
               <InputSelect
                 {...common}
-                createOptionLabel={(query) => t`Add "${query}"`}
-                value={selected}
                 clearable={!readOnly}
                 creatable={allowAddNew}
+                createOptionLabel={(query) => t`Add "${query}"`}
                 loading={isOptionsLoading}
+                value={selected}
                 searchable
                 options={withExtraFieldOptions(
                   selectOptions,
@@ -1476,11 +1476,11 @@ const FieldRenderer = ({
       return (
         <InputSelect
           {...common}
-          createOptionLabel={(query) => t`Add "${query}"`}
-          value={selected}
           clearable={!readOnly}
           creatable={allowAddNew}
+          createOptionLabel={(query) => t`Add "${query}"`}
           loading={isOptionsLoading}
+          value={selected}
           searchable
           options={withExtraFieldOptions(
             selectOptions,
@@ -1527,11 +1527,11 @@ const FieldRenderer = ({
           {preselectSync}
           <InputSelectMultiple
             {...common}
+            creatable={allowAddNew}
             createOptionLabel={(query) => t`Add "${query}"`}
+            loading={isOptionsLoading}
             options={withExtraFieldOptions(selectOptions, selected)}
             value={selected}
-            creatable={allowAddNew}
-            loading={isOptionsLoading}
             searchable
             onChange={(opts: Option[]) =>
               onChange(
@@ -1572,15 +1572,15 @@ const FieldRenderer = ({
           )}
           <Rating
             color='yellow'
+            fractions={field.settings?.specific?.allowHalfRating ? 2 : 1}
+            readOnly={readOnly}
+            size='md'
+            value={Number(value) || 0}
             count={
               field.settings?.specific?.iconCount ||
               field.settings?.specific?.ratingIconCount ||
               5
             }
-            fractions={field.settings?.specific?.allowHalfRating ? 2 : 1}
-            readOnly={readOnly}
-            size='md'
-            value={Number(value) || 0}
             onChange={onChange}
           />
           {error && (
@@ -1607,8 +1607,8 @@ const FieldRenderer = ({
                 Number(value) === i
               return (
                 <button
-                  key={i}
                   disabled={readOnly}
+                  key={i}
                   type='button'
                   className={cn(
                     'size-8 rounded-lg border text-xs font-bold transition-all active:scale-95 disabled:opacity-50',
@@ -1962,7 +1962,9 @@ const FieldRenderer = ({
       return (
         <div className='w-full'>
           <TableFieldRenderer
+            allFields={allFields}
             field={field}
+            formModel={formModel}
             masterSyncParentColumnKey={masterSyncParentColumnKey}
             masterSyncParentValue={masterSyncParentValue}
             ocrLineItems={ocrLineItems}
