@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { Divider, Rating, Skeleton, Stack, Tooltip } from '@mantine/core'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
@@ -98,6 +98,10 @@ import {
 } from '@/utils/filterUtils'
 import FormEntryTableField from './components/FormEntryTableField'
 import GenericFormImportModal from './components/GenericFormImportModal'
+import {
+  buildEntrySearchPayload,
+  resolveEntryColumn,
+} from './utils/entrySearchFilter'
 
 const FormEntriesChoiceInput = ({
   field,
@@ -1375,7 +1379,7 @@ const FormEntriesPage = () => {
 
   // Pagination states
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(50)
 
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
@@ -1486,25 +1490,6 @@ const FormEntriesPage = () => {
     }
   }, [formData, isDraftForm, navigate])
 
-  // Fetch form entries from backend API
-  const {
-    data: fetchedEntries,
-    isError: isEntriesError,
-    isLoading: isEntriesLoading,
-    refetch: refetchEntries,
-  } = useQuery({
-    enabled: !!formId && !isLoading && !isDraftForm,
-    queryKey: ['forms', 'entries', formId],
-    queryFn: async () => {
-      const { data, error } = await formApi.getFormEntries(formId, 1, 500)
-      if (error) throw new Error(error)
-      if (data && typeof data === 'object' && Array.isArray(data.entries)) {
-        return data.entries
-      }
-      return Array.isArray(data) ? data : []
-    },
-  })
-
   const normalizedFormJson = useMemo(() => {
     if (!formData) return { panels: [], rules: [], settings: {} as any }
     return ensureNormalizedRuntimeFormJson(formData._json || formData.formJson)
@@ -1606,6 +1591,81 @@ const FormEntriesPage = () => {
   } = useDataTableState({
     initialVisibilityState: {},
   })
+
+  // Column search: when a column is picked in the table search, the typed text
+  // is sent to the API as a `filterBy` (see utils/entrySearchFilter.ts).
+  const searchColumnId = searchState.id || ''
+  const searchText = (searchState.value || '').trim()
+  const entrySearchKey =
+    searchColumnId && searchText ? `${searchColumnId}::${searchText}` : ''
+  // Column names the API returned on its last non-empty response.
+  const entryColumnsRef = useRef<string[]>([])
+
+  // Fetch form entries from backend API
+  const {
+    data: fetchedEntries,
+    isError: isEntriesError,
+    isFetching: isEntriesFetching,
+    isLoading: isEntriesLoading,
+    refetch: refetchEntries,
+  } = useQuery({
+    enabled: !!formId && !isLoading && !isDraftForm,
+    // Keep the current rows on screen while a new search loads, so the table
+    // (and the search box) does not flash to the page skeleton.
+    placeholderData: keepPreviousData,
+    queryKey: ['forms', 'entries', formId, entrySearchKey],
+    queryFn: async () => {
+      const searchField = entrySearchKey
+        ? fields.find((field: Question) => field.id === searchColumnId)
+        : null
+      const criteria = searchField
+        ? resolveEntryColumn({
+            allLabels: fields.map((field: Question) =>
+              getEffectiveFieldLabel(field, ''),
+            ),
+            availableColumns: entryColumnsRef.current,
+            fieldId: searchField.id,
+            fieldLabel: getEffectiveFieldLabel(searchField, ''),
+          })
+        : null
+
+      // No resolvable column: load everything, the table filters the rows.
+      const { data, error } = criteria
+        ? await formApi.searchFormEntries(
+            formId,
+            buildEntrySearchPayload({
+              criteria,
+              itemsPerPage: 500,
+              value: searchText,
+            }),
+          )
+        : await formApi.getFormEntries(formId, 1, 500)
+      if (error) throw new Error(error)
+
+      const rows =
+        data && typeof data === 'object' && Array.isArray(data.entries)
+          ? data.entries
+          : Array.isArray(data)
+            ? data
+            : []
+
+      if (rows.length > 0 && rows[0] && typeof rows[0] === 'object') {
+        entryColumnsRef.current = Object.keys(rows[0])
+      }
+      return rows
+    },
+  })
+
+  // Search button / Enter in the column search: query again even when the
+  // text did not change (a changed text already refetches via the query key).
+  const handleEntrySearch = useCallback(
+    (next: { id: string; value: string }) => {
+      const nextText = next.value.trim()
+      const nextKey = next.id && nextText ? `${next.id}::${nextText}` : ''
+      if (next.id && nextKey === entrySearchKey) void refetchEntries()
+    },
+    [entrySearchKey, refetchEntries],
+  )
 
   // Synchronize fetched entries from backend with component state
   useEffect(() => {
@@ -3011,8 +3071,14 @@ const FormEntriesPage = () => {
         <div className='bg-surface-muted/50 flex flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
             activeFilters={activeFilters}
-            customSearchComponent={<TableSearch table={table as any} />}
             searchPlaceholder={t`Search entries...`}
+            customSearchComponent={
+              <TableSearch
+                loading={isEntriesFetching}
+                table={table as any}
+                onSearch={handleEntrySearch}
+              />
+            }
             searchQuery=''
             trailingActions={<TableExport table={table as any} />}
             actionButtons={[
