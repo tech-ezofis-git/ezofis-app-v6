@@ -1404,9 +1404,10 @@ const QuoteAgentResultView = ({
       }
 
       if (variant.itemCount > 0) {
+        const variantFreight = Number(variant.freight ?? 0)
         const totals = buildQuoteTotals(
           variant.rows,
-          variant.freight,
+          variantFreight,
           taxRate,
           columns,
           variant.discount,
@@ -1425,7 +1426,7 @@ const QuoteAgentResultView = ({
             : totals.total
         const shown: Record<string, number> = {
           discount: totals.discount,
-          freight: variant.freight,
+          freight: variantFreight,
           subtotal: totals.subtotal,
           tax: totals.hst,
           total: shownTotal,

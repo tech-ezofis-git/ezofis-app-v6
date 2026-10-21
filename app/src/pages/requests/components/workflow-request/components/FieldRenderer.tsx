@@ -24,6 +24,7 @@ import {
   RuntimeMatrixField,
 } from '@/pages/form-builder/components/common/RuntimeComplexFieldRenderer'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
+import { getPendingUploadSource } from '@/pages/form-builder/helpers/uploadFillLock'
 import {
   getFileIcon,
   getFileIconClasses,
@@ -68,6 +69,7 @@ interface ChoiceFieldProps {
   field: any
   value: any
   error?: string
+  loading?: boolean
   options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
@@ -116,6 +118,7 @@ interface StagedFileValue {
 const ChoiceRadioGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -198,11 +201,19 @@ const ChoiceRadioGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -313,6 +324,7 @@ const ChoiceRadioGroupField = ({
 const ChoiceCheckboxGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -409,11 +421,19 @@ const ChoiceCheckboxGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -908,7 +928,7 @@ const EmailOtpVerification = ({
 // @/components/base input components. Field types outside the MVP set
 // (TABLE, MATRIX, SIGNATURE, ADDRESS, RATING, ...) render a labeled
 // placeholder instead of silently disappearing.
-const FieldRenderer = ({
+const FieldRendererBase = ({
   error,
   fallbackAttachments,
   field,
@@ -1074,7 +1094,7 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
-  const masterConditions = buildMasterConditions(field, formModel)
+  const masterConditions = buildMasterConditions(field, formModel, allFields)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [], isFetching: isMasterLoading } =
@@ -1412,6 +1432,7 @@ const FieldRenderer = ({
         <ChoiceRadioGroupField
           error={error}
           field={field}
+          loading={isOptionsLoading}
           options={selectOptions}
           readOnly={readOnly}
           required={required}
@@ -1500,6 +1521,8 @@ const FieldRenderer = ({
           <ChoiceCheckboxGroupField
             error={error}
             field={field}
+            loading={isOptionsLoading}
+            options={selectOptions}
             readOnly={readOnly}
             required={required}
             value={value}
@@ -1998,5 +2021,31 @@ const FieldRenderer = ({
   }
 }
 
+FieldRendererBase.displayName = 'FieldRendererBase'
+// Fields an upload field fills stay disabled until its file is uploaded, then
+// follow their own settings (read-only/disabled fields never get enabled).
+const FieldRenderer = (props: Props) => {
+  const { t } = useLingui()
+  const { fallbackAttachments, field, formModel, panels, viewOnly } = props
+  const pendingSource =
+    viewOnly || props.onRequestUpload || fallbackAttachments?.length
+      ? null
+      : getPendingUploadSource(field, panels || [], formModel || {})
+
+  if (!pendingSource) return <FieldRendererBase {...props} />
+
+  const sourceLabel = getEffectiveFieldLabel(pendingSource) || t`the file`
+  return (
+    <div className='space-y-1'>
+      <FieldRendererBase {...props} viewOnly />
+      <p className='animate-in fade-in flex items-center gap-1 text-12 font-medium text-gray-9 duration-200'>
+        <Icon className='size-3.5 shrink-0' name='lucide:lock' />
+        <span>{t`Upload "${sourceLabel}" first to fill this field.`}</span>
+      </p>
+    </div>
+  )
+}
+
 FieldRenderer.displayName = 'FieldRenderer'
+
 export default FieldRenderer
