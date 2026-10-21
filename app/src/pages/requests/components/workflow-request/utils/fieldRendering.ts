@@ -237,7 +237,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
               ? dayjs().format('YYYY-MM-DD HH:mm')
               : dayjs().format('YYYY-MM-DD')
         } else if (
-          (specific.dateDefaultValueType === 'CUSTOM' || specific.defaultValue) &&
+          (specific.dateDefaultValueType === 'CUSTOM' ||
+            specific.defaultValue) &&
           specific.defaultValue
         ) {
           model[field.id] = String(specific.defaultValue).replace('T', ' ')
@@ -265,7 +266,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           }
         } else if (defaultMode === 'USER_NAME') {
           const s = authUserStore.getState().session
-          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          const name = s
+            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
+            : ''
           if (name) {
             model[field.id] = name
           }
@@ -285,7 +288,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValueInSelectField
         } else {
-          const optionsType = String(specific.optionsType || 'CUSTOM').toUpperCase()
+          const optionsType = String(
+            specific.optionsType || 'CUSTOM',
+          ).toUpperCase()
           if (optionsType === 'CUSTOM' || optionsType === 'DYNAMIC') {
             const opts = getFieldOptions(field)
             if (opts.length === 1) {
@@ -306,7 +311,9 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
           }
         } else if (defaultMode === 'USER_NAME') {
           const s = authUserStore.getState().session
-          const name = s ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : ''
+          const name = s
+            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
+            : ''
           if (name) {
             model[field.id] = name
           }
@@ -323,7 +330,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       } else if (fieldType === 'COUNTER' || fieldType === 'RATING') {
         model[field.id] = 0
       } else if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
-        const rowsType = specific.rowsType || specific.tableRowsType || 'ON_DEMAND'
+        const rowsType =
+          specific.rowsType || specific.tableRowsType || 'ON_DEMAND'
         const fixedRowCount =
           specific.fixedRowCount || specific.tableFixedRowCount || 5
         if (rowsType === 'FIXED') {
@@ -340,7 +348,8 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
               if (typeof labelEntry === 'string') {
                 rowObj[labelCol.id] = labelEntry
               } else if (labelEntry && typeof labelEntry === 'object') {
-                rowObj[labelCol.id] = labelEntry[labelCol.id] ?? labelEntry.label ?? ''
+                rowObj[labelCol.id] =
+                  labelEntry[labelCol.id] ?? labelEntry.label ?? ''
               }
             }
             // Column defaults fill only cells the label seeding left empty
@@ -623,7 +632,7 @@ export const extractScalarStrings = (val: any): string[] => {
 // short TTL instead.
 const MASTER_CALL_TTL_MS = 30_000
 const masterCallCache = new Map<string, { at: number; promise: Promise<any> }>()
-const cachedMasterCall = <T,>(
+const cachedMasterCall = <T>(
   kind: string,
   masterFormId: string,
   call: () => Promise<T>,
@@ -667,7 +676,9 @@ export const fetchMasterFormColumnOptions = async (
     let columnKeyOrLabel = masterFormColumn || ''
 
     // 1. Fetch Form Definition for Master Form to extract column schema and configured customOptions
-    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
+    const formDefRes = await cachedMasterCall('def', masterFormId, () =>
+      formApi.getFormDataById(masterFormId),
+    )
     console.log('[fetchMasterFormColumnOptions] Master Form Def Response:', {
       masterFormId,
       masterFormColumn,
@@ -809,7 +820,9 @@ export const fetchMasterFormColumnOptions = async (
     const uniqueValues = new Set<string>()
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+      formApi.getFormEntries(masterFormId, 1, 500),
+    )
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
@@ -965,8 +978,14 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
-    const finalOptions = Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
-    console.log('[fetchMasterFormColumnOptions] Final extracted options:', finalOptions)
+    const finalOptions = Array.from(uniqueValues).map((v) => ({
+      id: v,
+      name: v,
+    }))
+    console.log(
+      '[fetchMasterFormColumnOptions] Final extracted options:',
+      finalOptions,
+    )
     return finalOptions
   } catch (err) {
     console.error('Error fetching master form column options:', err)
@@ -992,7 +1011,9 @@ export const fetchMasterTableRows = async (
 
   try {
     let formFields: any[] = []
-    const formDefRes = await cachedMasterCall('def', masterFormId, () => formApi.getFormDataById(masterFormId))
+    const formDefRes = await cachedMasterCall('def', masterFormId, () =>
+      formApi.getFormDataById(masterFormId),
+    )
     if (formDefRes.data) {
       let fJson = formDefRes.data.formJson || formDefRes.data._json
       if (typeof fJson === 'string') {
@@ -1060,7 +1081,9 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () => formApi.getFormEntries(masterFormId, 1, 500))
+    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+      formApi.getFormEntries(masterFormId, 1, 500),
+    )
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
@@ -1232,7 +1255,9 @@ export const getDropdownFacetSource = (
     specific.optionsSource || optionsType,
   ).toUpperCase()
   const isRepo = optionsType === 'REPOSITORY' || optionsSource === 'REPOSITORY'
-  const isSyntheticRepoField = String(field?.id || '').startsWith('repo_field__')
+  const isSyntheticRepoField = String(field?.id || '').startsWith(
+    'repo_field__',
+  )
   const hasExplicitRepo = Boolean(
     specific.repositoryId && (isRepo || specific.repositoryField),
   )
@@ -1815,7 +1840,13 @@ export const getMissingMandatoryFieldsList = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { formRules?: any[]; hasUploadedFile?: boolean },
+  options?: {
+    formRules?: any[]
+    hasUploadedFile?: boolean
+    // Only the repository (folder) fields — skips the form's own mandatory
+    // fields. Used by the Upload step, which only indexes the file.
+    repoOnly?: boolean
+  },
 ): MissingMandatoryField[] => {
   let panels: any[] = []
   let formModel: Record<string, any> = {}
@@ -1829,7 +1860,11 @@ export const getMissingMandatoryFieldsList = (
 
   const missing: MissingMandatoryField[] = []
   const processedIds = new Set<string>()
-  const computedStates = evaluateFormRules(panels, formModel, options?.formRules)
+  const computedStates = evaluateFormRules(
+    panels,
+    formModel,
+    options?.formRules,
+  )
 
   // 1. Process repository fields (unmatched repo fields are only required when indexing an uploaded file)
   for (const descriptor of descriptors || []) {
@@ -1872,6 +1907,8 @@ export const getMissingMandatoryFieldsList = (
     }
   }
 
+  if (options?.repoOnly) return missing
+
   // 2. Process form panel fields
   for (const panel of panels || []) {
     if (panel?.id && computedStates[panel.id]?.visible === false) continue
@@ -1891,7 +1928,9 @@ export const getMissingMandatoryFieldsList = (
 
       if (isHidden || isReadOnly) continue
 
-      const isReq = dynamicState ? dynamicState.required : isFieldRequired(field)
+      const isReq = dynamicState
+        ? dynamicState.required
+        : isFieldRequired(field)
       if (isReq) {
         const val =
           formModel[field.id] ??
@@ -1935,7 +1974,11 @@ export const getMissingMandatoryFieldIds = (
   descriptors: RepoFieldDescriptor[],
   panelsOrFormModel: any[] | Record<string, any>,
   formModelArg?: Record<string, any>,
-  options?: { formRules?: any[]; hasUploadedFile?: boolean },
+  options?: {
+    formRules?: any[]
+    hasUploadedFile?: boolean
+    repoOnly?: boolean
+  },
 ): Set<string> => {
   const list = getMissingMandatoryFieldsList(
     descriptors,
