@@ -651,7 +651,7 @@ const useLivePreviewFieldOptions = (
     },
   })
 
-  const masterConditions = buildMasterConditions(field, model)
+  const masterConditions = buildMasterConditions(field, model, allFields)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [] } = useQuery({

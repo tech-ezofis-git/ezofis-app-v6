@@ -1093,7 +1093,7 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
-  const masterConditions = buildMasterConditions(field, formModel)
+  const masterConditions = buildMasterConditions(field, formModel, allFields)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [], isFetching: isMasterLoading } =
