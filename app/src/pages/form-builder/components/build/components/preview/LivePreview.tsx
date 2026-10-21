@@ -4,7 +4,6 @@ import {
   Divider,
   Rating,
   SegmentedControl,
-  Select,
   TextInput,
   Tooltip,
 } from '@mantine/core'
@@ -19,6 +18,7 @@ import {
 import { getUsers } from '@/api/v6/user'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
@@ -40,6 +40,7 @@ import {
 } from '@/pages/form-builder/store/formStore'
 import {
   buildInitialFormModel,
+  buildMasterConditions,
   buildMergedOcrFieldHints,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -65,12 +66,14 @@ import {
   resolveRuntimeFieldType,
   normalizeScannedValue,
   resolveShortTextFillValue,
+  selectOptionStoredValue,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import MasterFillSync from '@/pages/requests/components/workflow-request/components/MasterFillSync'
+import MasterPreselectSync from '@/pages/requests/components/workflow-request/components/MasterPreselectSync'
 import TableFieldRenderer from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -205,15 +208,21 @@ const LivePreview = () => {
     })
   }
 
-  const handleOcrFileSelect = async (file: File, field: Question) => {
+  const handleOcrFileSelect = async (files: File[], field: Question) => {
+    const file = files[0]
     if (!file) return
 
     const fieldId = field.id
+    const allowMultiple = field.settings?.specific?.allowMultipleFiles === true
+    // OCR runs on the first file; the field shows every selected file name.
+    const displayName = allowMultiple
+      ? files.map((f) => f.name).join(', ')
+      : file.name
     const assignedFieldIds = field.settings.validation.assignOtherControls || []
 
     // OCR only runs when this upload field has target fields assigned to it.
     if (assignedFieldIds.length === 0) {
-      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      setPreviewModel((prev) => ({ ...prev, [fieldId]: displayName }))
       return
     }
 
@@ -259,19 +268,19 @@ const LivePreview = () => {
             restrictedPatch[id] = ocrPatch[id]
         }
 
-        const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
+        const mergedPatch = { ...restrictedPatch, [fieldId]: displayName }
         setPreviewModel((prev) =>
           applyCalculatedFields(panels, { ...prev, ...mergedPatch }, rules),
         )
       } else {
         setPreviewModel((prev) =>
-          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
+          applyCalculatedFields(panels, { ...prev, [fieldId]: displayName }, rules),
         )
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err)
       setPreviewModel((prev) =>
-        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
+        applyCalculatedFields(panels, { ...prev, [fieldId]: displayName }, rules),
       )
     } finally {
       setExtractingFieldId(null)
@@ -483,7 +492,7 @@ const LivePreview = () => {
                             field,
                             previewModel,
                             handleFieldValueChange,
-                            (file) => handleOcrFileSelect(file, field),
+                            (files) => handleOcrFileSelect(files, field),
                             extractingFieldId === field.id,
                             selectedRepoId,
                             (patch) =>
@@ -521,26 +530,14 @@ const LivePreview = () => {
 const getFieldOptions = (field: Question): string[] => {
   const shared = getSharedFieldOptions(field)
   if (shared.length > 0) return shared.map((o) => o.name)
-  return ['Option A', 'Option B', 'Option C']
+  return []
 }
 
-const LivePreviewDropdown = ({
-  disabled,
-  fallbackRepositoryId,
-  field,
-  model,
-  multiple,
-  value,
-  onChange,
-}: {
-  disabled?: boolean
-  fallbackRepositoryId?: string
-  field: Question
-  model?: Record<string, any>
-  multiple?: boolean
-  value: any
-  onChange: (val: any) => void
-}) => {
+const useLivePreviewFieldOptions = (
+  field: Question,
+  model?: Record<string, any>,
+  fallbackRepositoryId?: string,
+) => {
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
   const { panels } = useFormStore()
@@ -654,14 +651,7 @@ const LivePreviewDropdown = ({
     },
   })
 
-  const masterConditions = (
-    field.settings?.specific?.masterFormConditionColumn || []
-  )
-    .filter((c: any) => c?.formField && c?.masterColumn)
-    .map((c: any) => ({
-      masterColumn: String(c.masterColumn),
-      value: model?.[c.formField],
-    }))
+  const masterConditions = buildMasterConditions(field, model)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [] } = useQuery({
@@ -709,6 +699,32 @@ const LivePreviewDropdown = ({
     field,
   ])
 
+  return selectOptions
+}
+
+const LivePreviewDropdown = ({
+  disabled,
+  fallbackRepositoryId,
+  field,
+  model,
+  multiple,
+  value,
+  onChange,
+}: {
+  disabled?: boolean
+  fallbackRepositoryId?: string
+  field: Question
+  model?: Record<string, any>
+  multiple?: boolean
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const selectOptions = useLivePreviewFieldOptions(
+    field,
+    model,
+    fallbackRepositoryId,
+  )
+
   useEffect(() => {
     if (selectOptions.length === 1) {
       const singleOptVal = String(selectOptions[0].id ?? selectOptions[0].name)
@@ -725,6 +741,11 @@ const LivePreviewDropdown = ({
     }
   }, [selectOptions, value, multiple, onChange])
 
+  const allowAddNew = Boolean(
+    field.settings?.specific?.allowToAddNewOptions ||
+      field.settings?.specific?.allowCustomEntries,
+  )
+
   if (multiple) {
     const seen = new Set<string>()
     const selectedOptions = normalizeStoredMultiSelectValue(value).flatMap(
@@ -740,41 +761,57 @@ const LivePreviewDropdown = ({
 
     return (
       <InputSelectMultiple
+        creatable={allowAddNew}
+        createOptionLabel={(query) => `Add "${query}"`}
         disabled={disabled}
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
-        value={selectedOptions}
         placeholder={
           getEffectiveFieldPlaceholder(field) || 'Select options...'
         }
+        searchable
+        value={selectedOptions}
         onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
       />
     )
   }
 
+  const selectedOpt =
+    findFieldOption(selectOptions, value) ||
+    (value !== undefined && value !== null && value !== ''
+      ? { id: String(value), name: String(value) }
+      : null)
+
   return (
-    <Select
-      data={selectOptions.map((opt) => opt.name)}
+    <InputSelect
+      creatable={allowAddNew}
+      createOptionLabel={(query) => `Add "${query}"`}
       disabled={disabled}
+      options={withExtraFieldOptions(
+        selectOptions,
+        selectedOpt ? [selectedOpt] : [],
+      )}
       placeholder={getEffectiveFieldPlaceholder(field) || 'Select an option'}
-      size='sm'
-      value={String(value) || null}
-      classNames={{
-        input:
-          'border-gray-3 bg-surface text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-      }}
-      onChange={(val) => onChange(val)}
+      searchable
+      value={selectedOpt}
+      onChange={(opt) =>
+        onChange(opt ? selectOptionStoredValue(opt, selectOptions) : '')
+      }
     />
   )
 }
 
 const LivePreviewChoiceGroup = ({
   disabled,
+  fallbackRepositoryId,
   field,
+  model,
   value,
   onChange,
 }: {
   disabled?: boolean
+  fallbackRepositoryId?: string
   field: Question
+  model?: Record<string, any>
   value: any
   onChange: (val: any) => void
 }) => {
@@ -784,7 +821,19 @@ const LivePreviewChoiceGroup = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field)
+  const selectOptions = useLivePreviewFieldOptions(
+    field,
+    model,
+    fallbackRepositoryId,
+  )
+
+  const baseOptions = useMemo(() => {
+    if (selectOptions && selectOptions.length > 0) {
+      return selectOptions.map((o) => o.name || String(o.id))
+    }
+    return getFieldOptions(field)
+  }, [selectOptions, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 3
@@ -1016,6 +1065,30 @@ const LivePreviewChoiceGroup = ({
   )
 }
 
+const LivePreviewPreselect = ({
+  field,
+  model,
+  onChange,
+  value,
+}: {
+  field: Question
+  model: Record<string, any>
+  onChange: (value: any) => void
+  value: any
+}) => {
+  const { panels } = useFormStore()
+  if (!field.settings?.specific?.masterPreselectEnabled) return null
+  return (
+    <MasterPreselectSync
+      allFields={panels.flatMap((p: any) => p.fields || [])}
+      field={field}
+      formModel={model}
+      value={value}
+      onChange={onChange}
+    />
+  )
+}
+
 const LivePreviewSearchableInput = ({
   children,
   fallbackRepositoryId,
@@ -1138,7 +1211,7 @@ const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
   onChange: (fieldId: string, value: any) => void,
-  onOcrProcessFile?: (file: File) => void,
+  onOcrProcessFile?: (files: File[]) => void,
   isExtracting?: boolean,
   fallbackRepositoryId?: string,
   onUpdateModel?: (patch: Record<string, any>) => void,
@@ -1221,12 +1294,17 @@ const renderPreviewInput = (
             className='hidden'
             disabled={disabled || isExtracting}
             id={fileInputId}
+            multiple={
+              resolvedType === 'FILE_UPLOAD' &&
+              field.settings?.specific?.allowMultipleFiles === true
+            }
             type='file'
             onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file && onOcrProcessFile) {
-                onOcrProcessFile(file)
+              const files = Array.from(e.target.files ?? [])
+              if (files.length > 0 && onOcrProcessFile) {
+                onOcrProcessFile(files)
               }
+              e.target.value = ''
             }}
           />
           <label
@@ -1625,25 +1703,43 @@ const renderPreviewInput = (
       )
     case 'MULTI_SELECT':
       return (
-        <LivePreviewDropdown
-          disabled={disabled}
-          fallbackRepositoryId={fallbackRepositoryId}
-          field={field}
-          model={model}
-          value={fieldValue}
-          multiple
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewDropdown
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            multiple
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
       return (
-        <LivePreviewChoiceGroup
-          disabled={disabled}
-          field={field}
-          value={fieldValue}
-          onChange={(val) => onChange(field.id, val)}
-        />
+        <>
+          <LivePreviewPreselect
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+          <LivePreviewChoiceGroup
+            disabled={disabled}
+            fallbackRepositoryId={fallbackRepositoryId}
+            field={field}
+            model={model}
+            value={fieldValue}
+            onChange={(val) => onChange(field.id, val)}
+          />
+        </>
       )
     default:
       return (

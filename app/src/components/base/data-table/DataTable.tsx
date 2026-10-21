@@ -400,7 +400,15 @@ const DataTable = <TData,>({
                               name='tabler:stack-2'
                             />
                             <span className='text-15 font-semibold whitespace-nowrap text-[var(--gray-13)]'>
-                              {(row.original as any).group}
+                              {(() => {
+                                const raw = (row.original as any).group
+                                if (!raw) return 'No Group'
+                                const str = String(raw).trim()
+                                if (/^root(\s*\(|\b)/i.test(str)) {
+                                  return str.replace(/^root/i, 'No Group')
+                                }
+                                return str
+                              })()}
                             </span>
                             {showAmounts && (
                               <div

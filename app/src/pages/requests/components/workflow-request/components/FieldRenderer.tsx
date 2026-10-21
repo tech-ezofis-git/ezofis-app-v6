@@ -31,6 +31,7 @@ import {
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
+  buildMasterConditions,
   buildMergedOcrFieldHints,
   extractCurrencyCode,
   extractCurrencyNumericValue,
@@ -38,6 +39,7 @@ import {
   extractScalarStrings,
   facetsToFieldOptions,
   fetchMasterFormColumnOptions,
+  type FieldOption,
   findFieldOption,
   getConfiguredFieldOptions,
   getDateTimeLimits,
@@ -59,12 +61,14 @@ import {
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 import MasterFillSync from './MasterFillSync'
+import MasterPreselectSync from './MasterPreselectSync'
 import TableFieldRenderer from './TableFieldRenderer'
 
 interface ChoiceFieldProps {
   field: any
   value: any
   error?: string
+  options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
   onChange: (val: any) => void
@@ -82,6 +86,9 @@ interface Props {
   preparePhase?: 'extracting' | 'uploading' | null
   repoFieldHints?: string[]
   viewOnly?: boolean
+  // Extra files picked on a multiple-files upload field; the first file stays
+  // in the field, the rest join the request's attachments.
+  onAddAttachments?: (files: File[]) => void
   onChange: (value: any) => void
   onMultiFieldChange?: (patch: Record<string, any>) => void
   onOcrFieldList?: (
@@ -109,6 +116,7 @@ interface StagedFileValue {
 const ChoiceRadioGroupField = ({
   error,
   field,
+  options,
   readOnly,
   required,
   value,
@@ -121,7 +129,13 @@ const ChoiceRadioGroupField = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const baseOptions = useMemo(() => {
+    if (options && options.length > 0) {
+      return options.map((o) => o.name || String(o.id))
+    }
+    return getFieldOptions(field).map((o) => o.name)
+  }, [options, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 0
@@ -299,6 +313,7 @@ const ChoiceRadioGroupField = ({
 const ChoiceCheckboxGroupField = ({
   error,
   field,
+  options,
   readOnly,
   required,
   value,
@@ -312,7 +327,13 @@ const ChoiceCheckboxGroupField = ({
   const [newOptionText, setNewOptionText] = useState('')
   const [isAddingOption, setIsAddingOption] = useState(false)
 
-  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const baseOptions = useMemo(() => {
+    if (options && options.length > 0) {
+      return options.map((o) => o.name || String(o.id))
+    }
+    return getFieldOptions(field).map((o) => o.name)
+  }, [options, field])
+
   const allOptions = [...baseOptions, ...customList]
 
   const optionsPerLine = specific.optionsPerLine ?? 0
@@ -899,6 +920,7 @@ const FieldRenderer = ({
   repositoryId,
   value,
   viewOnly,
+  onAddAttachments,
   onChange,
   onMultiFieldChange,
   onOcrFieldList,
@@ -1050,14 +1072,7 @@ const FieldRenderer = ({
       parentField.id
     : masterInfo.masterFormParentColumn
 
-  const masterConditions = (
-    field.settings?.specific?.masterFormConditionColumn || []
-  )
-    .filter((c: any) => c?.formField && c?.masterColumn)
-    .map((c: any) => ({
-      masterColumn: String(c.masterColumn),
-      value: formModel?.[c.formField],
-    }))
+  const masterConditions = buildMasterConditions(field, formModel)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
   const { data: masterFieldOptions = [] } = useQuery({
@@ -1145,6 +1160,19 @@ const FieldRenderer = ({
       onChange={onChange}
     />
   ) : null
+
+  // "Pre-select from Master" (MULTIPLE_CHOICE / MULTI_SELECT). Renders nothing.
+  const preselectSync =
+    (runtimeType === 'MULTIPLE_CHOICE' || runtimeType === 'MULTI_SELECT') &&
+    field.settings?.specific?.masterPreselectEnabled ? (
+      <MasterPreselectSync
+        allFields={allFields}
+        field={field}
+        formModel={formModel || {}}
+        value={value}
+        onChange={onChange}
+      />
+    ) : null
 
   const common = {
     disabled: readOnly,
@@ -1376,6 +1404,7 @@ const FieldRenderer = ({
         <ChoiceRadioGroupField
           error={error}
           field={field}
+          options={selectOptions}
           readOnly={readOnly}
           required={required}
           value={value}
@@ -1386,6 +1415,10 @@ const FieldRenderer = ({
     case 'SINGLE_SELECT': {
       const selected = findFieldOption(selectOptions, value)
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
+      const allowAddNew = Boolean(
+        field.settings?.specific?.allowToAddNewOptions ||
+          field.settings?.specific?.allowCustomEntries,
+      )
       if (isSearchField) {
         return (
           <div className='flex w-full items-end gap-1.5'>
@@ -1394,7 +1427,7 @@ const FieldRenderer = ({
                 {...common}
                 createOptionLabel={(query) => t`Add "${query}"`}
                 value={selected}
-                creatable
+                creatable={allowAddNew}
                 searchable
                 options={withExtraFieldOptions(
                   selectOptions,
@@ -1435,7 +1468,7 @@ const FieldRenderer = ({
           {...common}
           createOptionLabel={(query) => t`Add "${query}"`}
           value={selected}
-          creatable
+          creatable={allowAddNew}
           searchable
           options={withExtraFieldOptions(
             selectOptions,
@@ -1450,17 +1483,24 @@ const FieldRenderer = ({
 
     case 'MULTIPLE_CHOICE':
       return (
-        <ChoiceCheckboxGroupField
-          error={error}
-          field={field}
-          readOnly={readOnly}
-          required={required}
-          value={value}
-          onChange={onChange}
-        />
+        <>
+          {preselectSync}
+          <ChoiceCheckboxGroupField
+            error={error}
+            field={field}
+            readOnly={readOnly}
+            required={required}
+            value={value}
+            onChange={onChange}
+          />
+        </>
       )
 
     case 'MULTI_SELECT': {
+      const allowAddNew = Boolean(
+        field.settings?.specific?.allowToAddNewOptions ||
+          field.settings?.specific?.allowCustomEntries,
+      )
       const seen = new Set<string>()
       const selected = normalizeStoredMultiSelectValue(value).flatMap((id) => {
         const opt = findFieldOption(selectOptions, id)
@@ -1471,19 +1511,22 @@ const FieldRenderer = ({
         return [opt]
       })
       return (
-        <InputSelectMultiple
-          {...common}
-          createOptionLabel={(query) => t`Add "${query}"`}
-          options={withExtraFieldOptions(selectOptions, selected)}
-          value={selected}
-          creatable
-          searchable
-          onChange={(opts: Option[]) =>
-            onChange(
-              opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
-            )
-          }
-        />
+        <>
+          {preselectSync}
+          <InputSelectMultiple
+            {...common}
+            createOptionLabel={(query) => t`Add "${query}"`}
+            options={withExtraFieldOptions(selectOptions, selected)}
+            value={selected}
+            creatable={allowAddNew}
+            searchable
+            onChange={(opts: Option[]) =>
+              onChange(
+                opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
+              )
+            }
+          />
+        </>
       )
     }
 
@@ -1716,9 +1759,18 @@ const FieldRenderer = ({
           </div>
         ) : null
 
+      const allowMultipleFiles =
+        runtimeType === 'FILE_UPLOAD' &&
+        field.settings?.specific?.allowMultipleFiles === true
+
       const handleFiles = async (files: FileList | null) => {
         const file = files?.[0]
         if (!file) return
+
+        const extraFiles =
+          allowMultipleFiles && onAddAttachments && !onRequestUpload
+            ? Array.from(files ?? []).slice(1)
+            : []
 
         if (!repositoryId) {
           showToast({
@@ -1750,6 +1802,7 @@ const FieldRenderer = ({
           repositoryId,
         }
         onChange(fileEntry)
+        if (extraFiles.length > 0) onAddAttachments?.(extraFiles)
 
         setIsUploading(true)
         const ocrHints = buildMergedOcrFieldHints(
@@ -1791,6 +1844,7 @@ const FieldRenderer = ({
               accept={runtimeType === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
               disabled={readOnly}
               isLoading={isUploading || Boolean(isPreparing)}
+              multiple={allowMultipleFiles && Boolean(onAddAttachments)}
               loadingText={
                 preparePhase === 'uploading'
                   ? t`Uploading the document…`

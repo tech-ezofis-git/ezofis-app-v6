@@ -1017,6 +1017,67 @@ export function hydrateFormModel(
   return applyCalculatedFields(panels || [], baseModel, options?.formRules)
 }
 
+function extractRawFormRoot(input: any): any {
+  if (!input) return null
+  let current = input
+  if (typeof current === 'string') {
+    const trimmed = current.trim()
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        current = JSON.parse(trimmed)
+      } catch {
+        return null
+      }
+    } else {
+      return null
+    }
+  }
+
+  // Handle nested wrappers: .data, ._json, .formJson
+  for (let i = 0; i < 3; i++) {
+    if (!current || typeof current !== 'object') break
+    if (Array.isArray(current.panels)) break
+
+    if (current._json) {
+      current =
+        typeof current._json === 'string'
+          ? (() => {
+              try {
+                return JSON.parse(current._json)
+              } catch {
+                return current._json
+              }
+            })()
+          : current._json
+      continue
+    }
+    if (current.formJson) {
+      current =
+        typeof current.formJson === 'string'
+          ? (() => {
+              try {
+                return JSON.parse(current.formJson)
+              } catch {
+                return current.formJson
+              }
+            })()
+          : current.formJson
+      continue
+    }
+    if (
+      current.data &&
+      typeof current.data === 'object' &&
+      (current.data.panels || current.data._json || current.data.formJson)
+    ) {
+      current = current.data
+      continue
+    }
+    break
+  }
+
+  return current && typeof current === 'object' ? current : null
+}
+
 /**
  * Safely normalizes a raw `formJson` object (or string) from the backend using `normalizeV5FormJson`
  * so runtime consumers (`useWorkflowForm`, `FormEntriesPage`, etc.) automatically get V5-to-V6
@@ -1028,10 +1089,11 @@ export function ensureNormalizedRuntimeFormJson(rawFormJson: any): {
   secondaryPanels: any[]
   settings: Record<string, any>
 } {
-  if (!rawFormJson) {
+  const root = extractRawFormRoot(rawFormJson)
+  if (!root) {
     return { panels: [], rules: [], secondaryPanels: [], settings: {} }
   }
-  const normalized = normalizeV5FormJson(rawFormJson)
+  const normalized = normalizeV5FormJson(root)
   return {
     panels: normalized.panels || [],
     rules: normalized.rules || [],
@@ -1039,3 +1101,4 @@ export function ensureNormalizedRuntimeFormJson(rawFormJson: any): {
     settings: normalized.rawSettings || {},
   }
 }
+

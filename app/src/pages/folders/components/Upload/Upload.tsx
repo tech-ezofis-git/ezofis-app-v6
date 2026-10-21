@@ -11,7 +11,7 @@ import type {
   StageFileSummary,
 } from '@/api/v6/uploadAndIndex'
 import formApi from '@/api/form/form'
-import { uploadForOcr } from '@/api/v6/folder/folder'
+import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import {
   bulkUpload,
   deleteStagedFiles,
@@ -2764,7 +2764,9 @@ export default function Upload({
   useEffect(() => {
     if (initialFilesAppliedRef.current) return
     initialFilesAppliedRef.current = true
-    if (!initialFiles?.length) return
+    // If a staged file ID is provided (e.g. from Intelligent Upload indexing or staging),
+    // skip passing initialFiles to handleInvoiceFiles so we don't re-trigger OCR/uploadWithOcr or loop.
+    if (!initialFiles?.length || initialStagedFileId) return
     handleInvoiceFiles(initialFiles)
     // Apply once when Upload mounts with preselected files from the empty-state dropzone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2783,23 +2785,44 @@ export default function Upload({
         const { data } = await loadStageFile(stageId)
         if (!data) return
 
+        let fieldsToMapWith = repositoryFields
+        const targetRepoId =
+          activeRepositoryId ||
+          (data.repository?.id ? String(data.repository.id) : '')
+        if (
+          (!fieldsToMapWith || fieldsToMapWith.length === 0) &&
+          targetRepoId
+        ) {
+          try {
+            const { data: repoDetail } = await getRepositoryById(targetRepoId)
+            if (repoDetail?.fields && Array.isArray(repoDetail.fields)) {
+              fieldsToMapWith = repoDetail.fields
+            }
+          } catch {
+            // ignore fallback fetch error
+          }
+        }
+
         const { ocrJson, ocrText } = extractOcrJsonAndText(data)
         const mappedValues = mapOcrResponseToFieldValues(
           data,
-          repositoryFields,
+          fieldsToMapWith,
           data.name,
         )
         const fieldStatuses = mapOcrResponseToFieldStatuses(
           data,
-          repositoryFields,
+          fieldsToMapWith,
         )
 
+        const fallbackFile = initialFiles?.[0]
         const blob = await fetchStageFileBlob(stageId)
         let previewUrl: string | null = null
-        let fileObj: File | null = null
+        let fileObj: File | null = fallbackFile || null
         if (blob) {
           fileObj = new File([blob], data.name || 'file', { type: blob.type })
           previewUrl = URL.createObjectURL(blob)
+        } else if (fallbackFile) {
+          previewUrl = URL.createObjectURL(fallbackFile)
         }
 
         const entry: QueuedUploadFile = {
@@ -2820,7 +2843,10 @@ export default function Upload({
           ocrExtractedValues: mappedValues,
           ocrStatus: 'complete',
           previewUrl,
-          rawOcrJson: ocrJson,
+          rawOcrJson:
+            Array.isArray(ocrJson) && ocrJson.length === 0 && data.fields
+              ? data.fields
+              : ocrJson,
           rawOcrText: ocrText,
           restoredFromServer: true,
           stageFileId: data.id || stageId,

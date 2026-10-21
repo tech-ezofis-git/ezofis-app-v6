@@ -19,6 +19,7 @@ import EmptyState from '@/components/base/EmptyState'
 import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import AiDisclaimer from '@/components/common/AiDisclaimer'
 import { AnimateFadeIn } from '@/components/common/animations'
 import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
@@ -717,6 +718,7 @@ export default function DashboardApiBuilder({
             </div>
           ) : schema ? (
             <>
+              <AiDisclaimer />
               <div className='space-y-3'>
                 <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>
                   {t`KPIs`}
@@ -778,6 +780,7 @@ export default function DashboardApiBuilder({
         showTopConnector
       >
         <div className='space-y-5'>
+          <AiDisclaimer />
           <div className='flex items-center justify-between gap-2.5'>
             <Button
               icon='lucide:arrow-left'

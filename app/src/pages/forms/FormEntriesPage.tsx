@@ -201,11 +201,7 @@ const FormEntriesChoiceInput = ({
   }, [masterInfo.enabled, masterFieldOptions, optionsType, userFieldOptions, field])
 
   const opts =
-    rawOptions.length > 0
-      ? rawOptions.map((o) => o.name)
-      : masterInfo.enabled || optionsType === 'USER_LIST'
-        ? []
-        : ['Option 1', 'Option 2', 'Option 3']
+    rawOptions.length > 0 ? rawOptions.map((o) => o.name) : []
 
   useEffect(() => {
     if (rawOptions.length === 1) {
@@ -529,6 +525,11 @@ const FormEntriesSelectInput = ({
     }
   }, [selectOptions, val, isMulti, onChange])
 
+  const allowAddNew = Boolean(
+    field.settings?.specific?.allowToAddNewOptions ||
+      field.settings?.specific?.allowCustomEntries,
+  )
+
   if (isMulti) {
     const selectedValues = val
       ? String(val)
@@ -542,7 +543,8 @@ const FormEntriesSelectInput = ({
       <InputSelectMultiple
         options={withExtraFieldOptions(selectOptions, selectedOpts)}
         value={selectedOpts}
-        creatable
+        creatable={allowAddNew}
+        createOptionLabel={(query) => `Add "${query}"`}
         searchable
         placeholder={
           field.settings?.general?.placeholder || 'Select options...'
@@ -560,7 +562,8 @@ const FormEntriesSelectInput = ({
     <InputSelect
       placeholder={field.settings?.general?.placeholder || 'Select an option'}
       value={selectedOpt}
-      creatable
+      creatable={allowAddNew}
+      createOptionLabel={(query) => `Add "${query}"`}
       searchable
       options={withExtraFieldOptions(
         selectOptions,

@@ -102,13 +102,53 @@ export const useWorkflowForm = (
     RepositoryFieldDto[]
   >([])
 
-  const repositoryId = options?.viewerRepositoryId ?? workflow?.repositoryId
+  const parsedWorkflowJson = useMemo(() => {
+    if (!workflow) return null
+    if (workflow.workflowJson && typeof workflow.workflowJson === 'string') {
+      try {
+        return JSON.parse(workflow.workflowJson)
+      } catch {
+        return null
+      }
+    }
+    return workflow.workflowJson || null
+  }, [workflow])
 
-  const formId =
-    workflow?.formId ??
-    workflow?.wFormId ??
-    workflow?.settings?.general?.initiateUsing?.formId ??
-    ''
+  const parsedFlowJson = useMemo(() => {
+    if (!workflow) return null
+    if (workflow.flowJson && typeof workflow.flowJson === 'string') {
+      try {
+        return JSON.parse(workflow.flowJson)
+      } catch {
+        return null
+      }
+    }
+    return workflow.flowJson || null
+  }, [workflow])
+
+  const repositoryId = useMemo(
+    () =>
+      options?.viewerRepositoryId ??
+      workflow?.repositoryId ??
+      workflow?.settings?.general?.initiateUsing?.repositoryId ??
+      parsedWorkflowJson?.settings?.general?.initiateUsing?.repositoryId ??
+      parsedFlowJson?.settings?.general?.initiateUsing?.repositoryId ??
+      workflow?.folder ??
+      null,
+    [options?.viewerRepositoryId, workflow, parsedWorkflowJson, parsedFlowJson],
+  )
+
+  const formId = useMemo(
+    () =>
+      workflow?.formId ??
+      workflow?.wFormId ??
+      workflow?.settings?.general?.initiateUsing?.formId ??
+      parsedWorkflowJson?.settings?.general?.initiateUsing?.formId ??
+      parsedFlowJson?.settings?.general?.initiateUsing?.formId ??
+      workflow?.form ??
+      '',
+    [workflow, parsedWorkflowJson, parsedFlowJson],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -117,7 +157,40 @@ export const useWorkflowForm = (
       setIsLoadingForm(true)
       setLoadError(null)
 
+      const fallbackWorkflowForm =
+        workflow?.formJson?._json ??
+        workflow?.formJson?.formJson ??
+        workflow?.formJson
+
       if (!formId) {
+        if (fallbackWorkflowForm) {
+          const normalizedJson = ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
+          if (normalizedJson.panels?.length > 0) {
+            const normalizedForm: FormRecord = {
+              ...workflow,
+              formJson: {
+                ...((typeof fallbackWorkflowForm === 'object' && fallbackWorkflowForm) || {}),
+                panels: normalizedJson.panels,
+                settings: {
+                  ...((typeof fallbackWorkflowForm === 'object' &&
+                    fallbackWorkflowForm?.settings) || {}),
+                  rules: normalizedJson.rules,
+                },
+              },
+            }
+            if (!cancelled) {
+              setForm(normalizedForm)
+              setFormModel(
+                hydrateFormModel(normalizedJson.panels, null, {
+                  formRules: normalizedJson.rules,
+                  initialDefaults: buildInitialFormModel(normalizedJson.panels),
+                }),
+              )
+              setIsLoadingForm(false)
+            }
+            return
+          }
+        }
         if (!cancelled) {
           setLoadError('This workflow has no form configured.')
           setIsLoadingForm(false)
@@ -129,19 +202,46 @@ export const useWorkflowForm = (
       if (cancelled) return
 
       if (error || !data) {
+        if (fallbackWorkflowForm) {
+          const normalizedJson = ensureNormalizedRuntimeFormJson(fallbackWorkflowForm)
+          if (normalizedJson.panels?.length > 0) {
+            const normalizedForm: FormRecord = {
+              ...workflow,
+              formJson: {
+                ...((typeof fallbackWorkflowForm === 'object' && fallbackWorkflowForm) || {}),
+                panels: normalizedJson.panels,
+                settings: {
+                  ...((typeof fallbackWorkflowForm === 'object' &&
+                    fallbackWorkflowForm?.settings) || {}),
+                  rules: normalizedJson.rules,
+                },
+              },
+            }
+            setForm(normalizedForm)
+            setFormModel(
+              hydrateFormModel(normalizedJson.panels, null, {
+                formRules: normalizedJson.rules,
+                initialDefaults: buildInitialFormModel(normalizedJson.panels),
+              }),
+            )
+            setIsLoadingForm(false)
+            return
+          }
+        }
         setLoadError(error || 'Failed to load the form for this workflow.')
         setIsLoadingForm(false)
         return
       }
 
-      const normalizedJson = ensureNormalizedRuntimeFormJson(data?.formJson)
+      const rawFormSource = data?._json ?? data?.formJson ?? data
+      const normalizedJson = ensureNormalizedRuntimeFormJson(rawFormSource)
       const normalizedForm: FormRecord = {
         ...data,
         formJson: {
-          ...(data?.formJson || {}),
+          ...((typeof rawFormSource === 'object' && rawFormSource) || {}),
           panels: normalizedJson.panels,
           settings: {
-            ...(data?.formJson?.settings || {}),
+            ...((typeof rawFormSource === 'object' && rawFormSource?.settings) || {}),
             rules: normalizedJson.rules,
           },
         },
@@ -161,7 +261,7 @@ export const useWorkflowForm = (
     return () => {
       cancelled = true
     }
-  }, [formId])
+  }, [formId, workflow])
 
   useEffect(() => {
     if (!repositoryId) {
@@ -325,7 +425,7 @@ export const useWorkflowForm = (
 
   // Phase 1: OCR-only peek, nothing staged yet. Adds the file to the list
   // immediately (optimistic) and fills in whatever OCR recognizes.
-  const addAttachment = async (files: FileList | null) => {
+  const addAttachment = async (files: FileList | File[] | null) => {
     const list = files ? Array.from(files) : []
     if (list.length === 0 || !repositoryId) return
 

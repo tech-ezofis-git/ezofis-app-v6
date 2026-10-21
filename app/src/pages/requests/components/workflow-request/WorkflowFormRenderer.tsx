@@ -276,6 +276,7 @@ interface Props {
   }[]
   viewOnly?: boolean
   getPanelValue?: (panel: any, index: number) => string
+  onAddAttachments?: (files: File[]) => void
   onFieldChange: (fieldId: string, value: any) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
@@ -316,6 +317,7 @@ const WorkflowFormRenderer = ({
   stages,
   viewOnly,
   getPanelValue,
+  onAddAttachments,
   onFieldChange,
   onOcrFieldList,
   onOpenAttachment,
@@ -514,6 +516,7 @@ const WorkflowFormRenderer = ({
                     Boolean(readOnlyFieldIds?.has(String(field.id))) ||
                     isReadOnlyByRule
                   }
+                  onAddAttachments={onAddAttachments}
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                   onOcrFieldList={onOcrFieldList}
                   onOpenAttachment={onOpenAttachment}
@@ -599,6 +602,7 @@ const WorkflowFormRenderer = ({
                     handleFieldChangeWithCascade(fId, val)
                   })
                 }}
+                onAddAttachments={onAddAttachments}
                 onOcrFieldList={onOcrFieldList}
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={

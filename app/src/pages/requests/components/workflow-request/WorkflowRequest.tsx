@@ -80,20 +80,54 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const [isStartingAgentWorkflow, setIsStartingAgentWorkflow] = useState(false)
   const [agentUploadedFile, setAgentUploadedFile] = useState<File | null>(null)
 
+  const parsedWorkflowJson = useMemo(() => {
+    if (!workflow) return null
+    if (workflow.workflowJson && typeof workflow.workflowJson === 'string') {
+      try {
+        return JSON.parse(workflow.workflowJson)
+      } catch {
+        return null
+      }
+    }
+    return workflow.workflowJson || null
+  }, [workflow])
+
+  const parsedFlowJson = useMemo(() => {
+    if (!workflow) return null
+    if (workflow.flowJson && typeof workflow.flowJson === 'string') {
+      try {
+        return JSON.parse(workflow.flowJson)
+      } catch {
+        return null
+      }
+    }
+    return workflow.flowJson || null
+  }, [workflow])
+
+  const resolvedFormId = useMemo(
+    () =>
+      workflow?.formId ??
+      workflow?.wFormId ??
+      workflow?.settings?.general?.initiateUsing?.formId ??
+      parsedWorkflowJson?.settings?.general?.initiateUsing?.formId ??
+      parsedFlowJson?.settings?.general?.initiateUsing?.formId ??
+      workflow?.form ??
+      '',
+    [workflow, parsedWorkflowJson, parsedFlowJson],
+  )
+
   const { data: requestData } = useRequestDetail(
     workflow?.id,
     createdInstanceId,
     null,
     true,
-    workflow?.formId ||
-      workflow?.wFormId ||
-      workflow?.settings?.general?.initiateUsing?.formId ||
-      null,
+    resolvedFormId || null,
   )
 
   const initiateType = String(
     workflow?.settings?.general?.initiateUsing?.type ||
-      workflow?.workflowJson?.settings?.general?.initiateUsing?.type ||
+      parsedWorkflowJson?.settings?.general?.initiateUsing?.type ||
+      parsedFlowJson?.settings?.general?.initiateUsing?.type ||
       '',
   )
     .toUpperCase()
@@ -215,11 +249,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     const startTime = new Date().toISOString()
     const resolvedProcessId = `job-temp-${Date.now()}`
 
-    const wFormId =
-      workflow?.formId ??
-      workflow?.wFormId ??
-      workflow?.settings?.general?.initiateUsing?.formId ??
-      ''
+    const wFormId = resolvedFormId || ''
     const stubWorkflow = {
       ...workflow,
       flowJson:
@@ -662,6 +692,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         repoFieldHints={repoFieldHints}
                         repositoryId={workflow?.repositoryId}
                         onFieldChange={setFieldValue}
+                        onAddAttachments={addAttachment}
                         onOcrFieldList={applyOcrFieldList}
                       />
                     </div>
@@ -680,6 +711,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         repoFieldHints={repoFieldHints}
                         repositoryId={workflow?.repositoryId}
                         onFieldChange={setFieldValue}
+                        onAddAttachments={addAttachment}
                         onOcrFieldList={applyOcrFieldList}
                       />
                     </div>
@@ -726,6 +758,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 repoFieldHints={repoFieldHints}
                 repositoryId={workflow?.repositoryId}
                 onFieldChange={setFieldValue}
+                onAddAttachments={addAttachment}
                 onOcrFieldList={applyOcrFieldList}
               />
             </div>

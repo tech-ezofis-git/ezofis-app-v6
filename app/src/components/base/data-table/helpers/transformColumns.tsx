@@ -87,7 +87,17 @@ export default function transformColumns(
               }
               onClick={() => row.toggleExpanded()}
             />
-            <span className='font-medium'>{row.original.group}</span>
+            <span className='font-medium'>
+              {(() => {
+                const raw = row.original.group
+                if (!raw) return 'No Group'
+                const str = String(raw).trim()
+                if (/^root(\s*\(|\b)/i.test(str)) {
+                  return str.replace(/^root/i, 'No Group')
+                }
+                return str
+              })()}
+            </span>
           </div>
         )
       }

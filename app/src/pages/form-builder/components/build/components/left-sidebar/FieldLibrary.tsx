@@ -201,6 +201,13 @@ export const ALL_FIELDS: FieldType[] = [
     type: 'TABLE',
   },
   {
+    description: 'Table with runtime editable columns and types',
+    icon: 'lucide:table-properties',
+    label: 'Dynamic Table',
+    section: 'tier6',
+    type: 'DYNAMIC_TABLE',
+  },
+  {
     description: 'Rich-text & dynamic content',
     icon: 'lucide:type',
     label: 'Text Builder',
