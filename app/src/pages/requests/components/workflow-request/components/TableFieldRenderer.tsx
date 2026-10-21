@@ -57,6 +57,7 @@ import {
   getColumnFileError,
   getColumnOcrTargets,
   getFileInputAccept,
+  isAwaitingColumnFile,
   isFileColumnType,
   isMultiFileColumn,
   mapOcrToRowPatch,
@@ -792,12 +793,14 @@ const TableCellShortText = ({
 
 const TableCellFileInput = ({
   col,
+  fillsOtherColumns,
   isImageType,
   val,
   onCellChange,
   onFilesAdded,
 }: {
   col: TableColumn
+  fillsOtherColumns?: boolean
   isImageType: boolean
   val: any
   onCellChange: (newVal: any) => void
@@ -809,6 +812,19 @@ const TableCellFileInput = ({
   const multiple = isMultiFileColumn(col)
   const files = toFileList(val)
   const fileName: string | undefined = files[0]?.fileName
+
+  const handleRemove = (index: number) => {
+    setError(null)
+    onCellChange(removeFileFromValue(col, val, index))
+    setStatus(
+      fillsOtherColumns && files.length <= 1
+        ? {
+            text: 'File removed. Please upload the file again.',
+            tone: 'info',
+          }
+        : null,
+    )
+  }
 
   const handlePick = async (picked: File[]) => {
     // The picker's accept list can be bypassed (e.g. "All files"), so every
@@ -873,57 +889,72 @@ const TableCellFileInput = ({
               aria-label='Remove file'
               className='flex size-4 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
               type='button'
-              onClick={() => {
-                setError(null)
-                onCellChange(removeFileFromValue(col, val, index))
-              }}
+              onClick={() => handleRemove(index)}
             >
               <Icon height={10} name='lucide:x' width={10} />
             </button>
           </div>
         ))}
-      <label
-        className={cn(
-          'flex min-w-0 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
-          busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+      <div className='flex min-w-0 items-center gap-1'>
+        <label
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
+            busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+          )}
+        >
+          <Icon
+            className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
+            height={12}
+            width={12}
+            name={
+              busy
+                ? 'lucide:loader-2'
+                : fileName && !multiple
+                  ? 'lucide:paperclip'
+                  : 'lucide:upload'
+            }
+          />
+          <span className='min-w-0 flex-1 truncate'>
+            {busy
+              ? 'Reading document…'
+              : multiple
+                ? files.length > 0
+                  ? 'Add more files'
+                  : 'Add files'
+                : fileName ||
+                  col.settings?.specific?.placeholder ||
+                  (isImageType ? 'Upload image' : 'Upload file')}
+          </span>
+          <input
+            accept={getFileInputAccept(col, isImageType)}
+            className='hidden'
+            disabled={busy}
+            multiple={multiple}
+            type='file'
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? [])
+              e.target.value = ''
+              if (picked.length > 0) void handlePick(picked)
+            }}
+          />
+        </label>
+        {!multiple && fileName && !busy && (
+          <button
+            aria-label='Remove file'
+            className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+            title='Remove file'
+            type='button'
+            onClick={() => handleRemove(0)}
+          >
+            <Icon height={12} name='lucide:x' width={12} />
+          </button>
         )}
-      >
-        <Icon
-          className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
-          height={12}
-          width={12}
-          name={
-            busy
-              ? 'lucide:loader-2'
-              : fileName && !multiple
-                ? 'lucide:paperclip'
-                : 'lucide:upload'
-          }
-        />
-        <span className='min-w-0 flex-1 truncate'>
-          {busy
-            ? 'Reading document…'
-            : multiple
-              ? files.length > 0
-                ? 'Add more files'
-                : 'Add files'
-              : fileName ||
-                col.settings?.specific?.placeholder ||
-                (isImageType ? 'Upload image' : 'Upload file')}
-        </span>
-        <input
-          accept={getFileInputAccept(col, isImageType)}
-          className='hidden'
-          disabled={busy}
-          multiple={multiple}
-          type='file'
-          onChange={(e) => {
-            const picked = Array.from(e.target.files ?? [])
-            e.target.value = ''
-            if (picked.length > 0) void handlePick(picked)
-          }}
-        />
-      </label>
+      </div>
+      {fillsOtherColumns && files.length === 0 && !busy && !status && (
+        <p className='text-[11px] leading-tight text-gray-9'>
+          Upload a file first to fill the other columns.
+        </p>
+      )}
       {error && <p className='text-[11px] leading-tight text-red-9'>{error}</p>}
       {status && (
         <p
@@ -1247,6 +1278,11 @@ const renderCellInput = (
       return (
         <TableCellFileInput
           col={col}
+          fillsOtherColumns={
+            actions
+              ? getColumnOcrTargets(col, actions.siblingColumns).length > 0
+              : false
+          }
           isImageType={cellType === 'IMAGE_UPLOAD'}
           val={val}
           onCellChange={onCellChange}
@@ -2882,7 +2918,12 @@ const TableFieldRenderer = ({
                                   handleCellChange(rowIndex, col.id, cellVal),
                                 readOnly ||
                                   isColumnReadOnly(col) ||
-                                  isCellRuleReadOnly(col, resolvedRow),
+                                  isCellRuleReadOnly(col, resolvedRow) ||
+                                  isAwaitingColumnFile(
+                                    col,
+                                    resolvedRow,
+                                    tableColumns,
+                                  ),
                                 getLookupOptionsForCell(col, resolvedRow),
                                 isApiOptionsColumn(col)
                                   ? (code) =>
@@ -3094,7 +3135,12 @@ const TableFieldRenderer = ({
                             handleCellChange(rowIndex, col.id, cellVal),
                           readOnly ||
                             isColumnReadOnly(col) ||
-                            isCellRuleReadOnly(col, resolvedRow),
+                            isCellRuleReadOnly(col, resolvedRow) ||
+                            isAwaitingColumnFile(
+                              col,
+                              resolvedRow,
+                              tableColumns,
+                            ),
                           getLookupOptionsForCell(col, resolvedRow),
                           isApiOptionsColumn(col)
                             ? (code) =>

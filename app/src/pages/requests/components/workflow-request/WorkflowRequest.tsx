@@ -139,7 +139,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     Boolean(requestData?.isCompleted) ||
     Boolean(requestData?.completedAtUtc) ||
     Boolean(requestData?.completedAt) ||
-    ['completed', 'approved', 'closed', 'paid', 'success', 'succeeded'].includes(
+    [
+      'completed',
+      'approved',
+      'closed',
+      'paid',
+      'success',
+      'succeeded',
+    ].includes(
       String(requestData?.status || '')
         .toLowerCase()
         .trim(),
@@ -360,6 +367,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     isUploadingAttachment,
     loadError,
     missingMandatoryFieldIds,
+    missingRepoMandatoryFieldIds,
     needsManualUpload,
     panels,
     removeAttachment,
@@ -807,53 +815,68 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
               />
             </div>
           ) : (
-            <div className='flex min-w-0 flex-1 gap-4 overflow-hidden p-4'>
-              <div className='min-w-0 flex-1'>
-                <UploadedFilePreview
-                  activeHighlightTerm={activeHighlightTerm}
-                  activeKey={activeFileKey}
-                  focusRequestId={focusRequestId}
-                  files={
-                    agentUploadedFile
-                      ? [
-                          {
-                            fileName: agentUploadedFile.name,
-                            key: 'agent-file',
-                            rawFile: agentUploadedFile,
-                          },
-                        ]
-                      : uploadedFiles
-                  }
-                  onSelectKey={setActiveFileKey}
-                />
+            <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+              <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+                <button
+                  className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+                  type='button'
+                  onClick={cancelPendingUpload}
+                >
+                  <Icon
+                    className='size-4 transition-transform group-hover:-translate-x-0.5'
+                    name='tabler:arrow-left'
+                  />
+                  <span>{t`Back`}</span>
+                </button>
               </div>
-              <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-                <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
-                  <RepoFieldsPanel
-                    descriptors={repoFieldDescriptors}
-                    formModel={formModel}
-                    hasAttemptedSubmit={hasAttemptedSubmit}
-                    missingMandatoryFieldIds={missingMandatoryFieldIds}
-                    repoFieldHints={repoFieldHints}
-                    repositoryId={workflow?.repositoryId}
-                    onFieldChange={setFieldValue}
-                    onFieldFocus={handleFieldFocus}
-                    onOcrFieldList={applyOcrFieldList}
+              <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+                <div className='min-w-0 flex-1'>
+                  <UploadedFilePreview
+                    activeHighlightTerm={activeHighlightTerm}
+                    activeKey={activeFileKey}
+                    focusRequestId={focusRequestId}
+                    files={
+                      agentUploadedFile
+                        ? [
+                            {
+                              fileName: agentUploadedFile.name,
+                              key: 'agent-file',
+                              rawFile: agentUploadedFile,
+                            },
+                          ]
+                        : uploadedFiles
+                    }
+                    onSelectKey={setActiveFileKey}
                   />
                 </div>
-                <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
-                  <Button
-                    label={t`Cancel`}
-                    variant='outline'
-                    onClick={cancelPendingUpload}
-                  />
-                  <Button
-                    disabled={missingMandatoryFieldIds.size > 0}
-                    label={t`Upload`}
-                    loading={isConfirmingUpload}
-                    variant='solid'
-                    onClick={handleConfirmUpload}
-                  />
+                <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                  <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                    <RepoFieldsPanel
+                      descriptors={repoFieldDescriptors}
+                      formModel={formModel}
+                      hasAttemptedSubmit={hasAttemptedSubmit}
+                      missingMandatoryFieldIds={missingMandatoryFieldIds}
+                      repoFieldHints={repoFieldHints}
+                      repositoryId={workflow?.repositoryId}
+                      onFieldChange={setFieldValue}
+                      onFieldFocus={handleFieldFocus}
+                      onOcrFieldList={applyOcrFieldList}
+                    />
+                  </div>
+                  <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+                    <Button
+                      label={t`Cancel`}
+                      variant='outline'
+                      onClick={cancelPendingUpload}
+                    />
+                    <Button
+                      disabled={missingRepoMandatoryFieldIds.size > 0}
+                      label={t`Upload`}
+                      loading={isConfirmingUpload}
+                      variant='solid'
+                      onClick={handleConfirmUpload}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
