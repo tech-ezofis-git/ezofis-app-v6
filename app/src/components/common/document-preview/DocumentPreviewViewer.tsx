@@ -1665,6 +1665,9 @@ function PdfViewer({
     setLoadError(null)
     setTotalPages(event.doc.numPages)
 
+    // Fitting the page changes the worker key and remounts the viewer. Searching
+    // on that first document hits a viewer that is about to be destroyed, so the
+    // OCR probe records no matches and clicking a field cannot highlight it.
     if (pageScale !== null) {
       setDocumentReady(true)
       return
@@ -1672,9 +1675,14 @@ function PdfViewer({
 
     const containerWidth = viewerContainerRef.current?.clientWidth ?? 0
 
+    const applyFittedScale = (nextScale: number) => {
+      setPageScale(nextScale)
+      setScale(nextScale)
+      setDocumentReady(false)
+    }
+
     if (!containerWidth) {
-      setPageScale(1)
-      setScale(1)
+      applyFittedScale(1)
       return
     }
 
@@ -1689,14 +1697,10 @@ function PdfViewer({
           MAX_PAGE_SCALE,
         )
 
-        setPageScale(fitted)
-        setScale(fitted)
-        setDocumentReady(true)
+        applyFittedScale(fitted)
       })
       .catch(() => {
-        setPageScale(1)
-        setScale(1)
-        setDocumentReady(true)
+        applyFittedScale(1)
       })
   }
   const [matchesVersion, setMatchesVersion] = useState(0)
