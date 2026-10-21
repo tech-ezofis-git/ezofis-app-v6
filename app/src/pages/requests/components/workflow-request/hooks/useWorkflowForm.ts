@@ -425,7 +425,7 @@ export const useWorkflowForm = (
 
   // Phase 1: OCR-only peek, nothing staged yet. Adds the file to the list
   // immediately (optimistic) and fills in whatever OCR recognizes.
-  const addAttachment = async (files: FileList | null) => {
+  const addAttachment = async (files: FileList | File[] | null) => {
     const list = files ? Array.from(files) : []
     if (list.length === 0 || !repositoryId) return
 

@@ -36,16 +36,43 @@ import TruncatedExpandText from './TruncatedExpandText'
 import QuoteLineItemsTable, {
   buildQuoteTotals,
   normalizeLineItemRows,
+  remapLineItemRows,
+  toFormTableRows,
   type QuoteTotals,
   toMoney,
 } from './QuoteLineItemsTable'
+import QuoteVariantCards, {
+  QuoteComparePanel,
+  QuoteVariantEmptyPanel,
+  type QuoteTabId,
+} from './QuoteVariantCards'
 import {
   buildQuoteViewModel,
+  displayQuoteTotalLabel,
   getQuoteTaxRate,
   type QuoteScalarEntry,
   type QuoteTableEntry,
   type QuoteTotalEntry,
 } from './quoteResultUtils'
+import {
+  collectQuoteVariantResultKeys,
+  extractQuoteVariants,
+  isQuoteVariantTableKey,
+  QUOTE_VARIANT_META,
+  resolveLineItemTableVariant,
+  resolveQuoteFieldVariant,
+  resolveRowQuoteVariant,
+  stripQuoteVariantLabel,
+  resolveVariantScalarFromResult,
+  effectiveDynamicColumns,
+  extractQuoteVariantEmptyMeta,
+  previewQuoteTypeForVariant,
+  resolveComparePayload,
+  VARIANT_REMARKS_KEYS,
+  VARIANT_SCALAR_KEYS,
+  type QuoteVariantId,
+  type QuoteVariantTableSource,
+} from './quoteVariants'
 
 type QuotePaneMode = 'agent_review' | 'preview'
 
@@ -64,7 +91,50 @@ const ensureOnDemandTable = (field: any) => {
 }
 
 const controlLabel = (field: any | null, fallback?: string) =>
-  field ? getFieldHeading(field) : fallback
+  stripQuoteVariantLabel(field ? getFieldHeading(field) : fallback || '')
+
+const dynamicCellFilled = (value: unknown) => {
+  if (value == null || value === '') return false
+  if (typeof value === 'object') return false
+  const text = String(value).trim()
+  return text !== '' && text.toUpperCase() !== 'NA'
+}
+
+/** When rows carry their own keys, hide unused builder columns such as "Traceability". */
+const columnsForFilledDynamicTable = (
+  schema: { id: string; label?: string; name?: string; type?: string; settings?: any }[],
+  rows: Record<string, any>[],
+) => {
+  const filledRows = rows.filter((row) =>
+    Object.entries(row || {}).some(
+      ([key, value]) => !key.startsWith('_') && dynamicCellFilled(value),
+    ),
+  )
+  if (!filledRows.length) return schema
+
+  const usedSchema = schema.filter((col) =>
+    filledRows.some(
+      (row) =>
+        dynamicCellFilled(row[col.id]) ||
+        dynamicCellFilled(row[col.name || '']) ||
+        dynamicCellFilled(row[col.label || '']),
+    ),
+  )
+  const known = new Set(
+    usedSchema.flatMap((col) => [col.id, String(col.name || ''), String(col.label || '')]),
+  )
+  const extras: { id: string; name: string; type: string }[] = []
+  filledRows.forEach((row) => {
+    Object.keys(row || {}).forEach((key) => {
+      if (key.startsWith('_') || known.has(key)) return
+      if (!filledRows.some((item) => dynamicCellFilled(item[key]))) return
+      known.add(key)
+      extras.push({ id: key, name: key, type: 'SHORT_TEXT' })
+    })
+  })
+  if (extras.length) return [...usedSchema, ...extras]
+  return usedSchema.length ? usedSchema : schema
+}
 
 const isEmptyDisplay = (value: string) => {
   const trimmed = value.trim()
@@ -386,67 +456,6 @@ interface Props {
   onQuoteTotalChange?: (total: number | null) => void
 }
 
-/** True when request is on a stage that rules route to directly from Quote Agent. */
-const isOnStageAfterQuoteAgent = (workflow: any, requestData: any) => {
-  const json = workflow?.workflowJson || workflow || {}
-  const blocks = Array.isArray(json.blocks) ? json.blocks : []
-  const rules = Array.isArray(json.rules) ? json.rules : []
-  if (!blocks.length || !rules.length) return false
-
-  const quoteBlock = blocks.find((block: any) => {
-    const type = String(block?.type || '')
-    const label = String(block?.settings?.label || '')
-    const subtype = String(block?.settings?.subtype || '').toUpperCase()
-    return (
-      type === 'QUOTE_AGENT' || subtype === 'QUOTE' || label.includes('Quote')
-    )
-  })
-  if (!quoteBlock?.id) return false
-
-  const nextIds = new Set(
-    rules
-      .filter(
-        (rule: any) =>
-          String(rule?.fromBlockId || '') === String(quoteBlock.id),
-      )
-      .map((rule: any) => String(rule?.toBlockId || ''))
-      .filter(Boolean),
-  )
-  if (nextIds.size === 0) return false
-
-  const activityId = String(
-    requestData?.activityId ||
-      requestData?.currentActivityId ||
-      requestData?.stageId ||
-      '',
-  ).trim()
-  if (activityId && nextIds.has(activityId)) return true
-
-  const stage = String(
-    requestData?.stage || requestData?.currentStage || '',
-  ).trim()
-  if (!stage) return false
-
-  const nextBlocks = blocks.filter((block: any) =>
-    nextIds.has(String(block?.id || '')),
-  )
-  const labelMatches = nextBlocks.filter((block: any) => {
-    const label = String(block?.settings?.label || '').trim()
-    return label && stage === label
-  })
-  if (labelMatches.length !== 1) return false
-
-  // Duplicate labels (e.g. two "Manual User" blocks) — require activityId.
-  const matchedLabel = String(labelMatches[0]?.settings?.label || '').trim()
-  const sameLabelCount = blocks.filter(
-    (block: any) =>
-      String(block?.settings?.label || '').trim() === matchedLabel,
-  ).length
-  if (sameLabelCount > 1) return false
-
-  return true
-}
-
 const resolveTableValue = (
   formModel: Record<string, any>,
   field: any | null,
@@ -490,7 +499,6 @@ const QuoteAgentResultView = ({
   hiddenFieldIds,
   readOnly = false,
   readOnlyFieldIds,
-  requestData,
   result,
   workflow,
   onFieldChange,
@@ -508,18 +516,24 @@ const QuoteAgentResultView = ({
     [workflow],
   )
   const workflowFormId = useMemo(() => getWorkflowFormId(workflow), [workflow])
-  const canPreviewDocument = useMemo(
-    () =>
-      Boolean(documentTemplateJson) &&
-      isOnStageAfterQuoteAgent(workflow, requestData),
-    [documentTemplateJson, requestData, workflow],
-  )
 
   const [paneMode, setPaneMode] = useState<QuotePaneMode>('agent_review')
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFileName, setPreviewFileName] = useState('quote.pdf')
   const previewUrlRef = useRef<string | null>(null)
+  const [activeQuoteTabId, setActiveQuoteTabId] =
+    useState<QuoteTabId>('main')
+  const [copiedFromByVariant, setCopiedFromByVariant] = useState<
+    Partial<Record<QuoteVariantId, QuoteVariantId>>
+  >({})
+  /** Copied rows kept locally so Quote 2/3 leave the empty panel even if form keys lag. */
+  const [draftRowsByVariant, setDraftRowsByVariant] = useState<
+    Partial<Record<QuoteVariantId, Record<string, any>[]>>
+  >({})
+  const [draftOrderByVariant, setDraftOrderByVariant] = useState<
+    Partial<Record<QuoteVariantId, string>>
+  >({})
 
   useEffect(() => {
     return () => {
@@ -531,66 +545,50 @@ const QuoteAgentResultView = ({
   }, [])
 
   useEffect(() => {
-    if (!canPreviewDocument && paneMode === 'preview') {
+    if (!documentTemplateJson && paneMode === 'preview') {
       setPaneMode('agent_review')
     }
-  }, [canPreviewDocument, paneMode])
-
-  const loadDocumentPreview = async () => {
-    if (!documentTemplateJson) return
-    setPreviewLoading(true)
-    try {
-      const { data, error } = await previewDocument({
-        formData: buildDocumentPreviewFormData(formModel),
-        templateJson: documentTemplateJson,
-        ...(workflowFormId ? { formId: workflowFormId } : {}),
-      })
-      if (error || !data?.pdfBase64) {
-        showToast({
-          message: error || t`Document preview failed`,
-          variant: 'error',
-        })
-        return
-      }
-      const objectUrl = pdfBase64ToObjectUrl(data.pdfBase64)
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
-      previewUrlRef.current = objectUrl
-      setPreviewUrl(objectUrl)
-      setPreviewFileName(data.fileName || 'quote.pdf')
-    } finally {
-      setPreviewLoading(false)
-    }
-  }
-
-  const selectPaneMode = (mode: QuotePaneMode) => {
-    setPaneMode(mode)
-    if (mode === 'preview') {
-      void loadDocumentPreview()
-    }
-  }
+  }, [documentTemplateJson, paneMode])
 
   const viewModel = useMemo(
     () => buildQuoteViewModel(result, formFields, tableFields),
     [formFields, result, tableFields],
   )
 
-  const freightEntry = viewModel.totals.find(
-    (entry) => entry.kind === 'freight',
-  )
-  const freightFromForm = freightEntry
-    ? formModel?.[
-        freightEntry.field
-          ? getFieldId(freightEntry.field)
-          : freightEntry.resultKey
-      ]
-    : undefined
-  const freight = Number(
-    freightFromForm !== undefined &&
-      freightFromForm !== null &&
-      freightFromForm !== ''
-      ? freightFromForm
-      : (freightEntry?.value ?? 0),
-  )
+  const resolveTotalEntryValue = (
+    variantId: QuoteVariantId,
+    kind: QuoteTotalEntry['kind'],
+  ) => {
+    const entries = viewModel.totals.filter((entry) => entry.kind === kind)
+    const entry =
+      entries.find((e) => (e.variant || 'main') === variantId) ||
+      (variantId === 'main' ? entries[0] : null)
+    if (entry) {
+      const fromForm =
+        formModel?.[
+          entry.field ? getFieldId(entry.field) : entry.resultKey
+        ]
+      if (fromForm !== undefined && fromForm !== null && fromForm !== '') {
+        return Number(fromForm) || 0
+      }
+      return Number(entry.value || 0) || 0
+    }
+    if (kind === 'discount' || kind === 'freight' || kind === 'subtotal' || kind === 'tax' || kind === 'total') {
+      return (
+        resolveVariantScalarFromResult(result, variantId, kind === 'tax' ? 'tax' : kind) ||
+        0
+      )
+    }
+    return 0
+  }
+
+  const resolveFreightForVariant = (variantId: QuoteVariantId) =>
+    resolveTotalEntryValue(variantId, 'freight')
+
+  const resolveDiscountForVariant = (variantId: QuoteVariantId) =>
+    resolveTotalEntryValue(variantId, 'discount')
+
+  const freight = resolveFreightForVariant('main')
   const taxRate = useMemo(() => getQuoteTaxRate(result), [result])
 
   const lineItems = useMemo(() => {
@@ -662,9 +660,458 @@ const QuoteAgentResultView = ({
   )
 
   const initialTotals = useMemo(
-    () => buildQuoteTotals(lineItems, freight, taxRate, lineItemColumns),
-    [freight, lineItemColumns, lineItems, taxRate],
+    () =>
+      buildQuoteTotals(
+        lineItems,
+        freight,
+        taxRate,
+        lineItemColumns,
+        resolveDiscountForVariant('main'),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [freight, lineItemColumns, lineItems, taxRate, formModel, viewModel.totals],
   )
+
+  const resultForVariants = useMemo(() => {
+    const next: Record<string, any> = { ...(result || {}) }
+    viewModel.otherTables.forEach((table) => {
+      const key = table.resultKey || table.label
+      if (!key) return
+      const fieldId = table.field ? getFieldId(table.field) : ''
+      const fromForm =
+        fieldId && Array.isArray(formModel?.[fieldId])
+          ? formModel[fieldId]
+          : null
+      if (fromForm) next[key] = fromForm
+      else if (Array.isArray(table.rows)) next[key] = table.rows
+    })
+    return next
+  }, [formModel, result, viewModel.otherTables])
+
+  const formVariantTables = useMemo((): QuoteVariantTableSource[] => {
+    const sources: QuoteVariantTableSource[] = []
+    const seen = new Set<QuoteVariantId>()
+
+    const readFormTableRows = (field: any): Record<string, any>[] | null => {
+      const keys = [
+        field?.id,
+        field?.jsonId,
+        field?.name,
+        getFieldHeading(field),
+        getFieldId(field),
+      ]
+        .filter(Boolean)
+        .map((key) => String(key))
+      for (const key of keys) {
+        const value = formModel?.[key]
+        if (Array.isArray(value) && value.length > 0) return value
+      }
+      // Distinguish "missing" from explicit empty array after clear.
+      for (const key of keys) {
+        if (Array.isArray(formModel?.[key])) return formModel[key]
+      }
+      return null
+    }
+
+    tableFields.forEach((field) => {
+      const heading = getFieldHeading(field)
+      const id = resolveLineItemTableVariant(heading)
+      if (!id) return
+      seen.add(id)
+      const fieldId = getFieldId(field)
+      const columns = field?.settings?.specific?.tableColumns || []
+      const fromForm = readFormTableRows(field)
+      const fromResult = Array.isArray(resultForVariants[heading])
+        ? resultForVariants[heading]
+        : Array.isArray(resultForVariants[fieldId])
+          ? resultForVariants[fieldId]
+          : null
+      const draftRows = draftRowsByVariant[id]
+      const resolvedRows =
+        draftRows && draftRows.length > 0
+          ? draftRows
+          : id === 'main'
+            ? lineItems.length > 0
+              ? lineItems
+              : fromForm || fromResult || []
+            : fromForm && fromForm.length > 0
+              ? fromForm
+              : fromResult || []
+      sources.push({
+        columns,
+        discount: resolveDiscountForVariant(id),
+        fieldId,
+        freight: resolveFreightForVariant(id),
+        id,
+        resultKey: fieldId,
+        // Prefer live normalized main rows; fall back to form/result so copy
+        // still has Product/Qty/Price when lineItemTable is briefly empty.
+        rows: resolvedRows,
+        total: resolveTotalEntryValue(id, 'total'),
+      })
+    })
+
+    // API-only variants with no form field yet (legacy ALT/OPT + quote_2/quote_3 keys)
+    ;(['main', 'alt', 'opt'] as const).forEach((id) => {
+      if (seen.has(id)) return
+      const keyCandidates =
+        id === 'main'
+          ? ['Line Item']
+          : id === 'alt'
+            ? ['quote_2 Line Item', 'ALT Line Item']
+            : ['quote_3 Line Item', 'OPT Line Item']
+      const key =
+        keyCandidates.find((candidate) =>
+          Array.isArray(resultForVariants[candidate]),
+        ) || keyCandidates[0]
+      const draftRows = draftRowsByVariant[id]
+      const rows =
+        draftRows && draftRows.length > 0
+          ? draftRows
+          : id === 'main'
+            ? lineItems
+            : Array.isArray(resultForVariants[key])
+              ? resultForVariants[key]
+              : []
+      if (!rows.length && id !== 'main') return
+      if (id === 'main' && !rows.length) return
+      sources.push({
+        discount: resolveDiscountForVariant(id),
+        freight: resolveFreightForVariant(id),
+        id,
+        resultKey: key,
+        rows,
+        total: resolveTotalEntryValue(id, 'total'),
+      })
+    })
+
+    return sources
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scalars from viewModel/formModel/result
+  }, [
+    draftRowsByVariant,
+    formModel,
+    lineItems,
+    result,
+    resultForVariants,
+    tableFields,
+    viewModel.totals,
+  ])
+
+  const quoteVariants = useMemo(
+    () =>
+      extractQuoteVariants({
+        columns: lineItemColumns,
+        formVariantTables,
+        freight,
+        lineItems,
+        result: resultForVariants,
+        taxRate,
+      }),
+    [
+      freight,
+      formVariantTables,
+      lineItemColumns,
+      lineItems,
+      resultForVariants,
+      taxRate,
+    ],
+  )
+
+  const quoteEmptyMetaByVariant = useMemo(
+    () => extractQuoteVariantEmptyMeta(result),
+    [result],
+  )
+
+  const compareField = useMemo(
+    () =>
+      tableFields.find((field) => {
+        const heading = getFieldHeading(field)
+          .toLowerCase()
+          .replace(/[\s_-]+/g, '')
+        return heading === 'compare'
+      }) || null,
+    [tableFields],
+  )
+
+  const formCompareRows = useMemo(() => {
+    if (!compareField) return null
+    const fieldId = getFieldId(compareField)
+    const fromForm = formModel?.[fieldId]
+    // Compare panel reads this table only. Missing or empty rows stay empty
+    // instead of being rebuilt from line items or quote_result.compare.
+    return Array.isArray(fromForm) ? fromForm : []
+  }, [compareField, formModel])
+
+  const compareColumns = useMemo(
+    () => effectiveDynamicColumns(compareField, formCompareRows || []),
+    [compareField, formCompareRows],
+  )
+
+  const compareByVariant = useMemo(
+    () => ({
+      alt: resolveComparePayload(result, 'alt', formCompareRows || undefined),
+      opt: resolveComparePayload(result, 'opt', formCompareRows || undefined),
+    }),
+    [formCompareRows, result],
+  )
+
+  const quoteDynamicTables = useMemo(() => {
+    return tableFields
+      .map((field) => {
+        const type = String(field?.type || '')
+          .toUpperCase()
+          .replace(/[\s-]+/g, '_')
+        if (type !== 'DYNAMIC_TABLE') return null
+        const heading = getFieldHeading(field)
+        if (resolveLineItemTableVariant(heading)) return null
+        const compact = heading.toLowerCase().replace(/[\s_-]+/g, '')
+        if (compact === 'compare' || compact.endsWith('compare')) return null
+        const fieldId = getFieldId(field)
+        const stored = formModel?.[fieldId]
+        const sourceRows = Array.isArray(stored)
+          ? (stored as Record<string, any>[])
+          : []
+        const schemaColumns = effectiveDynamicColumns(field, sourceRows)
+        // An empty form array still renders the builder columns with one blank row.
+        // Filled rows drop unused default columns and keep the keys that have values.
+        const rows = sourceRows.length
+          ? sourceRows
+          : [{ _rowId: `${fieldId}-empty` }]
+        return {
+          columns: columnsForFilledDynamicTable(schemaColumns, rows),
+          fieldId,
+          rows,
+          title: stripQuoteVariantLabel(heading),
+          variantId: resolveQuoteFieldVariant(heading),
+        }
+      })
+      .filter(Boolean) as {
+      columns: ReturnType<typeof effectiveDynamicColumns>
+      fieldId: string
+      rows: Record<string, any>[]
+      title: string
+      variantId: QuoteVariantId
+    }[]
+  }, [formModel, tableFields])
+
+  useEffect(() => {
+    if (activeQuoteTabId === 'compare') return
+    if (!quoteVariants.some((variant) => variant.id === activeQuoteTabId)) {
+      setActiveQuoteTabId(quoteVariants[0]?.id || 'main')
+    }
+  }, [activeQuoteTabId, quoteVariants])
+
+  const activeQuoteVariant =
+    activeQuoteTabId === 'compare'
+      ? null
+      : quoteVariants.find((variant) => variant.id === activeQuoteTabId) ||
+        quoteVariants[0] ||
+        null
+
+  const activeVariantId = activeQuoteVariant?.id || 'main'
+  const isCompareTab = activeQuoteTabId === 'compare'
+  const activeOrderNumber = useMemo(() => {
+    const field = formFields.find((item) => {
+      const heading = getFieldHeading(item)
+      const compact = stripQuoteVariantLabel(heading)
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '')
+      return (
+        compact === 'ordernumber' &&
+        resolveQuoteFieldVariant(heading) === activeVariantId
+      )
+    })
+    if (!field) return null
+    const fieldId = getFieldId(field)
+    const drafted = draftOrderByVariant[activeVariantId]
+    if (drafted != null && drafted.trim() !== '') {
+      return { field, fieldId, value: drafted }
+    }
+    const keys = [
+      field.id,
+      field.jsonId,
+      field.name,
+      fieldId,
+      getFieldHeading(field),
+    ].filter(Boolean)
+    let value = ''
+    for (const key of keys) {
+      const fromForm = formModel?.[key]
+      const fromResult = result?.[key]
+      const picked = [fromForm, fromResult].find(
+        (item) =>
+          item != null &&
+          typeof item !== 'object' &&
+          String(item).trim() !== '',
+      )
+      if (picked != null) {
+        value = String(picked)
+        break
+      }
+    }
+    return { field, fieldId, value }
+  }, [activeVariantId, draftOrderByVariant, formFields, formModel, result])
+  const previewQuoteType = previewQuoteTypeForVariant(activeQuoteTabId)
+  const isEmptyActiveVariant =
+    !isCompareTab &&
+    Boolean(activeQuoteVariant && activeQuoteVariant.itemCount <= 0)
+
+  const previewQuoteTypeRef = useRef<string | null>(null)
+
+  const loadDocumentPreview = async (quoteType: string) => {
+    if (!documentTemplateJson || !quoteType) return
+    previewQuoteTypeRef.current = quoteType
+    setPreviewLoading(true)
+    try {
+      const { data, error } = await previewDocument({
+        formData: buildDocumentPreviewFormData(formModel),
+        quoteType,
+        templateJson: documentTemplateJson,
+        ...(workflowFormId ? { formId: workflowFormId } : {}),
+      })
+      if (error || !data?.pdfBase64) {
+        showToast({
+          message: error || t`Document preview failed`,
+          variant: 'error',
+        })
+        return
+      }
+      const objectUrl = pdfBase64ToObjectUrl(data.pdfBase64)
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = objectUrl
+      setPreviewUrl(objectUrl)
+      setPreviewFileName(data.fileName || 'quote.pdf')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const selectPaneMode = (mode: QuotePaneMode) => {
+    if (mode === 'preview' && (isCompareTab || isEmptyActiveVariant)) return
+    if (mode === 'preview' && !documentTemplateJson) {
+      showToast({
+        message: t`Document preview is not available for this workflow`,
+        variant: 'error',
+      })
+      return
+    }
+    if (mode === 'preview' && !previewQuoteType) return
+    setPaneMode(mode)
+    if (mode === 'preview' && previewQuoteType) {
+      void loadDocumentPreview(previewQuoteType)
+    }
+  }
+
+  useEffect(() => {
+    // Compare has no single quoteType — leave preview mode if user switches tabs.
+    if (isCompareTab && paneMode === 'preview') {
+      setPaneMode('agent_review')
+      previewQuoteTypeRef.current = null
+      return
+    }
+    // Refresh PDF when switching Quote 1 / 2 / 3 while already in preview.
+    if (
+      paneMode === 'preview' &&
+      previewQuoteType &&
+      previewQuoteTypeRef.current !== previewQuoteType
+    ) {
+      void loadDocumentPreview(previewQuoteType)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only on tab change
+  }, [isCompareTab, paneMode, previewQuoteType])
+
+  const previewDisabled = isCompareTab || isEmptyActiveVariant
+  const activeFreight =
+    activeQuoteVariant?.freight ?? resolveFreightForVariant(activeVariantId)
+  const activeDiscount =
+    activeQuoteVariant?.discount ?? resolveDiscountForVariant(activeVariantId)
+  const activeFormTable = formVariantTables.find(
+    (entry) => entry.id === activeVariantId,
+  )
+  const activeColumns =
+    activeQuoteVariant?.columns?.length
+      ? activeQuoteVariant.columns
+      : activeFormTable?.columns?.length
+        ? activeFormTable.columns
+        : lineItemColumns
+  const activeTableFieldId = (() => {
+    if (activeQuoteVariant?.fieldId) return activeQuoteVariant.fieldId
+    if (activeFormTable?.fieldId) return activeFormTable.fieldId
+    const byHeading = tableFields.find(
+      (field) =>
+        resolveLineItemTableVariant(getFieldHeading(field)) === activeVariantId,
+    )
+    if (byHeading) return getFieldId(byHeading)
+    // Only fall back to the primary Line Item field on the main tab.
+    if (activeVariantId === 'main' && viewModel.lineItemTable?.field) {
+      return getFieldId(viewModel.lineItemTable.field)
+    }
+    return undefined
+  })()
+
+  const variantResultKeys = useMemo(() => {
+    const keys = collectQuoteVariantResultKeys(quoteVariants)
+    quoteVariants.forEach((variant) => {
+      if (variant.fieldId) keys.add(variant.fieldId)
+      if (variant.resultKey) keys.add(variant.resultKey)
+    })
+    ;[
+      'Line Item',
+      'quote_2 Line Item',
+      'quote_3 Line Item',
+      'ALT Line Item',
+      'OPT Line Item',
+    ].forEach((key) => keys.add(key))
+    return keys
+  }, [quoteVariants])
+
+  const displayLineItems = activeQuoteVariant?.rows ?? lineItems
+
+  const activeVariantTotals = useMemo(() => {
+    if (isCompareTab || isEmptyActiveVariant) {
+      return {
+        discount: 0,
+        freight: 0,
+        gross: 0,
+        hst: 0,
+        subtotal: 0,
+        total: 0,
+      }
+    }
+    const computed = buildQuoteTotals(
+      displayLineItems,
+      activeFreight,
+      taxRate,
+      activeColumns,
+      activeDiscount,
+    )
+    // Prefer API Total for the active tab when present (sample quote_result shape).
+    const apiTotal = resolveTotalEntryValue(activeVariantId, 'total')
+    const apiHst = resolveTotalEntryValue(activeVariantId, 'tax')
+    const apiSubtotal = resolveTotalEntryValue(activeVariantId, 'subtotal')
+    // Prefer computed line-discount $ over the quote-level Discount field (often 0).
+    const apiDiscount = resolveTotalEntryValue(activeVariantId, 'discount')
+    return {
+      ...computed,
+      discount: computed.discount || apiDiscount || 0,
+      freight: activeFreight,
+      hst: apiHst || computed.hst,
+      subtotal: apiSubtotal || computed.subtotal,
+      total: apiTotal || computed.total,
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTotalEntryValue uses viewModel/formModel
+  }, [
+    activeColumns,
+    activeDiscount,
+    activeFreight,
+    activeVariantId,
+    displayLineItems,
+    formModel,
+    isCompareTab,
+    isEmptyActiveVariant,
+    taxRate,
+    viewModel.totals,
+  ])
 
   const [computedTotals, setComputedTotals] =
     useState<QuoteTotals>(initialTotals)
@@ -681,8 +1128,8 @@ const QuoteAgentResultView = ({
       totalsFromEditRef.current = false
       return
     }
-    setComputedTotals(initialTotals)
-  }, [initialTotals])
+    setComputedTotals(activeVariantTotals)
+  }, [activeVariantTotals])
 
   const canEditField = (field: any | null) =>
     canEditAgentFormField(field, {
@@ -720,11 +1167,61 @@ const QuoteAgentResultView = ({
 
   const writeField = (field: any | null, value: any, resultKey?: string) => {
     if (!onFieldChange) return
+    const keys = new Set<string>()
     if (field) {
-      onFieldChange(getFieldId(field), value)
-      return
+      ;[field.id, field.jsonId, field.name, getFieldId(field), getFieldHeading(field)]
+        .filter(Boolean)
+        .forEach((key) => keys.add(String(key)))
     }
-    if (resultKey) onFieldChange(resultKey, value)
+    if (resultKey) keys.add(String(resultKey))
+    if (keys.size === 0) return
+    keys.forEach((key) => onFieldChange(key, value))
+  }
+
+  const readScalarText = (field: any | null, extraKeys: string[] = []) => {
+    const keys = [
+      ...(field
+        ? [field.id, field.jsonId, field.name, getFieldId(field), getFieldHeading(field)]
+        : []),
+      ...extraKeys,
+    ].filter(Boolean)
+    for (const key of keys) {
+      const picked = [formModel?.[key], result?.[key]].find(
+        (item) =>
+          item != null &&
+          typeof item !== 'object' &&
+          String(item).trim() !== '',
+      )
+      if (picked != null) return String(picked)
+    }
+    const wanted = new Set(
+      extraKeys.map((key) =>
+        stripQuoteVariantLabel(key).toLowerCase().replace(/[\s_-]+/g, ''),
+      ),
+    )
+    if (field) {
+      wanted.add(
+        stripQuoteVariantLabel(getFieldHeading(field))
+          .toLowerCase()
+          .replace(/[\s_-]+/g, ''),
+      )
+    }
+    for (const bag of [formModel, result]) {
+      if (!bag || typeof bag !== 'object') continue
+      for (const [key, item] of Object.entries(bag)) {
+        const compact = stripQuoteVariantLabel(key)
+          .toLowerCase()
+          .replace(/[\s_-]+/g, '')
+        if (!wanted.has(compact)) continue
+        if (field && resolveQuoteFieldVariant(key) !== resolveQuoteFieldVariant(getFieldHeading(field))) {
+          continue
+        }
+        if (item == null || typeof item === 'object') continue
+        if (String(item).trim() === '') continue
+        return String(item)
+      }
+    }
+    return ''
   }
 
   const writeTable = (field: any | null, rows: Record<string, any>[]) => {
@@ -734,24 +1231,386 @@ const QuoteAgentResultView = ({
     onFieldChange?.(id, rows)
   }
 
-  const persistTotals = (totals: QuoteTotals) => {
-    if (!onFieldChange) return
-    viewModel.totals.forEach((entry) => {
-      let value: number | null = null
-      if (entry.kind === 'subtotal') value = totals.subtotal
-      if (entry.kind === 'freight') value = totals.freight
-      if (entry.kind === 'tax') value = totals.hst
-      if (entry.kind === 'total') value = totals.total
-      if (value == null) return
-      const current = resolveDisplayValue(
-        entry.field,
-        entry.value,
-        entry.resultKey,
+  const findOrderNumberField = (variantId: QuoteVariantId) =>
+    formFields.find((field) => {
+      const heading = getFieldHeading(field)
+      const compact = stripQuoteVariantLabel(heading)
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '')
+      return (
+        compact === 'ordernumber' &&
+        resolveQuoteFieldVariant(heading) === variantId
       )
-      if (Number(current) === value) return
-      writeField(entry.field, value, entry.resultKey)
+    }) || null
+
+  const variantScalarResultKey = (
+    variantId: QuoteVariantId,
+    kind: QuoteTotalEntry['kind'],
+  ) => {
+    if (kind === 'other') return undefined
+    const candidates = VARIANT_SCALAR_KEYS[variantId]?.[kind]
+    return candidates?.[0]
+  }
+
+  const writeVariantTotals = (
+    variantId: QuoteVariantId,
+    totals: QuoteTotals,
+  ) => {
+    if (!onFieldChange) return
+    const kinds: QuoteTotalEntry['kind'][] = [
+      'subtotal',
+      'discount',
+      'freight',
+      'tax',
+      'total',
+    ]
+    kinds.forEach((kind) => {
+      let value: number | null = null
+      if (kind === 'subtotal') value = totals.subtotal
+      if (kind === 'discount') value = totals.discount
+      if (kind === 'freight') value = totals.freight
+      if (kind === 'tax') value = totals.hst
+      if (kind === 'total') value = totals.total
+      if (value == null) return
+
+      const entry = viewModel.totals.find(
+        (item) =>
+          item.kind === kind && (item.variant || 'main') === variantId,
+      )
+      const resultKey =
+        entry?.resultKey || variantScalarResultKey(variantId, kind)
+      if (!resultKey && !entry?.field) return
+      writeField(entry?.field || null, value, resultKey)
     })
   }
+
+  const persistTotals = (totals: QuoteTotals) => {
+    writeVariantTotals(activeVariantId, totals)
+  }
+
+  /** Copy line items + totals (+ remarks) from one quote tab into another. */
+  const copyVariantFrom = (
+    sourceId: QuoteVariantId,
+    targetId: QuoteVariantId,
+  ) => {
+    if (!onFieldChange || readOnly) return
+    const source = quoteVariants.find((variant) => variant.id === sourceId)
+    const target = quoteVariants.find((variant) => variant.id === targetId)
+    if (!source || !target || source.itemCount <= 0) return
+
+    const sourceForm = formVariantTables.find((entry) => entry.id === sourceId)
+    const targetForm = formVariantTables.find((entry) => entry.id === targetId)
+    // Resolve columns/field ids from the live form fields (most reliable).
+    const sourceField = tableFields.find(
+      (field) => resolveLineItemTableVariant(getFieldHeading(field)) === sourceId,
+    )
+    const targetField = tableFields.find(
+      (field) => resolveLineItemTableVariant(getFieldHeading(field)) === targetId,
+    )
+    const sourceColumns =
+      (sourceField?.settings?.specific?.tableColumns?.length
+        ? sourceField.settings.specific.tableColumns
+        : sourceForm?.columns?.length
+          ? sourceForm.columns
+          : source.columns?.length
+            ? source.columns
+            : lineItemColumns) || []
+    const targetColumns =
+      (targetField?.settings?.specific?.tableColumns?.length
+        ? targetField.settings.specific.tableColumns
+        : targetForm?.columns?.length
+          ? targetForm.columns
+          : target.columns?.length
+            ? target.columns
+            : sourceColumns) || []
+    // Prefer live main lineItems (normalized + notes); variant.rows can be UUID-only.
+    const sourceRows =
+      sourceId === 'main' && lineItems.length > 0
+        ? lineItems
+        : sourceForm?.rows?.length
+          ? sourceForm.rows
+          : source.rows
+    // Remap via canonical Product/Qty/Price — source & target tables use different UUIDs.
+    const normalized = remapLineItemRows(
+      sourceRows,
+      sourceColumns,
+      targetColumns,
+    )
+    // Dual-write: target column UUIDs + canonical Product/Qty/Price keys.
+    // Also run the shared header→UUID mapper so Product/Qty/Price land even
+    // when column titles differ slightly between quote tables.
+    const mappedByHeader = mapExternalRowsToTableColumns(
+      normalized,
+      targetColumns,
+    )
+    const discountColumnId = (columns: any[]) =>
+      (columns || []).find((col) => {
+        const name = String(col?.name || col?.label || '')
+          .toLowerCase()
+          .replace(/[\s_%()-]+/g, '')
+        return name === 'discount' || name === 'disc' || name.startsWith('discount')
+      })?.id
+    const asDiscountNumber = (value: unknown) => {
+      if (value == null || typeof value === 'object') return NaN
+      const num = Number(String(value).replace(/[^0-9.]/g, ''))
+      return Number.isFinite(num) ? num : NaN
+    }
+    const readRowDiscount = (row: Record<string, any>, columns: any[]) => {
+      const colId = discountColumnId(columns)
+      const candidates: unknown[] = [row?.Discount, colId != null ? row?.[colId] : undefined]
+      Object.entries(row || {}).forEach(([key, value]) => {
+        if (key.startsWith('_')) return
+        const compact = key.toLowerCase().replace(/[\s_%-]+/g, '')
+        if (compact === 'discount' || compact === 'disc' || compact.includes('discount')) {
+          candidates.push(value)
+        }
+      })
+      const positive = candidates.find((value) => asDiscountNumber(value) > 0)
+      if (positive !== undefined) return positive
+      const qty = asDiscountNumber(row?.Qty)
+      const price = asDiscountNumber(row?.Price)
+      const subtotal = asDiscountNumber(row?.Subtotal)
+      const gross = qty * price
+      if (gross > 0 && Number.isFinite(subtotal) && subtotal >= 0 && gross - subtotal > 0.009) {
+        return Math.round((1 - subtotal / gross) * 10000) / 100
+      }
+      return ''
+    }
+    const rawSourceRows =
+      sourceForm?.rows?.length ? sourceForm.rows : source.rows || []
+    const formRows = normalizeLineItemRows(
+      toFormTableRows(normalized, targetColumns).map((row, index) => {
+        const sourceRow = sourceRows[index] || {}
+        const rawRow = rawSourceRows[index] || {}
+        const discount =
+          readRowDiscount(sourceRow, sourceColumns) ||
+          readRowDiscount(rawRow, sourceColumns) ||
+          readRowDiscount(row, targetColumns)
+        const next: Record<string, any> = {
+          ...(mappedByHeader[index] || {}),
+          ...row,
+        }
+        if (discount !== '' && asDiscountNumber(discount) > 0) {
+          next.Discount = discount
+          const targetDiscountId = discountColumnId(targetColumns)
+          if (targetDiscountId) next[targetDiscountId] = discount
+        }
+        const sourceRecord = sourceRow as Record<string, any>
+        const rawRecord = rawRow as Record<string, any>
+        const mode =
+          sourceRecord._discountMode ||
+          sourceRecord.DiscountMode ||
+          rawRecord._discountMode ||
+          rawRecord.DiscountMode
+        if (mode) next._discountMode = mode
+        return next
+      }),
+      targetColumns,
+    )
+    // Keep a local draft so the empty panel swaps to the table immediately.
+    setDraftRowsByVariant((prev) => ({ ...prev, [targetId]: formRows }))
+    // Write under every known field key (id / jsonId / label) — form storage
+    // and applyCalculatedFields may key off field.id only.
+    const writeKeys = new Set<string>()
+    if (targetField) {
+      ;[targetField.id, targetField.jsonId, targetField.name, getFieldId(targetField)]
+        .filter(Boolean)
+        .forEach((key) => writeKeys.add(String(key)))
+    }
+    if (targetForm?.fieldId) writeKeys.add(String(targetForm.fieldId))
+    if (target.fieldId) writeKeys.add(String(target.fieldId))
+    if (target.resultKey) writeKeys.add(String(target.resultKey))
+    ;['quote_2 Line Item', 'ALT Line Item', 'quote_3 Line Item', 'OPT Line Item']
+      .filter((key) => resolveLineItemTableVariant(key) === targetId)
+      .forEach((key) => writeKeys.add(key))
+    if (writeKeys.size === 0 && target.resultKey) {
+      writeKeys.add(String(target.resultKey))
+    }
+    writeKeys.forEach((key) => {
+      if (key) onFieldChange(key, formRows)
+    })
+
+    const freight = Number(source.freight ?? 0)
+    const totals = buildQuoteTotals(
+      formRows,
+      freight,
+      taxRate,
+      targetColumns,
+      Number(source.discount ?? 0),
+    )
+    const withSourceTotal = {
+      ...totals,
+      freight,
+      // Prefer source grand total when present; otherwise use recomputed from copied rows.
+      total:
+        source.total && Number.isFinite(source.total) && source.total > 0
+          ? source.total
+          : totals.total,
+    }
+    writeVariantTotals(targetId, withSourceTotal)
+
+    const sourceOrderField = findOrderNumberField(sourceId)
+    const targetOrderField = findOrderNumberField(targetId)
+    const orderFallbacks =
+      sourceId === 'alt'
+        ? ['quote_2 Order Number', 'ALT Order Number']
+        : sourceId === 'opt'
+          ? ['quote_3 Order Number', 'OPT Order Number']
+          : ['Order Number']
+    const copiedOrder = readScalarText(sourceOrderField, orderFallbacks)
+    if (targetOrderField && copiedOrder) {
+      const targetFallbacks =
+        targetId === 'alt'
+          ? ['quote_2 Order Number', 'ALT Order Number']
+          : targetId === 'opt'
+            ? ['quote_3 Order Number', 'OPT Order Number']
+            : ['Order Number']
+      writeField(targetOrderField, copiedOrder, targetFallbacks[0])
+      targetFallbacks.forEach((key) => onFieldChange(key, copiedOrder))
+      setDraftOrderByVariant((prev) => ({ ...prev, [targetId]: copiedOrder }))
+    }
+
+    // Copy remarks when present on the source quote.
+    const sourceRemarksKeys = VARIANT_REMARKS_KEYS[sourceId]
+    const targetRemarksKeys = VARIANT_REMARKS_KEYS[targetId]
+    const remarksEntry = viewModel.longTextEntries.find((entry) => {
+      const label = entry.label || entry.resultKey || ''
+      return (
+        resolveQuoteFieldVariant(label) === sourceId &&
+        /remark/i.test(label)
+      )
+    })
+    const remarksFromResult = sourceRemarksKeys
+      .map((key) => result?.[key])
+      .find((value) => value !== undefined && value !== null)
+    const remarksValue = remarksEntry
+      ? resolveDisplayValue(
+          remarksEntry.field,
+          remarksEntry.value,
+          remarksEntry.resultKey,
+        )
+      : remarksFromResult
+    if (
+      remarksValue !== undefined &&
+      remarksValue !== null &&
+      String(remarksValue).trim() !== ''
+    ) {
+      const targetRemarksEntry = viewModel.longTextEntries.find((entry) => {
+        const label = entry.label || entry.resultKey || ''
+        return (
+          resolveQuoteFieldVariant(label) === targetId &&
+          /remark/i.test(label)
+        )
+      })
+      writeField(
+        targetRemarksEntry?.field || null,
+        remarksValue,
+        targetRemarksEntry?.resultKey || targetRemarksKeys[0],
+      )
+    }
+
+    // Copy quote-scoped dynamic tables (Line Traceability) onto the target quote.
+    const dynamicTableBase = (field: any) =>
+      stripQuoteVariantLabel(getFieldHeading(field))
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '')
+    const isDynamicTableField = (field: any) =>
+      String(field?.type || '')
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_') === 'DYNAMIC_TABLE'
+    const readStoredRows = (field: any) => {
+      const keys = [field?.id, field?.jsonId, getFieldId(field), getFieldHeading(field)]
+        .filter(Boolean)
+        .map((key) => String(key))
+      for (const key of keys) {
+        const value = formModel?.[key]
+        if (Array.isArray(value) && value.length) return value as Record<string, any>[]
+      }
+      for (const key of keys) {
+        const value = result?.[key]
+        if (
+          Array.isArray(value) &&
+          value.length &&
+          value.every((row) => row && typeof row === 'object')
+        ) {
+          return value as Record<string, any>[]
+        }
+      }
+      return []
+    }
+    const sourceDynamic = tableFields.filter((field) => {
+      if (!isDynamicTableField(field)) return false
+      const heading = getFieldHeading(field)
+      if (resolveLineItemTableVariant(heading)) return false
+      const base = dynamicTableBase(field)
+      if (!base || base === 'compare' || base.endsWith('compare')) return false
+      return resolveQuoteFieldVariant(heading) === sourceId
+    })
+    const targetDynamic = tableFields.filter((field) => {
+      if (!isDynamicTableField(field)) return false
+      return resolveQuoteFieldVariant(getFieldHeading(field)) === targetId
+    })
+    sourceDynamic.forEach((sourceField) => {
+      const base = dynamicTableBase(sourceField)
+      const targetField = targetDynamic.find(
+        (field) => dynamicTableBase(field) === base,
+      )
+      if (!targetField) return
+      const sourceRows = readStoredRows(sourceField).filter((row) =>
+        Object.entries(row || {}).some(
+          ([key, value]) => !String(key).startsWith('_') && dynamicCellFilled(value),
+        ),
+      )
+      if (!sourceRows.length) return
+      const sourceCols = sourceField?.settings?.specific?.tableColumns || []
+      const targetCols = targetField?.settings?.specific?.tableColumns || []
+      const copied = sourceRows.map((row) => {
+        const next: Record<string, any> = { ...row }
+        delete next._rowId
+        sourceCols.forEach((col: any) => {
+          const match = targetCols.find(
+            (targetCol: any) =>
+              stripQuoteVariantLabel(String(targetCol?.name || targetCol?.label || ''))
+                .toLowerCase()
+                .replace(/[\s_-]+/g, '') ===
+              stripQuoteVariantLabel(String(col?.name || col?.label || ''))
+                .toLowerCase()
+                .replace(/[\s_-]+/g, ''),
+          )
+          if (match?.id && col?.id && row[col.id] != null) next[match.id] = row[col.id]
+        })
+        return next
+      })
+      const writeKeys = new Set<string>()
+      ;[
+        targetField.id,
+        targetField.jsonId,
+        targetField.name,
+        getFieldId(targetField),
+        getFieldHeading(targetField),
+      ]
+        .filter(Boolean)
+        .forEach((key) => writeKeys.add(String(key)))
+      writeKeys.forEach((key) => onFieldChange(key, copied))
+    })
+
+    totalsFromEditRef.current = true
+    setComputedTotals(withSourceTotal)
+    setCopiedFromByVariant((prev) => ({ ...prev, [targetId]: sourceId }))
+    setActiveQuoteTabId(targetId)
+    showToast({
+      message: t`Copied from ${QUOTE_VARIANT_META[sourceId].shortLabel}`,
+      variant: 'success',
+    })
+  }
+
+  const activeCopiedFromId =
+    activeVariantId && !isCompareTab
+      ? copiedFromByVariant[activeVariantId]
+      : undefined
+  const activeCopiedFromLabel = activeCopiedFromId
+    ? QUOTE_VARIANT_META[activeCopiedFromId].shortLabel
+    : null
 
   const resolveScalarEntry = (entry: QuoteScalarEntry) => {
     const raw = stringifyScalar(
@@ -842,8 +1701,21 @@ const QuoteAgentResultView = ({
 
   const canEditTotalEntry = (entry: QuoteTotalEntry) => {
     if (readOnly || !onFieldChange) return false
-    // Subtotal/Total are driven by line items + freight/tax.
-    if (entry.kind === 'subtotal' || entry.kind === 'total') return false
+    // Subtotal / HST / Total are driven by line items + discount/freight.
+    if (
+      entry.kind === 'subtotal' ||
+      entry.kind === 'total' ||
+      entry.kind === 'tax'
+    ) {
+      return false
+    }
+    if (entry.kind === 'discount') {
+      // Discount $ is derived from line-item discounts — edit those cells instead.
+      return false
+    }
+    if (entry.kind === 'freight') {
+      return true
+    }
     if (entry.field) return canEditField(entry.field)
     return false
   }
@@ -854,15 +1726,31 @@ const QuoteAgentResultView = ({
 
     let next = { ...computedTotals }
     if (entry.kind === 'freight') {
-      next = buildQuoteTotals(lineItems, parsed, taxRate, lineItemColumns)
+      next = buildQuoteTotals(
+        displayLineItems,
+        parsed,
+        taxRate,
+        activeColumns,
+        computedTotals.discount,
+      )
+    } else if (entry.kind === 'discount') {
+      next = buildQuoteTotals(
+        displayLineItems,
+        computedTotals.freight,
+        taxRate,
+        activeColumns,
+        parsed,
+      )
     } else if (entry.kind === 'tax') {
       next = {
         ...computedTotals,
         hst: Number(parsed.toFixed(2)),
         total: Number(
-          (computedTotals.subtotal + computedTotals.freight + parsed).toFixed(
-            2,
-          ),
+          (
+            Math.max(0, computedTotals.subtotal - computedTotals.discount) +
+            computedTotals.freight +
+            parsed
+          ).toFixed(2),
         ),
       }
     } else if (entry.kind === 'other') {
@@ -879,22 +1767,94 @@ const QuoteAgentResultView = ({
   }
 
   const totalDisplayValue = (entry: QuoteTotalEntry) => {
-    if (entry.kind === 'subtotal') return computedTotals.subtotal
+    if (entry.kind === 'subtotal') {
+      return computedTotals.gross > 0
+        ? computedTotals.gross
+        : computedTotals.subtotal
+    }
+    if (entry.kind === 'discount') return computedTotals.discount
     if (entry.kind === 'freight') return computedTotals.freight
     if (entry.kind === 'tax') return computedTotals.hst
     if (entry.kind === 'total') return computedTotals.total
     return resolveDisplayValue(entry.field, entry.value, entry.resultKey)
   }
 
-  const breakdownTotals = viewModel.totals.filter(
-    (entry) => entry.kind !== 'total',
-  )
+  const breakdownTotals = useMemo(() => {
+    const kinds: QuoteTotalEntry['kind'][] = [
+      'subtotal',
+      'discount',
+      'freight',
+      'tax',
+    ]
+    return kinds
+      .map((kind) => {
+        const existing = viewModel.totals.find(
+          (entry) =>
+            entry.kind === kind &&
+            (entry.variant || 'main') === activeVariantId,
+        )
+        if (existing) {
+          return {
+            ...existing,
+            label: displayQuoteTotalLabel(kind, existing.label),
+          }
+        }
+        // Synthesize from API scalars when form mapping is missing
+        const value = resolveTotalEntryValue(activeVariantId, kind)
+        if (kind === 'discount' && !value) {
+          // Still show Discount row so tab controls stay consistent
+        }
+        return {
+          field: null,
+          kind,
+          label: displayQuoteTotalLabel(kind),
+          resultKey: `${activeVariantId}:${kind}`,
+          value,
+          variant: activeVariantId,
+        } satisfies QuoteTotalEntry
+      })
+      .filter((entry) => {
+        // Always show the core breakdown rows for the active tab
+        return (
+          entry.kind === 'subtotal' ||
+          entry.kind === 'discount' ||
+          entry.kind === 'freight' ||
+          entry.kind === 'tax'
+        )
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVariantId, formModel, result, viewModel.totals, computedTotals])
 
-  const lineItemField = viewModel.lineItemTable?.field || null
+  const activeGrandTotal: QuoteTotalEntry = useMemo(() => {
+    const existing = viewModel.totals.find(
+      (entry) =>
+        entry.kind === 'total' && (entry.variant || 'main') === activeVariantId,
+    )
+    if (existing) {
+      return {
+        ...existing,
+        label: displayQuoteTotalLabel('total', existing.label),
+      }
+    }
+    return {
+      field: null,
+      kind: 'total',
+      label: 'Total',
+      resultKey: `${activeVariantId}:total`,
+      value: computedTotals.total,
+      variant: activeVariantId,
+    }
+  }, [activeVariantId, computedTotals.total, viewModel.totals])
+
+  const lineItemField =
+    (activeTableFieldId &&
+      tableFields.find((field) => getFieldId(field) === activeTableFieldId)) ||
+    viewModel.lineItemTable?.field ||
+    null
   const lineItemsVisible = canViewField(lineItemField)
   const lineItemsEditable =
-    Boolean(viewModel.lineItemTable) &&
-    (lineItemField ? canEditField(lineItemField) : false)
+    (Boolean(viewModel.lineItemTable) || formVariantTables.length > 0) &&
+    (lineItemField ? canEditField(lineItemField) : Boolean(onFieldChange))
 
   useEffect(() => {
     if (!onQuoteTotalChange) return
@@ -907,8 +1867,28 @@ const QuoteAgentResultView = ({
   }, [computedTotals.total, onQuoteTotalChange])
 
   const headerEntries = [viewModel.titleEntry, ...viewModel.metaEntries].filter(
-    (entry): entry is QuoteScalarEntry =>
-      !!entry && (!entry.field || canViewField(entry.field)),
+    (entry): entry is QuoteScalarEntry => {
+      if (!entry) return false
+      if (entry.field && !canViewField(entry.field)) return false
+      // Totals / discounts / remarks belong to the tab breakdown, not the header.
+      const label = entry.label || entry.resultKey || ''
+      const variant = resolveQuoteFieldVariant(label)
+      if (variant !== 'main' && /^(alt|opt)/i.test(label.trim())) return false
+      const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
+      if (
+        compact.includes('discount') ||
+        compact.includes('subtotal') ||
+        compact.includes('freight') ||
+        compact.includes('ordernumber') ||
+        compact === 'hst' ||
+        compact === 'total' ||
+        compact.endsWith('total') ||
+        compact.includes('remark')
+      ) {
+        return false
+      }
+      return true
+    },
   )
 
   const scalarLabel = (entry: QuoteScalarEntry) => {
@@ -957,9 +1937,17 @@ const QuoteAgentResultView = ({
     options?: { bold?: boolean },
   ) => {
     const canEdit = canEditTotalEntry(entry)
-    const value = totalDisplayValue(entry)
+    const value = Number(totalDisplayValue(entry)) || 0
     const fieldId = entry.field ? getFieldId(entry.field) : entry.resultKey
-    const display = `$${toMoney(value)}`
+    const quoteTotalLabel = `${QUOTE_VARIANT_META[activeVariantId]?.shortLabel || 'Quote'} Total`
+    const rowLabel =
+      entry.kind === 'total'
+        ? quoteTotalLabel
+        : displayQuoteTotalLabel(entry.kind, entry.label)
+    const display =
+      entry.kind === 'discount' && value > 0
+        ? `-$${toMoney(value)}`
+        : `$${toMoney(value)}`
 
     return (
       <div
@@ -971,7 +1959,14 @@ const QuoteAgentResultView = ({
         )}
         key={entry.resultKey}
       >
-        <span className='min-w-0 truncate text-left'>{entry.label}</span>
+        <span
+          className={cn(
+            'min-w-0 text-left',
+            entry.kind === 'total' ? 'whitespace-normal' : 'truncate',
+          )}
+        >
+          {rowLabel}
+        </span>
         <HoverEditShell
           activeEditId={activeEditId}
           canEdit={canEdit}
@@ -1006,7 +2001,7 @@ const QuoteAgentResultView = ({
 
   return (
     <div className='flex flex-col gap-4'>
-      {canPreviewDocument && paneMode === 'preview' ? (
+      {documentTemplateJson && paneMode === 'preview' ? (
         <div className='flex flex-col gap-3'>
           <div className='flex items-center justify-between gap-3'>
             <Button
@@ -1036,72 +2031,256 @@ const QuoteAgentResultView = ({
         </div>
       ) : (
         <div className='flex min-w-0 flex-col gap-4'>
-          <div className='grid min-w-0 grid-cols-1 items-start gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
-            <div className='grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-2.5 text-left sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'>
-              {headerEntries.map(renderHeaderField)}
-            </div>
-
-            <div className='flex shrink-0 flex-col items-start gap-1.5 text-left sm:items-end sm:text-right'>
-              {canPreviewDocument ? (
-                <Button
-                  aria-label={t`Quote Preview`}
-                  className='!border-secondary-5 mb-2 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3'
-                  color='secondary'
-                  icon='lucide:eye'
-                  label={t`Quote Preview`}
-                  size='sm'
-                  title={t`Quote Preview`}
-                  type='button'
-                  variant='outline'
-                  onClick={() => selectPaneMode('preview')}
-                />
-              ) : null}
-              <div className='text-sm leading-5 font-normal text-gray-12'>
-                <span className='font-bold'>{t`Total`}:</span>{' '}
-                <span>${toMoney(computedTotals.total)}</span>
-              </div>
-            </div>
+          <div className='grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-2.5 text-left sm:grid-cols-2'>
+            {headerEntries.map(renderHeaderField)}
           </div>
 
-          {viewModel.lineItemTable &&
+          {(viewModel.lineItemTable || formVariantTables.length > 0) &&
             lineItemsVisible &&
-            (lineItems.length > 0 || lineItemsEditable) && (
-              <QuoteLineItemsTable
-                freight={freight}
-                items={lineItems}
-                readOnly={!lineItemsEditable}
-                taxRate={taxRate}
-                title={viewModel.lineItemTable.label}
-                workflow={workflow}
-                onFieldChange={onFieldChange}
-                onTotalsChange={(totals) => {
-                  totalsFromEditRef.current = true
-                  setComputedTotals((prev) =>
-                    prev.subtotal === totals.subtotal &&
-                    prev.freight === totals.freight &&
-                    prev.hst === totals.hst &&
-                    prev.total === totals.total
-                      ? prev
-                      : totals,
-                  )
-                  persistTotals(totals)
-                }}
-              />
+            (lineItems.length > 0 ||
+              lineItemsEditable ||
+              quoteVariants.some((variant) => variant.itemCount > 0) ||
+              formVariantTables.length > 1) && (
+              <div className='flex flex-col gap-3'>
+                <QuoteVariantCards
+                  activeId={activeQuoteTabId}
+                  copiedFromLabel={activeCopiedFromLabel}
+                  emptyMetaByVariant={quoteEmptyMetaByVariant}
+                  variants={quoteVariants}
+                  onSelect={(id) => {
+                    setActiveQuoteTabId(id)
+                    if (id === 'compare') return
+                    const next = quoteVariants.find((variant) => variant.id === id)
+                    if (!next) return
+                    const fr = next.freight ?? resolveFreightForVariant(id)
+                    const computed = buildQuoteTotals(
+                      next.rows,
+                      fr,
+                      taxRate,
+                      next.columns?.length ? next.columns : lineItemColumns,
+                      resolveDiscountForVariant(id),
+                    )
+                    totalsFromEditRef.current = true
+                    const hasRows = next.itemCount > 0
+                    setComputedTotals({
+                      ...computed,
+                      discount: hasRows ? computed.discount : 0,
+                      freight: hasRows ? fr : 0,
+                      hst: hasRows ? computed.hst : 0,
+                      subtotal: hasRows ? computed.subtotal : 0,
+                      total: hasRows
+                        ? next.total && Number.isFinite(next.total)
+                          ? next.total
+                          : computed.total
+                        : 0,
+                    })
+                  }}
+                />
+
+                {!isCompareTab ? (
+                <div className='flex flex-wrap items-center justify-between gap-3'>
+                  {!isCompareTab && activeOrderNumber ? (
+                    <div className='flex min-w-0 items-baseline gap-1.5 text-left text-sm text-gray-12'>
+                      <span className='shrink-0 font-bold'>{t`Order Number`}:</span>
+                      <HoverEditShell
+                        activeEditId={activeEditId}
+                        canEdit={
+                          Boolean(onFieldChange) &&
+                          !readOnly &&
+                          canEditField(activeOrderNumber.field)
+                        }
+                        className='min-w-0'
+                        editor={
+                          <InputText
+                            value={activeOrderNumber.value}
+                            autoFocus
+                            onChange={(value) => {
+                              setDraftOrderByVariant((prev) => ({
+                                ...prev,
+                                [activeVariantId]: value,
+                              }))
+                              writeField(
+                                activeOrderNumber.field,
+                                value,
+                                activeOrderNumber.fieldId,
+                              )
+                            }}
+                          />
+                        }
+                        fieldId={activeOrderNumber.fieldId}
+                        label={t`Order Number`}
+                        onActivate={setActiveEditId}
+                      >
+                        <span className='truncate'>
+                          {activeOrderNumber.value || 'NA'}
+                        </span>
+                      </HoverEditShell>
+                    </div>
+                  ) : (
+                    <span />
+                  )}
+                  <div className='ml-auto flex shrink-0 items-center justify-end gap-3 text-right'>
+                    <Button
+                      aria-disabled={previewDisabled}
+                      aria-label={t`Quote Preview`}
+                      className={cn(
+                        '!border-secondary-5 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3',
+                        previewDisabled &&
+                          'pointer-events-none cursor-not-allowed opacity-50',
+                      )}
+                      color='secondary'
+                      disabled={previewDisabled}
+                      icon='lucide:eye'
+                      label={t`Quote Preview`}
+                      size='sm'
+                      title={
+                        previewDisabled
+                          ? isEmptyActiveVariant
+                            ? t`No data to preview`
+                            : t`Select Quote 1, 2, or 3 to preview`
+                          : undefined
+                      }
+                      type='button'
+                      variant='outline'
+                      onClick={() => selectPaneMode('preview')}
+                    />
+                    {!isCompareTab ? (
+                      <div className='text-sm leading-5 font-normal text-gray-12'>
+                        <span className='font-bold'>{t`Total`}:</span>{' '}
+                        <span>${toMoney(computedTotals.total)}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                ) : null}
+
+                {isCompareTab ? (
+                  <QuoteComparePanel
+                    compareByVariant={compareByVariant}
+                    compareColumns={compareColumns}
+                    emptyMetaByVariant={quoteEmptyMetaByVariant}
+                    variants={quoteVariants}
+                    onOpenVariant={(id) => setActiveQuoteTabId(id)}
+                  />
+                ) : isEmptyActiveVariant && activeQuoteVariant ? (
+                  <QuoteVariantEmptyPanel
+                    canCopy={Boolean(onFieldChange) && !readOnly}
+                    emptyMeta={
+                      activeQuoteVariant.id === 'alt' ||
+                      activeQuoteVariant.id === 'opt'
+                        ? quoteEmptyMetaByVariant[activeQuoteVariant.id]
+                        : null
+                    }
+                    sources={quoteVariants}
+                    variant={activeQuoteVariant}
+                    onCopyFrom={(sourceId) =>
+                      copyVariantFrom(sourceId, activeQuoteVariant.id)
+                    }
+                  />
+                ) : (
+                  <QuoteLineItemsTable
+                    discount={activeDiscount}
+                    freight={activeFreight}
+                    items={displayLineItems}
+                    readOnly={!lineItemsEditable}
+                    tableColumns={activeColumns}
+                    tableFieldId={activeTableFieldId}
+                    taxRate={taxRate}
+                    title={t`Line Items`}
+                    workflow={workflow}
+                    onFieldChange={(fieldId, value) => {
+                      if (!onFieldChange) return
+                      const rows = Array.isArray(value) ? value : []
+                      if (activeQuoteVariant?.id) {
+                        setDraftRowsByVariant((prev) => ({
+                          ...prev,
+                          [activeQuoteVariant.id]: rows,
+                        }))
+                      }
+                      const targetId =
+                        activeQuoteVariant?.fieldId ||
+                        activeQuoteVariant?.resultKey ||
+                        fieldId
+
+                      if (
+                        activeQuoteVariant?.fieldId ||
+                        (activeQuoteVariant?.resultKey &&
+                          activeQuoteVariant.id !== 'main')
+                      ) {
+                        onFieldChange(targetId, rows)
+                        return
+                      }
+
+                      if (
+                        quoteVariants.length > 1 &&
+                        !activeQuoteVariant?.fieldId
+                      ) {
+                        const activeId = activeQuoteVariant?.id || 'main'
+                        const tagged = rows.map((row) => ({
+                          ...row,
+                          QuoteType:
+                            row.QuoteType ||
+                            row['Quote Type'] ||
+                            QUOTE_VARIANT_META[activeId].label,
+                        }))
+                        const kept = lineItems.filter(
+                          (row) => resolveRowQuoteVariant(row) !== activeId,
+                        )
+                        onFieldChange(fieldId, [...kept, ...tagged])
+                        return
+                      }
+
+                      onFieldChange(fieldId, value)
+                    }}
+                    onTotalsChange={(totals) => {
+                      totalsFromEditRef.current = true
+                      setComputedTotals((prev) =>
+                        prev.subtotal === totals.subtotal &&
+                        prev.discount === totals.discount &&
+                        prev.freight === totals.freight &&
+                        prev.hst === totals.hst &&
+                        prev.total === totals.total
+                          ? prev
+                          : totals,
+                      )
+                      persistTotals(totals)
+                    }}
+                  />
+                )}
+              </div>
             )}
 
-          {breakdownTotals.length > 0 && (
+          {!isCompareTab &&
+            !isEmptyActiveVariant &&
+            breakdownTotals.length > 0 && (
             <div className='flex justify-end border-t border-gray-3 pt-3 pr-2'>
-              <div className='mr-2 flex w-full max-w-[18rem] flex-col gap-1.5 text-sm'>
+              <div className='mr-2 flex w-full max-w-[26rem] flex-col gap-1.5 text-sm'>
                 {breakdownTotals.map((entry) => renderTotalRow(entry))}
-                {viewModel.grandTotal
-                  ? renderTotalRow(viewModel.grandTotal, { bold: true })
+                {activeGrandTotal
+                  ? renderTotalRow(activeGrandTotal, { bold: true })
                   : null}
               </div>
             </div>
           )}
 
-          {viewModel.longTextEntries
-            .filter((entry) => !entry.field || canViewField(entry.field))
+          {!isCompareTab &&
+            !isEmptyActiveVariant &&
+            viewModel.longTextEntries
+            .filter((entry) => {
+              if (entry.field && !canViewField(entry.field)) return false
+              const label = entry.label || entry.resultKey || ''
+              const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
+              const variant = resolveQuoteFieldVariant(label)
+              const isVariantScoped =
+                compact.startsWith('quote') ||
+                compact.startsWith('alt') ||
+                compact.startsWith('opt') ||
+                compact.startsWith('optional') ||
+                compact === 'remarks' ||
+                compact === 'remark'
+              if (!isVariantScoped) return true
+              return variant === activeVariantId
+            })
             .map((entry) => {
               const { canEdit, display, raw } = resolveScalarEntry(entry)
               const fieldId = entry.field
@@ -1116,7 +2295,9 @@ const QuoteAgentResultView = ({
                     fieldId={fieldId}
                     heading={
                       <h4 className='text-sm font-semibold text-gray-12'>
-                        {entry.label}
+                        {/remark/i.test(entry.label || '')
+                          ? t`Remarks`
+                          : stripQuoteVariantLabel(entry.label || '')}
                       </h4>
                     }
                     label={controlLabel(entry.field, entry.label)}
@@ -1129,6 +2310,23 @@ const QuoteAgentResultView = ({
                 </div>
               )
             })}
+
+          {!isCompareTab &&
+            quoteDynamicTables
+              .filter((table) => table.variantId === activeVariantId)
+              .map((table) => (
+                <AgentFlatTable
+                  allowAddRow={false}
+                  allowDelete={false}
+                  columns={table.columns}
+                  icon='tabler:table'
+                  key={table.fieldId}
+                  readOnly
+                  rows={normalizeAgentTableRows(table.rows, table.columns)}
+                  title={table.title}
+                  onChange={() => {}}
+                />
+              ))}
 
           {viewModel.listEntries.map((entry) => {
             if (entry.field && !canViewField(entry.field)) return null
@@ -1147,7 +2345,7 @@ const QuoteAgentResultView = ({
               >
                 <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
                   <Icon className='h-4 w-4 text-orange-9' icon='tabler:bulb' />
-                  {entry.label}
+                  {stripQuoteVariantLabel(entry.label)}
                 </h4>
                 <ul className='flex list-disc flex-col gap-1 pl-5'>
                   {items.map((note: string, i: number) => (
@@ -1161,6 +2359,26 @@ const QuoteAgentResultView = ({
           })}
 
           {viewModel.otherTables.map((table) => {
+            const tableKey = `${table.label || ''} ${table.resultKey || ''}`
+              .toLowerCase()
+              .replace(/[\s_-]+/g, '')
+            // Compare lives in the Quotes → Compare tab — hide the raw form table.
+            if (tableKey === 'compare' || tableKey.endsWith('compare')) {
+              return null
+            }
+            const tableType = String(table.field?.type || '')
+              .toUpperCase()
+              .replace(/[\s-]+/g, '_')
+            // DYNAMIC_TABLE values are column-id rows in formData and are
+            // rendered on the matching quote tab.
+            if (tableType === 'DYNAMIC_TABLE') return null
+            if (
+              variantResultKeys.has(table.resultKey) ||
+              isQuoteVariantTableKey(table.resultKey) ||
+              isQuoteVariantTableKey(table.label)
+            ) {
+              return null
+            }
             const field = ensureOnDemandTable(table.field)
             if (field && !canViewField(field)) return null
             const rows = resolveTableRows(table)
@@ -1182,7 +2400,7 @@ const QuoteAgentResultView = ({
                 icon='tabler:table'
                 key={table.resultKey}
                 readOnly={!editable}
-                title={table.label}
+                title={stripQuoteVariantLabel(table.label)}
                 rows={normalizeAgentTableRows(
                   rows,
                   field.settings?.specific?.tableColumns || [],

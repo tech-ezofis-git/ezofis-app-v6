@@ -86,6 +86,9 @@ interface Props {
   preparePhase?: 'extracting' | 'uploading' | null
   repoFieldHints?: string[]
   viewOnly?: boolean
+  // Extra files picked on a multiple-files upload field; the first file stays
+  // in the field, the rest join the request's attachments.
+  onAddAttachments?: (files: File[]) => void
   onChange: (value: any) => void
   onMultiFieldChange?: (patch: Record<string, any>) => void
   onOcrFieldList?: (
@@ -917,6 +920,7 @@ const FieldRenderer = ({
   repositoryId,
   value,
   viewOnly,
+  onAddAttachments,
   onChange,
   onMultiFieldChange,
   onOcrFieldList,
@@ -996,53 +1000,55 @@ const FieldRenderer = ({
   const isRepoFacetEnabled =
     facetSource.enabled && (!hasRepoParentFilter || Boolean(repoParentValue))
 
-  const { data: uniqueFieldOptions = [] } = useQuery({
-    enabled: isRepoFacetEnabled,
-    queryKey: [
-      'repositoryItemFacets',
-      facetSource.repositoryId,
-      facetSource.fieldName,
-      repoParentFieldName,
-      repoParentValue,
-    ],
-    queryFn: async () => {
-      const scopeFilters: Record<string, string> = {}
-      if (repoParentFieldName && repoParentValue) {
-        scopeFilters[repoParentFieldName] = repoParentValue
-      }
-      const res = await getRepositoryItemFacets({
-        fieldName: facetSource.fieldName,
-        limit: 1000,
-        repositoryId: facetSource.repositoryId,
-        scopeFilters:
-          Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
-      })
-      return facetsToFieldOptions(res.data, {
-        splitArrayValues: field.type === 'MULTI_SELECT',
-      })
-    },
-  })
-
-  const { data: userFieldOptions = [] } = useQuery({
-    enabled: optionsType === 'USER_LIST',
-    queryKey: ['userListForDropdown'],
-    queryFn: async () => {
-      const res = await getUsers()
-      const session = authUserStore.getState().session
-      const currentUserEmail = session?.email?.trim().toLowerCase()
-      const currentUserId = session?.id ? String(session.id) : undefined
-
-      return res.data
-        .filter((user) => {
-          const userEmail = user.email?.trim().toLowerCase()
-          if (currentUserEmail && userEmail === currentUserEmail) return false
-          if (currentUserId && user.id && String(user.id) === currentUserId)
-            return false
-          return true
+  const { data: uniqueFieldOptions = [], isFetching: isFacetLoading } =
+    useQuery({
+      enabled: isRepoFacetEnabled,
+      queryKey: [
+        'repositoryItemFacets',
+        facetSource.repositoryId,
+        facetSource.fieldName,
+        repoParentFieldName,
+        repoParentValue,
+      ],
+      queryFn: async () => {
+        const scopeFilters: Record<string, string> = {}
+        if (repoParentFieldName && repoParentValue) {
+          scopeFilters[repoParentFieldName] = repoParentValue
+        }
+        const res = await getRepositoryItemFacets({
+          fieldName: facetSource.fieldName,
+          limit: 1000,
+          repositoryId: facetSource.repositoryId,
+          scopeFilters:
+            Object.keys(scopeFilters).length > 0 ? scopeFilters : undefined,
         })
-        .map((user) => ({ id: user.email, name: user.email }))
-    },
-  })
+        return facetsToFieldOptions(res.data, {
+          splitArrayValues: field.type === 'MULTI_SELECT',
+        })
+      },
+    })
+
+  const { data: userFieldOptions = [], isFetching: isUserOptionsLoading } =
+    useQuery({
+      enabled: optionsType === 'USER_LIST',
+      queryKey: ['userListForDropdown'],
+      queryFn: async () => {
+        const res = await getUsers()
+        const session = authUserStore.getState().session
+        const currentUserEmail = session?.email?.trim().toLowerCase()
+        const currentUserId = session?.id ? String(session.id) : undefined
+
+        return res.data
+          .filter((user) => {
+            const userEmail = user.email?.trim().toLowerCase()
+            if (currentUserEmail && userEmail === currentUserEmail) return false
+            if (currentUserId && user.id && String(user.id) === currentUserId)
+              return false
+            return true
+          })
+          .map((user) => ({ id: user.email, name: user.email }))
+      },
+    })
 
   const parentField = useMemo(() => {
     if (!masterInfo.masterFormParentColumn) return null
@@ -1071,27 +1077,33 @@ const FieldRenderer = ({
   const masterConditions = buildMasterConditions(field, formModel)
   const masterConditionsKey = JSON.stringify(masterConditions)
 
-  const { data: masterFieldOptions = [] } = useQuery({
-    enabled: masterInfo.enabled,
-    queryKey: [
-      'masterFormColumnOptions',
-      masterInfo.masterFormId,
-      masterInfo.masterFormColumn,
-      parentValue,
-      parentMasterColumn,
-      masterInfo.showAllData,
-      masterConditionsKey,
-    ],
-    queryFn: () =>
-      fetchMasterFormColumnOptions(
+  const { data: masterFieldOptions = [], isFetching: isMasterLoading } =
+    useQuery({
+      enabled: masterInfo.enabled,
+      queryKey: [
+        'masterFormColumnOptions',
         masterInfo.masterFormId,
         masterInfo.masterFormColumn,
         parentValue,
         parentMasterColumn,
         masterInfo.showAllData,
-        masterConditions,
-      ),
-  })
+        masterConditionsKey,
+      ],
+      queryFn: () =>
+        fetchMasterFormColumnOptions(
+          masterInfo.masterFormId,
+          masterInfo.masterFormColumn,
+          parentValue,
+          parentMasterColumn,
+          masterInfo.showAllData,
+          masterConditions,
+        ),
+    })
+
+  const isOptionsLoading =
+    (masterInfo.enabled && isMasterLoading) ||
+    (optionsType === 'USER_LIST' && isUserOptionsLoading) ||
+    (isRepoFacetEnabled && isFacetLoading)
 
   const selectOptions = useMemo(() => {
     if (masterInfo.enabled) {
@@ -1413,7 +1425,7 @@ const FieldRenderer = ({
       const isSearchField = field.settings?.specific?.isSearchField === 'YES'
       const allowAddNew = Boolean(
         field.settings?.specific?.allowToAddNewOptions ||
-          field.settings?.specific?.allowCustomEntries,
+        field.settings?.specific?.allowCustomEntries,
       )
       if (isSearchField) {
         return (
@@ -1423,7 +1435,9 @@ const FieldRenderer = ({
                 {...common}
                 createOptionLabel={(query) => t`Add "${query}"`}
                 value={selected}
+                clearable={!readOnly}
                 creatable={allowAddNew}
+                loading={isOptionsLoading}
                 searchable
                 options={withExtraFieldOptions(
                   selectOptions,
@@ -1464,7 +1478,9 @@ const FieldRenderer = ({
           {...common}
           createOptionLabel={(query) => t`Add "${query}"`}
           value={selected}
+          clearable={!readOnly}
           creatable={allowAddNew}
+          loading={isOptionsLoading}
           searchable
           options={withExtraFieldOptions(
             selectOptions,
@@ -1495,7 +1511,7 @@ const FieldRenderer = ({
     case 'MULTI_SELECT': {
       const allowAddNew = Boolean(
         field.settings?.specific?.allowToAddNewOptions ||
-          field.settings?.specific?.allowCustomEntries,
+        field.settings?.specific?.allowCustomEntries,
       )
       const seen = new Set<string>()
       const selected = normalizeStoredMultiSelectValue(value).flatMap((id) => {
@@ -1515,6 +1531,7 @@ const FieldRenderer = ({
             options={withExtraFieldOptions(selectOptions, selected)}
             value={selected}
             creatable={allowAddNew}
+            loading={isOptionsLoading}
             searchable
             onChange={(opts: Option[]) =>
               onChange(
@@ -1755,9 +1772,18 @@ const FieldRenderer = ({
           </div>
         ) : null
 
+      const allowMultipleFiles =
+        runtimeType === 'FILE_UPLOAD' &&
+        field.settings?.specific?.allowMultipleFiles === true
+
       const handleFiles = async (files: FileList | null) => {
         const file = files?.[0]
         if (!file) return
+
+        const extraFiles =
+          allowMultipleFiles && onAddAttachments && !onRequestUpload
+            ? Array.from(files ?? []).slice(1)
+            : []
 
         if (!repositoryId) {
           showToast({
@@ -1789,6 +1815,7 @@ const FieldRenderer = ({
           repositoryId,
         }
         onChange(fileEntry)
+        if (extraFiles.length > 0) onAddAttachments?.(extraFiles)
 
         setIsUploading(true)
         const ocrHints = buildMergedOcrFieldHints(
@@ -1830,6 +1857,7 @@ const FieldRenderer = ({
               accept={runtimeType === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
               disabled={readOnly}
               isLoading={isUploading || Boolean(isPreparing)}
+              multiple={allowMultipleFiles && Boolean(onAddAttachments)}
               loadingText={
                 preparePhase === 'uploading'
                   ? t`Uploading the document…`
@@ -1942,6 +1970,7 @@ const FieldRenderer = ({
             repositoryId={repositoryId}
             required={required}
             value={Array.isArray(value) ? value : []}
+            variant='form'
             onChange={onChange}
           />
           {error && (

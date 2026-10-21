@@ -5,6 +5,8 @@ export type DocumentPreviewRequest = {
   formData: Record<string, unknown>
   templateJson: Record<string, unknown> | string
   formId?: string
+  /** Active quote tab: quote_1 | quote_2 | quote_3 */
+  quoteType?: string
 }
 
 export type DocumentPreviewResponse = {
@@ -34,6 +36,7 @@ export const previewDocument = async (
       templateJson: payload.templateJson,
     }
     if (payload.formId) body.formId = payload.formId
+    if (payload.quoteType) body.quoteType = payload.quoteType
 
     const { data, status } = await axiosV6({
       data: body,

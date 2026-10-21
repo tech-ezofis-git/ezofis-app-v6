@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import {
   extractScalarStrings,
@@ -14,6 +14,34 @@ interface Props {
   value: any
   readOnly?: boolean
   onChange: (value: any) => void
+}
+
+/**
+ * Resolves a field's value in formModel by its id, jsonId, or label.
+ */
+const getFieldValueFromModel = (
+  fieldKey: string,
+  allFields: any[],
+  formModel: Record<string, any>,
+) => {
+  if (!fieldKey || !formModel) return undefined
+  if (formModel[fieldKey] !== undefined) return formModel[fieldKey]
+
+  const target = String(fieldKey).trim().toLowerCase()
+  const matched = allFields.find(
+    (f: any) =>
+      f.id === fieldKey ||
+      f.jsonId === fieldKey ||
+      f.label?.trim().toLowerCase() === target ||
+      f.name?.trim().toLowerCase() === target,
+  )
+  if (matched) {
+    return (
+      formModel[matched.id] ??
+      (matched.jsonId ? formModel[matched.jsonId] : undefined)
+    )
+  }
+  return undefined
 }
 
 /**
@@ -57,6 +85,61 @@ const MasterFillSync = ({
       parentField.id
     : parentId
 
+  // Inherit conditions from parentField (e.g. Email -> Vendor Email) as well as direct conditions
+  const conditions = useMemo(() => {
+    const conds: Array<{ masterColumn: string; value: any }> = []
+    const seenCols = new Set<string>()
+
+    const addCondition = (masterCol: string, val: any) => {
+      if (!masterCol) return
+      const norm = masterCol.trim().toLowerCase()
+      if (!seenCols.has(norm)) {
+        seenCols.add(norm)
+        conds.push({ masterColumn: String(masterCol), value: val })
+      }
+    }
+
+    // 1. The parent field's own selected value
+    if (
+      parentMasterColumn &&
+      parentValue !== undefined &&
+      parentValue !== null &&
+      parentValue !== ''
+    ) {
+      addCondition(String(parentMasterColumn), parentValue)
+    }
+
+    // 2. Parent field's condition mappings (e.g. Email -> Vendor Email)
+    if (parentField) {
+      const parentMappings =
+        parentField.settings?.specific?.masterFormConditionColumn || []
+      for (const m of parentMappings) {
+        const col = m?.masterColumn
+        const srcKey = m?.formField || m?.formColumn
+        if (col && srcKey) {
+          const val = getFieldValueFromModel(srcKey, allFields, formModel)
+          addCondition(String(col), val)
+        }
+      }
+    }
+
+    // 3. Any direct condition mappings on this field itself
+    const directMappings =
+      field?.settings?.specific?.masterFormConditionColumn || []
+    for (const m of directMappings) {
+      const col = m?.masterColumn
+      const srcKey = m?.formField || m?.formColumn
+      if (col && srcKey) {
+        const val = getFieldValueFromModel(srcKey, allFields, formModel)
+        addCondition(String(col), val)
+      }
+    }
+
+    return conds
+  }, [field, parentField, allFields, formModel, parentMasterColumn, parentValue])
+
+  const conditionsKey = JSON.stringify(conditions)
+
   const { data: fillValue } = useQuery({
     enabled: isActive && Boolean(parentKey),
     queryKey: [
@@ -65,6 +148,7 @@ const MasterFillSync = ({
       info.masterFormColumn,
       parentMasterColumn,
       parentKey,
+      conditionsKey,
     ],
     queryFn: async () => {
       const opts = await fetchMasterFormColumnOptions(
@@ -73,7 +157,7 @@ const MasterFillSync = ({
         undefined,
         undefined,
         false,
-        [{ masterColumn: String(parentMasterColumn), value: parentValue }],
+        conditions,
       )
       return opts[0]?.name ?? ''
     },

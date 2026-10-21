@@ -208,15 +208,21 @@ const LivePreview = () => {
     })
   }
 
-  const handleOcrFileSelect = async (file: File, field: Question) => {
+  const handleOcrFileSelect = async (files: File[], field: Question) => {
+    const file = files[0]
     if (!file) return
 
     const fieldId = field.id
+    const allowMultiple = field.settings?.specific?.allowMultipleFiles === true
+    // OCR runs on the first file; the field shows every selected file name.
+    const displayName = allowMultiple
+      ? files.map((f) => f.name).join(', ')
+      : file.name
     const assignedFieldIds = field.settings.validation.assignOtherControls || []
 
     // OCR only runs when this upload field has target fields assigned to it.
     if (assignedFieldIds.length === 0) {
-      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      setPreviewModel((prev) => ({ ...prev, [fieldId]: displayName }))
       return
     }
 
@@ -262,19 +268,19 @@ const LivePreview = () => {
             restrictedPatch[id] = ocrPatch[id]
         }
 
-        const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
+        const mergedPatch = { ...restrictedPatch, [fieldId]: displayName }
         setPreviewModel((prev) =>
           applyCalculatedFields(panels, { ...prev, ...mergedPatch }, rules),
         )
       } else {
         setPreviewModel((prev) =>
-          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
+          applyCalculatedFields(panels, { ...prev, [fieldId]: displayName }, rules),
         )
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err)
       setPreviewModel((prev) =>
-        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }, rules),
+        applyCalculatedFields(panels, { ...prev, [fieldId]: displayName }, rules),
       )
     } finally {
       setExtractingFieldId(null)
@@ -486,7 +492,7 @@ const LivePreview = () => {
                             field,
                             previewModel,
                             handleFieldValueChange,
-                            (file) => handleOcrFileSelect(file, field),
+                            (files) => handleOcrFileSelect(files, field),
                             extractingFieldId === field.id,
                             selectedRepoId,
                             (patch) =>
@@ -756,6 +762,7 @@ const LivePreviewDropdown = ({
     return (
       <InputSelectMultiple
         creatable={allowAddNew}
+        createOptionLabel={(query) => `Add "${query}"`}
         disabled={disabled}
         options={withExtraFieldOptions(selectOptions, selectedOptions)}
         placeholder={
@@ -777,6 +784,7 @@ const LivePreviewDropdown = ({
   return (
     <InputSelect
       creatable={allowAddNew}
+      createOptionLabel={(query) => `Add "${query}"`}
       disabled={disabled}
       options={withExtraFieldOptions(
         selectOptions,
@@ -1203,7 +1211,7 @@ const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
   onChange: (fieldId: string, value: any) => void,
-  onOcrProcessFile?: (file: File) => void,
+  onOcrProcessFile?: (files: File[]) => void,
   isExtracting?: boolean,
   fallbackRepositoryId?: string,
   onUpdateModel?: (patch: Record<string, any>) => void,
@@ -1286,12 +1294,17 @@ const renderPreviewInput = (
             className='hidden'
             disabled={disabled || isExtracting}
             id={fileInputId}
+            multiple={
+              resolvedType === 'FILE_UPLOAD' &&
+              field.settings?.specific?.allowMultipleFiles === true
+            }
             type='file'
             onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file && onOcrProcessFile) {
-                onOcrProcessFile(file)
+              const files = Array.from(e.target.files ?? [])
+              if (files.length > 0 && onOcrProcessFile) {
+                onOcrProcessFile(files)
               }
+              e.target.value = ''
             }}
           />
           <label

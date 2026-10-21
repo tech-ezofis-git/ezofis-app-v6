@@ -211,9 +211,17 @@ export default function Comments({
         )}
 
         {sortedComments.map((c, idx) => {
+          const isAgentComment =
+            c?.isAgent === true ||
+            String(c?.authorType || '').toUpperCase() === 'AGENT'
           const isMe =
-            Boolean(currentUserEmail && c?.createdByEmail === currentUserEmail) ||
-            Boolean(session?.id && c?.createdBy && String(c.createdBy) === String(session.id))
+            !isAgentComment &&
+            (Boolean(currentUserEmail && c?.createdByEmail === currentUserEmail) ||
+              Boolean(
+                session?.id &&
+                  c?.createdBy &&
+                  String(c.createdBy) === String(session.id),
+              ))
           const rawName = String(
             c?.createdByName ||
               c?.createdByEmail ||
@@ -224,6 +232,7 @@ export default function Comments({
           const lowerName = rawName.toLowerCase()
           const isAi =
             !isMe &&
+            !isAgentComment &&
             Boolean(
               c?.isAi ||
                 c?.isBot ||
@@ -231,13 +240,18 @@ export default function Comments({
                   lowerName,
                 ),
             )
-          const name = isMe
-            ? t`You`
-            : isAi
-              ? t`AI`
-              : rawName && !isUuid(rawName)
-                ? rawName
-                : c?.createdByEmail || t`User`
+          const agentName = String(
+            c?.authorName || c?.externalCommentsBy || '',
+          ).trim()
+          const name = isAgentComment
+            ? agentName || t`Agent`
+            : isMe
+              ? t`You`
+              : isAi
+                ? t`AI`
+                : rawName && !isUuid(rawName)
+                  ? rawName
+                  : c?.createdByEmail || t`User`
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
             ? formatDatetime(
@@ -253,7 +267,11 @@ export default function Comments({
 
           return (
             <div className='flex items-start gap-3' key={`${c?.id ?? idx}`}>
-              {isAi ? (
+              {isAgentComment ? (
+                <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-2 text-primary-11'>
+                  <Icon className='size-4' name='tabler:robot' />
+                </div>
+              ) : isAi ? (
                 <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-purple-4/50 bg-purple-1 text-purple-9 shadow-2xs'>
                   <AiBrandIcon className='size-4 shrink-0' />
                 </div>
