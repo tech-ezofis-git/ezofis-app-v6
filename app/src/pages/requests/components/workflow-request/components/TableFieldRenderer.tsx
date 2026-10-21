@@ -1011,6 +1011,7 @@ const TableCellSelect = ({
       className='w-full'
       creatable={allowNew}
       options={displayOptions}
+      searchable
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.filter((opt) =>
         (Array.isArray(val) ? val : []).includes(opt.id),
@@ -1026,6 +1027,7 @@ const TableCellSelect = ({
       className='w-full'
       creatable={allowNew}
       options={displayOptions}
+      searchable
       placeholder={getColumnPlaceholder(col)}
       value={displayOptions.find((opt) => opt.id === val) || null}
       onChange={(opt) =>
