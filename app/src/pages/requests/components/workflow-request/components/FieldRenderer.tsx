@@ -68,6 +68,7 @@ interface ChoiceFieldProps {
   field: any
   value: any
   error?: string
+  loading?: boolean
   options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
@@ -116,6 +117,7 @@ interface StagedFileValue {
 const ChoiceRadioGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -198,11 +200,19 @@ const ChoiceRadioGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -313,6 +323,7 @@ const ChoiceRadioGroupField = ({
 const ChoiceCheckboxGroupField = ({
   error,
   field,
+  loading,
   options,
   readOnly,
   required,
@@ -409,11 +420,19 @@ const ChoiceCheckboxGroupField = ({
         <p className='text-12 font-normal text-gray-9'>{general.description}</p>
       )}
 
+      {loading && (
+        <div className='flex items-center gap-2 text-12 font-normal text-gray-9'>
+          <Icon className='size-4 animate-spin' name='lucide:loader-2' />
+          <span>{t`Loading options…`}</span>
+        </div>
+      )}
+
       <div
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
             'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+          loading && 'hidden',
         )}
       >
         <div
@@ -1412,6 +1431,7 @@ const FieldRenderer = ({
         <ChoiceRadioGroupField
           error={error}
           field={field}
+          loading={isOptionsLoading}
           options={selectOptions}
           readOnly={readOnly}
           required={required}
@@ -1500,6 +1520,8 @@ const FieldRenderer = ({
           <ChoiceCheckboxGroupField
             error={error}
             field={field}
+            loading={isOptionsLoading}
+            options={selectOptions}
             readOnly={readOnly}
             required={required}
             value={value}

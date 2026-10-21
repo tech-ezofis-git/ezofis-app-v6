@@ -907,7 +907,9 @@ const TableCellFileInput = ({
               ? files.length > 0
                 ? 'Add more files'
                 : 'Add files'
-              : fileName || '...'}
+              : fileName ||
+                col.settings?.specific?.placeholder ||
+                (isImageType ? 'Upload image' : 'Upload file')}
         </span>
         <input
           accept={getFileInputAccept(col, isImageType)}
