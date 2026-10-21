@@ -49,6 +49,7 @@ const columnTitle = (col: any) =>
 const LINE_FIELD_ALIASES: Record<string, string[]> = {
   Category: ['category'],
   Description: ['description', 'desc', 'details', 'item description'],
+  Discount: ['discount', 'disc', 'discount %', 'discount%'],
   Note: ['note', 'notes', 'remark', 'remarks'],
   Price: [
     'price',
@@ -148,6 +149,32 @@ const resolveLineFieldValue = (
   // picked up Price or another field must not replace it.
   if (canonical === 'Qty' && !isEmptyValue(named)) return named
 
+  // Prefer real named Product/Price over a stale UUID 0 left on another quote.
+  if (
+    (canonical === 'Product' || canonical === 'Price') &&
+    !isEmptyValue(named) &&
+    (isEmptyValue(fromColumn) ||
+      (canonical === 'Price' &&
+        Number(fromColumn) === 0 &&
+        Number(named) > 0))
+  ) {
+    return named
+  }
+
+  // Edited discount lives on the canonical key. A stale 0 on the other
+  // quote's column UUID must not hide it when rows are copied across tables.
+  if (canonical === 'Discount') {
+    const namedNum = parseLooseNumber(named)
+    const columnNum = parseLooseNumber(fromColumn)
+    if (
+      Number.isFinite(namedNum) &&
+      namedNum > 0 &&
+      (!Number.isFinite(columnNum) || columnNum === 0)
+    ) {
+      return named
+    }
+  }
+
   if (!isEmptyValue(fromColumn)) return fromColumn
   if (!isEmptyValue(named)) return named
   return ''
@@ -189,11 +216,29 @@ const generateRowId = () => {
   }
 }
 
+type DiscountMode = 'percent' | 'amount'
+
+const resolveDiscountMode = (row: Record<string, any>): DiscountMode => {
+  const raw = String(row?._discountMode || row?.DiscountMode || 'percent')
+    .trim()
+    .toLowerCase()
+  return raw === 'amount' || raw === '$' || raw === 'dollar' ? 'amount' : 'percent'
+}
+
 const computeLineSubtotal = (row: Record<string, any>, columns: any[] = []) => {
   const qty = parseLooseNumber(resolveLineFieldValue(row, columns, 'Qty'))
   const price = parseLooseNumber(resolveLineFieldValue(row, columns, 'Price'))
   if (Number.isFinite(qty) && Number.isFinite(price)) {
-    return roundMoney(qty * price)
+    const discountRaw = parseLooseNumber(
+      resolveLineFieldValue(row, columns, 'Discount'),
+    )
+    const discount = Number.isFinite(discountRaw) ? discountRaw : 0
+    const base = qty * price
+    if (resolveDiscountMode(row) === 'amount') {
+      return roundMoney(Math.max(0, base - discount))
+    }
+    // Default form formula: (Qty * Price) * (1 - Discount / 100)
+    return roundMoney(base * (1 - discount / 100))
   }
   const existing = parseLooseNumber(
     resolveLineFieldValue(row, columns, 'Subtotal'),
@@ -213,6 +258,7 @@ export const normalizeLineItemRow = (
   }
   if (row?._approved != null) next._approved = row._approved
   if (row?._hideNote != null) next._hideNote = row._hideNote
+  next._discountMode = resolveDiscountMode(row)
 
   const needsReview = row?.['Needs Engineering Review']
   if (needsReview != null) next['Needs Engineering Review'] = needsReview
@@ -224,22 +270,25 @@ export const normalizeLineItemRow = (
   const categoryValue = resolveLineFieldValue(row, columns, 'Category')
   if (!isEmptyValue(categoryValue)) next.Category = categoryValue
   else if (!isEmptyValue(row?.Category)) next.Category = row.Category
-  ;(['Product', 'Description', 'Qty', 'Price'] as const).forEach(
+  ;(['Product', 'Description', 'Qty', 'Price', 'Discount'] as const).forEach(
     (canonical) => {
       const value = resolveLineFieldValue(row, columns, canonical)
-      next[canonical] = value
+      // Keep Discount as '' while editing so the user can clear "0";
+      // computeLineSubtotal already treats empty as 0.
+      next[canonical] = isEmptyValue(value) && canonical === 'Discount' ? '' : value
       const col = findColumnForCanonical(columns, canonical)
       const blockedIds = new Set([
         'Product',
         'Description',
         'Qty',
         'Price',
+        'Discount',
         'Subtotal',
         'Note',
         'Category',
       ])
       blockedIds.delete(canonical)
-      if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = value
+      if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = next[canonical]
     },
   )
 
@@ -259,14 +308,116 @@ export const normalizeLineItemRows = (
   columns: any[] = [],
 ) => (rows || []).map((row, index) => normalizeLineItemRow(row, columns, index))
 
-/** Persist only form column ids (plus meta) — avoids name/UUID scramble. */
-const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
+const CANONICAL_LINE_FIELDS = [
+  'Product',
+  'Description',
+  'Qty',
+  'Price',
+  'Discount',
+  'Note',
+  'Category',
+  'Subtotal',
+] as const
+
+const canonicalForColumn = (col: any): string | null => {
+  const title = columnTitle(col)
+  for (const key of Object.keys(LINE_FIELD_ALIASES)) {
+    if (headingMatchesAliases(title, LINE_FIELD_ALIASES[key])) return key
+  }
+  return null
+}
+
+/** Pull a canonical field from a row using any available column defs + named keys. */
+const pickCanonicalLineValue = (
+  row: Record<string, any>,
+  canonical: string,
+  columnSets: any[][],
+) => {
+  for (const cols of columnSets) {
+    if (!cols?.length) continue
+    const value = resolveLineFieldValue(row, cols, canonical)
+    if (!isEmptyValue(value)) return value
+  }
+  const aliases = LINE_FIELD_ALIASES[canonical] || [canonical]
+  const named = readNamedField(row, canonical, aliases)
+  if (!isEmptyValue(named)) return named
+
+  // Direct UUID read from every known column def for this canonical.
+  for (const cols of columnSets) {
+    const col = findColumnForCanonical(cols, canonical)
+    if (col?.id != null && !isEmptyValue(row?.[col.id])) return row[col.id]
+  }
+
+  // Last resort: walk every source column id present on the row.
+  for (const cols of columnSets) {
+    for (const col of cols || []) {
+      if (canonicalForColumn(col) !== canonical) continue
+      if (col?.id != null && !isEmptyValue(row?.[col.id])) return row[col.id]
+    }
+  }
+  return ''
+}
+
+/**
+ * Copy rows between quote tables with different column UUIDs (Line Item → quote_2).
+ * Resolves Product/Qty/Price via source column ids, then writes target column ids.
+ */
+export const remapLineItemRows = (
+  rows: Record<string, any>[] | undefined,
+  sourceColumns: any[] = [],
+  targetColumns: any[] = [],
+) => {
+  const columnSets = [sourceColumns, targetColumns].filter(
+    (cols) => Array.isArray(cols) && cols.length > 0,
+  )
+  const writeColumns = targetColumns.length
+    ? targetColumns
+    : sourceColumns.length
+      ? sourceColumns
+      : []
+
+  return (rows || []).map((row, index) => {
+    const slim: Record<string, any> = {
+      _discountMode: resolveDiscountMode(row),
+      _rowId: generateRowId(),
+    }
+    if (row?._approved != null) slim._approved = row._approved
+    if (row?._hideNote != null) slim._hideNote = row._hideNote
+    if (row?.['Needs Engineering Review'] != null) {
+      slim['Needs Engineering Review'] = row['Needs Engineering Review']
+    }
+
+    CANONICAL_LINE_FIELDS.forEach((canonical) => {
+      slim[canonical] = pickCanonicalLineValue(row, canonical, columnSets)
+    })
+
+    // If still missing Product/Qty/Price, map source-col UUID → canonical by definition.
+    if (sourceColumns.length) {
+      sourceColumns.forEach((col) => {
+        const canonical = canonicalForColumn(col)
+        if (!canonical || !(CANONICAL_LINE_FIELDS as readonly string[]).includes(canonical)) {
+          return
+        }
+        if (!isEmptyValue(slim[canonical])) return
+        if (col?.id != null && !isEmptyValue(row?.[col.id])) {
+          slim[canonical] = row[col.id]
+        }
+      })
+    }
+
+    return normalizeLineItemRow(slim, writeColumns, index)
+  })
+}
+
+/** Persist form column ids + canonical keys so copy survives UUID mismatches. */
+export const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
   rows.map((row) => {
     const mapped: Record<string, any> = {
       _rowId: row._rowId || generateRowId(),
     }
     if (row._approved != null) mapped._approved = row._approved
     if (row._hideNote != null) mapped._hideNote = row._hideNote
+    if (row._discountMode) mapped._discountMode = row._discountMode
     // Keep warning payload so Approve can hide it after reload/sync.
     if (!isEmptyValue(row.Note)) mapped.Note = row.Note
     if (row['Needs Engineering Review'] != null) {
@@ -274,16 +425,31 @@ const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
     }
     if (!isEmptyValue(row.Category)) mapped.Category = row.Category
 
-    if (!columns.length) {
-      ;(
-        ['Product', 'Description', 'Qty', 'Price', 'Subtotal', 'Note'] as const
-      ).forEach((key) => {
-        mapped[key] = row[key]
-      })
-      return mapped
-    }
+    // Always keep canonical Product/Qty/Price (etc.) on the row. Quote 2/3
+    // tables use different column UUIDs than Quote 1; named keys let normalize
+    // recover values even when column defs are missing or mismatched on read.
+    ;(
+      [
+        'Product',
+        'Description',
+        'Qty',
+        'Price',
+        'Discount',
+        'Subtotal',
+        'Note',
+      ] as const
+    ).forEach((key) => {
+      if (key === 'Discount') {
+        mapped[key] = isEmptyValue(row[key]) ? '' : row[key]
+        return
+      }
+      if (!isEmptyValue(row[key])) mapped[key] = row[key]
+    })
+
+    if (!columns.length) return mapped
 
     columns.forEach((col) => {
+      if (col?.id == null || col.id === '') return
       const title = columnTitle(col)
       let canonical: string | null = null
       for (const key of Object.keys(LINE_FIELD_ALIASES)) {
@@ -293,7 +459,18 @@ const toFormTableRows = (rows: Record<string, any>[], columns: any[]) =>
         }
       }
       if (canonical) {
-        mapped[col.id] = row[canonical] ?? row[col.id] ?? ''
+        const namedValue = row[canonical]
+        const columnValue = row[col.id]
+        const value = !isEmptyValue(namedValue)
+          ? namedValue
+          : !isEmptyValue(columnValue)
+            ? columnValue
+            : ''
+        mapped[col.id] = value
+        // Mirror onto canonical when UUID had the only copy of the value.
+        if (isEmptyValue(mapped[canonical]) && !isEmptyValue(value)) {
+          mapped[canonical] = value
+        }
       } else if (!isEmptyValue(row[col.id])) {
         mapped[col.id] = row[col.id]
       } else {
@@ -309,6 +486,9 @@ const applyLineField = (
   value: any,
   columns: any[] = [],
 ) => {
+  if (canonical === '_discountMode') {
+    return { ...row, _discountMode: value === 'amount' ? 'amount' : 'percent' }
+  }
   const next = { ...row, [canonical]: value }
   const col = findColumnForCanonical(columns, canonical)
   if (col?.id) next[col.id] = value
@@ -316,9 +496,11 @@ const applyLineField = (
 }
 
 const emptyLineRow = (): Record<string, any> => ({
+  _discountMode: 'percent',
   _rowId: generateRowId(),
   Category: '',
   Description: '',
+  Discount: 0,
   Note: '',
   Price: 0,
   Product: '',
@@ -331,16 +513,59 @@ const sumLineSubtotals = (rows: Record<string, any>[], columns: any[] = []) =>
     rows.reduce((sum, row) => sum + computeLineSubtotal(row, columns), 0),
   )
 
+/** Pre-discount line amount: Qty × Price (before % / $ discount). */
+const computeLineGross = (row: Record<string, any>, columns: any[] = []) => {
+  const qty = parseLooseNumber(resolveLineFieldValue(row, columns, 'Qty'))
+  const price = parseLooseNumber(resolveLineFieldValue(row, columns, 'Price'))
+  if (!Number.isFinite(qty) || !Number.isFinite(price)) return 0
+  return qty * price
+}
+
+const sumLineGross = (rows: Record<string, any>[], columns: any[] = []) =>
+  roundMoney(rows.reduce((sum, row) => sum + computeLineGross(row, columns), 0))
+
+/**
+ * Build quote totals.
+ * - Subtotal = sum of line nets (after each line's Discount).
+ * - Discount = $ saved on lines (gross − net), so the footer reflects row discounts.
+ * - Optional `quoteDiscount` is an extra $ off only when lines have no discount applied
+ *   (avoids double-counting when the Discount field was persisted from line savings).
+ */
 export const buildQuoteTotals = (
   rows: Record<string, any>[],
   freight: number,
   taxRate: number,
   columns: any[] = [],
+  quoteDiscount = 0,
 ) => {
+  const gross = sumLineGross(rows, columns)
   const subtotal = sumLineSubtotals(rows, columns)
-  const hst = roundMoney((subtotal + freight) * taxRate)
-  const total = roundMoney(subtotal + freight + hst)
-  return { freight: roundMoney(freight), hst, subtotal, total }
+  const lineDiscount = roundMoney(Math.max(0, gross - subtotal))
+  const hasLineDiscount =
+    lineDiscount > 0 ||
+    rows.some((row) => {
+      const raw = parseLooseNumber(
+        resolveLineFieldValue(row, columns, 'Discount'),
+      )
+      return Number.isFinite(raw) && raw > 0
+    })
+  const extraDiscount = hasLineDiscount
+    ? 0
+    : Math.max(0, Number(quoteDiscount) || 0)
+  const discountAmt = roundMoney(lineDiscount + extraDiscount)
+  // Tax on net lines (+ freight). Line discounts are already in `subtotal`.
+  const taxableBase =
+    Math.max(0, subtotal - extraDiscount) + Number(freight || 0)
+  const hst = roundMoney(taxableBase * taxRate)
+  const total = roundMoney(taxableBase + hst)
+  return {
+    discount: discountAmt,
+    freight: roundMoney(freight),
+    gross,
+    hst,
+    subtotal,
+    total,
+  }
 }
 
 const findProductColumn = (columns: any[]) =>
@@ -393,7 +618,10 @@ const itemsFingerprint = (items: Record<string, any>[] | undefined) => {
 }
 
 export type QuoteTotals = {
+  discount: number
   freight: number
+  /** Qty × Price before line discounts. */
+  gross: number
   hst: number
   subtotal: number
   total: number
@@ -401,7 +629,13 @@ export type QuoteTotals = {
 
 interface Props {
   items: Record<string, any>[]
+  /** Quote-level discount ($) for the active Main/ALT/OPT tab. */
+  discount?: number
   freight?: number
+  /** When set, prefer these columns (ALT/OPT tables have distinct column UUIDs). */
+  tableColumns?: any[]
+  /** Persist edits to this form field id (Line Item / ALT Line Item / OPT Line Item). */
+  tableFieldId?: string
   readOnly?: boolean
   taxRate?: number
   title?: string
@@ -411,9 +645,12 @@ interface Props {
 }
 
 const QuoteLineItemsTable = ({
+  discount = 0,
   freight = 0,
   items,
   readOnly = false,
+  tableColumns: tableColumnsProp,
+  tableFieldId,
   taxRate = 0.13,
   title,
   workflow,
@@ -422,16 +659,25 @@ const QuoteLineItemsTable = ({
 }: Props) => {
   const { t } = useLingui()
 
-  const tableField = useMemo(
-    () =>
-      collectFormTableFields(workflow).find((field) =>
-        isLineItemHeading(getFieldHeading(field)),
-      ),
-    [workflow],
-  )
-  const tableColumns = useMemo(
-    () => tableField?.settings?.specific?.tableColumns || [],
-    [tableField],
+  const tableField = useMemo(() => {
+    const fields = collectFormTableFields(workflow)
+    if (tableFieldId) {
+      const byId = fields.find((field) => getFieldId(field) === tableFieldId)
+      if (byId) return byId
+    }
+    return fields.find((field) => isLineItemHeading(getFieldHeading(field)))
+  }, [tableFieldId, workflow])
+
+  const tableColumns = useMemo(() => {
+    if (Array.isArray(tableColumnsProp) && tableColumnsProp.length > 0) {
+      return tableColumnsProp
+    }
+    return tableField?.settings?.specific?.tableColumns || []
+  }, [tableColumnsProp, tableField])
+
+  const hasDiscountColumn = useMemo(
+    () => Boolean(findColumnForCanonical(tableColumns, 'Discount')),
+    [tableColumns],
   )
 
   const productColumn = useMemo(
@@ -468,29 +714,26 @@ const QuoteLineItemsTable = ({
   useEffect(() => {
     // Sync local rows from props only — do NOT call onTotalsChange here.
     // Persisting totals on sync updates formModel → new items fingerprint → loop.
+    // Do not invent a placeholder NA row when the quote truly has 0 items.
     setRows(normalizedItems.length ? normalizedItems : [])
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync on content fingerprint only
   }, [itemsKey])
 
-  useEffect(() => {
-    if (readOnly) return
-    if (normalizedItems.length > 0) return
-    if (rows.length > 0) return
-    setRows([emptyLineRow()])
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once when quote has no lines
-  }, [normalizedItems, readOnly])
-
   const persist = (next: Record<string, any>[]) => {
     const normalized = normalizeLineItemRows(next, tableColumns)
-    const totals = buildQuoteTotals(normalized, freight, taxRate, tableColumns)
+    const totals = buildQuoteTotals(
+      normalized,
+      freight,
+      taxRate,
+      tableColumns,
+      discount,
+    )
     setRows(normalized)
     onTotalsChange?.(totals)
     if (!onFieldChange) return
-    if (tableField) {
-      onFieldChange(
-        getFieldId(tableField),
-        toFormTableRows(normalized, tableColumns),
-      )
+    const persistId = tableFieldId || (tableField ? getFieldId(tableField) : '')
+    if (persistId) {
+      onFieldChange(persistId, toFormTableRows(normalized, tableColumns))
     } else {
       onFieldChange('Line Item', normalized)
     }
@@ -583,6 +826,7 @@ const QuoteLineItemsTable = ({
   const canEdit = !readOnly
   const hasUnaccepted = rows.some((row) => !row._approved)
 
+  // Parent renders a dedicated empty-state panel for 0-item quote tabs.
   if (!rows.length) return null
 
   return (
@@ -630,6 +874,11 @@ const QuoteLineItemsTable = ({
               <th className='w-28 border border-gray-3 p-3 text-center font-semibold'>
                 Price
               </th>
+              {hasDiscountColumn ? (
+                <th className='w-[9.5rem] min-w-[9.5rem] border border-gray-3 p-3 text-center font-semibold whitespace-nowrap'>
+                  Discount
+                </th>
+              ) : null}
               <th className='w-28 border border-gray-3 p-3 text-center font-semibold'>
                 Subtotal
               </th>
@@ -645,9 +894,11 @@ const QuoteLineItemsTable = ({
             {rows.map((item, i) => (
               <QuoteLineRow
                 canEdit={canEdit}
+                columns={tableColumns}
                 item={item}
                 key={item._rowId || i}
                 productColumn={productColumn}
+                showDiscount={hasDiscountColumn}
                 useApiProduct={useApiProduct}
                 onApprove={() => approveRow(i)}
                 onChange={(key, value) => updateCell(i, key, value)}
@@ -801,8 +1052,10 @@ function HoverValue({
 
 function QuoteLineRow({
   canEdit,
+  columns = [],
   item,
   productColumn,
+  showDiscount = false,
   useApiProduct,
   onApprove,
   onChange,
@@ -810,8 +1063,10 @@ function QuoteLineRow({
   onSelectProduct,
 }: {
   canEdit: boolean
+  columns?: any[]
   item: Record<string, any>
   productColumn: any
+  showDiscount?: boolean
   useApiProduct: boolean
   onApprove: () => void
   onChange: (key: string, value: any) => void
@@ -833,8 +1088,24 @@ function QuoteLineRow({
 
   const productLabel =
     String(productColumn?.name || productColumn?.label || '') || t`Product`
-  const lineSubtotal = computeLineSubtotal(item)
+  const lineGross = computeLineGross(item, columns)
+  const lineSubtotal = computeLineSubtotal(item, columns)
+  const lineSaved = roundMoney(Math.max(0, lineGross - lineSubtotal))
+  const hasLineSavings = lineSaved > 0
   const description = String(item.Description || '').trim()
+  const discountMode = resolveDiscountMode(item)
+  const discountDisplay = (() => {
+    const resolved = resolveLineFieldValue(item, columns, 'Discount')
+    const num = parseLooseNumber(
+      !isEmptyValue(resolved) ? resolved : item.Discount,
+    )
+    if (!Number.isFinite(num)) return '0'
+    return Number.isInteger(num) ? String(num) : String(num)
+  })()
+
+  const setDiscountMode = (mode: DiscountMode) => {
+    onChange('_discountMode', mode)
+  }
 
   return (
     <tr className='group'>
@@ -1012,10 +1283,86 @@ function QuoteLineRow({
           )}
         />
       </td>
-      <td className='w-28 border border-gray-3 p-3 text-center align-top'>
-        <span className='inline-block font-semibold tabular-nums text-gray-12'>
-          ${toMoney(lineSubtotal)}
-        </span>
+      {showDiscount ? (
+        <td className='w-[9.5rem] min-w-[9.5rem] border border-gray-3 p-3 text-center align-top text-gray-12'>
+          <HoverValue
+            align='center'
+            canEdit={canEdit}
+            className='w-full text-center'
+            display={
+              <span className='inline-block tabular-nums'>
+                {discountMode === 'amount'
+                  ? `$${discountDisplay}`
+                  : `${discountDisplay}%`}
+              </span>
+            }
+            input={() => (
+              <div className='inline-flex h-8 items-stretch overflow-hidden rounded-md border border-gray-4 bg-surface'>
+                <button
+                  aria-label={t`Percent discount`}
+                  aria-pressed={discountMode === 'percent'}
+                  className={cn(
+                    'inline-flex w-7 shrink-0 items-center justify-center text-xs font-bold transition-colors',
+                    discountMode === 'percent'
+                      ? 'bg-[var(--primary-9)] text-white'
+                      : 'bg-gray-1 text-gray-10 hover:bg-gray-2',
+                  )}
+                  type='button'
+                  onClick={() => setDiscountMode('percent')}
+                >
+                  %
+                </button>
+                <button
+                  aria-label={t`Dollar discount`}
+                  aria-pressed={discountMode === 'amount'}
+                  className={cn(
+                    'inline-flex w-7 shrink-0 items-center justify-center border-l border-gray-4 text-xs font-bold transition-colors',
+                    discountMode === 'amount'
+                      ? 'bg-[var(--primary-9)] text-white'
+                      : 'bg-gray-1 text-gray-10 hover:bg-gray-2',
+                  )}
+                  type='button'
+                  onClick={() => setDiscountMode('amount')}
+                >
+                  $
+                </button>
+                <input
+                  aria-label={t`Discount`}
+                  className='w-14 min-w-0 border-l border-gray-4 bg-transparent px-1.5 text-center text-sm tabular-nums text-gray-12 outline-none focus:bg-[var(--primary-1)]'
+                  inputMode='decimal'
+                  autoFocus
+                  value={
+                    item.Discount === '' || item.Discount == null
+                      ? ''
+                      : item.Discount
+                  }
+                  onChange={(event) =>
+                    onChange('Discount', event.target.value)
+                  }
+                />
+              </div>
+            )}
+          />
+        </td>
+      ) : null}
+      <td className='w-32 min-w-[8rem] border border-gray-3 p-3 text-center align-top'>
+        {hasLineSavings ? (
+          <div className='flex flex-col items-center gap-0.5'>
+            <span className='text-xs text-gray-9 line-through tabular-nums'>
+              ${toMoney(lineGross)}
+            </span>
+            <span className='font-bold text-gray-12 tabular-nums'>
+              ${toMoney(lineSubtotal)}
+            </span>
+            <span className='text-xs font-semibold text-green-11 tabular-nums'>
+              {t`Saved`} ${toMoney(lineSaved)}
+            </span>
+          </div>
+        ) : (
+          <span className='inline-block font-semibold text-gray-12 tabular-nums'>
+            ${toMoney(lineSubtotal)}
+          </span>
+        )}
       </td>
       {canEdit && (
         <td className='w-px border border-gray-3 p-2 text-right align-top whitespace-nowrap'>

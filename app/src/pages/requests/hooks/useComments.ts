@@ -3,14 +3,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type CommentItem = {
+  authorName?: string
+  authorType?: string
   comments?: string
   createdAt?: string
   createdBy?: string
   createdByEmail?: string
   createdByName?: string
+  externalCommentsBy?: string
   fileIds?: Array<string | number>
   hasNotifytoInitiated?: boolean
   id?: string | number
+  isAgent?: boolean
   showTo?: number // 1/2 etc in v5
 }
 
@@ -46,6 +50,8 @@ export function useComments(
             : []
 
       const mapped: CommentItem[] = list.map((c: any) => ({
+        authorName: c.authorName || c.externalCommentsBy || '',
+        authorType: c.authorType || '',
         comments: c.comments || c.text || c.comment || '',
         createdAt:
           c.createdAt || c.createdAtUtc || c.occurredAtUtc || c.createdOn || '',
@@ -57,9 +63,13 @@ export function useComments(
           '',
         createdByName:
           c.createdByName || c.createdByUserName || c.performedByUserName || '',
+        externalCommentsBy: c.externalCommentsBy || '',
         fileIds: c.fileIds || [],
         hasNotifytoInitiated: c.hasNotifytoInitiated || false,
         id: c.id || c._id || '',
+        isAgent:
+          c.isAgent === true ||
+          String(c.authorType || '').toUpperCase() === 'AGENT',
         showTo: c.showTo ?? 2,
       }))
 

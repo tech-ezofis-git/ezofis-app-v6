@@ -929,26 +929,21 @@ export function DocumentsListView({
             <div className='m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
               {error}
             </div>
-          ) : !activeRepositoryId || folders.length > 0 ? (
+          ) : !activeRepositoryId ? (
             <FolderDataTableSection
               effectiveFolderTotal={folders.length}
               folderFilters={{}}
-              folders={folders}
               folderSearch={searchQuery}
-              hasFiles={activeRepositoryId ? visibleFiles.length > 0 : false}
+              folders={folders}
+              hasFiles={false}
               hasMoreFolders={false}
-              hideFolderActions={!activeRepositoryId}
-              isExpanded={!activeRepositoryId || visibleFiles.length === 0}
+              hideFolderActions
+              isExpanded
               isSplitView={false}
               loading={loading}
               loadingFolders={false}
               loadingPage={loadingPage}
               rowSize='compact'
-              folderBodyMaxHeight={
-                activeRepositoryId && visibleFiles.length > 0
-                  ? `${Math.min(260, Math.max(96, folders.length * 56 + 52))}px`
-                  : undefined
-              }
               onLoadMoreFolders={() => undefined}
               onOpenFolder={handleOpenFolder}
               onReload={handleRefresh}
@@ -976,8 +971,7 @@ export function DocumentsListView({
             visibleFiles.length === 0 &&
             !loading &&
             !loadingPage &&
-            !refreshing &&
-            folders.length === 0 ? (
+            !refreshing ? (
               hasActiveQuery ? (
                 <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
                   <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />

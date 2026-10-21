@@ -920,6 +920,7 @@ const GridRowItem = memo(
     workflow,
     onRowClick,
   }: GridRowItemProps) => {
+    const { t } = useLingui()
     const originalIndex =
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
@@ -1089,6 +1090,21 @@ const GridRowItem = memo(
           onRowClick(row, 'Overview')
         }}
       >
+        <button
+          aria-label={isSelected ? t`Deselect request` : t`Select request`}
+          aria-pressed={isSelected}
+          type='button'
+          className={cn(
+            'absolute top-0 bottom-0 left-0 z-20 w-14 border-0 bg-transparent p-0',
+            isSelected || hasSelectionActive
+              ? 'cursor-pointer'
+              : 'pointer-events-none group-hover:pointer-events-auto group-hover:cursor-pointer',
+          )}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleRowSelection(rowId, e)
+          }}
+        />
         {/* Checkbox & Status Icon */}
         <div className='flex shrink-0 items-center'>
           <div
@@ -1099,16 +1115,6 @@ const GridRowItem = memo(
                 : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
             )}
           >
-            <input
-              checked={isSelected}
-              className='absolute inset-0 z-10 cursor-pointer opacity-0'
-              type='checkbox'
-              onChange={() => {}}
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleRowSelection(rowId, e)
-              }}
-            />
             <div
               className={cn(
                 'flex size-5 items-center justify-center rounded-md border-2 transition-all',

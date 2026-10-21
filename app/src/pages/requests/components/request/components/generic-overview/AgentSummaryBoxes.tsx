@@ -481,7 +481,10 @@ const AgentSummaryBoxes: React.FC<AgentSummaryBoxesProps> = ({
           const qualifyResult =
             requestData?.qualifyAgentResponse?.qualifier_result
           if (qualifyResult) {
-            const summary = summarizeQualifierResult(qualifyResult)
+            const summary = summarizeQualifierResult(
+              qualifyResult,
+              collectFormFields(workflow),
+            )
             const decision = qualifyDecisionStyle(summary.qualify)
             if (summary.qualify) {
               status = decision.label
