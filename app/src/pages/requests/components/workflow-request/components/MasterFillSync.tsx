@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
-
 import {
   extractScalarStrings,
   fetchMasterFormColumnOptions,
@@ -8,8 +7,8 @@ import {
 } from '../utils/fieldRendering'
 
 interface Props {
-  field: any
   allFields: any[]
+  field: any
   formModel: Record<string, any>
   value: any
   readOnly?: boolean
@@ -56,9 +55,9 @@ const MasterFillSync = ({
   allFields,
   field,
   formModel,
-  onChange,
   readOnly,
   value,
+  onChange,
 }: Props) => {
   const specific = field?.settings?.specific || {}
   const info = getMasterFormInfo(field)
@@ -136,7 +135,14 @@ const MasterFillSync = ({
     }
 
     return conds
-  }, [field, parentField, allFields, formModel, parentMasterColumn, parentValue])
+  }, [
+    field,
+    parentField,
+    allFields,
+    formModel,
+    parentMasterColumn,
+    parentValue,
+  ])
 
   const conditionsKey = JSON.stringify(conditions)
 

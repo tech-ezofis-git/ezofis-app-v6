@@ -1,4 +1,4 @@
-import { type ComponentProps, useState } from 'react'
+import { type ComponentProps, useMemo, useState } from 'react'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -12,17 +12,18 @@ import {
   isFormulaSourceType,
   isInsideUnclosedAverage,
   isTableFieldType,
+  TABLE_SUM_SEPARATOR,
 } from '@/pages/form-builder/helpers/formula'
 import cn from '@/utils/cn'
-
-function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
-  return <InputSelectBase searchable wrapOptions {...props} />
-}
 
 interface Props {
   activeQuestion: Question
   fields: Question[]
   onChange: (tokens: FormulaToken[]) => void
+}
+
+function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
+  return <InputSelectBase searchable wrapOptions {...props} />
 }
 
 const OPERATORS: { label: string; value: string }[] = [
@@ -54,6 +55,32 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
   )
   const selectedTable = tableFields.find((field) => field.id === tableFieldId)
   const numericColumns = getNumericTableColumns(selectedTable)
+
+  const includeFieldOptions = useMemo(() => {
+    const directOptions = sourceFields.map((field) => ({
+      id: field.id,
+      isTableSum: false,
+      name: field.label || 'Untitled',
+    }))
+
+    const tableColumnOptions = tableFields.flatMap((table) => {
+      const cols = getNumericTableColumns(table)
+      const availableCols =
+        cols.length > 0
+          ? cols
+          : (table.settings?.specific?.tableColumns || []).filter(
+              (c: any) => c.type !== 'FILE_UPLOAD' && c.type !== 'CAMERA',
+            )
+
+      return availableCols.map((col: any) => ({
+        id: encodeTableSumValue(table.id, col.id),
+        isTableSum: true,
+        name: `${table.label || 'Table'} → ${col.name || 'Column'} (Sum)`,
+      }))
+    })
+
+    return [...directOptions, ...tableColumnOptions]
+  }, [sourceFields, tableFields])
 
   const setTokens = (next: FormulaToken[]) => onChange(next)
 
@@ -255,24 +282,28 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           Include field
         </label>
         <InputSelect
+          options={includeFieldOptions}
           value={null}
-          options={sourceFields.map((field) => ({
-            id: field.id,
-            name: field.label || 'Untitled',
-          }))}
           placeholder={
-            sourceFields.length
-              ? 'Number, currency, counter, or calculated'
+            includeFieldOptions.length
+              ? 'Select field or table column sum'
               : 'No compatible fields yet'
           }
-          onChange={(option) =>
-            option &&
-            appendTokens([{ type: 'FIELD', value: String(option.id) }])
-          }
+          onChange={(option) => {
+            if (!option) return
+            const item = includeFieldOptions.find((o) => o.id === option.id)
+            if (
+              item?.isTableSum ||
+              String(option.id).includes(TABLE_SUM_SEPARATOR)
+            ) {
+              appendTokens([{ type: 'TABLE_SUM', value: String(option.id) }])
+            } else {
+              appendTokens([{ type: 'FIELD', value: String(option.id) }])
+            }
+          }}
         />
         <p className='text-[10px] text-gray-7'>
-          Only Number, Currency, Counter, and Calculated fields can be used in a
-          formula.
+          Include a number field, currency, or the sum of a table column.
         </p>
       </div>
 
