@@ -985,6 +985,13 @@ const columnTitle = (column: any) =>
     .trim()
     .toLowerCase()
 
+/** "quote_2 Total", "quote_3 Subtotal", "ALT Freight", "OPT HST" ... */
+const QUOTE_VARIANT_TOTAL_LABEL =
+  /^(quote[\s_-]*[23]|alt|opt)\b[\s_:-]*(sub[\s_-]?total|total|freight|discount|hst|gst|tax)$/i
+
+const isBlankStoredValue = (value: unknown) =>
+  value == null || (typeof value === 'string' && value.trim() === '')
+
 /** Drop label copies. Line values stay on the column control id. */
 const storeFormValues = (
   panels: any[] | undefined,
@@ -999,6 +1006,20 @@ const storeFormValues = (
     if (label) headings.add(label)
     const columns = field?.settings?.specific?.tableColumns
     if (field?.id && Array.isArray(columns)) columnsByFieldId.set(field.id, columns)
+  }
+
+  // Quote 2 / Quote 3 totals are Calculated fields whose formula often cannot
+  // be evaluated (a blank operand makes it fail), which would wipe the total
+  // the quote view just saved from the line items. Keep the saved value; it
+  // is what move-next and the document preview send.
+  for (const field of fields) {
+    const id = field?.id
+    if (!id || !QUOTE_VARIANT_TOTAL_LABEL.test(String(field?.label || '').trim())) {
+      continue
+    }
+    if (isBlankStoredValue(calculated[id]) && !isBlankStoredValue(values[id])) {
+      calculated[id] = values[id]
+    }
   }
 
   const next: Record<string, any> = {}
