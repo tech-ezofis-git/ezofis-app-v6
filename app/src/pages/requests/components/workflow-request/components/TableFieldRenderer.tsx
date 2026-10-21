@@ -27,6 +27,10 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import Combobox from '@/components/base/inputs/select/Combobox'
+import Menu from '@/components/base/menu/Menu'
+import MenuDivider from '@/components/base/menu/MenuDivider'
+import MenuItem from '@/components/base/menu/MenuItem'
+import MenuSub from '@/components/base/menu/MenuSub'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
@@ -199,6 +203,17 @@ export interface TableColumn {
     }
   }
 }
+
+const DYNAMIC_COLUMN_TYPES = [
+  { icon: 'mdi:form-textbox', label: 'Short Text', type: 'SHORT_TEXT' },
+  { icon: 'mdi:email', label: 'Email', type: 'EMAIL' },
+  { icon: 'mdi:numeric', label: 'Number', type: 'NUMBER' },
+  { icon: 'lucide:calendar', label: 'Date', type: 'DATE' },
+  { icon: 'lucide:clock', label: 'Time', type: 'TIME' },
+  { icon: 'mdi:counter', label: 'Counter', type: 'COUNTER' },
+  { icon: 'mdi:currency-usd', label: 'Currency', type: 'CURRENCY_AMOUNT' },
+  { icon: 'mdi:phone', label: 'Phone Number', type: 'PHONE_NUMBER' },
+] as const
 
 const getColumnPlaceholder = (col: TableColumn) =>
   col.settings?.specific?.placeholder || getEffectiveColumnLabel(col) || '...'
@@ -1489,6 +1504,33 @@ const TableFieldRenderer = ({
     )
   }
 
+  const handleUpdateColumnType = (colId: string, nextType: string) => {
+    updateDynamicColumns(
+      dynamicColumns.map((c) => {
+        if (c.id !== colId) return c
+        const validation = { ...(c.settings?.validation || {}) }
+        const specificSettings = { ...(c.settings?.specific || {}) }
+        if (nextType === 'NUMBER') {
+          validation.contentRule = 'INTEGER'
+        } else if (nextType === 'CURRENCY_AMOUNT') {
+          validation.contentRule = 'INTEGER'
+          specificSettings.currencyOptionsType = 'ALL'
+        } else if (nextType === 'EMAIL') {
+          validation.contentRule = 'EMAIL'
+        }
+        return {
+          ...c,
+          type: nextType as any,
+          settings: {
+            ...c.settings,
+            specific: specificSettings,
+            validation,
+          },
+        }
+      }),
+    )
+  }
+
   const handleDeleteDynamicColumn = (colId: string) => {
     updateDynamicColumns(dynamicColumns.filter((c) => c.id !== colId))
   }
@@ -1499,6 +1541,17 @@ const TableFieldRenderer = ({
     if (idx === -1 || nextIdx < 0 || nextIdx >= dynamicColumns.length) return
     const next = [...dynamicColumns]
     ;[next[idx], next[nextIdx]] = [next[nextIdx], next[idx]]
+    updateDynamicColumns(next)
+  }
+
+  const handleReorderDynamicColumn = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return
+    const sourceIdx = dynamicColumns.findIndex((c) => c.id === sourceId)
+    const targetIdx = dynamicColumns.findIndex((c) => c.id === targetId)
+    if (sourceIdx === -1 || targetIdx === -1) return
+    const next = [...dynamicColumns]
+    const [moved] = next.splice(sourceIdx, 1)
+    next.splice(targetIdx, 0, moved)
     updateDynamicColumns(next)
   }
 
@@ -2356,6 +2409,27 @@ const TableFieldRenderer = ({
             </>
           )}
           {!readOnly &&
+            isDynamicTable &&
+            (isFlat ? (
+              <IconButton
+                color='primary'
+                icon='lucide:columns-3'
+                size='xs'
+                tooltip={t`Add Column`}
+                variant='ghost'
+                onClick={handleAddDynamicColumn}
+              />
+            ) : (
+              <button
+                className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary-5/40 bg-primary-1/50 px-2.5 py-1 text-xs font-bold text-primary-9 shadow-2xs transition-colors hover:bg-primary-1 active:scale-95'
+                type='button'
+                onClick={handleAddDynamicColumn}
+              >
+                <Icon height={13} name='lucide:columns-3' width={13} />
+                <span>{t`Add Column`}</span>
+              </button>
+            ))}
+          {!readOnly &&
             rowsType === 'ON_DEMAND' &&
             (isFlat ? (
               <IconButton
@@ -2510,7 +2584,19 @@ const TableFieldRenderer = ({
                       )}
                     >
                       {isDynamicColumn(col) && !readOnly ? (
-                        <div className='flex items-center gap-1'>
+                        <div
+                          className='group/colheader flex items-center justify-between gap-1'
+                          draggable
+                          onDragOver={(e) => e.preventDefault()}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', col.id)
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            const sourceId = e.dataTransfer.getData('text/plain')
+                            if (sourceId) handleReorderDynamicColumn(sourceId, col.id)
+                          }}
+                        >
                           {editingColumnId === col.id ? (
                             <input
                               className='min-w-0 flex-1 rounded border border-primary-5 bg-surface px-1 py-0.5 text-11 font-bold text-gray-12 outline-none'
@@ -2530,52 +2616,98 @@ const TableFieldRenderer = ({
                               }}
                             />
                           ) : (
-                            <button
-                              className='min-w-0 flex-1 cursor-pointer truncate text-left hover:underline'
-                              title={t`Click to rename`}
-                              type='button'
-                              onClick={() => setEditingColumnId(col.id)}
+                            <div
+                              className='flex min-w-0 flex-1 cursor-grab items-center gap-1.5'
+                              onDoubleClick={() => setEditingColumnId(col.id)}
                             >
-                              {col.name || 'Column'}
-                            </button>
+                              <span
+                                className='truncate font-bold text-gray-12'
+                                title={t`Double click to rename or drag to reorder`}
+                              >
+                                {col.name || 'Column'}
+                              </span>
+                              <span
+                                className='rounded bg-gray-2 px-1 py-0.2 text-[9px] font-semibold text-gray-9 uppercase'
+                                title={t`Type: ${col.type || 'SHORT_TEXT'}`}
+                              >
+                                {col.type || 'SHORT_TEXT'}
+                              </span>
+                            </div>
                           )}
-                          <button
-                            className='shrink-0 cursor-pointer text-gray-6 hover:text-gray-10 disabled:opacity-30'
-                            disabled={dynamicColumns[0]?.id === col.id}
-                            title={t`Move left`}
-                            type='button'
-                            onClick={() => handleMoveDynamicColumn(col.id, -1)}
-                          >
-                            <Icon
-                              height={10}
-                              name='lucide:chevron-left'
-                              width={10}
-                            />
-                          </button>
-                          <button
-                            className='shrink-0 cursor-pointer text-gray-6 hover:text-gray-10 disabled:opacity-30'
-                            title={t`Move right`}
-                            type='button'
-                            disabled={
-                              dynamicColumns[dynamicColumns.length - 1]?.id ===
-                              col.id
-                            }
-                            onClick={() => handleMoveDynamicColumn(col.id, 1)}
-                          >
-                            <Icon
-                              height={10}
-                              name='lucide:chevron-right'
-                              width={10}
-                            />
-                          </button>
-                          <button
-                            className='shrink-0 cursor-pointer text-red-7 hover:text-red-9'
-                            title={t`Delete column`}
-                            type='button'
-                            onClick={() => handleDeleteDynamicColumn(col.id)}
-                          >
-                            <Icon height={10} name='lucide:x' width={10} />
-                          </button>
+
+                          <div className='flex shrink-0 items-center gap-0.5'>
+                            <button
+                              className='shrink-0 cursor-pointer text-gray-6 opacity-0 transition-opacity group-hover/colheader:opacity-100 hover:text-gray-10 disabled:opacity-30'
+                              disabled={dynamicColumns[0]?.id === col.id}
+                              title={t`Move left`}
+                              type='button'
+                              onClick={() => handleMoveDynamicColumn(col.id, -1)}
+                            >
+                              <Icon
+                                height={11}
+                                name='lucide:chevron-left'
+                                width={11}
+                              />
+                            </button>
+                            <button
+                              className='shrink-0 cursor-pointer text-gray-6 opacity-0 transition-opacity group-hover/colheader:opacity-100 hover:text-gray-10 disabled:opacity-30'
+                              title={t`Move right`}
+                              type='button'
+                              disabled={
+                                dynamicColumns[dynamicColumns.length - 1]?.id ===
+                                col.id
+                              }
+                              onClick={() => handleMoveDynamicColumn(col.id, 1)}
+                            >
+                              <Icon
+                                height={11}
+                                name='lucide:chevron-right'
+                                width={11}
+                              />
+                            </button>
+
+                            <Menu
+                              position='bottom-end'
+                              target={
+                                <button
+                                  className='flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 hover:bg-gray-3 hover:text-gray-12'
+                                  title={t`Column options`}
+                                  type='button'
+                                >
+                                  <Icon height={12} name='lucide:more-vertical' width={12} />
+                                </button>
+                              }
+                              width={180}
+                            >
+                              <MenuItem
+                                icon='lucide:pencil'
+                                label={t`Edit Name`}
+                                onClick={() => setEditingColumnId(col.id)}
+                              />
+                              <MenuSub icon='lucide:arrow-right-left' label={t`Change Type`}>
+                                {DYNAMIC_COLUMN_TYPES.map((tItem) => (
+                                  <MenuItem
+                                    key={tItem.type}
+                                    icon={tItem.icon}
+                                    label={tItem.label}
+                                    rightSection={
+                                      col.type === tItem.type ? (
+                                        <Icon className='text-primary-9' height={12} name='lucide:check' width={12} />
+                                      ) : null
+                                    }
+                                    onClick={() => handleUpdateColumnType(col.id, tItem.type)}
+                                  />
+                                ))}
+                              </MenuSub>
+                              <MenuDivider />
+                              <MenuItem
+                                className='text-red-9 hover:bg-red-2'
+                                icon='lucide:trash-2'
+                                label={t`Delete Column`}
+                                onClick={() => handleDeleteDynamicColumn(col.id)}
+                              />
+                            </Menu>
+                          </div>
                         </div>
                       ) : (
                         <span className='inline-flex items-center gap-1 truncate'>
