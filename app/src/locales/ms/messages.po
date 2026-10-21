@@ -1015,7 +1015,11 @@ msgstr "Tambah Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:281
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:859
+=======
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:615
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2440
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2451
 msgid "Add Row"
@@ -1849,7 +1853,7 @@ msgstr "Lampirkan fail (pilihan)..."
 #~ msgstr "Lampirkan pada invois"
 
 #: src/pages/portal/components/PortalDetail.tsx:294
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1693
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1702
 msgid "Attachment"
 msgstr "Lampiran"
 
@@ -1863,8 +1867,8 @@ msgstr "Lampiran"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:78
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:180
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:416
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:452
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:459
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:495
 msgid "Attachments"
 msgstr "Lampiran"
 
@@ -2446,7 +2450,11 @@ msgstr "Boleh Lihat"
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:291
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:502
+<<<<<<< HEAD
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:802
+=======
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:846
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/RequestsPage.tsx:1868
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:797
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:845
@@ -2909,7 +2917,7 @@ msgstr "Nombor Pelanggan"
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:305
 #: src/pages/folders/components/SignRequestAssignForm.tsx:537
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:537
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1607
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1616
 #: src/pages/requests/components/request/components/Header.tsx:625
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
@@ -3037,8 +3045,8 @@ msgstr "Lajur yang Dimakan:"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:64
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:156
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:422
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:458
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:465
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:501
 msgid "Comments"
 msgstr "Komen"
 
@@ -4159,8 +4167,13 @@ msgstr "Padam Peranan"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:472
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:394
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:396
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1370
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1372
+=======
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1023
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1025
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2872
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2984
 msgid "Delete row"
@@ -5733,7 +5746,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:550
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4847
 #: src/pages/requests/components/RequestSummary.tsx:194
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:404
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:447
 msgid "Extracted Data"
 msgstr "Data Diekstrak"
 
@@ -6069,11 +6082,11 @@ msgstr ""
 msgid "Failed to stage files for upload."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:480
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:523
 msgid "Failed to start the workflow. Please try again."
 msgstr "Gagal memulakan aliran kerja. Sila cuba lagi."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:335
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:336
 msgid "Failed to start workflow"
 msgstr ""
 
@@ -6091,14 +6104,14 @@ msgstr "Gagal mengemas kini folder: {0}"
 msgid "Failed to upload master file to the server"
 msgstr "Gagal memuat naik fail induk ke pelayan"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1215
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1238
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1293
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1317
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1224
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1247
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1302
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1326
 msgid "Failed to upload the file."
 msgstr "Gagal memuat naik fail."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:536
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:579
 msgid "Failed to upload the file. Please try again."
 msgstr "Gagal memuat naik fail. Sila cuba lagi."
 
@@ -7148,11 +7161,11 @@ msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:570
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:602
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1604
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1613
 #: src/pages/requests/components/request/components/Header.tsx:784
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:424
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:460
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:467
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:503
 msgid "History"
 msgstr "Sejarah"
 
@@ -7436,8 +7449,8 @@ msgid "Initializing upload..."
 msgstr "Memulakan muat naik..."
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:822
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:275
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:311
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:276
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:312
 msgid "Initiating..."
 msgstr "Memulakan..."
 
@@ -7958,11 +7971,11 @@ msgstr ""
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:55
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:56
 msgid "Leave {site}? Your {requestName} request may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:56
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:57
 msgid "Leave {site}? Your new request may not be saved."
 msgstr ""
 
@@ -8087,7 +8100,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6275
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:409
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:452
 msgid "Line Items"
 msgstr "Item Baris"
 
@@ -8216,7 +8229,7 @@ msgstr "Memuatkan medan..."
 msgid "Loading folders..."
 msgstr "Memuatkan folder..."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:570
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:613
 msgid "Loading form…"
 msgstr "Memuatkan borang…"
 
@@ -9275,9 +9288,9 @@ msgstr "Laporan Baharu"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:821
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:75
 #: src/pages/requests/components/request/NewRequestSheet.tsx:105
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:273
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:274
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:550
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:275
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:593
 msgid "New Request"
 msgstr "Permintaan Baharu"
 
@@ -9460,7 +9473,11 @@ msgid "No Data Available"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:775
+<<<<<<< HEAD
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:738
+=======
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:781
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 msgid "No data available yet."
 msgstr ""
 
@@ -11664,7 +11681,7 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2673
 #: src/pages/folders/components/Upload/Upload.tsx:4284
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:517
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:560
 msgid "Processing"
 msgstr "Diproses"
 
@@ -11681,7 +11698,7 @@ msgstr "Pemprosesan & Kesesakan"
 msgid "Processing active"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:269
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:270
 msgid "Processing Document..."
 msgstr ""
 
@@ -12478,7 +12495,7 @@ msgstr "Permintaan Status"
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:495
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:538
 msgid "Request submitted successfully."
 msgstr ""
 
@@ -15435,7 +15452,7 @@ msgstr ""
 msgid "The passwords don't match. Please try again."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:500
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:543
 msgid "The request was created, but the comments could not be saved."
 msgstr ""
 
@@ -15773,7 +15790,11 @@ msgstr "Ejen utama mengikut penggunaan kredit · {periodSubtitle}"
 #~ msgstr "Kepekatan Top-3"
 
 #: src/pages/forms/FormEntriesPage.tsx:1334
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2149
+=======
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1060
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:1008
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2890
@@ -16343,7 +16364,11 @@ msgstr "Menaik taraf…"
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:714
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:764
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
+<<<<<<< HEAD
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:808
+=======
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:852
+>>>>>>> 55976904d930be618e8d1ee0ae924d4da7901be2
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:81
 msgid "Upload"
 msgstr "Muat naik"
