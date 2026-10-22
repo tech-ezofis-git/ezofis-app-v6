@@ -51,12 +51,12 @@ msgstr ""
 msgid "({0} Folders)"
 msgstr "({0} Folder)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3540
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3541
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3660
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3661
 msgid "(empty row)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3597
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3717
 msgid "(remove column)"
 msgstr ""
 
@@ -136,12 +136,12 @@ msgstr "{0} diberikan"
 #~ msgstr "{0} jemputan dihantar"
 
 #. placeholder {0}: variant.itemCount
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:115
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:110
 msgid "{0} item"
 msgstr ""
 
 #. placeholder {0}: variant.itemCount
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:116
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:111
 msgid "{0} items"
 msgstr ""
 
@@ -190,7 +190,7 @@ msgid "{0} remaining"
 msgstr "{0} yang tinggal"
 
 #. placeholder {0}: selectedRowIds.size
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2991
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3095
 msgid "{0} row(s) selected"
 msgstr ""
 
@@ -289,7 +289,7 @@ msgstr ""
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} aliran kerja aktif"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3032
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3136
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} item baris ditemui dalam dokumen yang dimuat naik."
 
@@ -658,17 +658,25 @@ msgstr ""
 msgid "a trigger field"
 msgstr "medan pencetus"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1161
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1310
 msgid "Accept"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:837
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:928
 msgid "Accept all"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1313
+msgid "Accept line item"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1147
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1149
-msgid "Accepted"
+#~ msgid "Accepted"
+#~ msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1310
+msgid "Accepted — click to undo"
 msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:171
@@ -741,10 +749,10 @@ msgstr "Tindakan Diperlukan"
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:306
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:874
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:401
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1002
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3299
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3403
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -883,15 +891,15 @@ msgstr "Tambah kad"
 msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 msgstr "Tambah kad untuk mengumpulkan peringkat aliran kerja ke dalam lajur Kanban. Jika tiada kad disimpan, Permintaan memaparkan satu lajur bagi setiap peringkat."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3278
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3646
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3382
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3771
 msgid "Add column"
 msgstr ""
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:269
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:339
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2946
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2957
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3050
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3061
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:89
 msgid "Add Column"
 msgstr ""
@@ -981,7 +989,7 @@ msgstr "Tambah Item Baris"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1052
-#: src/pages/requests/components/request/components/Header.tsx:1850
+#: src/pages/requests/components/request/components/Header.tsx:1906
 msgid "Add message (optional)"
 msgstr "Tambah mesej (pilihan)"
 
@@ -991,13 +999,13 @@ msgstr "Tambah fail lagi"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:629
-#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1551
 msgid "Add more people..."
 msgstr "Tambah lagi orang..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:630
-#: src/pages/requests/components/request/components/Header.tsx:1496
+#: src/pages/requests/components/request/components/Header.tsx:1552
 msgid "Add names or emails"
 msgstr "Tambah nama atau e-mel"
 
@@ -1018,10 +1026,10 @@ msgid "Add Portal"
 msgstr "Tambah Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:281
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:846
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2967
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2978
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:357
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:937
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3071
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3082
 msgid "Add Row"
 msgstr "Tambah Baris"
 
@@ -1037,7 +1045,7 @@ msgstr ""
 msgid "Add tab"
 msgstr "Tambah tab"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2797
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2901
 msgid "Add the first column"
 msgstr ""
 
@@ -1179,10 +1187,13 @@ msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:767
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:779
-#: src/pages/requests/components/request/components/Header.tsx:911
-#: src/pages/requests/components/request/components/Header.tsx:1370
+#: src/pages/requests/components/request/components/Header.tsx:101
 msgid "AI Insights"
 msgstr "AI Insights"
+
+#: src/pages/requests/components/request/components/Header.tsx:100
+msgid "AI Insights · {value}% confidence"
+msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:510
 msgid "AI is analysing the document..."
@@ -1584,7 +1595,7 @@ msgid "API URL"
 msgstr "URL API"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2908
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3012
 msgid "Append"
 msgstr "Lampirkan"
 
@@ -1638,15 +1649,15 @@ msgstr "Peta haba kelewatan kelulusan"
 #~ msgid "Approval Rate"
 #~ msgstr "Kadar Kelulusan"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:378
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3297
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3434
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3556
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:480
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:482
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3401
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3543
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3676
 msgid "Approve"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3001
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3105
 msgid "Approve selected"
 msgstr ""
 
@@ -1654,10 +1665,10 @@ msgstr ""
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:366
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:368
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3421
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3547
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3530
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3667
 #: src/pages/requests/utils/localizeRequestUi.ts:43
 msgid "Approved"
 msgstr "Diluluskan"
@@ -1796,7 +1807,7 @@ msgstr "Tetapkan kumpulan akses pengguna"
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Tetapkan pengguna kepada peranan setelah pengguna tersedia dalam platform."
 
-#: src/pages/requests/components/request/components/Header.tsx:655
+#: src/pages/requests/components/request/components/Header.tsx:749
 msgid "Assigned User"
 msgstr ""
 
@@ -1862,7 +1873,7 @@ msgstr "Lampiran"
 #: src/pages/portal/components/PortalWizard.tsx:1063
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:565
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:597
-#: src/pages/requests/components/request/components/Header.tsx:776
+#: src/pages/requests/components/request/components/Header.tsx:870
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
@@ -2044,7 +2055,7 @@ msgstr "Menunggu Pengesahan"
 #: src/pages/portal/components/PortalShell.tsx:132
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2331
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2368
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:64
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1166
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1292
@@ -2122,8 +2133,8 @@ msgstr "Kembali ke Persediaan PO"
 msgid "Back to Prompt"
 msgstr "Kembali ke Gesaan"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2328
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2333
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2365
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2370
 msgid "Back to quotation details"
 msgstr ""
 
@@ -2156,20 +2167,20 @@ msgstr ""
 msgid "Back to workflows"
 msgstr "Kembali ke aliran kerja"
 
-#: src/pages/requests/components/request/components/Header.tsx:1241
+#: src/pages/requests/components/request/components/Header.tsx:1316
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Backorder"
 msgstr "Pesanan belakang"
 
-#: src/pages/requests/components/request/components/Header.tsx:746
+#: src/pages/requests/components/request/components/Header.tsx:840
 msgid "Backorder Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:750
+#: src/pages/requests/components/request/components/Header.tsx:844
 msgid "Backorder Detected"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1235
+#: src/pages/requests/components/request/components/Header.tsx:1310
 msgid "Backorder detected on purchase order fulfillment"
 msgstr ""
 
@@ -2587,7 +2598,7 @@ msgstr "Tukar Tema"
 #~ msgid "Change to normal field"
 #~ msgstr "Tukar ke medan biasa"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3224
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3328
 msgid "Change Type"
 msgstr ""
 
@@ -2917,7 +2928,7 @@ msgstr "Nombor Pelanggan"
 #: src/pages/folders/components/SignRequestAssignForm.tsx:537
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:537
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1630
-#: src/pages/requests/components/request/components/Header.tsx:625
+#: src/pages/requests/components/request/components/Header.tsx:719
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
@@ -2926,8 +2937,8 @@ msgstr "Nombor Pelanggan"
 msgid "Close"
 msgstr "Tutup"
 
-#: src/pages/requests/components/request/components/Header.tsx:943
-#: src/pages/requests/components/request/components/Header.tsx:1402
+#: src/pages/requests/components/request/components/Header.tsx:1018
+#: src/pages/requests/components/request/components/Header.tsx:1458
 msgid "Close AI Insights"
 msgstr "Tutup Cerapan AI"
 
@@ -2972,7 +2983,7 @@ msgstr "Kuncupkan"
 #~ msgid "Collapse All"
 #~ msgstr "Runtuhkan Semua"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3570
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3690
 msgid "Collapse row"
 msgstr ""
 
@@ -2998,7 +3009,7 @@ msgstr ""
 msgid "Column Name"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3206
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3310
 msgid "Column options"
 msgstr ""
 
@@ -3038,7 +3049,7 @@ msgstr "Lajur yang Dimakan:"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:571
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:603
-#: src/pages/requests/components/request/components/Header.tsx:782
+#: src/pages/requests/components/request/components/Header.tsx:876
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
@@ -3049,8 +3060,8 @@ msgstr "Lajur yang Dimakan:"
 msgid "Comments"
 msgstr "Komen"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:188
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:414
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:181
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:422
 msgid "Compare"
 msgstr ""
 
@@ -3449,12 +3460,12 @@ msgstr "Kawalan dengan Garis Masa Kesediaan"
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "Kawalan dijana daripada definisi medan repositori sahaja. Nilai kosong atau tiada kekal kosong dalam mod edit dan dipaparkan sebagai \"-\" dalam paparan grid/senarai."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:208
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:215
 msgid "Copied from"
 msgstr ""
 
 #. placeholder {0}: QUOTE_VARIANT_META[sourceId].shortLabel
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1922
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1930
 msgid "Copied from {0}"
 msgstr ""
 
@@ -3466,7 +3477,7 @@ msgstr "Disalin ke papan keratan"
 #~ msgid "Copy"
 #~ msgstr "Salin"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:518
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:525
 msgid "Copy from"
 msgstr ""
 
@@ -3523,11 +3534,11 @@ msgstr "Tidak dapat menjana medan. Cuba medan Syor sekali lagi."
 msgid "Could not generate folder configuration. Try again."
 msgstr "Tidak dapat menjana konfigurasi folder. Cuba lagi."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2763
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2867
 msgid "Could not read that file."
 msgstr "Tidak dapat membaca fail itu."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2578
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2682
 msgid "Could not read the document: {failure}"
 msgstr ""
 
@@ -3820,7 +3831,7 @@ msgstr "Peranan Semasa"
 #: src/pages/folders/components/DocumentsListView.tsx:537
 #: src/pages/folders/components/FolderTable.tsx:1380
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1721
-#: src/pages/requests/components/request/components/Header.tsx:642
+#: src/pages/requests/components/request/components/Header.tsx:736
 msgid "Current Stage"
 msgstr "Peringkat Semasa"
 
@@ -4011,8 +4022,8 @@ msgstr "Disember"
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Tentukan cara semakan dokumen dijejaki apabila fail dikemas kini."
 
-#: src/pages/requests/components/request/components/Header.tsx:939
-#: src/pages/requests/components/request/components/Header.tsx:1398
+#: src/pages/requests/components/request/components/Header.tsx:1014
+#: src/pages/requests/components/request/components/Header.tsx:1454
 msgid "Decision Details"
 msgstr ""
 
@@ -4117,7 +4128,7 @@ msgstr "Padam kad"
 #~ msgid "Delete column"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3251
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3355
 msgid "Delete Column"
 msgstr ""
 
@@ -4164,12 +4175,12 @@ msgid "Delete Role"
 msgstr "Padam Peranan"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:472
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:394
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:396
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1357
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1359
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3439
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3561
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:496
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:498
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1546
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1548
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3548
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3681
 msgid "Delete row"
 msgstr "Padamkan baris"
 
@@ -4182,7 +4193,7 @@ msgid "Delete Rule"
 msgstr "Padamkan Peraturan"
 
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:264
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3011
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3115
 msgid "Delete selected"
 msgstr ""
 
@@ -4338,8 +4349,8 @@ msgstr ""
 
 #: src/pages/forms/FormsPage.tsx:234
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:96
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1178
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1199
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1347
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1368
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:627
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
@@ -4444,7 +4455,7 @@ msgstr "Muat Naik Terus"
 msgid "Disabled"
 msgstr "Dilumpuhkan"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1317
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1503
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "Discount"
 msgstr ""
@@ -4572,11 +4583,11 @@ msgstr "Pemilik dokumen dimaklumkan terlebih dahulu."
 msgid "Document Preview"
 msgstr "Pratonton Dokumen"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1022
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1030
 msgid "Document preview failed"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1041
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1049
 msgid "Document preview is not available for this workflow"
 msgstr ""
 
@@ -4664,7 +4675,7 @@ msgstr "Dokumen akan disembunyikan apabila:"
 msgid "Documents will be shown when:"
 msgstr "Dokumen akan ditunjukkan apabila:"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1303
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1489
 msgid "Dollar discount"
 msgstr ""
 
@@ -4704,7 +4715,7 @@ msgstr "Selesai Menyesuaikan"
 #~ msgid "Done editing"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3154
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3258
 msgid "Double click to rename or drag to reorder"
 msgstr ""
 
@@ -4813,6 +4824,8 @@ msgstr "Seret dan lepaskan hamparan anda di sini, atau"
 
 #: src/pages/folders/components/FolderSharePopover.tsx:945
 #: src/pages/folders/components/SignRequestAssignForm.tsx:373
+#: src/pages/requests/components/request/components/generic-overview/SortableRows.tsx:103
+#: src/pages/requests/components/request/components/generic-overview/SortableRows.tsx:105
 #: src/pages/settings/components/SettingsSortableDataTable.tsx:275
 msgid "Drag to reorder"
 msgstr "Seret untuk menyusun semula"
@@ -4929,16 +4942,16 @@ msgstr "Perlu Bayar Hari Ini"
 #~ msgid "Dummy results"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1225
+#: src/pages/requests/components/request/components/Header.tsx:1300
 #: src/pages/requests/utils/localizeRequestUi.ts:45
 msgid "Duplicate"
 msgstr "Pendua"
 
-#: src/pages/requests/components/request/components/Header.tsx:734
+#: src/pages/requests/components/request/components/Header.tsx:828
 msgid "Duplicate Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:738
+#: src/pages/requests/components/request/components/Header.tsx:832
 msgid "Duplicate Detected"
 msgstr ""
 
@@ -5183,7 +5196,7 @@ msgstr "Edit Metadata"
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Mod Edit Aktif — Klik bulatan semak pada mana-mana bahagian, jubin KPI, garis cerapan AI atau kad carta untuk menyahpilih item yang tidak diingini. Tukar kepada Mod Paparan untuk melihat reka letak tersuai anda."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3219
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3323
 msgid "Edit Name"
 msgstr ""
 
@@ -5626,7 +5639,7 @@ msgstr "Kembangkan"
 msgid "Expand all steps"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3570
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3690
 msgid "Expand row"
 msgstr ""
 
@@ -5697,7 +5710,7 @@ msgid "Export staged files"
 msgstr ""
 
 #: src/pages/requests/components/InboxList.tsx:2083
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2933
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3037
 msgid "Export to Excel"
 msgstr "Eksport ke Excel"
 
@@ -6753,7 +6766,7 @@ msgstr "Hasilkan Reka Bentuk Papan Pemuka"
 msgid "Generate KPIs and charts from your prompt, then load live data."
 msgstr "Jana KPI dan carta daripada gesaan anda, kemudian muatkan data langsung."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:153
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:162
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:164
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:225
 msgid "Generate PDF documents from the template set on this step."
@@ -7163,7 +7176,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:573
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:605
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1627
-#: src/pages/requests/components/request/components/Header.tsx:784
+#: src/pages/requests/components/request/components/Header.tsx:878
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:476
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:512
@@ -7253,15 +7266,15 @@ msgstr "Pemprosesan Invois Segera"
 #~ msgid "Import CSV/Excel"
 #~ msgstr "Import CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2922
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3026
 msgid "Import CSV/Excel (adds to existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2921
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3025
 msgid "Import CSV/Excel (replaces existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3041
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3145
 msgid "Import extracted items"
 msgstr "Import item yang diekstrak"
 
@@ -7455,6 +7468,18 @@ msgstr "Memulakan muat naik..."
 msgid "Initiating..."
 msgstr "Memulakan..."
 
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:94
+msgid "Insert row above"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:96
+msgid "Insert row below"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:97
+msgid "Insert row here"
+msgstr ""
+
 #: src/layouts/app/components/sidebar/Sidebar.tsx:41
 msgid "Insights"
 msgstr "Wawasan"
@@ -7521,7 +7546,7 @@ msgstr "Pratonton Papan Pemuka Interaktif"
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "Pratonton interaktif reka bentuk papan pemuka tersuai anda untuk {repositoryName}."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2654
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2712
 msgid "Internal Notes"
 msgstr ""
 
@@ -7569,7 +7594,7 @@ msgstr "Jemput Orang"
 #~ msgstr "Jemputan dihantar"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1747
+#: src/pages/requests/components/request/components/Header.tsx:1803
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Dijemput"
@@ -7690,7 +7715,7 @@ msgstr ""
 msgid "Invoice Total"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1316
+#: src/pages/requests/components/request/components/Header.tsx:1391
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
 msgid "Invoice Value"
 msgstr "Nilai Invois"
@@ -7754,6 +7779,10 @@ msgstr "Tidak Kosong"
 #: src/pages/sign-in/components/SignInForm.tsx:575
 #~ msgid "is used with more than one account. Which account do you want to use?"
 #~ msgstr "digunakan dengan lebih daripada satu akaun. Akaun mana yang ingin digunakan?"
+
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:361
+msgid "is working"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3405
 msgid "ISO Currency Code"
@@ -7933,7 +7962,7 @@ msgstr "Tindakan Terakhir Pada"
 msgid "Last Action By"
 msgstr "Tindakan Terakhir Oleh"
 
-#: src/pages/requests/components/request/components/Header.tsx:712
+#: src/pages/requests/components/request/components/Header.tsx:806
 msgid "Last Activity"
 msgstr ""
 
@@ -8098,8 +8127,8 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:558
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2509
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:827
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2567
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:908
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1519
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
@@ -8368,7 +8397,7 @@ msgid "Loading your branded sign-in"
 msgstr "Memuatkan log masuk berjenama anda"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:874
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2255
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2330
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:220
 msgid "Loading..."
 msgstr "Memuatkan..."
@@ -9092,7 +9121,7 @@ msgstr "Alih ke bawah"
 msgid "Move Entry to Trash"
 msgstr "Move Entri to Trash"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3171
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3275
 msgid "Move left"
 msgstr ""
 
@@ -9100,12 +9129,12 @@ msgstr ""
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Alihkan dokumen yang dipadankan daripada storan aktif ke dalam arkib."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3185
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3289
 msgid "Move right"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:350
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:352
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:454
 msgid "Move to matched items"
 msgstr ""
 
@@ -9227,7 +9256,7 @@ msgstr "Kecilkan baris"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Kecilkan baris yang disertakan dalam laporan ini. Biarkan kosong untuk menyertakan setiap baris."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1219
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1388
 msgid "needs engineering review"
 msgstr ""
 
@@ -9254,7 +9283,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
-#: src/pages/requests/components/request/components/Header.tsx:1880
+#: src/pages/requests/components/request/components/Header.tsx:1936
 #: src/pages/requests/RequestsPage.tsx:1896
 msgid "New"
 msgstr "baru"
@@ -9363,8 +9392,8 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:824
-#: src/pages/requests/components/request/components/Header.tsx:1091
+#: src/pages/requests/components/request/components/Header.tsx:918
+#: src/pages/requests/components/request/components/Header.tsx:1166
 msgid "Next Request"
 msgstr "Permintaan Seterusnya"
 
@@ -9477,11 +9506,11 @@ msgstr "Tiada data penggunaan untuk tempoh ini."
 msgid "No Dashboard Configured"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:145
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:138
 msgid "No data"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:371
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:379
 msgid "NO DATA"
 msgstr ""
 
@@ -9502,13 +9531,13 @@ msgstr "Tiada Data Dijumpai"
 msgid "No data loss, no rework — just choose how your trial carries over."
 msgstr "Tiada kehilangan data, tiada kerja semula — cuma pilih cara percubaan anda dipindahkan."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2459
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2517
 msgid "No data to preview"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:784
-#: src/pages/requests/components/request/components/Header.tsx:953
-#: src/pages/requests/components/request/components/Header.tsx:1412
+#: src/pages/requests/components/request/components/Header.tsx:1028
+#: src/pages/requests/components/request/components/Header.tsx:1468
 msgid "No decision details available for this request."
 msgstr "Tiada butiran keputusan tersedia untuk permintaan ini."
 
@@ -9648,7 +9677,7 @@ msgstr "Tiada panel borang ditemui untuk permintaan ini."
 #~ msgid "No generated document yet"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:321
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:330
 msgid "No generated document yet. It will appear here when this stage completes."
 msgstr ""
 
@@ -9682,7 +9711,7 @@ msgstr "Tiada integrasi"
 msgid "No key facts extracted."
 msgstr "Tiada fakta utama diekstrak."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:490
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:497
 msgid "No line items available for this quote."
 msgstr ""
 
@@ -9698,7 +9727,7 @@ msgstr ""
 msgid "No logs found"
 msgstr "Tiada log ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2753
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2857
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Tiada lajur sepadan ditemui — Pengepala CSV/Excel mesti sepadan dengan nama lajur jadual."
 
@@ -9851,7 +9880,7 @@ msgstr "Tiada dasar pengekalan dikonfigurasikan lagi. Klik 'Buat Dasar' untuk me
 msgid "No roles yet"
 msgstr "Tiada peranan lagi"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3657
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3782
 msgid "No rows yet."
 msgstr ""
 
@@ -9912,7 +9941,7 @@ msgstr "Tiada cerapan arah aliran pembekal tersedia."
 msgid "No suppliers found"
 msgstr "Tiada pembekal ditemui"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2803
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2907
 msgid "No table columns configured."
 msgstr "Tiada lajur jadual dikonfigurasikan."
 
@@ -9988,7 +10017,7 @@ msgstr "Tiada pengguna lagi"
 msgid "No valid files selected."
 msgstr "Tiada fail yang sah dipilih."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2581
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2685
 msgid "No values were found in the document for: {wantedNames}"
 msgstr ""
 
@@ -10060,7 +10089,7 @@ msgstr "Tidak dijadualkan"
 msgid "Not selected"
 msgstr "Tidak dipilih"
 
-#: src/pages/requests/components/request/components/Header.tsx:648
+#: src/pages/requests/components/request/components/Header.tsx:742
 msgid "Not specified"
 msgstr ""
 
@@ -10091,7 +10120,7 @@ msgid "Notify document owner beforehand"
 msgstr "Beritahu pemilik dokumen terlebih dahulu"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:1877
+#: src/pages/requests/components/request/components/Header.tsx:1933
 msgid "Notify me when accessed"
 msgstr "Beritahu saya apabila diakses"
 
@@ -10198,7 +10227,7 @@ msgstr ""
 
 #: src/pages/folders/components/FolderTable.tsx:561
 #: src/pages/portal/components/PortalHome.tsx:360
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:427
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:435
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
 msgstr "Buka"
@@ -10431,7 +10460,7 @@ msgstr "Tertunggak dan perlu dibayar paling cepat dahulu — proses dari atas ke
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
 #: src/pages/reports/components/ReportsListView.tsx:212
-#: src/pages/requests/components/request/components/Header.tsx:1739
+#: src/pages/requests/components/request/components/Header.tsx:1795
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -10650,7 +10679,7 @@ msgstr ""
 msgid "Pending Review"
 msgstr "Menunggu Semakan"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1289
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1475
 msgid "Percent discount"
 msgstr ""
 
@@ -11385,7 +11414,7 @@ msgstr "Rujukan PO"
 msgid "PO Setup"
 msgstr "Persediaan PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:1335
+#: src/pages/requests/components/request/components/Header.tsx:1410
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5359
 msgid "PO Value"
@@ -11504,7 +11533,7 @@ msgstr "Portal"
 #~ msgid "Posting..."
 #~ msgstr "Menghantar..."
 
-#: src/pages/requests/components/request/components/Header.tsx:1219
+#: src/pages/requests/components/request/components/Header.tsx:1294
 msgid "Potential duplicate invoice detected in ERP records"
 msgstr ""
 
@@ -11540,7 +11569,7 @@ msgstr "Sediakan fail anda"
 msgid "Preparing redacted file..."
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:222
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:231
 #: src/pages/requests/utils/localizeRequestUi.ts:60
 msgid "Preparing your request..."
 msgstr "Menyediakan permintaan anda..."
@@ -11579,7 +11608,7 @@ msgstr ""
 msgid "Preview Data (3 sample rows):"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2340
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2377
 msgid "Preview Mode"
 msgstr ""
 
@@ -11600,8 +11629,8 @@ msgstr ""
 msgid "Previous page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:802
-#: src/pages/requests/components/request/components/Header.tsx:1068
+#: src/pages/requests/components/request/components/Header.tsx:896
+#: src/pages/requests/components/request/components/Header.tsx:1143
 msgid "Previous Request"
 msgstr "Permintaan Sebelumnya"
 
@@ -11613,7 +11642,7 @@ msgstr ""
 msgid "Previous step"
 msgstr "Langkah sebelumnya"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1263
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1444
 msgid "Price"
 msgstr ""
 
@@ -11737,7 +11766,7 @@ msgstr "Perolehan (PO & Rekuisisi)"
 msgid "Procurement Agent"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1077
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1232
 msgid "Product"
 msgstr ""
 
@@ -11834,7 +11863,7 @@ msgstr "Dipadamkan"
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "Letakkan lewat dahulu dalam warna merah. Donut di sebelah kiri dalam warna biru..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1239
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1415
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:631
 msgid "Qty"
@@ -11906,19 +11935,19 @@ msgstr "Cuba Cepat"
 #~ msgid "Quickly view resources created during your evaluation"
 #~ msgstr "Lihat sumber yang dibuat semasa penilaian anda dengan pantas"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:191
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:184
 msgid "Quote 1 → 2 / 3"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:391
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:444
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:451
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:399
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:459
 msgid "Quote 1 → Quote 2"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:391
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:444
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:451
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:399
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:459
 msgid "Quote 1 → Quote 3"
 msgstr ""
 
@@ -11930,21 +11959,21 @@ msgstr ""
 msgid "Quote Estimator"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2404
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2431
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2462
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2489
 msgid "Quote Number"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2445
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2454
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2503
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2512
 msgid "Quote Preview"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:860
+#: src/pages/requests/components/request/components/Header.tsx:954
 msgid "Quote Total"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:100
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:95
 msgid "Quotes"
 msgstr ""
 
@@ -11954,7 +11983,7 @@ msgstr "Dibesarkan Pada"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1917
-#: src/pages/requests/components/request/components/Header.tsx:680
+#: src/pages/requests/components/request/components/Header.tsx:774
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Dibesarkan Oleh"
@@ -11963,7 +11992,7 @@ msgstr "Dibesarkan Oleh"
 #~ msgid "Raised Date"
 #~ msgstr "Tarikh Dibangkitkan"
 
-#: src/pages/requests/components/request/components/Header.tsx:694
+#: src/pages/requests/components/request/components/Header.tsx:788
 msgid "Raised On"
 msgstr ""
 
@@ -12143,8 +12172,13 @@ msgstr ""
 #: src/pages/folders/components/DocumentSigningPage.tsx:2783
 #: src/pages/folders/components/DocumentSigningPage.tsx:2902
 #: src/pages/folders/components/DocumentSigningPage.tsx:2909
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:127
 msgid "Redo"
 msgstr "Buat semula"
+
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:125
+msgid "Redo (Ctrl+Y)"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3697
 msgid "Reference Document Number"
@@ -12232,7 +12266,7 @@ msgstr "Dokumen berkaitan tidak ditemui"
 msgid "Remaining files ready for indexing."
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2626
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2684
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Remarks"
 msgstr ""
@@ -12324,8 +12358,13 @@ msgstr "Namakan semula"
 #~ msgid "Rendering dashboard preview..."
 #~ msgstr "Memaparkan pratonton papan pemuka..."
 
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:959
+msgid "Reorder"
+msgstr ""
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2909
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3013
 msgid "Replace"
 msgstr "Gantikan"
 
@@ -12462,8 +12501,8 @@ msgstr ""
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
-#: src/pages/requests/components/request/components/Header.tsx:582
-#: src/pages/requests/components/request/components/Header.tsx:621
+#: src/pages/requests/components/request/components/Header.tsx:676
+#: src/pages/requests/components/request/components/Header.tsx:715
 msgid "Request & Stage Details"
 msgstr ""
 
@@ -12495,11 +12534,11 @@ msgstr "Permintaan dipindahkan"
 msgid "Request No"
 msgstr "Permintaan No"
 
-#: src/pages/requests/components/request/components/Header.tsx:670
+#: src/pages/requests/components/request/components/Header.tsx:764
 msgid "Request Number"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1671
+#: src/pages/requests/components/request/components/Header.tsx:1727
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
@@ -12507,7 +12546,7 @@ msgstr "Pemilik Permintaan"
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
-#: src/pages/requests/components/request/components/Header.tsx:498
+#: src/pages/requests/components/request/components/Header.tsx:603
 #: src/pages/requests/components/request/Request.tsx:2944
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
@@ -13026,7 +13065,7 @@ msgstr "Pemetaan Medan Jadual SAP"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2706
 #: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1922
+#: src/pages/requests/components/request/components/Header.tsx:1978
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
 #: src/pages/settings/components/SettingsWizardLayout.tsx:88
 msgid "Save"
@@ -13147,7 +13186,7 @@ msgid "Save User"
 msgstr "Simpan Pengguna"
 
 #: src/pages/folders/components/Upload/Upload.tsx:4705
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1345
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1534
 msgid "Saved"
 msgstr ""
 
@@ -13188,7 +13227,7 @@ msgid "Scan QR"
 msgstr "Imbas QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2884
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2988
 msgid "Scan QR / Barcode"
 msgstr "Imbas QR / Kod Bar"
 
@@ -13570,7 +13609,7 @@ msgstr "Protokol Keselamatan"
 msgid "See the Attachments section for uploaded files."
 msgstr "Lihat bahagian Lampiran untuk fail yang dimuat naik."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3098
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3202
 #: src/pages/settings/components/ManageUser.tsx:1910
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -13695,7 +13734,7 @@ msgstr "Pilih Semua"
 msgid "Select all files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3073
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3177
 msgid "Select all rows"
 msgstr ""
 
@@ -13874,7 +13913,7 @@ msgstr "Pilih medan kata laluan"
 #~ msgid "Select Platform Version"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2460
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2518
 msgid "Select Quote 1, 2, or 3 to preview"
 msgstr ""
 
@@ -13891,8 +13930,8 @@ msgstr ""
 msgid "Select role"
 msgstr "Pilih peranan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3345
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3501
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3449
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3610
 msgid "Select row"
 msgstr "Pilih baris"
 
@@ -14063,7 +14102,7 @@ msgstr "Hantar untuk Tandatangan"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1046
-#: src/pages/requests/components/request/components/Header.tsx:1844
+#: src/pages/requests/components/request/components/Header.tsx:1900
 msgid "Send notification"
 msgstr "Hantar pemberitahuan"
 
@@ -14235,8 +14274,8 @@ msgstr "Keterukan"
 #: src/pages/folders/components/FolderTable.tsx:1540
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1439
-#: src/pages/requests/components/request/components/Header.tsx:1867
+#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1923
 msgid "Share"
 msgstr "Kongsi"
 
@@ -14252,7 +14291,7 @@ msgstr ""
 msgid "Share Report"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1464
+#: src/pages/requests/components/request/components/Header.tsx:1520
 msgid "Share Request"
 msgstr "Permintaan Kongsi"
 
@@ -14287,7 +14326,7 @@ msgstr "Perkongsian"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1070
-#: src/pages/requests/components/request/components/Header.tsx:1867
+#: src/pages/requests/components/request/components/Header.tsx:1923
 msgid "Sharing..."
 msgstr "Berkongsi..."
 
@@ -14793,7 +14832,7 @@ msgstr "Garis masa SLA standard. Tiada pengecualian harga dijumpai."
 msgid "Start"
 msgstr "Mula"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:507
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:514
 msgid "Start from an existing quote:"
 msgstr ""
 
@@ -14839,7 +14878,7 @@ msgstr "Aliran kredit statik untuk {selectedMonth}"
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:192
-#: src/pages/requests/components/request/components/Header.tsx:723
+#: src/pages/requests/components/request/components/Header.tsx:817
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2282
@@ -15240,7 +15279,7 @@ msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 #~ msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2872
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2976
 msgid "Switch to Advance (card) view"
 msgstr ""
 
@@ -15259,7 +15298,7 @@ msgstr ""
 msgid "Switch to JSON view"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2871
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2975
 msgid "Switch to Normal (grid) view"
 msgstr ""
 
@@ -15299,7 +15338,7 @@ msgstr "Segerakkan data Borang Induk dengan medan folder yang sepadan."
 msgid "Sync with existing OneDrive folders"
 msgstr "Segerakkan dengan folder OneDrive sedia ada"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2854
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2958
 msgid "Syncing from master table..."
 msgstr ""
 
@@ -15432,7 +15471,7 @@ msgstr "Penyewa tiada. Log masuk semula dan cuba lagi."
 msgid "Test Connection"
 msgstr "Uji Sambungan"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2460
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2551
 msgid "Text could not be read from the document: no repository is available for this form."
 msgstr ""
 
@@ -15453,7 +15492,7 @@ msgstr ""
 msgid "That's everything for this section. Continue when you're ready."
 msgstr "Itu sahaja untuk bahagian ini. Teruskan apabila anda sudah bersedia."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:334
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:343
 msgid "The agent stopped. Review the request and try again."
 msgstr ""
 
@@ -15667,7 +15706,7 @@ msgstr "Portal ini tiada borang induk atau medan nama pengguna."
 msgid "This portal link is invalid or has not been published yet."
 msgstr "Pautan portal ini tidak sah atau belum diterbitkan lagi."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:376
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:384
 msgid "This quote has no line items to compare against Quote 1."
 msgstr ""
 
@@ -15711,7 +15750,7 @@ msgstr "Kawasan tanda ini kepunyaan pengguna lain."
 msgid "This sign request link is invalid."
 msgstr "Pautan permintaan tanda ini tidak sah."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:331
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:340
 msgid "This step could not be completed."
 msgstr ""
 
@@ -15835,10 +15874,10 @@ msgstr "Ejen utama mengikut penggunaan kredit · {periodSubtitle}"
 #~ msgstr "Kepekatan Top-3"
 
 #: src/pages/forms/FormEntriesPage.tsx:1338
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2469
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2527
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:1008
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3457
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3566
 msgid "Total"
 msgstr "Jumlah"
 
@@ -16057,7 +16096,7 @@ msgid "Type:"
 msgstr "Jenis:"
 
 #. placeholder {0}: col.type || 'SHORT_TEXT'
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3160
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3264
 msgid "Type: {0}"
 msgstr ""
 
@@ -16225,7 +16264,7 @@ msgid "Unable to verify OTP"
 msgstr "Tidak dapat mengesahkan OTP"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:127
-#: src/pages/requests/components/request/components/Header.tsx:661
+#: src/pages/requests/components/request/components/Header.tsx:755
 msgid "Unassigned"
 msgstr "Tidak diperuntukkan"
 
@@ -16236,8 +16275,13 @@ msgstr "Dicaj Kurang"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2768
 #: src/pages/folders/components/DocumentSigningPage.tsx:2892
 #: src/pages/folders/components/DocumentSigningPage.tsx:2899
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:116
 msgid "Undo"
 msgstr "Buat Asal"
+
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:114
+msgid "Undo (Ctrl+Z)"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:11
 msgid "Unique PO Identifier"
@@ -17199,7 +17243,7 @@ msgstr "Selamat datang ke {0}"
 msgid "Welcome to AP Automation Setup"
 msgstr "Selamat datang ke Persediaan Automasi AP"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:194
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:187
 msgid "What changed vs Quote 1"
 msgstr ""
 
@@ -17336,7 +17380,7 @@ msgstr ""
 msgid "Working"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:223
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:232
 msgid "Working on this request..."
 msgstr ""
 
