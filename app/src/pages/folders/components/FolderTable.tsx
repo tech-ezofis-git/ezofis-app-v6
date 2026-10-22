@@ -143,6 +143,9 @@ type FolderTableDataTableSplitProps = {
 
   repositoryId?: string
 
+  /** Files/folders are the API results for the current search text. */
+  searchResultsCurrent?: boolean
+
   uploadDisabled?: boolean
 
   onAiSummary: (id: string) => void
@@ -336,6 +339,8 @@ export function FolderDataTableSection({
 
   rowSize = 'compact',
 
+  skipSearchFilter = false,
+
   onLoadMoreFolders,
 
   onOpenFolder,
@@ -367,6 +372,9 @@ export function FolderDataTableSection({
 
   rowSize?: 'compact' | 'comfortable' | 'default'
 
+  /** Folders are already API search results; don't re-filter by text. */
+  skipSearchFilter?: boolean
+
   onLoadMoreFolders?: () => void
 
   onOpenFolder: (id: string) => void
@@ -381,8 +389,13 @@ export function FolderDataTableSection({
   const requestedFolderCountRef = useRef(0)
 
   const filteredFolders = useMemo(
-    () => filterFolders(folders, folderFilters, folderSearch),
-    [folderFilters, folders, folderSearch],
+    () =>
+      filterFolders(
+        folders,
+        folderFilters,
+        skipSearchFilter ? '' : folderSearch,
+      ),
+    [folderFilters, folders, folderSearch, skipSearchFilter],
   )
 
   const folderRows = useMemo<FolderRow[]>(
@@ -580,7 +593,8 @@ export function FolderDataTableSection({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  if (!folders.length && (!folderSearch || hasFiles) && !loadingFolders) return null
+  if (!folders.length && (!folderSearch || hasFiles) && !loadingFolders)
+    return null
 
   const resolvedFolderBodyMaxHeight =
     folderBodyMaxHeight ||
@@ -658,6 +672,8 @@ export default function FolderTableDataTableSplit({
   refreshing = false,
 
   repositoryId,
+
+  searchResultsCurrent = false,
 
   uploadDisabled = false,
 
@@ -825,7 +841,12 @@ export default function FolderTableDataTableSplit({
         onPageSizeChange?.(nextPageSize)
       }
     },
-    [showingArchivedList, fileCategory, fetchArchivedFileList, onPageSizeChange],
+    [
+      showingArchivedList,
+      fileCategory,
+      fetchArchivedFileList,
+      onPageSizeChange,
+    ],
   )
 
   const handleReload = useCallback(() => {
@@ -885,10 +906,16 @@ export default function FolderTableDataTableSplit({
       loadingArchived)
   const showFoldersPane =
     splitViewMode !== 'files-only' &&
-    (!isSearching || folders.length > 0 || (!files.length && !loading && !loadingPage))
+    (!isSearching ||
+      folders.length > 0 ||
+      (!files.length && !loading && !loadingPage))
   const showFilesPane =
     splitViewMode !== 'folders-only' &&
-    (!isSearching || files.length > 0 || loading || loadingPage || !folders.length)
+    (!isSearching ||
+      files.length > 0 ||
+      loading ||
+      loadingPage ||
+      !folders.length)
   const isSplitView = canResizeSplit && splitViewMode === 'split'
 
   useEffect(() => {
@@ -1021,6 +1048,7 @@ export default function FolderTableDataTableSplit({
             loadingFolders={loadingFolders}
             loadingPage={loadingPage}
             rowSize={hideFolderActions ? 'default' : 'compact'}
+            skipSearchFilter={searchResultsCurrent}
             folderBodyMaxHeight={
               splitViewMode === 'folders-only' || !canResizeSplit
                 ? FULL_PANEL_FOLDER_HEIGHT
@@ -1054,11 +1082,6 @@ export default function FolderTableDataTableSplit({
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
             foldersLength={folders.length}
-            isExpanded={
-              splitViewMode === 'files-only' ||
-              folders.length === 0 ||
-              !canResizeSplit
-            }
             isSplitView={isSplitView}
             loading={loading || loadingArchived}
             loadingPage={loadingPage}
@@ -1067,6 +1090,14 @@ export default function FolderTableDataTableSplit({
               canResizeSplit && splitViewMode === 'files-only'
                 ? renderSplitDivider()
                 : undefined
+            }
+            isExpanded={
+              splitViewMode === 'files-only' ||
+              folders.length === 0 ||
+              !canResizeSplit
+            }
+            skipSearchFilter={
+              searchResultsCurrent && fileCategory !== 'archived'
             }
             onAiSummary={onAiSummary}
             onDeleteFile={onDeleteFile}
@@ -1175,6 +1206,7 @@ function FileDataTableSection({
   loading,
   loadingPage,
   permissions,
+  skipSearchFilter = false,
   onAiSummary,
   onDeleteFile,
   onDeleteStagedFile,
@@ -1205,6 +1237,8 @@ function FileDataTableSection({
     delete?: boolean
     editMetadata?: boolean
   }
+  /** Files are already API search results; don't re-filter by text. */
+  skipSearchFilter?: boolean
   onAiSummary: (id: string) => void
   onDeleteFile?: (fileId: string) => Promise<void>
   onDeleteStagedFile?: (file: FileItem) => Promise<void>
@@ -1234,9 +1268,15 @@ function FileDataTableSection({
         files as Array<Record<string, unknown>>,
         mergedFileFilters,
         folderContextFilters,
-        fileSearch,
+        skipSearchFilter ? '' : fileSearch,
       ),
-    [folderContextFilters, files, mergedFileFilters, fileSearch],
+    [
+      folderContextFilters,
+      files,
+      mergedFileFilters,
+      fileSearch,
+      skipSearchFilter,
+    ],
   )
 
   const getPrimaryFileName = (file: any) => {
