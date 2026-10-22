@@ -376,26 +376,30 @@ export const computeWorkflowStages = ({
   }
 
   const endBlock = executedEndBlock || endBlocks[0] || null
+  const currentBlockNow = currentIdStr ? byId.get(currentIdStr) : null
+  const currentIsLiveStage =
+    Boolean(currentBlockNow) &&
+    String(currentBlockNow?.type || '').toUpperCase() !== 'END'
 
-  // 1. Determine if the workflow has completed / reached terminal stage
+  // 1. Determine if the workflow has completed / reached terminal stage.
+  // A live stage such as Approver means the request is still in progress,
+  // even when an earlier history row says "approved" or "completed".
   const isTerminal =
-    Boolean(isCompleted) ||
-    (Boolean(endBlock) && currentIdStr === String(endBlock.id)) ||
-    (Array.isArray(history) &&
-      history.some((h: any) => {
-        const s = String(
-          h.status || h.stage || h.title || h.action || h.stageName || '',
-        )
-          .toLowerCase()
-          .trim()
-        return (
-          s === 'completed' ||
-          s === 'workflow success' ||
-          s === 'success' ||
-          s === 'approved' ||
-          s.includes('completed')
-        )
-      }))
+    !currentIsLiveStage &&
+    (Boolean(isCompleted) ||
+      (Boolean(endBlock) && currentIdStr === String(endBlock.id)) ||
+      (Array.isArray(history) &&
+        history.some((h: any) => {
+          const s = String(h.status || '')
+            .toLowerCase()
+            .trim()
+          return (
+            s === 'completed' ||
+            s === 'workflow success' ||
+            s === 'success' ||
+            s === 'closed'
+          )
+        })))
 
   // 2. Extract stages that actually executed from history (ignoring unvisited branches)
   const visitedBlocks: any[] = []
