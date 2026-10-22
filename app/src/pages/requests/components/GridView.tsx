@@ -1567,13 +1567,20 @@ const GridView = <TData,>({
       <div className='flex flex-col gap-3 pt-3 pb-4'>
         {data.map((group: any) => {
           const groupId = group.groupId || 'no-group'
+          // The inbox puts requests with no group into a "No Group" bucket
+          // (id "no-group"), including the one it creates for a just-started
+          // job. On its own, with no Group By chosen, that is just the list.
+          const isUngroupedBucket =
+            group.groupId === 'no-group' &&
+            (table.getState().grouping?.length ?? 0) === 0
           const isSingleFlatGroup =
             data.length === 1 &&
             (!group.groupKey ||
               !group.groupValue ||
               String(group.groupValue).trim().toLowerCase() === 'root' ||
               group.groupId === 'root' ||
-              group.groupId === 'all')
+              group.groupId === 'all' ||
+              isUngroupedBucket)
           const isRealGroup =
             data.length > 1 ||
             (!isSingleFlatGroup && Boolean(group.groupKey && group.groupValue))
