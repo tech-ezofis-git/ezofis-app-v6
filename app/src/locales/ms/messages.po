@@ -1438,7 +1438,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2622
+#: src/pages/requests/components/request/Request.tsx:2660
 msgid "An error occurred: {0}"
 msgstr "Ralat berlaku: {0}"
 
@@ -6013,7 +6013,7 @@ msgid "Failed to proceed request:"
 msgstr "Gagal meneruskan permintaan:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2416
+#: src/pages/requests/components/request/Request.tsx:2451
 msgid "Failed to proceed request: {0}"
 msgstr "Gagal meneruskan permintaan: {0}"
 
@@ -6039,7 +6039,7 @@ msgid "Failed to save report"
 msgstr "Gagal menyimpan laporan"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2560
+#: src/pages/requests/components/request/Request.tsx:2598
 msgid "Failed to save request: {0}"
 msgstr "Gagal menyimpan permintaan: {0}"
 
@@ -6063,7 +6063,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2910
+#: src/pages/requests/components/request/Request.tsx:2948
 msgid "Failed to share request"
 msgstr "Gagal berkongsi permintaan"
 
@@ -6088,7 +6088,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2561
+#: src/pages/requests/components/request/Request.tsx:2599
 msgid "Failed to submit request: {0}"
 msgstr "Gagal menyerahkan permintaan: {0}"
 
@@ -7317,7 +7317,7 @@ msgid "Inactive"
 msgstr "Tidak Aktif"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
-#: src/pages/requests/components/request/Request.tsx:1875
+#: src/pages/requests/components/request/Request.tsx:1906
 #: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -7707,7 +7707,7 @@ msgstr ""
 #~ msgid "invoices"
 #~ msgstr "invois"
 
-#: src/pages/requests/components/request/Request.tsx:1874
+#: src/pages/requests/components/request/Request.tsx:1905
 #: src/pages/requests/RequestsPage.tsx:329
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -7968,11 +7968,11 @@ msgstr "Nama Keluarga"
 #~ msgid "Launch Workflow"
 #~ msgstr "Lancarkan Aliran Kerja"
 
-#: src/pages/requests/components/request/Request.tsx:2028
+#: src/pages/requests/components/request/Request.tsx:2059
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2027
+#: src/pages/requests/components/request/Request.tsx:2058
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -9667,7 +9667,7 @@ msgstr "Tiada kumpulan lagi"
 msgid "No history found"
 msgstr "Tiada sejarah ditemui"
 
-#: src/pages/requests/components/request/Request.tsx:2886
+#: src/pages/requests/components/request/Request.tsx:2924
 msgid "No instance ID available to share"
 msgstr "Tiada ID contoh tersedia untuk dikongsi"
 
@@ -10805,7 +10805,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Sila lampirkan fail untuk meneruskan."
 
-#: src/pages/requests/components/request/Request.tsx:2278
+#: src/pages/requests/components/request/Request.tsx:2310
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -10822,12 +10822,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr ""
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2267
+#: src/pages/requests/components/request/Request.tsx:2299
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:834
-#: src/pages/requests/components/request/Request.tsx:2305
+#: src/pages/requests/components/request/Request.tsx:2337
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -10861,7 +10861,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2286
+#: src/pages/requests/components/request/Request.tsx:2318
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -12449,15 +12449,15 @@ msgstr "Permintaan {requestNo} telah berjaya dipindahkan."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Permintaan {requestNo} berjaya dipindahkan"
 
-#: src/pages/requests/components/request/Request.tsx:2475
+#: src/pages/requests/components/request/Request.tsx:2510
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Tindakan \"{action}\" bagi permintaan {resolvedRequestNo} berjaya diselesaikan"
 
-#: src/pages/requests/components/request/Request.tsx:2453
+#: src/pages/requests/components/request/Request.tsx:2488
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2474
+#: src/pages/requests/components/request/Request.tsx:2509
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
@@ -12481,7 +12481,7 @@ msgstr "Minta Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Permintaan dibuat. Anda boleh menjejakinya daripada Penyerahan Saya."
 
-#: src/pages/requests/components/request/Request.tsx:2585
+#: src/pages/requests/components/request/Request.tsx:2623
 msgid "Request is being processed."
 msgstr ""
 
@@ -12502,12 +12502,12 @@ msgstr ""
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/Request.tsx:2604
+#: src/pages/requests/components/request/Request.tsx:2642
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
 #: src/pages/requests/components/request/components/Header.tsx:498
-#: src/pages/requests/components/request/Request.tsx:2906
+#: src/pages/requests/components/request/Request.tsx:2944
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
@@ -12518,7 +12518,7 @@ msgid "Request Status"
 msgstr "Permintaan Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2605
+#: src/pages/requests/components/request/Request.tsx:2643
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
