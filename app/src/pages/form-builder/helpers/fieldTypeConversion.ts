@@ -1,63 +1,59 @@
 import type { Question, QuestionType } from '@/pages/form-builder/store/formStore'
-
-const CONVERSION_GROUPS: QuestionType[][] = [
-  ['SHORT_TEXT', 'LONG_TEXT', 'EMAIL', 'PHONE_NUMBER', 'URL'],
-  ['SINGLE_CHOICE', 'MULTIPLE_CHOICE'],
-  ['SINGLE_SELECT', 'MULTI_SELECT'],
-  ['DATE', 'TIME', 'DATE_TIME'],
-  ['NUMBER', 'CURRENCY_AMOUNT'],
-  ['FILE_UPLOAD', 'IMAGE_UPLOAD'],
-]
+import { getField } from '@/helpers/new-field'
 
 export const FIELD_TYPE_LABELS: Partial<Record<QuestionType, string>> = {
+  ADDRESS: 'Address',
+  CALCULATED: 'Calculated',
+  COUNTER: 'Counter',
   CURRENCY_AMOUNT: 'Currency',
   DATE: 'Date',
   DATE_TIME: 'Date & Time',
+  DIVIDER: 'Divider',
+  DYNAMIC_TABLE: 'Dynamic Table',
   EMAIL: 'Email',
   FILE_UPLOAD: 'File Upload',
+  HEADING: 'Heading',
   IMAGE_UPLOAD: 'Image Upload',
   LONG_TEXT: 'Long Text',
+  MATRIX: 'Matrix',
   MULTI_SELECT: 'Multi Select',
   MULTIPLE_CHOICE: 'Multiple Choice',
   NUMBER: 'Number',
+  OPINION_SCALE: 'Opinion Scale',
+  PARAGRAPH: 'Paragraph',
   PHONE_NUMBER: 'Phone Number',
+  RATING: 'Rating',
   SHORT_TEXT: 'Short Text',
+  SIGNATURE: 'Signature',
   SINGLE_CHOICE: 'Single Choice',
   SINGLE_SELECT: 'Single Select',
+  TABLE: 'Table',
   TIME: 'Time',
   URL: 'URL',
+  YES_NO_TOGGLE: 'Yes/No Toggle',
 }
 
-/** Types the given field can be switched to, including its current type. */
-export const getConvertibleTypes = (type: QuestionType): QuestionType[] =>
-  CONVERSION_GROUPS.find((group) => group.includes(type)) ?? []
+/** Types a field can be switched to. Any listed type converts to any other. */
+export const CONVERTIBLE_TYPES = Object.keys(
+  FIELD_TYPE_LABELS,
+) as QuestionType[]
+
+export const isConvertibleType = (type: QuestionType): boolean =>
+  CONVERTIBLE_TYPES.includes(type)
 
 /**
- * Returns the updated question for a type switch. Label, id, general settings,
- * options and logic carry over; the default value and validation rules are
- * cleared (except required/optional) because their shape is type-specific.
+ * Returns the question switched to `newType`. Only the id and label carry
+ * over; every other setting is reset to the new type's defaults.
  */
 export const convertQuestionType = (
   question: Question,
   newType: QuestionType,
 ): Question => {
-  if (
-    question.type === newType ||
-    !getConvertibleTypes(question.type).includes(newType)
-  ) {
-    return question
-  }
-  const { defaultValue: _defaultValue, ...specific } = (question.settings
-    ?.specific ?? {}) as Record<string, unknown>
+  if (question.type === newType) return question
+  const fresh = getField(newType) as Question
   return {
-    ...question,
-    settings: {
-      ...question.settings,
-      specific: specific as Question['settings']['specific'],
-      validation: {
-        fieldRule: question.settings?.validation?.fieldRule ?? 'OPTIONAL',
-      },
-    },
-    type: newType,
+    ...fresh,
+    id: question.id,
+    label: question.label,
   }
 }

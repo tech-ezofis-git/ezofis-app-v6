@@ -1153,12 +1153,14 @@ const TableCellFileInput = ({
 }
 
 const TableCellSelect = ({
+  asChoice,
   col,
   isMulti,
   options,
   val,
   onCellChange,
 }: {
+  asChoice?: boolean
   col: TableColumn
   isMulti?: boolean
   options: { id: string; name: string }[]
@@ -1188,7 +1190,73 @@ const TableCellSelect = ({
   const qr = col.settings?.specific?.qrValue === true
   const [scannerOpen, setScannerOpen] = useState(false)
 
-  const select = isMulti ? (
+  const selectedIds: string[] = isMulti
+    ? Array.isArray(val)
+      ? val
+      : []
+    : val === undefined || val === null || val === ''
+      ? []
+      : [val]
+
+  // SINGLE_CHOICE / MULTIPLE_CHOICE columns show every option inline
+  // (radio / checkbox) like top-level choice fields; *_SELECT stay dropdowns.
+  const select = asChoice ? (
+    <div className='flex w-full flex-wrap items-center gap-1.5'>
+      {displayOptions.map((opt) => {
+        const checked = selectedIds.includes(opt.id)
+        return (
+          <button
+            key={opt.id}
+            aria-checked={checked}
+            role={isMulti ? 'checkbox' : 'radio'}
+            type='button'
+            className={cn(
+              'flex min-h-8 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1 text-xs transition-all active:scale-[0.98]',
+              checked
+                ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9'
+                : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+            )}
+            onClick={() => {
+              if (isMulti) {
+                const next = checked
+                  ? selectedIds.filter((id) => id !== opt.id)
+                  : [...selectedIds, opt.id]
+                onCellChange(
+                  next.map((id) => {
+                    const o = displayOptions.find((d) => d.id === id)
+                    return o ? toStoredOptionValue(o, displayOptions) : id
+                  }),
+                )
+              } else {
+                onCellChange(
+                  checked ? null : toStoredOptionValue(opt, displayOptions),
+                )
+              }
+            }}
+          >
+            <span
+              className={cn(
+                'flex size-3.5 shrink-0 items-center justify-center border',
+                isMulti ? 'rounded-sm' : 'rounded-full',
+                checked
+                  ? 'border-primary-9 bg-primary-9 text-white'
+                  : 'border-gray-4 bg-surface',
+              )}
+            >
+              {checked && (
+                <Icon
+                  height={9}
+                  name={isMulti ? 'lucide:check' : 'lucide:circle'}
+                  width={9}
+                />
+              )}
+            </span>
+            <span className='truncate'>{opt.name}</span>
+          </button>
+        )
+      })}
+    </div>
+  ) : isMulti ? (
     <InputSelectMultiple
       className='w-full'
       creatable={allowNew}
@@ -1452,6 +1520,7 @@ const renderCellInput = (
       const options = resolvedOptions || parseColumnOptions(col)
       return (
         <TableCellSelect
+          asChoice={cellType === 'SINGLE_CHOICE'}
           col={col}
           options={options}
           val={val}
@@ -1465,6 +1534,7 @@ const renderCellInput = (
       const options = resolvedOptions || parseColumnOptions(col)
       return (
         <TableCellSelect
+          asChoice={cellType === 'MULTIPLE_CHOICE'}
           col={col}
           options={options}
           val={val}

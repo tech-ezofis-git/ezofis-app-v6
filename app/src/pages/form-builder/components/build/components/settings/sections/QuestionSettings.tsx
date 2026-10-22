@@ -30,9 +30,10 @@ import { classNames as baseInputClassNames } from '@/components/base/inputs/shar
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
 import {
+  CONVERTIBLE_TYPES,
   convertQuestionType,
   FIELD_TYPE_LABELS,
-  getConvertibleTypes,
+  isConvertibleType,
 } from '@/pages/form-builder/helpers/fieldTypeConversion'
 import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import {
@@ -915,13 +916,14 @@ const QuestionSettings = ({
             onChange={(val: string) => setLocalLabel(val)}
           />
 
-          {getConvertibleTypes(activeQuestion.type).length > 1 && (
+          {isConvertibleType(activeQuestion.type) &&
+            !activeQuestion.notEditable && (
             <div>
               <label className='mb-2 block text-13 font-medium text-gray-11'>
                 Field Type
               </label>
               <InputSelect
-                options={getConvertibleTypes(activeQuestion.type).map((t) => ({
+                options={CONVERTIBLE_TYPES.map((t) => ({
                   id: t,
                   name: FIELD_TYPE_LABELS[t] ?? t,
                 }))}
