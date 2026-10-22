@@ -1,7 +1,17 @@
-import { ChevronDown, FileText } from 'lucide-react'
+import { ArrowLeft, Download, Eye, FileText } from 'lucide-react'
 import PostalMime from 'postal-mime'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
+
+// Lazy: DocumentPreviewViewer itself renders EmlPreview for .eml files.
+const DocumentPreviewViewer = lazy(() => import('./DocumentPreviewViewer'))
+
+type EmlAttachment = {
+  filename: string
+  mimeType: string
+  size: string
+  url: string
+}
 
 interface EmlPreviewProps {
   fileUrl: string
@@ -25,6 +35,10 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
   const [loading, setLoading] = useState(true)
   const [emailData, setEmailData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  /** Attachment opened in place of the email body (null = show email). */
+  const [openAttachment, setOpenAttachment] = useState<EmlAttachment | null>(
+    null,
+  )
 
   useEffect(() => {
     let active = true
@@ -61,11 +75,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
     if (!emailData) return null
     const urls: string[] = []
     let processedHtml = emailData.html
-    const displayAttachments: {
-      filename?: string
-      size: string
-      url: string
-    }[] = []
+    const displayAttachments: EmlAttachment[] = []
 
     const attachments = Array.isArray(emailData.attachments)
       ? emailData.attachments
@@ -96,6 +106,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
           att.content.length ?? att.content.byteLength ?? att.content.size
         displayAttachments.push({
           filename: att.filename || `attachment-${idx}`,
+          mimeType: String(att.mimeType || ''),
           size: typeof byteLength === 'number' ? formatBytes(byteLength) : '',
           url,
         })
@@ -116,6 +127,8 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
 
   useEffect(() => {
     const urls = prepared?.urls
+    // A new email invalidates any open attachment's blob URL.
+    setOpenAttachment(null)
     return () => {
       urls?.forEach((url) => URL.revokeObjectURL(url))
     }
@@ -136,6 +149,56 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
   }
 
   const { displayAttachments, htmlWithMargin } = prepared
+
+  if (openAttachment) {
+    const mime = openAttachment.mimeType.toLowerCase()
+    return (
+      <div className='animate-in fade-in flex h-full w-full flex-col overflow-hidden bg-surface text-[13px] duration-200'>
+        <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 px-3 py-2 sm:px-4'>
+          <button
+            className='inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-semibold text-gray-12 transition-all hover:bg-gray-2 active:scale-95'
+            type='button'
+            onClick={() => setOpenAttachment(null)}
+          >
+            <ArrowLeft size={14} />
+            Back
+          </button>
+          <div className='h-5 w-px shrink-0 bg-gray-4' />
+          <FileText className='shrink-0 text-red-9' size={18} />
+          <div className='flex min-w-0 flex-1 flex-col'>
+            <span className='truncate text-[13px] font-medium text-gray-12'>
+              {openAttachment.filename}
+            </span>
+            {openAttachment.size ? (
+              <span className='text-[11px] leading-none text-gray-9'>
+                {openAttachment.size}
+              </span>
+            ) : null}
+          </div>
+          <a
+            aria-label='Download attachment'
+            className='inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95'
+            download={openAttachment.filename}
+            href={openAttachment.url}
+            title='Download'
+          >
+            <Download size={16} />
+          </a>
+        </div>
+        <div className='min-h-0 flex-1'>
+          <Suspense fallback={<SkeletonDocumentPreview flush />}>
+            <DocumentPreviewViewer
+              fileName={openAttachment.filename}
+              fileUrl={openAttachment.url}
+              isImage={mime.startsWith('image/')}
+              isPdf={mime === 'application/pdf'}
+            />
+          </Suspense>
+        </div>
+      </div>
+    )
+  }
+
   const { from, text, to } = emailData
   const toList = Array.isArray(to) ? to : to ? [to] : []
   const initials = getInitials(from?.name, from?.address)
@@ -167,11 +230,12 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
             <div className='flex flex-wrap gap-3'>
               {displayAttachments.map((att) => {
                 return (
-                  <a
-                    className='group flex w-64 cursor-pointer items-center justify-between rounded-md border border-[var(--gray-3)] bg-[var(--gray-1)] p-2.5 transition-colors hover:bg-[var(--gray-2)]'
-                    download={att.filename}
-                    href={att.url}
+                  <button
+                    className='group flex w-64 cursor-pointer items-center justify-between rounded-md border border-[var(--gray-3)] bg-[var(--gray-1)] p-2.5 text-left transition-colors hover:bg-[var(--gray-2)] active:scale-[0.99]'
                     key={att.url}
+                    title={`Open ${att.filename}`}
+                    type='button'
+                    onClick={() => setOpenAttachment(att)}
                   >
                     <div className='flex items-center gap-3 overflow-hidden'>
                       <FileText className='shrink-0 text-red-9' size={20} />
@@ -184,11 +248,11 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
                         </span>
                       </div>
                     </div>
-                    <ChevronDown
+                    <Eye
                       className='ml-2 shrink-0 text-[var(--gray-8)] group-hover:text-[var(--gray-11)]'
                       size={18}
                     />
-                  </a>
+                  </button>
                 )
               })}
             </div>

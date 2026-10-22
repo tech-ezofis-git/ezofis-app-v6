@@ -1,3 +1,4 @@
+import { arrayMove } from '@dnd-kit/sortable'
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
@@ -7,6 +8,18 @@ import {
   mapExternalRowsToTableColumns,
 } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import cn from '@/utils/cn'
+import RowInsertRail from './RowInsertRail'
+import {
+  SortableRows,
+  SortableTableRow,
+  useSortableRowIds,
+} from './SortableRows'
+import StickyScrollX from './StickyScrollX'
+import {
+  handleHistoryShortcut,
+  TableHistoryButtons,
+  useRowsHistory,
+} from './tableHistory'
 
 const cellInputClass =
   'w-full rounded-md border border-transparent bg-transparent px-0 py-0.5 text-left text-inherit outline-none transition-colors hover:border-gray-4 hover:bg-gray-1 focus:border-[var(--primary-6)] focus:bg-surface'
@@ -214,7 +227,13 @@ const AgentFlatTable = ({
     return row
   }, [columns])
 
-  const persist = (next: Record<string, any>[]) => {
+  const history = useRowsHistory<Record<string, any>>(title)
+
+  const persist = (
+    next: Record<string, any>[],
+    options?: { coalesceKey?: string; skipHistory?: boolean },
+  ) => {
+    if (!options?.skipHistory) history.record(rows, options?.coalesceKey)
     setRows(next)
     onChange(next)
   }
@@ -222,11 +241,45 @@ const AgentFlatTable = ({
   const updateCell = (index: number, key: string, value: any) => {
     persist(
       rows.map((row, i) => (i === index ? { ...row, [key]: value } : row)),
+      { coalesceKey: `${index}:${key}` },
     )
   }
 
+  const undo = () => {
+    const previous = history.undo(rows)
+    if (previous) persist(previous, { skipHistory: true })
+  }
+
+  const redo = () => {
+    const next = history.redo(rows)
+    if (next) persist(next, { skipHistory: true })
+  }
+
+  // Just-added row: scrolls into view with its first field focused.
+  const [focusRowId, setFocusRowId] = useState<string | null>(null)
+  const focusTimerRef = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(focusTimerRef.current), [])
+
+  const focusNewRow = (rowId: string) => {
+    setFocusRowId(rowId)
+    window.clearTimeout(focusTimerRef.current)
+    focusTimerRef.current = window.setTimeout(() => setFocusRowId(null), 1500)
+  }
+
   const addRow = () => {
-    persist([...rows, { ...emptyRow, _rowId: generateRowId() }])
+    const rowId = generateRowId()
+    persist([...rows, { ...emptyRow, _rowId: rowId }])
+    focusNewRow(rowId)
+  }
+
+  const insertRow = (index: number) => {
+    const rowId = generateRowId()
+    persist([
+      ...rows.slice(0, index),
+      { ...emptyRow, _rowId: rowId },
+      ...rows.slice(index),
+    ])
+    focusNewRow(rowId)
   }
 
   const deleteRow = (index: number) => {
@@ -257,159 +310,210 @@ const AgentFlatTable = ({
     )
   }
 
+  const reorderRow = (fromIndex: number, toIndex: number) => {
+    persist(arrayMove(rows, fromIndex, toIndex))
+  }
+
   const canEdit = !readOnly
   const actionCount =
     (onMoveRow ? 1 : 0) + (showRowApprove ? 1 : 0) + (allowDelete ? 1 : 0)
   const singleAction = actionCount <= 1
+  const rowIds = useSortableRowIds(rows)
+  const [isDraggingRow, setIsDraggingRow] = useState(false)
 
   if (!columns.length) return null
 
   return (
-    <div className='flex flex-col gap-3'>
+    // Focusable so Ctrl+Z / Ctrl+Y work after clicking anywhere in the table.
+    <div
+      className='flex flex-col gap-3 outline-none'
+      tabIndex={canEdit ? -1 : undefined}
+      onKeyDown={
+        canEdit
+          ? (event) => handleHistoryShortcut(event, undo, redo)
+          : undefined
+      }
+    >
       <div className='flex items-center justify-between gap-2'>
         <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
           <Icon className={cn('h-4 w-4', iconClassName)} icon={icon} />
           {title} ({rows.length})
         </h4>
-        {canEdit && allowAddRow && (
-          <button
-            className='inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
-            type='button'
-            onClick={addRow}
-          >
-            <Icon className='h-3.5 w-3.5 text-current' icon='tabler:plus' />
-            {t`Add Row`}
-          </button>
+        {canEdit && (
+          <div className='flex items-center gap-2'>
+            <TableHistoryButtons
+              canRedo={history.canRedo}
+              canUndo={history.canUndo}
+              onRedo={redo}
+              onUndo={undo}
+            />
+            {allowAddRow ? (
+              <button
+                className='inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
+                type='button'
+                onClick={addRow}
+              >
+                <Icon className='h-3.5 w-3.5 text-current' icon='tabler:plus' />
+                {t`Add Row`}
+              </button>
+            ) : null}
+          </div>
         )}
       </div>
-      <div className='w-full overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full border-collapse text-left text-sm'>
-          <thead className='bg-gray-1 text-xs text-gray-11'>
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.id}
-                  className={cn(
-                    'border border-gray-3 px-3 py-2 text-left font-semibold',
-                    columnWidthClass(col),
-                    wideColumnIds.has(col.id)
-                      ? 'break-words whitespace-normal'
-                      : 'whitespace-nowrap',
-                    isNumericColumn(col) ? 'text-right' : 'text-left',
+      <RowInsertRail
+        enabled={canEdit && allowAddRow && !isDraggingRow}
+        layoutKey={rowIds.join('|')}
+        rowCount={rows.length}
+        onInsert={insertRow}
+      >
+        <SortableRows
+          ids={rowIds}
+          onDragActiveChange={setIsDraggingRow}
+          onMove={reorderRow}
+        >
+          <StickyScrollX className='w-full rounded-lg border border-gray-3'>
+            <table className='w-full border-collapse text-left text-sm'>
+              <thead className='bg-gray-1 text-xs text-gray-11'>
+                <tr>
+                  {canEdit ? (
+                    <th
+                      aria-label={t`Reorder`}
+                      className='w-8 border border-gray-3 p-1'
+                    />
+                  ) : null}
+                  {columns.map((col) => (
+                    <th
+                      key={col.id}
+                      className={cn(
+                        'border border-gray-3 px-3 py-2 text-left font-semibold',
+                        columnWidthClass(col),
+                        wideColumnIds.has(col.id)
+                          ? 'break-words whitespace-normal'
+                          : 'whitespace-nowrap',
+                        isNumericColumn(col) ? 'text-right' : 'text-left',
+                      )}
+                    >
+                      {columnLabel(col)}
+                    </th>
+                  ))}
+                  {canEdit && actionCount > 0 && (
+                    <th
+                      aria-label={t`Actions`}
+                      className={cn(
+                        'border border-gray-3 py-2 whitespace-nowrap',
+                        singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
+                      )}
+                    />
                   )}
-                >
-                  {columnLabel(col)}
-                </th>
-              ))}
-              {canEdit && actionCount > 0 && (
-                <th
-                  aria-label={t`Actions`}
-                  className={cn(
-                    'border border-gray-3 py-2 whitespace-nowrap',
-                    singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
-                  )}
-                />
-              )}
-            </tr>
-          </thead>
-          <tbody className='bg-surface'>
-            {rows.map((row, index) => (
-              <tr className='group' key={`${index}-${row._rowId || 'row'}`}>
-                {columns.map((col, colIdx) => (
-                  <td
-                    key={col.id}
-                    className={cn(
-                      'border border-gray-3 px-3 py-2 text-left align-top text-gray-11',
-                      columnWidthClass(col),
-                      wideColumnIds.has(col.id)
-                        ? 'break-words whitespace-normal'
-                        : 'whitespace-nowrap',
-                      isNumericColumn(col)
-                        ? 'text-right font-medium text-gray-12'
-                        : 'text-left',
-                    )}
+                </tr>
+              </thead>
+              <tbody className='bg-surface'>
+                {rows.map((row, index) => (
+                  <SortableTableRow
+                    autoFocus={canEdit && rowIds[index] === focusRowId}
+                    className='group'
+                    disabled={!canEdit}
+                    handleCellClassName='pt-1.5'
+                    id={rowIds[index]}
+                    key={rowIds[index]}
                   >
-                    {renderCell(
-                      col,
-                      row[col.id],
-                      canEdit,
-                      (value) => updateCell(index, col.id, value),
-                      !wideColumnIds.has(col.id) && !isNumericColumn(col),
+                    {columns.map((col) => (
+                      <td
+                        key={col.id}
+                        className={cn(
+                          'border border-gray-3 px-3 py-2 text-left align-top text-gray-11',
+                          columnWidthClass(col),
+                          wideColumnIds.has(col.id)
+                            ? 'break-words whitespace-normal'
+                            : 'whitespace-nowrap',
+                          isNumericColumn(col)
+                            ? 'text-right font-medium text-gray-12'
+                            : 'text-left',
+                        )}
+                      >
+                        {renderCell(
+                          col,
+                          row[col.id],
+                          canEdit,
+                          (value) => updateCell(index, col.id, value),
+                          !wideColumnIds.has(col.id) && !isNumericColumn(col),
+                        )}
+                      </td>
+                    ))}
+                    {canEdit && actionCount > 0 && (
+                      <td
+                        className={cn(
+                          'border border-gray-3 py-1 text-center align-middle whitespace-nowrap',
+                          singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
+                        )}
+                      >
+                        <div className='inline-flex items-center justify-center gap-0.5'>
+                          {onMoveRow ? (
+                            <Tooltip content={t`Move to matched items`}>
+                              <button
+                                aria-label={t`Move to matched items`}
+                                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
+                                type='button'
+                                onClick={() => moveRow(index)}
+                              >
+                                <Icon
+                                  className='h-4 w-4'
+                                  icon='tabler:arrow-right'
+                                />
+                              </button>
+                            </Tooltip>
+                          ) : null}
+                          {showRowApprove ? (
+                            row._approved ? (
+                              <Tooltip content={t`Approved`}>
+                                <span
+                                  aria-label={t`Approved`}
+                                  className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
+                                >
+                                  <Icon
+                                    className='h-3.5 w-3.5'
+                                    icon='tabler:check'
+                                  />
+                                </span>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip content={t`Approve`}>
+                                <button
+                                  aria-label={t`Approve`}
+                                  className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
+                                  type='button'
+                                  onClick={() => approveRow(index)}
+                                >
+                                  <Icon
+                                    className='h-3.5 w-3.5'
+                                    icon='tabler:check'
+                                  />
+                                </button>
+                              </Tooltip>
+                            )
+                          ) : null}
+                          {allowDelete ? (
+                            <Tooltip content={t`Delete row`}>
+                              <button
+                                aria-label={t`Delete row`}
+                                className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
+                                type='button'
+                                onClick={() => deleteRow(index)}
+                              >
+                                <Icon className='h-4 w-4' icon='tabler:trash' />
+                              </button>
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                      </td>
                     )}
-                  </td>
+                  </SortableTableRow>
                 ))}
-                {canEdit && actionCount > 0 && (
-                  <td
-                    className={cn(
-                      'border border-gray-3 py-1 text-center align-middle whitespace-nowrap',
-                      singleAction ? 'w-10 px-1' : 'w-16 px-1.5',
-                    )}
-                  >
-                    <div className='inline-flex items-center justify-center gap-0.5'>
-                      {onMoveRow ? (
-                        <Tooltip content={t`Move to matched items`}>
-                          <button
-                            aria-label={t`Move to matched items`}
-                            className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
-                            type='button'
-                            onClick={() => moveRow(index)}
-                          >
-                            <Icon
-                              className='h-4 w-4'
-                              icon='tabler:arrow-right'
-                            />
-                          </button>
-                        </Tooltip>
-                      ) : null}
-                      {showRowApprove ? (
-                        row._approved ? (
-                          <Tooltip content={t`Approved`}>
-                            <span
-                              aria-label={t`Approved`}
-                              className='inline-flex size-7 items-center justify-center rounded-md border border-green-6 bg-green-3 text-green-11'
-                            >
-                              <Icon
-                                className='h-3.5 w-3.5'
-                                icon='tabler:check'
-                              />
-                            </span>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip content={t`Approve`}>
-                            <button
-                              aria-label={t`Approve`}
-                              className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-5 bg-gray-2 text-gray-9 transition-all hover:border-gray-6 hover:bg-gray-3 hover:text-gray-11 active:scale-95'
-                              type='button'
-                              onClick={() => approveRow(index)}
-                            >
-                              <Icon
-                                className='h-3.5 w-3.5'
-                                icon='tabler:check'
-                              />
-                            </button>
-                          </Tooltip>
-                        )
-                      ) : null}
-                      {allowDelete ? (
-                        <Tooltip content={t`Delete row`}>
-                          <button
-                            aria-label={t`Delete row`}
-                            className='inline-flex size-7 cursor-pointer items-center justify-center rounded-md p-1 text-red-9 opacity-60 transition-all group-hover:opacity-100 hover:bg-red-2 active:scale-95'
-                            type='button'
-                            onClick={() => deleteRow(index)}
-                          >
-                            <Icon className='h-4 w-4' icon='tabler:trash' />
-                          </button>
-                        </Tooltip>
-                      ) : null}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </StickyScrollX>
+        </SortableRows>
+      </RowInsertRail>
     </div>
   )
 }
