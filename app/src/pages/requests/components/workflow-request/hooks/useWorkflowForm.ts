@@ -6,7 +6,12 @@ import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
 import folderApi from '@/pages/folders/api/folderApi'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import {
+  isFileColumnType,
+  toFileList,
+} from '@/pages/form-builder/helpers/tableColumnFiles'
 import { getTableFieldErrors } from '@/pages/form-builder/helpers/runtimeValidation'
+import { uploadInstanceAttachment } from '@/pages/requests/utils/instanceAttachmentUpload'
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
@@ -18,6 +23,7 @@ import {
   buildRepoMetadata,
   ensureNormalizedRuntimeFormJson,
   extractOcrText,
+  fillRepoMetadataFromTableRow,
   getDependentChildFieldIds,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
@@ -808,6 +814,75 @@ export const useWorkflowForm = (
       .filter(Boolean)
     const instanceId = readStartedInstanceId(resData)
     let commentError = ''
+
+    // Files picked in table file columns can be attached to the started
+    // request like sidebar attachments, with the row's values as their
+    // repository metadata. Off by default: while a file is linked to the
+    // request the backend rewrites the table (file cell = item id, the other
+    // columns cleared). Enable with localStorage 'attachTableFiles' = '1' once
+    // that is fixed.
+    const attachTableFiles = (() => {
+      try {
+        return localStorage.getItem('attachTableFiles') === '1'
+      } catch {
+        return false
+      }
+    })()
+    const tableFileUploads: Array<{ file: File; metadata: any }> = []
+    for (const panel of attachTableFiles ? panels : []) {
+      for (const field of panel.fields || []) {
+        const type = resolveRuntimeFieldType(field)
+        if (type !== 'TABLE' && type !== 'DYNAMIC_TABLE') continue
+        const rows = staged.formModel[field.id]
+        const columns: any[] = field.settings?.specific?.tableColumns || []
+        const fileColumns = columns.filter(
+          (c) => c?.id && isFileColumnType(c.type),
+        )
+        if (!Array.isArray(rows) || fileColumns.length === 0) continue
+        for (const row of rows) {
+          for (const col of fileColumns) {
+            for (const cellFile of toFileList(row?.[col.id])) {
+              if (!(cellFile.rawFile instanceof File)) continue
+              tableFileUploads.push({
+                file: cellFile.rawFile,
+                metadata: fillRepoMetadataFromTableRow(
+                  buildRepoMetadata(
+                    repositoryFields,
+                    panels,
+                    staged.formModel,
+                    cellFile.fileName,
+                  ),
+                  columns,
+                  row,
+                ),
+              })
+            }
+          }
+        }
+      }
+    }
+    if (tableFileUploads.length > 0) {
+      const targetRepositoryId = repositoryId
+      if (!instanceId || !targetRepositoryId) {
+        commentError =
+          'Request was created, but the table file(s) could not be attached.'
+      } else {
+        for (const upload of tableFileUploads) {
+          const attached = await uploadInstanceAttachment(
+            String(workflow.id),
+            instanceId,
+            targetRepositoryId,
+            upload.file,
+            upload.metadata,
+          )
+          console.log('[table file attach]', upload.file.name, attached)
+          if (attached.error) {
+            commentError = `Request was created, but ${upload.file.name} could not be attached.`
+            break
+          }
+        }
+      }
+    }
     if (pendingComments.length > 0) {
       if (!instanceId) {
         commentError =
