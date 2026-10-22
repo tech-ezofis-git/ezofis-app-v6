@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MsalRedirectRouteImport } from './routes/msal-redirect'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EncryptedNameRouteImport } from './routes/$encryptedName'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
@@ -102,6 +103,11 @@ import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports_.$
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
 
+const MsalRedirectRoute = MsalRedirectRouteImport.update({
+  id: '/msal-redirect',
+  path: '/msal-redirect',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -572,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/stories': typeof StoriesRouteRouteWithChildren
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/msal-redirect': typeof MsalRedirectRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -663,6 +670,7 @@ export interface FileRoutesByTo {
   '/playground': typeof PlaygroundRouteRoute
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/msal-redirect': typeof MsalRedirectRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -758,6 +766,7 @@ export interface FileRoutesById {
   '/stories': typeof StoriesRouteRouteWithChildren
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/msal-redirect': typeof MsalRedirectRoute
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
   '/_app/help-center': typeof AppHelpCenterRoute
@@ -852,6 +861,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/$encryptedName'
     | '/auth'
+    | '/msal-redirect'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -943,6 +953,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/$encryptedName'
     | '/auth'
+    | '/msal-redirect'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -1037,6 +1048,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/$encryptedName'
     | '/auth'
+    | '/msal-redirect'
     | '/_app/folders'
     | '/_app/forms'
     | '/_app/help-center'
@@ -1132,6 +1144,7 @@ export interface RootRouteChildren {
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   EncryptedNameRoute: typeof EncryptedNameRoute
   AuthRoute: typeof AuthRoute
+  MsalRedirectRoute: typeof MsalRedirectRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
   PortalPortalIdRoute: typeof PortalPortalIdRoute
@@ -1145,6 +1158,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/msal-redirect': {
+      id: '/msal-redirect'
+      path: '/msal-redirect'
+      fullPath: '/msal-redirect'
+      preLoaderRoute: typeof MsalRedirectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -1992,6 +2012,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   EncryptedNameRoute: EncryptedNameRoute,
   AuthRoute: AuthRoute,
+  MsalRedirectRoute: MsalRedirectRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
   PortalPortalIdRoute: PortalPortalIdRoute,

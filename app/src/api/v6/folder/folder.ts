@@ -860,6 +860,47 @@ export const deleteRepositoryItem = async (
   return response
 }
 
+/**
+ * Update metadata on an existing item. Body keys match upload metadata
+ * (repository field sqlColumnName).
+ */
+export const updateRepositoryItemMetadata = async (payload: {
+  itemId: string
+  metadata: Record<string, string>
+  repositoryId: string
+  tenantId?: string
+}) => {
+  const response: { data: unknown; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: payload.metadata,
+      headers: getFolderTenantHeaders(payload.tenantId),
+      method: 'PATCH',
+      skipCancellation: true,
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/metadata`,
+    } as any)
+
+    if (status < 200 || status >= 300) throw 'invalid status code'
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    const body = e?.response?.data
+    response.error =
+      (typeof body === 'string' && body) ||
+      body?.message ||
+      body?.error ||
+      body?.title ||
+      e?.message ||
+      'error updating metadata'
+  }
+
+  return response
+}
+
 // Keep the API object extensible for existing imports.
 ;(authApiV6 as any).getRepositoryItems = getRepositoryItems
 ;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
@@ -1254,7 +1295,7 @@ export const uploadForStaticMetadata = async (
         'Content-Type': undefined,
         // This endpoint rejects the V6 session token; it reads its own `token`
         // header, whose value is the tenant id.
-        token: STATIC_METADATA_TOKEN,
+        'token': STATIC_METADATA_TOKEN,
       },
       method: 'POST',
       signal,

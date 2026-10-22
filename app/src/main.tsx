@@ -33,10 +33,21 @@ function PostHogErrorFallback({ error }: { error?: any }) {
   )
 }
 
+// Hosts whose Azure app registration has the /msal-redirect URI added. On the
+// others the site root stays the redirect URI, because Microsoft rejects any
+// address that is not registered (AADSTS50011).
+const MSAL_REDIRECT_PAGE_HOSTS = ['cloud.ezofis.com']
+
+const msalRedirectUri = MSAL_REDIRECT_PAGE_HOSTS.includes(
+  window.location.hostname,
+)
+  ? `${window.location.origin}/msal-redirect`
+  : window.location.origin
+
 const msalInstance = new PublicClientApplication({
   auth: {
     clientId: microsoftClientId,
-    redirectUri: window.location.origin,
+    redirectUri: msalRedirectUri,
   },
 })
 
