@@ -23,7 +23,23 @@ vi.mock('@/api/v6/folder/folder', async (importOriginal) => {
   }
 })
 
+vi.mock('@/api/v6/uploadAndIndex', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  const mockApi = {
+    uploadWithOcr: vi.fn().mockResolvedValue({
+      data: { fileId: 'staged-file-1', repositoryId: 'repo-1' },
+      error: '',
+    }),
+  }
+  return {
+    ...actual,
+    default: mockApi,
+    uploadAndIndexApi: mockApi,
+  }
+})
+
 addIcon('lucide:x', { body: '<path d="M0 0"/>', height: 24, width: 24 })
+addIcon('lucide:refresh-cw', { body: '<path d="M0 0"/>', height: 24, width: 24 })
 
 beforeEach(() => {
   uploadForOcr.mockReset()

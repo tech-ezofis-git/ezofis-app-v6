@@ -6,3 +6,14 @@ import { createContext, useContext } from 'react'
 export const WorkflowNameContext = createContext('')
 
 export const useWorkflowName = () => useContext(WorkflowNameContext)
+
+export const WorkflowAttachmentsContext = createContext<any[]>([])
+
+export const useWorkflowAttachments = () => useContext(WorkflowAttachmentsContext)
+
+export const WorkflowOpenAttachmentContext = createContext<
+  ((attachment: any) => void) | undefined
+>(undefined)
+
+export const useWorkflowOpenAttachment = () =>
+  useContext(WorkflowOpenAttachmentContext)

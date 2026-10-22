@@ -23,6 +23,10 @@ import {
   resolveRuntimeFieldType,
 } from './utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
+import {
+  WorkflowAttachmentsContext,
+  WorkflowOpenAttachmentContext,
+} from './WorkflowNameContext'
 import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
 
 const STAGE_PAGE_SIZE = 8
@@ -627,49 +631,53 @@ const WorkflowFormRenderer = ({
 
   if (hidePanels) {
     return (
-      <div
-        className={
-          disableOwnScroll
-            ? cn(
-                'w-full max-w-full min-w-0 px-4 py-4',
-                presentation === 'extracted' && 'p-4',
-              )
-            : cn(
-                'w-full max-w-full min-w-0 overflow-x-hidden',
-                presentation === 'extracted' ? 'px-4 pt-2 pb-4' : 'px-4 pt-3 pb-6',
-              )
-        }
-      >
-        {stageBar}
-        <AnimateFadeIn delay={0.1}>
-          <div className='flex flex-col gap-6'>
-            {panels.map((panel: any, panelIndex: number) => {
-              const visibleFields = (panel.fields || []).filter(
-                (field: any) => {
-                  const state = evaluatedFieldStates[field.id]
-                  const isHiddenByRule = state
-                    ? !state.visible
-                    : isFieldHidden(field)
-                  return (
-                    !isHiddenByRule &&
-                    !hiddenFieldIds?.has(field.id) &&
-                    field.type !== 'DIVIDER'
-                  )
-                },
-              )
-              if (visibleFields.length === 0) return null
+      <WorkflowAttachmentsContext.Provider value={attachments || []}>
+        <WorkflowOpenAttachmentContext.Provider value={onOpenAttachment}>
+          <div
+            className={
+            disableOwnScroll
+              ? cn(
+                  'w-full max-w-full min-w-0 px-4 py-4',
+                  presentation === 'extracted' && 'p-4',
+                )
+              : cn(
+                  'w-full max-w-full min-w-0 overflow-x-hidden',
+                  presentation === 'extracted' ? 'px-4 pt-2 pb-4' : 'px-4 pt-3 pb-6',
+                )
+          }
+        >
+          {stageBar}
+          <AnimateFadeIn delay={0.1}>
+            <div className='flex flex-col gap-6'>
+              {panels.map((panel: any, panelIndex: number) => {
+                const visibleFields = (panel.fields || []).filter(
+                  (field: any) => {
+                    const state = evaluatedFieldStates[field.id]
+                    const isHiddenByRule = state
+                      ? !state.visible
+                      : isFieldHidden(field)
+                    return (
+                      !isHiddenByRule &&
+                      !hiddenFieldIds?.has(field.id) &&
+                      field.type !== 'DIVIDER'
+                    )
+                  },
+                )
+                if (visibleFields.length === 0) return null
 
-              return (
-                <div className='min-w-0' key={panel.id || panelIndex}>
-                  {renderVisibleFields(visibleFields)}
-                </div>
-              )
-            })}
-          </div>
-        </AnimateFadeIn>
-      </div>
-    )
-  }
+                return (
+                  <div className='min-w-0' key={panel.id || panelIndex}>
+                    {renderVisibleFields(visibleFields)}
+                  </div>
+                )
+              })}
+            </div>
+          </AnimateFadeIn>
+        </div>
+      </WorkflowOpenAttachmentContext.Provider>
+    </WorkflowAttachmentsContext.Provider>
+  )
+}
 
   const content = (
     <div
@@ -794,7 +802,7 @@ const WorkflowFormRenderer = ({
     </div>
   )
 
-  return disableOwnScroll ? (
+  const rendered = disableOwnScroll ? (
     content
   ) : (
     <div className='h-full min-h-0 w-full min-w-0 overflow-hidden'>
@@ -802,6 +810,14 @@ const WorkflowFormRenderer = ({
         {content}
       </ScrollArea>
     </div>
+  )
+
+  return (
+    <WorkflowAttachmentsContext.Provider value={attachments || []}>
+      <WorkflowOpenAttachmentContext.Provider value={onOpenAttachment}>
+        {rendered}
+      </WorkflowOpenAttachmentContext.Provider>
+    </WorkflowAttachmentsContext.Provider>
   )
 }
 

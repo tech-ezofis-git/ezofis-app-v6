@@ -3,7 +3,7 @@ import { useLingui } from '@lingui/react/macro'
 import { SegmentedControl } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import type { Option } from '@/types/option'
 import {
@@ -12,12 +12,18 @@ import {
   uploadForOcr,
   uploadForStaticMetadata,
 } from '@/api/v6/folder/folder'
+import fileApi from '@/api/file/file'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
-import { getUsers } from '@/api/v6/user'
-import { useWorkflowName } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import {
+  useWorkflowAttachments,
+  useWorkflowName,
+  useWorkflowOpenAttachment,
+} from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
@@ -800,6 +806,7 @@ const TableCellFileInput = ({
   col,
   fillTargetNames,
   isImageType,
+  readOnly,
   val,
   onCellChange,
   onFilesAdded,
@@ -808,6 +815,7 @@ const TableCellFileInput = ({
   /** Names of the columns this file fills, listed in the info tooltip. */
   fillTargetNames?: string[]
   isImageType: boolean
+  readOnly?: boolean
   val: any
   onCellChange: (newVal: any) => void
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
@@ -815,8 +823,64 @@ const TableCellFileInput = ({
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<OcrStatus | null>(null)
   const [busy, setBusy] = useState(false)
+  const workflowAttachments = useWorkflowAttachments()
+  const onOpenAttachment = useWorkflowOpenAttachment()
+  const storeSelectedItem = requestStore((state) => state.selectedItem)
+  const storeRawWorkflow = requestStore((state) => state.rawWorkflowData)
+
+  const allAvailableAttachments = useMemo(() => {
+    const list: any[] = []
+    if (Array.isArray(workflowAttachments)) list.push(...workflowAttachments)
+    if (Array.isArray(storeSelectedItem?.attachments))
+      list.push(...storeSelectedItem.attachments)
+    if (Array.isArray(storeRawWorkflow?.attachments))
+      list.push(...storeRawWorkflow.attachments)
+    return list
+  }, [workflowAttachments, storeSelectedItem, storeRawWorkflow])
+
+  const resolveAttachmentMeta = useCallback(
+    (fileEntry: any) => {
+      if (!fileEntry) return fileEntry
+      const key = String(
+        fileEntry.itemId || fileEntry.fileId || fileEntry.id || fileEntry.fileName || '',
+      ).trim()
+      if (!key) return fileEntry
+
+      const cleanKey = key.replace(/-/g, '').toLowerCase()
+
+      const matched = allAvailableAttachments.find((att: any) => {
+        const attItemId = String(att.itemId || '').trim()
+        const attId = String(att.id || '').trim()
+        const attFileId = String(att.fileId || '').trim()
+        const attFileName = String(att.fileName || att.name || '').trim()
+
+        if (attItemId.toLowerCase() === key.toLowerCase() || attItemId.replace(/-/g, '').toLowerCase() === cleanKey) return true
+        if (attId.toLowerCase() === key.toLowerCase() || attId.replace(/-/g, '').toLowerCase() === cleanKey) return true
+        if (attFileId.toLowerCase() === key.toLowerCase() || attFileId.replace(/-/g, '').toLowerCase() === cleanKey) return true
+        if (attFileName && attFileName.toLowerCase() === key.toLowerCase()) return true
+        return false
+      })
+
+      if (matched) {
+        return {
+          ...fileEntry,
+          fileName: matched.fileName || matched.name || fileEntry.fileName,
+          fileSize: matched.fileSize ?? fileEntry.fileSize,
+          itemId: matched.itemId || fileEntry.itemId || matched.id,
+          repositoryId: matched.repositoryId || fileEntry.repositoryId,
+        }
+      }
+      return fileEntry
+    },
+    [allAvailableAttachments],
+  )
+
   const multiple = isMultiFileColumn(col)
-  const files = toFileList(val)
+  const rawFiles = toFileList(val)
+  const files = useMemo(
+    () => rawFiles.map(resolveAttachmentMeta),
+    [rawFiles, resolveAttachmentMeta],
+  )
   const fileName: string | undefined = files[0]?.fileName
 
   const handleRemove = (index: number) => {
@@ -871,6 +935,79 @@ const TableCellFileInput = ({
     }
   }
 
+  const handleOpenFile = async (fileObj: any) => {
+    if (!fileObj) return
+
+    const resolved = resolveAttachmentMeta(fileObj)
+
+    if (onOpenAttachment) {
+      onOpenAttachment(resolved)
+      return
+    }
+
+    if (fileObj.rawFile instanceof Blob) {
+      const url = URL.createObjectURL(fileObj.rawFile)
+      window.open(url, '_blank')
+      return
+    }
+    const targetRepoId = String(
+      resolved.repositoryId ||
+        fileObj.repositoryId ||
+        storeSelectedItem?.repositoryId ||
+        storeRawWorkflow?.repositoryId ||
+        '3',
+    )
+    const fileId = String(
+      resolved.itemId ||
+        resolved.fileId ||
+        resolved.id ||
+        fileObj.fileId ||
+        fileObj.id ||
+        fileObj.itemId ||
+        '',
+    )
+    if (!fileId) return
+
+    const isUuid = (testVal: string): boolean =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testVal)
+
+    if (isUuid(targetRepoId) && isUuid(fileId)) {
+      try {
+        const response = await fileApi.viewBinaryV6(targetRepoId, fileId)
+        if (response?.data instanceof Blob) {
+          const url = window.URL.createObjectURL(response.data)
+          window.open(url, '_blank')
+          return
+        }
+      } catch (err) {
+        console.error('Error viewing table file attachment:', err)
+      }
+    } else {
+      const rId = Number(targetRepoId)
+      if (!Number.isNaN(rId) && rId > 0) {
+        try {
+          const response = await fileApi.viewBinary(2, '2', rId, Number(fileId), 2)
+          const base64 = response?.data?.file || response?.data
+          if (typeof base64 === 'string') {
+            const mimeType = base64.startsWith('/9j/') ? 'image/jpeg' : base64.startsWith('iVBORw0KGgo') ? 'image/png' : 'application/pdf'
+            const url = base64.startsWith('data:') ? base64 : `data:${mimeType};base64,${base64}`
+            const win = window.open()
+            if (win) {
+              win.document.write(
+                `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+              )
+              return
+            }
+          }
+        } catch (err) {
+          console.error('Error viewing legacy table file:', err)
+        }
+      }
+    }
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   return (
     <div className='flex min-w-0 flex-col gap-1'>
       {multiple &&
@@ -885,70 +1022,98 @@ const TableCellFileInput = ({
               name='lucide:paperclip'
               width={12}
             />
-            <span
-              className='min-w-0 flex-1 truncate'
+            <button
+              className='min-w-0 flex-1 cursor-pointer truncate text-left text-primary-11 hover:underline'
               title={String(file.fileName ?? '')}
+              type='button'
+              onClick={() => handleOpenFile(file)}
             >
               {file.fileName}
-            </span>
-            <button
-              aria-label='Remove file'
-              className='flex size-4 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
-              type='button'
-              onClick={() => handleRemove(index)}
-            >
-              <Icon height={10} name='lucide:x' width={10} />
             </button>
+            {!readOnly && (
+              <button
+                aria-label='Remove file'
+                className='flex size-4 shrink-0 cursor-pointer items-center justify-center rounded text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+                type='button'
+                onClick={() => handleRemove(index)}
+              >
+                <Icon height={10} name='lucide:x' width={10} />
+              </button>
+            )}
           </div>
         ))}
       <div className='flex min-w-0 items-center gap-1'>
-        {/* Purple + dashed reads as "click to upload"; the greyed cells next
-            to it are the ones still waiting for this file. */}
-        <label
-          className={cn(
-            'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border px-3 text-13 font-medium transition-colors active:scale-[0.99]',
-            fileName && !multiple
-              ? 'border-gray-5 bg-surface text-gray-12 hover:border-primary-6'
-              : 'border-dashed border-primary-6 bg-primary-2 text-primary-11 hover:bg-primary-3',
-            busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
-          )}
-        >
-          <Icon
-            className={cn('shrink-0 text-primary-10', busy && 'animate-spin')}
-            height={14}
-            width={14}
-            name={
-              busy
-                ? 'lucide:loader-2'
-                : fileName && !multiple
-                  ? 'lucide:paperclip'
-                  : 'lucide:upload'
-            }
-          />
-          <span className='min-w-0 flex-1 truncate'>
-            {busy
-              ? 'Reading document…'
-              : multiple
-                ? files.length > 0
-                  ? 'Add more files'
-                  : 'Add files'
-                : fileName ||
-                  col.settings?.specific?.placeholder ||
-                  (isImageType ? 'Upload image' : 'Upload file')}
-          </span>
-          <input
-            accept={getFileInputAccept(col, isImageType)}
-            className='hidden'
+        <input
+          accept={getFileInputAccept(col, isImageType)}
+          className='hidden'
+          disabled={busy}
+          multiple={multiple}
+          ref={fileInputRef}
+          type='file'
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? [])
+            e.target.value = ''
+            if (picked.length > 0) void handlePick(picked)
+          }}
+        />
+
+        {fileName && !multiple ? (
+          <div className='flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border border-gray-5 bg-surface px-3 text-13 font-medium text-gray-12'>
+            <Icon
+              className={cn('shrink-0 text-primary-10', busy && 'animate-spin')}
+              height={14}
+              name={busy ? 'lucide:loader-2' : 'lucide:paperclip'}
+              width={14}
+            />
+            <button
+              className='min-w-0 flex-1 cursor-pointer truncate text-left text-primary-11 hover:underline'
+              title={fileName}
+              type='button'
+              onClick={() => handleOpenFile(files[0])}
+            >
+              {fileName}
+            </button>
+            {!busy && !readOnly && (
+              <button
+                aria-label='Change file'
+                className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-8 transition-all hover:bg-gray-2 hover:text-gray-12'
+                title='Change file'
+                type='button'
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icon height={13} name='lucide:refresh-cw' width={13} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            className={cn(
+              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border border-dashed border-primary-6 bg-primary-2 px-3 text-13 font-medium text-primary-11 transition-colors active:scale-[0.99] hover:bg-primary-3',
+              busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+            )}
             disabled={busy}
-            multiple={multiple}
-            type='file'
-            onChange={(e) => {
-              const picked = Array.from(e.target.files ?? [])
-              e.target.value = ''
-              if (picked.length > 0) void handlePick(picked)
-            }}
-          />
-        </label>
+            type='button'
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Icon
+              className={cn('shrink-0 text-primary-10', busy && 'animate-spin')}
+              height={14}
+              name={busy ? 'lucide:loader-2' : 'lucide:upload'}
+              width={14}
+            />
+            <span className='min-w-0 flex-1 truncate text-left'>
+              {busy
+                ? 'Reading document…'
+                : multiple
+                  ? files.length > 0
+                    ? 'Add more files'
+                    : 'Add files'
+                  : col.settings?.specific?.placeholder ||
+                    (isImageType ? 'Upload image' : 'Upload file')}
+            </span>
+          </button>
+        )}
+
         {fillTargetNames && fillTargetNames.length > 0 && (
           <Tooltip
             content={`${files.length > 0 ? 'Filled from the file' : 'Upload a file to fill'}: ${fillTargetNames.join(', ')}`}
@@ -1153,7 +1318,7 @@ const renderCellInput = (
     )
   }
 
-  if (readOnly) {
+  if (readOnly && cellType !== 'FILE_UPLOAD' && cellType !== 'IMAGE_UPLOAD') {
     return (
       <div className='truncate px-2 py-1 text-xs text-gray-12'>
         {formatRuntimeFieldDisplayValue(val, col)}
@@ -1322,6 +1487,7 @@ const renderCellInput = (
               : undefined
           }
           isImageType={cellType === 'IMAGE_UPLOAD'}
+          readOnly={readOnly}
           val={val}
           onCellChange={onCellChange}
           onFilesAdded={actions?.onFilesAdded}
@@ -2167,6 +2333,8 @@ const TableFieldRenderer = ({
     let failure = ''
     for (const file of files) {
       let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
+      let ocrJson: string | undefined
+      let ocrText: string | undefined
       let error: unknown
       if (isExpenseReimbursement) {
         const res = await uploadForStaticMetadata(
@@ -2183,10 +2351,12 @@ const TableFieldRenderer = ({
           }
         }
         ocrFieldList = payload?.ocrResult
+        ocrText = typeof payload?.ocrText === 'string' ? payload.ocrText : undefined
       } else {
         const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
         error = res.error
         ocrFieldList = res.data?.ocrFieldList
+        ocrJson = res.data?.ocrJson
       }
       if (error || !ocrFieldList) {
         failure = String(error || 'no data was returned')
@@ -2202,14 +2372,59 @@ const TableFieldRenderer = ({
         current[idx],
         !isMultiFileColumn(col),
       )
-      if (Object.keys(patch).length === 0) continue
+
+      // Step 2: Call uploadWithOcr with metadata to stage the file and obtain fileId
+      const targetRepoId = String(ocrRepositoryId || repositoryId || '3')
+      const mergedRowData = { ...current[idx], ...patch }
+      const metaEntries: Record<string, any> = {}
+      for (const [k, v] of Object.entries(mergedRowData)) {
+        if (v !== undefined && v !== null && typeof v !== 'object') {
+          const colDef = tableColumns.find((c) => c.id === k)
+          const nameKey = colDef?.name || colDef?.label || k
+          metaEntries[nameKey] = String(v)
+          metaEntries[k] = String(v)
+        }
+      }
+
+      let stagedCellVal = current[idx]?.[col.id]
+      try {
+        const stageRes = await uploadAndIndexApi.uploadWithOcr({
+          fields: hints,
+          file,
+          metadata: metaEntries,
+          ocrFieldList,
+          ocrJson,
+          ocrText,
+          repositoryId: targetRepoId,
+        })
+        if (stageRes.data?.fileId) {
+          const stagedFileObj = {
+            fileId: stageRes.data.fileId,
+            fileName: file.name,
+            fileSize: file.size,
+            repositoryId: stageRes.data.repositoryId || targetRepoId,
+          }
+          if (isMultiFileColumn(col)) {
+            const existingList = Array.isArray(stagedCellVal) ? stagedCellVal : []
+            stagedCellVal = [...existingList.filter((item: any) => item?.fileName !== file.name), stagedFileObj]
+          } else {
+            stagedCellVal = stagedFileObj
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('[table uploadWithOcr] Error staging file:', uploadErr)
+      }
+
+      patch[col.id] = stagedCellVal
       editedRowKeys.current.add(rowKey)
       const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
       rowsRef.current = next
       onChange(next)
       for (const id of Object.keys(patch)) {
         const target = targets.find((tg) => tg.id === id)
-        filled.add(String(target?.name || target?.label || id))
+        if (target && patch[id] !== undefined && patch[id] !== null && patch[id] !== '') {
+          filled.add(String(target.name || target.label || id))
+        }
       }
     }
     const wantedNames = targetNames.join(', ')
@@ -3157,7 +3372,17 @@ const TableFieldRenderer = ({
                             const v =
                               resolvedRow[col.id] ??
                               (col.name ? resolvedRow[col.name] : undefined)
-                            return v != null && v !== '' ? String(v) : null
+                            if (v == null || v === '') return null
+                            if (typeof v === 'object') {
+                              if (Array.isArray(v)) {
+                                const names = v
+                                  .map((item) => item?.fileName || item?.name || item?.label || '')
+                                  .filter(Boolean)
+                                return names.join(', ') || null
+                              }
+                              return (v as any).fileName || (v as any).name || (v as any).label || null
+                            }
+                            return String(v)
                           })
                           .filter(Boolean)
                           .join(' · ') || t`(empty row)`

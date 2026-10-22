@@ -73,7 +73,77 @@ export const buildStartWorkflowPayload = (
         continue
       }
 
+      const normalizedType = String(field.type || '').toUpperCase()
+      if ((normalizedType === 'TABLE' || normalizedType === 'DYNAMIC_TABLE') && Array.isArray(value)) {
+        const tableColumns = field.settings?.specific?.tableColumns || []
+        const fileColIds = new Set(
+          tableColumns
+            .filter((c: any) => {
+              const ct = String(c?.type || '').toUpperCase()
+              return ct === 'FILE_UPLOAD' || ct === 'IMAGE_UPLOAD' || ct === 'IMAGE'
+            })
+            .map((c: any) => c.id),
+        )
+
+        const sanitizedRows = value.map((row: any) => {
+          if (!row || typeof row !== 'object') return row
+          const cleanRow: Record<string, any> = { ...row }
+          for (const [colKey, cellVal] of Object.entries(cleanRow)) {
+            if (!cellVal || typeof cellVal !== 'object') continue
+
+            const processCellFile = (fileItem: any) => {
+              if (!fileItem || typeof fileItem !== 'object') return fileItem
+              const fid = String(fileItem.fileId || fileItem.itemId || '').trim()
+              const repId = String(fileItem.repositoryId || '').trim()
+              if (fid && repId) {
+                const targetCol = tableColumns.find((c: any) => c.id === colKey)
+                stagedFiles.push({
+                  fieldId: targetCol?.id || colKey,
+                  fieldName: targetCol?.name || targetCol?.label,
+                  fileId: fid,
+                  fileName: fileItem.fileName || fileItem.name,
+                  jsonId: targetCol?.id || colKey,
+                  repositoryId: repId,
+                })
+              }
+              const { rawFile: _rf, ...rest } = fileItem
+              return rest
+            }
+
+            if (fileColIds.has(colKey) || 'rawFile' in (cellVal as any) || 'fileId' in (cellVal as any)) {
+              if (Array.isArray(cellVal)) {
+                cleanRow[colKey] = cellVal.map(processCellFile)
+              } else {
+                cleanRow[colKey] = processCellFile(cellVal)
+              }
+            }
+
+            // Also mirror under column name so backend matches regardless of ID vs Name
+            const targetCol = tableColumns.find((c: any) => c.id === colKey)
+            if (targetCol?.name && targetCol.name !== colKey) {
+              cleanRow[targetCol.name] = cleanRow[colKey]
+            }
+          }
+          return cleanRow
+        })
+
+        formData[field.id] = sanitizedRows
+        if (field.label && field.label !== field.id) {
+          formData[field.label] = sanitizedRows
+        }
+        if (field.name && field.name !== field.id && field.name !== field.label) {
+          formData[field.name] = sanitizedRows
+        }
+        continue
+      }
+
       formData[field.id] = value
+      if (field.label && field.label !== field.id) {
+        formData[field.label] = value
+      }
+      if (field.name && field.name !== field.id && field.name !== field.label) {
+        formData[field.name] = value
+      }
     }
   }
 
