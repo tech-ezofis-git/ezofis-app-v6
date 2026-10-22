@@ -578,6 +578,8 @@ interface CellActions {
   siblingColumns: TableColumn[]
   /** Label of the row's file column the cell waits on (disabled until then). */
   awaitingFile?: string
+  /** The row's file is being read by OCR; the cell stays disabled until it is filled. */
+  awaitingOcr?: boolean
   row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
@@ -843,7 +845,11 @@ const TableCellFileInput = ({
     (fileEntry: any) => {
       if (!fileEntry) return fileEntry
       const key = String(
-        fileEntry.itemId || fileEntry.fileId || fileEntry.id || fileEntry.fileName || '',
+        fileEntry.itemId ||
+          fileEntry.fileId ||
+          fileEntry.id ||
+          fileEntry.fileName ||
+          '',
       ).trim()
       if (!key) return fileEntry
 
@@ -855,10 +861,23 @@ const TableCellFileInput = ({
         const attFileId = String(att.fileId || '').trim()
         const attFileName = String(att.fileName || att.name || '').trim()
 
-        if (attItemId.toLowerCase() === key.toLowerCase() || attItemId.replace(/-/g, '').toLowerCase() === cleanKey) return true
-        if (attId.toLowerCase() === key.toLowerCase() || attId.replace(/-/g, '').toLowerCase() === cleanKey) return true
-        if (attFileId.toLowerCase() === key.toLowerCase() || attFileId.replace(/-/g, '').toLowerCase() === cleanKey) return true
-        if (attFileName && attFileName.toLowerCase() === key.toLowerCase()) return true
+        if (
+          attItemId.toLowerCase() === key.toLowerCase() ||
+          attItemId.replace(/-/g, '').toLowerCase() === cleanKey
+        )
+          return true
+        if (
+          attId.toLowerCase() === key.toLowerCase() ||
+          attId.replace(/-/g, '').toLowerCase() === cleanKey
+        )
+          return true
+        if (
+          attFileId.toLowerCase() === key.toLowerCase() ||
+          attFileId.replace(/-/g, '').toLowerCase() === cleanKey
+        )
+          return true
+        if (attFileName && attFileName.toLowerCase() === key.toLowerCase())
+          return true
         return false
       })
 
@@ -970,7 +989,9 @@ const TableCellFileInput = ({
     if (!fileId) return
 
     const isUuid = (testVal: string): boolean =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testVal)
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        testVal,
+      )
 
     if (isUuid(targetRepoId) && isUuid(fileId)) {
       try {
@@ -987,11 +1008,23 @@ const TableCellFileInput = ({
       const rId = Number(targetRepoId)
       if (!Number.isNaN(rId) && rId > 0) {
         try {
-          const response = await fileApi.viewBinary(2, '2', rId, Number(fileId), 2)
+          const response = await fileApi.viewBinary(
+            2,
+            '2',
+            rId,
+            Number(fileId),
+            2,
+          )
           const base64 = response?.data?.file || response?.data
           if (typeof base64 === 'string') {
-            const mimeType = base64.startsWith('/9j/') ? 'image/jpeg' : base64.startsWith('iVBORw0KGgo') ? 'image/png' : 'application/pdf'
-            const url = base64.startsWith('data:') ? base64 : `data:${mimeType};base64,${base64}`
+            const mimeType = base64.startsWith('/9j/')
+              ? 'image/jpeg'
+              : base64.startsWith('iVBORw0KGgo')
+                ? 'image/png'
+                : 'application/pdf'
+            const url = base64.startsWith('data:')
+              ? base64
+              : `data:${mimeType};base64,${base64}`
             const win = window.open()
             if (win) {
               win.document.write(
@@ -1089,7 +1122,7 @@ const TableCellFileInput = ({
         ) : (
           <button
             className={cn(
-              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border border-dashed border-primary-6 bg-primary-2 px-3 text-13 font-medium text-primary-11 transition-colors active:scale-[0.99] hover:bg-primary-3',
+              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border border-dashed border-primary-6 bg-primary-2 px-3 text-13 font-medium text-primary-11 transition-colors hover:bg-primary-3 active:scale-[0.99]',
               busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
             )}
             disabled={busy}
@@ -1370,11 +1403,15 @@ const renderCellInput = (
     )
   }
 
-  if (readOnly && actions?.awaitingFile) {
+  if (readOnly && (actions?.awaitingFile || actions?.awaitingOcr)) {
     return (
       <Tooltip
         className='flex w-full'
-        content={`Please upload "${actions.awaitingFile}" first`}
+        content={
+          actions.awaitingFile
+            ? `Please upload "${actions.awaitingFile}" first`
+            : 'Reading the uploaded document...'
+        }
         position='top'
       >
         <div
@@ -1678,6 +1715,11 @@ const TableFieldRenderer = ({
   // Rows whose uploaded file is still being read by OCR; the cells it will
   // fill stay locked until the result (or a failure) comes back.
   const [ocrPendingRows, setOcrPendingRows] = useState<Set<string>>(new Set())
+  // `rowKey:columnId` cells being filled from a master table after their
+  // source column changed.
+  const [masterFillPending, setMasterFillPending] = useState<Set<string>>(
+    new Set(),
+  )
   const rowKeyOf = (row: { _rowId?: string } | undefined, idx: number) =>
     row?._rowId || `row-${idx}`
 
@@ -1955,9 +1997,12 @@ const TableFieldRenderer = ({
   // Master-table sources filtered by another column of the same row.
   const {
     data: masterCascadedOptions = {},
-    isLoading: isMasterCascadedLoading,
+    isFetching: isMasterCascadedFetching,
   } = useQuery({
     enabled: masterCascadeColumns.length > 0,
+    // Keep the previous options while a changed parent value refetches, so
+    // only the cell whose parent changed shows a loader.
+    placeholderData: (prev) => prev,
     queryKey: [
       'tableColumnMasterCascadedOptions',
       field?.id,
@@ -2111,9 +2156,10 @@ const TableFieldRenderer = ({
   // this is keyed by [columnId][parentValue] since options differ per row.
   const {
     data: cascadedOptionsByColumn = {},
-    isLoading: isCascadedLookupLoading,
+    isFetching: isCascadedLookupFetching,
   } = useQuery({
     enabled: cascadeColumns.length > 0,
+    placeholderData: (prev) => prev,
     queryKey: [
       'tableColumnCascadedLookupOptions',
       field?.id,
@@ -2225,15 +2271,44 @@ const TableFieldRenderer = ({
 
   // True while the options (or master-synced rows) a column depends on are
   // still being fetched, so its cells can show a loader instead of empty input.
-  const isColumnLoading = (col: TableColumn) => {
+  const isColumnLoading = (
+    col: TableColumn,
+    row: Record<string, any>,
+    rowIndex: number,
+  ) => {
     if (isMasterSyncing) return true
+    if (masterFillPending.has(`${rowKeyOf(row, rowIndex)}:${col.id}`)) {
+      return true
+    }
+    // A filtered dropdown only waits on its own parent value, not on every
+    // other filtered column that happens to share the query.
+    const isWaitingOnParent = (
+      fetching: boolean,
+      byColumn: Record<string, Record<string, unknown>>,
+    ) => {
+      if (!fetching) return false
+      const parentColId = col.settings?.lookupSettings?.cascadeFromColumn
+      if (!parentColId) return false
+      const topField = allFields?.find((f: any) => f.id === parentColId)
+      const parentVal = topField
+        ? formModel?.[topField.id]
+        : readParentCell(row, parentColId)
+      if (parentVal === undefined || parentVal === null || parentVal === '') {
+        return false
+      }
+      return byColumn[col.id]?.[String(parentVal)] === undefined
+    }
     const source = getColumnOptionsSource(col)
     const cascades = Boolean(col.settings?.lookupSettings?.cascadeFromColumn)
     if (getColumnMasterConfig(col)) {
-      return cascades ? isMasterCascadedLoading : isMasterOptionsLoading
+      return cascades
+        ? isWaitingOnParent(isMasterCascadedFetching, masterCascadedOptions)
+        : isMasterOptionsLoading
     }
     if (source === 'LOOKUP') {
-      return cascades ? isCascadedLookupLoading : isLookupOptionsLoading
+      return cascades
+        ? isWaitingOnParent(isCascadedLookupFetching, cascadedOptionsByColumn)
+        : isLookupOptionsLoading
     }
     if (source === 'USER_LIST') return isUserListLoading
     if (source === 'PREDEFINED') {
@@ -2362,40 +2437,56 @@ const TableFieldRenderer = ({
       sourceValue === ''
     )
     const patch: Record<string, unknown> = {}
-    await Promise.all(
-      targets.map(async (target) => {
-        const s = target.settings?.specific
-        if (!hasSource) {
-          patch[target.id] = ''
-          return
-        }
-        try {
-          const options = await fetchMasterFormColumnOptions(
-            String(s?.masterFormId),
-            String(s?.masterFormColumn),
-            undefined,
-            undefined,
-            false,
-            [
-              {
-                masterColumn: getMasterMatchColumn(sourceCol),
-                value: sourceValue,
-              },
-            ],
-          )
-          patch[target.id] = options[0]?.name ?? ''
-        } catch {
-          // Leave the cell as it is when the lookup fails
-        }
-      }),
-    )
-    if (Object.keys(patch).length === 0) return
-    const current = rowsRef.current
-    const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
-    if (idx < 0) return
-    const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
-    rowsRef.current = next
-    onChange(next)
+    const pendingKeys = hasSource
+      ? targets.map((target) => `${rowKey}:${target.id}`)
+      : []
+    if (pendingKeys.length > 0) {
+      setMasterFillPending((prev) => new Set([...prev, ...pendingKeys]))
+    }
+    try {
+      await Promise.all(
+        targets.map(async (target) => {
+          const s = target.settings?.specific
+          if (!hasSource) {
+            patch[target.id] = ''
+            return
+          }
+          try {
+            const options = await fetchMasterFormColumnOptions(
+              String(s?.masterFormId),
+              String(s?.masterFormColumn),
+              undefined,
+              undefined,
+              false,
+              [
+                {
+                  masterColumn: getMasterMatchColumn(sourceCol),
+                  value: sourceValue,
+                },
+              ],
+            )
+            patch[target.id] = options[0]?.name ?? ''
+          } catch {
+            // Leave the cell as it is when the lookup fails
+          }
+        }),
+      )
+      if (Object.keys(patch).length === 0) return
+      const current = rowsRef.current
+      const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
+      if (idx < 0) return
+      const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+      rowsRef.current = next
+      onChange(next)
+    } finally {
+      if (pendingKeys.length > 0) {
+        setMasterFillPending((prev) => {
+          const next = new Set(prev)
+          pendingKeys.forEach((k) => next.delete(k))
+          return next
+        })
+      }
+    }
   }
 
   const handleCellChange = (rowIndex: number, colId: string, cellVal: any) => {
@@ -2487,7 +2578,8 @@ const TableFieldRenderer = ({
             }
           }
           ocrFieldList = payload?.ocrResult
-          ocrText = typeof payload?.ocrText === 'string' ? payload.ocrText : undefined
+          ocrText =
+            typeof payload?.ocrText === 'string' ? payload.ocrText : undefined
         } else {
           const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
           error = res.error
@@ -2541,8 +2633,15 @@ const TableFieldRenderer = ({
               repositoryId: stageRes.data.repositoryId || targetRepoId,
             }
             if (isMultiFileColumn(col)) {
-              const existingList = Array.isArray(stagedCellVal) ? stagedCellVal : []
-              stagedCellVal = [...existingList.filter((item: any) => item?.fileName !== file.name), stagedFileObj]
+              const existingList = Array.isArray(stagedCellVal)
+                ? stagedCellVal
+                : []
+              stagedCellVal = [
+                ...existingList.filter(
+                  (item: any) => item?.fileName !== file.name,
+                ),
+                stagedFileObj,
+              ]
             } else {
               stagedCellVal = stagedFileObj
             }
@@ -2558,7 +2657,12 @@ const TableFieldRenderer = ({
         onChange(next)
         for (const id of Object.keys(patch)) {
           const target = targets.find((tg) => tg.id === id)
-          if (target && patch[id] !== undefined && patch[id] !== null && patch[id] !== '') {
+          if (
+            target &&
+            patch[id] !== undefined &&
+            patch[id] !== null &&
+            patch[id] !== ''
+          ) {
             filled.add(String(target.name || target.label || id))
           }
         }
@@ -3360,7 +3464,7 @@ const TableFieldRenderer = ({
                           </Td>
                           {effectiveColumns.map((col) => (
                             <Td className='p-1.5 align-middle' key={col.id}>
-                              {isColumnLoading(col)
+                              {isColumnLoading(col, resolvedRow, rowIndex)
                                 ? cellLoader
                                 : renderCellInput(
                                     col,
@@ -3395,6 +3499,11 @@ const TableFieldRenderer = ({
                                       awaitingFile: awaitingFileLabel(
                                         col,
                                         resolvedRow,
+                                      ),
+                                      awaitingOcr: isAwaitingOcr(
+                                        col,
+                                        resolvedRow,
+                                        rowIndex,
                                       ),
                                       row: resolvedRow,
                                       siblingColumns: tableColumns,
@@ -3528,11 +3637,22 @@ const TableFieldRenderer = ({
                             if (typeof v === 'object') {
                               if (Array.isArray(v)) {
                                 const names = v
-                                  .map((item) => item?.fileName || item?.name || item?.label || '')
+                                  .map(
+                                    (item) =>
+                                      item?.fileName ||
+                                      item?.name ||
+                                      item?.label ||
+                                      '',
+                                  )
                                   .filter(Boolean)
                                 return names.join(', ') || null
                               }
-                              return (v as any).fileName || (v as any).name || (v as any).label || null
+                              return (
+                                (v as any).fileName ||
+                                (v as any).name ||
+                                (v as any).label ||
+                                null
+                              )
                             }
                             return String(v)
                           })
@@ -3598,7 +3718,7 @@ const TableFieldRenderer = ({
                             </button>
                           )}
                         </div>
-                        {isColumnLoading(col)
+                        {isColumnLoading(col, resolvedRow, rowIndex)
                           ? cellLoader
                           : renderCellInput(
                               col,
@@ -3625,6 +3745,11 @@ const TableFieldRenderer = ({
                                 awaitingFile: awaitingFileLabel(
                                   col,
                                   resolvedRow,
+                                ),
+                                awaitingOcr: isAwaitingOcr(
+                                  col,
+                                  resolvedRow,
+                                  rowIndex,
                                 ),
                                 row: resolvedRow,
                                 siblingColumns: tableColumns,
