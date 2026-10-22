@@ -148,7 +148,6 @@ export const buildStartWorkflowPayload = (
       if (field.name && field.name !== field.id && field.name !== field.label) {
         formData[field.name] = value
       }
-      }
     }
   }
 
