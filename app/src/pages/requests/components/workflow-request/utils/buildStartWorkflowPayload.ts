@@ -77,28 +77,76 @@ export const buildStartWorkflowPayload = (
         continue
       }
 
-      formData[field.id] = value
-
-      // Files picked in a table's file columns: the backend flattens every
-      // table cell to text and turns an object cell into "", so the row
-      // carries the file name as a plain string. The file itself is attached
-      // after the request starts (useWorkflowForm) - staging it here makes the
-      // backend write its id over the whole table.
-      if (Array.isArray(value)) {
-        const fileColumns = (field.settings?.specific?.tableColumns || []).filter(
-          (c: any) => c?.id && isFileColumnType(c.type),
+      const normalizedType = String(field.type || '').toUpperCase()
+      if ((normalizedType === 'TABLE' || normalizedType === 'DYNAMIC_TABLE') && Array.isArray(value)) {
+        const tableColumns = field.settings?.specific?.tableColumns || []
+        const fileColIds = new Set(
+          tableColumns
+            .filter((c: any) => {
+              const ct = String(c?.type || '').toUpperCase()
+              return ct === 'FILE_UPLOAD' || ct === 'IMAGE_UPLOAD' || ct === 'IMAGE'
+            })
+            .map((c: any) => c.id),
         )
-        if (fileColumns.length === 0) continue
-        formData[field.id] = value.map((row: any) => {
-          const nextRow = { ...row }
-          for (const col of fileColumns) {
-            const names = toFileList(row?.[col.id])
-              .map((file) => String(file.fileName ?? ''))
-              .filter(Boolean)
-            if (names.length > 0) nextRow[col.id] = names.join(', ')
+
+        const sanitizedRows = value.map((row: any) => {
+          if (!row || typeof row !== 'object') return row
+          const cleanRow: Record<string, any> = { ...row }
+          for (const [colKey, cellVal] of Object.entries(cleanRow)) {
+            if (!cellVal || typeof cellVal !== 'object') continue
+
+            const processCellFile = (fileItem: any) => {
+              if (!fileItem || typeof fileItem !== 'object') return fileItem
+              const fid = String(fileItem.fileId || fileItem.itemId || '').trim()
+              const repId = String(fileItem.repositoryId || '').trim()
+              if (fid && repId) {
+                const targetCol = tableColumns.find((c: any) => c.id === colKey)
+                stagedFiles.push({
+                  fieldId: targetCol?.id || colKey,
+                  fieldName: targetCol?.name || targetCol?.label,
+                  fileId: fid,
+                  fileName: fileItem.fileName || fileItem.name,
+                  jsonId: targetCol?.id || colKey,
+                  repositoryId: repId,
+                })
+              }
+              const { rawFile: _rf, ...rest } = fileItem
+              return rest
+            }
+
+            if (fileColIds.has(colKey) || 'rawFile' in (cellVal as any) || 'fileId' in (cellVal as any)) {
+              if (Array.isArray(cellVal)) {
+                cleanRow[colKey] = cellVal.map(processCellFile)
+              } else {
+                cleanRow[colKey] = processCellFile(cellVal)
+              }
+            }
+
+            // Also mirror under column name so backend matches regardless of ID vs Name
+            const targetCol = tableColumns.find((c: any) => c.id === colKey)
+            if (targetCol?.name && targetCol.name !== colKey) {
+              cleanRow[targetCol.name] = cleanRow[colKey]
+            }
           }
-          return nextRow
+          return cleanRow
         })
+
+        formData[field.id] = sanitizedRows
+        if (field.label && field.label !== field.id) {
+          formData[field.label] = sanitizedRows
+        }
+        if (field.name && field.name !== field.id && field.name !== field.label) {
+          formData[field.name] = sanitizedRows
+        }
+        continue
+      }
+
+      formData[field.id] = value
+      if (field.label && field.label !== field.id) {
+        formData[field.label] = value
+      }
+      if (field.name && field.name !== field.id && field.name !== field.label) {
+        formData[field.name] = value
       }
     }
   }
