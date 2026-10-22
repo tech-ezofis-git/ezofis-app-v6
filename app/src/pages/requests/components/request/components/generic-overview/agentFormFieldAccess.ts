@@ -33,10 +33,13 @@ export const canEditAgentFormField = (
 ) => {
   const { hiddenFieldIds, onFieldChange, readOnly, readOnlyFieldIds } = options
   if (readOnly || !onFieldChange || !field) return false
-  if (isFieldHidden(field) || isFieldReadOnly(field)) return false
+  if (isFieldHidden(field)) return false
   const id = getFieldId(field)
   if (!id) return false
   if (hiddenFieldIds?.has(id)) return false
-  if (readOnlyFieldIds?.has(id)) return false
+  if (readOnlyFieldIds !== undefined) {
+    return !readOnlyFieldIds.has(id)
+  }
+  if (isFieldReadOnly(field)) return false
   return true
 }
