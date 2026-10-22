@@ -644,7 +644,7 @@ export const useWorkflowForm = (
                 nextRow[colKey] = stagedList
                 rowUpdated = true
               }
-            } else if (cellVal.rawFile && !cellVal.fileId) {
+            } else if ((cellVal as any).rawFile && !(cellVal as any).fileId) {
               nextRow[colKey] = await stageCellFile(cellVal)
               rowUpdated = true
             }
