@@ -488,14 +488,10 @@ const TableColumnSettingsPanel = ({
                 <InputSelect
                   placeholder='No cascade — show all options'
                   clearable
-                  options={siblingColumns.map((c) => ({
-                    id: c.id,
-                    name: c.name || 'Column',
-                  }))}
+                  options={cascadeOptions}
                   value={
-                    siblingColumns
-                      .map((c) => ({ id: c.id, name: c.name || 'Column' }))
-                      .find((c) => c.id === cascadeFromColumn) || null
+                    cascadeOptions.find((c) => c.id === cascadeFromColumn) ||
+                    null
                   }
                   onChange={(opt) =>
                     onUpdate({
@@ -556,15 +552,13 @@ const TableColumnSettingsPanel = ({
                 />
                 <InputSwitch
                   checked={showAllData}
-                  description='When filtering by another column, show every master value if that column is empty.'
-                  label='Show all data'
+                  label='List all data when parent is empty'
                   onChange={(checked) =>
                     onUpdate({ specific: { showAllData: checked } })
                   }
                 />
                 <InputSwitch
                   checked={column.settings?.specific?.isSameMaster === true}
-                  description='Saved for V5 parity; not applied when options load yet.'
                   label='Same Master'
                   onChange={(checked) =>
                     onUpdate({ specific: { isSameMaster: checked } })
@@ -576,14 +570,10 @@ const TableColumnSettingsPanel = ({
                 <InputSelect
                   placeholder='No cascade — show all options'
                   clearable
-                  options={siblingColumns.map((c) => ({
-                    id: c.id,
-                    name: c.name || 'Column',
-                  }))}
+                  options={cascadeOptions}
                   value={
-                    siblingColumns
-                      .map((c) => ({ id: c.id, name: c.name || 'Column' }))
-                      .find((c) => c.id === cascadeFromColumn) || null
+                    cascadeOptions.find((c) => c.id === cascadeFromColumn) ||
+                    null
                   }
                   onChange={(opt) =>
                     onUpdate({

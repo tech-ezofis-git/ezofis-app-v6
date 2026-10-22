@@ -865,6 +865,12 @@ const QuestionSettings = ({
           </div>
           <TableColumnSettingsPanel
             column={activeTableColumn}
+            formFields={allQuestions.filter(
+              (q) =>
+                q.id !== activeQuestion.id &&
+                q.type !== 'TABLE' &&
+                q.type !== 'DYNAMIC_TABLE',
+            )}
             masterForms={masterForms}
             repositories={repositories.map((r: any) => ({
               id: String(r.id),
@@ -2730,6 +2736,23 @@ const QuestionSettings = ({
                               id: f.id,
                               name: f.label || 'Untitled Field',
                             })),
+                          ...panels
+                            .flatMap((p: any) => p.fields)
+                            .filter((f: any) =>
+                              ['TABLE', 'DYNAMIC_TABLE'].includes(f.type),
+                            )
+                            .flatMap((t: any) =>
+                              (t.settings?.specific?.tableColumns || [])
+                                .filter((c: any) =>
+                                  ['SINGLE_SELECT', 'SINGLE_CHOICE'].includes(
+                                    c.type,
+                                  ),
+                                )
+                                .map((c: any) => ({
+                                  id: c.id,
+                                  name: `${t.label || 'Table'} › ${c.name || 'Column'}`,
+                                })),
+                            ),
                         ]
                         const savedParentId =
                           activeQuestion.settings.specific
