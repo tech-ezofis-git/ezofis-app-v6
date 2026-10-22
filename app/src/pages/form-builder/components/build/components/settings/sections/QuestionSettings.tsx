@@ -29,6 +29,12 @@ import InputText from '@/components/base/inputs/InputText'
 import { classNames as baseInputClassNames } from '@/components/base/inputs/shared/constants'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
+import {
+  CONVERTIBLE_TYPES,
+  convertQuestionType,
+  FIELD_TYPE_LABELS,
+  isConvertibleType,
+} from '@/pages/form-builder/helpers/fieldTypeConversion'
 import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import {
   fetchMasterFormColumnOptions,
@@ -909,6 +915,33 @@ const QuestionSettings = ({
             }
             onChange={(val: string) => setLocalLabel(val)}
           />
+
+          {isConvertibleType(activeQuestion.type) &&
+            !activeQuestion.notEditable && (
+            <div>
+              <label className='mb-2 block text-13 font-medium text-gray-11'>
+                Field Type
+              </label>
+              <InputSelect
+                options={CONVERTIBLE_TYPES.map((t) => ({
+                  id: t,
+                  name: FIELD_TYPE_LABELS[t] ?? t,
+                }))}
+                value={{
+                  id: activeQuestion.type,
+                  name:
+                    FIELD_TYPE_LABELS[activeQuestion.type] ??
+                    activeQuestion.type,
+                }}
+                onChange={(val) =>
+                  val &&
+                  updateQuestion(activeQuestion.id, (q: Question) =>
+                    convertQuestionType(q, val.id as QuestionType),
+                  )
+                }
+              />
+            </div>
+          )}
 
           <Tooltip label={activeQuestion.id} position='top' withArrow>
             <button

@@ -579,6 +579,87 @@ export const useWorkflowForm = (
       }
     }
 
+    // Also stage any files attached inside table / dynamic_table rows
+    for (const panel of panels) {
+      for (const field of panel.fields || []) {
+        const fieldType = String(field.type || '').toUpperCase()
+        if (fieldType !== 'TABLE' && fieldType !== 'DYNAMIC_TABLE') continue
+        const rows = nextFormModel[field.id]
+        if (!Array.isArray(rows) || rows.length === 0) continue
+
+        const tableColumns = field.settings?.specific?.tableColumns || []
+        let rowsUpdated = false
+        const updatedRows = []
+
+        for (const row of rows) {
+          if (!row || typeof row !== 'object') {
+            updatedRows.push(row)
+            continue
+          }
+          const nextRow = { ...row }
+          let rowUpdated = false
+
+          for (const [colKey, cellVal] of Object.entries(nextRow)) {
+            if (!cellVal || typeof cellVal !== 'object') continue
+
+            const stageCellFile = async (fileObj: any) => {
+              if (!fileObj || typeof fileObj !== 'object') return fileObj
+              if (fileObj.fileId || !fileObj.rawFile) return fileObj
+
+              const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+                fields: repoFieldHints,
+                file: fileObj.rawFile,
+                metadata: buildRepoMetadata(
+                  repositoryFields,
+                  panels,
+                  formModel,
+                  fileObj.fileName || fileObj.name,
+                ),
+                ocrFieldList: fileObj.ocrFieldList,
+                ocrJson: fileObj.ocrJson,
+                ocrText: extractOcrText(fileObj.ocrJson),
+                repositoryId: fileObj.repositoryId || repositoryId,
+              })
+              if (error || !data) {
+                throw new Error(
+                  error ||
+                    `Failed to upload ${fileObj.fileName || fileObj.name || 'file'}.`,
+                )
+              }
+              return {
+                fileId: data.fileId,
+                fileName: fileObj.fileName || fileObj.name,
+                fileSize: fileObj.fileSize ?? fileObj.size,
+                repositoryId: data.repositoryId || fileObj.repositoryId || repositoryId,
+              }
+            }
+
+            if (Array.isArray(cellVal)) {
+              const hasUnstaged = cellVal.some((item) => item?.rawFile && !item?.fileId)
+              if (hasUnstaged) {
+                const stagedList = []
+                for (const item of cellVal) {
+                  stagedList.push(await stageCellFile(item))
+                }
+                nextRow[colKey] = stagedList
+                rowUpdated = true
+              }
+            } else if ((cellVal as any).rawFile && !(cellVal as any).fileId) {
+              nextRow[colKey] = await stageCellFile(cellVal)
+              rowUpdated = true
+            }
+          }
+
+          if (rowUpdated) rowsUpdated = true
+          updatedRows.push(nextRow)
+        }
+
+        if (rowsUpdated) {
+          nextFormModel[field.id] = updatedRows
+        }
+      }
+    }
+
     return { attachments: stagedAttachments, formModel: nextFormModel }
   }
 
@@ -609,10 +690,12 @@ export const useWorkflowForm = (
     if (pendingAttachment) return true
     return panels.some((panel) =>
       (panel.fields || []).some((field: any) => {
-        if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
-          return false
-        const value = formModel[field.id]
-        return Boolean(value?.rawFile && !value?.fileId && value?.ocrChecked)
+        const fieldType = String(field.type || '').toUpperCase()
+        if (fieldType === 'FILE_UPLOAD' || fieldType === 'IMAGE_UPLOAD') {
+          const value = formModel[field.id]
+          return Boolean(value?.rawFile && !value?.fileId && value?.ocrChecked)
+        }
+        return false
       }),
     )
   }
@@ -692,10 +775,27 @@ export const useWorkflowForm = (
       const next = { ...prev }
       for (const panel of panels) {
         for (const field of panel.fields || []) {
-          if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
-            continue
-          const value = next[field.id]
-          if (value?.rawFile && !value?.fileId) delete next[field.id]
+          const fieldType = String(field.type || '').toUpperCase()
+          if (fieldType === 'FILE_UPLOAD' || fieldType === 'IMAGE_UPLOAD') {
+            const value = next[field.id]
+            if (value?.rawFile && !value?.fileId) delete next[field.id]
+          } else if (fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE') {
+            const rows = next[field.id]
+            if (Array.isArray(rows)) {
+              next[field.id] = rows.map((row: any) => {
+                if (!row || typeof row !== 'object') return row
+                const cleanRow = { ...row }
+                for (const [colKey, cellVal] of Object.entries(cleanRow)) {
+                  if (Array.isArray(cellVal)) {
+                    cleanRow[colKey] = cellVal.filter((item) => item?.fileId || !item?.rawFile)
+                  } else if (cellVal && typeof cellVal === 'object' && (cellVal as any).rawFile && !(cellVal as any).fileId) {
+                    delete cleanRow[colKey]
+                  }
+                }
+                return cleanRow
+              })
+            }
+          }
         }
       }
       return next
