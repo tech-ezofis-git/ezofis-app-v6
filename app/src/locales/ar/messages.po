@@ -200,7 +200,7 @@ msgid "{0} schema fields available"
 msgstr ""
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1780
+#: src/pages/requests/components/GridView.tsx:1787
 msgid "{0} Selected"
 msgstr "{0} تم التحديد"
 
@@ -233,7 +233,7 @@ msgid "{0} was {1} days ago — past the {2}-day threshold"
 msgstr "{0} كان قبل {1} يومًا — بعد تجاوز حد {2} يومًا"
 
 #. placeholder {0}: fileName.trim()
-#: src/pages/folders/components/DocumentDetailsView.tsx:1889
+#: src/pages/folders/components/DocumentDetailsView.tsx:2091
 msgid "{0} was deleted. Kindly try a new file."
 msgstr ""
 
@@ -289,6 +289,10 @@ msgstr "{doneCount} جاهز"
 msgid "{enabledCount} enabled"
 msgstr "{enabledCount} ممكّن"
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:39
+msgid "{fieldCount} fields"
+msgstr ""
+
 #: src/pages/folders/components/Upload/Upload.tsx:1274
 #~ msgid "{fieldName} is mandatory."
 #~ msgstr "{fieldName} إلزامي."
@@ -301,7 +305,7 @@ msgstr "{filesCount} مستندات في قائمة الانتظار"
 msgid "{filesPct}% file capacity"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3607
+#: src/pages/folders/components/DocumentDetailsView.tsx:3868
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "عارض {fileType}"
@@ -376,11 +380,11 @@ msgstr "{progress}% مكتمل"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} مطلوب مرتبط"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1496
+#: src/pages/folders/components/DocumentDetailsView.tsx:1698
 msgid "{savedFileName} created as version {savedVersion}."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1497
+#: src/pages/folders/components/DocumentDetailsView.tsx:1699
 msgid "{savedFileName} updated successfully."
 msgstr ""
 
@@ -797,7 +801,7 @@ msgstr "إضافة"
 msgid "Add \"{query}\""
 msgstr "إضافة \"{query}\""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3087
+#: src/pages/folders/components/DocumentDetailsView.tsx:3331
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:374
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:114
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:202
@@ -1184,8 +1188,8 @@ msgid "AI Suggestions"
 msgstr "اقتراحات الذكاء الاصطناعي"
 
 #: src/pages/folders/components/AiSummaryView.tsx:285
-#: src/pages/folders/components/DocumentDetailsView.tsx:2255
-#: src/pages/folders/components/DocumentDetailsView.tsx:2262
+#: src/pages/folders/components/DocumentDetailsView.tsx:2496
+#: src/pages/folders/components/DocumentDetailsView.tsx:2503
 #: src/pages/folders/components/DocumentsListView.tsx:1122
 #: src/pages/folders/components/FolderTable.tsx:1535
 msgid "AI Summary"
@@ -1713,7 +1717,7 @@ msgstr ""
 msgid "Are you sure you want to delete this user? This action cannot be undone."
 msgstr "هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3575
+#: src/pages/folders/components/DocumentDetailsView.tsx:3836
 msgid "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 msgstr ""
 
@@ -1994,8 +1998,8 @@ msgstr "في انتظار التحقق"
 #: src/pages/folders/components/AiSummaryView.tsx:242
 #: src/pages/folders/components/AiSummaryView.tsx:495
 #: src/pages/folders/components/CollaboraEditor.tsx:278
-#: src/pages/folders/components/DocumentDetailsView.tsx:1883
-#: src/pages/folders/components/DocumentDetailsView.tsx:2169
+#: src/pages/folders/components/DocumentDetailsView.tsx:2085
+#: src/pages/folders/components/DocumentDetailsView.tsx:2371
 #: src/pages/folders/components/DocumentSigningPage.tsx:2836
 #: src/pages/folders/components/DocumentSigningPage.tsx:2842
 #: src/pages/folders/components/EditMetadataView.tsx:395
@@ -2291,7 +2295,7 @@ msgstr "تخزين آمن مدمج"
 
 #. placeholder {0}: actionValidation.action.label
 #. placeholder {1}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1812
+#: src/pages/requests/components/GridView.tsx:1819
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "تم تطبيق الإجراء المجمع \"{0}\" على طلبات {1} بنجاح!"
 
@@ -2305,7 +2309,7 @@ msgid "Bulk Import Entries"
 msgstr "إدخالات الاستيراد بالجملة"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1789
+#: src/pages/requests/components/GridView.tsx:1796
 msgid "Bulk marked {0} requests as Paid successfully!"
 msgstr "تم وضع علامة على {0} من الطلبات المجمعة على أنها مدفوعة بنجاح!"
 
@@ -2398,8 +2402,9 @@ msgstr "يمكنه العرض"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:108
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
-#: src/pages/folders/components/DocumentDetailsView.tsx:2515
-#: src/pages/folders/components/DocumentDetailsView.tsx:3573
+#: src/pages/folders/components/DocumentDetailsView.tsx:2397
+#: src/pages/folders/components/DocumentDetailsView.tsx:2756
+#: src/pages/folders/components/DocumentDetailsView.tsx:3834
 #: src/pages/folders/components/DocumentsListView.tsx:1158
 #: src/pages/folders/components/FolderTable.tsx:1662
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1037
@@ -2424,7 +2429,7 @@ msgstr "يمكنه العرض"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:302
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:522
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:873
-#: src/pages/requests/RequestsPage.tsx:1868
+#: src/pages/requests/RequestsPage.tsx:1873
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:797
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:845
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:957
@@ -2905,7 +2910,7 @@ msgstr ""
 msgid "Close panel"
 msgstr "إغلاق اللوحة"
 
-#: src/pages/requests/RequestsPage.tsx:1964
+#: src/pages/requests/RequestsPage.tsx:1969
 msgid "Close Tab"
 msgstr ""
 
@@ -3001,7 +3006,7 @@ msgstr "الأعمدة المستوردة:"
 #~ msgid "Coming Soon"
 #~ msgstr "قريباً"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1848
+#: src/pages/folders/components/DocumentDetailsView.tsx:2050
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:571
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:603
 #: src/pages/requests/components/request/components/Header.tsx:782
@@ -3198,7 +3203,7 @@ msgstr "تأكيد والترقية إلى بيئة الإنتاج"
 msgid "Confirm and activate the policy"
 msgstr "تأكيد وتفعيل السياسة"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2538
+#: src/pages/folders/components/DocumentDetailsView.tsx:2780
 msgid "Confirm Decline"
 msgstr ""
 
@@ -3222,7 +3227,7 @@ msgstr "اتصال {0}"
 msgid "Connect {providerLabel}"
 msgstr "اتصال {providerLabel}"
 
-#: src/pages/requests/RequestsPage.tsx:1878
+#: src/pages/requests/RequestsPage.tsx:1883
 msgid "Connect Email Watch"
 msgstr ""
 
@@ -3265,7 +3270,7 @@ msgid "Connect your QuickBooks account to sync PO and invoice data automatically
 msgstr "اربط حساب QuickBooks لمزامنة بيانات أوامر الشراء والفواتير تلقائياً."
 
 #: src/pages/requests/components/Header.tsx:139
-#: src/pages/requests/RequestsPage.tsx:1945
+#: src/pages/requests/RequestsPage.tsx:1950
 msgid "Connected"
 msgstr ""
 
@@ -3277,11 +3282,11 @@ msgstr "متصل • REST v11.13"
 msgid "Connected • SID: {sapSystemId}"
 msgstr "متصل • SID: {sapSystemId}"
 
-#: src/pages/requests/RequestsPage.tsx:1729
+#: src/pages/requests/RequestsPage.tsx:1734
 msgid "Connected successfully"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1937
+#: src/pages/requests/RequestsPage.tsx:1942
 msgid "Connected Successfully!"
 msgstr ""
 
@@ -3294,7 +3299,7 @@ msgid "Connecting to SAP Host ({sapHost})..."
 msgstr "جارٍ الاتصال بمضيف SAP ({sapHost})..."
 
 #: src/pages/requests/components/Header.tsx:142
-#: src/pages/requests/RequestsPage.tsx:1858
+#: src/pages/requests/RequestsPage.tsx:1863
 msgid "Connecting..."
 msgstr ""
 
@@ -3314,7 +3319,7 @@ msgstr "نجح الاتصال! تم التحقق من وجهة RFC لـ SAP ERP 
 msgid "Connector"
 msgstr "الموصل"
 
-#: src/pages/requests/RequestsPage.tsx:1950
+#: src/pages/requests/RequestsPage.tsx:1955
 msgid "Connector ID:"
 msgstr ""
 
@@ -3493,15 +3498,15 @@ msgstr ""
 #~ msgid "Couldn't delete selected staged files."
 #~ msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:342
+#: src/pages/folders/components/FolderExplorer.tsx:353
 msgid "Couldn't delete this document. Missing document or repository ID."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:223
+#: src/pages/folders/components/FolderExplorer.tsx:234
 msgid "Couldn't delete this staged file."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:306
+#: src/pages/folders/components/FolderExplorer.tsx:317
 msgid "Couldn't export this staged file. Missing ID."
 msgstr ""
 
@@ -3966,8 +3971,8 @@ msgstr "حدد كيفية تتبع مراجعات المستندات عند تح
 msgid "Decision Details"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2418
-#: src/pages/folders/components/DocumentDetailsView.tsx:2425
+#: src/pages/folders/components/DocumentDetailsView.tsx:2659
+#: src/pages/folders/components/DocumentDetailsView.tsx:2666
 msgid "Decline"
 msgstr ""
 
@@ -4458,7 +4463,7 @@ msgstr "مستند التاريخ"
 msgid "Document Date in Document"
 msgstr "تاريخ المستند في المستند"
 
-#: src/pages/folders/components/FolderExplorer.tsx:362
+#: src/pages/folders/components/FolderExplorer.tsx:373
 msgid "Document deleted successfully."
 msgstr ""
 
@@ -4654,8 +4659,8 @@ msgstr "مدفوعات مزدوجة رصدتها خوارزميات دفتر ا�
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3265
-#: src/pages/folders/components/DocumentDetailsView.tsx:3269
+#: src/pages/folders/components/DocumentDetailsView.tsx:3509
+#: src/pages/folders/components/DocumentDetailsView.tsx:3513
 #: src/pages/folders/components/DocumentSigningPage.tsx:2796
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:876
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:87
@@ -4666,8 +4671,8 @@ msgstr "تنزيل"
 msgid "Download documents"
 msgstr "تنزيل المستندات"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2228
-#: src/pages/folders/components/DocumentDetailsView.tsx:2232
+#: src/pages/folders/components/DocumentDetailsView.tsx:2457
+#: src/pages/folders/components/DocumentDetailsView.tsx:2461
 msgid "Download file"
 msgstr "تنزيل الملف"
 
@@ -4693,7 +4698,7 @@ msgstr "تنزيل القالب"
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr "قم بتنزيل ملف قالب بيانات PO Master المحدد مسبقاً لعرض السجلات المرجعية. استخدم هذا الملف لفهم هيكل المخطط الافتراضي وقيم العينات المستخدمة للمطابقة."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2228
+#: src/pages/folders/components/DocumentDetailsView.tsx:2457
 #: src/pages/forms/components/GenericFormImportModal.tsx:464
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:910
 msgid "Downloading..."
@@ -4930,7 +4935,7 @@ msgstr "على سبيل المثال الاحتفاظ بالعقود منتهي�
 msgid "e.g. Finance Team"
 msgstr "مثال: فريق المالية"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2504
+#: src/pages/folders/components/DocumentDetailsView.tsx:2744
 msgid "e.g. Not my document"
 msgstr ""
 
@@ -5052,8 +5057,8 @@ msgstr ""
 msgid "Edit Field Mappings"
 msgstr "تعديل ربط الحقول"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2190
-#: src/pages/folders/components/DocumentDetailsView.tsx:2192
+#: src/pages/folders/components/DocumentDetailsView.tsx:2419
+#: src/pages/folders/components/DocumentDetailsView.tsx:2421
 msgid "Edit file"
 msgstr "تحرير الملف"
 
@@ -5091,9 +5096,12 @@ msgstr "تحرير القائمة"
 msgid "Edit Menu Setup"
 msgstr "تحرير إعداد القائمة"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:2474
+#: src/pages/folders/components/DocumentDetailsView.tsx:2481
 #: src/pages/folders/components/DocumentsListView.tsx:1116
 #: src/pages/folders/components/EditMetadataView.tsx:402
 #: src/pages/folders/components/FolderTable.tsx:1529
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:36
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:111
 msgid "Edit Metadata"
 msgstr "تعديل البيانات الوصفية"
@@ -5445,7 +5453,7 @@ msgstr ""
 msgid "Error starting workflow"
 msgstr "خطأ في بدء سير العمل"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1478
+#: src/pages/folders/components/DocumentDetailsView.tsx:1680
 msgid "Error updating document: {detail}"
 msgstr "خطأ في تحديث المستند: {detail}"
 
@@ -5526,10 +5534,10 @@ msgstr "سجلات أمر الشراء الموجودة"
 msgid "Existing requests"
 msgstr "الطلبات الحالية"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2266
-#: src/pages/folders/components/DocumentDetailsView.tsx:2287
-#: src/pages/folders/components/DocumentDetailsView.tsx:3574
-#: src/pages/folders/components/DocumentDetailsView.tsx:3577
+#: src/pages/folders/components/DocumentDetailsView.tsx:2507
+#: src/pages/folders/components/DocumentDetailsView.tsx:2528
+#: src/pages/folders/components/DocumentDetailsView.tsx:3835
+#: src/pages/folders/components/DocumentDetailsView.tsx:3838
 msgid "Exit Signing"
 msgstr ""
 
@@ -5768,7 +5776,7 @@ msgstr "فشل تصنيف المستند"
 msgid "Failed to complete signing process"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1481
+#: src/pages/requests/RequestsPage.tsx:1486
 msgid "Failed to connect watch email."
 msgstr ""
 
@@ -5785,7 +5793,7 @@ msgstr "فشل إنشاء المجلد: {0}"
 msgid "Failed to create Master Form: {0}"
 msgstr "فشل إنشاء النموذج الرئيسي: {0}"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2527
+#: src/pages/folders/components/DocumentDetailsView.tsx:2769
 #: src/pages/sign-request/SignRequestInvitePage.tsx:311
 msgid "Failed to decline sign request"
 msgstr ""
@@ -5911,7 +5919,7 @@ msgstr ""
 #~ msgid "Failed to move this request."
 #~ msgstr "فشل نقل هذا الطلب."
 
-#: src/pages/requests/RequestsPage.tsx:1468
+#: src/pages/requests/RequestsPage.tsx:1473
 msgid "Failed to obtain sign-in URL from server."
 msgstr ""
 
@@ -5945,7 +5953,7 @@ msgstr "فشلت معالجة الملف"
 msgid "Failed to revoke"
 msgstr "فشل الإلغاء"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1476
+#: src/pages/folders/components/DocumentDetailsView.tsx:1678
 msgid "Failed to save document edits"
 msgstr "فشل في حفظ تعديلات المستند"
 
@@ -5974,7 +5982,7 @@ msgstr "فشل إرسال OTP. يرجى المحاولة مرة أخرى."
 msgid "Failed to share dashboard"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2406
+#: src/pages/folders/components/DocumentDetailsView.tsx:2647
 msgid "Failed to share file"
 msgstr ""
 
@@ -6015,6 +6023,10 @@ msgstr "فشل إرسال الطلب: {0}"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2063
 msgid "Failed to update folder: {0}"
 msgstr "فشل تحديث المجلد: {0}"
+
+#: src/pages/folders/components/DocumentDetailsView.tsx:879
+msgid "Failed to update metadata"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2019
 msgid "Failed to upload master file to the server"
@@ -6191,12 +6203,12 @@ msgstr ""
 msgid "File Selected"
 msgstr "تم تحديد الملف"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2399
+#: src/pages/folders/components/DocumentDetailsView.tsx:2640
 #: src/pages/folders/components/FolderSharePopover.tsx:513
 msgid "File shared and sign request sent successfully"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2400
+#: src/pages/folders/components/DocumentDetailsView.tsx:2641
 #: src/pages/folders/components/FolderSharePopover.tsx:514
 #: src/pages/folders/components/ShareView.tsx:185
 msgid "File shared successfully"
@@ -6484,7 +6496,7 @@ msgstr "تم تحديث المجلد بنجاح."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:30
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
-#: src/pages/folders/components/FolderExplorer.tsx:621
+#: src/pages/folders/components/FolderExplorer.tsx:632
 #: src/pages/search/SearchPage.tsx:328
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:74
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
@@ -6600,7 +6612,7 @@ msgstr ""
 msgid "found in your PO Master data. Choose how"
 msgstr "وجدت في بيانات أمر الشراء الرئيسي الخاص بك. اختر كيف"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:918
+#: src/pages/folders/components/DocumentDetailsView.tsx:1122
 msgid "From"
 msgstr ""
 
@@ -7411,7 +7423,7 @@ msgstr ""
 #~ msgid "Intelligent Upload"
 #~ msgstr "التحميل الذكي"
 
-#: src/pages/folders/components/FolderExplorer.tsx:630
+#: src/pages/folders/components/FolderExplorer.tsx:641
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:798
 msgid "Intelligent Upload & Classify"
 msgstr "التحميل والتصنيف الذكي"
@@ -7541,7 +7553,7 @@ msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 msgid "Invoice Extracted Line Item"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2727
+#: src/pages/folders/components/DocumentDetailsView.tsx:2971
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6738
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
@@ -8107,8 +8119,8 @@ msgstr "جارٍ تحميل المرفقات..."
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2913
-#: src/pages/folders/components/DocumentDetailsView.tsx:2919
+#: src/pages/folders/components/DocumentDetailsView.tsx:3157
+#: src/pages/folders/components/DocumentDetailsView.tsx:3163
 msgid "Loading comments..."
 msgstr "جاري تحميل التعليقات..."
 
@@ -8125,6 +8137,7 @@ msgstr "جاري تحميل المستند..."
 msgid "Loading field data…"
 msgstr "جارٍ تحميل البيانات الميدانية..."
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:55
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:322
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:104
 msgid "Loading fields..."
@@ -8174,7 +8187,7 @@ msgstr "جارٍ تحميل القوائم..."
 msgid "Loading notifications..."
 msgstr "جارٍ تحميل الإشعارات..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2908
+#: src/pages/folders/components/DocumentDetailsView.tsx:3152
 msgid "Loading older comments..."
 msgstr "جارٍ تحميل التعليقات القديمة..."
 
@@ -8198,8 +8211,8 @@ msgstr "جارٍ تحميل المعاينة..."
 msgid "Loading recipient email..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3179
-#: src/pages/folders/components/DocumentDetailsView.tsx:3185
+#: src/pages/folders/components/DocumentDetailsView.tsx:3423
+#: src/pages/folders/components/DocumentDetailsView.tsx:3429
 msgid "Loading related documents..."
 msgstr "جارٍ تحميل المستندات ذات الصلة…"
 
@@ -8231,7 +8244,7 @@ msgstr "جاري تحميل خيارات المشاركة..."
 msgid "Loading sign request..."
 msgstr "جارٍ تحميل طلب التوقيع…"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2796
+#: src/pages/folders/components/DocumentDetailsView.tsx:3040
 msgid "Loading timeline..."
 msgstr "جاري تحميل الجدول الزمني..."
 
@@ -8524,7 +8537,7 @@ msgstr "وضع الكل كمقروء"
 #~ msgid "Mark as optional"
 #~ msgstr "تعليم كاختياري"
 
-#: src/pages/requests/components/GridView.tsx:1799
+#: src/pages/requests/components/GridView.tsx:1806
 msgid "Mark as Paid"
 msgstr "وضع علامة على أنه مدفوع"
 
@@ -8788,6 +8801,10 @@ msgstr "البيانات الوصفية"
 msgid "Metadata fields"
 msgstr "حقول البيانات الوصفية"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:897
+msgid "Metadata updated successfully."
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/history/History.tsx:173
 msgid "Metadata validated, no duplicates found"
 msgstr "تم التحقق من صحة البيانات الوصفية، ولم يتم العثور على أي تكرارات"
@@ -8859,7 +8876,7 @@ msgstr ""
 msgid "Mismatches Found"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2305
+#: src/pages/folders/components/DocumentDetailsView.tsx:2546
 #: src/pages/folders/components/ShareView.tsx:137
 msgid "Missing file context for share"
 msgstr "سياق الملف مفقود للمشاركة"
@@ -9041,8 +9058,8 @@ msgstr "يجب أن يحتوي على:"
 msgid "My Account"
 msgstr "حسابي"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2431
-#: src/pages/folders/components/DocumentDetailsView.tsx:2460
+#: src/pages/folders/components/DocumentDetailsView.tsx:2672
+#: src/pages/folders/components/DocumentDetailsView.tsx:2701
 msgid "My Sign"
 msgstr "علامة بلدي"
 
@@ -9148,7 +9165,7 @@ msgstr ""
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
 #: src/pages/requests/components/request/components/Header.tsx:1880
-#: src/pages/requests/RequestsPage.tsx:1891
+#: src/pages/requests/RequestsPage.tsx:1896
 msgid "New"
 msgstr "جديد"
 
@@ -9286,7 +9303,7 @@ msgstr "لا يوجد عوامل نشطة"
 msgid "No activity recorded"
 msgstr "لا يوجد نشاط مسجل"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2891
+#: src/pages/folders/components/DocumentDetailsView.tsx:3135
 msgid "No activity timeline is available for this document."
 msgstr "لا يوجد جدول زمني للنشاط لهذا المستند."
 
@@ -9335,11 +9352,11 @@ msgstr "لم يتم العثور على أعمدة"
 msgid "No columns match search"
 msgstr "لا توجد أعمدة تطابق البحث"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3074
+#: src/pages/folders/components/DocumentDetailsView.tsx:3318
 msgid "No comments are available for this document. Add the first comment to start collaboration."
 msgstr "لا توجد تعليقات لهذا المستند. أضف أول تعليق لبدء التعاون."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3076
+#: src/pages/folders/components/DocumentDetailsView.tsx:3320
 msgid "No comments found"
 msgstr "لم يتم العثور على تعليقات"
 
@@ -9627,6 +9644,7 @@ msgid "No menus yet"
 msgstr "لا توجد قوائم حتى الآن"
 
 #: src/pages/folders/components/EditMetadataView.tsx:466
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:78
 msgid "No metadata fields available"
 msgstr "لا توجد حقول بيانات وصفية متاحة"
 
@@ -9680,7 +9698,7 @@ msgstr "لم يتم العثور على مهام سير عمل منشورة."
 msgid "No recommendations available."
 msgstr "لا توجد توصيات متاحة."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3362
+#: src/pages/folders/components/DocumentDetailsView.tsx:3606
 msgid "No related documents are linked with this file yet."
 msgstr "لا توجد مستندات مرتبطة بهذا الملف بعد."
 
@@ -9814,7 +9832,7 @@ msgstr "لا يوجد حساب طرف ثالث مطلوب"
 msgid "No timeline data for this period."
 msgstr "لا توجد بيانات الجدول الزمني لهذه الفترة."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2893
+#: src/pages/folders/components/DocumentDetailsView.tsx:3137
 msgid "No timeline found"
 msgstr "لم يتم العثور على جدول زمني"
 
@@ -10088,7 +10106,7 @@ msgstr ""
 msgid "Open draft files"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1507
+#: src/pages/folders/components/DocumentDetailsView.tsx:1709
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:539
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:544
 msgid "Open file"
@@ -10911,6 +10929,10 @@ msgstr ""
 #~ msgid "Please fill required field(s): {names}"
 #~ msgstr "يرجى ملء الحقل (الحقول) المطلوب(ة): {names}"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:850
+msgid "Please fill the mandatory fields: {names}"
+msgstr ""
+
 #: src/pages/settings/helpers/requiredFieldErrors.ts:15
 #~ msgid "Please fill the required field: {0}"
 #~ msgstr "يرجى ملء الحقل المطلوب: {0}"
@@ -10975,13 +10997,13 @@ msgstr "يرجى تسجيل الدخول بالبريد الذي أُرسل إل
 msgid "Please place at least one signature box before submitting."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2345
+#: src/pages/folders/components/DocumentDetailsView.tsx:2586
 #: src/pages/folders/components/ShareView.tsx:153
 msgid "Please review this file"
 msgstr "يرجى مراجعة هذا الملف"
 
 #. placeholder {0}: data.fileName
-#: src/pages/folders/components/DocumentDetailsView.tsx:2344
+#: src/pages/folders/components/DocumentDetailsView.tsx:2585
 msgid "Please review this file: {0}"
 msgstr "الرجاء مراجعة هذا الملف: {0}"
 
@@ -11062,7 +11084,7 @@ msgstr ""
 msgid "Please sign this document"
 msgstr "يرجى توقيع هذا المستند"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2357
+#: src/pages/folders/components/DocumentDetailsView.tsx:2598
 msgid "Please sign this document. You can place your signature anywhere."
 msgstr "الرجاء التوقيع على هذه الوثيقة. يمكنك وضع توقيعك في أي مكان."
 
@@ -11397,7 +11419,7 @@ msgstr "التفضيلات"
 msgid "Prepare your file"
 msgstr "جهّز ملفك"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2210
+#: src/pages/folders/components/DocumentDetailsView.tsx:2439
 msgid "Preparing redacted file..."
 msgstr ""
 
@@ -11494,8 +11516,8 @@ msgstr "طباعة"
 msgid "Print documents"
 msgstr "طباعة المستندات"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2211
-#: src/pages/folders/components/DocumentDetailsView.tsx:2215
+#: src/pages/folders/components/DocumentDetailsView.tsx:2440
+#: src/pages/folders/components/DocumentDetailsView.tsx:2444
 msgid "Print file"
 msgstr "طباعة الملف"
 
@@ -11904,7 +11926,7 @@ msgstr "جاهز للاستخدام"
 msgid "Real-Time Dashboard"
 msgstr "لوحة معلومات فورية"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2499
+#: src/pages/folders/components/DocumentDetailsView.tsx:2740
 msgid "Reason for declining"
 msgstr ""
 
@@ -11916,7 +11938,7 @@ msgstr ""
 #~ msgid "Receive transparent confidence rankings for top candidate repository matches."
 #~ msgstr "احصل على تصنيفات ثقة شفافة لأفضل مطابقات المستودعات المرشحة."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:929
+#: src/pages/folders/components/DocumentDetailsView.tsx:1131
 #: src/pages/folders/components/Upload/Upload.tsx:1367
 msgid "Received"
 msgstr "مستلم"
@@ -11988,7 +12010,7 @@ msgstr "التكرار"
 #~ msgid "Recv Qty"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3549
+#: src/pages/folders/components/DocumentDetailsView.tsx:3810
 msgid "Redacted"
 msgstr ""
 
@@ -12077,11 +12099,11 @@ msgstr "رفض المعاملة"
 msgid "Rejected"
 msgstr "مرفوض"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1854
+#: src/pages/folders/components/DocumentDetailsView.tsx:2056
 msgid "Related Docs"
 msgstr "مستندات ذات صلة"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3364
+#: src/pages/folders/components/DocumentDetailsView.tsx:3608
 msgid "Related documents not found"
 msgstr "لم يتم العثور على مستندات ذات صلة"
 
@@ -12143,8 +12165,8 @@ msgstr ""
 msgid "Remove file"
 msgstr "إزالة الملف"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3326
-#: src/pages/folders/components/DocumentDetailsView.tsx:3330
+#: src/pages/folders/components/DocumentDetailsView.tsx:3570
+#: src/pages/folders/components/DocumentDetailsView.tsx:3574
 msgid "Remove from related"
 msgstr "إزالة من ذات الصلة"
 
@@ -12164,7 +12186,7 @@ msgstr "إزالة الموقّع"
 msgid "Remove tab"
 msgstr "إزالة علامة التبويب"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:633
+#: src/pages/folders/components/DocumentDetailsView.tsx:673
 msgid "Removed from related"
 msgstr "تمت الإزالة من ذات الصلة"
 
@@ -12875,8 +12897,9 @@ msgid "SAP Table Field Mapping"
 msgstr "تعيين حقول جدول SAP"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:291
-#: src/pages/folders/components/DocumentDetailsView.tsx:2465
-#: src/pages/folders/components/DocumentDetailsView.tsx:2487
+#: src/pages/folders/components/DocumentDetailsView.tsx:2413
+#: src/pages/folders/components/DocumentDetailsView.tsx:2706
+#: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1922
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
@@ -13004,7 +13027,7 @@ msgstr ""
 msgid "Saved ({0})"
 msgstr "تم الحفظ ({0})"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2120
+#: src/pages/folders/components/DocumentDetailsView.tsx:2322
 msgid "Saved signature removed."
 msgstr "تمت إزالة التوقيع المحفوظ."
 
@@ -13012,7 +13035,8 @@ msgstr "تمت إزالة التوقيع المحفوظ."
 #~ msgid "Saved to stage"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2484
+#: src/pages/folders/components/DocumentDetailsView.tsx:2413
+#: src/pages/folders/components/DocumentDetailsView.tsx:2725
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/folders/components/Upload/Upload.tsx:4700
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1225
@@ -13439,7 +13463,7 @@ msgstr ""
 #~ msgid "Select a folder"
 #~ msgstr "حدد مجلداً"
 
-#: src/pages/folders/components/FolderExplorer.tsx:668
+#: src/pages/folders/components/FolderExplorer.tsx:679
 msgid "Select a folder before uploading."
 msgstr ""
 
@@ -13447,8 +13471,8 @@ msgstr ""
 #~ msgid "Select a form"
 #~ msgstr "حدد نموذجاً"
 
-#: src/pages/folders/components/FolderExplorer.tsx:681
-#: src/pages/folders/components/FolderExplorer.tsx:695
+#: src/pages/folders/components/FolderExplorer.tsx:692
+#: src/pages/folders/components/FolderExplorer.tsx:706
 msgid "Select a repository before uploading."
 msgstr "حدد مستودعًا قبل التحميل."
 
@@ -13837,7 +13861,7 @@ msgstr ""
 msgid "Semantic Classification"
 msgstr "التصنيف الدلالي"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2486
+#: src/pages/folders/components/DocumentDetailsView.tsx:2727
 #: src/pages/forms/components/AiFormBuilder.tsx:227
 #: src/pages/portal/components/PortalWizardChat.tsx:298
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2200
@@ -14024,7 +14048,7 @@ msgstr "الخطورة"
 #: src/components/common/SharePopover.tsx:330
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/dashboard/DashboardPage.tsx:352
-#: src/pages/folders/components/DocumentDetailsView.tsx:2298
+#: src/pages/folders/components/DocumentDetailsView.tsx:2539
 #: src/pages/folders/components/DocumentsListView.tsx:1127
 #: src/pages/folders/components/FolderFilterBar.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:554
@@ -14246,8 +14270,8 @@ msgid "Sign"
 msgstr "توقيع"
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:323
-#: src/pages/folders/components/DocumentDetailsView.tsx:2266
-#: src/pages/folders/components/DocumentDetailsView.tsx:2287
+#: src/pages/folders/components/DocumentDetailsView.tsx:2507
+#: src/pages/folders/components/DocumentDetailsView.tsx:2528
 msgid "Sign Document"
 msgstr ""
 
@@ -14320,7 +14344,7 @@ msgstr ""
 msgid "Sign out"
 msgstr "تسجيل الخروج"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:949
+#: src/pages/folders/components/DocumentDetailsView.tsx:1151
 msgid "Sign Request"
 msgstr ""
 
@@ -14328,12 +14352,12 @@ msgstr ""
 msgid "Sign request declined"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2397
+#: src/pages/folders/components/DocumentDetailsView.tsx:2638
 #: src/pages/folders/components/FolderSharePopover.tsx:511
 msgid "Sign request sent successfully"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2148
+#: src/pages/folders/components/DocumentDetailsView.tsx:2350
 msgid "Sign request sent. Assigned places stay visible on the document."
 msgstr "تم إرسال طلب التوقيع. تظل الأماكن المخصصة مرئية في المستند."
 
@@ -14342,7 +14366,7 @@ msgstr "تم إرسال طلب التوقيع. تظل الأماكن المخص�
 msgid "Sign Up"
 msgstr "إنشاء حساب"
 
-#: src/pages/requests/RequestsPage.tsx:1674
+#: src/pages/requests/RequestsPage.tsx:1679
 msgid "Sign-in or watch creation failed."
 msgstr ""
 
@@ -14363,13 +14387,13 @@ msgstr "طرق التوقيع"
 msgid "Signature placed on document."
 msgstr "التوقيع يوضع على الوثيقة"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2131
+#: src/pages/folders/components/DocumentDetailsView.tsx:2333
 msgid "Signature saved for reuse."
 msgstr "تم حفظ التوقيع لإعادة الاستخدام."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2017
-#: src/pages/folders/components/DocumentDetailsView.tsx:2110
-#: src/pages/folders/components/DocumentDetailsView.tsx:2704
+#: src/pages/folders/components/DocumentDetailsView.tsx:2219
+#: src/pages/folders/components/DocumentDetailsView.tsx:2312
+#: src/pages/folders/components/DocumentDetailsView.tsx:2946
 msgid "Signature submitted successfully."
 msgstr "تم إرسال التوقيع بنجاح."
 
@@ -14540,7 +14564,7 @@ msgstr "نوع المصدر"
 msgid "Source: Manual Entry"
 msgstr "المصدر: الإدخال اليدوي"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3528
+#: src/pages/folders/components/DocumentDetailsView.tsx:3789
 msgid "Source: OCR Document"
 msgstr "المصدر: وثيقة التعرف الضوئي على الحروف"
 
@@ -14568,13 +14592,13 @@ msgstr "المرحلة غير متوفرة"
 msgid "Staged"
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:242
+#: src/pages/folders/components/FolderExplorer.tsx:253
 #: src/pages/folders/components/Upload/Upload.tsx:2582
 #: src/pages/folders/components/Upload/Upload.tsx:3768
 msgid "Staged file deleted."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:324
+#: src/pages/folders/components/FolderExplorer.tsx:335
 msgid "Staged file exported successfully."
 msgstr ""
 
@@ -14609,8 +14633,8 @@ msgstr "ابدأ البحث"
 msgid "Start typing to search"
 msgstr "ابدأ الكتابة للبحث"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2245
-#: src/pages/folders/components/DocumentDetailsView.tsx:2251
+#: src/pages/folders/components/DocumentDetailsView.tsx:2486
+#: src/pages/folders/components/DocumentDetailsView.tsx:2492
 #: src/pages/folders/components/DocumentsListView.tsx:1133
 #: src/pages/folders/components/FolderTable.tsx:1546
 msgid "Start Workflow"
@@ -14635,7 +14659,7 @@ msgstr "اتجاه الائتمان الثابت لـ {selectedMonth}"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1040
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2182
-#: src/pages/folders/components/DocumentDetailsView.tsx:935
+#: src/pages/folders/components/DocumentDetailsView.tsx:1137
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:192
@@ -15293,6 +15317,10 @@ msgstr ""
 msgid "The passwords don't match. Please try again."
 msgstr ""
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:80
+msgid "The repository did not return editable metadata fields."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:552
 msgid "The request was created, but the comments could not be saved."
 msgstr ""
@@ -15419,7 +15447,7 @@ msgstr ""
 msgid "This file still has expired or invalid fields ({0}). Do you want to export?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1890
+#: src/pages/folders/components/DocumentDetailsView.tsx:2092
 msgid "This file was deleted. Kindly try a new file."
 msgstr ""
 
@@ -15467,7 +15495,7 @@ msgstr "رابط البوابة هذا غير صالح أو لم يتم نشره
 msgid "This quote has no line items to compare against Quote 1."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:611
+#: src/pages/folders/components/DocumentDetailsView.tsx:651
 msgid "This related document cannot be removed."
 msgstr "لا يمكن إزالة هذه الوثيقة ذات الصلة."
 
@@ -15491,7 +15519,7 @@ msgstr "ينقص هذا الطلب بعض التفاصيل المطلوبة لل
 msgid "This request is missing an instance id."
 msgstr "يفتقد هذا الطلب معرف المثيل."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3142
+#: src/pages/folders/components/DocumentDetailsView.tsx:3386
 msgid "This result cannot be added to related documents."
 msgstr "لا يمكن إضافة هذه النتيجة إلى المستندات ذات الصلة."
 
@@ -15567,7 +15595,7 @@ msgstr "تشغيل الوقت"
 msgid "Timeframe"
 msgstr "الإطار الزمني"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1842
+#: src/pages/folders/components/DocumentDetailsView.tsx:2044
 msgid "Timeline"
 msgstr "الجدول الزمني"
 
@@ -15584,7 +15612,7 @@ msgstr "المنطقة الزمنية"
 #~ msgid "Tip: switch this on to make the field mandatory."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:925
+#: src/pages/folders/components/DocumentDetailsView.tsx:1127
 msgid "To"
 msgstr ""
 
@@ -15600,7 +15628,7 @@ msgstr "إلى سلة المهملات؟"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:655
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2387
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2401
-#: src/pages/folders/components/DocumentDetailsView.tsx:2979
+#: src/pages/folders/components/DocumentDetailsView.tsx:3223
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "اليوم"
@@ -15882,12 +15910,12 @@ msgstr "تعذر إنشاء طلب التوقيع"
 msgid "Unable to create this request."
 msgstr "غير قادر على إنشاء هذا الطلب."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1750
-#: src/pages/folders/components/DocumentDetailsView.tsx:1762
-#: src/pages/folders/components/DocumentDetailsView.tsx:1769
-#: src/pages/folders/components/DocumentDetailsView.tsx:1785
-#: src/pages/folders/components/DocumentDetailsView.tsx:3289
-#: src/pages/folders/components/DocumentDetailsView.tsx:3311
+#: src/pages/folders/components/DocumentDetailsView.tsx:1952
+#: src/pages/folders/components/DocumentDetailsView.tsx:1964
+#: src/pages/folders/components/DocumentDetailsView.tsx:1971
+#: src/pages/folders/components/DocumentDetailsView.tsx:1987
+#: src/pages/folders/components/DocumentDetailsView.tsx:3533
+#: src/pages/folders/components/DocumentDetailsView.tsx:3555
 msgid "Unable to download file"
 msgstr "تعذر تنزيل الملف"
 
@@ -15907,7 +15935,7 @@ msgstr "غير قادر على تحميل النشاط."
 msgid "Unable to load AI summary"
 msgstr "غير قادر على تحميل ملخص AI"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1004
+#: src/pages/folders/components/DocumentDetailsView.tsx:1206
 msgid "Unable to load document details"
 msgstr "تعذر تحميل تفاصيل المستند"
 
@@ -15947,7 +15975,7 @@ msgstr "تعذر فتح طلب التوقيع"
 msgid "Unable to preview document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1827
+#: src/pages/folders/components/DocumentDetailsView.tsx:2029
 msgid "Unable to print file"
 msgstr ""
 
@@ -15962,7 +15990,7 @@ msgstr "غير قادر على معالجة هذا المستند."
 #~ msgid "Unable to read the selected file."
 #~ msgstr "تعذر قراءة الملف المحدد."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:640
+#: src/pages/folders/components/DocumentDetailsView.tsx:680
 msgid "Unable to remove related document"
 msgstr "غير قادر على إزالة المستند ذي الصلة"
 
@@ -16090,7 +16118,7 @@ msgid "Unsupported file type. Please upload a CSV or XLSX file."
 msgstr "نوع ملف غير مدعوم. يرجى رفع ملف CSV أو XLSX."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:118
-#: src/pages/folders/components/DocumentDetailsView.tsx:529
+#: src/pages/folders/components/DocumentDetailsView.tsx:569
 #: src/pages/folders/components/ShareView.tsx:263
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1098
 msgid "Untitled"
@@ -16190,7 +16218,7 @@ msgid "Upgrading…"
 msgstr "جارٍ الترقية…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2026
-#: src/pages/folders/components/FolderExplorer.tsx:627
+#: src/pages/folders/components/FolderExplorer.tsx:638
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:317
 #: src/pages/folders/components/Upload/Upload.tsx:4048
@@ -16442,7 +16470,7 @@ msgstr "استخدم حقل كلمة مرور تسجيل الدخول من ال�
 #~ msgid "Use this report"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2931
+#: src/pages/folders/components/DocumentDetailsView.tsx:3175
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:254
 #: src/pages/settings/components/AuditMonitoring.tsx:331
 #: src/pages/settings/components/AuditMonitoring.tsx:332
@@ -17154,7 +17182,7 @@ msgstr "نعم"
 msgid "Yes, Delete"
 msgstr "نعم, Delete"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2981
+#: src/pages/folders/components/DocumentDetailsView.tsx:3225
 #: src/pages/settings/components/credits/Credits.tsx:59
 msgid "Yesterday"
 msgstr "أمس"
@@ -17165,7 +17193,7 @@ msgstr "أمس"
 msgid "You"
 msgstr "أنت"
 
-#: src/pages/requests/RequestsPage.tsx:1957
+#: src/pages/requests/RequestsPage.tsx:1962
 msgid "You can close this tab or return to the main window."
 msgstr ""
 
@@ -17177,7 +17205,7 @@ msgstr "ليس لديك حق الوصول. امتيازات المسؤول مط�
 msgid "You do not have access. Admin privileges are required to save security policies."
 msgstr "ليس لديك حق الوصول. امتيازات المسؤول مطلوبة لحفظ سياسات الأمان."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2330
+#: src/pages/folders/components/DocumentDetailsView.tsx:2571
 msgid "You do not have permission to send for signature."
 msgstr "ليس لديك إذن للإرسال للتوقيع."
 
@@ -17222,7 +17250,7 @@ msgstr "سيبدأ وكيل الذكاء الاصطناعي بمراقبة بر�
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1940
+#: src/pages/requests/RequestsPage.tsx:1945
 msgid "Your mailbox has been connected and the enquiry watch is active."
 msgstr ""
 
