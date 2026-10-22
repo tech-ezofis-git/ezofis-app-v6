@@ -107,6 +107,7 @@ export function FolderExplorer() {
   >(undefined)
   const [pendingRepositoryData, setPendingRepositoryData] = useState<any>(null)
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
+  const [pendingOpenMetadataEdit, setPendingOpenMetadataEdit] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     fileName?: string
     id: string
@@ -141,6 +142,7 @@ export function FolderExplorer() {
   const openShareForFile = useCallback(
     (fileId: string) => {
       setPendingOpenShare(true)
+      setPendingOpenMetadataEdit(false)
       setDetailsDocument(null)
       openFileAction(fileId, 'details')
     },
@@ -161,6 +163,14 @@ export function FolderExplorer() {
           trimmedId.startsWith('staged-') ? trimmedId : `staged-${trimmedId}`,
         )
         setAppView('Upload')
+        return
+      }
+      // Edit Metadata opens the details view directly in inline edit mode.
+      if (targetView === 'editMetadata') {
+        setPendingOpenShare(false)
+        setPendingOpenMetadataEdit(true)
+        setDetailsDocument(null)
+        openFileAction(trimmedId, 'details')
         return
       }
       openFileAction(trimmedId, targetView)
@@ -200,6 +210,7 @@ export function FolderExplorer() {
       } else {
         setDetailsDocument(null)
       }
+      setPendingOpenMetadataEdit(false)
       openFile(trimmedId)
     },
     [activeFolder, files, openFile, setAppView],
@@ -731,14 +742,17 @@ export function FolderExplorer() {
 
     return (
       <DocumentDetailsView
+        autoOpenMetadataEdit={pendingOpenMetadataEdit}
         autoOpenShare={pendingOpenShare}
         fileName={detailsDocument?.fileName}
         id={detailsId}
+        metadataRow={getSelectedFileRow(detailsId)}
         permissions={folderPermissions}
         repositoryId={detailsRepositoryId}
         onAiSummary={() => setAppView('aiSummary')}
         onBack={() => {
           setPendingOpenShare(false)
+          setPendingOpenMetadataEdit(false)
           setDetailsDocument(null)
           setAppView('explorer')
         }}
@@ -747,11 +761,14 @@ export function FolderExplorer() {
             ? () => setAppView('editMetadata')
             : undefined
         }
+        onMetadataEditOpened={() => setPendingOpenMetadataEdit(false)}
+        onMetadataSaved={() => void refreshData()}
         onOpenRelatedDocument={({
           id: relatedId,
           repositoryId: relatedRepoId,
         }) => {
           setPendingOpenShare(false)
+          setPendingOpenMetadataEdit(false)
           setDetailsDocument({
             id: relatedId,
             repositoryId: relatedRepoId,

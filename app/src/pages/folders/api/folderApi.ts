@@ -407,7 +407,7 @@ export const toPage = (paged?: PagedDto<any> | null): RepositoryFilePage => {
   }
 }
 
-const toFileColumns = (
+export const toFileColumns = (
   fields: RepositoryFieldDto[] = [],
 ): DynamicRepositoryColumn[] =>
   fields
@@ -803,9 +803,7 @@ const normalizeChildren = (
       groupValue: String(group.name),
       hasChildren: !isLeaf,
       // Last browse stage: file icon (not folder) in tree + list.
-      iconKey: isLeaf
-        ? 'fileText'
-        : fieldIconMap.get(groupField) || 'folder',
+      iconKey: isLeaf ? 'fileText' : fieldIconMap.get(groupField) || 'folder',
       isLeaf,
       itemCount: group.itemCount,
       level: response.level ?? Object.keys(currentFilters).length + 1,

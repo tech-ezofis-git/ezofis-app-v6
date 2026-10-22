@@ -14,6 +14,7 @@ import {
   getRepositoryById,
   persistEditedDocumentToRepository,
   type RepositoryFieldDto,
+  updateRepositoryItemMetadata,
   type UploadArchiveResponse,
 } from '@/api/v6/folder/folder'
 import {
@@ -29,11 +30,10 @@ import {
   submitSignRequest,
 } from '@/api/v6/folder/signRequest'
 import IconButton from '@/components/base/button/IconButton'
-import Icon from '@/components/base/icon/Icon'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
+import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
-import cn from '@/utils/cn'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   buildRedactedFileBlob,
@@ -47,6 +47,7 @@ import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
+import cn from '@/utils/cn'
 
 const getMilestoneIcon = (milestone?: string) => {
   switch (String(milestone || '').toLowerCase()) {
@@ -71,7 +72,19 @@ import {
   formatUtcToLocalDateTime,
   parseUtcDate,
 } from '@/utils/utcDate'
-import { folderApi } from '../api/folderApi'
+import {
+  type DynamicRepositoryColumn,
+  folderApi,
+  toFileColumns,
+} from '../api/folderApi'
+import {
+  getRawValue,
+  normalizeDateForInput,
+  normalizeType,
+  toBooleanValue,
+  toTextValue,
+  useEditMetadataForm,
+} from '../hooks/useEditMetadataForm'
 import {
   type DocumentPreviewKind,
   getFileExtension,
@@ -102,6 +115,7 @@ import {
 } from './DocumentSigningPage'
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
+import { InlineMetadataEditPanel } from './InlineMetadataEditPanel'
 import { Button, Card, PrimaryButton, StatusPill } from './Ui'
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
@@ -353,6 +367,7 @@ const toUiErrorMessage = (value: unknown, fallback: string) => {
 }
 
 export function DocumentDetailsView({
+  autoOpenMetadataEdit = false,
   autoOpenShare = false,
   compactActions = false,
   fileName = '',
@@ -360,6 +375,7 @@ export function DocumentDetailsView({
   id,
   invitePreview = null,
   inviteToken = '',
+  metadataRow,
   permissions,
   repositoryId,
   signatureFields: initialSignatureFieldsProp,
@@ -368,11 +384,15 @@ export function DocumentDetailsView({
   onAiSummary,
   onBack,
   onDecline,
+  onMetadataEditOpened,
+  onMetadataSaved,
   onOpenRelatedDocument,
   onShareOpened,
   onSigningComplete,
   onWorkflow,
 }: {
+  /** Open in inline metadata edit mode once loaded (list Edit Metadata action). */
+  autoOpenMetadataEdit?: boolean
   /** Open the Canva-style share popover on mount (list Share action). */
   autoOpenShare?: boolean
   /** Hide AI/Share/Workflow when opened from invite. */
@@ -385,6 +405,8 @@ export function DocumentDetailsView({
   /** Invite preview metadata — used when workspace API is not available. */
   invitePreview?: SignRequestInvitePreview | null
   inviteToken?: string
+  /** Raw list row for this file (sqlColumnName keys) to prefill metadata edit. */
+  metadataRow?: Record<string, any>
   permissions?: {
     checkIn?: boolean
     checkOut?: boolean
@@ -406,6 +428,10 @@ export function DocumentDetailsView({
   onBack?: () => void
   onDecline?: (reason: string) => Promise<void> | void
   onEdit?: () => void
+  /** The auto-opened metadata edit mode was entered. */
+  onMetadataEditOpened?: () => void
+  /** Metadata was saved inline; lets the caller refresh its listing. */
+  onMetadataSaved?: () => void
   /** Open a related file in details (use that row's repositoryId + id). */
   onOpenRelatedDocument?: (payload: {
     id: string
@@ -493,6 +519,20 @@ export function DocumentDetailsView({
   const canSendForSignature = permissions
     ? permissions.sendForSignature === true
     : true
+  const canEditMetadata =
+    !inviteToken && (permissions ? permissions.editMetadata === true : true)
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false)
+  /** Values snapshot the metadata form is prefilled from while editing. */
+  const [metadataEditSource, setMetadataEditSource] = useState<Record<
+    string,
+    any
+  > | null>(null)
+  const [metadataSaveError, setMetadataSaveError] = useState('')
+  const [metadataInvalidKeys, setMetadataInvalidKeys] = useState<string[]>([])
+  /** Values saved here, so a re-edit doesn't prefill a stale list row. */
+  const [savedMetadataValues, setSavedMetadataValues] = useState<
+    Record<string, string>
+  >({})
   const [assignedFields, setAssignedFields] = useState<SignRequestFieldDto[]>(
     () => initialSignatureFields,
   )
@@ -662,6 +702,8 @@ export function DocumentDetailsView({
   const [piiRepositoryFields, setPiiRepositoryFields] = useState<
     RepositoryFieldDto[]
   >([])
+  /** Repository id whose fields finished loading (success or failure). */
+  const [repositoryFieldsLoadedFor, setRepositoryFieldsLoadedFor] = useState('')
   useEffect(() => {
     let cancelled = false
     const loadFolderPii = async () => {
@@ -670,6 +712,7 @@ export function DocumentDetailsView({
         setPiiRepositoryFields([])
         return
       }
+      setRepositoryFieldsLoadedFor('')
       try {
         const response = await getRepositoryById(repositoryId)
         if (cancelled) return
@@ -688,6 +731,8 @@ export function DocumentDetailsView({
           setFolderPiiSettings(resolveFolderPiiSettings(repositoryId, null))
           setPiiRepositoryFields([])
         }
+      } finally {
+        if (!cancelled) setRepositoryFieldsLoadedFor(repositoryId)
       }
     }
     void loadFolderPii()
@@ -695,6 +740,165 @@ export function DocumentDetailsView({
       cancelled = true
     }
   }, [repositoryId])
+
+  // Metadata edit form fields come from the repository field configuration
+  // (raw fields carry optionsJson for dropdowns).
+  const metadataColumns = useMemo<DynamicRepositoryColumn[]>(
+    () =>
+      toFileColumns(piiRepositoryFields).map((column) => ({
+        ...(piiRepositoryFields.find((field) => field.id === column.fieldId) ??
+          {}),
+        ...column,
+      })),
+    [piiRepositoryFields],
+  )
+
+  const metadataForm = useEditMetadataForm(
+    metadataColumns,
+    metadataEditSource ?? undefined,
+  )
+
+  useEffect(() => {
+    setIsEditingMetadata(false)
+    setMetadataEditSource(null)
+    setMetadataSaveError('')
+    setMetadataInvalidKeys([])
+    setSavedMetadataValues({})
+  }, [id, repositoryId])
+
+  const toFormValue = (column: DynamicRepositoryColumn, raw: any) => {
+    const fieldType = normalizeType(column.dataType)
+    if (fieldType === 'date' || fieldType === 'datetime') {
+      return normalizeDateForInput(raw)
+    }
+    if (
+      fieldType === 'boolean' ||
+      fieldType === 'bool' ||
+      fieldType === 'checkbox'
+    ) {
+      return String(toBooleanValue(raw))
+    }
+    return toTextValue(raw)
+  }
+
+  const startMetadataEdit = () => {
+    const normalize = (value: string) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+    const labelValues = extractMetadataFromDetail(data)
+    const source: Record<string, any> = {}
+
+    // Prefer values saved here, then the raw list row, then the details panel.
+    for (const column of metadataColumns) {
+      const saved = savedMetadataValues[column.key]
+      const rowValue = getRawValue(metadataRow, column.key)
+      if (saved !== undefined) {
+        source[column.key] = saved
+      } else if (
+        rowValue !== '' &&
+        rowValue !== null &&
+        rowValue !== undefined
+      ) {
+        source[column.key] = rowValue
+      } else {
+        const match = Object.entries(labelValues).find(
+          ([label]) =>
+            normalize(label) === normalize(column.label || '') ||
+            normalize(label) === normalize(column.key),
+        )
+        if (match) source[column.key] = match[1]
+      }
+    }
+
+    setMetadataEditSource(source)
+    setMetadataSaveError('')
+    setMetadataInvalidKeys([])
+    setIsEditingMetadata(true)
+  }
+
+  // List "Edit Metadata" action: enter edit mode once details + fields load.
+  useEffect(() => {
+    if (!autoOpenMetadataEdit) return
+    if (!canEditMetadata) {
+      onMetadataEditOpened?.()
+      return
+    }
+    if (isEditingMetadata || loading || !data) return
+    if (repositoryFieldsLoadedFor !== repositoryId) return
+    startMetadataEdit()
+    onMetadataEditOpened?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenMetadataEdit, data, loading, repositoryFieldsLoadedFor])
+
+  const cancelMetadataEdit = () => {
+    if (metadataForm.saving) return
+    setIsEditingMetadata(false)
+    setMetadataEditSource(null)
+    setMetadataSaveError('')
+    setMetadataInvalidKeys([])
+  }
+
+  const saveMetadata = async (values: Record<string, any>) => {
+    const missing = metadataColumns.filter(
+      (column) =>
+        column.isMandatory && String(values[column.key] ?? '').trim() === '',
+    )
+    if (missing.length) {
+      const names = missing
+        .map((column) => column.label || column.key)
+        .join(', ')
+      setMetadataInvalidKeys(missing.map((column) => column.key))
+      setMetadataSaveError(t`Please fill the mandatory fields: ${names}`)
+      return
+    }
+    setMetadataInvalidKeys([])
+
+    // Send only the fields the user changed.
+    const changed: Record<string, string> = {}
+    for (const column of metadataColumns) {
+      const next = String(values[column.key] ?? '')
+      const initial = toFormValue(
+        column,
+        getRawValue(metadataEditSource ?? undefined, column.key),
+      )
+      if (next !== initial) changed[column.key] = next
+    }
+
+    if (!Object.keys(changed).length) {
+      cancelMetadataEdit()
+      return
+    }
+
+    setMetadataSaveError('')
+    const { error: saveError } = await updateRepositoryItemMetadata({
+      itemId: id,
+      metadata: changed,
+      repositoryId,
+    })
+
+    if (saveError) {
+      const message = toUiErrorMessage(saveError, t`Failed to update metadata`)
+      setMetadataSaveError(message)
+      showToast({ message, variant: 'error' })
+      return
+    }
+
+    // Reload details in place so the preview stays mounted.
+    try {
+      const latest = await folderApi.getDocumentDetail(repositoryId, id)
+      setData(latest as WorkspaceDocumentDetail)
+    } catch {
+      // Saved successfully; keep current details if the reload fails.
+    }
+
+    setSavedMetadataValues((previous) => ({ ...previous, ...changed }))
+    setIsEditingMetadata(false)
+    setMetadataEditSource(null)
+    showToast({
+      message: t`Metadata updated successfully.`,
+      variant: 'success',
+    })
+    onMetadataSaved?.()
+  }
 
   const folderPiiEnabled = folderPiiSettings.enabled
   // Folder security `piiRedaction` grants the original file. Everyone else sees the redacted preview.
@@ -917,9 +1121,7 @@ export function DocumentDetailsView({
             {
               label: t`From`,
               value:
-                invitePreview?.senderName ||
-                invitePreview?.senderEmail ||
-                '-',
+                invitePreview?.senderName || invitePreview?.senderEmail || '-',
             },
             {
               label: t`To`,
@@ -2184,7 +2386,34 @@ export function DocumentDetailsView({
         </div>
 
         <div className='flex shrink-0 items-center gap-1 sm:gap-1.5'>
-          {!compactActions ? (
+          {isEditingMetadata ? (
+            <div className='animate-in fade-in flex items-center gap-1.5 duration-200'>
+              <Button
+                className='h-8 px-3.5 text-[13px] font-semibold'
+                disabled={metadataForm.saving}
+                type='button'
+                onClick={cancelMetadataEdit}
+              >
+                {t`Cancel`}
+              </Button>
+              <PrimaryButton
+                className='h-8 px-3.5 text-[13px] font-semibold active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={metadataForm.saving || !metadataColumns.length}
+                type='button'
+                onClick={() => {
+                  if (metadataForm.saving) return
+                  void metadataForm.saveValues(saveMetadata)
+                }}
+              >
+                {metadataForm.saving ? (
+                  <Loader2 className='animate-spin' size={14} />
+                ) : (
+                  <DynamicIcon className='h-4 w-4' name='save' />
+                )}
+                {metadataForm.saving ? t`Saving...` : t`Save`}
+              </PrimaryButton>
+            </div>
+          ) : !compactActions ? (
             <>
               {isEditableDocType && canEditDocument ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
@@ -2240,6 +2469,18 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
+              {canEditMetadata ? (
+                <button
+                  aria-label={t`Edit Metadata`}
+                  className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
+                  disabled={loading || !data || isSigning}
+                  type='button'
+                  onClick={startMetadataEdit}
+                >
+                  <Icon className='size-4 text-blue-9' name='lucide:pencil' />
+                  <span className='hidden sm:inline'>{t`Edit Metadata`}</span>
+                </button>
+              ) : null}
               {onWorkflow ? (
                 <button
                   aria-label={t`Start Workflow`}
@@ -2416,9 +2657,9 @@ export function DocumentDetailsView({
           {activeInviteToken && onDecline ? (
             <button
               aria-label={t`Decline`}
+              className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-3 bg-red-1 px-3 text-[13px] font-semibold text-red-11 transition-all hover:border-red-5 hover:bg-red-2 hover:text-red-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
               disabled={isDeclining || isPreviewLoading}
               type='button'
-              className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-3 bg-red-1 px-3 text-[13px] font-semibold text-red-11 transition-all hover:border-red-5 hover:bg-red-2 hover:text-red-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
               onClick={() => setShowDeclineForm((prev) => !prev)}
             >
               <DynamicIcon className='h-4 w-4 text-red-9' name='x-circle' />
@@ -2499,32 +2740,33 @@ export function DocumentDetailsView({
                 {t`Reason for declining`}
               </label>
               <input
-                type='text'
                 className='mt-1 w-full max-w-lg rounded-md border border-red-4 bg-surface px-3 py-1.5 text-xs text-gray-13 placeholder:text-gray-8 focus:border-red-6 focus:outline-none'
                 placeholder={t`e.g. Not my document`}
+                type='text'
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}
               />
             </div>
             <div className='flex items-center gap-2 pt-2 sm:pt-0'>
               <button
-                type='button'
                 className='inline-flex h-8 items-center justify-center rounded-md border border-gray-4 bg-surface px-3 text-xs font-medium text-gray-11 hover:bg-gray-2'
+                type='button'
                 onClick={() => setShowDeclineForm(false)}
               >
                 {t`Cancel`}
               </button>
               <button
-                type='button'
-                disabled={isDeclining}
                 className='inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-red-9 px-3 text-xs font-semibold text-white hover:bg-red-10 disabled:opacity-50'
+                disabled={isDeclining}
+                type='button'
                 onClick={async () => {
                   setIsDeclining(true)
                   try {
                     await onDecline?.(declineReason.trim() || 'Not my document')
                   } catch (err: any) {
                     showToast({
-                      message: err?.message || t`Failed to decline sign request`,
+                      message:
+                        err?.message || t`Failed to decline sign request`,
                       variant: 'error',
                     })
                   } finally {
@@ -2721,7 +2963,9 @@ export function DocumentDetailsView({
             </Card>
 
             {hasLineItems ? (
-              <Card className={`overflow-hidden p-0 ${forceSigning ? 'shrink-0' : ''}`}>
+              <Card
+                className={`overflow-hidden p-0 ${forceSigning ? 'shrink-0' : ''}`}
+              >
                 <div className='border-b border-gray-3 px-5 py-4'>
                   <h3 className='text-[15px] font-semibold text-gray-13'>
                     {t`Invoice Line Items`}
@@ -3041,7 +3285,7 @@ export function DocumentDetailsView({
                                                 : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
                                             }`}
                                           >
-                                            <p className='text-amber-11 dark:text-amber-10 pb-1 text-[13px] leading-5 font-normal break-words whitespace-pre-wrap '>
+                                            <p className='text-amber-11 dark:text-amber-10 pb-1 text-[13px] leading-5 font-normal break-words whitespace-pre-wrap'>
                                               {message}
                                             </p>
 
@@ -3373,7 +3617,7 @@ export function DocumentDetailsView({
             ) : null}
           </main>
 
-          {infoCards.length > 0 || ticketData ? (
+          {isEditingMetadata || infoCards.length > 0 || ticketData ? (
             <aside
               className={`ez-detail-scroll min-w-0 ${
                 forceSigning
@@ -3381,7 +3625,24 @@ export function DocumentDetailsView({
                   : 'space-y-4 overflow-y-auto pr-2 pb-6'
               }`}
             >
-              {ticketData ? (
+              {isEditingMetadata ? (
+                <InlineMetadataEditPanel
+                  error={metadataSaveError}
+                  fields={metadataColumns}
+                  formValues={metadataForm.formValues}
+                  invalidKeys={metadataInvalidKeys}
+                  saving={metadataForm.saving}
+                  onChange={(key, value) => {
+                    metadataForm.updateFieldValue(key, value)
+                    if (metadataInvalidKeys.includes(key)) {
+                      setMetadataInvalidKeys((previous) =>
+                        previous.filter((item) => item !== key),
+                      )
+                    }
+                  }}
+                />
+              ) : null}
+              {!isEditingMetadata && ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
@@ -3483,7 +3744,7 @@ export function DocumentDetailsView({
                   </div>
                 </Card>
               ) : null}
-              {infoCards.map((card) => (
+              {(isEditingMetadata ? [] : infoCards).map((card) => (
                 <Card className='overflow-hidden p-0' key={card.id}>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
@@ -3547,7 +3808,7 @@ export function DocumentDetailsView({
                             {maskField ? (
                               <b
                                 aria-label={t`Redacted`}
-                                className='block whitespace-nowrap font-mono text-[13px] font-semibold text-gray-13'
+                                className='block font-mono text-[13px] font-semibold whitespace-nowrap text-gray-13'
                               >
                                 {`*****${maskedTail}`}
                               </b>
