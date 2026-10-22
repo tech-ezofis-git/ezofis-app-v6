@@ -54,6 +54,50 @@ import { resolveShareContext } from '../utils/shareContextStorage'
 
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
+/** Normal (unsearched) listing, kept apart from search results. */
+type BaseListingSnapshot = {
+  filePage?: RepositoryFilePage
+  files: FileItem[]
+  filterKey: string
+  folderId: string
+  folderPage: FolderPageMeta
+  folders: FolderItem[]
+  listAllFiles: boolean
+}
+
+const toFilterKey = (
+  file: Record<string, string>,
+  folder: Record<string, string>,
+) => JSON.stringify({ file, folder })
+
+/**
+ * Keep already-loaded matches, then append only API records not yet present.
+ * When the API result is paged, local-only matches may sit on a later API
+ * page, so only matches the API also returned are kept to avoid duplicates.
+ */
+const mergeSearchResults = <T>(
+  existingMatches: T[],
+  apiResults: T[],
+  getId: (item: T) => string,
+  isComplete: boolean,
+) => {
+  const apiIds = new Set(apiResults.map(getId).filter(Boolean))
+  const merged = new Map<string, T>()
+  const withoutId: T[] = []
+
+  for (const item of existingMatches) {
+    const id = getId(item)
+    if (id && (isComplete || apiIds.has(id))) merged.set(id, item)
+  }
+  for (const item of apiResults) {
+    const id = getId(item)
+    if (!id) withoutId.push(item)
+    else if (!merged.has(id)) merged.set(id, item)
+  }
+
+  return [...merged.values(), ...withoutId]
+}
+
 export function useFolderExplorer() {
   const embedMode = useEmbedMode()
   const storedState = useMemo(() => {
@@ -144,6 +188,12 @@ export function useFolderExplorer() {
   >({})
   const [currentFolderGroupField, setCurrentFolderGroupField] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  /** Search terms the current files/folders were resolved for by the API. */
+  const [appliedSearch, setAppliedSearch] = useState({
+    fileSearch: '',
+    folderSearch: '',
+  })
+  const baseListingRef = useRef<BaseListingSnapshot | null>(null)
   const cursorByFolderRef = useRef<
     Record<string, Record<number, string | null>>
   >({})
@@ -180,10 +230,7 @@ export function useFolderExplorer() {
   fileSearchRef.current = fileSearch
 
   const getFilterSnapshot = () =>
-    JSON.stringify({
-      file: fileFiltersRef.current,
-      folder: folderFiltersRef.current,
-    })
+    toFilterKey(fileFiltersRef.current, folderFiltersRef.current)
 
   type FilterWriteOptions = { fromAskAi?: boolean; manual?: boolean }
 
@@ -449,21 +496,25 @@ export function useFolderExplorer() {
 
     setError('')
 
+    const effectiveFileFilters = fileFilters ?? fileFiltersRef.current
+    const effectiveFolderFilters = folderFilters ?? folderFiltersRef.current
+    const effectiveListAllFiles = listAllFiles ?? viewMode === 'list'
+
     try {
       const response = await folderApi.getFolderContent(folderId, {
         cursor,
-        fileFilters: fileFilters ?? fileFiltersRef.current,
+        fileFilters: effectiveFileFilters,
         fileSearch:
           fileSearch !== undefined
             ? fileSearch
             : fileSearchRef.current.trim() || undefined,
-        folderFilters: folderFilters ?? folderFiltersRef.current,
+        folderFilters: effectiveFolderFilters,
         folderSearch:
           folderSearch !== undefined
             ? folderSearch
             : folderSearchRef.current.trim() || undefined,
         includeFiles,
-        listAllFiles: listAllFiles ?? viewMode === 'list',
+        listAllFiles: effectiveListAllFiles,
         page,
         pageSize: pageSizeValue,
       })
@@ -480,8 +531,89 @@ export function useFolderExplorer() {
         folderSearch !== undefined ? folderSearch : folderSearchRef.current
       ).trim()
 
+      const filterKey = toFilterKey(
+        effectiveFileFilters,
+        effectiveFolderFilters,
+      )
+      let apiFolders = response.folders || []
+      let apiFiles = (response.files || []).filter(
+        (file) => !file.isStaged && !file.stageFileId,
+      )
+      let resolvedFilePage = response.filePage
+      let resolvedFolderPage = nextFolderPage
+
+      // First page of a search: merge with matches already loaded in this
+      // folder's normal listing so existing rows are kept and only new,
+      // unique records are added.
+      const base = baseListingRef.current
+      if (
+        isSearchCall &&
+        !folderPageOnly &&
+        !appendFolders &&
+        (response.filePage?.page ?? page) === 1 &&
+        base?.folderId === folderId &&
+        base.filterKey === filterKey
+      ) {
+        if (activeFileSearch) {
+          const filesComplete =
+            !response.filePage ||
+            (!response.filePage.hasMore && response.filePage.totalPages <= 1)
+          apiFiles = mergeSearchResults(
+            base.files.filter((file) =>
+              matchesSearchText(file, activeFileSearch),
+            ),
+            apiFiles,
+            getFileId,
+            filesComplete,
+          )
+          if (filesComplete && resolvedFilePage) {
+            resolvedFilePage = {
+              ...resolvedFilePage,
+              totalCount: apiFiles.length,
+            }
+          }
+        }
+        if (activeFolderSearch) {
+          const foldersComplete = !nextFolderPage.hasMore
+          apiFolders = mergeSearchResults(
+            base.folders.filter((folder) =>
+              matchesSearchText(folder, activeFolderSearch),
+            ),
+            apiFolders,
+            (folder) => String(folder.id || ''),
+            foldersComplete,
+          )
+          if (foldersComplete) {
+            resolvedFolderPage = {
+              ...resolvedFolderPage,
+              totalCount: apiFolders.length,
+            }
+          }
+        }
+      }
+
+      // Cache the normal listing separately so clearing search can restore it
+      // without mixing in search results.
+      if (!isSearchCall && !folderPageOnly && !appendFolders) {
+        baseListingRef.current = {
+          filePage: response.filePage,
+          files: apiFiles,
+          filterKey,
+          folderId,
+          folderPage: nextFolderPage,
+          folders: apiFolders,
+          listAllFiles: effectiveListAllFiles,
+        }
+      }
+
+      if (!folderPageOnly) {
+        setAppliedSearch({
+          fileSearch: isSearchCall ? activeFileSearch : '',
+          folderSearch: isSearchCall ? activeFolderSearch : '',
+        })
+      }
+
       setFolders((previous) => {
-        const apiFolders = response.folders || []
         if (appendFolders) {
           return mergeFoldersById(previous, apiFolders)
         }
@@ -502,15 +634,12 @@ export function useFolderExplorer() {
 
       setFiles((previous) => {
         if (folderPageOnly) return previous
-        const apiFiles = (response.files || []).filter(
-          (file) => !file.isStaged && !file.stageFileId,
-        )
         return apiFiles
       })
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
-      setFilePage(response.filePage)
-      setFolderPage(nextFolderPage)
+      setFilePage(resolvedFilePage)
+      setFolderPage(resolvedFolderPage)
 
       if (folderPageOnly) {
         lastRequestedFolderPageRef.current[folderId] = nextFolderPage.page
@@ -818,6 +947,42 @@ export function useFolderExplorer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder, viewMode])
 
+  const restoreBaseListing = () => {
+    const base = baseListingRef.current
+    if (
+      !base ||
+      base.folderId !== activeFolder ||
+      base.listAllFiles !== (viewMode === 'list') ||
+      base.filterKey !== getFilterSnapshot() ||
+      (base.filePage?.page ?? 1) !== 1
+    ) {
+      return false
+    }
+
+    // Invalidate any in-flight search response so it can't overwrite this.
+    requestSeqRef.current += 1
+
+    cursorByFolderRef.current[activeFolder] = { 1: null }
+    if (base.filePage?.nextCursor) {
+      cursorByFolderRef.current[activeFolder][2] = base.filePage.nextCursor
+    }
+    folderLoadLockRef.current = false
+    lastRequestedFolderPageRef.current[activeFolder] = base.folderPage.page
+
+    setFiles(base.files)
+    setFolders(base.folders)
+    setFilePage(base.filePage)
+    setFolderPage(base.folderPage)
+    setAppliedSearch({ fileSearch: '', folderSearch: '' })
+    syncFolderFilterOptionSource(base.folders, { folderSearch: '' })
+    setError('')
+    setLoading(false)
+    setLoadingPage(false)
+    setLoadingFolders(false)
+    setRefreshing(false)
+    return true
+  }
+
   useEffect(() => {
     if (!activeFolder) return
 
@@ -832,32 +997,40 @@ export function useFolderExplorer() {
       return
     }
 
-    const timer = window.setTimeout(async () => {
-      cursorByFolderRef.current[activeFolder] = { 1: null }
-      folderLoadLockRef.current = false
-      lastRequestedFolderPageRef.current[activeFolder] = 1
-      lastExecutedSearchRef.current = {
-        fileSearch: trimmedFile,
-        folderSearch: trimmedFolder,
-      }
+    // Cleared search: show the cached normal listing right away instead of
+    // stale search results, and refetch the unfiltered list without debounce.
+    const isCleared = !trimmedFolder && !trimmedFile
+    if (isCleared) restoreBaseListing()
 
-      try {
-        await loadFolderContent({
-          fileFilters: fileFiltersRef.current,
+    const timer = window.setTimeout(
+      async () => {
+        cursorByFolderRef.current[activeFolder] = { 1: null }
+        folderLoadLockRef.current = false
+        lastRequestedFolderPageRef.current[activeFolder] = 1
+        lastExecutedSearchRef.current = {
           fileSearch: trimmedFile,
-          folderFilters: folderFiltersRef.current,
-          folderId: activeFolder,
           folderSearch: trimmedFolder,
-          listAllFiles:
-            viewMode === 'list' || Boolean(trimmedFile || trimmedFolder),
-          page: 1,
-          pageSizeValue: pageSizeRef.current,
-          syncTree: viewMode === 'grid' && !trimmedFile && !trimmedFolder,
-        })
-      } catch {
-        // Error is handled safely inside loadFolderContent
-      }
-    }, FOLDER_SEARCH_DEBOUNCE_MS)
+        }
+
+        try {
+          await loadFolderContent({
+            fileFilters: fileFiltersRef.current,
+            fileSearch: trimmedFile,
+            folderFilters: folderFiltersRef.current,
+            folderId: activeFolder,
+            folderSearch: trimmedFolder,
+            listAllFiles:
+              viewMode === 'list' || Boolean(trimmedFile || trimmedFolder),
+            page: 1,
+            pageSizeValue: pageSizeRef.current,
+            syncTree: viewMode === 'grid' && !trimmedFile && !trimmedFolder,
+          })
+        } catch {
+          // Error is handled safely inside loadFolderContent
+        }
+      },
+      isCleared ? 0 : FOLDER_SEARCH_DEBOUNCE_MS,
+    )
 
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1211,6 +1384,12 @@ export function useFolderExplorer() {
     return Boolean(root && root.id !== activeFolder)
   }, [breadcrumbs, tree, activeFolder])
 
+  /** True when files/folders on screen are the API results for the current search. */
+  const searchResultsCurrent =
+    Boolean(appliedSearch.fileSearch || appliedSearch.folderSearch) &&
+    appliedSearch.fileSearch === fileSearch.trim() &&
+    appliedSearch.folderSearch === folderSearch.trim()
+
   const folderHasMore = useMemo(
     () =>
       Boolean(folderPage?.hasMore) &&
@@ -1234,6 +1413,11 @@ export function useFolderExplorer() {
       cursorByFolderRef.current[activeFolder] = { 1: null }
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
+
+      // Data may have changed; don't restore a stale listing on search clear.
+      if (fileSearchRef.current.trim() || folderSearchRef.current.trim()) {
+        baseListingRef.current = null
+      }
 
       await loadSelectedRepository(activeFolder, { force: true })
 
@@ -1299,6 +1483,7 @@ export function useFolderExplorer() {
     refreshData,
     refreshing,
     repositoryNodes,
+    searchResultsCurrent,
     selectedFile,
     selectedRepository,
     selectFolder,

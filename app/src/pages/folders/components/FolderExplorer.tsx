@@ -72,6 +72,7 @@ export function FolderExplorer() {
     refreshData,
     refreshing,
     repositoryNodes,
+    searchResultsCurrent,
     selectedFile,
     selectedRepository,
     selectFolder,
@@ -421,7 +422,11 @@ export function FolderExplorer() {
     }
 
     if (openItemId) {
-      openDetailsFile(openItemId, repoId || undefined, openItemName || undefined)
+      openDetailsFile(
+        openItemId,
+        repoId || undefined,
+        openItemName || undefined,
+      )
     }
 
     if (!globalThis.location?.pathname?.startsWith('/embed')) {
@@ -785,9 +790,7 @@ export function FolderExplorer() {
         initialFiles={pendingUploadFiles}
         initialStagedFileId={pendingStagedFileId}
         repositoryData={pendingRepositoryData || selectedRepository}
-        repositoryId={
-          pendingRepositoryData?.id || resolvedRepositoryId || null
-        }
+        repositoryId={pendingRepositoryData?.id || resolvedRepositoryId || null}
         onBack={exitUpload}
         onIntelligentUpload={(files) => {
           intelligentOpenedFromUploadRef.current = true
@@ -800,7 +803,6 @@ export function FolderExplorer() {
   }
 
   if (appView === 'intelligentUpload') {
-
     const candidateRepos = repositoryNodes.map((node) => ({
       id: String(getRepositoryIdFromFolder(node.id) || node.id),
       name: node.title,
@@ -959,6 +961,7 @@ export function FolderExplorer() {
           repositories={repositoryNodes}
           repositoryId={resolvedRepositoryId}
           searchQuery={fileSearch}
+          serverSearchQuery={searchResultsCurrent ? fileSearch.trim() : ''}
           uploadDisabled={!canUpload}
           view={viewMode}
           setView={changeViewMode}
@@ -1082,6 +1085,7 @@ export function FolderExplorer() {
               permissions={folderPermissions}
               refreshing={refreshing}
               repositoryId={resolvedRepositoryId}
+              searchResultsCurrent={searchResultsCurrent}
               uploadDisabled={!canUpload}
               folderTotalCount={
                 activeFolder ? folderPage?.totalCount : displayFolders.length
