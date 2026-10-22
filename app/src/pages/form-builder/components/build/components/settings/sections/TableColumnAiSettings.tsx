@@ -136,10 +136,6 @@ const TableColumnAiSettings = ({
   return (
     <div className='animate-in fade-in slide-in-from-top-1 space-y-3 rounded-lg border border-dashed border-gray-3 p-2.5 duration-200'>
       <SectionLabel>AI Settings</SectionLabel>
-      <p className='text-[10px] text-gray-6 italic'>
-        Saved with the column for V5 parity. Document checks are not enforced
-        when the form is filled in yet.
-      </p>
 
       <InputRadioGroup
         label='Form Controls Validate'

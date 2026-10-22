@@ -79,7 +79,7 @@ function WorkflowStageBar({
   const visibleCount = Math.min(STAGE_PAGE_SIZE, shown.length)
 
   return (
-    <div className='mb-4 flex items-start gap-1 rounded-xl border border-gray-3 bg-gray-0 px-2 py-3'>
+    <div className='mb-4 flex items-start gap-1 rounded-xl border border-gray-3 bg-gray-0 px-3 pt-4 pb-3'>
       {canPage ? (
         <div className='flex h-6 shrink-0 items-center'>
           <button
@@ -93,7 +93,7 @@ function WorkflowStageBar({
           </button>
         </div>
       ) : null}
-      <div className='min-w-0 flex-1 overflow-hidden'>
+      <div className='min-w-0 flex-1 overflow-hidden py-3'>
         <div
           className='flex items-start transition-transform duration-300 ease-in-out'
           style={{
@@ -102,16 +102,22 @@ function WorkflowStageBar({
           }}
         >
           {shown.map(({ index, stage }) => {
+            const upcoming = activeIndex >= 0 && index > activeIndex
             const isEndSuccess =
-              Boolean(stage.isSuccess) ||
-              Boolean(stage.isEnd && (isAllDone || activeIndex === index))
+              !upcoming &&
+              (Boolean(stage.isSuccess) ||
+                Boolean(stage.isEnd && (isAllDone || activeIndex === index)))
             const done =
-              isEndSuccess ||
-              (activeIndex >= 0 ? index < activeIndex : stage.status === 'done')
+              !upcoming &&
+              (isEndSuccess ||
+                (activeIndex >= 0
+                  ? index < activeIndex
+                  : stage.status === 'done'))
             const current =
+              !upcoming &&
               !isEndSuccess &&
               (activeIndex === index || stage.status === 'current')
-            const isCondition = Boolean(stage.isCondition)
+            const isCondition = Boolean(stage.isCondition) && !done && !current
 
             return (
               <div
@@ -124,7 +130,7 @@ function WorkflowStageBar({
                       'h-0.5 flex-1',
                       index === 0
                         ? 'bg-transparent'
-                        : done || current || isEndSuccess
+                        : !upcoming && (done || current || isEndSuccess)
                           ? 'bg-green-9'
                           : 'bg-gray-4',
                     )}
