@@ -33,11 +33,33 @@ const toPositiveNumber = (v: unknown): number | undefined => {
 const readCell = (row: Record<string, any> | undefined, col: any) =>
   row?.[col.id] ?? (col.name ? row?.[col.name] : undefined)
 
+const DEFAULT_CALCULATED_DECIMALS = 2
+
+/**
+ * Decimal places a calculated value keeps: the configured precision, else 2.
+ * Fixed decimals also stop floating point noise (29.500000000000004) from
+ * ever being stored or shown.
+ */
+export function getCalculatedDecimals(field: any): number {
+  const raw =
+    field?.settings?.specific?.decimalPrecision ??
+    field?.settings?.validation?.decimalDigits ??
+    field?.settings?.validation?.decimalValue
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return DEFAULT_CALCULATED_DECIMALS
+  }
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed >= 0
+    ? parsed
+    : DEFAULT_CALCULATED_DECIMALS
+}
+
 /**
  * Content rule of a CALCULATED column, applied to its formula result: Integer
- * rounds the result to a whole number ("does not accept decimals"); Decimal
- * and no rule leave it as calculated. Used wherever a column's formula is
- * evaluated so the cell, totals and other formulas all see the same value.
+ * rounds the result to a whole number ("does not accept decimals"); anything
+ * else is rounded to the column's decimals (2 unless configured). Used
+ * wherever a column's formula is evaluated so the cell, totals and other
+ * formulas all see the same value.
  */
 export function applyCalculatedContentRule(
   col: any,
@@ -47,7 +69,9 @@ export function applyCalculatedContentRule(
   const rule = String(
     col?.settings?.validation?.contentRule || '',
   ).toUpperCase()
-  return rule === 'INTEGER' ? Math.round(result) : result
+  if (rule === 'INTEGER') return Math.round(result)
+  const factor = 10 ** getCalculatedDecimals(col)
+  return Math.round((result + Number.EPSILON) * factor) / factor
 }
 
 /**

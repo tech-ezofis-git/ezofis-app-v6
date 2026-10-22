@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { applyCalculatedFields, evaluateFormula } from './formula'
-import { applyCalculatedContentRule } from './tableColumnDefaults'
+import {
+  applyCalculatedContentRule,
+  getCalculatedDecimals,
+} from './tableColumnDefaults'
 import {
   normalizeCurrencyEntryValue,
   normalizePhoneEntryValue,
@@ -846,6 +849,20 @@ export function formatRuntimeFieldDisplayValue(
 ): string {
   if (raw === undefined || raw === null || raw === '') return ''
   const runtimeType = field ? resolveRuntimeFieldType(field) : ''
+
+  // Calculated numbers always read with fixed decimals (29.50, not 29.5).
+  if (runtimeType === 'CALCULATED' && typeof raw !== 'object') {
+    const text = String(raw).trim()
+    const num = Number(text.replace(/,/g, ''))
+    if (text !== '' && Number.isFinite(num)) {
+      const rule = String(
+        field?.settings?.validation?.contentRule || '',
+      ).toUpperCase()
+      return rule === 'INTEGER'
+        ? String(Math.round(num))
+        : num.toFixed(getCalculatedDecimals(field))
+    }
+  }
 
   if (
     runtimeType === 'CURRENCY_AMOUNT' ||

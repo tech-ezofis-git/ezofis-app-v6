@@ -902,16 +902,21 @@ const TableCellFileInput = ({
           </div>
         ))}
       <div className='flex min-w-0 items-center gap-1'>
+        {/* Purple + dashed reads as "click to upload"; the greyed cells next
+            to it are the ones still waiting for this file. */}
         <label
           className={cn(
-            'flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-dashed border-gray-3 bg-surface px-2 py-1 text-xs text-gray-9 hover:border-primary-5',
+            'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border px-3 text-13 font-medium transition-colors active:scale-[0.99]',
+            fileName && !multiple
+              ? 'border-gray-5 bg-surface text-gray-12 hover:border-primary-6'
+              : 'border-dashed border-primary-6 bg-primary-2 text-primary-11 hover:bg-primary-3',
             busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
           )}
         >
           <Icon
-            className={cn('shrink-0 text-gray-6', busy && 'animate-spin')}
-            height={12}
-            width={12}
+            className={cn('shrink-0 text-primary-10', busy && 'animate-spin')}
+            height={14}
+            width={14}
             name={
               busy
                 ? 'lucide:loader-2'
@@ -1631,6 +1636,17 @@ const TableFieldRenderer = ({
     updateDynamicColumns(next)
   }
 
+  // A row's cell is stored under the column id, but rows saved or imported
+  // elsewhere can carry it under the column name (the cell display falls back
+  // to the name too). The parent value of a filtered dropdown must be read the
+  // same way, or it looks empty and the dropdown shows no options.
+  const readParentCell = (row: Record<string, any>, parentColId: string) => {
+    const byId = row?.[parentColId]
+    if (byId !== undefined && byId !== null && byId !== '') return byId
+    const parentName = tableColumns.find((c) => c.id === parentColId)?.name
+    return parentName ? row?.[parentName] : undefined
+  }
+
   const lookupColumns = tableColumns.filter(
     (col) =>
       getColumnOptionsSource(col) === 'LOOKUP' &&
@@ -1712,7 +1728,7 @@ const TableFieldRenderer = ({
           : Array.from(
               new Set(
                 rows
-                  .map((r) => r[parentColId || ''])
+                  .map((r) => readParentCell(r, parentColId || ''))
                   .filter((v) => v !== undefined && v !== null && v !== ''),
               ),
             )
@@ -1747,7 +1763,7 @@ const TableFieldRenderer = ({
             : Array.from(
                 new Set(
                   rows
-                    .map((r) => r[parentColId])
+                    .map((r) => readParentCell(r, parentColId))
                     .filter((v) => v !== undefined && v !== null && v !== ''),
                 ),
               )
@@ -1861,7 +1877,7 @@ const TableFieldRenderer = ({
           : Array.from(
               new Set(
                 rows
-                  .map((r) => r[parentColId || ''])
+                  .map((r) => readParentCell(r, parentColId || ''))
                   .filter((v) => v !== undefined && v !== null && v !== ''),
               ),
             )
@@ -1897,7 +1913,7 @@ const TableFieldRenderer = ({
             : Array.from(
                 new Set(
                   rows
-                    .map((r) => r[parentColId])
+                    .map((r) => readParentCell(r, parentColId))
                     .filter((v) => v !== undefined && v !== null && v !== ''),
                 ),
               )
@@ -1953,6 +1969,11 @@ const TableFieldRenderer = ({
       effectiveRow = {
         ...row,
         [parentColId]: formModel?.[parentColId],
+      }
+    } else if (parentColId) {
+      const parentVal = readParentCell(row, parentColId)
+      if (parentVal !== undefined) {
+        effectiveRow = { ...row, [parentColId]: parentVal }
       }
     }
     return selectColumnCellOptions(col, effectiveRow, {
@@ -2906,7 +2927,14 @@ const TableFieldRenderer = ({
                     </Th>
                   )}
                   {showActionColumn && (
-                    <Th className='w-28 px-2 py-2 text-center text-11 font-bold text-gray-10'>
+                    <Th
+                      className={cn(
+                        // Only the Approve button needs the wide column; a
+                        // lone delete icon fits in a narrow one.
+                        showRowApprove ? 'w-28 px-2' : 'w-12 px-1',
+                        'py-2 text-center text-11 font-bold text-gray-10',
+                      )}
+                    >
                       {showRowApprove ? (
                         t`Approve`
                       ) : (
