@@ -140,7 +140,7 @@ const deleteFormEntry = async (fId: string, eId: string) => {
 const getFormEntries = async (
   formId: string,
   page: number = 1,
-  size: number = 500,
+  size: number = 10000,
   includeFormJson: boolean = true,
   tenantIdOverride?: string,
 ) => {

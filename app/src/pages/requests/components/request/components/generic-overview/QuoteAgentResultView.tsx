@@ -1012,7 +1012,7 @@ const QuoteAgentResultView = ({
     setPreviewLoading(true)
     try {
       const { data, error } = await previewDocument({
-        formData: buildDocumentPreviewFormData(formModel),
+        formData: buildPreviewFormData(),
         quoteType,
         templateJson: documentTemplateJson,
         ...(workflowFormId ? { formId: workflowFormId } : {}),
@@ -1160,6 +1160,64 @@ const QuoteAgentResultView = ({
     taxRate,
     viewModel.totals,
   ])
+
+  /**
+   * formData for the document preview. A quote's Subtotal / Freight / HST /
+   * Total fields are often Calculated fields; when their formula cannot be
+   * evaluated they are saved blank even though the screen shows the totals
+   * worked out from the line items. Blank ones are filled from those shown
+   * totals so the PDF matches the screen. Filled values are never overwritten.
+   */
+  const buildPreviewFormData = () => {
+    const data = buildDocumentPreviewFormData(formModel)
+    if (isCompareTab || isEmptyActiveVariant) return data
+
+    const shown: Record<
+      'discount' | 'freight' | 'subtotal' | 'tax' | 'total',
+      number
+    > = {
+      discount: activeVariantTotals.discount,
+      freight: activeVariantTotals.freight,
+      subtotal: activeVariantTotals.subtotal,
+      tax: activeVariantTotals.hst,
+      total: activeVariantTotals.total,
+    }
+
+    ;(['subtotal', 'discount', 'freight', 'tax', 'total'] as const).forEach(
+      (kind) => {
+        const entry = viewModel.totals.find(
+          (item) =>
+            item.kind === kind && (item.variant || 'main') === activeVariantId,
+        )
+        const field =
+          entry?.field ||
+          formFields.find((item) => {
+            const heading = getFieldHeading(item)
+            if (resolveQuoteFieldVariant(heading) !== activeVariantId) {
+              return false
+            }
+            const compact = compactControl(stripQuoteVariantLabel(heading))
+            if (kind === 'total' && compact.includes('subtotal')) return false
+            const names = kind === 'tax' ? ['hst', 'gst', 'tax'] : [kind]
+            return names.some(
+              (name) => compact === name || compact.endsWith(name),
+            )
+          }) ||
+          null
+        if (!field) return
+
+        const id = getFieldId(field)
+        const current = data[id]
+        const isBlank =
+          current == null ||
+          (typeof current === 'string' && current.trim() === '')
+        const value = shown[kind]
+        if (isBlank && Number.isFinite(value)) data[id] = value
+      },
+    )
+
+    return data
+  }
 
   const [computedTotals, setComputedTotals] =
     useState<QuoteTotals>(initialTotals)
@@ -2343,7 +2401,7 @@ const QuoteAgentResultView = ({
                 <div className='flex flex-wrap items-center justify-between gap-3'>
                   {!isCompareTab && activeOrderNumber ? (
                     <div className='flex min-w-0 items-baseline gap-1.5 text-left text-sm text-gray-12'>
-                      <span className='shrink-0 font-bold'>{t`Order Number`}:</span>
+                      <span className='shrink-0 font-bold'>{t`Quote Number`}:</span>
                       <HoverEditShell
                         activeEditId={activeEditId}
                         canEdit={
@@ -2370,7 +2428,7 @@ const QuoteAgentResultView = ({
                           />
                         }
                         fieldId={activeOrderNumber.fieldId}
-                        label={t`Order Number`}
+                        label={t`Quote Number`}
                         onActivate={setActiveEditId}
                       >
                         <span className='truncate'>

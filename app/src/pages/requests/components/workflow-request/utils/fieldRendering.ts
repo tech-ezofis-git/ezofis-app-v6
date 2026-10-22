@@ -657,7 +657,9 @@ export const buildMasterConditions = (
   const cleanStr = (s?: string) =>
     s ? String(s).replace(/\*/g, ' ').replace(/\s+/g, ' ').trim() : ''
 
-  const explicit = (field?.settings?.specific?.masterFormConditionColumn || [])
+  const explicit: Array<{ masterColumn: string; value: any }> = (
+    field?.settings?.specific?.masterFormConditionColumn || []
+  )
     .filter((c: any) => (c?.formField || c?.formColumn) && c?.masterColumn)
     .map((c: any) => ({
       masterColumn: String(c.masterColumn),
@@ -731,10 +733,15 @@ export const buildMasterConditions = (
       const colStr = String(masterCol).trim()
       const colLower = colStr.toLowerCase()
       const colClean = cleanStr(colStr).toLowerCase()
-      const alreadyInExplicit = explicit.some((c) => {
-        const mcLower = c.masterColumn.trim().toLowerCase()
-        return mcLower === colLower || cleanStr(c.masterColumn).toLowerCase() === colClean
-      })
+      const alreadyInExplicit = explicit.some(
+        (c: { masterColumn: string; value?: any }) => {
+          const mcLower = c.masterColumn.trim().toLowerCase()
+          return (
+            mcLower === colLower ||
+            cleanStr(c.masterColumn).toLowerCase() === colClean
+          )
+        },
+      )
       const alreadyInChained = chained.some((c) => {
         const mcLower = c.masterColumn.trim().toLowerCase()
         return mcLower === colLower || cleanStr(c.masterColumn).toLowerCase() === colClean
@@ -937,7 +944,7 @@ export const fetchMasterFormColumnOptions = async (
 
     // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
     const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 500),
+      formApi.getFormEntries(masterFormId, 1, 10000),
     )
     let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
@@ -967,7 +974,7 @@ export const fetchMasterFormColumnOptions = async (
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) {
@@ -1198,14 +1205,14 @@ export const fetchMasterTableRows = async (
     }
 
     const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 500),
+      formApi.getFormEntries(masterFormId, 1, 10000),
     )
     let rawEntries = parseEntriesData(entriesRes.data)
     if (rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
-          itemsPerPage: 500,
+          itemsPerPage: 10000,
         }),
       )
       if (searchRes.data) rawEntries = parseEntriesData(searchRes.data)
