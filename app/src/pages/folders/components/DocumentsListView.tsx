@@ -102,6 +102,8 @@ type DocumentsListViewProps = {
   repositories?: TreeNode[]
   repositoryId?: string
   searchQuery?: string
+  /** Search text the current `files` were already resolved for by the API. */
+  serverSearchQuery?: string
   uploadDisabled?: boolean
   view: ExplorerView
   onAiSummary: (id: string) => void
@@ -397,6 +399,7 @@ export function DocumentsListView({
   repositories = [],
   repositoryId = '',
   searchQuery: searchQueryProp = '',
+  serverSearchQuery = '',
   uploadDisabled = false,
   view,
   setView,
@@ -551,8 +554,17 @@ export function DocumentsListView({
 
   // Client OR-match for multi-select (same field); AND across different fields; plus searchQuery.
   const visibleFiles = useMemo(() => {
+    // API search results (merged with existing matches) are authoritative;
+    // only text-filter locally while the API result is still pending.
+    const isServerResolved =
+      Boolean(serverSearchQuery) && searchQuery.trim() === serverSearchQuery
+
     return normalizedFiles.filter((file) => {
-      if (searchQuery && !matchesSearchText(file, searchQuery)) {
+      if (
+        searchQuery &&
+        !isServerResolved &&
+        !matchesSearchText(file, searchQuery)
+      ) {
         return false
       }
 
@@ -576,7 +588,13 @@ export function DocumentsListView({
         return matchesAnyFilterValue(String(fieldValue ?? ''), value)
       })
     })
-  }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
+  }, [
+    folderContextFilters,
+    normalizedFiles,
+    fileFilters,
+    searchQuery,
+    serverSearchQuery,
+  ])
 
   const isStagedCategory = fileCategory === 'staged'
   const totalCount = isStagedCategory
@@ -933,17 +951,17 @@ export function DocumentsListView({
             <FolderDataTableSection
               effectiveFolderTotal={folders.length}
               folderFilters={{}}
-              folderSearch={searchQuery}
               folders={folders}
+              folderSearch={searchQuery}
               hasFiles={false}
               hasMoreFolders={false}
-              hideFolderActions
-              isExpanded
               isSplitView={false}
               loading={loading}
               loadingFolders={false}
               loadingPage={loadingPage}
               rowSize='compact'
+              hideFolderActions
+              isExpanded
               onLoadMoreFolders={() => undefined}
               onOpenFolder={handleOpenFolder}
               onReload={handleRefresh}
@@ -1020,23 +1038,23 @@ export function DocumentsListView({
               loadingPage ||
               refreshing ? (
               <DataTable
-                  pageSize={Math.max(5, visibleFiles.length || pageSize)}
-                  rowSize='compact'
-                  table={table}
-                  hideActionBar
-                  hideGrouping
-                  isSticky
-                  stickyHeader
-                  isLoading={
-                    (loading || loadingPage) && visibleFiles.length === 0
-                  }
-                  isReLoading={
-                    refreshing ||
-                    loadingPage ||
-                    (loading && visibleFiles.length > 0)
-                  }
-                  onReload={handleRefresh}
-                />
+                pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                rowSize='compact'
+                table={table}
+                hideActionBar
+                hideGrouping
+                isSticky
+                stickyHeader
+                isLoading={
+                  (loading || loadingPage) && visibleFiles.length === 0
+                }
+                isReLoading={
+                  refreshing ||
+                  loadingPage ||
+                  (loading && visibleFiles.length > 0)
+                }
+                onReload={handleRefresh}
+              />
             ) : null
           ) : null}
         </section>
@@ -1160,7 +1178,6 @@ export function DocumentsListView({
           }
         }}
       />
-
     </div>
   )
 }

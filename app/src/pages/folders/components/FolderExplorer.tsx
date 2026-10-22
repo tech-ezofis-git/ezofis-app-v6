@@ -72,6 +72,7 @@ export function FolderExplorer() {
     refreshData,
     refreshing,
     repositoryNodes,
+    searchResultsCurrent,
     selectedFile,
     selectedRepository,
     selectFolder,
@@ -106,6 +107,7 @@ export function FolderExplorer() {
   >(undefined)
   const [pendingRepositoryData, setPendingRepositoryData] = useState<any>(null)
   const [pendingOpenShare, setPendingOpenShare] = useState(false)
+  const [pendingOpenMetadataEdit, setPendingOpenMetadataEdit] = useState(false)
   const [detailsDocument, setDetailsDocument] = useState<{
     fileName?: string
     id: string
@@ -140,6 +142,7 @@ export function FolderExplorer() {
   const openShareForFile = useCallback(
     (fileId: string) => {
       setPendingOpenShare(true)
+      setPendingOpenMetadataEdit(false)
       setDetailsDocument(null)
       openFileAction(fileId, 'details')
     },
@@ -160,6 +163,14 @@ export function FolderExplorer() {
           trimmedId.startsWith('staged-') ? trimmedId : `staged-${trimmedId}`,
         )
         setAppView('Upload')
+        return
+      }
+      // Edit Metadata opens the details view directly in inline edit mode.
+      if (targetView === 'editMetadata') {
+        setPendingOpenShare(false)
+        setPendingOpenMetadataEdit(true)
+        setDetailsDocument(null)
+        openFileAction(trimmedId, 'details')
         return
       }
       openFileAction(trimmedId, targetView)
@@ -199,6 +210,7 @@ export function FolderExplorer() {
       } else {
         setDetailsDocument(null)
       }
+      setPendingOpenMetadataEdit(false)
       openFile(trimmedId)
     },
     [activeFolder, files, openFile, setAppView],
@@ -421,7 +433,11 @@ export function FolderExplorer() {
     }
 
     if (openItemId) {
-      openDetailsFile(openItemId, repoId || undefined, openItemName || undefined)
+      openDetailsFile(
+        openItemId,
+        repoId || undefined,
+        openItemName || undefined,
+      )
     }
 
     if (!globalThis.location?.pathname?.startsWith('/embed')) {
@@ -726,14 +742,17 @@ export function FolderExplorer() {
 
     return (
       <DocumentDetailsView
+        autoOpenMetadataEdit={pendingOpenMetadataEdit}
         autoOpenShare={pendingOpenShare}
         fileName={detailsDocument?.fileName}
         id={detailsId}
+        metadataRow={getSelectedFileRow(detailsId)}
         permissions={folderPermissions}
         repositoryId={detailsRepositoryId}
         onAiSummary={() => setAppView('aiSummary')}
         onBack={() => {
           setPendingOpenShare(false)
+          setPendingOpenMetadataEdit(false)
           setDetailsDocument(null)
           setAppView('explorer')
         }}
@@ -742,11 +761,14 @@ export function FolderExplorer() {
             ? () => setAppView('editMetadata')
             : undefined
         }
+        onMetadataEditOpened={() => setPendingOpenMetadataEdit(false)}
+        onMetadataSaved={() => void refreshData()}
         onOpenRelatedDocument={({
           id: relatedId,
           repositoryId: relatedRepoId,
         }) => {
           setPendingOpenShare(false)
+          setPendingOpenMetadataEdit(false)
           setDetailsDocument({
             id: relatedId,
             repositoryId: relatedRepoId,
@@ -785,9 +807,7 @@ export function FolderExplorer() {
         initialFiles={pendingUploadFiles}
         initialStagedFileId={pendingStagedFileId}
         repositoryData={pendingRepositoryData || selectedRepository}
-        repositoryId={
-          pendingRepositoryData?.id || resolvedRepositoryId || null
-        }
+        repositoryId={pendingRepositoryData?.id || resolvedRepositoryId || null}
         onBack={exitUpload}
         onIntelligentUpload={(files) => {
           intelligentOpenedFromUploadRef.current = true
@@ -800,7 +820,6 @@ export function FolderExplorer() {
   }
 
   if (appView === 'intelligentUpload') {
-
     const candidateRepos = repositoryNodes.map((node) => ({
       id: String(getRepositoryIdFromFolder(node.id) || node.id),
       name: node.title,
@@ -959,6 +978,7 @@ export function FolderExplorer() {
           repositories={repositoryNodes}
           repositoryId={resolvedRepositoryId}
           searchQuery={fileSearch}
+          serverSearchQuery={searchResultsCurrent ? fileSearch.trim() : ''}
           uploadDisabled={!canUpload}
           view={viewMode}
           setView={changeViewMode}
@@ -1082,6 +1102,7 @@ export function FolderExplorer() {
               permissions={folderPermissions}
               refreshing={refreshing}
               repositoryId={resolvedRepositoryId}
+              searchResultsCurrent={searchResultsCurrent}
               uploadDisabled={!canUpload}
               folderTotalCount={
                 activeFolder ? folderPage?.totalCount : displayFolders.length
