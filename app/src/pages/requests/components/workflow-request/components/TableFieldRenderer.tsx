@@ -1438,6 +1438,9 @@ const TableFieldRenderer = ({
   // value was typed or generated, so this keeps an edited row from ever being
   // mistaken for an untouched default row when scanned/imported rows arrive.
   const editedRowKeys = useRef(new Set<string>())
+  // Rows whose uploaded file is still being read by OCR; the cells it will
+  // fill stay locked until the result (or a failure) comes back.
+  const [ocrPendingRows, setOcrPendingRows] = useState<Set<string>>(new Set())
   const rowKeyOf = (row: { _rowId?: string } | undefined, idx: number) =>
     row?._rowId || `row-${idx}`
 
@@ -1674,7 +1677,10 @@ const TableFieldRenderer = ({
   )
 
   // Master-table sources, same fetcher the top-level choice fields use.
-  const { data: masterOptionsByColumn = {} } = useQuery({
+  const {
+    data: masterOptionsByColumn = {},
+    isLoading: isMasterOptionsLoading,
+  } = useQuery({
     enabled: masterColumns.length > 0,
     queryKey: [
       'tableColumnMasterOptions',
@@ -1710,7 +1716,10 @@ const TableFieldRenderer = ({
   })
 
   // Master-table sources filtered by another column of the same row.
-  const { data: masterCascadedOptions = {} } = useQuery({
+  const {
+    data: masterCascadedOptions = {},
+    isLoading: isMasterCascadedLoading,
+  } = useQuery({
     enabled: masterCascadeColumns.length > 0,
     queryKey: [
       'tableColumnMasterCascadedOptions',
@@ -1820,47 +1829,53 @@ const TableFieldRenderer = ({
   )
 
   // Folders / repositories (names) for "predefined list: folders" columns
-  const { data: folderOptions = [] } = useQuery({
-    enabled: hasPredefinedFolder,
-    queryKey: ['tableColumnPredefinedFolders'],
-    queryFn: async () => {
-      const res = await getRepositorys()
-      const list: Array<{ name?: string }> = Array.isArray(res.data)
-        ? res.data
-        : []
-      return list
-        .filter((r) => r?.name)
-        .map((r) => ({ id: String(r.name), name: String(r.name) }))
-    },
-  })
+  const { data: folderOptions = [], isLoading: isFolderOptionsLoading } =
+    useQuery({
+      enabled: hasPredefinedFolder,
+      queryKey: ['tableColumnPredefinedFolders'],
+      queryFn: async () => {
+        const res = await getRepositorys()
+        const list: Array<{ name?: string }> = Array.isArray(res.data)
+          ? res.data
+          : []
+        return list
+          .filter((r) => r?.name)
+          .map((r) => ({ id: String(r.name), name: String(r.name) }))
+      },
+    })
 
   // System users (emails), as for the top-level "User List" options.
-  const { data: userListOptions = [] } = useQuery({
-    enabled: hasUserListColumn || hasPredefinedUser,
-    queryKey: ['tableColumnUserListOptions'],
-    queryFn: async () => {
-      const res = await getUsers()
-      const session = authUserStore.getState().session
-      const currentUserEmail = session?.email?.trim().toLowerCase()
-      const currentUserId = session?.id ? String(session.id) : undefined
-      return res.data
-        .filter((user) => {
-          const userEmail = user.email?.trim().toLowerCase()
-          if (currentUserEmail && userEmail === currentUserEmail) return false
-          if (currentUserId && user.id && String(user.id) === currentUserId) {
-            return false
-          }
-          return true
-        })
-        .map((user) => ({ id: user.email, name: user.email }))
+  const { data: userListOptions = [], isLoading: isUserListLoading } = useQuery(
+    {
+      enabled: hasUserListColumn || hasPredefinedUser,
+      queryKey: ['tableColumnUserListOptions'],
+      queryFn: async () => {
+        const res = await getUsers()
+        const session = authUserStore.getState().session
+        const currentUserEmail = session?.email?.trim().toLowerCase()
+        const currentUserId = session?.id ? String(session.id) : undefined
+        return res.data
+          .filter((user) => {
+            const userEmail = user.email?.trim().toLowerCase()
+            if (currentUserEmail && userEmail === currentUserEmail) return false
+            if (currentUserId && user.id && String(user.id) === currentUserId) {
+              return false
+            }
+            return true
+          })
+          .map((user) => ({ id: user.email, name: user.email }))
+      },
     },
-  })
+  )
 
   // For columns configured with a "cascade" parent (another column in the
   // same row), facet options are filtered server-side per distinct parent
   // value seen across the current rows — unlike lookupOptionsByColumn below,
   // this is keyed by [columnId][parentValue] since options differ per row.
-  const { data: cascadedOptionsByColumn = {} } = useQuery({
+  const {
+    data: cascadedOptionsByColumn = {},
+    isLoading: isCascadedLookupLoading,
+  } = useQuery({
     enabled: cascadeColumns.length > 0,
     queryKey: [
       'tableColumnCascadedLookupOptions',
@@ -1951,6 +1966,18 @@ const TableFieldRenderer = ({
 
   // Label of the file column a cell is still waiting on (undefined once the
   // row has its document).
+  const isAwaitingOcr = (
+    col: TableColumn,
+    row: Record<string, unknown>,
+    rowIndex: number,
+  ) =>
+    ocrPendingRows.has(rowKeyOf(row, rowIndex)) &&
+    tableColumns.some(
+      (src) =>
+        src.id !== col.id &&
+        getColumnOcrTargets(src, tableColumns).some((tg) => tg.id === col.id),
+    )
+
   const awaitingFileLabel = (
     col: TableColumn,
     row: Record<string, unknown>,
@@ -1958,6 +1985,39 @@ const TableFieldRenderer = ({
     const source = getAwaitingColumnFile(col, row, tableColumns)
     return source ? getColumnLabel(source) : undefined
   }
+
+  // True while the options (or master-synced rows) a column depends on are
+  // still being fetched, so its cells can show a loader instead of empty input.
+  const isColumnLoading = (col: TableColumn) => {
+    if (isMasterSyncing) return true
+    const source = getColumnOptionsSource(col)
+    const cascades = Boolean(col.settings?.lookupSettings?.cascadeFromColumn)
+    if (getColumnMasterConfig(col)) {
+      return cascades ? isMasterCascadedLoading : isMasterOptionsLoading
+    }
+    if (source === 'LOOKUP') {
+      return cascades ? isCascadedLookupLoading : isLookupOptionsLoading
+    }
+    if (source === 'USER_LIST') return isUserListLoading
+    if (source === 'PREDEFINED') {
+      return getColumnPredefinedType(col) === 'FOLDER'
+        ? isFolderOptionsLoading
+        : isUserListLoading
+    }
+    return false
+  }
+
+  const cellLoader = (
+    <div className='flex h-8 items-center gap-1.5 px-2 text-11 text-gray-9'>
+      <Icon
+        className='animate-spin'
+        height={14}
+        name='lucide:loader-2'
+        width={14}
+      />
+      {t`Loading...`}
+    </div>
+  )
 
   const getLookupOptionsForCell = (
     col: TableColumn,
@@ -1993,7 +2053,10 @@ const TableFieldRenderer = ({
     })
   }
 
-  const { data: lookupOptionsByColumn = {} } = useQuery({
+  const {
+    data: lookupOptionsByColumn = {},
+    isLoading: isLookupOptionsLoading,
+  } = useQuery({
     enabled: lookupColumns.length > 0,
     queryKey: [
       'tableColumnLookupOptions',
@@ -2163,54 +2226,63 @@ const TableFieldRenderer = ({
     }
     const hints = buildColumnOcrHints(targets)
     const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
+    setOcrPendingRows((prev) => new Set(prev).add(rowKey))
     const filled = new Set<string>()
     let failure = ''
-    for (const file of files) {
-      let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
-      let error: unknown
-      if (isExpenseReimbursement) {
-        const res = await uploadForStaticMetadata(
-          file,
-          hints.map((h) => h.replace(',', ', ')),
-        )
-        error = res.error
-        let payload = res.data
-        if (typeof payload === 'string') {
-          try {
-            payload = JSON.parse(payload)
-          } catch {
-            payload = null
+    try {
+      for (const file of files) {
+        let ocrFieldList: Array<{ name?: string; value?: unknown }> | undefined
+        let error: unknown
+        if (isExpenseReimbursement) {
+          const res = await uploadForStaticMetadata(
+            file,
+            hints.map((h) => h.replace(',', ', ')),
+          )
+          error = res.error
+          let payload = res.data
+          if (typeof payload === 'string') {
+            try {
+              payload = JSON.parse(payload)
+            } catch {
+              payload = null
+            }
           }
+          ocrFieldList = payload?.ocrResult
+        } else {
+          const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
+          error = res.error
+          ocrFieldList = res.data?.ocrFieldList
         }
-        ocrFieldList = payload?.ocrResult
-      } else {
-        const res = await uploadForOcr(ocrRepositoryId || '', file, hints)
-        error = res.error
-        ocrFieldList = res.data?.ocrFieldList
+        if (error || !ocrFieldList) {
+          failure = String(error || 'no data was returned')
+          console.warn('[table uploadForOcr] OCR extraction warning:', failure)
+          continue
+        }
+        const current = rowsRef.current
+        const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
+        if (idx < 0) continue
+        const patch = mapOcrToRowPatch(
+          targets,
+          ocrFieldList,
+          current[idx],
+          !isMultiFileColumn(col),
+        )
+        if (Object.keys(patch).length === 0) continue
+        editedRowKeys.current.add(rowKey)
+        const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+        rowsRef.current = next
+        onChange(next)
+        for (const id of Object.keys(patch)) {
+          const target = targets.find((tg) => tg.id === id)
+          filled.add(String(target?.name || target?.label || id))
+        }
       }
-      if (error || !ocrFieldList) {
-        failure = String(error || 'no data was returned')
-        console.warn('[table uploadForOcr] OCR extraction warning:', failure)
-        continue
-      }
-      const current = rowsRef.current
-      const idx = current.findIndex((r, i) => rowKeyOf(r, i) === rowKey)
-      if (idx < 0) continue
-      const patch = mapOcrToRowPatch(
-        targets,
-        ocrFieldList,
-        current[idx],
-        !isMultiFileColumn(col),
-      )
-      if (Object.keys(patch).length === 0) continue
-      editedRowKeys.current.add(rowKey)
-      const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
-      rowsRef.current = next
-      onChange(next)
-      for (const id of Object.keys(patch)) {
-        const target = targets.find((tg) => tg.id === id)
-        filled.add(String(target?.name || target?.label || id))
-      }
+    } finally {
+      setOcrPendingRows((prev) => {
+        const next = new Set(prev)
+        next.delete(rowKey)
+        return next
+      })
     }
     const wantedNames = targetNames.join(', ')
     // Success needs no line under the cell: the info icon already lists the
@@ -3002,41 +3074,50 @@ const TableFieldRenderer = ({
                           </Td>
                           {effectiveColumns.map((col) => (
                             <Td className='p-1.5 align-middle' key={col.id}>
-                              {renderCellInput(
-                                col,
-                                resolvedRow[col.id] ??
-                                  (col.name
-                                    ? resolvedRow[col.name]
-                                    : undefined),
-                                (cellVal) =>
-                                  handleCellChange(rowIndex, col.id, cellVal),
-                                readOnly ||
-                                  isColumnReadOnly(col) ||
-                                  isCellRuleReadOnly(col, resolvedRow) ||
-                                  Boolean(awaitingFileLabel(col, resolvedRow)),
-                                getLookupOptionsForCell(col, resolvedRow),
-                                isApiOptionsColumn(col)
-                                  ? (code) =>
-                                      handleApiProductSelect(
+                              {isColumnLoading(col)
+                                ? cellLoader
+                                : renderCellInput(
+                                    col,
+                                    resolvedRow[col.id] ??
+                                      (col.name
+                                        ? resolvedRow[col.name]
+                                        : undefined),
+                                    (cellVal) =>
+                                      handleCellChange(
                                         rowIndex,
                                         col.id,
-                                        code,
-                                      )
-                                  : undefined,
-                                rowIndex,
-                                {
-                                  awaitingFile: awaitingFileLabel(
-                                    col,
-                                    resolvedRow,
-                                  ),
-                                  row: resolvedRow,
-                                  siblingColumns: tableColumns,
-                                  onFilesAdded: (files) =>
-                                    handleFilesAdded(rowIndex, col, files),
-                                  onRowPatch: (patch) =>
-                                    handleRowPatch(rowIndex, patch),
-                                },
-                              )}
+                                        cellVal,
+                                      ),
+                                    readOnly ||
+                                      isColumnReadOnly(col) ||
+                                      isCellRuleReadOnly(col, resolvedRow) ||
+                                      Boolean(
+                                        awaitingFileLabel(col, resolvedRow),
+                                      ) ||
+                                      isAwaitingOcr(col, resolvedRow, rowIndex),
+                                    getLookupOptionsForCell(col, resolvedRow),
+                                    isApiOptionsColumn(col)
+                                      ? (code) =>
+                                          handleApiProductSelect(
+                                            rowIndex,
+                                            col.id,
+                                            code,
+                                          )
+                                      : undefined,
+                                    rowIndex,
+                                    {
+                                      awaitingFile: awaitingFileLabel(
+                                        col,
+                                        resolvedRow,
+                                      ),
+                                      row: resolvedRow,
+                                      siblingColumns: tableColumns,
+                                      onFilesAdded: (files) =>
+                                        handleFilesAdded(rowIndex, col, files),
+                                      onRowPatch: (patch) =>
+                                        handleRowPatch(rowIndex, patch),
+                                    },
+                                  )}
                             </Td>
                           ))}
                           {isDynamicTable && !readOnly && <Td />}
@@ -3221,32 +3302,42 @@ const TableFieldRenderer = ({
                             </button>
                           )}
                         </div>
-                        {renderCellInput(
-                          col,
-                          resolvedRow[col.id] ??
-                            (col.name ? resolvedRow[col.name] : undefined),
-                          (cellVal) =>
-                            handleCellChange(rowIndex, col.id, cellVal),
-                          readOnly ||
-                            isColumnReadOnly(col) ||
-                            isCellRuleReadOnly(col, resolvedRow) ||
-                            Boolean(awaitingFileLabel(col, resolvedRow)),
-                          getLookupOptionsForCell(col, resolvedRow),
-                          isApiOptionsColumn(col)
-                            ? (code) =>
-                                handleApiProductSelect(rowIndex, col.id, code)
-                            : undefined,
-                          rowIndex,
-                          {
-                            awaitingFile: awaitingFileLabel(col, resolvedRow),
-                            row: resolvedRow,
-                            siblingColumns: tableColumns,
-                            onFilesAdded: (files) =>
-                              handleFilesAdded(rowIndex, col, files),
-                            onRowPatch: (patch) =>
-                              handleRowPatch(rowIndex, patch),
-                          },
-                        )}
+                        {isColumnLoading(col)
+                          ? cellLoader
+                          : renderCellInput(
+                              col,
+                              resolvedRow[col.id] ??
+                                (col.name ? resolvedRow[col.name] : undefined),
+                              (cellVal) =>
+                                handleCellChange(rowIndex, col.id, cellVal),
+                              readOnly ||
+                                isColumnReadOnly(col) ||
+                                isCellRuleReadOnly(col, resolvedRow) ||
+                                Boolean(awaitingFileLabel(col, resolvedRow)) ||
+                                isAwaitingOcr(col, resolvedRow, rowIndex),
+                              getLookupOptionsForCell(col, resolvedRow),
+                              isApiOptionsColumn(col)
+                                ? (code) =>
+                                    handleApiProductSelect(
+                                      rowIndex,
+                                      col.id,
+                                      code,
+                                    )
+                                : undefined,
+                              rowIndex,
+                              {
+                                awaitingFile: awaitingFileLabel(
+                                  col,
+                                  resolvedRow,
+                                ),
+                                row: resolvedRow,
+                                siblingColumns: tableColumns,
+                                onFilesAdded: (files) =>
+                                  handleFilesAdded(rowIndex, col, files),
+                                onRowPatch: (patch) =>
+                                  handleRowPatch(rowIndex, patch),
+                              },
+                            )}
                       </div>
                     ))}
                     {isDynamicTable && !readOnly && (
