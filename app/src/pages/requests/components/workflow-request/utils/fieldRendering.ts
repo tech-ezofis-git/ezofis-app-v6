@@ -2217,6 +2217,31 @@ export const buildRepoMetadata = (
   return metadata
 }
 
+// A file uploaded from a table row describes that row, but buildRepoMetadata
+// only reads top-level fields. Fills the still-empty entries from the row's
+// columns whose name/label matches the repository field name.
+export const fillRepoMetadataFromTableRow = (
+  metadata: Record<string, string>,
+  columns: any[],
+  row: Record<string, any> | undefined,
+): Record<string, string> => {
+  if (!row) return metadata
+  const next = { ...metadata }
+  for (const col of columns || []) {
+    if (!col?.id) continue
+    const value = stringifyFieldValue(row[col.id])
+    if (!value) continue
+    const keys = [col.name, col.label]
+      .filter(Boolean)
+      .map((k) => normalizeName(String(k)))
+    const repoName = Object.keys(next).find(
+      (name) => !next[name] && keys.includes(normalizeName(name)),
+    )
+    if (repoName) next[repoName] = value
+  }
+  return next
+}
+
 // Maps an uploadForOcr/uploadWithOcr response's `ocrFieldList` (matched by
 // field NAME, e.g. "PO Number") into the formModel — always under the
 // field's own repo-native id, AND mirrored onto the matching form field's id

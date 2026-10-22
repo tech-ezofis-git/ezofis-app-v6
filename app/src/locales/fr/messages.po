@@ -200,7 +200,7 @@ msgid "{0} schema fields available"
 msgstr ""
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1780
+#: src/pages/requests/components/GridView.tsx:1787
 msgid "{0} Selected"
 msgstr "{0} Sélectionné"
 
@@ -245,7 +245,7 @@ msgid "{0} was {1} days ago — past the {2}-day threshold"
 msgstr "{0} c'était il y a {1} jours – au-delà du seuil de {2} jours"
 
 #. placeholder {0}: fileName.trim()
-#: src/pages/folders/components/DocumentDetailsView.tsx:1889
+#: src/pages/folders/components/DocumentDetailsView.tsx:2091
 msgid "{0} was deleted. Kindly try a new file."
 msgstr ""
 
@@ -310,6 +310,10 @@ msgstr "{enabledCount} activé"
 #~ msgid "{enabledCount} of {0} permissions enabled"
 #~ msgstr "{enabledCount} sur {0} autorisations activées"
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:39
+msgid "{fieldCount} fields"
+msgstr ""
+
 #: src/pages/folders/components/Upload/Upload.tsx:1274
 #~ msgid "{fieldName} is mandatory."
 #~ msgstr "{fieldName} est obligatoire."
@@ -322,7 +326,7 @@ msgstr "{filesCount} document(s) dans la file d'attente"
 msgid "{filesPct}% file capacity"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3607
+#: src/pages/folders/components/DocumentDetailsView.tsx:3868
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "Visionneuse {fileType}"
@@ -401,11 +405,11 @@ msgstr "{progress}% terminé"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} Obligatoire Mappé"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1496
+#: src/pages/folders/components/DocumentDetailsView.tsx:1698
 msgid "{savedFileName} created as version {savedVersion}."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1497
+#: src/pages/folders/components/DocumentDetailsView.tsx:1699
 msgid "{savedFileName} updated successfully."
 msgstr ""
 
@@ -822,7 +826,7 @@ msgstr "Ajouter"
 msgid "Add \"{query}\""
 msgstr "Ajoutez \"{query}\""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3087
+#: src/pages/folders/components/DocumentDetailsView.tsx:3331
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:374
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:114
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:202
@@ -1213,10 +1217,10 @@ msgid "AI Suggestions"
 msgstr "Suggestions de l'IA"
 
 #: src/pages/folders/components/AiSummaryView.tsx:285
-#: src/pages/folders/components/DocumentDetailsView.tsx:2255
-#: src/pages/folders/components/DocumentDetailsView.tsx:2262
-#: src/pages/folders/components/DocumentsListView.tsx:1104
-#: src/pages/folders/components/FolderTable.tsx:1495
+#: src/pages/folders/components/DocumentDetailsView.tsx:2496
+#: src/pages/folders/components/DocumentDetailsView.tsx:2503
+#: src/pages/folders/components/DocumentsListView.tsx:1122
+#: src/pages/folders/components/FolderTable.tsx:1535
 msgid "AI Summary"
 msgstr "Résumé IA"
 
@@ -1434,7 +1438,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2622
+#: src/pages/requests/components/request/Request.tsx:2660
 msgid "An error occurred: {0}"
 msgstr "Une erreur s'est produite : {0}"
 
@@ -1709,8 +1713,8 @@ msgstr ""
 msgid "Are you sure you want to delete 1 selected staged file?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1142
-#: src/pages/folders/components/FolderTable.tsx:1624
+#: src/pages/folders/components/DocumentsListView.tsx:1160
+#: src/pages/folders/components/FolderTable.tsx:1664
 msgid "Are you sure you want to delete this document? This action cannot be undone."
 msgstr ""
 
@@ -1738,7 +1742,7 @@ msgstr ""
 msgid "Are you sure you want to delete this user? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3575
+#: src/pages/folders/components/DocumentDetailsView.tsx:3836
 msgid "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 msgstr ""
 
@@ -2019,8 +2023,8 @@ msgstr "En attente de vérification"
 #: src/pages/folders/components/AiSummaryView.tsx:242
 #: src/pages/folders/components/AiSummaryView.tsx:495
 #: src/pages/folders/components/CollaboraEditor.tsx:278
-#: src/pages/folders/components/DocumentDetailsView.tsx:1883
-#: src/pages/folders/components/DocumentDetailsView.tsx:2169
+#: src/pages/folders/components/DocumentDetailsView.tsx:2085
+#: src/pages/folders/components/DocumentDetailsView.tsx:2371
 #: src/pages/folders/components/DocumentSigningPage.tsx:2836
 #: src/pages/folders/components/DocumentSigningPage.tsx:2842
 #: src/pages/folders/components/EditMetadataView.tsx:395
@@ -2316,7 +2320,7 @@ msgstr "Stockage sécurisé intégré"
 
 #. placeholder {0}: actionValidation.action.label
 #. placeholder {1}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1812
+#: src/pages/requests/components/GridView.tsx:1819
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "L'action groupée \"{0}\" a été appliquée avec succès à {1} requêtes !"
 
@@ -2330,7 +2334,7 @@ msgid "Bulk Import Entries"
 msgstr "Entrées d'importation en masse"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1789
+#: src/pages/requests/components/GridView.tsx:1796
 msgid "Bulk marked {0} requests as Paid successfully!"
 msgstr "En masse, {0} demandes ont été marquées comme étant payées avec succès !"
 
@@ -2423,10 +2427,11 @@ msgstr "Peut voir"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:108
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
-#: src/pages/folders/components/DocumentDetailsView.tsx:2515
-#: src/pages/folders/components/DocumentDetailsView.tsx:3573
-#: src/pages/folders/components/DocumentsListView.tsx:1140
-#: src/pages/folders/components/FolderTable.tsx:1622
+#: src/pages/folders/components/DocumentDetailsView.tsx:2397
+#: src/pages/folders/components/DocumentDetailsView.tsx:2756
+#: src/pages/folders/components/DocumentDetailsView.tsx:3834
+#: src/pages/folders/components/DocumentsListView.tsx:1158
+#: src/pages/folders/components/FolderTable.tsx:1662
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1037
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:111
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:169
@@ -2449,7 +2454,7 @@ msgstr "Peut voir"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:302
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:522
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:873
-#: src/pages/requests/RequestsPage.tsx:1868
+#: src/pages/requests/RequestsPage.tsx:1873
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:797
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:845
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:957
@@ -2934,7 +2939,7 @@ msgstr ""
 msgid "Close panel"
 msgstr "Fermer le panneau"
 
-#: src/pages/requests/RequestsPage.tsx:1964
+#: src/pages/requests/RequestsPage.tsx:1969
 msgid "Close Tab"
 msgstr ""
 
@@ -3030,7 +3035,7 @@ msgstr "Colonnes ingérées :"
 #~ msgid "Coming Soon"
 #~ msgstr "À venir"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1848
+#: src/pages/folders/components/DocumentDetailsView.tsx:2050
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:571
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:603
 #: src/pages/requests/components/request/components/Header.tsx:782
@@ -3235,7 +3240,7 @@ msgstr "Confirmer et passer en production"
 msgid "Confirm and activate the policy"
 msgstr "Confirmer et activer la politique"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2538
+#: src/pages/folders/components/DocumentDetailsView.tsx:2780
 msgid "Confirm Decline"
 msgstr ""
 
@@ -3259,7 +3264,7 @@ msgstr "Connectez {0}"
 msgid "Connect {providerLabel}"
 msgstr "Connectez {providerLabel}"
 
-#: src/pages/requests/RequestsPage.tsx:1878
+#: src/pages/requests/RequestsPage.tsx:1883
 msgid "Connect Email Watch"
 msgstr ""
 
@@ -3302,7 +3307,7 @@ msgid "Connect your QuickBooks account to sync PO and invoice data automatically
 msgstr "Connectez votre compte QuickBooks pour synchroniser automatiquement les données de bon de commande et de facture."
 
 #: src/pages/requests/components/Header.tsx:139
-#: src/pages/requests/RequestsPage.tsx:1945
+#: src/pages/requests/RequestsPage.tsx:1950
 msgid "Connected"
 msgstr ""
 
@@ -3314,11 +3319,11 @@ msgstr "Connecté • REST v11.13"
 msgid "Connected • SID: {sapSystemId}"
 msgstr "Connecté • SID : {sapSystemId}"
 
-#: src/pages/requests/RequestsPage.tsx:1729
+#: src/pages/requests/RequestsPage.tsx:1734
 msgid "Connected successfully"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1937
+#: src/pages/requests/RequestsPage.tsx:1942
 msgid "Connected Successfully!"
 msgstr ""
 
@@ -3331,7 +3336,7 @@ msgid "Connecting to SAP Host ({sapHost})..."
 msgstr "Connexion à l'hôte SAP ({sapHost})..."
 
 #: src/pages/requests/components/Header.tsx:142
-#: src/pages/requests/RequestsPage.tsx:1858
+#: src/pages/requests/RequestsPage.tsx:1863
 msgid "Connecting..."
 msgstr ""
 
@@ -3351,7 +3356,7 @@ msgstr "Connexion réussie ! Destination RFC de SAP ERP ({sapSystemId}) vérifi�
 msgid "Connector"
 msgstr "Connecteur"
 
-#: src/pages/requests/RequestsPage.tsx:1950
+#: src/pages/requests/RequestsPage.tsx:1955
 msgid "Connector ID:"
 msgstr ""
 
@@ -3530,15 +3535,15 @@ msgstr ""
 #~ msgid "Couldn't delete selected staged files."
 #~ msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:341
+#: src/pages/folders/components/FolderExplorer.tsx:353
 msgid "Couldn't delete this document. Missing document or repository ID."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:222
+#: src/pages/folders/components/FolderExplorer.tsx:234
 msgid "Couldn't delete this staged file."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:305
+#: src/pages/folders/components/FolderExplorer.tsx:317
 msgid "Couldn't export this staged file. Missing ID."
 msgstr ""
 
@@ -3687,7 +3692,7 @@ msgstr "Créé à"
 msgid "Created by"
 msgstr "Créé par"
 
-#: src/pages/folders/components/FolderTable.tsx:508
+#: src/pages/folders/components/FolderTable.tsx:521
 #: src/pages/forms/FormEntriesPage.tsx:2150
 #: src/pages/forms/FormEntriesPage.tsx:3122
 #: src/pages/forms/FormsPage.tsx:259
@@ -3812,8 +3817,8 @@ msgstr ""
 msgid "Current Role"
 msgstr "Rôle actuel"
 
-#: src/pages/folders/components/DocumentsListView.tsx:534
-#: src/pages/folders/components/FolderTable.tsx:1340
+#: src/pages/folders/components/DocumentsListView.tsx:537
+#: src/pages/folders/components/FolderTable.tsx:1380
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1721
 #: src/pages/requests/components/request/components/Header.tsx:642
 msgid "Current Stage"
@@ -3966,7 +3971,7 @@ msgstr "Date et heure"
 msgid "Date From"
 msgstr "Dater de"
 
-#: src/pages/folders/components/FolderTable.tsx:496
+#: src/pages/folders/components/FolderTable.tsx:509
 msgid "Date Modified"
 msgstr "Date de modification"
 
@@ -4011,8 +4016,8 @@ msgstr "Décidez de la manière dont les révisions des documents sont suivies l
 msgid "Decision Details"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2418
-#: src/pages/folders/components/DocumentDetailsView.tsx:2425
+#: src/pages/folders/components/DocumentDetailsView.tsx:2659
+#: src/pages/folders/components/DocumentDetailsView.tsx:2666
 msgid "Decline"
 msgstr ""
 
@@ -4069,11 +4074,11 @@ msgstr "Définir une règle"
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr "Définissez le nom du rôle, attribuez des utilisateurs et décrivez son étendue."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1125
-#: src/pages/folders/components/DocumentsListView.tsx:1141
-#: src/pages/folders/components/FolderTable.tsx:558
-#: src/pages/folders/components/FolderTable.tsx:1517
-#: src/pages/folders/components/FolderTable.tsx:1623
+#: src/pages/folders/components/DocumentsListView.tsx:1143
+#: src/pages/folders/components/DocumentsListView.tsx:1159
+#: src/pages/folders/components/FolderTable.tsx:571
+#: src/pages/folders/components/FolderTable.tsx:1557
+#: src/pages/folders/components/FolderTable.tsx:1663
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:98
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:112
 #: src/pages/folders/components/Upload/Upload.tsx:4966
@@ -4120,8 +4125,8 @@ msgstr ""
 msgid "Delete column \"{col}\""
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1145
-#: src/pages/folders/components/FolderTable.tsx:1627
+#: src/pages/folders/components/DocumentsListView.tsx:1163
+#: src/pages/folders/components/FolderTable.tsx:1667
 msgid "Delete Document"
 msgstr ""
 
@@ -4515,7 +4520,7 @@ msgstr "Date du document"
 msgid "Document Date in Document"
 msgstr "Date du document dans le document"
 
-#: src/pages/folders/components/FolderExplorer.tsx:361
+#: src/pages/folders/components/FolderExplorer.tsx:373
 msgid "Document deleted successfully."
 msgstr ""
 
@@ -4711,8 +4716,8 @@ msgstr "Doubles paiements signalés par les algorithmes du grand livre"
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3265
-#: src/pages/folders/components/DocumentDetailsView.tsx:3269
+#: src/pages/folders/components/DocumentDetailsView.tsx:3509
+#: src/pages/folders/components/DocumentDetailsView.tsx:3513
 #: src/pages/folders/components/DocumentSigningPage.tsx:2796
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:876
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:87
@@ -4723,8 +4728,8 @@ msgstr "Télécharger"
 msgid "Download documents"
 msgstr "Télécharger des documents"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2228
-#: src/pages/folders/components/DocumentDetailsView.tsx:2232
+#: src/pages/folders/components/DocumentDetailsView.tsx:2457
+#: src/pages/folders/components/DocumentDetailsView.tsx:2461
 msgid "Download file"
 msgstr "Télécharger le fichier"
 
@@ -4750,7 +4755,7 @@ msgstr "Télécharger le modèle"
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr "Téléchargez le fichier modèle de données de base du bon de commande prédéfini pour afficher les enregistrements de référence. Utilisez ce fichier pour comprendre la structure du schéma par défaut et les exemples de valeurs utilisés pour la correspondance."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2228
+#: src/pages/folders/components/DocumentDetailsView.tsx:2457
 #: src/pages/forms/components/GenericFormImportModal.tsx:464
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:910
 msgid "Downloading..."
@@ -4995,7 +5000,7 @@ msgstr "par ex. Équipe Finances"
 #~ msgid "e.g. New York, NY"
 #~ msgstr "ex. New York, NY"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2504
+#: src/pages/folders/components/DocumentDetailsView.tsx:2744
 msgid "e.g. Not my document"
 msgstr ""
 
@@ -5117,8 +5122,8 @@ msgstr ""
 msgid "Edit Field Mappings"
 msgstr "Modifier les mappages de champs"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2190
-#: src/pages/folders/components/DocumentDetailsView.tsx:2192
+#: src/pages/folders/components/DocumentDetailsView.tsx:2419
+#: src/pages/folders/components/DocumentDetailsView.tsx:2421
 msgid "Edit file"
 msgstr "Modifier le fichier"
 
@@ -5164,9 +5169,12 @@ msgstr "Modifier le menu"
 msgid "Edit Menu Setup"
 msgstr "Modifier la configuration du menu"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1098
+#: src/pages/folders/components/DocumentDetailsView.tsx:2474
+#: src/pages/folders/components/DocumentDetailsView.tsx:2481
+#: src/pages/folders/components/DocumentsListView.tsx:1116
 #: src/pages/folders/components/EditMetadataView.tsx:402
-#: src/pages/folders/components/FolderTable.tsx:1489
+#: src/pages/folders/components/FolderTable.tsx:1529
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:36
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:111
 msgid "Edit Metadata"
 msgstr "Modifier les métadonnées"
@@ -5518,7 +5526,7 @@ msgstr ""
 msgid "Error starting workflow"
 msgstr "Erreur lors du démarrage du flux de travail"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1478
+#: src/pages/folders/components/DocumentDetailsView.tsx:1680
 msgid "Error updating document: {detail}"
 msgstr "Erreur lors de la mise à jour du document : {detail}"
 
@@ -5599,10 +5607,10 @@ msgstr "enregistrements de bons de commande existants"
 msgid "Existing requests"
 msgstr "Demandes existantes"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2266
-#: src/pages/folders/components/DocumentDetailsView.tsx:2287
-#: src/pages/folders/components/DocumentDetailsView.tsx:3574
-#: src/pages/folders/components/DocumentDetailsView.tsx:3577
+#: src/pages/folders/components/DocumentDetailsView.tsx:2507
+#: src/pages/folders/components/DocumentDetailsView.tsx:2528
+#: src/pages/folders/components/DocumentDetailsView.tsx:3835
+#: src/pages/folders/components/DocumentDetailsView.tsx:3838
 msgid "Exit Signing"
 msgstr ""
 
@@ -5841,7 +5849,7 @@ msgstr "Échec de la classification du document"
 msgid "Failed to complete signing process"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1481
+#: src/pages/requests/RequestsPage.tsx:1486
 msgid "Failed to connect watch email."
 msgstr ""
 
@@ -5858,7 +5866,7 @@ msgstr "Échec de la création du dossier : {0}"
 msgid "Failed to create Master Form: {0}"
 msgstr "Échec de la création du formulaire principal : {0}"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2527
+#: src/pages/folders/components/DocumentDetailsView.tsx:2769
 #: src/pages/sign-request/SignRequestInvitePage.tsx:311
 msgid "Failed to decline sign request"
 msgstr ""
@@ -5984,7 +5992,7 @@ msgstr ""
 #~ msgid "Failed to move this request."
 #~ msgstr "Échec du déplacement de cette demande."
 
-#: src/pages/requests/RequestsPage.tsx:1468
+#: src/pages/requests/RequestsPage.tsx:1473
 msgid "Failed to obtain sign-in URL from server."
 msgstr ""
 
@@ -6005,7 +6013,7 @@ msgid "Failed to proceed request:"
 msgstr "Échec du traitement de la demande :"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2416
+#: src/pages/requests/components/request/Request.tsx:2451
 msgid "Failed to proceed request: {0}"
 msgstr "Échec du traitement de la demande : {0}"
 
@@ -6018,7 +6026,7 @@ msgstr "Échec du traitement du fichier"
 msgid "Failed to revoke"
 msgstr "Échec de la révocation"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1476
+#: src/pages/folders/components/DocumentDetailsView.tsx:1678
 msgid "Failed to save document edits"
 msgstr "Échec de l'enregistrement des modifications du document"
 
@@ -6031,7 +6039,7 @@ msgid "Failed to save report"
 msgstr "Échec de l'enregistrement du rapport"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2560
+#: src/pages/requests/components/request/Request.tsx:2598
 msgid "Failed to save request: {0}"
 msgstr "Échec de l'enregistrement de la demande : {0}"
 
@@ -6047,7 +6055,7 @@ msgstr "Échec de l'envoi d'OTP. Veuillez réessayer."
 msgid "Failed to share dashboard"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2406
+#: src/pages/folders/components/DocumentDetailsView.tsx:2647
 msgid "Failed to share file"
 msgstr ""
 
@@ -6055,7 +6063,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2910
+#: src/pages/requests/components/request/Request.tsx:2948
 msgid "Failed to share request"
 msgstr "Échec du partage de la demande"
 
@@ -6080,7 +6088,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2561
+#: src/pages/requests/components/request/Request.tsx:2599
 msgid "Failed to submit request: {0}"
 msgstr "Échec de l'envoi de la demande : {0}"
 
@@ -6088,6 +6096,10 @@ msgstr "Échec de l'envoi de la demande : {0}"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2063
 msgid "Failed to update folder: {0}"
 msgstr "Échec de la mise à jour du dossier : {0}"
+
+#: src/pages/folders/components/DocumentDetailsView.tsx:879
+msgid "Failed to update metadata"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2019
 msgid "Failed to upload master file to the server"
@@ -6264,12 +6276,12 @@ msgstr ""
 msgid "File Selected"
 msgstr "Fichier sélectionné"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2399
+#: src/pages/folders/components/DocumentDetailsView.tsx:2640
 #: src/pages/folders/components/FolderSharePopover.tsx:513
 msgid "File shared and sign request sent successfully"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2400
+#: src/pages/folders/components/DocumentDetailsView.tsx:2641
 #: src/pages/folders/components/FolderSharePopover.tsx:514
 #: src/pages/folders/components/ShareView.tsx:185
 msgid "File shared successfully"
@@ -6302,9 +6314,9 @@ msgstr "Fichier téléversé avec succès"
 #~ msgid "File uploaded."
 #~ msgstr "Fichier téléversé."
 
-#: src/pages/folders/components/DocumentsListView.tsx:1048
-#: src/pages/folders/components/FolderTable.tsx:484
-#: src/pages/folders/components/FolderTable.tsx:1651
+#: src/pages/folders/components/DocumentsListView.tsx:1066
+#: src/pages/folders/components/FolderTable.tsx:497
+#: src/pages/folders/components/FolderTable.tsx:1691
 #: src/pages/folders/components/Upload/Upload.tsx:4049
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
@@ -6315,7 +6327,7 @@ msgstr "Fichiers"
 msgid "Files & Storage"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:977
+#: src/pages/folders/components/FolderTable.tsx:1004
 msgid "FILES IN THIS FOLDER"
 msgstr "FICHIERS DANS CE DOSSIER"
 
@@ -6565,7 +6577,7 @@ msgstr "Dossier mis à jour avec succès."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:30
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
-#: src/pages/folders/components/FolderExplorer.tsx:616
+#: src/pages/folders/components/FolderExplorer.tsx:632
 #: src/pages/search/SearchPage.tsx:328
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:74
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
@@ -6573,7 +6585,7 @@ msgstr "Dossier mis à jour avec succès."
 msgid "Folders"
 msgstr "Dossiers"
 
-#: src/pages/folders/components/FolderTable.tsx:966
+#: src/pages/folders/components/FolderTable.tsx:993
 msgid "FOLDERS"
 msgstr "DOSSIERS"
 
@@ -6681,7 +6693,7 @@ msgstr ""
 msgid "found in your PO Master data. Choose how"
 msgstr "trouvé dans vos données de base de bon de commande. Choisissez comment"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:918
+#: src/pages/folders/components/DocumentDetailsView.tsx:1122
 msgid "From"
 msgstr ""
 
@@ -7305,7 +7317,7 @@ msgid "Inactive"
 msgstr "Inactif"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:167
-#: src/pages/requests/components/request/Request.tsx:1875
+#: src/pages/requests/components/request/Request.tsx:1906
 #: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -7496,7 +7508,7 @@ msgstr ""
 #~ msgid "Intelligent Upload"
 #~ msgstr "Téléversement intelligent"
 
-#: src/pages/folders/components/FolderExplorer.tsx:625
+#: src/pages/folders/components/FolderExplorer.tsx:641
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:798
 msgid "Intelligent Upload & Classify"
 msgstr "Téléversement et classification intelligents"
@@ -7626,7 +7638,7 @@ msgstr "La facture dépasse la valeur du bon de commande."
 msgid "Invoice Extracted Line Item"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2727
+#: src/pages/folders/components/DocumentDetailsView.tsx:2971
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6738
 msgid "Invoice Line Items"
 msgstr "Lignes de facture"
@@ -7695,7 +7707,7 @@ msgstr ""
 #~ msgid "invoices"
 #~ msgstr "factures"
 
-#: src/pages/requests/components/request/Request.tsx:1874
+#: src/pages/requests/components/request/Request.tsx:1905
 #: src/pages/requests/RequestsPage.tsx:329
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -7956,11 +7968,11 @@ msgstr "Nom"
 #~ msgid "Launch Workflow"
 #~ msgstr "Lancer le flux"
 
-#: src/pages/requests/components/request/Request.tsx:2028
+#: src/pages/requests/components/request/Request.tsx:2059
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2027
+#: src/pages/requests/components/request/Request.tsx:2058
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -8192,8 +8204,8 @@ msgstr "Chargement des pièces jointes..."
 msgid "Loading Attachments..."
 msgstr "Chargement des pièces jointes..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2913
-#: src/pages/folders/components/DocumentDetailsView.tsx:2919
+#: src/pages/folders/components/DocumentDetailsView.tsx:3157
+#: src/pages/folders/components/DocumentDetailsView.tsx:3163
 msgid "Loading comments..."
 msgstr "Chargement des commentaires..."
 
@@ -8210,6 +8222,7 @@ msgstr "Chargement du document..."
 msgid "Loading field data…"
 msgstr "Chargement des données de terrain…"
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:55
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:322
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:104
 msgid "Loading fields..."
@@ -8259,7 +8272,7 @@ msgstr "Chargement des menus..."
 msgid "Loading notifications..."
 msgstr "Chargement des notifications..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2908
+#: src/pages/folders/components/DocumentDetailsView.tsx:3152
 msgid "Loading older comments..."
 msgstr "Chargement des commentaires plus anciens..."
 
@@ -8283,8 +8296,8 @@ msgstr "Chargement de l'aperçu..."
 msgid "Loading recipient email..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3179
-#: src/pages/folders/components/DocumentDetailsView.tsx:3185
+#: src/pages/folders/components/DocumentDetailsView.tsx:3423
+#: src/pages/folders/components/DocumentDetailsView.tsx:3429
 msgid "Loading related documents..."
 msgstr "Chargement des documents associés…"
 
@@ -8316,7 +8329,7 @@ msgstr "Chargement des options de partage..."
 msgid "Loading sign request..."
 msgstr "Chargement de la demande de signe..."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2796
+#: src/pages/folders/components/DocumentDetailsView.tsx:3040
 msgid "Loading timeline..."
 msgstr "Chargement de la chronologie..."
 
@@ -8613,7 +8626,7 @@ msgstr "Marquer tout comme lu"
 #~ msgid "Mark as optional"
 #~ msgstr "Marquer comme facultatif"
 
-#: src/pages/requests/components/GridView.tsx:1799
+#: src/pages/requests/components/GridView.tsx:1806
 msgid "Mark as Paid"
 msgstr "Marquer comme payé"
 
@@ -8877,6 +8890,10 @@ msgstr "Métadonnées"
 msgid "Metadata fields"
 msgstr "Champs de métadonnées"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:897
+msgid "Metadata updated successfully."
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/history/History.tsx:173
 msgid "Metadata validated, no duplicates found"
 msgstr "Métadonnées validées, aucun doublon trouvé"
@@ -8948,7 +8965,7 @@ msgstr ""
 msgid "Mismatches Found"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2305
+#: src/pages/folders/components/DocumentDetailsView.tsx:2546
 #: src/pages/folders/components/ShareView.tsx:137
 msgid "Missing file context for share"
 msgstr "Contexte de fichier manquant pour le partage"
@@ -9130,8 +9147,8 @@ msgstr "Doit contenir :"
 msgid "My Account"
 msgstr "Mon compte"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2431
-#: src/pages/folders/components/DocumentDetailsView.tsx:2460
+#: src/pages/folders/components/DocumentDetailsView.tsx:2672
+#: src/pages/folders/components/DocumentDetailsView.tsx:2701
 msgid "My Sign"
 msgstr "Mon signe"
 
@@ -9150,9 +9167,9 @@ msgstr "N/D"
 msgid "N/A (No value needed)"
 msgstr "N/A (Aucune valeur requise)"
 
-#: src/pages/folders/components/DocumentsListView.tsx:535
-#: src/pages/folders/components/FolderTable.tsx:468
-#: src/pages/folders/components/FolderTable.tsx:1334
+#: src/pages/folders/components/DocumentsListView.tsx:538
+#: src/pages/folders/components/FolderTable.tsx:481
+#: src/pages/folders/components/FolderTable.tsx:1374
 #: src/pages/forms/FormEntriesPage.tsx:3113
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
@@ -9237,7 +9254,7 @@ msgstr ""
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
 #: src/pages/requests/components/request/components/Header.tsx:1880
-#: src/pages/requests/RequestsPage.tsx:1891
+#: src/pages/requests/RequestsPage.tsx:1896
 msgid "New"
 msgstr "Nouveau"
 
@@ -9384,7 +9401,7 @@ msgstr "Aucun agent actif"
 msgid "No activity recorded"
 msgstr "Aucune activité enregistrée"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2891
+#: src/pages/folders/components/DocumentDetailsView.tsx:3135
 msgid "No activity timeline is available for this document."
 msgstr "Aucune chronologie d'activité disponible pour ce document."
 
@@ -9433,11 +9450,11 @@ msgstr "Aucune colonne trouvée"
 msgid "No columns match search"
 msgstr "Aucune colonne ne correspond à la recherche"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3074
+#: src/pages/folders/components/DocumentDetailsView.tsx:3318
 msgid "No comments are available for this document. Add the first comment to start collaboration."
 msgstr "Aucun commentaire disponible pour ce document. Ajoutez le premier commentaire pour commencer la collaboration."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3076
+#: src/pages/folders/components/DocumentDetailsView.tsx:3320
 msgid "No comments found"
 msgstr "Aucun commentaire trouvé"
 
@@ -9527,8 +9544,8 @@ msgstr "Aucun résumé du document disponible."
 msgid "No documents currently match this rule."
 msgstr "Aucun document ne correspond actuellement à cette règle."
 
-#: src/pages/folders/components/DocumentsListView.tsx:978
-#: src/pages/folders/components/DocumentsListView.tsx:1000
+#: src/pages/folders/components/DocumentsListView.tsx:996
+#: src/pages/folders/components/DocumentsListView.tsx:1018
 msgid "No documents found"
 msgstr "Aucun document trouvé"
 
@@ -9650,7 +9667,7 @@ msgstr "Aucun groupe pour l'instant"
 msgid "No history found"
 msgstr "Aucun historique trouvé"
 
-#: src/pages/requests/components/request/Request.tsx:2886
+#: src/pages/requests/components/request/Request.tsx:2924
 msgid "No instance ID available to share"
 msgstr "Aucun ID d'instance disponible à partager"
 
@@ -9729,6 +9746,7 @@ msgid "No menus yet"
 msgstr "Pas encore de menus"
 
 #: src/pages/folders/components/EditMetadataView.tsx:466
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:78
 msgid "No metadata fields available"
 msgstr "Aucun champ de métadonnées disponible"
 
@@ -9782,7 +9800,7 @@ msgstr "Aucun flux de travail publié trouvé."
 msgid "No recommendations available."
 msgstr "Aucune recommandation disponible."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3362
+#: src/pages/folders/components/DocumentDetailsView.tsx:3606
 msgid "No related documents are linked with this file yet."
 msgstr "Aucun document associé n'est encore lié à ce fichier."
 
@@ -9799,7 +9817,7 @@ msgstr "Aucun document connexe trouvé."
 msgid "No repository fields configured."
 msgstr "Aucun champ de dépôt configuré."
 
-#: src/pages/folders/components/FolderTable.tsx:1139
+#: src/pages/folders/components/FolderTable.tsx:1170
 msgid "No repository items found"
 msgstr "Aucun élément de dépôt trouvé"
 
@@ -9917,7 +9935,7 @@ msgstr "Aucun compte tiers requis"
 msgid "No timeline data for this period."
 msgstr "Aucune donnée chronologique pour cette période."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2893
+#: src/pages/folders/components/DocumentDetailsView.tsx:3137
 msgid "No timeline found"
 msgstr "Aucune chronologie trouvée"
 
@@ -10177,7 +10195,7 @@ msgstr "OneDrive"
 msgid "Only visible to you"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:548
+#: src/pages/folders/components/FolderTable.tsx:561
 #: src/pages/portal/components/PortalHome.tsx:360
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:427
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
@@ -10196,7 +10214,7 @@ msgstr ""
 msgid "Open draft files"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1507
+#: src/pages/folders/components/DocumentDetailsView.tsx:1709
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:539
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:544
 msgid "Open file"
@@ -10783,7 +10801,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Veuillez joindre un fichier pour continuer."
 
-#: src/pages/requests/components/request/Request.tsx:2278
+#: src/pages/requests/components/request/Request.tsx:2310
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -10800,12 +10818,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr ""
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2267
+#: src/pages/requests/components/request/Request.tsx:2299
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:834
-#: src/pages/requests/components/request/Request.tsx:2305
+#: src/pages/requests/components/request/Request.tsx:2337
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -10839,7 +10857,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2286
+#: src/pages/requests/components/request/Request.tsx:2318
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -11023,6 +11041,10 @@ msgstr ""
 #~ msgid "Please fill required field(s): {names}"
 #~ msgstr "Veuillez remplir le(s) champ(s) obligatoire(s) : {names}"
 
+#: src/pages/folders/components/DocumentDetailsView.tsx:850
+msgid "Please fill the mandatory fields: {names}"
+msgstr ""
+
 #: src/pages/settings/helpers/requiredFieldErrors.ts:15
 #~ msgid "Please fill the required field: {0}"
 #~ msgstr "Veuillez remplir le champ obligatoire : {0}"
@@ -11087,13 +11109,13 @@ msgstr "Veuillez vous connecter avec l'adresse e-mail à laquelle le lien a ét�
 msgid "Please place at least one signature box before submitting."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2345
+#: src/pages/folders/components/DocumentDetailsView.tsx:2586
 #: src/pages/folders/components/ShareView.tsx:153
 msgid "Please review this file"
 msgstr "Veuillez réviser ce fichier"
 
 #. placeholder {0}: data.fileName
-#: src/pages/folders/components/DocumentDetailsView.tsx:2344
+#: src/pages/folders/components/DocumentDetailsView.tsx:2585
 msgid "Please review this file: {0}"
 msgstr "Veuillez consulter ce fichier : {0}"
 
@@ -11174,7 +11196,7 @@ msgstr ""
 msgid "Please sign this document"
 msgstr "Veuillez signer ce document"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2357
+#: src/pages/folders/components/DocumentDetailsView.tsx:2598
 msgid "Please sign this document. You can place your signature anywhere."
 msgstr "Veuillez signer ce document. Vous pouvez apposer votre signature n'importe où."
 
@@ -11509,7 +11531,7 @@ msgstr "Préférences"
 msgid "Prepare your file"
 msgstr "Préparez votre fichier"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2210
+#: src/pages/folders/components/DocumentDetailsView.tsx:2439
 msgid "Preparing redacted file..."
 msgstr ""
 
@@ -11606,8 +11628,8 @@ msgstr "Imprimer"
 msgid "Print documents"
 msgstr "Imprimer des documents"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2211
-#: src/pages/folders/components/DocumentDetailsView.tsx:2215
+#: src/pages/folders/components/DocumentDetailsView.tsx:2440
+#: src/pages/folders/components/DocumentDetailsView.tsx:2444
 msgid "Print file"
 msgstr "Imprimer le fichier"
 
@@ -12020,7 +12042,7 @@ msgstr "Prêt à l'emploi"
 msgid "Real-Time Dashboard"
 msgstr "Tableau de bord en temps réel"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2499
+#: src/pages/folders/components/DocumentDetailsView.tsx:2740
 msgid "Reason for declining"
 msgstr ""
 
@@ -12032,7 +12054,7 @@ msgstr ""
 #~ msgid "Receive transparent confidence rankings for top candidate repository matches."
 #~ msgstr "Recevez des classements de confiance transparents pour les meilleurs dépôts candidats correspondants."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:929
+#: src/pages/folders/components/DocumentDetailsView.tsx:1131
 #: src/pages/folders/components/Upload/Upload.tsx:1367
 msgid "Received"
 msgstr "Reçu"
@@ -12104,7 +12126,7 @@ msgstr "Périodicité"
 #~ msgid "Recv Qty"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3549
+#: src/pages/folders/components/DocumentDetailsView.tsx:3810
 msgid "Redacted"
 msgstr ""
 
@@ -12193,11 +12215,11 @@ msgstr "Rejeter la transaction"
 msgid "Rejected"
 msgstr "Rejeté"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1854
+#: src/pages/folders/components/DocumentDetailsView.tsx:2056
 msgid "Related Docs"
 msgstr "Docs associés"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3364
+#: src/pages/folders/components/DocumentDetailsView.tsx:3608
 msgid "Related documents not found"
 msgstr "Documents associés introuvables"
 
@@ -12259,8 +12281,8 @@ msgstr ""
 msgid "Remove file"
 msgstr "Supprimer le fichier"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3326
-#: src/pages/folders/components/DocumentDetailsView.tsx:3330
+#: src/pages/folders/components/DocumentDetailsView.tsx:3570
+#: src/pages/folders/components/DocumentDetailsView.tsx:3574
 msgid "Remove from related"
 msgstr "Supprimer des liens associés"
 
@@ -12280,11 +12302,11 @@ msgstr "Retirer le signataire"
 msgid "Remove tab"
 msgstr "Supprimer l'onglet"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:633
+#: src/pages/folders/components/DocumentDetailsView.tsx:673
 msgid "Removed from related"
 msgstr "Supprimé des liens associés"
 
-#: src/pages/folders/components/FolderTable.tsx:551
+#: src/pages/folders/components/FolderTable.tsx:564
 msgid "Rename"
 msgstr "Renommer"
 
@@ -12374,7 +12396,7 @@ msgstr "Objet du rapport"
 msgid "Reports"
 msgstr "Rapports"
 
-#: src/pages/folders/components/DocumentsListView.tsx:898
+#: src/pages/folders/components/DocumentsListView.tsx:916
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:979
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:942
 msgid "Repository"
@@ -12423,15 +12445,15 @@ msgstr "La demande {requestNo} a été déplacée avec succès."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "La demande {requestNo} a été déplacée avec succès"
 
-#: src/pages/requests/components/request/Request.tsx:2475
+#: src/pages/requests/components/request/Request.tsx:2510
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "L'action « {action} » pour la demande {resolvedRequestNo} a été effectuée avec succès"
 
-#: src/pages/requests/components/request/Request.tsx:2453
+#: src/pages/requests/components/request/Request.tsx:2488
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2474
+#: src/pages/requests/components/request/Request.tsx:2509
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "La demande {resolvedRequestNo} a été soumise avec succès"
 
@@ -12455,7 +12477,7 @@ msgstr "Demander une démo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Demande créée. Vous pouvez le suivre depuis Mes soumissions."
 
-#: src/pages/requests/components/request/Request.tsx:2585
+#: src/pages/requests/components/request/Request.tsx:2623
 msgid "Request is being processed."
 msgstr ""
 
@@ -12476,12 +12498,12 @@ msgstr ""
 msgid "Request Owner"
 msgstr "Propriétaire de la demande"
 
-#: src/pages/requests/components/request/Request.tsx:2604
+#: src/pages/requests/components/request/Request.tsx:2642
 msgid "Request saved successfully"
 msgstr "Demande enregistrée avec succès"
 
 #: src/pages/requests/components/request/components/Header.tsx:498
-#: src/pages/requests/components/request/Request.tsx:2906
+#: src/pages/requests/components/request/Request.tsx:2944
 msgid "Request shared successfully"
 msgstr "Demande partagée avec succès"
 
@@ -12492,7 +12514,7 @@ msgid "Request Status"
 msgstr "Demande Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2605
+#: src/pages/requests/components/request/Request.tsx:2643
 msgid "Request submitted successfully"
 msgstr "Demande soumise avec succès"
 
@@ -12592,7 +12614,7 @@ msgstr "Réinitialisez les mappages aux suggestions correspondantes."
 msgid "Reset Password"
 msgstr "Réinitialiser le mot de passe"
 
-#: src/pages/folders/components/DocumentsListView.tsx:987
+#: src/pages/folders/components/DocumentsListView.tsx:1005
 msgid "Reset Search"
 msgstr "Réinitialiser la recherche"
 
@@ -12995,8 +13017,9 @@ msgid "SAP Table Field Mapping"
 msgstr "Mappage des champs de table SAP"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:291
-#: src/pages/folders/components/DocumentDetailsView.tsx:2465
-#: src/pages/folders/components/DocumentDetailsView.tsx:2487
+#: src/pages/folders/components/DocumentDetailsView.tsx:2413
+#: src/pages/folders/components/DocumentDetailsView.tsx:2706
+#: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1922
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
@@ -13128,7 +13151,7 @@ msgstr ""
 msgid "Saved ({0})"
 msgstr "Enregistré ({0})"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2120
+#: src/pages/folders/components/DocumentDetailsView.tsx:2322
 msgid "Saved signature removed."
 msgstr "Signature enregistrée supprimée."
 
@@ -13136,7 +13159,8 @@ msgstr "Signature enregistrée supprimée."
 #~ msgid "Saved to stage"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2484
+#: src/pages/folders/components/DocumentDetailsView.tsx:2413
+#: src/pages/folders/components/DocumentDetailsView.tsx:2725
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/folders/components/Upload/Upload.tsx:4700
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1225
@@ -13272,7 +13296,7 @@ msgstr "Rechercher une unité commerciale..."
 msgid "Search by document name, reference number, or keywords..."
 msgstr "Recherche par nom de document, numéro de référence ou mots-clés..."
 
-#: src/pages/folders/components/DocumentsListView.tsx:892
+#: src/pages/folders/components/DocumentsListView.tsx:910
 #: src/pages/folders/components/ExplorerToolbar.tsx:271
 #: src/pages/folders/components/FolderFilterBar.tsx:399
 msgid "Search by name or metadata..."
@@ -13576,7 +13600,7 @@ msgstr ""
 #~ msgid "Select a folder"
 #~ msgstr "Sélectionnez un dossier"
 
-#: src/pages/folders/components/FolderExplorer.tsx:663
+#: src/pages/folders/components/FolderExplorer.tsx:679
 msgid "Select a folder before uploading."
 msgstr ""
 
@@ -13584,8 +13608,8 @@ msgstr ""
 #~ msgid "Select a form"
 #~ msgstr "Sélectionnez un formulaire"
 
-#: src/pages/folders/components/FolderExplorer.tsx:676
-#: src/pages/folders/components/FolderExplorer.tsx:690
+#: src/pages/folders/components/FolderExplorer.tsx:692
+#: src/pages/folders/components/FolderExplorer.tsx:706
 msgid "Select a repository before uploading."
 msgstr "Sélectionnez un référentiel avant de télécharger."
 
@@ -14008,7 +14032,7 @@ msgstr ""
 msgid "Semantic Classification"
 msgstr "Classification sémantique"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2486
+#: src/pages/folders/components/DocumentDetailsView.tsx:2727
 #: src/pages/forms/components/AiFormBuilder.tsx:227
 #: src/pages/portal/components/PortalWizardChat.tsx:298
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2200
@@ -14195,15 +14219,15 @@ msgstr "Gravité"
 #: src/components/common/SharePopover.tsx:330
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/dashboard/DashboardPage.tsx:352
-#: src/pages/folders/components/DocumentDetailsView.tsx:2298
-#: src/pages/folders/components/DocumentsListView.tsx:1109
+#: src/pages/folders/components/DocumentDetailsView.tsx:2539
+#: src/pages/folders/components/DocumentsListView.tsx:1127
 #: src/pages/folders/components/FolderFilterBar.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:554
 #: src/pages/folders/components/FolderSharePopover.tsx:570
 #: src/pages/folders/components/FolderSharePopover.tsx:603
 #: src/pages/folders/components/FolderSharePopover.tsx:1073
-#: src/pages/folders/components/FolderTable.tsx:552
-#: src/pages/folders/components/FolderTable.tsx:1500
+#: src/pages/folders/components/FolderTable.tsx:565
+#: src/pages/folders/components/FolderTable.tsx:1540
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
 #: src/pages/requests/components/request/components/Header.tsx:1439
@@ -14297,7 +14321,7 @@ msgstr "Afficher {0} dans les paramètres"
 #~ msgid "Show all {matchCount} matches"
 #~ msgstr "Afficher toutes les {matchCount} correspondances"
 
-#: src/pages/folders/components/FolderTable.tsx:916
+#: src/pages/folders/components/FolderTable.tsx:943
 msgid "Show both folders and files"
 msgstr "Afficher les dossiers et les fichiers"
 
@@ -14322,7 +14346,7 @@ msgstr "Afficher moins de suggestions"
 msgid "Show file list"
 msgstr ""
 
-#: src/pages/folders/components/FolderTable.tsx:913
+#: src/pages/folders/components/FolderTable.tsx:940
 msgid "Show files only"
 msgstr "Afficher uniquement les fichiers"
 
@@ -14330,8 +14354,8 @@ msgstr "Afficher uniquement les fichiers"
 msgid "Show Folder Configuration in Settings"
 msgstr "Afficher la configuration des dossiers dans les paramètres"
 
-#: src/pages/folders/components/FolderTable.tsx:913
-#: src/pages/folders/components/FolderTable.tsx:915
+#: src/pages/folders/components/FolderTable.tsx:940
+#: src/pages/folders/components/FolderTable.tsx:942
 msgid "Show folders only"
 msgstr "Afficher uniquement les dossiers"
 
@@ -14417,8 +14441,8 @@ msgid "Sign"
 msgstr "Signer"
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:323
-#: src/pages/folders/components/DocumentDetailsView.tsx:2266
-#: src/pages/folders/components/DocumentDetailsView.tsx:2287
+#: src/pages/folders/components/DocumentDetailsView.tsx:2507
+#: src/pages/folders/components/DocumentDetailsView.tsx:2528
 msgid "Sign Document"
 msgstr ""
 
@@ -14491,7 +14515,7 @@ msgstr ""
 msgid "Sign out"
 msgstr "se déconnecter"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:949
+#: src/pages/folders/components/DocumentDetailsView.tsx:1151
 msgid "Sign Request"
 msgstr ""
 
@@ -14499,12 +14523,12 @@ msgstr ""
 msgid "Sign request declined"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2397
+#: src/pages/folders/components/DocumentDetailsView.tsx:2638
 #: src/pages/folders/components/FolderSharePopover.tsx:511
 msgid "Sign request sent successfully"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2148
+#: src/pages/folders/components/DocumentDetailsView.tsx:2350
 msgid "Sign request sent. Assigned places stay visible on the document."
 msgstr "Demande de signature envoyée. Les lieux attribués restent visibles sur le document."
 
@@ -14513,7 +14537,7 @@ msgstr "Demande de signature envoyée. Les lieux attribués restent visibles sur
 msgid "Sign Up"
 msgstr "S'inscrire"
 
-#: src/pages/requests/RequestsPage.tsx:1674
+#: src/pages/requests/RequestsPage.tsx:1679
 msgid "Sign-in or watch creation failed."
 msgstr ""
 
@@ -14534,13 +14558,13 @@ msgstr "Méthodes de signature"
 msgid "Signature placed on document."
 msgstr "Signature apposée sur le document."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2131
+#: src/pages/folders/components/DocumentDetailsView.tsx:2333
 msgid "Signature saved for reuse."
 msgstr "Signature enregistrée pour réutilisation."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2017
-#: src/pages/folders/components/DocumentDetailsView.tsx:2110
-#: src/pages/folders/components/DocumentDetailsView.tsx:2704
+#: src/pages/folders/components/DocumentDetailsView.tsx:2219
+#: src/pages/folders/components/DocumentDetailsView.tsx:2312
+#: src/pages/folders/components/DocumentDetailsView.tsx:2946
 msgid "Signature submitted successfully."
 msgstr "Signature envoyée avec succès."
 
@@ -14711,7 +14735,7 @@ msgstr "Type de source"
 msgid "Source: Manual Entry"
 msgstr "Source : Saisie manuelle"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3528
+#: src/pages/folders/components/DocumentDetailsView.tsx:3789
 msgid "Source: OCR Document"
 msgstr "Source : Document OCR"
 
@@ -14739,13 +14763,13 @@ msgstr "Étape non disponible"
 msgid "Staged"
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:241
+#: src/pages/folders/components/FolderExplorer.tsx:253
 #: src/pages/folders/components/Upload/Upload.tsx:2582
 #: src/pages/folders/components/Upload/Upload.tsx:3768
 msgid "Staged file deleted."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:323
+#: src/pages/folders/components/FolderExplorer.tsx:335
 msgid "Staged file exported successfully."
 msgstr ""
 
@@ -14780,10 +14804,10 @@ msgstr "Lancer la recherche"
 msgid "Start typing to search"
 msgstr "Commencez à taper pour rechercher"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2245
-#: src/pages/folders/components/DocumentDetailsView.tsx:2251
-#: src/pages/folders/components/DocumentsListView.tsx:1115
-#: src/pages/folders/components/FolderTable.tsx:1506
+#: src/pages/folders/components/DocumentDetailsView.tsx:2486
+#: src/pages/folders/components/DocumentDetailsView.tsx:2492
+#: src/pages/folders/components/DocumentsListView.tsx:1133
+#: src/pages/folders/components/FolderTable.tsx:1546
 msgid "Start Workflow"
 msgstr "Démarrer le flux de travail"
 
@@ -14806,7 +14830,7 @@ msgstr "Tendance de crédit statique pour {selectedMonth}"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1040
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2182
-#: src/pages/folders/components/DocumentDetailsView.tsx:935
+#: src/pages/folders/components/DocumentDetailsView.tsx:1137
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:192
@@ -15464,6 +15488,10 @@ msgstr ""
 msgid "The passwords don't match. Please try again."
 msgstr ""
 
+#: src/pages/folders/components/InlineMetadataEditPanel.tsx:80
+msgid "The repository did not return editable metadata fields."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:552
 msgid "The request was created, but the comments could not be saved."
 msgstr ""
@@ -15556,10 +15584,10 @@ msgstr "Ce champ est obligatoire."
 #~ msgid "This field type ({fieldType}) isn't supported in this view yet."
 #~ msgstr "Ce type de champ ({fieldType}) n'est pas encore pris en charge dans cette vue."
 
-#: src/pages/folders/components/DocumentsListView.tsx:779
-#: src/pages/folders/components/DocumentsListView.tsx:786
-#: src/pages/folders/components/FolderTable.tsx:1444
-#: src/pages/folders/components/FolderTable.tsx:1453
+#: src/pages/folders/components/DocumentsListView.tsx:797
+#: src/pages/folders/components/DocumentsListView.tsx:804
+#: src/pages/folders/components/FolderTable.tsx:1484
+#: src/pages/folders/components/FolderTable.tsx:1493
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:152
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1089
 msgid "this file"
@@ -15590,12 +15618,12 @@ msgstr ""
 msgid "This file still has expired or invalid fields ({0}). Do you want to export?"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1890
+#: src/pages/folders/components/DocumentDetailsView.tsx:2092
 msgid "This file was deleted. Kindly try a new file."
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1002
-#: src/pages/folders/components/FolderTable.tsx:1143
+#: src/pages/folders/components/DocumentsListView.tsx:1020
+#: src/pages/folders/components/FolderTable.tsx:1174
 msgid "This folder does not contain any folders or files yet."
 msgstr "Ce dossier ne contient pas encore de dossiers ou de fichiers."
 
@@ -15638,7 +15666,7 @@ msgstr "Ce lien de portail n'est pas valide ou n'a pas encore été publié."
 msgid "This quote has no line items to compare against Quote 1."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:611
+#: src/pages/folders/components/DocumentDetailsView.tsx:651
 msgid "This related document cannot be removed."
 msgstr "Ce document associé ne peut pas être supprimé."
 
@@ -15662,7 +15690,7 @@ msgstr "Cette demande manque de certains détails requis pour avancer."
 msgid "This request is missing an instance id."
 msgstr "Il manque un identifiant d'instance à cette requête."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3142
+#: src/pages/folders/components/DocumentDetailsView.tsx:3386
 msgid "This result cannot be added to related documents."
 msgstr "Ce résultat ne peut pas être ajouté aux documents associés."
 
@@ -15738,7 +15766,7 @@ msgstr "Temps écoulé"
 msgid "Timeframe"
 msgstr "Laps de temps"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1842
+#: src/pages/folders/components/DocumentDetailsView.tsx:2044
 msgid "Timeline"
 msgstr "Chronologie"
 
@@ -15755,7 +15783,7 @@ msgstr "Fuseau horaire"
 #~ msgid "Tip: switch this on to make the field mandatory."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:925
+#: src/pages/folders/components/DocumentDetailsView.tsx:1127
 msgid "To"
 msgstr ""
 
@@ -15771,7 +15799,7 @@ msgstr "à la poubelle ?"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:655
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2387
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2401
-#: src/pages/folders/components/DocumentDetailsView.tsx:2979
+#: src/pages/folders/components/DocumentDetailsView.tsx:3223
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "Aujourd'hui"
@@ -15950,7 +15978,7 @@ msgstr "Essayez un autre mot-clé, un autre dossier ou désactivez l'une des con
 msgid "Try Again"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:980
+#: src/pages/folders/components/DocumentsListView.tsx:998
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "Essayez de modifier la recherche de fichiers ou de réinitialiser les filtres sélectionnés."
 
@@ -16053,12 +16081,12 @@ msgstr "Impossible de créer une demande de signature"
 msgid "Unable to create this request."
 msgstr "Impossible de créer cette demande."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1750
-#: src/pages/folders/components/DocumentDetailsView.tsx:1762
-#: src/pages/folders/components/DocumentDetailsView.tsx:1769
-#: src/pages/folders/components/DocumentDetailsView.tsx:1785
-#: src/pages/folders/components/DocumentDetailsView.tsx:3289
-#: src/pages/folders/components/DocumentDetailsView.tsx:3311
+#: src/pages/folders/components/DocumentDetailsView.tsx:1952
+#: src/pages/folders/components/DocumentDetailsView.tsx:1964
+#: src/pages/folders/components/DocumentDetailsView.tsx:1971
+#: src/pages/folders/components/DocumentDetailsView.tsx:1987
+#: src/pages/folders/components/DocumentDetailsView.tsx:3533
+#: src/pages/folders/components/DocumentDetailsView.tsx:3555
 msgid "Unable to download file"
 msgstr "Impossible de télécharger le fichier"
 
@@ -16078,7 +16106,7 @@ msgstr "Impossible de charger l'activité."
 msgid "Unable to load AI summary"
 msgstr "Impossible de charger le résumé de l'IA"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1004
+#: src/pages/folders/components/DocumentDetailsView.tsx:1206
 msgid "Unable to load document details"
 msgstr "Impossible de charger les détails du document"
 
@@ -16118,7 +16146,7 @@ msgstr "Impossible d'ouvrir la demande de signature"
 msgid "Unable to preview document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1827
+#: src/pages/folders/components/DocumentDetailsView.tsx:2029
 msgid "Unable to print file"
 msgstr ""
 
@@ -16133,7 +16161,7 @@ msgstr "Impossible de traiter ce document."
 #~ msgid "Unable to read the selected file."
 #~ msgstr "Impossible de lire le fichier sélectionné."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:640
+#: src/pages/folders/components/DocumentDetailsView.tsx:680
 msgid "Unable to remove related document"
 msgstr "Impossible de supprimer le document associé"
 
@@ -16261,7 +16289,7 @@ msgid "Unsupported file type. Please upload a CSV or XLSX file."
 msgstr "Type de fichier non pris en charge. Veuillez téléverser un fichier CSV ou XLSX."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:118
-#: src/pages/folders/components/DocumentDetailsView.tsx:529
+#: src/pages/folders/components/DocumentDetailsView.tsx:569
 #: src/pages/folders/components/ShareView.tsx:263
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1098
 msgid "Untitled"
@@ -16361,7 +16389,7 @@ msgid "Upgrading…"
 msgstr "Mise à niveau…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2026
-#: src/pages/folders/components/FolderExplorer.tsx:622
+#: src/pages/folders/components/FolderExplorer.tsx:638
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:317
 #: src/pages/folders/components/Upload/Upload.tsx:4048
@@ -16406,8 +16434,8 @@ msgstr "Téléversez un fichier PO ; nous extrairons les en-têtes pour le mappa
 msgid "Upload document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1012
-#: src/pages/folders/components/FolderTable.tsx:1154
+#: src/pages/folders/components/DocumentsListView.tsx:1030
+#: src/pages/folders/components/FolderTable.tsx:1185
 msgid "Upload Documents"
 msgstr "Télécharger des documents"
 
@@ -16617,7 +16645,7 @@ msgstr "Utilisez le champ de mot de passe de connexion du maître pour l'authent
 #~ msgid "Use this setup"
 #~ msgstr "Utiliser cette configuration"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2931
+#: src/pages/folders/components/DocumentDetailsView.tsx:3175
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:254
 #: src/pages/settings/components/AuditMonitoring.tsx:331
 #: src/pages/settings/components/AuditMonitoring.tsx:332
@@ -16966,8 +16994,8 @@ msgstr ""
 msgid "View All Versions"
 msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1092
-#: src/pages/folders/components/FolderTable.tsx:1483
+#: src/pages/folders/components/DocumentsListView.tsx:1110
+#: src/pages/folders/components/FolderTable.tsx:1523
 msgid "View Details"
 msgstr "Afficher les détails"
 
@@ -17333,7 +17361,7 @@ msgstr "Oui"
 msgid "Yes, Delete"
 msgstr "Oui, supprimer"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2981
+#: src/pages/folders/components/DocumentDetailsView.tsx:3225
 #: src/pages/settings/components/credits/Credits.tsx:59
 msgid "Yesterday"
 msgstr "Hier"
@@ -17344,7 +17372,7 @@ msgstr "Hier"
 msgid "You"
 msgstr "Vous"
 
-#: src/pages/requests/RequestsPage.tsx:1957
+#: src/pages/requests/RequestsPage.tsx:1962
 msgid "You can close this tab or return to the main window."
 msgstr ""
 
@@ -17356,7 +17384,7 @@ msgstr "Vous n'y avez pas accès. Des privilèges d'administrateur sont requis p
 msgid "You do not have access. Admin privileges are required to save security policies."
 msgstr "Vous n'y avez pas accès. Des privilèges d'administrateur sont requis pour enregistrer les politiques de sécurité."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2330
+#: src/pages/folders/components/DocumentDetailsView.tsx:2571
 msgid "You do not have permission to send for signature."
 msgstr "Vous n'avez pas l'autorisation d'envoyer pour signature."
 
@@ -17401,7 +17429,7 @@ msgstr "Votre agent IA commencera à surveiller votre e-mail et à traiter autom
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1940
+#: src/pages/requests/RequestsPage.tsx:1945
 msgid "Your mailbox has been connected and the enquiry watch is active."
 msgstr ""
 
