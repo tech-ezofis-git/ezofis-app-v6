@@ -2069,6 +2069,7 @@ const Request = ({
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
     const parsed = safeParseFormData(activeItem?.formData)
+    console.log('[inbox formData from server]', parsed)
     setGenericFormModel((prev) => {
       const next = { ...parsed }
       for (const [key, value] of Object.entries(prev)) {

@@ -1,5 +1,9 @@
 import type { StartWorkflowJsonPayload } from '@/api/v6/workflows'
 import {
+  isFileColumnType,
+  toFileList,
+} from '@/pages/form-builder/helpers/tableColumnFiles'
+import {
   findFormFieldIdByName,
   PRESENTATIONAL_TYPES,
   SYNTHETIC_FIELD_PREFIX,
@@ -74,6 +78,28 @@ export const buildStartWorkflowPayload = (
       }
 
       formData[field.id] = value
+
+      // Files picked in a table's file columns: the backend flattens every
+      // table cell to text and turns an object cell into "", so the row
+      // carries the file name as a plain string. The file itself is attached
+      // after the request starts (useWorkflowForm) - staging it here makes the
+      // backend write its id over the whole table.
+      if (Array.isArray(value)) {
+        const fileColumns = (field.settings?.specific?.tableColumns || []).filter(
+          (c: any) => c?.id && isFileColumnType(c.type),
+        )
+        if (fileColumns.length === 0) continue
+        formData[field.id] = value.map((row: any) => {
+          const nextRow = { ...row }
+          for (const col of fileColumns) {
+            const names = toFileList(row?.[col.id])
+              .map((file) => String(file.fileName ?? ''))
+              .filter(Boolean)
+            if (names.length > 0) nextRow[col.id] = names.join(', ')
+          }
+          return nextRow
+        })
+      }
     }
   }
 
@@ -91,10 +117,59 @@ export const buildStartWorkflowPayload = (
     formData[name] = value
   }
 
-  return {
+  const keyByName = isKeyByNameEnabled()
+  const payload = {
     context: comment,
     envType: 'trial',
-    formData,
+    formData: keyByName ? rekeyFormDataByName(panels, formData) : formData,
     stagedFiles,
   }
+  // Debug aid for the table-file investigation: shows exactly what start/json
+  // is sent. Run localStorage.setItem('debugStartKeysByName', '1') to send
+  // field/column names as keys instead of ids.
+  console.log('[start/json] keyed by', keyByName ? 'name' : 'id', payload)
+  return payload
+}
+
+const isKeyByNameEnabled = (): boolean => {
+  try {
+    return localStorage.getItem('debugStartKeysByName') === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Same formData with every field keyed by its name (label as fallback) and
+ * every table row's cells keyed by column name, instead of by id.
+ */
+export const rekeyFormDataByName = (
+  panels: any[],
+  formData: Record<string, any>,
+): Record<string, any> => {
+  const out: Record<string, any> = {}
+  const fieldById = new Map<string, any>()
+  for (const panel of panels || []) {
+    for (const field of panel.fields || []) fieldById.set(field.id, field)
+  }
+  for (const [key, value] of Object.entries(formData)) {
+    const field = fieldById.get(key)
+    if (!field) {
+      out[key] = value
+      continue
+    }
+    const columns: any[] = field.settings?.specific?.tableColumns || []
+    out[field.name || field.label || key] =
+      Array.isArray(value) && columns.length > 0
+        ? value.map((row: any) => {
+            const next: Record<string, any> = {}
+            for (const [cellKey, cellValue] of Object.entries(row || {})) {
+              const col = columns.find((c) => c.id === cellKey)
+              next[col ? col.name || col.label || cellKey : cellKey] = cellValue
+            }
+            return next
+          })
+        : value
+  }
+  return out
 }
