@@ -992,6 +992,37 @@ const QUOTE_VARIANT_TOTAL_LABEL =
 const isBlankStoredValue = (value: unknown) =>
   value == null || (typeof value === 'string' && value.trim() === '')
 
+/** "Freight", "Discount", "quote_2 Freight", "ALT Discount" ... (any quote tab). */
+const isQuoteAdjustmentLabel = (label: string) => {
+  const compact = label
+    .trim()
+    .replace(/^(quote[\s_-]*\d|alt|opt)\b[\s_:-]*/i, '')
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+  return compact.endsWith('freight') || compact.endsWith('discount')
+}
+
+/**
+ * Blank Freight / Discount values are saved as 0 (the quote view already
+ * shows them as 0). Applied to the API payload only, so a blank value can
+ * still fall back to the agent's figure on screen.
+ */
+const fillBlankQuoteAdjustments = (
+  panels: any[] | undefined,
+  values: Record<string, any>,
+) => {
+  const next = { ...values }
+  for (const panel of panels || []) {
+    for (const field of panel?.fields || []) {
+      const id = field?.id
+      if (!id || field?.settings?.specific?.tableColumns) continue
+      if (!isQuoteAdjustmentLabel(String(field?.label || ''))) continue
+      if (isBlankStoredValue(next[id])) next[id] = 0
+    }
+  }
+  return next
+}
+
 /** Drop label copies. Line values stay on the column control id. */
 const storeFormValues = (
   panels: any[] | undefined,
@@ -2314,7 +2345,10 @@ const Request = ({
 
       let fields: any = {}
       if (isGenericWorkflow) {
-        fields = genericFormModel
+        fields = fillBlankQuoteAdjustments(
+          getFormPanels(rawWorkflowData),
+          genericFormModel,
+        )
       } else if (Object.keys(formModel).length > 0) {
         fields = mapFormModelToPayloadFields(
           formModel,
@@ -2525,7 +2559,10 @@ const Request = ({
 
       let fields: any = {}
       if (isGenericWorkflow) {
-        fields = genericFormModel
+        fields = fillBlankQuoteAdjustments(
+          getFormPanels(rawWorkflowData),
+          genericFormModel,
+        )
       } else if (Object.keys(formModel).length > 0) {
         fields = mapFormModelToPayloadFields(
           formModel,
