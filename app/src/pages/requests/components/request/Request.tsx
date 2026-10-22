@@ -1090,7 +1090,7 @@ const storeFormValues = (
           const base = qty * price
           const subtotal =
             String(row._discountMode || '').toLowerCase() === 'amount'
-              ? Math.max(0, base - discount)
+              ? Math.max(0, base - qty * discount) // $ discount is per unit
               : base * (1 - discount / 100)
           stored[subtotalCol.id] = Math.round(subtotal * 100) / 100
         }

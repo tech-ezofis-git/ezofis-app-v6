@@ -1,3 +1,4 @@
+import { arrayMove } from '@dnd-kit/sortable'
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
@@ -9,6 +10,14 @@ import {
   collectFormTableFields,
   isLineItemHeading,
 } from './AgentEditableTables'
+import RowInsertRail from './RowInsertRail'
+import { SortableRows, useSortableRow, useSortableRowIds } from './SortableRows'
+import StickyScrollX from './StickyScrollX'
+import {
+  handleHistoryShortcut,
+  TableHistoryButtons,
+  useRowsHistory,
+} from './tableHistory'
 
 const getFieldHeading = (field: any) =>
   String(
@@ -34,6 +43,9 @@ const lineItemAcceptBtnClass =
   'inline-flex cursor-pointer items-center gap-1 rounded-md border border-[var(--orange-7)] bg-[var(--orange-2)] px-2 py-1 text-[11px] font-semibold text-[var(--orange-11)] transition-all hover:bg-[var(--orange-3)] active:scale-95'
 
 /** Purple outline for + Add Row (white fill, primary border/text). */
+/** Qty / Price / Discount / Subtotal share one width. */
+const amountColumnClass = 'w-[8.5rem] min-w-[8.5rem]'
+
 const lineItemAddRowBtnClass =
   'inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
 
@@ -154,9 +166,7 @@ const resolveLineFieldValue = (
     (canonical === 'Product' || canonical === 'Price') &&
     !isEmptyValue(named) &&
     (isEmptyValue(fromColumn) ||
-      (canonical === 'Price' &&
-        Number(fromColumn) === 0 &&
-        Number(named) > 0))
+      (canonical === 'Price' && Number(fromColumn) === 0 && Number(named) > 0))
   ) {
     return named
   }
@@ -222,7 +232,9 @@ const resolveDiscountMode = (row: Record<string, any>): DiscountMode => {
   const raw = String(row?._discountMode || row?.DiscountMode || 'percent')
     .trim()
     .toLowerCase()
-  return raw === 'amount' || raw === '$' || raw === 'dollar' ? 'amount' : 'percent'
+  return raw === 'amount' || raw === '$' || raw === 'dollar'
+    ? 'amount'
+    : 'percent'
 }
 
 const computeLineSubtotal = (row: Record<string, any>, columns: any[] = []) => {
@@ -235,7 +247,8 @@ const computeLineSubtotal = (row: Record<string, any>, columns: any[] = []) => {
     const discount = Number.isFinite(discountRaw) ? discountRaw : 0
     const base = qty * price
     if (resolveDiscountMode(row) === 'amount') {
-      return roundMoney(Math.max(0, base - discount))
+      // $ discount is per unit: Qty 10 × $5 off = $50 off the line.
+      return roundMoney(Math.max(0, base - qty * discount))
     }
     // Default form formula: (Qty * Price) * (1 - Discount / 100)
     return roundMoney(base * (1 - discount / 100))
@@ -275,7 +288,8 @@ export const normalizeLineItemRow = (
       const value = resolveLineFieldValue(row, columns, canonical)
       // Keep Discount as '' while editing so the user can clear "0";
       // computeLineSubtotal already treats empty as 0.
-      next[canonical] = isEmptyValue(value) && canonical === 'Discount' ? '' : value
+      next[canonical] =
+        isEmptyValue(value) && canonical === 'Discount' ? '' : value
       const col = findColumnForCanonical(columns, canonical)
       const blockedIds = new Set([
         'Product',
@@ -288,7 +302,8 @@ export const normalizeLineItemRow = (
         'Category',
       ])
       blockedIds.delete(canonical)
-      if (col?.id && !blockedIds.has(String(col.id))) next[col.id] = next[canonical]
+      if (col?.id && !blockedIds.has(String(col.id)))
+        next[col.id] = next[canonical]
     },
   )
 
@@ -395,7 +410,10 @@ export const remapLineItemRows = (
     if (sourceColumns.length) {
       sourceColumns.forEach((col) => {
         const canonical = canonicalForColumn(col)
-        if (!canonical || !(CANONICAL_LINE_FIELDS as readonly string[]).includes(canonical)) {
+        if (
+          !canonical ||
+          !(CANONICAL_LINE_FIELDS as readonly string[]).includes(canonical)
+        ) {
           return
         }
         if (!isEmptyValue(slim[canonical])) return
@@ -706,7 +724,15 @@ const QuoteLineItemsTable = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync on content fingerprint only
   }, [itemsKey])
 
-  const persist = (next: Record<string, any>[]) => {
+  const history = useRowsHistory<Record<string, any>>(tableFieldId)
+
+  const persist = (
+    next: Record<string, any>[],
+    options?: { coalesceKey?: string; skipHistory?: boolean },
+  ) => {
+    if (!options?.skipHistory) {
+      history.record(rowsRef.current, options?.coalesceKey)
+    }
     const normalized = normalizeLineItemRows(next, tableColumns)
     const totals = buildQuoteTotals(
       normalized,
@@ -732,7 +758,18 @@ const QuoteLineItemsTable = ({
         if (i !== index) return row
         return applyLineField(row, key, value, tableColumns)
       }),
+      { coalesceKey: `${index}:${key}` },
     )
+  }
+
+  const undo = () => {
+    const previous = history.undo(rowsRef.current)
+    if (previous) persist(previous, { skipHistory: true })
+  }
+
+  const redo = () => {
+    const next = history.redo(rowsRef.current)
+    if (next) persist(next, { skipHistory: true })
   }
 
   const selectProduct = async (index: number, productCode: string | null) => {
@@ -783,10 +820,12 @@ const QuoteLineItemsTable = ({
     )
   }
 
-  const approveRow = (index: number) => {
+  const setRowApproved = (index: number, approved: boolean) => {
     persist(
       rowsRef.current.map((row, i) =>
-        i === index ? { ...row, _approved: true, _hideNote: true } : row,
+        i === index
+          ? { ...row, _approved: approved, _hideNote: approved }
+          : row,
       ),
     )
   }
@@ -801,8 +840,35 @@ const QuoteLineItemsTable = ({
     )
   }
 
+  // Index of a just-added row: it scrolls into view with its Product editor
+  // open. Tracked by index (row ids can be regenerated on the form round
+  // trip) and cleared shortly after so later remounts don't reopen it.
+  const [focusRowIndex, setFocusRowIndex] = useState<number | null>(null)
+  const focusTimerRef = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(focusTimerRef.current), [])
+
+  const focusNewRow = (index: number) => {
+    setFocusRowIndex(index)
+    window.clearTimeout(focusTimerRef.current)
+    focusTimerRef.current = window.setTimeout(
+      () => setFocusRowIndex(null),
+      1500,
+    )
+  }
+
   const addRow = () => {
     persist([...rowsRef.current, emptyLineRow()])
+    focusNewRow(rowsRef.current.length)
+  }
+
+  const insertRow = (index: number) => {
+    const current = rowsRef.current
+    persist([
+      ...current.slice(0, index),
+      emptyLineRow(),
+      ...current.slice(index),
+    ])
+    focusNewRow(index)
   }
 
   const deleteRow = (index: number) => {
@@ -810,14 +876,29 @@ const QuoteLineItemsTable = ({
     persist(next.length > 0 ? next : [emptyLineRow()])
   }
 
+  const moveRow = (fromIndex: number, toIndex: number) => {
+    persist(arrayMove(rowsRef.current, fromIndex, toIndex))
+  }
+
   const canEdit = !readOnly
   const hasUnaccepted = rows.some((row) => !row._approved)
+  const rowIds = useSortableRowIds(rows)
+  const [isDraggingRow, setIsDraggingRow] = useState(false)
 
   // Parent renders a dedicated empty-state panel for 0-item quote tabs.
   if (!rows.length) return null
 
   return (
-    <div className='flex flex-col gap-3'>
+    // Focusable so Ctrl+Z / Ctrl+Y work after clicking anywhere in the table.
+    <div
+      className='flex flex-col gap-3 outline-none'
+      tabIndex={canEdit ? -1 : undefined}
+      onKeyDown={
+        canEdit
+          ? (event) => handleHistoryShortcut(event, undo, redo)
+          : undefined
+      }
+    >
       <div className='flex items-center justify-between gap-2'>
         <h4 className='flex items-center gap-1.5 text-sm font-semibold text-gray-12'>
           <Icon
@@ -828,12 +909,22 @@ const QuoteLineItemsTable = ({
         </h4>
         {canEdit && (
           <div className='flex items-center gap-2'>
+            <TableHistoryButtons
+              canRedo={history.canRedo}
+              canUndo={history.canUndo}
+              onRedo={redo}
+              onUndo={undo}
+            />
             {hasUnaccepted ? (
               <button
                 className={lineItemAcceptBtnClass}
                 type='button'
                 onClick={acceptAll}
               >
+                <Icon
+                  className='size-4 text-[var(--orange-9)]'
+                  icon='tabler:circle-check'
+                />
                 {t`Accept all`}
               </button>
             ) : null}
@@ -848,54 +939,95 @@ const QuoteLineItemsTable = ({
           </div>
         )}
       </div>
-      <div className='overflow-x-auto rounded-lg border border-gray-3'>
-        <table className='w-full border-collapse text-left text-sm'>
-          <thead className='bg-gray-1 text-xs text-gray-11'>
-            <tr>
-              <th className='min-w-[220px] border border-gray-3 p-3 text-left font-semibold'>
-                Product
-              </th>
-              <th className='w-24 border border-gray-3 p-3 text-center font-semibold'>
-                Qty
-              </th>
-              <th className='w-28 border border-gray-3 p-3 text-center font-semibold'>
-                Price
-              </th>
-              {hasDiscountColumn ? (
-                <th className='w-[9.5rem] min-w-[9.5rem] border border-gray-3 p-3 text-center font-semibold whitespace-nowrap'>
-                  Discount
-                </th>
-              ) : null}
-              <th className='w-28 border border-gray-3 p-3 text-center font-semibold'>
-                Subtotal
-              </th>
-              {canEdit && (
-                <th
-                  aria-label={t`Actions`}
-                  className='w-px border border-gray-3 p-2 whitespace-nowrap'
-                />
-              )}
-            </tr>
-          </thead>
-          <tbody className='bg-surface'>
-            {rows.map((item, i) => (
-              <QuoteLineRow
-                canEdit={canEdit}
-                columns={tableColumns}
-                item={item}
-                key={item._rowId || i}
-                productColumn={productColumn}
-                showDiscount={hasDiscountColumn}
-                useApiProduct={useApiProduct}
-                onApprove={() => approveRow(i)}
-                onChange={(key, value) => updateCell(i, key, value)}
-                onDelete={() => deleteRow(i)}
-                onSelectProduct={(code) => selectProduct(i, code)}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <RowInsertRail
+        enabled={canEdit && !isDraggingRow}
+        layoutKey={rowIds.join('|')}
+        rowCount={rows.length}
+        onInsert={insertRow}
+      >
+        <SortableRows
+          ids={rowIds}
+          onDragActiveChange={setIsDraggingRow}
+          onMove={moveRow}
+        >
+          <StickyScrollX className='rounded-lg border border-gray-3'>
+            <table className='w-full border-collapse text-left text-sm'>
+              <thead className='bg-gray-1 text-xs text-gray-11'>
+                <tr>
+                  {canEdit ? (
+                    <th
+                      aria-label={t`Reorder`}
+                      className='w-8 border border-gray-3 p-1'
+                    />
+                  ) : null}
+                  <th className='min-w-[220px] border border-gray-3 p-3 text-left font-semibold'>
+                    Product
+                  </th>
+                  <th
+                    className={cn(
+                      amountColumnClass,
+                      'border border-gray-3 p-3 text-center font-semibold',
+                    )}
+                  >
+                    Qty
+                  </th>
+                  <th
+                    className={cn(
+                      amountColumnClass,
+                      'border border-gray-3 p-3 text-center font-semibold',
+                    )}
+                  >
+                    Price
+                  </th>
+                  {hasDiscountColumn ? (
+                    <th
+                      className={cn(
+                        amountColumnClass,
+                        'border border-gray-3 p-3 text-center font-semibold whitespace-nowrap',
+                      )}
+                    >
+                      Discount
+                    </th>
+                  ) : null}
+                  <th
+                    className={cn(
+                      amountColumnClass,
+                      'border border-gray-3 p-3 text-center font-semibold',
+                    )}
+                  >
+                    Subtotal
+                  </th>
+                  {canEdit && (
+                    <th
+                      aria-label={t`Actions`}
+                      className='w-px border border-gray-3 p-2 whitespace-nowrap'
+                    />
+                  )}
+                </tr>
+              </thead>
+              <tbody className='bg-surface'>
+                {rows.map((item, i) => (
+                  <QuoteLineRow
+                    autoEdit={canEdit && i === focusRowIndex}
+                    canEdit={canEdit}
+                    columns={tableColumns}
+                    item={item}
+                    key={rowIds[i]}
+                    productColumn={productColumn}
+                    showDiscount={hasDiscountColumn}
+                    sortId={rowIds[i]}
+                    useApiProduct={useApiProduct}
+                    onApprovedChange={(approved) => setRowApproved(i, approved)}
+                    onChange={(key, value) => updateCell(i, key, value)}
+                    onDelete={() => deleteRow(i)}
+                    onSelectProduct={(code) => selectProduct(i, code)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </StickyScrollX>
+        </SortableRows>
+      </RowInsertRail>
     </div>
   )
 }
@@ -907,6 +1039,7 @@ function HoverValue({
   align = 'left',
   canEdit,
   className,
+  defaultOpen = false,
   display,
   fill = false,
   input,
@@ -915,6 +1048,8 @@ function HoverValue({
   align?: 'center' | 'left' | 'right'
   canEdit: boolean
   className?: string
+  /** Mount already in edit mode (e.g. a freshly added row). */
+  defaultOpen?: boolean
   display: ReactNode
   /** Stretch to the cell so sibling actions stay in a fixed column. */
   fill?: boolean
@@ -922,7 +1057,12 @@ function HoverValue({
   keepOpenOnPortal?: boolean
   input: (close: () => void) => ReactNode
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
+
+  // Also open when an already-mounted cell becomes the new-row target.
+  useEffect(() => {
+    if (defaultOpen && canEdit) setOpen(true)
+  }, [canEdit, defaultOpen])
   const rootRef = useRef<HTMLDivElement>(null)
   const close = () => setOpen(false)
 
@@ -1038,29 +1178,44 @@ function HoverValue({
 }
 
 function QuoteLineRow({
+  autoEdit = false,
   canEdit,
   columns = [],
   item,
   productColumn,
   showDiscount = false,
+  sortId,
   useApiProduct,
-  onApprove,
+  onApprovedChange,
   onChange,
   onDelete,
   onSelectProduct,
 }: {
+  /** Freshly added row: scroll into view and open the Product editor. */
+  autoEdit?: boolean
   canEdit: boolean
   columns?: any[]
   item: Record<string, any>
   productColumn: any
   showDiscount?: boolean
+  sortId: string
   useApiProduct: boolean
-  onApprove: () => void
+  onApprovedChange: (approved: boolean) => void
   onChange: (key: string, value: any) => void
   onDelete: () => void
   onSelectProduct: (code: string | null) => void | Promise<void>
 }) {
   const { t } = useLingui()
+  const { handle, rowProps } = useSortableRow(sortId, !canEdit)
+  const rowElRef = useRef<HTMLTableRowElement | null>(null)
+
+  useEffect(() => {
+    if (!autoEdit) return
+    const frame = window.requestAnimationFrame(() =>
+      rowElRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    )
+    return () => window.cancelAnimationFrame(frame)
+  }, [autoEdit])
   const approved = Boolean(item._approved)
   const needsReview =
     item['Needs Engineering Review'] === true ||
@@ -1095,13 +1250,26 @@ function QuoteLineRow({
   }
 
   return (
-    <tr className='group'>
+    <tr
+      className={cn('group', rowProps.className)}
+      style={rowProps.style}
+      ref={(node) => {
+        rowProps.ref(node)
+        rowElRef.current = node
+      }}
+    >
+      {canEdit ? (
+        <td className='w-8 border border-gray-3 p-1 text-center align-top'>
+          <div className='pt-2'>{handle}</div>
+        </td>
+      ) : null}
       <td className='min-w-[220px] border border-gray-3 p-3 text-left align-top'>
         <div className='flex min-w-0 flex-col items-start gap-1 text-left'>
           <div className='flex w-full items-start gap-2'>
             <HoverValue
               canEdit={canEdit}
               className='block w-full text-left'
+              defaultOpen={autoEdit}
               keepOpenOnPortal={useApiProduct}
               fill
               display={
@@ -1137,31 +1305,32 @@ function QuoteLineRow({
               }
             />
             {canEdit ? (
-              <div
-                className={cn(
-                  'mt-0.5 shrink-0 self-start',
-                  approved && 'flex w-6 justify-center',
-                )}
+              <Tooltip
+                className='mt-0.5 shrink-0 self-start'
+                content={approved ? t`Accepted — click to undo` : t`Accept`}
               >
-                {approved ? (
-                  <Tooltip content={t`Accepted`}>
-                    <span
-                      aria-label={t`Accepted`}
-                      className='inline-flex size-6 items-center justify-center rounded-full bg-green-3 text-green-11'
-                    >
-                      <Icon className='h-3.5 w-3.5' icon='tabler:check' />
-                    </span>
-                  </Tooltip>
-                ) : (
-                  <button
-                    className={cn(lineItemAcceptBtnClass, 'shrink-0 px-2 py-0.5')}
-                    type='button'
-                    onClick={onApprove}
-                  >
-                    {t`Accept`}
-                  </button>
-                )}
-              </div>
+                <button
+                  aria-label={t`Accept line item`}
+                  aria-pressed={approved}
+                  type='button'
+                  className={cn(
+                    'inline-flex size-6 cursor-pointer items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95',
+                    approved
+                      ? 'text-green-9 hover:text-green-10'
+                      : 'text-[var(--orange-9)] hover:text-[var(--orange-10)]',
+                  )}
+                  onClick={() => onApprovedChange(!approved)}
+                >
+                  <Icon
+                    className='size-5'
+                    icon={
+                      approved
+                        ? 'tabler:circle-check-filled'
+                        : 'tabler:circle-check'
+                    }
+                  />
+                </button>
+              </Tooltip>
             ) : null}
           </div>
           {description ? (
@@ -1226,13 +1395,20 @@ function QuoteLineRow({
           ) : null}
         </div>
       </td>
-      <td className='w-24 border border-gray-3 p-3 text-center align-top text-gray-12'>
+      <td
+        className={cn(
+          amountColumnClass,
+          'border border-gray-3 p-3 text-center align-top text-gray-12',
+        )}
+      >
         <HoverValue
           align='center'
           canEdit={canEdit}
           className='w-full text-center'
           display={
-            <span className='inline-block tabular-nums'>{formatQty(item.Qty)}</span>
+            <span className='inline-block tabular-nums'>
+              {formatQty(item.Qty)}
+            </span>
           }
           input={() => (
             <input
@@ -1248,7 +1424,12 @@ function QuoteLineRow({
           )}
         />
       </td>
-      <td className='w-28 border border-gray-3 p-3 text-center align-top text-gray-12'>
+      <td
+        className={cn(
+          amountColumnClass,
+          'border border-gray-3 p-3 text-center align-top text-gray-12',
+        )}
+      >
         <HoverValue
           align='center'
           canEdit={canEdit}
@@ -1271,7 +1452,12 @@ function QuoteLineRow({
         />
       </td>
       {showDiscount ? (
-        <td className='w-[9.5rem] min-w-[9.5rem] border border-gray-3 p-3 text-center align-top text-gray-12'>
+        <td
+          className={cn(
+            amountColumnClass,
+            'border border-gray-3 p-3 text-center align-top text-gray-12',
+          )}
+        >
           <HoverValue
             align='center'
             canEdit={canEdit}
@@ -1315,7 +1501,7 @@ function QuoteLineRow({
                 </button>
                 <input
                   aria-label={t`Discount`}
-                  className='w-14 min-w-0 border-l border-gray-4 bg-transparent px-1.5 text-center text-sm tabular-nums text-gray-12 outline-none focus:bg-[var(--primary-1)]'
+                  className='w-14 min-w-0 border-l border-gray-4 bg-transparent px-1.5 text-center text-sm text-gray-12 tabular-nums outline-none focus:bg-[var(--primary-1)]'
                   inputMode='decimal'
                   autoFocus
                   value={
@@ -1323,19 +1509,22 @@ function QuoteLineRow({
                       ? ''
                       : item.Discount
                   }
-                  onChange={(event) =>
-                    onChange('Discount', event.target.value)
-                  }
+                  onChange={(event) => onChange('Discount', event.target.value)}
                 />
               </div>
             )}
           />
         </td>
       ) : null}
-      <td className='w-32 min-w-[8rem] border border-gray-3 p-3 text-center align-top'>
+      <td
+        className={cn(
+          amountColumnClass,
+          'border border-gray-3 p-3 text-center align-top',
+        )}
+      >
         {hasLineSavings ? (
           <div className='flex flex-col items-center gap-0.5'>
-            <span className='text-xs text-gray-9 line-through tabular-nums'>
+            <span className='text-xs text-gray-9 tabular-nums line-through'>
               ${toMoney(lineGross)}
             </span>
             <span className='font-bold text-gray-12 tabular-nums'>

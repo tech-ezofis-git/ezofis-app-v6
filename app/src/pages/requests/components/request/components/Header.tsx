@@ -66,6 +66,111 @@ interface HeaderProps {
   ) => Promise<boolean>
 }
 
+const AI_RING_RADIUS = 14
+const AI_RING_CIRCUMFERENCE = 2 * Math.PI * AI_RING_RADIUS
+
+/**
+ * AI Insights trigger: a compact confidence gauge (score ring + number) with
+ * the AI mark, instead of a labelled button.
+ */
+const AiInsightsTrigger = ({
+  active,
+  processing,
+  score,
+  onClick,
+}: {
+  active: boolean
+  processing?: boolean
+  score?: number | string
+  onClick: () => void
+}) => {
+  const { t } = useLingui()
+  const hasScore =
+    score !== undefined && score !== null && Number.isFinite(Number(score))
+  const value = hasScore
+    ? Math.max(0, Math.min(100, Math.round(Number(score))))
+    : 0
+  const tone =
+    value >= 90
+      ? 'stroke-[var(--green-9)] text-[var(--green-11)]'
+      : value >= 60
+        ? 'stroke-[var(--orange-9)] text-[var(--orange-11)]'
+        : 'stroke-[var(--red-9)] text-[var(--red-11)]'
+  const label = hasScore
+    ? t`AI Insights · ${value}% confidence`
+    : t`AI Insights`
+
+  return (
+    <Tooltip content={label} position='bottom'>
+      <button
+        aria-expanded={active}
+        aria-label={label}
+        type='button'
+        className={cn(
+          'animate-in fade-in zoom-in-95 relative inline-flex size-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-all duration-200 hover:bg-[var(--gray-2)] active:scale-95',
+          active && 'bg-[var(--primary-2)] ring-2 ring-[var(--primary-6)]',
+          processing && 'pointer-events-none opacity-70',
+        )}
+        onClick={onClick}
+      >
+        <svg
+          viewBox='0 0 34 34'
+          aria-hidden
+          className={cn(
+            'absolute inset-0 -rotate-90',
+            processing && 'animate-spin',
+          )}
+        >
+          <circle
+            className='fill-none stroke-[var(--gray-4)]'
+            cx='17'
+            cy='17'
+            r={AI_RING_RADIUS}
+            strokeWidth='2.5'
+          />
+          <circle
+            cx='17'
+            cy='17'
+            r={AI_RING_RADIUS}
+            strokeDasharray={AI_RING_CIRCUMFERENCE}
+            strokeLinecap='round'
+            strokeWidth='2.5'
+            className={cn(
+              'fill-none transition-[stroke-dashoffset] duration-700 ease-out',
+              hasScore ? tone : 'stroke-[var(--primary-9)]',
+            )}
+            strokeDashoffset={
+              AI_RING_CIRCUMFERENCE *
+              (1 - (hasScore ? value : processing ? 25 : 0) / 100)
+            }
+          />
+        </svg>
+        {hasScore ? (
+          <span
+            className={cn(
+              'relative text-[10px] leading-none font-bold tabular-nums',
+              tone,
+            )}
+          >
+            {value}
+          </span>
+        ) : (
+          <AiBrandIcon className='relative size-[15px]' />
+        )}
+        {hasScore ? (
+          <span className='absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-surface shadow-sm ring-1 ring-[var(--gray-3)]'>
+            <AiBrandIcon className='size-[10px]' />
+          </span>
+        ) : null}
+      </button>
+    </Tooltip>
+  )
+}
+
+/** Negative review actions (Reject, Disqualify) share the red styling. */
+const isRejectLikeAction = (label: string) =>
+  label.includes('reject') || label.includes('disqualif')
+
 // Generates a consistent color from a string (name/email)
 const getAvatarColor = (_str?: string) => {
   return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
@@ -553,17 +658,6 @@ const Header: React.FC<HeaderProps> = ({
     })
   }
 
-  const getScoreBadgeClass = (score: any) => {
-    const numScore = Number(score)
-    if (numScore >= 90) {
-      return 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-    }
-    if (numScore >= 60) {
-      return 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-    }
-    return 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
-  }
-
   const renderStageInfoGroup = () => {
     if (!stage && !assigneeLabel && !requestNo) return null
 
@@ -893,33 +987,14 @@ const Header: React.FC<HeaderProps> = ({
           {/* AI Insights Toggle & Overlay */}
           {enableAIInsights && (
             <div className='relative' ref={containerRef}>
-              <Button
-                variant='outline'
-                className={cn(
-                  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
-                  showAIInsights
-                    ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                    : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
-                  isProcessing &&
-                    'pointer-events-none animate-pulse opacity-70',
-                )}
+              <AiInsightsTrigger
+                active={showAIInsights}
+                processing={isProcessing}
+                score={agentData?.score}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
-              >
-                <AiBrandIcon className='size-[16px]' />
-                <span>{t`AI Insights`}</span>
-                {agentData?.score !== undefined && (
-                  <span
-                    className={cn(
-                      'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
-                      getScoreBadgeClass(agentData.score),
-                    )}
-                  >
-                    {Math.round(Number(agentData.score))}%
-                  </span>
-                )}
-              </Button>
+              />
 
               <AnimatePresence>
                 {showAIInsights && (
@@ -975,14 +1050,14 @@ const Header: React.FC<HeaderProps> = ({
                 let defaultIcon = action?.icon
                 if (!defaultIcon) {
                   if (label.includes('approve')) defaultIcon = 'lucide:check'
-                  else if (label.includes('reject')) defaultIcon = 'lucide:x'
+                  else if (isRejectLikeAction(label)) defaultIcon = 'lucide:x'
                   else defaultIcon = 'lucide:arrow-right'
                 }
                 if (label.includes('approve')) {
                   btnColor = 'green'
                   borderClass =
                     'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-                } else if (label.includes('reject')) {
+                } else if (isRejectLikeAction(label)) {
                   btnColor = 'red'
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
@@ -1352,33 +1427,14 @@ const Header: React.FC<HeaderProps> = ({
           {/* AI Insights Toggle & Overlay */}
           {enableAIInsights && (
             <div className='relative' ref={containerRef}>
-              <Button
-                variant='outline'
-                className={cn(
-                  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
-                  showAIInsights
-                    ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                    : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
-                  isProcessing &&
-                    'pointer-events-none animate-pulse opacity-70',
-                )}
+              <AiInsightsTrigger
+                active={showAIInsights}
+                processing={isProcessing}
+                score={agentData?.score}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
-              >
-                <AiBrandIcon className='size-[16px]' />
-                <span>{t`AI Insights`}</span>
-                {agentData?.score !== undefined && (
-                  <span
-                    className={cn(
-                      'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
-                      getScoreBadgeClass(agentData.score),
-                    )}
-                  >
-                    {Math.round(Number(agentData.score))}%
-                  </span>
-                )}
-              </Button>
+              />
 
               <AnimatePresence>
                 {showAIInsights && (
@@ -1965,11 +2021,7 @@ const Header: React.FC<HeaderProps> = ({
                     label.includes('approve')
                   ) {
                     defaultIcon = 'lucide:check'
-                  } else if (
-                    label === 'rejected' ||
-                    label === 'reject' ||
-                    label.includes('reject')
-                  ) {
+                  } else if (isRejectLikeAction(label)) {
                     defaultIcon = 'lucide:x'
                   } else {
                     defaultIcon = 'lucide:arrow-right'
@@ -1984,11 +2036,7 @@ const Header: React.FC<HeaderProps> = ({
                   btnColor = 'green'
                   borderClass =
                     'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-                } else if (
-                  label === 'rejected' ||
-                  label === 'reject' ||
-                  label.includes('reject')
-                ) {
+                } else if (isRejectLikeAction(label)) {
                   btnColor = 'red'
                   borderClass =
                     'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'

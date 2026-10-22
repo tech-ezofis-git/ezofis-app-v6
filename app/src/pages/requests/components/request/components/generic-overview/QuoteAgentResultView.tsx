@@ -1,6 +1,13 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { pdfBase64ToObjectUrl, previewDocument } from '@/api/v6/documentPreview'
 import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
@@ -43,6 +50,7 @@ import QuoteLineItemsTable, {
 } from './QuoteLineItemsTable'
 import QuoteVariantCards, {
   QuoteComparePanel,
+  QuoteVariantDescription,
   QuoteVariantEmptyPanel,
   type QuoteTabId,
 } from './QuoteVariantCards'
@@ -1932,6 +1940,35 @@ const QuoteAgentResultView = ({
     ? QUOTE_VARIANT_META[activeCopiedFromId].shortLabel
     : null
 
+  // Sticky stops at the scroll panel's padding edge; pull the quote tabs up
+  // by that padding so nothing peeks through above them.
+  const [quoteTabsTop, setQuoteTabsTop] = useState(0)
+  const quoteScrollerRef = useRef<HTMLElement | null>(null)
+  const quoteTabsAnchorRef = useRef<HTMLDivElement | null>(null)
+  const quoteTabsRef = useCallback((node: HTMLDivElement | null) => {
+    let el = node?.parentElement
+    while (el) {
+      const style = window.getComputedStyle(el)
+      if (/(auto|scroll)/.test(style.overflowY)) {
+        quoteScrollerRef.current = el
+        setQuoteTabsTop(-(parseFloat(style.paddingTop) || 0))
+        return
+      }
+      el = el.parentElement
+    }
+  }, [])
+
+  /** After switching quote tabs, bring the new quote's content to the top. */
+  const scrollQuoteToTop = () => {
+    const anchor = quoteTabsAnchorRef.current
+    const scroller = quoteScrollerRef.current
+    if (!anchor || !scroller) return
+    const offset =
+      anchor.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+    // Only when scrolled past the tabs; at the top there is nothing to do.
+    if (offset < 0) scroller.scrollBy({ behavior: 'smooth', top: offset })
+  }
+
   const resolveScalarEntry = (entry: QuoteScalarEntry) => {
     const raw = stringifyScalar(
       resolveDisplayValue(entry.field, entry.value, entry.resultKey),
@@ -2361,14 +2398,28 @@ const QuoteAgentResultView = ({
               lineItemsEditable ||
               quoteVariants.some((variant) => variant.itemCount > 0) ||
               formVariantTables.length > 1) && (
-              <div className='flex flex-col gap-3'>
+              // `contents` makes the whole quote column (totals, remarks,
+              // traceability…) the sticky container, so the tabs stay pinned
+              // to the end instead of leaving with the line-items block.
+              <div className='contents'>
+                {/* Quote tabs stay pinned at the top of the panel while the
+                    rest scrolls underneath. -mx-4/px-4 spans the card's
+                    padding so rows don't show at the edges. */}
+                {/* Natural (un-stuck) position of the tabs; -mt-4 cancels the
+                    column gap so this marker adds no space. */}
+                <div className='-mt-4 h-0' ref={quoteTabsAnchorRef} aria-hidden />
+                <div
+                  className='sticky z-30 -mx-4 border-b border-gray-3 bg-surface-primary px-4 pt-3 pb-3'
+                  ref={quoteTabsRef}
+                  style={{ top: quoteTabsTop }}
+                >
                 <QuoteVariantCards
                   activeId={activeQuoteTabId}
-                  copiedFromLabel={activeCopiedFromLabel}
                   emptyMetaByVariant={quoteEmptyMetaByVariant}
                   variants={quoteVariants}
                   onSelect={(id) => {
                     setActiveQuoteTabId(id)
+                    scrollQuoteToTop()
                     if (id === 'compare') return
                     const next = quoteVariants.find((variant) => variant.id === id)
                     if (!next) return
@@ -2395,6 +2446,13 @@ const QuoteAgentResultView = ({
                         : 0,
                     })
                   }}
+                />
+                </div>
+
+                <QuoteVariantDescription
+                  activeId={activeQuoteTabId}
+                  copiedFromLabel={activeCopiedFromLabel}
+                  variants={quoteVariants}
                 />
 
                 {!isCompareTab ? (

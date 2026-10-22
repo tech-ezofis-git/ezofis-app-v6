@@ -54,6 +54,15 @@ const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
 
 const textOf = (value: unknown) => String(value || '').trim()
 
+/** 4s, 1m 05s */
+const formatElapsed = (ms: number) => {
+  const total = Math.max(1, Math.round(ms / 1000))
+  if (total < 60) return `${total}s`
+  const minutes = Math.floor(total / 60)
+  const seconds = String(total % 60).padStart(2, '0')
+  return `${minutes}m ${seconds}s`
+}
+
 const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   agentBlock,
   attachments = [],
@@ -336,82 +345,88 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             </div>
           </div>
         ) : isProcessing ? (
-          messageHistory.length > 0 ? (
-            <ol className='mx-auto flex w-full max-w-lg flex-col py-8'>
-              {messageHistory.map((step, index) => {
-                const isCurrent = index === messageHistory.length - 1
-                const endedAt = isCurrent
-                  ? now
-                  : messageHistory[index + 1].startedAt
-                const seconds = Math.max(
-                  1,
-                  Math.round((endedAt - step.startedAt) / 1000),
-                )
-                return (
-                  <li
-                    className='animate-in fade-in slide-in-from-bottom-2 flex gap-3 duration-300'
-                    key={`${index}-${step.text}`}
-                  >
-                    <div className='flex w-6 shrink-0 flex-col items-center'>
-                      <span
-                        className={cn(
-                          'flex size-6 items-center justify-center rounded-full',
-                          isCurrent
-                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)]'
-                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            'size-3.5',
-                            isCurrent && 'animate-spin',
-                          )}
-                          icon={isCurrent ? 'tabler:loader-2' : 'tabler:check'}
-                        />
-                      </span>
-                      {!isCurrent && (
-                        <span className='my-1 w-px flex-1 bg-[var(--gray-5)]' />
-                      )}
-                    </div>
-                    <div
-                      className={cn(
-                        'flex min-w-0 flex-1 items-start justify-between gap-4',
-                        !isCurrent && 'pb-4',
-                      )}
+          <div
+            aria-live='polite'
+            className='animate-in fade-in flex flex-col gap-3 text-left duration-300'
+          >
+            {/* Header: which agent is working and for how long. */}
+            <div className='flex min-w-0 items-center gap-2'>
+              <span className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-2)] text-[var(--primary-11)]'>
+                <Icon className='size-4' icon={iconName} />
+              </span>
+              <span className='min-w-0 truncate text-sm font-semibold text-gray-12'>
+                {label}
+              </span>
+              <span className='shrink-0 text-sm text-gray-9'>
+                {t`is working`}
+              </span>
+              {messageHistory.length > 0 ? (
+                <span className='shrink-0 text-xs text-gray-9 tabular-nums'>
+                  · {formatElapsed(now - messageHistory[0].startedAt)}
+                </span>
+              ) : null}
+            </div>
+
+            {/* Activity log: one line per step, newest last. */}
+            <ol className='ml-3.5 flex flex-col border-l border-gray-4 py-0.5 pl-4'>
+              {messageHistory.length > 0 ? (
+                messageHistory.map((step, index) => {
+                  const isCurrent = index === messageHistory.length - 1
+                  const endedAt = isCurrent
+                    ? now
+                    : messageHistory[index + 1].startedAt
+                  return (
+                    <li
+                      className='animate-in fade-in slide-in-from-bottom-1 relative flex min-w-0 items-start gap-2 py-1.5 duration-300'
+                      key={`${index}-${step.text}`}
                     >
                       <span
                         className={cn(
-                          'min-w-0 pt-0.5 text-sm leading-5',
+                          'absolute top-1.5 -left-[25px] flex size-[18px] items-center justify-center rounded-full ring-4 ring-[var(--surface-primary)]',
                           isCurrent
-                            ? 'text-shade-loading font-medium'
-                            : 'text-[var(--gray-9)]',
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)]'
+                            : 'bg-[var(--green-3)] text-[var(--green-11)]',
                         )}
                       >
-                        {step.text}
+                        <Icon
+                          className={cn('size-3', isCurrent && 'animate-spin')}
+                          icon={isCurrent ? 'tabler:loader-2' : 'tabler:check'}
+                        />
                       </span>
-                      <span className='shrink-0 pt-1 text-xs text-[var(--gray-9)] tabular-nums'>
-                        {seconds}s
-                      </span>
-                    </div>
-                  </li>
-                )
-              })}
+                      <p className='min-w-0 text-[13px] leading-5'>
+                        <span
+                          className={cn(
+                            'break-words',
+                            isCurrent
+                              ? 'text-shade-loading font-medium'
+                              : 'text-gray-10',
+                          )}
+                        >
+                          {step.text}
+                          {isCurrent ? '…' : ''}
+                        </span>
+                        <span className='ml-2 text-xs text-gray-8 tabular-nums'>
+                          {formatElapsed(endedAt - step.startedAt)}
+                        </span>
+                      </p>
+                    </li>
+                  )
+                })
+              ) : (
+                <li className='relative flex min-w-0 items-start py-1.5'>
+                  <span className='absolute top-1.5 -left-[25px] flex size-[18px] items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-11)] ring-4 ring-[var(--surface-primary)]'>
+                    <Icon
+                      className='size-3 animate-spin'
+                      icon='tabler:loader-2'
+                    />
+                  </span>
+                  <span className='text-shade-loading text-[13px] leading-5 font-medium'>
+                    {processingTitle}
+                  </span>
+                </li>
+              )}
             </ol>
-          ) : (
-            <div className='flex flex-col items-center justify-center gap-4 py-12 text-center'>
-              <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
-                <Icon
-                  className='size-7 animate-spin text-[var(--primary-9)]'
-                  icon='tabler:loader-2'
-                />
-              </div>
-              <div className='max-w-md px-4 text-center'>
-                <h3 className='text-shade-loading text-base font-semibold'>
-                  {processingTitle}
-                </h3>
-              </div>
-            </div>
-          )
+          </div>
         ) : isQualify && requestData?.qualifyAgentResponse?.qualifier_result ? (
           <QualifyAgentResultView
             agentBlock={agentBlock}

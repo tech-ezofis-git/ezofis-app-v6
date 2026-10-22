@@ -69,7 +69,7 @@ const emptyTitleFor = (id: QuoteVariantId) =>
 
 type Props = {
   activeId: QuoteTabId
-  /** When set, show a highlighted "Copied from …" badge under the tabs. */
+  /** QuoteVariantDescription: highlighted "Copied from …" badge. */
   copiedFromLabel?: string | null
   emptyMetaByVariant?: Partial<Record<'alt' | 'opt', QuoteVariantEmptyMeta>>
   variants: QuoteVariant[]
@@ -78,7 +78,6 @@ type Props = {
 
 export default function QuoteVariantCards({
   activeId,
-  copiedFromLabel,
   emptyMetaByVariant,
   variants,
   onSelect,
@@ -87,10 +86,6 @@ export default function QuoteVariantCards({
   if (variants.length <= 1) return null
 
   const mainTotal = variants.find((v) => v.id === 'main')?.total ?? 0
-  const activeVariant =
-    activeId === 'compare'
-      ? null
-      : variants.find((v) => v.id === activeId) || variants[0]
   const isCompareActive = activeId === 'compare'
 
   return (
@@ -116,9 +111,7 @@ export default function QuoteVariantCards({
               : t`${variant.itemCount} items`
           const discount = Number(variant.discount || 0)
           const discountLabel =
-            !isEmpty && discount > 0
-              ? ` · -$${toMoney(discount)} disc.`
-              : ''
+            !isEmpty && discount > 0 ? ` · -$${toMoney(discount)} disc.` : ''
 
           return (
             <button
@@ -157,7 +150,7 @@ export default function QuoteVariantCards({
                 </>
               ) : (
                 <>
-                  <span className='text-sm font-semibold tabular-nums text-gray-12'>
+                  <span className='text-sm font-semibold text-gray-12 tabular-nums'>
                     ${toMoney(variant.total)}
                   </span>
                   <span className='text-[10px] leading-4 text-gray-10'>
@@ -179,7 +172,7 @@ export default function QuoteVariantCards({
             'flex min-h-[4.25rem] flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-all active:scale-[0.99]',
             isCompareActive
               ? 'border-2 border-[var(--indigo-8)] bg-[var(--indigo-2)] shadow-[0_0_0_1px_var(--indigo-6)]'
-              : 'border border-t-[3px] border-t-[var(--indigo-8)] border-x-gray-3 border-b-gray-3 bg-surface hover:bg-[var(--indigo-1)]',
+              : 'border border-t-[3px] border-x-gray-3 border-t-[var(--indigo-8)] border-b-gray-3 bg-surface hover:bg-[var(--indigo-1)]',
           )}
           type='button'
           onClick={() => onSelect('compare')}
@@ -195,31 +188,43 @@ export default function QuoteVariantCards({
           </span>
         </button>
       </div>
+    </div>
+  )
+}
 
-      {activeVariant && !isCompareActive ? (
-        <div className='flex flex-wrap items-center gap-2'>
-          <p className='text-[12px] leading-5 text-gray-10'>
-            {activeVariant.description ||
-              QUOTE_VARIANT_META[activeVariant.id].description}
-          </p>
-          {copiedFromLabel ? (
-            <span className='inline-flex items-center gap-1 rounded-full border border-[var(--primary-7)] bg-[var(--primary-3)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--primary-11)] shadow-[0_0_0_1px_var(--primary-5)]'>
-              <Icon className='size-3' icon='lucide:copy' />
-              {t`Copied from`} {copiedFromLabel}
-            </span>
-          ) : null}
-        </div>
+/** Description (and "Copied from" badge) for the active quote tab. */
+export function QuoteVariantDescription({
+  activeId,
+  copiedFromLabel,
+  variants,
+}: Pick<Props, 'activeId' | 'copiedFromLabel' | 'variants'>) {
+  const { t } = useLingui()
+  if (variants.length <= 1 || activeId === 'compare') return null
+  const activeVariant = variants.find((v) => v.id === activeId) || variants[0]
+  if (!activeVariant) return null
+
+  return (
+    <div className='flex flex-wrap items-center gap-2'>
+      <p className='text-[12px] leading-5 text-gray-10'>
+        {activeVariant.description ||
+          QUOTE_VARIANT_META[activeVariant.id].description}
+      </p>
+      {copiedFromLabel ? (
+        <span className='inline-flex items-center gap-1 rounded-full border border-[var(--primary-7)] bg-[var(--primary-3)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--primary-11)] shadow-[0_0_0_1px_var(--primary-5)]'>
+          <Icon className='size-3' icon='lucide:copy' />
+          {t`Copied from`} {copiedFromLabel}
+        </span>
       ) : null}
     </div>
   )
 }
 
-const isCompareRowArray = (
-  value: unknown,
-): value is Record<string, any>[] =>
+const isCompareRowArray = (value: unknown): value is Record<string, any>[] =>
   Array.isArray(value) &&
   value.length > 0 &&
-  value.every((item) => item && typeof item === 'object' && !Array.isArray(item))
+  value.every(
+    (item) => item && typeof item === 'object' && !Array.isArray(item),
+  )
 
 const columnsFromCompareRows = (
   rows: Record<string, any>[],
@@ -295,7 +300,10 @@ function CompareValueView({
           <p className='text-sm font-semibold text-gray-12'>{label}</p>
         ) : null}
         {lines.map((line, index) => (
-          <p className='text-sm leading-6 text-gray-12' key={`${line}-${index}`}>
+          <p
+            className='text-sm leading-6 text-gray-12'
+            key={`${line}-${index}`}
+          >
             {line}
           </p>
         ))}
@@ -481,8 +489,7 @@ export function QuoteVariantEmptyPanel({
 }) {
   const { t } = useLingui()
   const title = emptyTitleFor(variant.id)
-  const note =
-    emptyMeta?.status?.trim() || EMPTY_NOTES[variant.id]
+  const note = emptyMeta?.status?.trim() || EMPTY_NOTES[variant.id]
   const detail =
     emptyMeta?.reason?.trim() ||
     (variant.id === 'alt' || variant.id === 'opt'
