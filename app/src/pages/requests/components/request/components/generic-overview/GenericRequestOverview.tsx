@@ -1587,7 +1587,14 @@ const GenericRequestOverview = ({
                     formModel={formModel}
                     stages={workflowStages}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                    hiddenFieldIds={summaryHiddenFieldIds}
+                    // Table controls are only held back when agent steps show
+                    // them in their own detail view; a plain workflow has no
+                    // other place to render them.
+                    hiddenFieldIds={
+                      agentBlocks.length > 0
+                        ? summaryHiddenFieldIds
+                        : hiddenFieldIds
+                    }
                     hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
                     panels={panels}

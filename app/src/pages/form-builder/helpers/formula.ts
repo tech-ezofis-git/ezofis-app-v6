@@ -385,11 +385,10 @@ export const formatCalculatedResult = (
   precision?: number,
 ): string => {
   if (!Number.isFinite(value)) return ''
-  if (precision !== undefined && precision >= 0) {
-    return value.toFixed(precision)
-  }
-  if (Number.isInteger(value)) return String(value)
-  return String(Number(value.toFixed(6)))
+  // Fixed decimals: the configured precision, else 2 (29.50).
+  return value.toFixed(
+    precision !== undefined && precision >= 0 ? precision : 2,
+  )
 }
 
 const isCalculationEnabled = (field: Question): boolean =>

@@ -977,7 +977,7 @@ const FieldRendererBase = ({
   }
   const general = field?.settings?.general || {}
   const required = isFieldRequired(field)
-  const readOnly = viewOnly || isFieldReadOnly(field)
+  const readOnly = viewOnly !== undefined ? viewOnly : isFieldReadOnly(field)
 
   const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
   const facetSource = getDropdownFacetSource(field, repositoryId)

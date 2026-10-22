@@ -668,6 +668,13 @@ export const buildMasterConditions = (
 
   if (!allFields || allFields.length === 0) return explicit
 
+  // Form fields already tied to a master column by an explicit mapping
+  const mappedFormFields = new Set<string>(
+    (field?.settings?.specific?.masterFormConditionColumn || [])
+      .map((c: any) => String(c?.formField || c?.formColumn || ''))
+      .filter(Boolean),
+  )
+
   const chained: Array<{ masterColumn: string; value: any }> = []
   const visited = new Set<string>()
   if (field?.id) visited.add(String(field.id))
@@ -724,7 +731,16 @@ export const buildMasterConditions = (
       pField.label ||
       pField.id
 
+    // A parent with no master column of its own (its id is the only name left)
+    // or one the explicit mappings already cover has no column to match on.
+    const isMappedExplicitly =
+      mappedFormFields.has(String(pField.id)) ||
+      (pField.jsonId && mappedFormFields.has(String(pField.jsonId)))
+    const hasNoMasterColumn = String(masterCol) === String(pField.id)
+
     if (
+      !isMappedExplicitly &&
+      !hasNoMasterColumn &&
       masterCol &&
       val !== undefined &&
       val !== null &&
@@ -844,6 +860,7 @@ export const fetchMasterFormColumnOptions = async (
 
     // Prepare parent column candidate keys if parent filtering is active
     const parentCandidateKeys = new Set<string>()
+    let parentColumnResolved = false
     if (parentMasterColumn) {
       parentCandidateKeys.add(parentMasterColumn)
       parentCandidateKeys.add(parentMasterColumn.trim())
@@ -863,6 +880,7 @@ export const fetchMasterFormColumnOptions = async (
           cleanStr(f.name).toLowerCase() === pClean,
       )
       if (matchedParentField) {
+        parentColumnResolved = true
         if (matchedParentField.id) {
           parentCandidateKeys.add(matchedParentField.id)
           parentCandidateKeys.add(matchedParentField.id.trim())
@@ -920,15 +938,34 @@ export const fetchMasterFormColumnOptions = async (
     const hasConditions = activeConditions.length > 0
     const conditionsToApply = activeConditions.filter((c) => c.values.size > 0)
 
-    const hasParentFilter = Boolean(
-      parentMasterColumn && String(parentMasterColumn).trim(),
-    )
+    // A parent that is a plain form field (no column in the master table) can
+    // only filter through the explicit condition mappings; matching it as a
+    // master column would drop every row.
+    const parentCoveredByConditions = hasConditions && !parentColumnResolved
+    const hasParentFilter =
+      Boolean(parentMasterColumn && String(parentMasterColumn).trim()) &&
+      !parentCoveredByConditions
     const targetParentVals = extractScalarStrings(parentValue)
     const targetParentSet = new Set(
       targetParentVals.map((s) => s.trim().toLowerCase()),
     )
 
+    console.log('[MASTERDBG] inputs', {
+      masterFormId,
+      masterFormColumn,
+      parentValue,
+      parentMasterColumn,
+      showAllData,
+      conditions,
+      candidateKeys: Array.from(candidateKeys),
+      conditionKeys: activeConditions.map((c) => ({
+        keys: Array.from(c.keys),
+        values: Array.from(c.values),
+      })),
+    })
+
     if (hasParentFilter && targetParentSet.size === 0 && !showAllData) {
+      console.log('[MASTERDBG] early exit: parent filter set but value empty')
       return []
     }
     if (
@@ -937,6 +974,7 @@ export const fetchMasterFormColumnOptions = async (
       conditionsToApply.length === 0 &&
       !showAllData
     ) {
+      console.log('[MASTERDBG] early exit: conditions set but all values empty')
       return []
     }
 
@@ -1027,6 +1065,10 @@ export const fetchMasterFormColumnOptions = async (
       return undefined
     }
 
+    let dbgPassedConditions = 0
+    let dbgPassedParent = 0
+    console.log('[MASTERDBG] master entries loaded:', rawEntries.length)
+
     for (const entry of rawEntries) {
       const dicts = [
         ...normalizeDictList(entry.formData),
@@ -1050,6 +1092,7 @@ export const fetchMasterFormColumnOptions = async (
         })
         if (!allMatch) continue
       }
+      dbgPassedConditions++
 
       if (hasParentFilter && targetParentSet.size > 0) {
         let entryParentVal: any = undefined
@@ -1082,6 +1125,7 @@ export const fetchMasterFormColumnOptions = async (
           continue
         }
       }
+      dbgPassedParent++
 
       let val: any = undefined
       for (const dict of dicts) {
@@ -1101,6 +1145,14 @@ export const fetchMasterFormColumnOptions = async (
       }
     }
 
+    console.log('[MASTERDBG] result', {
+      masterFormColumn,
+      entries: rawEntries.length,
+      passedConditions: dbgPassedConditions,
+      passedParent: dbgPassedParent,
+      options: uniqueValues.size,
+      sampleEntryKeys: Object.keys(rawEntries[0] || {}).slice(0, 40),
+    })
     const finalOptions = Array.from(uniqueValues).map((v) => ({
       id: v,
       name: v,

@@ -79,7 +79,7 @@ function WorkflowStageBar({
   const visibleCount = Math.min(STAGE_PAGE_SIZE, shown.length)
 
   return (
-    <div className='mb-4 flex items-start gap-1 rounded-xl border border-gray-3 bg-gray-0 px-2 py-3'>
+    <div className='mb-4 flex items-start gap-1 rounded-xl border border-gray-3 bg-gray-0 px-3 pt-4 pb-3'>
       {canPage ? (
         <div className='flex h-6 shrink-0 items-center'>
           <button
@@ -93,7 +93,7 @@ function WorkflowStageBar({
           </button>
         </div>
       ) : null}
-      <div className='min-w-0 flex-1 overflow-hidden'>
+      <div className='min-w-0 flex-1 overflow-hidden py-3'>
         <div
           className='flex items-start transition-transform duration-300 ease-in-out'
           style={{
@@ -102,16 +102,22 @@ function WorkflowStageBar({
           }}
         >
           {shown.map(({ index, stage }) => {
+            const upcoming = activeIndex >= 0 && index > activeIndex
             const isEndSuccess =
-              Boolean(stage.isSuccess) ||
-              Boolean(stage.isEnd && (isAllDone || activeIndex === index))
+              !upcoming &&
+              (Boolean(stage.isSuccess) ||
+                Boolean(stage.isEnd && (isAllDone || activeIndex === index)))
             const done =
-              isEndSuccess ||
-              (activeIndex >= 0 ? index < activeIndex : stage.status === 'done')
+              !upcoming &&
+              (isEndSuccess ||
+                (activeIndex >= 0
+                  ? index < activeIndex
+                  : stage.status === 'done'))
             const current =
+              !upcoming &&
               !isEndSuccess &&
               (activeIndex === index || stage.status === 'current')
-            const isCondition = Boolean(stage.isCondition)
+            const isCondition = Boolean(stage.isCondition) && !done && !current
 
             return (
               <div
@@ -124,7 +130,7 @@ function WorkflowStageBar({
                       'h-0.5 flex-1',
                       index === 0
                         ? 'bg-transparent'
-                        : done || current || isEndSuccess
+                        : !upcoming && (done || current || isEndSuccess)
                           ? 'bg-green-9'
                           : 'bg-gray-4',
                     )}
@@ -411,6 +417,19 @@ const WorkflowFormRenderer = ({
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
 
+  const resolveEffectiveReadOnly = (field: any) => {
+    if (viewOnly) return true
+    const state = evaluatedFieldStates[field.id]
+    const isReadOnlyByRule = Boolean(state?.disabled)
+    const baseReadOnly = isFieldReadOnly(field) || isReadOnlyByRule
+
+    // Workflow setting takes precedence: if readOnlyFieldIds is explicitly provided by stage rules
+    if (readOnlyFieldIds !== undefined) {
+      return readOnlyFieldIds.has(String(field.id))
+    }
+    return baseReadOnly
+  }
+
   const renderVisibleFields = (visibleFields: any[]) => {
     if (presentation === 'extracted') {
       const scalarFields = visibleFields.filter(
@@ -445,11 +464,7 @@ const WorkflowFormRenderer = ({
                   return t`This field is required.`
                 return undefined
               })()
-              const isReadOnly =
-                viewOnly ||
-                Boolean(readOnlyFieldIds?.has(String(field.id))) ||
-                isFieldReadOnly(field) ||
-                Boolean(state?.disabled)
+              const isReadOnly = resolveEffectiveReadOnly(field)
 
               return (
                 <ExtractedFieldCell
@@ -477,8 +492,7 @@ const WorkflowFormRenderer = ({
                 ? field.settings?.general?.size || 'col-12'
                 : field.settings?.general?.size,
             )
-            const state = evaluatedFieldStates[field.id]
-            const isReadOnlyByRule = Boolean(state?.disabled)
+            const isFieldEffectiveReadOnly = resolveEffectiveReadOnly(field)
             return (
               <div
                 className={`${sizeClass} max-w-full min-w-0 px-1 pb-2`}
@@ -511,20 +525,13 @@ const WorkflowFormRenderer = ({
                     Boolean(preparePhase) &&
                     preparingFieldId === String(field.id)
                   }
-                  viewOnly={
-                    viewOnly ||
-                    Boolean(readOnlyFieldIds?.has(String(field.id))) ||
-                    isReadOnlyByRule
-                  }
+                  viewOnly={isFieldEffectiveReadOnly}
                   onAddAttachments={onAddAttachments}
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                   onOcrFieldList={onOcrFieldList}
                   onOpenAttachment={onOpenAttachment}
                   onRequestUpload={
-                    onRequestUpload &&
-                    !viewOnly &&
-                    !readOnlyFieldIds?.has(String(field.id)) &&
-                    !isReadOnlyByRule
+                    onRequestUpload && !isFieldEffectiveReadOnly
                       ? (file) => onRequestUpload(field.id, file)
                       : undefined
                   }
@@ -550,11 +557,7 @@ const WorkflowFormRenderer = ({
                   ? field.settings?.general?.size || 'col-12'
                   : field.settings?.general?.size,
               )
-          const state = evaluatedFieldStates[field.id]
-          const isReadOnlyByRule = Boolean(state?.disabled)
-          const isRequiredByRule = state
-            ? state.required
-            : isFieldRequired(field)
+          const isFieldEffectiveReadOnly = resolveEffectiveReadOnly(field)
 
           return (
             <div
@@ -591,11 +594,7 @@ const WorkflowFormRenderer = ({
                 isPreparing={
                   Boolean(preparePhase) && preparingFieldId === String(field.id)
                 }
-                viewOnly={
-                  viewOnly ||
-                  Boolean(readOnlyFieldIds?.has(String(field.id))) ||
-                  isReadOnlyByRule
-                }
+                viewOnly={isFieldEffectiveReadOnly}
                 onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                 onMultiFieldChange={(patch) => {
                   Object.entries(patch).forEach(([fId, val]) => {
@@ -606,10 +605,7 @@ const WorkflowFormRenderer = ({
                 onOcrFieldList={onOcrFieldList}
                 onOpenAttachment={onOpenAttachment}
                 onRequestUpload={
-                  onRequestUpload &&
-                  !viewOnly &&
-                  !readOnlyFieldIds?.has(String(field.id)) &&
-                  !isReadOnlyByRule
+                  onRequestUpload && !isFieldEffectiveReadOnly
                     ? (file) => onRequestUpload(field.id, file)
                     : undefined
                 }
@@ -720,21 +716,12 @@ const WorkflowFormRenderer = ({
 
             const allReadOnly =
               viewOnly ||
-              visibleFields.every((field: any) => {
-                const state = evaluatedFieldStates[field.id]
-                return (
-                  readOnlyFieldIds?.has(String(field.id)) ||
-                  isFieldReadOnly(field) ||
-                  Boolean(state?.disabled)
-                )
-              })
+              visibleFields.every((field: any) => resolveEffectiveReadOnly(field))
 
             const requiredFields = visibleFields.filter((field: any) => {
               const state = evaluatedFieldStates[field.id]
               const isReq = state ? state.required : isFieldRequired(field)
-              const isRo =
-                (state ? state.disabled : isFieldReadOnly(field)) ||
-                Boolean(readOnlyFieldIds?.has(String(field.id)))
+              const isRo = resolveEffectiveReadOnly(field)
               return isReq && !isRo
             })
             const completedCount = requiredFields.filter((field: any) =>
