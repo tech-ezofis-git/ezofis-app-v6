@@ -1284,7 +1284,9 @@ const RequestsPage = () => {
     return true
   }, [isAccountsPayable, selectedWorkflow, session, user, workflow?.id])
 
-  const isRfqWorkflow = useMemo(() => {
+  // Workflows that can be started from a watched mailbox: the RFQ Process and
+  // the Quote Request Process (matched by name, like the RFQ one always was).
+  const isEmailWatchWorkflow = useMemo(() => {
     const currentWfId = String(
       workflow?.id || selectedWorkflow?.id || rawWorkflowData?.id || '',
     ).toLowerCase()
@@ -1300,7 +1302,8 @@ const RequestsPage = () => {
 
     return (
       currentWfId === WATCHFOX_CONFIG.workflowId.toLowerCase() ||
-      currentWfName.includes('rfq')
+      currentWfName.includes('rfq') ||
+      currentWfName.includes('quote request')
     )
   }, [
     workflow?.id,
@@ -1311,7 +1314,9 @@ const RequestsPage = () => {
     rawWorkflowData,
   ])
 
-  const canShowWatchEmail = Boolean(isRfqWorkflow && canCreateNewRequest)
+  const canShowWatchEmail = Boolean(
+    isEmailWatchWorkflow && canCreateNewRequest,
+  )
 
   const [isConnectingWatchEmail, setIsConnectingWatchEmailState] =
     useState<boolean>(() => {
@@ -1847,7 +1852,7 @@ const RequestsPage = () => {
   const headerActionButtons = useMemo(() => {
     const buttons = []
 
-    // Only show "Connect Email Watch" button if RFQ workflow, user has access to New, and not yet connected
+    // Only show "Connect Email Watch" button for the RFQ / Quote Request workflows, if the user has access to New, and not yet connected
     if (canShowWatchEmail && !connectedWatchEmail) {
       if (isConnectingWatchEmail) {
         buttons.push({
