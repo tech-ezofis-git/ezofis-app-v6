@@ -28,6 +28,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { PORTAL_SETUP_GUIDES } from '@/constants/pageGuides'
 import {
   BRANDING_STORAGE_KEYS,
   readBrandingSession,
@@ -1083,6 +1084,7 @@ function PortalSetup({
       clickable: isEditMode ? true : undefined,
       description: i18n._(step.description),
       disabled: isEditMode ? false : undefined,
+      guide: PORTAL_SETUP_GUIDES[step.key],
       icon: step.icon,
       id: idx,
       label: i18n._(step.title),

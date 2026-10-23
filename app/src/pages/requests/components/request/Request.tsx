@@ -6,6 +6,7 @@ import formApi from '@/api/form/form'
 import { getGroups, getUsers } from '@/api/v6/user'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
@@ -19,6 +20,7 @@ import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useAttachments } from '../../hooks/useAttachments'
 import { useComments } from '../../hooks/useComments'
+import { useMasterFormValue } from '../../hooks/useMasterFormValue'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -1141,6 +1143,7 @@ const Request = ({
     jobMappings,
     jobStatuses,
     processingProcesses,
+    quoteRegenerationPending,
     rawWorkflowData,
     requestListTab,
     selectedItem: storeSelectedItem,
@@ -1989,6 +1992,19 @@ const Request = ({
   const [formModel, setFormModel] = useState<any>({})
   const [genericFormModel, setGenericFormModel] = useState<Record<string, any>>(
     {},
+  )
+
+  // "Budget" from the master form behind the workflow's lookup fields,
+  // shown in the header like the quote total (0 when the cell is blank).
+  const genericFormPanels = useMemo(
+    () => (isGenericWorkflow ? getFormPanels(overviewWorkflowData) : []),
+    [isGenericWorkflow, overviewWorkflowData],
+  )
+  const masterBudget = useMasterFormValue(
+    genericFormPanels,
+    genericFormModel,
+    'Budget',
+    '0',
   )
 
   const resolvedRequestNo = useMemo(() => {
@@ -2980,6 +2996,7 @@ const Request = ({
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
+          budget={masterBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}
@@ -3003,6 +3020,29 @@ const Request = ({
           totalAmount={totalAmount}
           actions={headerActions.map((a: any) => {
             console.log('Header action being mapped:', a.value, a.label)
+            // Quote edited after its PDF was generated: moving the request
+            // on would send the stale PDF. Reject / Disqualify stay open.
+            const actionLabel = String(a.label || a.value || '').toLowerCase()
+            if (
+              quoteRegenerationPending &&
+              !actionLabel.includes('reject') &&
+              !actionLabel.includes('disqualif')
+            ) {
+              return {
+                ...a,
+                disabled: true,
+                onClick: undefined,
+                renderWrapper: (btn: React.ReactNode) => (
+                  <Tooltip
+                    content={t`Quote data has changed. Regenerate the PDF before you continue.`}
+                    position='bottom'
+                    width={240}
+                  >
+                    {btn}
+                  </Tooltip>
+                ),
+              }
+            }
             if (
               String(a.value).toLowerCase() === 'forward' ||
               String(a.label).toLowerCase() === 'forward'

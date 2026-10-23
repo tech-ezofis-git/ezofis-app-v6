@@ -5,6 +5,7 @@ import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWiz
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
+import { REPORT_BUILDER_GUIDES } from '@/constants/pageGuides'
 import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayout'
 import type { Report, ReportStatus } from '../types'
 import {
@@ -90,6 +91,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       clickable: isEditing || index <= maxVisitedStep,
       description: stepDefinitions[stepId].description,
       disabled: isEditing ? false : index > maxVisitedStep,
+      guide: REPORT_BUILDER_GUIDES[stepId],
       id: index,
       label: stepDefinitions[stepId].label,
     }))

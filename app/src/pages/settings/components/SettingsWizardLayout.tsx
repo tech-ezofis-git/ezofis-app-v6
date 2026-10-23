@@ -1,6 +1,7 @@
 import type { I18n, MessageDescriptor } from '@lingui/core'
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef } from 'react'
+import type { PageGuide } from '@/constants/pageGuides'
 import Button from '@/components/base/button/Button'
 import InfoCard from '@/components/base/InfoCard'
 import Stepper from '@/components/base/Stepper'
@@ -11,6 +12,8 @@ export type SettingsWizardStep = {
   clickable?: boolean
   description?: string
   disabled?: boolean
+  /** Heading + explanation for the page-guide banner on this step. */
+  guide?: PageGuide
   icon?: string
   id: number
   label: string
@@ -44,8 +47,8 @@ export type SettingsWizardLayoutProps = {
   moduleTitle?: Translatable
   nextLabel?: string
   saveLabel?: string
-  skipLabel?: string
   setupTitle?: Translatable
+  skipLabel?: string
   steps: SettingsWizardStep[]
   onBack?: () => void
   onBackToSettings?: () => void
@@ -141,6 +144,18 @@ export default function SettingsWizardLayout({
     }))
   }, [steps, activeStep, i18n.locale])
 
+  // Page-guide banner: the step's own guide copy, else its label and short
+  // description so a step without a guide still gets a meaningful banner.
+  const currentStep = steps[activeStep]
+  const activeGuide = currentStep?.guide
+    ? {
+        description: i18n._(currentStep.guide.description),
+        title: i18n._(currentStep.guide.title),
+      }
+    : currentStep?.description
+      ? { description: currentStep.description, title: currentStep.label }
+      : null
+
   return (
     <div
       className={cn(
@@ -193,12 +208,13 @@ export default function SettingsWizardLayout({
             )}
           >
             <div className='flex min-h-full w-full flex-col gap-6 pt-3 pb-6 md:gap-7 md:pb-8'>
-              {steps[activeStep]?.description ? (
+              {activeGuide ? (
                 <InfoCard
-                  description={t`${steps[activeStep]?.label ?? ''}. ${steps[activeStep]?.description ?? ''} Complete the fields on this step, then continue when you are ready. You can return to this step before you save.`}
-                  showVideo
-                  title={t`What should I do on this page?`}
+                  description={activeGuide.description}
+                  key={activeStep}
+                  title={activeGuide.title}
                   videoUrl={steps[activeStep]?.videoUrl}
+                  showVideo
                 />
               ) : null}
               <div className='flex flex-col gap-6 md:gap-7'>{children}</div>

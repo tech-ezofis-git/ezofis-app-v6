@@ -18,13 +18,16 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
   getConfiguredFieldOptions,
   getFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/requestEvents'
 import cn from '@/utils/cn'
+import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import {
   canEditAgentFormField,
   canViewAgentFormField,
@@ -45,6 +48,13 @@ import {
   getWorkflowFormId,
 } from './documentGenerateTemplate'
 import { getFieldHeading, getFieldId } from './qualifierResultUtils'
+import {
+  buildQuoteSnapshot,
+  type QuoteSnapshot,
+  quoteBaselineStorageKey,
+  readQuoteBaseline,
+  writeQuoteBaseline,
+} from './quoteChangeDetection'
 import TruncatedExpandText from './TruncatedExpandText'
 import QuoteLineItemsTable, {
   buildQuoteTotals,
@@ -209,7 +219,7 @@ interface HoverEditProps {
   editor: ReactNode
   fieldId: string
   className?: string
-  /** When set, pencil sits top-right on the same row as this heading. */
+  /** When set, shown above the editable value. */
   heading?: ReactNode
   inline?: boolean
   label?: string
@@ -256,21 +266,6 @@ const HoverEditShell = ({
     }
   }, [isActive, onActivate])
 
-  const editButton = (
-    <button
-      aria-label='Edit'
-      className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-      type='button'
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onActivate(fieldId)
-      }}
-    >
-      <Icon className='size-3.5' icon='lucide:pencil' />
-    </button>
-  )
-
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
@@ -307,21 +302,36 @@ const HoverEditShell = ({
     )
   }
 
+  const activate = () => onActivate(fieldId)
+  // The value itself is the edit target: a field outline on hover / focus.
+  const editableValue = (
+    <span
+      aria-label='Edit'
+      className={cn(
+        'min-w-0 overflow-hidden',
+        inline ? 'inline-block max-w-full align-baseline' : 'block w-full',
+        editableValueClass,
+      )}
+      role='button'
+      tabIndex={0}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        activate()
+      }}
+      onKeyDown={onEditableValueKeyDown(activate)}
+    >
+      {children}
+    </span>
+  )
+
   if (heading) {
     return wrapLabel(
-      <span
-        ref={rootRef}
-        className='group flex w-full min-w-0 flex-col gap-1 rounded px-0.5 transition-colors'
-      >
+      <span ref={rootRef} className='flex w-full min-w-0 flex-col gap-1'>
         <span className='flex min-w-0 items-center justify-between gap-2'>
           {heading}
-          {!isActive ? editButton : <span className='size-6 shrink-0' />}
         </span>
-        {isActive ? (
-          editor
-        ) : (
-          <span className='block min-w-0 w-full'>{children}</span>
-        )}
+        {isActive ? editor : editableValue}
       </span>,
     )
   }
@@ -330,37 +340,11 @@ const HoverEditShell = ({
     <span
       ref={rootRef}
       className={cn(
-        'group relative min-w-0 rounded px-0.5 transition-colors',
-        isActive
-          ? inline
-            ? 'inline-flex items-baseline align-baseline'
-            : 'block w-full'
-          : inline
-            ? 'inline-flex max-w-full items-baseline pr-5 align-baseline'
-            : 'flex w-full items-baseline pr-5',
+        'min-w-0',
+        inline ? 'inline-flex max-w-full items-baseline align-baseline' : 'block w-full',
       )}
     >
-      {isActive ? (
-        editor
-      ) : (
-        <>
-          <span className='min-w-0 flex-1 overflow-hidden align-baseline'>
-            {children}
-          </span>
-          <button
-            aria-label='Edit'
-            className='absolute top-1/2 right-0 inline-flex size-5 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-            type='button'
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onActivate(fieldId)
-            }}
-          >
-            <Icon className='size-3.5' icon='lucide:pencil' />
-          </button>
-        </>
-      )}
+      {isActive ? editor : editableValue}
     </span>,
   )
 }
@@ -556,10 +540,20 @@ const QuoteAgentResultView = ({
   // Set by the user's own edits (not the totals auto-sync), so the
   // "changed since the PDF was generated" state ignores load-time writes.
   const userEditedRef = useRef(false)
+  // Last generated quote (see quoteBaseline below) and where it is stored.
+  const quoteBaselineRef = useRef<QuoteSnapshot | null>(null)
+  const baselineStorageKeyRef = useRef<string | null>(null)
   const onFieldChange = useMemo(
     () =>
       onFieldChangeProp
         ? (fieldId: string, value: unknown) => {
+            // First edit freezes the baseline; keep it across reloads.
+            if (!userEditedRef.current && quoteBaselineRef.current) {
+              writeQuoteBaseline(
+                baselineStorageKeyRef.current,
+                quoteBaselineRef.current,
+              )
+            }
             userEditedRef.current = true
             onFieldChangeProp(fieldId, value)
           }
@@ -1113,22 +1107,61 @@ const QuoteAgentResultView = ({
     () => documentGenerateIsComplete(requestData, null, workflow),
     [requestData, workflow],
   )
-  const quoteSnapshot = useMemo(() => {
-    const byVariant: Partial<Record<QuoteVariantId, string>> = {}
+  const variantResultKeys = useMemo(() => {
+    const keys = collectQuoteVariantResultKeys(quoteVariants)
     quoteVariants.forEach((variant) => {
-      byVariant[variant.id] = JSON.stringify([
-        lineValueSignature(variant.rows),
-        variant.total,
-        variant.discount ?? 0,
-        variant.freight ?? 0,
-      ])
+      if (variant.fieldId) keys.add(variant.fieldId)
+      if (variant.resultKey) keys.add(variant.resultKey)
     })
-    return { all: JSON.stringify(formModel), byVariant }
-  }, [formModel, quoteVariants])
-  const [quoteBaseline, setQuoteBaseline] = useState(quoteSnapshot)
+    ;[
+      'Line Item',
+      'quote_2 Line Item',
+      'quote_3 Line Item',
+      'ALT Line Item',
+      'OPT Line Item',
+    ].forEach((key) => keys.add(key))
+    return keys
+  }, [quoteVariants])
+
+  // Value-based: normalized line items, totals and form fields (no UI state),
+  // so undoing an edit hides Regenerate again.
+  const quoteSnapshot = useMemo(
+    () => buildQuoteSnapshot(formModel, quoteVariants, variantResultKeys),
+    [formModel, quoteVariants, variantResultKeys],
+  )
+  const baselineStorageKey = quoteBaselineStorageKey(
+    requestData?.workflowInstanceId || requestData?.processId,
+    requestData?.documentGenerateResponse,
+  )
+  baselineStorageKeyRef.current = baselineStorageKey
+  // Snapshot of the last generated quote. Edits never move it; only a
+  // successful regenerate does (or a fresh load with nothing stored).
+  const [quoteBaseline, setQuoteBaseline] = useState<QuoteSnapshot>(
+    () => readQuoteBaseline(baselineStorageKey) ?? quoteSnapshot,
+  )
+  quoteBaselineRef.current = quoteBaseline
+  // Whether the baseline came from storage (then load-time writes must not
+  // replace it). Read once on mount; the effect below handles key changes.
+  const storedBaselineRef = useRef<boolean | null>(null)
+  if (storedBaselineRef.current === null) {
+    storedBaselineRef.current = Boolean(readQuoteBaseline(baselineStorageKey))
+  }
+  const loadedBaselineKeyRef = useRef(baselineStorageKey)
   useEffect(() => {
-    // Until the user edits, every write (load, totals sync) is the baseline.
-    if (!userEditedRef.current) setQuoteBaseline(quoteSnapshot)
+    // Another request (or a newly generated document): restore its baseline.
+    if (loadedBaselineKeyRef.current === baselineStorageKey) return
+    loadedBaselineKeyRef.current = baselineStorageKey
+    const stored = readQuoteBaseline(baselineStorageKey)
+    userEditedRef.current = false
+    storedBaselineRef.current = Boolean(stored)
+    setQuoteBaseline(stored ?? quoteSnapshot)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on request change
+  }, [baselineStorageKey])
+  useEffect(() => {
+    // Until the user edits, load-time writes (totals sync) are the baseline.
+    if (!userEditedRef.current && !storedBaselineRef.current) {
+      setQuoteBaseline(quoteSnapshot)
+    }
   }, [quoteSnapshot])
   const changedVariantIds = quoteVariants
     .filter(
@@ -1142,6 +1175,17 @@ const QuoteAgentResultView = ({
     Boolean(onFieldChange) &&
     isDocumentGenerated &&
     quoteBaseline.all !== quoteSnapshot.all
+  // Lets the request header hold Approve / forward actions until the PDF
+  // matches the quote again.
+  useEffect(() => {
+    requestStore.setState({ quoteRegenerationPending: hasQuoteChanges })
+  }, [hasQuoteChanges])
+  useEffect(
+    () => () => {
+      requestStore.setState({ quoteRegenerationPending: false })
+    },
+    [],
+  )
   const changedQuoteLabels = quoteVariants
     .filter((variant) => changedVariantIds.includes(variant.id))
     .map((variant) => variant.label)
@@ -1192,7 +1236,11 @@ const QuoteAgentResultView = ({
       })
       // The new PDFs replace the old ones in Attachments.
       window.dispatchEvent(new Event(REQUEST_ATTACHMENTS_CHANGED_EVENT))
+      // The regenerated PDF is the new baseline. A failure above returns
+      // early and leaves the old one, so Regenerate stays visible.
       userEditedRef.current = false
+      storedBaselineRef.current = true
+      writeQuoteBaseline(baselineStorageKey, quoteSnapshot)
       setQuoteBaseline(quoteSnapshot)
     } finally {
       setIsRegenerating(false)
@@ -1225,22 +1273,6 @@ const QuoteAgentResultView = ({
     }
     return undefined
   })()
-
-  const variantResultKeys = useMemo(() => {
-    const keys = collectQuoteVariantResultKeys(quoteVariants)
-    quoteVariants.forEach((variant) => {
-      if (variant.fieldId) keys.add(variant.fieldId)
-      if (variant.resultKey) keys.add(variant.resultKey)
-    })
-    ;[
-      'Line Item',
-      'quote_2 Line Item',
-      'quote_3 Line Item',
-      'ALT Line Item',
-      'OPT Line Item',
-    ].forEach((key) => keys.add(key))
-    return keys
-  }, [quoteVariants])
 
   const displayLineItems = activeQuoteVariant?.rows ?? lineItems
 
@@ -2464,12 +2496,7 @@ const QuoteAgentResultView = ({
           label={entry.label}
           onActivate={setActiveEditId}
         >
-          <span
-            className={cn(
-              'block w-full text-right tabular-nums',
-              !canEdit && 'pr-5',
-            )}
-          >
+          <span className='block w-full text-right tabular-nums'>
             {display}
           </span>
         </HoverEditShell>
@@ -2478,7 +2505,7 @@ const QuoteAgentResultView = ({
   }
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-3'>
       {documentTemplateJson && paneMode === 'preview' ? (
         <div className='flex flex-col gap-3'>
           <div className='flex items-center justify-between gap-3'>
@@ -2522,8 +2549,8 @@ const QuoteAgentResultView = ({
           </div>
         </div>
       ) : (
-        <div className='flex min-w-0 flex-col gap-4'>
-          <div className='grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-2.5 text-left sm:grid-cols-2'>
+        <div className='flex min-w-0 flex-col gap-3'>
+          <div className='grid min-w-0 grid-cols-1 items-start gap-x-5 gap-y-2 text-left sm:grid-cols-2'>
             {headerEntries.map(renderHeaderField)}
           </div>
 
@@ -2540,11 +2567,11 @@ const QuoteAgentResultView = ({
                 {/* Quote tabs stay pinned at the top of the panel while the
                     rest scrolls underneath. -mx-4/px-4 spans the card's
                     padding so rows don't show at the edges. */}
-                {/* Natural (un-stuck) position of the tabs; -mt-4 cancels the
+                {/* Natural (un-stuck) position of the tabs; -mt-3 cancels the
                     column gap so this marker adds no space. */}
-                <div className='-mt-4 h-0' ref={quoteTabsAnchorRef} aria-hidden />
+                <div className='-mt-3 h-0' ref={quoteTabsAnchorRef} aria-hidden />
                 <div
-                  className='sticky z-30 -mx-4 border-b border-gray-3 bg-surface-primary px-4 pt-3 pb-3'
+                  className='sticky z-30 -mx-4 border-b border-gray-3 bg-surface-primary px-4 pt-2 pb-2.5'
                   ref={quoteTabsRef}
                   style={{ top: quoteTabsTop }}
                 >
@@ -2594,8 +2621,8 @@ const QuoteAgentResultView = ({
                 {hasQuoteChanges ? (
                   // Data changed after the PDF was generated: preview it,
                   // then regenerate so the attached PDF matches.
-                  <div className='flex animate-in flex-wrap items-center gap-3 rounded-xl border border-orange-5 bg-orange-1 px-4 py-3 duration-300 fade-in slide-in-from-top-1'>
-                    <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-3 text-orange-11'>
+                  <div className='flex animate-in flex-wrap items-center gap-3 rounded-xl border border-orange-5 bg-orange-1 px-3 py-2.5 duration-300 fade-in slide-in-from-top-1'>
+                    <span className='flex size-8 shrink-0 items-center justify-center rounded-full bg-orange-3 text-orange-11'>
                       <Icon className='size-4' icon='lucide:file-diff' />
                     </span>
                     <div className='min-w-0 flex-1'>
@@ -2609,22 +2636,24 @@ const QuoteAgentResultView = ({
                       </p>
                     </div>
                     <div className='flex shrink-0 items-center gap-2'>
-                      <Button
-                        className='!border-secondary-5 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3'
-                        color='secondary'
-                        disabled={previewDisabled || isRegenerating}
-                        icon='lucide:eye'
-                        label={t`Quote Preview`}
-                        size='sm'
-                        type='button'
-                        variant='outline'
-                        title={
-                          previewDisabled
-                            ? t`Select a quote with line items to preview`
-                            : undefined
-                        }
-                        onClick={() => selectPaneMode('preview')}
-                      />
+                      {/* The generated PDF is out of date until regenerated. */}
+                      <Tooltip
+                        content={t`Quote data has changed. Regenerate the quotation to preview the latest version.`}
+                        position='bottom'
+                        width={260}
+                      >
+                        <Button
+                          aria-disabled
+                          className='pointer-events-none !border-secondary-5 !bg-secondary-2 !text-secondary-11 opacity-50'
+                          color='secondary'
+                          icon='lucide:eye'
+                          label={t`Quote Preview`}
+                          size='sm'
+                          type='button'
+                          variant='outline'
+                          disabled
+                        />
+                      </Tooltip>
                       <Button
                         color='primary'
                         disabled={isRegenerating}

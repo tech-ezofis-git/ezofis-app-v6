@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InfoCard from '@/components/base/InfoCard'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import AiDisclaimer from '@/components/common/AiDisclaimer'
+import { AI_FORM_BUILDER_GUIDES } from '@/constants/pageGuides'
 import {
   buildFormPayloadFromAiSuggestion,
   type FormTypeOption,
@@ -69,7 +71,7 @@ export default function AiFormBuilder({
   onBack,
   onManualCreate,
 }: AiFormBuilderProps) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
 
   const [formType, setFormType] = useState<FormTypeOption | null>(null)
   const [prompt, setPrompt] = useState('')
@@ -138,8 +140,21 @@ export default function AiFormBuilder({
       </div>
 
       <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-6 sm:pt-8 md:pt-10'>
+        <div className='w-full max-w-3xl'>
+          <InfoCard
+            key={formType ? 'describe' : 'type'}
+            showVideo
+            description={i18n._(
+              AI_FORM_BUILDER_GUIDES[formType ? 'describe' : 'type']
+                .description,
+            )}
+            title={i18n._(
+              AI_FORM_BUILDER_GUIDES[formType ? 'describe' : 'type'].title,
+            )}
+          />
+        </div>
         <div className='flex flex-col items-center gap-3 text-center'>
-          <div className='bg-purple-2 text-purple-11 flex h-12 w-12 items-center justify-center rounded-2xl'>
+          <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-2 text-purple-11'>
             <AiBrandIcon className='size-6' variant='outline-purple' />
           </div>
           <h1 className='text-xl font-semibold text-gray-12 md:text-2xl'>

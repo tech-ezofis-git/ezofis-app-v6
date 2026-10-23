@@ -632,7 +632,7 @@ export const extractScalarStrings = (val: any): string[] => {
 // short TTL instead.
 const MASTER_CALL_TTL_MS = 30_000
 const masterCallCache = new Map<string, { at: number; promise: Promise<any> }>()
-const cachedMasterCall = <T>(
+export const cachedMasterCall = <T>(
   kind: string,
   masterFormId: string,
   call: () => Promise<T>,

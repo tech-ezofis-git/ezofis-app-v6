@@ -18,6 +18,7 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
+import { BRANDING_GUIDES } from '@/constants/pageGuides'
 import {
   persistBrandingToSession,
   readBrandingSession as readSession,
@@ -584,6 +585,7 @@ const ColorPreference = ({ onBack }: ColorPreferenceProps) => {
         clickable: true,
         description: i18n._(step.description),
         disabled: false,
+        guide: BRANDING_GUIDES[step.key],
         icon: step.icon,
         id: index,
         label: i18n._(step.title),

@@ -13,6 +13,11 @@ type TruncatedExpandTextProps = {
    */
   fit?: boolean
   /**
+   * Ellipsis when the text does not fit; on hover / focus the same text
+   * wraps in place over as many lines as it needs (no tooltip or overlay).
+   */
+  hoverExpand?: boolean
+  /**
    * When set, truncate to this many characters + "...".
    * Ignored when `truncateAfter` is set.
    * When omitted (and no truncateAfter), truncate by available width.
@@ -38,6 +43,7 @@ const TruncatedExpandText = ({
   as = 'span',
   className,
   fit = false,
+  hoverExpand = false,
   maxChars,
   truncateAfter,
   value,
@@ -48,11 +54,14 @@ const TruncatedExpandText = ({
   const fullValue = String(value ?? '').trim() || 'NA'
 
   useLayoutEffect(() => {
-    if (!fit) return
+    if (!fit && !hoverExpand) return
     const el = textRef.current
     if (!el) return
 
     const measure = () => {
+      // While expanded (hover / focus) the text no longer overflows; keep
+      // the last reading so it stays focusable instead of flickering.
+      if (hoverExpand && el.matches(':hover, :focus-visible')) return
       setOverflowing(el.scrollWidth > el.clientWidth + 1)
     }
 
@@ -61,7 +70,7 @@ const TruncatedExpandText = ({
     observer.observe(el)
     if (el.parentElement) observer.observe(el.parentElement)
     return () => observer.disconnect()
-  }, [fit, fullValue])
+  }, [fit, fullValue, hoverExpand])
 
   let shortValue: string | null = null
 
@@ -74,6 +83,23 @@ const TruncatedExpandText = ({
     if (fullValue.length > maxChars) {
       shortValue = `${fullValue.slice(0, maxChars)}...`
     }
+  }
+
+  if (hoverExpand) {
+    // No overlay: on hover / focus the same element un-truncates and wraps,
+    // so the full value shows in the header row itself.
+    return (
+      <Tag
+        ref={textRef}
+        tabIndex={overflowing ? 0 : undefined}
+        className={cn(
+          'block max-w-full min-w-0 truncate leading-snug outline-none hover:break-words hover:whitespace-normal focus-visible:break-words focus-visible:whitespace-normal',
+          className,
+        )}
+      >
+        {fullValue}
+      </Tag>
+    )
   }
 
   if (fit) {

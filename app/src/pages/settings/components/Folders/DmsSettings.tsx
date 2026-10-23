@@ -66,6 +66,7 @@ import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { FOLDER_SETUP_GUIDES } from '@/constants/pageGuides'
 import BrandCard from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/BrandCard'
 import SectionHeader from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/SectionHeader'
 import { OrDivider } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
@@ -2184,6 +2185,7 @@ export default function DmsFolderConfiguration({
       clickable: isEditMode ? true : undefined,
       description: item.description,
       disabled: isEditMode ? false : undefined,
+      guide: FOLDER_SETUP_GUIDES[item.id],
       icon: icons[item.id],
       id: item.id - 1,
       label: item.title,

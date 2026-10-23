@@ -16,12 +16,14 @@ import {
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
 import EmptyState from '@/components/base/EmptyState'
+import InfoCard from '@/components/base/InfoCard'
 import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import AiDisclaimer from '@/components/common/AiDisclaimer'
 import { AnimateFadeIn } from '@/components/common/animations'
 import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
+import { DASHBOARD_BUILDER_GUIDES } from '@/constants/pageGuides'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
 import {
   BuilderTimelineStep,
@@ -51,7 +53,7 @@ export default function DashboardApiBuilder({
   workflowId = '',
   onSavedHtmlHeaderChange,
 }: Props) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
 
   const [activeStep, setActiveStep] = useState(1)
   const [sessionId, setSessionId] = useState('')
@@ -621,6 +623,15 @@ export default function DashboardApiBuilder({
       key={`api-builder-${repositoryId}`}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
+      {DASHBOARD_BUILDER_GUIDES[activeStep] ? (
+        <InfoCard
+          className='mb-4'
+          description={i18n._(DASHBOARD_BUILDER_GUIDES[activeStep].description)}
+          key={activeStep}
+          title={i18n._(DASHBOARD_BUILDER_GUIDES[activeStep].title)}
+          showVideo
+        />
+      ) : null}
       <BuilderTimelineStep
         bottomConnectorState={getConnectorState(1, 2)}
         description={t`Describe the dashboard you want to create.`}

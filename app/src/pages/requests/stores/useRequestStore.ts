@@ -82,6 +82,8 @@ type Store = {
   pendingNav: any
   pendingOpenNewRequest: boolean
   processingProcesses: any[]
+  /** Quote edited after its PDF was generated; Regenerate PDF is pending. */
+  quoteRegenerationPending: boolean
   rawWorkflowData: any
   reloadMeta: boolean
   repoData: any
@@ -143,6 +145,7 @@ const requestStore = create<Store>()(
       pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
       pendingOpenNewRequest: false,
       processingProcesses: [],
+      quoteRegenerationPending: false,
       rawWorkflowData: null,
       reloadMeta: false,
       repoData: null,

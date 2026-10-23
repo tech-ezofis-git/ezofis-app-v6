@@ -8,6 +8,7 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
+import InfoCard from '@/components/base/InfoCard'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -22,6 +23,7 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import { RETENTION_POLICY_GUIDES } from '@/constants/pageGuides'
 import cn from '@/utils/cn'
 import {
   ACTION_OPTIONS,
@@ -127,7 +129,7 @@ export default function FolderRetentionPolicyWizard({
   onClose: () => void
   onSave: (policy: RetentionPolicy) => void
 }) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
   const [step, setStep] = useState<Step>(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isGeneratingConditions, setIsGeneratingConditions] = useState(false)
@@ -854,6 +856,13 @@ export default function FolderRetentionPolicyWizard({
 
         <div className='col-span-1 h-full w-full overflow-y-auto'>
           <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
+            <InfoCard
+              className='mb-5'
+              description={i18n._(RETENTION_POLICY_GUIDES[step].description)}
+              key={step}
+              title={i18n._(RETENTION_POLICY_GUIDES[step].title)}
+              showVideo
+            />
             {renderStepContent()}
 
             <div className='mt-6 flex items-center justify-between border-t border-[var(--border-default)] pt-4'>

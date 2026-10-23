@@ -752,7 +752,7 @@ const DocumentFormSplitLayout = ({
             'no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4',
             summaryAgentBlocks.length > 0
               ? 'pt-1.5'
-              : 'flex min-h-[69px] items-end',
+              : 'flex min-h-[60px] items-end',
           )}
         >
           <div className='flex min-w-0 flex-1 items-end justify-between gap-4'>

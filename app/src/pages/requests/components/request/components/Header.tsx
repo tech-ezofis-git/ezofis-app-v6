@@ -37,6 +37,8 @@ interface HeaderProps {
   approveLoading?: boolean
   assigneeLabel?: string
   attachmentCount?: number
+  /** Budget read from the linked master form (generic requests). */
+  budget?: string | null
   commentsCount?: number
   currency?: string
   enableAIInsights?: boolean
@@ -298,6 +300,7 @@ const Header: React.FC<HeaderProps> = ({
   approveLoading,
   assigneeLabel,
   attachmentCount = 0,
+  budget,
   commentsCount = 0,
   currency,
   enableAIInsights = true,
@@ -965,11 +968,12 @@ const Header: React.FC<HeaderProps> = ({
               </Tooltip>
             </div>
 
+            {/* Capped width with ellipsis; hover shows the full name in place. */}
             <TruncatedExpandText
               as='h1'
-              className='text-[15px] font-semibold tracking-tight text-gray-13'
+              className='max-w-[12rem] text-[15px] font-semibold tracking-tight text-gray-13 sm:max-w-[8rem] xl:max-w-[10rem] 2xl:max-w-[15rem]'
               value={requestNo}
-              fit
+              hoverExpand
             />
 
             {/* Next Request Icon + Info Icon (tight spacing) */}
@@ -1002,6 +1006,32 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className='ml-auto flex shrink-0 flex-nowrap items-center gap-2 sm:gap-3'>
           <div className='flex shrink-0 items-center gap-1.5'>
+            {(() => {
+              const raw = String(budget ?? '').trim()
+              if (!raw) return null
+              const amountNum = Number(raw.replace(/[^0-9.-]/g, ''))
+              const isAmount =
+                /\d/.test(raw) && Number.isFinite(amountNum) && !/[a-z]/i.test(raw)
+              const code = String(currency || '')
+                .trim()
+                .toUpperCase()
+              const currencyLabel = code.length === 3 ? `${code} - $` : '$'
+              return (
+                <div className='mr-1 flex flex-col border-r border-[var(--gray-3)] pr-2 text-right sm:mr-1.5 sm:pr-3'>
+                  <span className='mb-1 text-[9px] leading-none font-semibold whitespace-nowrap text-[var(--gray-11)] sm:text-[10px]'>
+                    {t`Budget`}
+                  </span>
+                  <span className='text-[12px] leading-tight font-semibold whitespace-nowrap text-[var(--primary-9)] sm:text-[13px]'>
+                    {isAmount
+                      ? `${currencyLabel} ${amountNum.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                          minimumFractionDigits: 2,
+                        })}`
+                      : raw}
+                  </span>
+                </div>
+              )
+            })()}
             {(() => {
               const amountNum = Number(
                 String(totalAmount ?? '')

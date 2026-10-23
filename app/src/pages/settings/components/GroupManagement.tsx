@@ -25,6 +25,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { GROUP_SETUP_GUIDES } from '@/constants/pageGuides'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
@@ -806,6 +807,7 @@ function GroupSetup({
       clickable: isEditMode ? true : undefined,
       description: i18n._(step.description),
       disabled: isEditMode ? false : undefined,
+      guide: GROUP_SETUP_GUIDES[step.key],
       icon:
         step.key === 'details'
           ? 'tabler:users'
