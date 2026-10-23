@@ -187,22 +187,32 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
         },
       ]
       ;(formApi.getFormEntries as any).mockResolvedValue({ data: entries })
-      // Mirrors the by-column endpoint: no value loads the column, a value
-      // returns only the entries whose column equals it.
+      // Mirrors the by-column endpoint: no entries, just the requested
+      // column's distinct `values` among the entries matching every filter.
+      const cell = (e: (typeof entries)[number], column: string) =>
+        (e.formData as Record<string, string>)[
+          Object.keys(e.formData).find((k) => k.trim() === column.trim()) ||
+            ''
+        ]
       ;(formApi.getFormEntriesByColumn as any).mockImplementation(
-        async (_formId: string, columnName: string, columnValue?: string) => ({
+        async (
+          _formId: string,
+          columnName: string,
+          filters: { columnName: string; columnValue: string }[] = [],
+        ) => ({
           data: {
-            entries:
-              columnValue === undefined
-                ? entries
-                : entries.filter(
-                    (e) =>
-                      (e.formData as Record<string, string>)[
-                        Object.keys(e.formData).find(
-                          (k) => k.trim() === columnName.trim(),
-                        ) || ''
-                      ] === columnValue,
-                  ),
+            entries: null,
+            values: [
+              ...new Set(
+                entries
+                  .filter((e) =>
+                    filters.every(
+                      (f) => cell(e, f.columnName) === f.columnValue,
+                    ),
+                  )
+                  .map((e) => cell(e, columnName)),
+              ),
+            ],
           },
           error: '',
         }),
@@ -232,10 +242,11 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
       ])
       // Personal Care Brand X should NOT be present!
       expect(options.some((o) => o.id === 'Personal Care Brand X')).toBe(false)
-      // No parent value: the column is loaded by name only
+      // No parent value: the column, filtered by the condition mapping only
       expect(formApi.getFormEntriesByColumn).toHaveBeenCalledWith(
         'master-1',
         'Brand',
+        [{ columnName: 'Company Unit', columnValue: 'Amlion Toothpaste' }],
       )
       expect(formApi.getFormEntries).not.toHaveBeenCalled()
     })
@@ -260,11 +271,15 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
       expect(options).toEqual([
         { id: 'Toothpaste Brand B', name: 'Toothpaste Brand B' },
       ])
-      // Parent has a value: the parent's column is queried with that value
+      // Parent has a value: the field's column, filtered by parent = value
+      // and by the condition mapping
       expect(formApi.getFormEntriesByColumn).toHaveBeenCalledWith(
         'master-1',
-        'Material Code',
-        'PMC001',
+        'Brand',
+        [
+          { columnName: 'Material Code', columnValue: 'PMC001' },
+          { columnName: 'Company Unit', columnValue: 'Amlion Toothpaste' },
+        ],
       )
       expect(formApi.getFormEntries).not.toHaveBeenCalled()
     })

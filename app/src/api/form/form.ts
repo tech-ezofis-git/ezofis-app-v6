@@ -203,15 +203,22 @@ const searchFormEntries = async (
   return response
 }
 
-// Loads a master form's entries by column (POST /form/{id}/entry/by-column).
-// `columnName` may be the field label, physical column name or jsonId.
-// Without `columnValue` the whole column is loaded; with it, only the entries
-// whose column equals that value. A 404 means no entry matched, so it is
-// returned as an empty list rather than an error.
+// A by-column filter: only entries whose `columnName` equals `columnValue`.
+// Column names may be the field label, physical column name or jsonId.
+export type FormEntryColumnFilter = {
+  columnName: string
+  columnValue: string
+}
+
+// Loads `columnName` from a master form's entries (POST
+// /form/{id}/entry/by-column), keeping only the entries that match every
+// filter (e.g. Expenses where Category = Travel):
+// { columnName: 'Expenses', filters: [{ columnName: 'Category', columnValue: 'Travel' }] }
+// A 404 means no entry matched, so it is returned as an empty list.
 const getFormEntriesByColumn = async (
   formId: string,
   columnName: string,
-  columnValue?: string,
+  filters: FormEntryColumnFilter[] = [],
   tenantIdOverride?: string,
 ) => {
   const response: any = { data: null, error: '' }
@@ -222,8 +229,11 @@ const getFormEntriesByColumn = async (
       store.session?.tenantId ||
       store.identity?.tenantId ||
       ''
-    const payload: Record<string, string> = { columnName }
-    if (columnValue !== undefined) payload.columnValue = columnValue
+    const payload: {
+      columnName: string
+      filters?: FormEntryColumnFilter[]
+    } = { columnName }
+    if (filters.length > 0) payload.filters = filters
     const { data, status } = await axiosV6.post(
       `/form/${formId}/entry/by-column`,
       payload,
