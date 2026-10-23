@@ -6,6 +6,8 @@ interface Props {
   children: ReactNode
   value: string | null
   color?: 'gray' | 'primary' | 'secondary'
+  /** Extra classes for the tab list (e.g. nowrap + horizontal scroll). */
+  listClassName?: string
   tabClassName?: string
   onChange: (value: string | null) => void
 }
@@ -13,12 +15,16 @@ interface Props {
 const Tabs = ({
   children,
   color = 'gray',
+  listClassName,
   tabClassName = 'h-13',
   value,
   onChange,
 }: Props) => {
   const classNames = {
-    list: 'animate-in fade-in slide-in-from-left-4 duration-300 before:border-0 gap-6',
+    list: cn(
+      'animate-in fade-in slide-in-from-left-4 gap-6 duration-300 before:border-0',
+      listClassName,
+    ),
     tab: cn(
       'group !gap-2 !px-0 !text-13 !font-medium !text-gray-10 !outline-0 !transition-all hover:!bg-transparent hover:!text-gray-12 focus-visible:!bg-transparent focus-visible:!text-gray-12 focus-visible:!underline active:scale-95 data-[active]:!text-gray-13 data-[disabled]:!pointer-events-none data-[disabled]:!opacity-50',
       color === 'primary' &&

@@ -368,13 +368,21 @@ const DocumentFormSplitLayout = ({
   onFieldsChange?: (patch: Record<string, any>) => void
 }) => {
   const { t } = useLingui()
-  // Default left-pane doc: newest real document (skip .eml/.msg so email UI is not shown).
+  // The viewer centres on the request's original file(s) (isOriginal). Older
+  // data without the flag falls back to every attachment.
+  const originalAttachments = useMemo(() => {
+    const originals = attachments.filter((file) => file?.isOriginal === true)
+    return originals.length > 0 ? originals : attachments
+  }, [attachments])
+
+  // Default left-pane doc: the original file — a real document when there is
+  // one, otherwise the original itself (e.g. the inbound .eml).
   const recentDocument = useMemo(
     () =>
-      getRecentDocumentAttachment(attachments) ||
-      getLatestAttachment(attachments) ||
-      attachments[0],
-    [attachments],
+      getRecentDocumentAttachment(originalAttachments) ||
+      getLatestAttachment(originalAttachments) ||
+      originalAttachments[0],
+    [originalAttachments],
   )
 
   const [viewerAttachmentKey, setViewerAttachmentKey] = useState(() =>
@@ -383,6 +391,11 @@ const DocumentFormSplitLayout = ({
   const knownAttachmentKeysRef = useRef<Set<string>>(new Set())
   const hasSeededAttachmentKeysRef = useRef(false)
   const [newAttachmentKeys, setNewAttachmentKeys] = useState<Set<string>>(
+    () => new Set(),
+  )
+  // Files uploaded while this request is open. Unlike newAttachmentKeys
+  // (cleared once viewed), these stay in the viewer strip for the session.
+  const [sessionAddedKeys, setSessionAddedKeys] = useState<Set<string>>(
     () => new Set(),
   )
 
@@ -399,6 +412,7 @@ const DocumentFormSplitLayout = ({
     hasSeededAttachmentKeysRef.current = false
     knownAttachmentKeysRef.current = new Set()
     setNewAttachmentKeys(new Set())
+    setSessionAddedKeys(new Set())
     setViewerAttachmentKey(attachmentKeyOf(recentDocument))
   }, [requestIdentity])
 
@@ -435,9 +449,31 @@ const DocumentFormSplitLayout = ({
     }
 
     setNewAttachmentKeys((prev) => new Set([...prev, ...added]))
-    const newestKey = attachmentKeyOf(recentDocument)
+    setSessionAddedKeys((prev) => new Set([...prev, ...added]))
+    // Open the file that was just uploaded, not the original.
+    const addedSet = new Set(added)
+    const addedFiles = attachments.filter((file) =>
+      addedSet.has(attachmentKeyOf(file)),
+    )
+    const newestKey = attachmentKeyOf(
+      getRecentDocumentAttachment(addedFiles) ||
+        getLatestAttachment(addedFiles) ||
+        addedFiles[addedFiles.length - 1],
+    )
     if (newestKey) setViewerAttachmentKey(newestKey)
   }, [attachments, recentDocument, viewerAttachmentKey])
+
+  // Viewer strip: original files plus anything uploaded during this visit,
+  // so a freshly uploaded file shown in the viewer can be switched back to.
+  const viewerStripAttachments = useMemo(
+    () =>
+      attachments.filter(
+        (file) =>
+          originalAttachments.includes(file) ||
+          sessionAddedKeys.has(attachmentKeyOf(file)),
+      ),
+    [attachments, originalAttachments, sessionAddedKeys],
+  )
 
   const viewerAttachment = useMemo(() => {
     if (!attachments.length) return recentDocument
@@ -673,7 +709,7 @@ const DocumentFormSplitLayout = ({
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1'>
         <LeftViewerAttachmentStrip
-          attachments={attachments}
+          attachments={viewerStripAttachments}
           newAttachmentKeys={newAttachmentKeys}
           selectedKey={attachmentKeyOf(viewerAttachment)}
           onOpenAttachmentsTab={() => selectTab('attachments')}
@@ -708,53 +744,37 @@ const DocumentFormSplitLayout = ({
             />
           </div>
         )}
-        {/* Without agent cards above, the tab bar becomes the pane header:
-            same height as the left attachment strip, with pill tabs. */}
+        {/* Plain text tabs with a primary underline on the active one (same
+            look as the Requests list tabs). Without agent cards above, the
+            bar is the pane header, matching the left attachment strip height. */}
         <div
           className={cn(
             'no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4',
             summaryAgentBlocks.length > 0
               ? 'pt-1.5'
-              : 'flex min-h-[69px] items-center py-2.5',
+              : 'flex min-h-[69px] items-end',
           )}
         >
-          <div className='flex min-w-0 flex-1 items-center justify-between gap-4'>
-            <div
-              className={cn(
-                'no-scrollbar flex min-w-0 items-center overflow-x-auto',
-                summaryAgentBlocks.length > 0
-                  ? 'gap-2 sm:gap-6 md:gap-8'
-                  : 'gap-1.5',
-              )}
-            >
+          <div className='flex min-w-0 flex-1 items-end justify-between gap-4'>
+            <div className='no-scrollbar flex min-w-0 items-end gap-6 overflow-x-auto'>
               {tabs.map((tab) => (
                 <button
+                  aria-selected={activeTab === tab.id}
                   key={tab.id}
+                  role='tab'
+                  type='button'
                   className={cn(
-                    'flex shrink-0 items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
-                    summaryAgentBlocks.length > 0
-                      ? cn(
-                          '-mb-[2px] border-b-2 pb-2.5',
-                          activeTab === tab.id
-                            ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                        )
-                      : cn(
-                          'h-9 rounded-lg px-3 text-[12px] active:scale-95',
-                          activeTab === tab.id
-                            ? 'bg-[var(--primary-2)] text-[var(--primary-11)] shadow-[inset_0_0_0_1px_var(--primary-5)]'
-                            : 'text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]',
-                        ),
+                    'flex shrink-0 items-center border-b-2 pt-1 pb-3 text-13 font-medium whitespace-nowrap outline-none transition-colors focus-visible:underline active:scale-95',
+                    activeTab === tab.id
+                      ? 'border-accent-primary text-gray-13'
+                      : 'border-transparent text-gray-10 hover:border-primary-4 hover:text-gray-12',
                   )}
                   onClick={() => selectTab(tab.id)}
                 >
-                  <Icon className='h-4 w-4 shrink-0' name={tab.icon} />
-                  <span>{tab.label}</span>
-                  {'count' in tab && tab.count !== undefined && (
-                    <span className='flex h-4 items-center justify-center rounded-full bg-gray-2 px-1.5 text-[10px] font-semibold text-gray-12'>
-                      {tab.count}
-                    </span>
-                  )}
+                  {tab.label}
+                  {'count' in tab && tab.count !== undefined
+                    ? ` (${tab.count})`
+                    : null}
                 </button>
               ))}
             </div>

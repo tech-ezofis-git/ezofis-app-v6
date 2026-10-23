@@ -33,13 +33,13 @@ interface Props {
   hideListTabs?: boolean
   isConnectingWatchEmail?: boolean
   metaData?: IRequestMeta
-  onCancelConnectWatchEmail?: () => void
-  onReconnectWatchEmail?: () => void
   stageCounts?: Record<string, number>
   tabs?: RequestTabDescriptor[]
   totalStageCount?: number | null
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
+  onCancelConnectWatchEmail?: () => void
+  onReconnectWatchEmail?: () => void
 }
 
 const Header = ({
@@ -52,14 +52,14 @@ const Header = ({
   isConnectingWatchEmail,
   isLoading,
   metaData,
-  onCancelConnectWatchEmail,
-  onReconnectWatchEmail,
   stageCounts,
   tabs = [],
   totalStageCount,
   workflow,
   setActiveTab,
   setWorkflow,
+  onCancelConnectWatchEmail,
+  onReconnectWatchEmail,
 }: Props) => {
   const { t } = useLingui()
   const processedCount =
@@ -100,22 +100,27 @@ const Header = ({
       {hideListTabs ? (
         <p className='text-15 font-semibold text-gray-13'>{t`Process Overview`}</p>
       ) : (
-        <Tabs
-          color='primary'
-          tabClassName='py-3.5'
-          value={activeTab}
-          onChange={(val) => setActiveTab(val as string)}
-        >
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.value}
-              value={tab.value}
-              label={
-                isLoading ? tab.label : `${tab.label} (${countFor(tab)})`
-              }
-            />
-          ))}
-        </Tabs>
+        // Plain text tabs with a primary underline on the active one; the
+        // list scrolls sideways instead of wrapping on narrow screens.
+        <div className='-mb-px max-w-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+          <Tabs
+            color='primary'
+            listClassName='flex-nowrap'
+            tabClassName='shrink-0 !rounded-none !border-b-2 !bg-transparent py-3.5 whitespace-nowrap'
+            value={activeTab}
+            onChange={(val) => setActiveTab(val as string)}
+          >
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.value}
+                value={tab.value}
+                label={
+                  isLoading ? tab.label : `${tab.label} (${countFor(tab)})`
+                }
+              />
+            ))}
+          </Tabs>
+        </div>
       )}
 
       <div className='flex items-center gap-2'>
@@ -135,21 +140,27 @@ const Header = ({
             className='flex items-center gap-1.5 rounded-lg border border-green-4 bg-green-2 px-3 py-1.5 text-13 font-medium text-green-11 shadow-2xs'
             title={connectedWatchEmail}
           >
-            <Icon className='size-4 text-green-9' name='tabler:circle-check-filled' />
+            <Icon
+              className='size-4 text-green-9'
+              name='tabler:circle-check-filled'
+            />
             <span className='font-semibold text-green-12'>{t`Connected`}</span>
             {isConnectingWatchEmail ? (
               <div className='ml-1 flex items-center gap-1'>
                 <Tooltip content={t`Connecting...`} position='bottom'>
                   <span className='inline-flex size-5 items-center justify-center text-green-11'>
-                    <Icon className='size-3.5 animate-spin' name='tabler:refresh' />
+                    <Icon
+                      className='size-3.5 animate-spin'
+                      name='tabler:refresh'
+                    />
                   </span>
                 </Tooltip>
                 {onCancelConnectWatchEmail && (
                   <Tooltip content={t`Cancel reconnect`} position='bottom'>
                     <button
-                      type='button'
                       aria-label={t`Cancel reconnect`}
-                      className='inline-flex size-5 items-center justify-center rounded text-gray-10 hover:bg-red-2 hover:text-red-11 active:scale-95 transition-all'
+                      className='inline-flex size-5 items-center justify-center rounded text-gray-10 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95'
+                      type='button'
                       onClick={onCancelConnectWatchEmail}
                     >
                       <Icon className='size-3.5' name='tabler:x' />
@@ -161,9 +172,9 @@ const Header = ({
               onReconnectWatchEmail && (
                 <Tooltip content={t`Reconnect watch email`} position='bottom'>
                   <button
-                    type='button'
                     aria-label={t`Reconnect`}
-                    className='ml-1 inline-flex size-5 items-center justify-center rounded text-green-10 hover:bg-green-3 hover:text-green-12 active:scale-95 transition-all'
+                    className='ml-1 inline-flex size-5 items-center justify-center rounded text-green-10 transition-all hover:bg-green-3 hover:text-green-12 active:scale-95'
+                    type='button'
                     onClick={onReconnectWatchEmail}
                   >
                     <Icon className='size-3.5' name='tabler:refresh' />
@@ -191,7 +202,6 @@ const Header = ({
     </div>
   )
 }
-
 
 Header.displayName = 'Header'
 export default Header

@@ -938,8 +938,8 @@ const Header: React.FC<HeaderProps> = ({
     ]
 
     return (
-      <OverlayHeaderWrapper className='relative min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
-        <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-2.5'>
+      <OverlayHeaderWrapper className='relative min-h-14 w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 md:flex-nowrap'>
+        <div className='flex max-w-full min-w-[8rem] shrink flex-nowrap items-center gap-2 sm:gap-2.5'>
           {/* Navigation & Request Group */}
           <div className='flex min-w-0 items-center gap-1 sm:gap-1.5'>
             {/* Back Icon + Previous Request Icon (tight spacing) */}
@@ -991,16 +991,16 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Stage trail centered in the header (wide screens, where it has room). */}
+        {/* Stage trail sits in the row's flow between title and actions, so
+            it shrinks (and its step labels ellipsize) instead of overlapping
+            the request title on narrower screens. */}
         {stageTrail.length > 0 ? (
-          <div className='pointer-events-none absolute inset-y-0 left-1/2 hidden -translate-x-1/2 items-center xl:flex'>
-            <div className='pointer-events-auto'>
-              <StageTrail items={stageTrail} since={stageSince} />
-            </div>
+          <div className='hidden min-w-0 flex-auto items-center justify-center md:flex'>
+            <StageTrail items={stageTrail} since={stageSince} />
           </div>
         ) : null}
 
-        <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
+        <div className='ml-auto flex shrink-0 flex-nowrap items-center gap-2 sm:gap-3'>
           <div className='flex shrink-0 items-center gap-1.5'>
             {(() => {
               const amountNum = Number(

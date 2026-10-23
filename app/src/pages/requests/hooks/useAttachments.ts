@@ -19,6 +19,8 @@ export type AttachmentItem = {
   id?: number | string
   initiate?: boolean
   isAiMatch?: boolean
+  /** True for the file(s) the request was created from (e.g. the inbound email). */
+  isOriginal?: boolean
   itemId?: number | string
   name?: string
   repositoryId?: number | string
