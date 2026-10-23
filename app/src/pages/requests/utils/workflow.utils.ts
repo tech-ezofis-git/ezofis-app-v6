@@ -128,6 +128,78 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
+// True when the workflow starts from an uploaded document ("Document Form"),
+// read from settings / workflowJson / flowJson the same way the in-app new
+// request does.
+export function isDocumentFormWorkflow(workflow: any): boolean {
+  if (!workflow) return false
+  const parse = (value: any) => {
+    if (typeof value !== 'string') return value || null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  const initiateType = String(
+    workflow.settings?.general?.initiateUsing?.type ||
+      parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
+      parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+  return initiateType === 'DOCUMENTFORM'
+}
+
+// Field ids the workflow's start block hides from the initiator on a new
+// request (its "form visibility" access and secure-control rules). Shared by
+// the in-app new request and the portal so both hide the same fields.
+export function getStartStageHiddenFieldIds(
+  workflow: any,
+  panels: any[],
+  currentUserId: string,
+): Set<string> {
+  const blocks = extractBlocks(workflow)
+  // Find the first trigger / start / manual user block for New Request
+  const startBlock =
+    blocks.find((b: any) => {
+      const type = String(b.type || b.toolType || '').toUpperCase()
+      return (
+        type === 'START' ||
+        type === 'INITIATOR' ||
+        type === 'TRIGGER' ||
+        type === 'MANUAL_USER' ||
+        type === 'FORM_SUBMISSION'
+      )
+    }) || blocks[0]
+
+  const settings = startBlock?.settings || {}
+  const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
+  const allFieldIds = panels.flatMap((p: any) =>
+    (p.fields || []).map((f: any) => String(f.id)),
+  )
+  if (access === 'ALL') return new Set<string>()
+  if (access === 'NONE') return new Set(allFieldIds)
+
+  const rules = Array.isArray(settings.formSecureControls)
+    ? settings.formSecureControls
+    : []
+  const rule =
+    rules.find((r: any) => String(r.userId) === currentUserId) ||
+    rules.find((r: any) => !r.userId) ||
+    (rules.length === 1 ? rules[0] : null)
+
+  if (!rule) return new Set<string>()
+  const specifiedFields = new Set<string>((rule.formFields || []).map(String))
+  const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
+  if (mode === 'SHOW') {
+    return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
+  }
+  // HIDE mode (default)
+  return specifiedFields
+}
+
 export function getStageNameFromWorkflow(
   activityId?: string | null,
   workflow?: any,
@@ -582,6 +654,87 @@ export const computeWorkflowStages = ({
   }
 
   return result
+}
+
+export type StageTrailItem = {
+  /** 1-based position of the step in the whole flow. */
+  number: number
+  step: WorkflowStageStep
+}
+
+/**
+ * Compact 3-step window for the request header: previous, current and next
+ * (a condition when the route branches). On the first stage it shows steps
+ * 1–3, looking one block further ahead along a single path when needed.
+ * When the flow is finished it shows the last three steps.
+ */
+export const getStageTrail = (
+  stages: WorkflowStageStep[],
+  workflow?: any,
+): StageTrailItem[] => {
+  if (!stages.length) return []
+  const items: StageTrailItem[] = stages.map((step, index) => ({
+    number: index + 1,
+    step,
+  }))
+  const currentIndex = stages.findIndex((step) => step.status === 'current')
+
+  if (currentIndex === -1) return items.slice(-3)
+  if (currentIndex > 0) return items.slice(currentIndex - 1, currentIndex + 2)
+
+  // First stage: extend one step past the known next one when the path is linear.
+  const last = items[items.length - 1]
+  if (
+    items.length < 3 &&
+    workflow &&
+    !last.step.isCondition &&
+    !last.step.isEnd &&
+    last.step.status === 'future'
+  ) {
+    const { blocks, rules } = extractWorkflowGraph(workflow)
+    const targets = Array.from(
+      new Set(
+        rules
+          .filter(
+            (rule: any) =>
+              String(rule.fromBlockId || rule.from || rule.source || '') ===
+              last.step.id,
+          )
+          .map((rule: any) => String(rule.toBlockId || rule.to || rule.target || ''))
+          .filter(Boolean),
+      ),
+    )
+    if (targets.length >= 2) {
+      items.push({
+        number: items.length + 1,
+        step: {
+          id: '__conditional_next_2__',
+          isCondition: true,
+          label: t`Conditional flow`,
+          status: 'future',
+        },
+      })
+    } else if (targets.length === 1) {
+      const block = blocks.find((b: any) => String(b.id) === targets[0])
+      if (block) {
+        const type = String(block.type || '').toUpperCase()
+        const isCondition =
+          type === 'CONDITION' || type === 'DECISION' || type === 'BRANCH'
+        items.push({
+          number: items.length + 1,
+          step: {
+            id: String(block.id),
+            isCondition,
+            isEnd: type === 'END',
+            label: isCondition ? t`Conditional flow` : stageLabel(block),
+            status: 'future',
+          },
+        })
+      }
+    }
+  }
+
+  return items.slice(0, 3)
 }
 
 export const listWorkflowStages = (

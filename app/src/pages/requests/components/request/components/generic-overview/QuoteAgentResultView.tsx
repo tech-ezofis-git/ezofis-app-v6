@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { pdfBase64ToObjectUrl, previewDocument } from '@/api/v6/documentPreview'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -22,8 +23,8 @@ import {
   getConfiguredFieldOptions,
   getFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/requestEvents'
 import cn from '@/utils/cn'
-import type { AgentBlock } from './AgentSummaryBoxes'
 import {
   canEditAgentFormField,
   canViewAgentFormField,
@@ -33,6 +34,11 @@ import {
   collectFormTableFields,
 } from './AgentEditableTables'
 import AgentFlatTable, { normalizeAgentTableRows } from './AgentFlatTable'
+import {
+  type AgentBlock,
+  documentGenerateIsComplete,
+  findDocumentGenerateBlockId,
+} from './AgentSummaryBoxes'
 import {
   buildDocumentPreviewFormData,
   getDocumentGenerateTemplateJson,
@@ -539,13 +545,27 @@ const QuoteAgentResultView = ({
   hiddenFieldIds,
   readOnly = false,
   readOnlyFieldIds,
+  requestData,
   result,
   workflow,
-  onFieldChange,
+  onFieldChange: onFieldChangeProp,
   onFieldsChange,
   onQuoteTotalChange,
 }: Props) => {
   const { t } = useLingui()
+  // Set by the user's own edits (not the totals auto-sync), so the
+  // "changed since the PDF was generated" state ignores load-time writes.
+  const userEditedRef = useRef(false)
+  const onFieldChange = useMemo(
+    () =>
+      onFieldChangeProp
+        ? (fieldId: string, value: unknown) => {
+            userEditedRef.current = true
+            onFieldChangeProp(fieldId, value)
+          }
+        : undefined,
+    [onFieldChangeProp],
+  )
   const formFields = useMemo(() => collectFormFields(workflow), [workflow])
   const tableFields = useMemo(
     () => collectFormTableFields(workflow),
@@ -847,13 +867,21 @@ const QuoteAgentResultView = ({
         lineItems,
         result: resultForVariants,
         taxRate,
+      }).filter((variant) => {
+        // A quote whose table this stage hides is not shown at all.
+        const field = variant.fieldId
+          ? tableFields.find((item) => getFieldId(item) === variant.fieldId)
+          : null
+        return !field || canViewAgentFormField(field, hiddenFieldIds)
       }),
     [
       freight,
       formVariantTables,
+      hiddenFieldIds,
       lineItemColumns,
       lineItems,
       resultForVariants,
+      tableFields,
       taxRate,
     ],
   )
@@ -1077,6 +1105,99 @@ const QuoteAgentResultView = ({
   }, [isCompareTab, paneMode, previewQuoteType])
 
   const previewDisabled = isCompareTab || isEmptyActiveVariant
+
+  // --- Regenerate PDF (RFQ) ---------------------------------------------
+  // Once Document Generate has run, edits make the archived quote PDF stale:
+  // offer Quote Preview + Regenerate PDF for the changed data.
+  const isDocumentGenerated = useMemo(
+    () => documentGenerateIsComplete(requestData, null, workflow),
+    [requestData, workflow],
+  )
+  const quoteSnapshot = useMemo(() => {
+    const byVariant: Partial<Record<QuoteVariantId, string>> = {}
+    quoteVariants.forEach((variant) => {
+      byVariant[variant.id] = JSON.stringify([
+        lineValueSignature(variant.rows),
+        variant.total,
+        variant.discount ?? 0,
+        variant.freight ?? 0,
+      ])
+    })
+    return { all: JSON.stringify(formModel), byVariant }
+  }, [formModel, quoteVariants])
+  const [quoteBaseline, setQuoteBaseline] = useState(quoteSnapshot)
+  useEffect(() => {
+    // Until the user edits, every write (load, totals sync) is the baseline.
+    if (!userEditedRef.current) setQuoteBaseline(quoteSnapshot)
+  }, [quoteSnapshot])
+  const changedVariantIds = quoteVariants
+    .filter(
+      (variant) =>
+        quoteBaseline.byVariant[variant.id] !==
+        quoteSnapshot.byVariant[variant.id],
+    )
+    .map((variant) => variant.id)
+  const hasQuoteChanges =
+    !readOnly &&
+    Boolean(onFieldChange) &&
+    isDocumentGenerated &&
+    quoteBaseline.all !== quoteSnapshot.all
+  const changedQuoteLabels = quoteVariants
+    .filter((variant) => changedVariantIds.includes(variant.id))
+    .map((variant) => variant.label)
+    .join(', ')
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  const regenerateDocument = async () => {
+    const workflowId = requestData?.workflowId || workflow?.id
+    const instanceId =
+      requestData?.workflowInstanceId || requestData?.processId
+    // The API wants the Document Generate Agent step's id (the step before
+    // the current one), not the current activity.
+    const activityId = findDocumentGenerateBlockId(
+      workflow,
+      String(requestData?.activityId || requestData?.currentActivityId || ''),
+    )
+    if (!workflowId || !instanceId || !activityId) {
+      showToast({
+        message: t`Cannot regenerate the PDF for this request.`,
+        variant: 'error',
+      })
+      return
+    }
+    setIsRegenerating(true)
+    try {
+      const { data, error } = await workflowsApiV6.regenerateDocument(
+        workflowId,
+        instanceId,
+        {
+          activityId,
+          formData: JSON.stringify(buildDocumentPreviewFormData(formModel)),
+        },
+      )
+      if (error) {
+        showToast({
+          message: t`Could not regenerate the PDF: ${error}`,
+          variant: 'error',
+        })
+        return
+      }
+      const count = data?.documents?.length || 1
+      showToast({
+        message:
+          count === 1
+            ? t`Quote PDF regenerated.`
+            : t`${count} quote PDFs regenerated.`,
+        variant: 'success',
+      })
+      // The new PDFs replace the old ones in Attachments.
+      window.dispatchEvent(new Event(REQUEST_ATTACHMENTS_CHANGED_EVENT))
+      userEditedRef.current = false
+      setQuoteBaseline(quoteSnapshot)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
   const activeFreight =
     activeQuoteVariant?.freight ?? resolveFreightForVariant(activeVariantId)
   const activeDiscount =
@@ -2372,10 +2493,24 @@ const QuoteAgentResultView = ({
               variant='ghost'
               onClick={() => selectPaneMode('agent_review')}
             />
-            <span className='inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--secondary-6)] bg-[var(--secondary-2)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--secondary-11)]'>
-              <Icon className='size-3.5' icon='lucide:eye' />
-              {t`Preview Mode`}
-            </span>
+            <div className='flex shrink-0 items-center gap-2'>
+              <span className='inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--secondary-6)] bg-[var(--secondary-2)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--secondary-11)]'>
+                <Icon className='size-3.5' icon='lucide:eye' />
+                {t`Preview Mode`}
+              </span>
+              {hasQuoteChanges ? (
+                <Button
+                  color='primary'
+                  disabled={isRegenerating}
+                  icon='lucide:refresh-cw'
+                  label={t`Regenerate PDF`}
+                  loading={isRegenerating}
+                  size='sm'
+                  type='button'
+                  onClick={() => void regenerateDocument()}
+                />
+              ) : null}
+            </div>
           </div>
           <div className='flex min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface-primary'>
             <DocumentPreviewViewer
@@ -2415,6 +2550,7 @@ const QuoteAgentResultView = ({
                 >
                 <QuoteVariantCards
                   activeId={activeQuoteTabId}
+                  changedIds={hasQuoteChanges ? changedVariantIds : undefined}
                   emptyMetaByVariant={quoteEmptyMetaByVariant}
                   variants={quoteVariants}
                   onSelect={(id) => {
@@ -2454,6 +2590,54 @@ const QuoteAgentResultView = ({
                   copiedFromLabel={activeCopiedFromLabel}
                   variants={quoteVariants}
                 />
+
+                {hasQuoteChanges ? (
+                  // Data changed after the PDF was generated: preview it,
+                  // then regenerate so the attached PDF matches.
+                  <div className='flex animate-in flex-wrap items-center gap-3 rounded-xl border border-orange-5 bg-orange-1 px-4 py-3 duration-300 fade-in slide-in-from-top-1'>
+                    <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-3 text-orange-11'>
+                      <Icon className='size-4' icon='lucide:file-diff' />
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                      <p className='text-13 font-semibold text-gray-12'>
+                        {t`Quote changed after the PDF was generated`}
+                      </p>
+                      <p className='mt-0.5 text-12 text-gray-11'>
+                        {changedQuoteLabels
+                          ? t`Edited: ${changedQuoteLabels}. Preview the changes, then regenerate the PDF so the attachment matches.`
+                          : t`Preview the changes, then regenerate the PDF so the attachment matches.`}
+                      </p>
+                    </div>
+                    <div className='flex shrink-0 items-center gap-2'>
+                      <Button
+                        className='!border-secondary-5 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3'
+                        color='secondary'
+                        disabled={previewDisabled || isRegenerating}
+                        icon='lucide:eye'
+                        label={t`Quote Preview`}
+                        size='sm'
+                        type='button'
+                        variant='outline'
+                        title={
+                          previewDisabled
+                            ? t`Select a quote with line items to preview`
+                            : undefined
+                        }
+                        onClick={() => selectPaneMode('preview')}
+                      />
+                      <Button
+                        color='primary'
+                        disabled={isRegenerating}
+                        icon='lucide:refresh-cw'
+                        label={t`Regenerate PDF`}
+                        loading={isRegenerating}
+                        size='sm'
+                        type='button'
+                        onClick={() => void regenerateDocument()}
+                      />
+                    </div>
+                  </div>
+                ) : null}
 
                 {!isCompareTab ? (
                 <div className='flex flex-wrap items-center justify-between gap-3'>
@@ -2498,6 +2682,7 @@ const QuoteAgentResultView = ({
                     <span />
                   )}
                   <div className='ml-auto flex shrink-0 items-center justify-end gap-3 text-right'>
+                    {hasQuoteChanges ? null : (
                     <Button
                       aria-disabled={previewDisabled}
                       aria-label={t`Quote Preview`}
@@ -2522,6 +2707,7 @@ const QuoteAgentResultView = ({
                       variant='outline'
                       onClick={() => selectPaneMode('preview')}
                     />
+                    )}
                     {!isCompareTab ? (
                       <div className='text-sm leading-5 font-normal text-gray-12'>
                         <span className='font-bold'>{t`Total`}:</span>{' '}
@@ -2542,7 +2728,9 @@ const QuoteAgentResultView = ({
                   />
                 ) : isEmptyActiveVariant && activeQuoteVariant ? (
                   <QuoteVariantEmptyPanel
-                    canCopy={Boolean(onFieldChange) && !readOnly}
+                    canCopy={
+                      Boolean(onFieldChange) && !readOnly && lineItemsEditable
+                    }
                     emptyMeta={
                       activeQuoteVariant.id === 'alt' ||
                       activeQuoteVariant.id === 'opt'

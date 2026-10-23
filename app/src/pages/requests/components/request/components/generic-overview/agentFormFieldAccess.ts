@@ -37,9 +37,9 @@ export const canEditAgentFormField = (
   const id = getFieldId(field)
   if (!id) return false
   if (hiddenFieldIds?.has(id)) return false
-  if (readOnlyFieldIds !== undefined) {
-    return !readOnlyFieldIds.has(id)
-  }
+  // Editable only when both the form and the stage allow it: a stage rule
+  // never unlocks a read-only / calculated form field.
   if (isFieldReadOnly(field)) return false
+  if (readOnlyFieldIds?.has(id)) return false
   return true
 }

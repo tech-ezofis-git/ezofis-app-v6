@@ -537,6 +537,96 @@ const moveNext = async (instanceId: string, payload: any) => {
   return response
 }
 
+export type RegenerateDocumentResponse = {
+  attachmentId?: string
+  documents?: {
+    attachmentId?: string
+    fileName?: string
+    itemId?: string
+    quoteType?: string
+  }[]
+  fileName?: string
+  itemId?: string
+}
+
+/**
+ * RFQ: re-generate the quote PDF(s) without moving the ticket. Allowed on the
+ * Document Generate Agent step or any step after it; the previous PDFs are
+ * retired once the new ones are archived.
+ */
+const regenerateDocument = async (
+  workflowId: number | string,
+  instanceId: number | string,
+  payload: { activityId: string; formData?: string },
+) => {
+  const response: { data: null | RegenerateDocumentResponse; error: string } =
+    { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/Workflows/${workflowId}/instances/${instanceId}/ftl/regenerate-document`,
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: unknown } }
+    const body = err?.response?.data
+    response.error =
+      (typeof body === 'string' && body) ||
+      (body as { message?: string } | undefined)?.message ||
+      err?.message ||
+      'error regenerating document'
+  }
+  return response
+}
+
+export type RegenerateAgentResponse = {
+  /** Raw `{ qualifier_result }` / `{ quote_result }` payload (JSON string). */
+  agentResponseJson?: string
+  /** Refreshed form fields keyed by jsonId (JSON string). */
+  formDataJson?: string
+}
+
+/**
+ * RFQ: re-run the Qualify / Quote agent on the ticket's uploaded file without
+ * moving the ticket. Only allowed while the ticket is on that agent's step.
+ */
+const regenerateAgent = async (
+  kind: 'qualifier' | 'quote',
+  workflowId: number | string,
+  instanceId: number | string,
+  payload: { activityId: string },
+) => {
+  const response: { data: null | RegenerateAgentResponse; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      skipCancellation: true,
+      url: `/Workflows/${workflowId}/instances/${instanceId}/ftl/regenerate-${kind}`,
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: unknown } }
+    const body = err?.response?.data
+    response.error =
+      (typeof body === 'string' && body) ||
+      (body as { message?: string } | undefined)?.message ||
+      err?.message ||
+      `error regenerating ${kind}`
+  }
+  return response
+}
+
 const getApAgentJobStatus = async (jobId: string) => {
   const response: { data: any; error: string } = { data: null, error: '' }
   try {
@@ -941,6 +1031,8 @@ export const workflowsApiV6 = {
   deleteWorkflow,
   moveNext,
   raiseTicket,
+  regenerateAgent,
+  regenerateDocument,
   searchTickets,
   shareFile,
   startWorkflow,

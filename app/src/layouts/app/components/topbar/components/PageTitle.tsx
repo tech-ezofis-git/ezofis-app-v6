@@ -2,7 +2,6 @@ import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMatches, useParams } from '@tanstack/react-router'
 import formApi from '@/api/form/form'
-import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
@@ -13,17 +12,17 @@ import {
 } from '@/pages/dashboard/workflows/setupPreview'
 import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import { localizeRequestListTab } from '@/pages/requests/utils/localizeRequestUi'
 import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 import cn from '@/utils/cn'
 
 const PageTitle = () => {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const matches = useMatches()
-  const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
-    requestStore((state) => state)
+  const { closeRequest, isRequestOpen, selectedWorkflow } = requestStore(
+    (state) => state,
+  )
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const isApSetupStarted = useSetupStore((state) => state.isSetupStarted)
   const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
@@ -143,14 +142,8 @@ const PageTitle = () => {
       )
     }
 
+    // The list-tab badge (Inbox / Sent / Approved) lives in the request header.
     if (isRequestsRoute && isRequestOpen && selectedWorkflow?.name) {
-      const badgeColor =
-        requestListTab === 'Sent'
-          ? 'orange'
-          : requestListTab === 'Closed'
-            ? 'green'
-            : 'blue'
-
       return (
         <div className='flex items-center gap-3 text-15/5 font-semibold text-gray-13'>
           <span
@@ -159,14 +152,6 @@ const PageTitle = () => {
           >
             {selectedWorkflow.name}
           </span>
-          <Badge
-            color={badgeColor}
-            label={
-              requestListTab
-                ? localizeRequestListTab(i18n, requestListTab)
-                : t`Inbox`
-            }
-          />
         </div>
       )
     }

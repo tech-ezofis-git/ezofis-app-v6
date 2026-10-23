@@ -38,6 +38,16 @@ const initiateByList = (block: any): string[] => {
   )
 }
 
+// workflowJson / flowJson arrive either parsed or as a JSON string.
+const parseJsonField = (value: unknown): any => {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
 export const getWorkflowRepositoryId = (
   workflow: any,
   extra?: unknown,
@@ -46,7 +56,12 @@ export const getWorkflowRepositoryId = (
   asScalar(workflow?.repositoryId) ||
   asScalar(workflow?.settings?.general?.initiateUsing?.repositoryId) ||
   asScalar(
-    workflow?.workflowJson?.settings?.general?.initiateUsing?.repositoryId,
+    parseJsonField(workflow?.workflowJson)?.settings?.general?.initiateUsing
+      ?.repositoryId,
+  ) ||
+  asScalar(
+    parseJsonField(workflow?.flowJson)?.settings?.general?.initiateUsing
+      ?.repositoryId,
   )
 
 export const isEmailStartedWorkflow = (workflow: any): boolean => {

@@ -573,6 +573,18 @@ export const buildDetailFormModel = (
 export const PORTAL_SECTION_DOCUMENT = 'portal-section-document'
 export const PORTAL_SECTION_ATTACHMENTS = 'portal-section-attachments'
 export const PORTAL_SECTION_HISTORY = 'portal-section-history'
+export const PORTAL_SECTION_COMMENTS = 'portal-section-comments'
+
+// Scrolls a portal section into view and briefly rings it so the user sees
+// which block the header shortcut jumped to.
+export const scrollToPortalSection = (id: string) => {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const ring = ['ring-2', 'ring-primary-6', 'ring-offset-2']
+  el.classList.add(...ring)
+  window.setTimeout(() => el.classList.remove(...ring), 1400)
+}
 
 export type PortalNavSection = {
   completed?: boolean

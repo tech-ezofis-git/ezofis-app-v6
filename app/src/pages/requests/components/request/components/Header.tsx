@@ -2,7 +2,10 @@ import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
+import type { ButtonColor } from '@/components/base/button/types'
+import type { StageTrailItem } from '@/pages/requests/utils/workflow.utils'
 import { getUserListQueryOptions } from '@/api/userQueries'
+import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -14,9 +17,14 @@ import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 // import InputSelect from '@/components/base/inputs/InputSelect'
 import TruncatedExpandText from '@/pages/requests/components/request/components/generic-overview/TruncatedExpandText'
-import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import {
+  localizeRequestListTab,
+  localizeRequestStatus,
+} from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
+import StageTrail from './StageTrail'
 
 interface HeaderProps {
   isLoading: boolean
@@ -49,6 +57,10 @@ interface HeaderProps {
    * workflow instance. */
   simple?: boolean
   stage?: any
+  /** When the request reached its current step (transactionCreatedAt). */
+  stageSince?: string
+  /** Compact previous / current / next workflow steps (generic requests). */
+  stageTrail?: StageTrailItem[]
   status?: string
   ticketUserId?: string
   totalAmount?: string
@@ -171,6 +183,32 @@ const AiInsightsTrigger = ({
 const isRejectLikeAction = (label: string) =>
   label.includes('reject') || label.includes('disqualif')
 
+const ACTION_BORDER_CLASS: Record<ButtonColor, string> = {
+  gray: 'border-gray-4 hover:border-gray-6 shadow-sm hover:shadow-md transition-shadow',
+  green:
+    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow',
+  orange:
+    'border-orange-4 hover:border-orange-6 shadow-sm hover:shadow-md transition-shadow',
+  primary:
+    'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow',
+  red: 'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow',
+  secondary:
+    'border-secondary-4 hover:border-secondary-6 shadow-sm hover:shadow-md transition-shadow',
+}
+
+/**
+ * Review button color: the color set on the workflow connection wins;
+ * otherwise Approve is green, Reject / Disqualify red, the rest primary.
+ */
+const resolveActionColor = (action: any): ButtonColor => {
+  const explicit = String(action?.color || '').toLowerCase()
+  if (explicit in ACTION_BORDER_CLASS) return explicit as ButtonColor
+  const label = String(action?.label || '').toLowerCase()
+  if (label.includes('approve')) return 'green'
+  if (isRejectLikeAction(label)) return 'red'
+  return 'primary'
+}
+
 // Generates a consistent color from a string (name/email)
 const getAvatarColor = (_str?: string) => {
   return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
@@ -280,6 +318,8 @@ const Header: React.FC<HeaderProps> = ({
   showApprove: _showApprove,
   simple = false,
   stage,
+  stageSince,
+  stageTrail = [],
   status = 'Pending Review',
   ticketUserId,
   totalAmount,
@@ -293,6 +333,25 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
+  const requestListTab = requestStore((state) => state.requestListTab)
+
+  // List tab this request was opened from (Inbox / Sent / Approved …).
+  const listTabBadge = (
+    <Badge
+      color={
+        requestListTab === 'Sent'
+          ? 'orange'
+          : requestListTab === 'Closed'
+            ? 'green'
+            : 'blue'
+      }
+      label={
+        requestListTab
+          ? localizeRequestListTab(i18n, requestListTab)
+          : t`Inbox`
+      }
+    />
+  )
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const [showStageInfo, setShowStageInfo] = React.useState(false)
   const stageInfoTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
@@ -879,7 +938,7 @@ const Header: React.FC<HeaderProps> = ({
     ]
 
     return (
-      <OverlayHeaderWrapper className='min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
+      <OverlayHeaderWrapper className='relative min-h-14 w-full flex-nowrap items-center justify-between gap-3 px-4 py-2'>
         <div className='flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-2.5'>
           {/* Navigation & Request Group */}
           <div className='flex min-w-0 items-center gap-1 sm:gap-1.5'>
@@ -926,10 +985,20 @@ const Header: React.FC<HeaderProps> = ({
                   onClick={onNext}
                 />
               </Tooltip>
+              <span className='mx-1 shrink-0'>{listTabBadge}</span>
               {renderStageInfoGroup()}
             </div>
           </div>
         </div>
+
+        {/* Stage trail centered in the header (wide screens, where it has room). */}
+        {stageTrail.length > 0 ? (
+          <div className='pointer-events-none absolute inset-y-0 left-1/2 hidden -translate-x-1/2 items-center xl:flex'>
+            <div className='pointer-events-auto'>
+              <StageTrail items={stageTrail} since={stageSince} />
+            </div>
+          </div>
+        ) : null}
 
         <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
           <div className='flex shrink-0 items-center gap-1.5'>
@@ -1039,28 +1108,13 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex shrink-0 items-center gap-2 border-l border-gray-3 pl-3'>
               {actions.map((action: any) => {
                 const label = String(action?.label || '').toLowerCase()
-                let btnColor:
-                  | 'gray'
-                  | 'primary'
-                  | 'secondary'
-                  | 'red'
-                  | 'green' = 'primary'
-                let borderClass =
-                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                const btnColor = resolveActionColor(action)
+                const borderClass = ACTION_BORDER_CLASS[btnColor]
                 let defaultIcon = action?.icon
                 if (!defaultIcon) {
                   if (label.includes('approve')) defaultIcon = 'lucide:check'
                   else if (isRejectLikeAction(label)) defaultIcon = 'lucide:x'
                   else defaultIcon = 'lucide:arrow-right'
-                }
-                if (label.includes('approve')) {
-                  btnColor = 'green'
-                  borderClass =
-                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-                } else if (isRejectLikeAction(label)) {
-                  btnColor = 'red'
-                  borderClass =
-                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
 
                 const actionVal = String(action?.value || action?.label || '')
@@ -1174,6 +1228,7 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onNext}
               />
             </Tooltip>
+            <span className='mx-1 shrink-0'>{listTabBadge}</span>
             {renderStageInfoGroup()}
           </div>
         </div>
@@ -1969,7 +2024,14 @@ const Header: React.FC<HeaderProps> = ({
           )}
 
           {!isProcessing && (
-            <div className='flex items-center gap-2'>
+            <div
+              className={cn(
+                'flex items-center gap-2',
+                // Divider between the icon tools and the review buttons.
+                (isEditing || Boolean(actions?.length)) &&
+                  'border-l border-gray-3 pl-3',
+              )}
+            >
               {isEditing && (
                 <Button
                   color='primary'
@@ -2002,16 +2064,10 @@ const Header: React.FC<HeaderProps> = ({
 
               {actions?.map((action: any) => {
                 const label = String(action?.label || '').toLowerCase()
-                let btnColor:
-                  | 'gray'
-                  | 'primary'
-                  | 'secondary'
-                  | 'red'
-                  | 'green' = 'primary'
+                const btnColor = resolveActionColor(action)
                 const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
                   'subtle'
-                let borderClass =
-                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                const borderClass = ACTION_BORDER_CLASS[btnColor]
 
                 let defaultIcon = action?.icon
                 if (!defaultIcon) {
@@ -2026,20 +2082,6 @@ const Header: React.FC<HeaderProps> = ({
                   } else {
                     defaultIcon = 'lucide:arrow-right'
                   }
-                }
-
-                if (
-                  label === 'approved' ||
-                  label === 'approve' ||
-                  label.includes('approve')
-                ) {
-                  btnColor = 'green'
-                  borderClass =
-                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-                } else if (isRejectLikeAction(label)) {
-                  btnColor = 'red'
-                  borderClass =
-                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                 }
 
                 const actionVal = String(action?.value || action?.label || '')

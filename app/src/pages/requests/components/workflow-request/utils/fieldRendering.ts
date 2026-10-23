@@ -861,6 +861,8 @@ export const fetchMasterFormColumnOptions = async (
     // Prepare parent column candidate keys if parent filtering is active
     const parentCandidateKeys = new Set<string>()
     let parentColumnResolved = false
+    // Parent's column name as the master form labels it, for the by-column API
+    let parentColumnName = parentMasterColumn?.trim() || ''
     if (parentMasterColumn) {
       parentCandidateKeys.add(parentMasterColumn)
       parentCandidateKeys.add(parentMasterColumn.trim())
@@ -881,6 +883,8 @@ export const fetchMasterFormColumnOptions = async (
       )
       if (matchedParentField) {
         parentColumnResolved = true
+        parentColumnName =
+          String(matchedParentField.label || '').trim() || parentColumnName
         if (matchedParentField.id) {
           parentCandidateKeys.add(matchedParentField.id)
           parentCandidateKeys.add(matchedParentField.id.trim())
@@ -928,11 +932,15 @@ export const fetchMasterFormColumnOptions = async (
         addKeys(f?.id)
         addKeys(f?.label)
         addKeys(f?.name)
+        const rawValues = extractScalarStrings(c.value)
+          .map((s) => s.trim())
+          .filter(Boolean)
         return {
+          // Master column label, sent as a by-column filter
+          columnName: String(f?.label || c.masterColumn).trim(),
           keys,
-          values: new Set(
-            extractScalarStrings(c.value).map((s) => s.trim().toLowerCase()),
-          ),
+          rawValues,
+          values: new Set(rawValues.map((s) => s.toLowerCase())),
         }
       })
     const hasConditions = activeConditions.length > 0
@@ -980,11 +988,6 @@ export const fetchMasterFormColumnOptions = async (
 
     const uniqueValues = new Set<string>()
 
-    // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 10000),
-    )
-    let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
       if (Array.isArray(data)) return data
@@ -1006,9 +1009,128 @@ export const fetchMasterFormColumnOptions = async (
       return []
     }
 
-    rawEntries = parseEntriesData(entriesRes.data)
+    // by-column rows are keyed by the physical column name (e.g. "PO_Number"),
+    // so also match labels with their spaces as underscores.
+    const addUnderscoreKeys = (keys: Set<string>, extra?: string) => {
+      if (extra) {
+        keys.add(extra)
+        keys.add(extra.trim().toLowerCase())
+      }
+      for (const k of Array.from(keys)) {
+        if (/\s/.test(k.trim())) keys.add(k.trim().replace(/\s+/g, '_'))
+      }
+    }
 
-    if (rawEntries.length === 0) {
+    // 2. Fetch master entries by column (POST /form/{id}/entry/by-column):
+    // the field's own column, filtered by the parent's column = value when
+    // it has a parent, e.g. { columnName: 'Expenses', filters:
+    // [{ columnName: 'Category', columnValue: 'Travel' }] }.
+    let rawEntries: any[] = []
+    let byColumnFailed = false
+    // The column's distinct values, as by-column returns them in `values`
+    // (already filtered by the parent); used as the options directly.
+    let serverValues: string[] | null = null
+    const collectServerValues = (data: any) => {
+      if (!Array.isArray(data?.values)) return
+      serverValues = [...(serverValues || []), ...data.values]
+    }
+    const ownColumnName = String(
+      matchedField?.label || columnKeyOrLabel || '',
+    ).trim()
+    // Condition mappings / chained ancestors become extra filters. A filter
+    // holds one value, so a multi-value condition falls back to loading the
+    // entries and matching them here.
+    const conditionFilters = conditionsToApply.map((c) => ({
+      columnName: c.columnName,
+      columnValue: c.rawValues[0],
+    }))
+    if (conditionsToApply.some((c) => c.rawValues.length > 1)) {
+      byColumnFailed = true
+    }
+    const filterKey = (filters: { columnName: string; columnValue: string }[]) =>
+      filters.map((f) => `${f.columnName}=${f.columnValue}`).join('&')
+    if (byColumnFailed) {
+      // skip the by-column call
+    } else if (
+      hasParentFilter &&
+      targetParentSet.size > 0 &&
+      parentColumnName &&
+      ownColumnName
+    ) {
+      const parentVals = Array.from(
+        new Set(targetParentVals.map((s) => s.trim()).filter(Boolean)),
+      )
+      for (const parentVal of parentVals) {
+        const filters = [
+          { columnName: parentColumnName, columnValue: parentVal },
+          ...conditionFilters,
+        ]
+        const res = await cachedMasterCall(
+          `bycol:${ownColumnName}:${filterKey(filters)}`,
+          masterFormId,
+          () =>
+            formApi.getFormEntriesByColumn(
+              masterFormId,
+              ownColumnName,
+              filters,
+            ),
+        )
+        if (res.error) {
+          byColumnFailed = true
+          break
+        }
+        collectServerValues(res.data)
+        rawEntries.push(...parseEntriesData(res.data))
+        addUnderscoreKeys(candidateKeys, res.data?.resolvedColumn)
+      }
+    } else if (ownColumnName) {
+      const res = await cachedMasterCall(
+        `bycol:${ownColumnName}:${filterKey(conditionFilters)}`,
+        masterFormId,
+        () =>
+          formApi.getFormEntriesByColumn(
+            masterFormId,
+            ownColumnName,
+            conditionFilters,
+          ),
+      )
+      if (res.error) {
+        byColumnFailed = true
+      } else {
+        collectServerValues(res.data)
+        rawEntries = parseEntriesData(res.data)
+        addUnderscoreKeys(candidateKeys, res.data?.resolvedColumn)
+      }
+    } else {
+      byColumnFailed = true
+    }
+
+    if (!byColumnFailed && serverValues !== null) {
+      for (const raw of serverValues as unknown[]) {
+        for (const rawStr of extractScalarStrings(raw)) {
+          for (const item of splitStoredSelectValues(rawStr)) {
+            const itemStr = item.trim()
+            if (itemStr) uniqueValues.add(itemStr)
+          }
+        }
+      }
+      return Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    }
+
+    addUnderscoreKeys(candidateKeys)
+    addUnderscoreKeys(parentCandidateKeys)
+    activeConditions.forEach((c) => addUnderscoreKeys(c.keys))
+
+    // Fall back to loading every entry if the by-column call is unavailable
+    if (byColumnFailed) {
+      rawEntries = []
+      const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+        formApi.getFormEntries(masterFormId, 1, 10000),
+      )
+      rawEntries = parseEntriesData(entriesRes.data)
+    }
+
+    if (byColumnFailed && rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
@@ -1256,11 +1378,117 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 10000),
-    )
-    let rawEntries = parseEntriesData(entriesRes.data)
-    if (rawEntries.length === 0) {
+    // Master form label for a column key, as the by-column API expects
+    const columnLabelOf = (keyOrLabel: string): string => {
+      const key = keyOrLabel.trim()
+      const matched = formFields.find(
+        (f: any) =>
+          f.id === key ||
+          f.label?.trim().toLowerCase() === key.toLowerCase() ||
+          f.name?.trim().toLowerCase() === key.toLowerCase(),
+      )
+      return String(matched?.label || key).trim()
+    }
+    // by-column rows are keyed by the physical column name (e.g. "PO_Number")
+    const addUnderscoreKeys = (keys: Set<string>, extra?: string) => {
+      if (extra) {
+        keys.add(extra)
+        keys.add(extra.trim().toLowerCase())
+      }
+      for (const k of Array.from(keys)) {
+        if (/\s/.test(k.trim())) keys.add(k.trim().replace(/\s+/g, '_'))
+      }
+    }
+
+    // Fetch master entries by column (POST /form/{id}/entry/by-column): the
+    // first mapped column, filtered by the parent's column = value when the
+    // table has a parent.
+    let rawEntries: any[] = []
+    let byColumnFailed = false
+    let serverValues: string[] | null = null
+    const collectServerValues = (data: any) => {
+      if (!Array.isArray(data?.values)) return
+      serverValues = [...(serverValues || []), ...data.values]
+    }
+    const firstMapped = columnMappings.find((m) => m.masterColumn)
+    const ownColumnName = firstMapped
+      ? columnLabelOf(firstMapped.masterColumn)
+      : ''
+    if (hasParentFilter && ownColumnName) {
+      const parentColumnName = columnLabelOf(parentMasterColumnKey || '')
+      const parentVals = Array.from(
+        new Set(
+          extractScalarStrings(parentValue)
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      )
+      for (const parentVal of parentVals) {
+        const res = await cachedMasterCall(
+          `bycol:${ownColumnName}:${parentColumnName}:${parentVal}`,
+          masterFormId,
+          () =>
+            formApi.getFormEntriesByColumn(masterFormId, ownColumnName, [
+              { columnName: parentColumnName, columnValue: parentVal },
+            ]),
+        )
+        if (res.error) {
+          byColumnFailed = true
+          break
+        }
+        collectServerValues(res.data)
+        rawEntries.push(...parseEntriesData(res.data))
+      }
+    } else {
+      if (ownColumnName) {
+        const res = await cachedMasterCall(
+          `bycol:${ownColumnName}`,
+          masterFormId,
+          () => formApi.getFormEntriesByColumn(masterFormId, ownColumnName),
+        )
+        if (res.error) byColumnFailed = true
+        else {
+          collectServerValues(res.data)
+          rawEntries = parseEntriesData(res.data)
+        }
+      } else {
+        byColumnFailed = true
+      }
+    }
+    addUnderscoreKeys(parentCandidateKeys)
+
+    // by-column returns only the requested column's `values` (no entries):
+    // enough to fill a table mapped from that one column. With more mapped
+    // columns the other cells need whole entries, so load those instead.
+    if (!byColumnFailed && rawEntries.length === 0 && serverValues !== null) {
+      const mapped = columnMappings.filter(
+        (m) => m.masterColumn && m.tableColumn,
+      )
+      if (mapped.length === 1) {
+        const tableColumn = mapped[0].tableColumn
+        const seen = new Set<string>()
+        const rows: Record<string, any>[] = []
+        for (const raw of serverValues as unknown[]) {
+          for (const value of extractScalarStrings(raw)) {
+            const text = value.trim()
+            if (!text || seen.has(text)) continue
+            seen.add(text)
+            rows.push({ [tableColumn]: text })
+          }
+        }
+        return rows
+      }
+      byColumnFailed = true
+    }
+
+    // Fall back to loading every entry if the by-column call is unavailable
+    if (byColumnFailed) {
+      const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+        formApi.getFormEntries(masterFormId, 1, 10000),
+      )
+      rawEntries = parseEntriesData(entriesRes.data)
+    }
+    if (byColumnFailed && rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
@@ -1314,10 +1542,11 @@ export const fetchMasterTableRows = async (
 
     const mappingKeySets = columnMappings
       .filter((m) => m.masterColumn && m.tableColumn)
-      .map((m) => ({
-        keys: buildCandidateKeys(m.masterColumn),
-        tableColumn: m.tableColumn,
-      }))
+      .map((m) => {
+        const keys = buildCandidateKeys(m.masterColumn)
+        addUnderscoreKeys(keys)
+        return { keys, tableColumn: m.tableColumn }
+      })
 
     const rows: Record<string, any>[] = []
     for (const entry of rawEntries) {
@@ -1907,6 +2136,31 @@ export const buildRepoFieldDescriptors = (
     }
   })
 
+const REQUEST_NUMBER_NAMES = new Set([
+  'requestno',
+  'requestnumber',
+  'requestnum',
+  'reqno',
+  'reqnumber',
+])
+
+// "Request Number", "Request No.", "Request No", "RequestNo" ... — the system
+// assigns the request number, so it is never asked for on the new-request
+// page. Compared case- and punctuation-insensitively.
+export const isRequestNumberFieldName = (name?: string): boolean =>
+  REQUEST_NUMBER_NAMES.has((name || '').toLowerCase().replace(/[^a-z0-9]/g, ''))
+
+// Repo field descriptors with the request-number field no longer mandatory
+// (new-request / workflow upload screens only).
+export const withoutRequestNumberMandatory = (
+  descriptors: RepoFieldDescriptor[],
+): RepoFieldDescriptor[] =>
+  descriptors.map((d) =>
+    d.repoField.isMandatory && isRequestNumberFieldName(d.repoField.name)
+      ? { ...d, repoField: { ...d.repoField, isMandatory: false } }
+      : d,
+  )
+
 // A repo field's current value: its own slot if set, else whatever the
 // matching form field already holds (e.g. typed before any file was
 // uploaded, back when the plain form was the only thing on screen).
@@ -2240,6 +2494,78 @@ export const fillRepoMetadataFromTableRow = (
     if (repoName) next[repoName] = value
   }
   return next
+}
+
+const NUMERIC_REPO_TYPES = new Set([
+  'NUMBER',
+  'COUNTER',
+  'CURRENCY_AMOUNT',
+  'INTEGER',
+  'DECIMAL',
+])
+
+// Repository metadata for a file picked in a table row, plus the names of the
+// mandatory repository fields that are still empty. Values come from the
+// row's matching columns, the form's matching top-level fields, and the file
+// name (Filename / DocumentType), the same sources the Upload step uses.
+// `extra` holds values the user entered in the repository fields panel; they
+// win over the derived ones.
+export const getTableRowRepoMetadata = (
+  repositoryFields: {
+    dataType?: string
+    isMandatory?: boolean
+    level?: number
+    name?: string
+    sqlColumnName?: string
+  }[],
+  panels: any[],
+  formModel: Record<string, any>,
+  columns: any[],
+  row: Record<string, any> | undefined,
+  fileName: string,
+  extra?: Record<string, string>,
+): { metadata: Record<string, string>; missing: string[] } => {
+  const descriptors = withoutRequestNumberMandatory(
+    buildRepoFieldDescriptors(repositoryFields, panels),
+  )
+  const metadata = fillRepoMetadataFromTableRow(
+    buildRepoMetadata(repositoryFields, panels, formModel, fileName),
+    columns,
+    row,
+  )
+  const cleanFileName = getFileNameWithoutExtension(fileName)
+  const missing: string[] = []
+  for (const descriptor of descriptors) {
+    const name = descriptor.repoField.name!
+    if (extra?.[name]?.trim()) metadata[name] = extra[name].trim()
+    // Year / Month repository fields default to today's year and month
+    // (the month as a number for numeric fields, else its name).
+    if (!metadata[name]) {
+      const key = normalizeName(name)
+      const now = new Date()
+      if (key === 'year') {
+        metadata[name] = String(now.getFullYear())
+      } else if (key === 'month') {
+        metadata[name] = NUMERIC_REPO_TYPES.has(
+          descriptor.repoField.dataType || '',
+        )
+          ? String(now.getMonth() + 1)
+          : now.toLocaleString('en-US', { month: 'long' })
+      }
+    }
+    if (
+      !metadata[name] &&
+      cleanFileName &&
+      isFilenameField({
+        name,
+        sqlColumnName: descriptor.repoField.sqlColumnName || '',
+      })
+    ) {
+      metadata[name] = cleanFileName
+    }
+    if (descriptor.repoField.isMandatory && !metadata[name]) missing.push(name)
+  }
+  return { metadata, missing }
 }
 
 // Maps an uploadForOcr/uploadWithOcr response's `ocrFieldList` (matched by

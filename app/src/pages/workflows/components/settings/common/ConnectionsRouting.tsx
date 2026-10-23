@@ -1,21 +1,69 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from '@dnd-kit/modifiers'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
+import type { ButtonColor } from '@/components/base/button/types'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
+import Tooltip from '@/components/base/Tooltip'
 import {
   getNodeToolType,
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
+import cn from '@/utils/cn'
 import useWorkflowStore from '../../../stores/useWorkflowStore'
+import RequestPageVisibilitySetting from './RequestPageVisibilitySetting'
 import SettingsSection from './SettingsSection'
+
+/** Colors an action button can use on the request page (edge.data.buttonColor). */
+export type ConnectionButtonColor = Extract<
+  ButtonColor,
+  'green' | 'orange' | 'primary' | 'red' | 'secondary'
+>
 
 interface ConnectionsRoutingProps {
   defaultOpen?: boolean
   node: Node
 }
+
+const BUTTON_COLOR_OPTIONS: Array<{
+  id: ConnectionButtonColor
+  label: string
+  swatchClass: string
+}> = [
+  { id: 'primary', label: 'Primary', swatchClass: 'bg-primary-9' },
+  { id: 'green', label: 'Green', swatchClass: 'bg-green-9' },
+  { id: 'orange', label: 'Orange', swatchClass: 'bg-orange-9' },
+  { id: 'red', label: 'Red', swatchClass: 'bg-red-9' },
+  { id: 'secondary', label: 'Secondary', swatchClass: 'bg-secondary-9' },
+]
+
+const isConnectionButtonColor = (
+  value: unknown,
+): value is ConnectionButtonColor =>
+  BUTTON_COLOR_OPTIONS.some((option) => option.id === value)
 
 interface ConnectionWithData {
   action: string
@@ -27,6 +75,8 @@ interface ConnectionWithData {
   targetId: string
   targetLabel: string
   targetToolType: string
+  /** Request-page button color; unset means Primary. */
+  buttonColor?: ConnectionButtonColor
 }
 
 const routingActionOptions = [
@@ -126,6 +176,39 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
       ),
     )
   }
+
+  const onUpdateColor = (edgeId: string, buttonColor: ConnectionButtonColor) => {
+    updateEdgesAndStore((eds) =>
+      eds.map((e) =>
+        e.id === edgeId ? { ...e, data: { ...e.data, buttonColor } } : e,
+      ),
+    )
+  }
+
+  // Reorder this node's outgoing edges in place. Edge order is saved as rule
+  // order, which is the order of the action buttons on the request page.
+  const onReorder = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return
+    updateEdgesAndStore((eds) => {
+      const ownIds = eds.filter((e) => e.source === node.id).map((e) => e.id)
+      const from = ownIds.indexOf(String(active.id))
+      const to = ownIds.indexOf(String(over.id))
+      if (from === -1 || to === -1) return eds
+      const reordered = arrayMove(ownIds, from, to)
+      const byId = new Map(eds.map((e) => [e.id, e]))
+      let next = 0
+      return eds.map((e) =>
+        e.source === node.id ? byId.get(reordered[next++]) || e : e,
+      )
+    })
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   // Find all edges coming out of this node
   const outgoingEdges = edges.filter((e) => e.source === node.id)
@@ -243,6 +326,9 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
 
       return {
         action,
+        buttonColor: isConnectionButtonColor(edgeData.buttonColor)
+          ? edgeData.buttonColor
+          : undefined,
         confirm: !!edgeData.confirm,
         edgeId: edge.id,
         passwordAccess: !!edgeData.passwordAccess,
@@ -289,7 +375,11 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
       ),
     }))
 
+  const isAgentNode = /agent/i.test(String(nodeToolType || ''))
+
   return (
+    <>
+    {isAgentNode ? <RequestPageVisibilitySetting node={node} /> : null}
     <SettingsSection
       icon='lucide:git-branch'
       isOpen={isOpen}
@@ -299,13 +389,28 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
     >
       <div className='flex flex-col gap-2.5 py-1'>
         {connections.length > 0 ? (
-          connections.map((conn) => (
-            <div
-              className='space-y-4 rounded-xl bg-surface p-4 shadow-sm border border-gray-4'
+          <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            sensors={sensors}
+            onDragEnd={onReorder}
+          >
+          <SortableContext
+            items={connections.map((conn) => conn.edgeId)}
+            strategy={verticalListSortingStrategy}
+          >
+          <div className='flex flex-col gap-2.5'>
+          {connections.map((conn) => (
+            <SortableConnectionCard
+              disabled={connections.length < 2}
+              id={conn.edgeId}
               key={conn.edgeId}
             >
+              {(dragHandle) => (
+              <>
               <div className='flex items-start justify-between gap-2.5'>
                 <div className='flex items-start gap-2.5'>
+                  {dragHandle}
                   <Icon
                     className='mt-0.5 h-4 w-4 stroke-[2] text-purple-10'
                     name='lucide:link-2'
@@ -313,7 +418,7 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
                   <div className='flex flex-col space-y-0.5'>
                     <span className='text-13 font-medium leading-none text-gray-12'>
                       {conn.action
-                        ? `${conn.action} ➔ ${conn.targetLabel}`
+                        ? `${conn.action} âž” ${conn.targetLabel}`
                         : conn.targetLabel}
                     </span>
                     <span className='text-11 leading-tight text-gray-9'>
@@ -386,6 +491,12 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
                 </div>
               </div>
 
+              <ButtonColorPicker
+                action={conn.action}
+                value={conn.buttonColor || 'primary'}
+                onChange={(color) => onUpdateColor(conn.edgeId, color)}
+              />
+
               {isManualUser && (
                 <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1 border-t border-gray-3'>
                   <div className='flex items-center justify-between'>
@@ -434,8 +545,13 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
                   </div>
                 </div>
               )}
-            </div>
-          ))
+              </>
+              )}
+            </SortableConnectionCard>
+          ))}
+          </div>
+          </SortableContext>
+          </DndContext>
         ) : (
           <div className='py-4 text-center'>
             <p className='text-12 italic text-gray-8'>
@@ -557,6 +673,117 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
         </div>
       </div>
     </SettingsSection>
+    </>
   )
 }
 
+/** Swatch picker for the request-page action button color, with a preview. */
+function ButtonColorPicker({
+  action,
+  value,
+  onChange,
+}: {
+  action: string
+  value: ConnectionButtonColor
+  onChange: (color: ConnectionButtonColor) => void
+}) {
+  return (
+    <div className='flex items-center justify-between gap-3 border-t border-gray-3 pt-3'>
+      <div className='flex flex-col gap-1.5'>
+        <span className='text-12 font-medium text-gray-12'>Button Color</span>
+        <div aria-label='Button color' className='flex items-center gap-2' role='radiogroup'>
+          {BUTTON_COLOR_OPTIONS.map((option) => {
+            const selected = option.id === value
+            return (
+              <Tooltip content={option.label} key={option.id} position='top'>
+                <button
+                  aria-checked={selected}
+                  aria-label={option.label}
+                  role='radio'
+                  type='button'
+                  className={cn(
+                    'inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-white transition-all hover:scale-110 active:scale-95',
+                    option.swatchClass,
+                    selected
+                      ? 'ring-2 ring-gray-12 ring-offset-2 ring-offset-surface'
+                      : 'opacity-80 hover:opacity-100',
+                  )}
+                  onClick={() => onChange(option.id)}
+                >
+                  {selected ? (
+                    <Icon className='size-3.5 stroke-[3]' name='lucide:check' />
+                  ) : null}
+                </button>
+              </Tooltip>
+            )
+          })}
+        </div>
+      </div>
+      {/* Live preview of the button as it appears on the request page. */}
+      <Button
+        className='pointer-events-none h-8 max-w-[45%] rounded-lg px-3.5 text-[13px] font-semibold'
+        color={value}
+        icon='lucide:arrow-right'
+        iconClass='size-4 shrink-0'
+        label={action || 'Action'}
+        labelClass='truncate'
+        size='md'
+        tabIndex={-1}
+        variant='subtle'
+      />
+    </div>
+  )
+}
+
+/** A connection card that can be dragged by its grip to reorder routes. */
+function SortableConnectionCard({
+  children,
+  disabled,
+  id,
+}: {
+  disabled?: boolean
+  id: string
+  children: (dragHandle: ReactNode) => ReactNode
+}) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    transform,
+    transition,
+    setActivatorNodeRef,
+    setNodeRef,
+  } = useSortable({ disabled, id })
+
+  const dragHandle = disabled ? null : (
+    <Tooltip content='Drag to reorder' position='left'>
+      <button
+        aria-label='Drag to reorder connection'
+        ref={setActivatorNodeRef}
+        type='button'
+        className={cn(
+          '-ml-1 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-gray-8 transition-colors hover:bg-gray-3 hover:text-gray-11 active:cursor-grabbing',
+          isDragging && 'bg-gray-3 text-gray-12',
+        )}
+        {...attributes}
+        {...listeners}
+      >
+        <Icon className='size-4' name='lucide:grip-vertical' />
+      </button>
+    </Tooltip>
+  )
+
+  return (
+    <div
+      ref={setNodeRef}
+      // dnd-kit drives the drag position through a transform.
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        'space-y-4 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm transition-shadow',
+        isDragging && 'relative z-10 shadow-lg ring-2 ring-primary-6',
+      )}
+    >
+      {children(dragHandle)}
+    </div>
+  )
+}
