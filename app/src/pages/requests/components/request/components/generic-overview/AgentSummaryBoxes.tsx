@@ -157,6 +157,40 @@ const getDescendantBlockIds = (fromBlockId: string, rules: any[]) => {
   return descendants
 }
 
+/**
+ * True when `currentActivityId` follows `agentBlockId` with no other agent
+ * step in between (e.g. Qualify Agent → DisQualify, Quote Agent → Quote
+ * Verifier): the agent is the step right before the current one.
+ */
+export const isAgentStepBefore = (
+  workflow: WorkflowLike | undefined,
+  agentBlockId: string,
+  currentActivityId: string,
+) => {
+  if (!agentBlockId || !currentActivityId) return false
+  if (agentBlockId === currentActivityId) return true
+  const { blocks, rules } = getWorkflowGraph(workflow)
+  const isAgent = (id: string) =>
+    String(blocks.find((b) => String(b?.id) === id)?.type || '').includes(
+      'AGENT',
+    )
+  const queue = [agentBlockId]
+  const seen = new Set<string>([agentBlockId])
+  while (queue.length > 0) {
+    const id = queue.shift() as string
+    for (const rule of rules) {
+      if (String(rule?.fromBlockId || '') !== id) continue
+      const toId = String(rule?.toBlockId || '')
+      if (!toId || seen.has(toId)) continue
+      if (toId === currentActivityId) return true
+      seen.add(toId)
+      // Stop at the next agent step; walk through manual / condition steps.
+      if (!isAgent(toId)) queue.push(toId)
+    }
+  }
+  return false
+}
+
 const stageMatchesBlock = (stage: string, block: any) => {
   const label = String(block?.settings?.label || '').trim()
   const stageName = String(stage || '').trim()
@@ -280,6 +314,28 @@ const docGenVisitedInHistory = (requestData: any, label: string) => {
       stageType === 'document_generate_agent'
     )
   })
+}
+
+/**
+ * Id of the Document Generate Agent block that ran before the current step
+ * (the one the current activity descends from); first doc-gen block otherwise.
+ */
+export const findDocumentGenerateBlockId = (
+  workflow?: WorkflowLike,
+  currentActivityId?: string,
+) => {
+  const { blocks, rules } = getWorkflowGraph(workflow)
+  const docGenBlocks = blocks.filter((b) => isDocGenBlock(b as AgentBlock))
+  if (docGenBlocks.length === 0) return ''
+  const current = String(currentActivityId || '')
+  const before =
+    current &&
+    docGenBlocks.find(
+      (b) =>
+        String(b?.id) === current ||
+        getDescendantBlockIds(String(b?.id || ''), rules).has(current),
+    )
+  return String((before || docGenBlocks[0])?.id || '')
 }
 
 /**

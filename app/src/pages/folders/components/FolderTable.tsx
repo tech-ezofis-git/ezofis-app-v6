@@ -598,7 +598,7 @@ export function FolderDataTableSection({
 
   const resolvedFolderBodyMaxHeight =
     folderBodyMaxHeight ||
-    (hasFiles && folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
+    (hasFiles && folders.length <= FOLDER_FILES_SECTION_MAX_FOLDERS
       ? `${Math.min(220, Math.max(96, folders.length * 56 + 52))}px`
       : 'calc(100vh - 220px)')
 

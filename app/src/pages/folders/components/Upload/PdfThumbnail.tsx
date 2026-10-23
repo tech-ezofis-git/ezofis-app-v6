@@ -1,8 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { getStageFilePreviewSource } from '@/api/v6/uploadAndIndex'
 import Skeleton from '@/components/base/Skeleton'
 import cn from '@/utils/cn'
 import { getCachedThumbnail, setCachedThumbnail } from './thumbnailCache'
+import {
+  acquireThumbSlot,
+  isLocalFileUrl,
+  releaseThumbSlot,
+  useNearViewport,
+} from './thumbnailQueue'
 
 const PDF_WORKER_URL = new URL(
   'pdfjs-dist/build/pdf.worker.min.js',
@@ -12,29 +18,6 @@ const PDF_WORKER_URL = new URL(
 type PdfJsModule = typeof import('pdfjs-dist')
 
 let pdfjsPromise: Promise<PdfJsModule> | null = null
-
-const THUMB_CONCURRENCY = 16
-let activeThumbRenders = 0
-const thumbWaiters: Array<() => void> = []
-
-const acquireThumbSlot = () =>
-  new Promise<void>((resolve) => {
-    if (activeThumbRenders < THUMB_CONCURRENCY) {
-      activeThumbRenders += 1
-      resolve()
-      return
-    }
-    thumbWaiters.push(() => {
-      activeThumbRenders += 1
-      resolve()
-    })
-  })
-
-const releaseThumbSlot = () => {
-  activeThumbRenders = Math.max(0, activeThumbRenders - 1)
-  const next = thumbWaiters.shift()
-  if (next) next()
-}
 
 const loadPdfJs = async () => {
   if (!pdfjsPromise) {
@@ -55,6 +38,8 @@ type PdfThumbnailProps = {
   fallback?: ReactNode
   fileName: string
   fileUrl?: string
+  /** Render ahead of other cards (files from the current upload). */
+  priority?: boolean
   stageFileId?: string
 }
 
@@ -65,6 +50,7 @@ export default function PdfThumbnail({
   fallback = null,
   fileName,
   fileUrl,
+  priority = false,
   stageFileId,
 }: PdfThumbnailProps) {
   const key = cacheKey || stageFileId || fileUrl || fileName
@@ -72,6 +58,9 @@ export default function PdfThumbnail({
     getCachedThumbnail(key),
   )
   const [failed, setFailed] = useState(false)
+  const hostRef = useRef<HTMLDivElement>(null)
+  // Off-screen cards wait until scrolled near, so visible ones render first.
+  const nearViewport = useNearViewport(hostRef)
 
   useEffect(() => {
     const cached = getCachedThumbnail(key)
@@ -80,12 +69,13 @@ export default function PdfThumbnail({
       setFailed(false)
       return
     }
+    if (!nearViewport) return
 
     let cancelled = false
     setFailed(false)
 
     const render = async () => {
-      await acquireThumbSlot()
+      await acquireThumbSlot(priority)
       if (cancelled) {
         releaseThumbSlot()
         return
@@ -96,9 +86,11 @@ export default function PdfThumbnail({
       > | null = null
       try {
         const pdfjs = await loadPdfJs()
-        const remote = stageFileId
-          ? getStageFilePreviewSource(stageFileId)
-          : null
+        // A just-uploaded file is already in memory: no download needed.
+        const remote =
+          stageFileId && !isLocalFileUrl(fileUrl)
+            ? getStageFilePreviewSource(stageFileId)
+            : null
         const task = pdfjs.getDocument({
           disableAutoFetch: Boolean(remote),
           disableRange: !remote,
@@ -147,11 +139,15 @@ export default function PdfThumbnail({
     return () => {
       cancelled = true
     }
-  }, [fileUrl, key, stageFileId])
+  }, [fileUrl, key, nearViewport, priority, stageFileId])
 
   if (failed) return <>{fallback}</>
   if (!thumbUrl) {
-    return <Skeleton className={cn('h-full w-full rounded-none', className)} />
+    return (
+      <div className='h-full w-full' ref={hostRef}>
+        <Skeleton className={cn('h-full w-full rounded-none', className)} />
+      </div>
+    )
   }
 
   return (

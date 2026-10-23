@@ -592,14 +592,28 @@ export function RequiredProgressPie({
 
   return (
     <Tooltip
-      content={t`${filled} of ${total} Mandatory Fields Filled.`}
+      content={
+        ratio >= 1
+          ? t`All ${total} Mandatory Fields Filled.`
+          : t`${filled} of ${total} Mandatory Fields Filled.`
+      }
       position='top'
     >
       <span className={cn('inline-flex size-4 shrink-0', className)}>
         <svg aria-hidden className='size-full' viewBox='0 0 16 16'>
           <circle className='fill-primary-3' cx={cx} cy={cy} r={radius} />
           {ratio >= 1 ? (
-            <circle className='fill-green-9' cx={cx} cy={cy} r={radius} />
+            <>
+              <circle className='fill-green-9' cx={cx} cy={cy} r={radius} />
+              <path
+                d='M5 8.2 L7 10.2 L11 6'
+                fill='none'
+                stroke='white'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth='1.75'
+              />
+            </>
           ) : sector ? (
             <path className='fill-primary-9' d={sector} />
           ) : null}

@@ -46,7 +46,9 @@ import {
   extractWorkflowGraph,
   getActionsForActivity,
   getStageNameFromWorkflow,
+  getStageTrail,
   isAccountsPayableWorkflow,
+  type WorkflowStageStep,
 } from '../../utils/workflow.utils'
 import {
   attachmentToFormFileValue,
@@ -70,6 +72,7 @@ import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 import ForwardPopover from './ForwardPopover'
 import { getCanonicalFieldLabel } from '../../utils/localizeRequestUi'
+import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '../../utils/requestEvents'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
 const cleanKey = (s: string) =>
@@ -1398,6 +1401,13 @@ const Request = ({
     }
     return { ...rawWorkflowData, formJson }
   }, [rawWorkflowData, request?._formDefinition, hasWorkflowFormPanels])
+
+  // Stages reported by the generic overview → compact trail in the header.
+  const [workflowStages, setWorkflowStages] = useState<WorkflowStageStep[]>([])
+  const stageTrail = useMemo(
+    () => getStageTrail(workflowStages, overviewWorkflowData),
+    [overviewWorkflowData, workflowStages],
+  )
   // Synchronize store's selectedItem with the loaded request data
   useEffect(() => {
     if (request && selectedItem) {
@@ -1655,6 +1665,14 @@ const Request = ({
     resolvedWorkflowId,
   ])
 
+  // Regenerated quote PDFs replace the old ones: reload the attachments.
+  useEffect(() => {
+    const refresh = () => void refetchGenericAttachments()
+    window.addEventListener(REQUEST_ATTACHMENTS_CHANGED_EVENT, refresh)
+    return () =>
+      window.removeEventListener(REQUEST_ATTACHMENTS_CHANGED_EVENT, refresh)
+  }, [refetchGenericAttachments])
+
   // Agent nodes auto-route from their decision — do not surface their
   // QUALIFY / DISQUALIFY / MATCHED edges as clickable header buttons.
   const isAutoRoutedAgentStage = useMemo(() => {
@@ -1690,6 +1708,8 @@ const Request = ({
       derivedActions = dynamicRules.map((rule: any) => {
         const actionName = rule.proceedAction || rule.action || 'Submit'
         return {
+          // Button color chosen on the connection in the workflow builder.
+          ...(rule.buttonColor ? { color: rule.buttonColor } : {}),
           label: actionName,
           value: actionName,
         }
@@ -2975,6 +2995,10 @@ const Request = ({
           selectedItem={selectedItem}
           showApprove={isInboxTab}
           simple={isGenericWorkflow}
+          stageSince={
+            selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
+          }
+          stageTrail={stageTrail}
           status={statusBadge}
           totalAmount={totalAmount}
           actions={headerActions.map((a: any) => {
@@ -3123,6 +3147,7 @@ const Request = ({
                 onFieldChange={handleGenericFieldChange}
                 onFieldsChange={handleGenericFieldsChange}
                 onSignatureToggle={setSignatureConfirmed}
+                onStagesChange={setWorkflowStages}
               />
             ) : (
               <Overview

@@ -671,6 +671,10 @@ export const importWorkflow = (
               })
               .filter(Boolean)
           : undefined,
+        // Agent status card on the request page; unset means shown.
+        ...(block.settings?.showInRequestPage !== undefined
+          ? { showInRequestPage: block.settings.showInRequestPage !== false }
+          : {}),
         showTableAsEditable: Boolean(
           block.settings?.showTableAsEditable ??
           block.settings?.show_table_as_editable ??
@@ -713,6 +717,7 @@ export const importWorkflow = (
           return {
             data: {
               action: actionName,
+              ...(rule.buttonColor ? { buttonColor: rule.buttonColor } : {}),
               confirm: rule.confirm ?? false,
               passwordAccess: rule.passwordAccess ?? false,
               proceedAction: actionName,

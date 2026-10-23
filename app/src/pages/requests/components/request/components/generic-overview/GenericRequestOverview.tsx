@@ -51,7 +51,15 @@ import {
   type RepositoryFieldSchema,
   toUploadMetadata,
 } from '@/pages/requests/utils/repoFolderMetadata'
-import { computeWorkflowStages, listWorkflowStages } from '@/pages/requests/utils/workflow.utils'
+import {
+  getStageHiddenFieldIds,
+  getStageReadOnlyFieldIds,
+} from '@/pages/requests/utils/stageFormAccess'
+import {
+  computeWorkflowStages,
+  listWorkflowStages,
+  type WorkflowStageStep,
+} from '@/pages/requests/utils/workflow.utils'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -108,15 +116,9 @@ const overlayIndexingMetadata = (
   return next
 }
 
-const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
-  const raw =
-    typeof value === 'string' || typeof value === 'number' ? value : 'ALL'
-  const access = String(raw).toUpperCase()
-  if (access === 'NONE') return 'NONE'
-  if (access === 'CUSTOM') return 'CUSTOM'
-  // ALL, FULL (legacy dummy/imported workflows), and unknown values.
-  return 'ALL'
-}
+/** Workflow block setting "Show agent on request page"; unset means shown. */
+const isShownInRequestPage = (block: AgentBlock) =>
+  block.settings?.showInRequestPage !== false
 
 interface Props {
   // Fetched once at the Request level (so the header's attachment count and
@@ -148,6 +150,8 @@ interface Props {
   onFieldChange: (fieldId: string, value: any) => void
   onFieldsChange?: (patch: Record<string, any>) => void
   onSignatureToggle?: (confirmed: boolean) => void
+  /** Workflow stages for the compact stage trail in the request header. */
+  onStagesChange?: (stages: WorkflowStageStep[]) => void
 }
 
 // Split layout tailored specifically for "Document Approval"
@@ -469,6 +473,11 @@ const DocumentFormSplitLayout = ({
   )
   const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
   const hasAgents = agentBlocks.length > 0
+  // Status cards at the top only for agents with "Show agent on request page".
+  const summaryAgentBlocks = useMemo(
+    () => agentBlocks.filter(isShownInRequestPage),
+    [agentBlocks],
+  )
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
   const initialAgentId =
@@ -690,26 +699,52 @@ const DocumentFormSplitLayout = ({
       </div>
 
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
-        {agentBlocks.length > 0 && (
+        {summaryAgentBlocks.length > 0 && (
           <div className='px-4 pt-3 pb-2'>
             <AgentSummaryBoxes
-              agentBlocks={agentBlocks}
+              agentBlocks={summaryAgentBlocks}
               requestData={selectedItem}
               workflow={rawWorkflowData}
             />
           </div>
         )}
-        <div className='no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4 pt-1.5'>
-          <div className='flex items-center justify-between gap-4'>
-            <div className='no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto sm:gap-6 md:gap-8'>
+        {/* Without agent cards above, the tab bar becomes the pane header:
+            same height as the left attachment strip, with pill tabs. */}
+        <div
+          className={cn(
+            'no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4',
+            summaryAgentBlocks.length > 0
+              ? 'pt-1.5'
+              : 'flex min-h-[69px] items-center py-2.5',
+          )}
+        >
+          <div className='flex min-w-0 flex-1 items-center justify-between gap-4'>
+            <div
+              className={cn(
+                'no-scrollbar flex min-w-0 items-center overflow-x-auto',
+                summaryAgentBlocks.length > 0
+                  ? 'gap-2 sm:gap-6 md:gap-8'
+                  : 'gap-1.5',
+              )}
+            >
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   className={cn(
-                    '-mb-[2px] flex shrink-0 items-center gap-1.5 border-b-2 pb-2.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
-                    activeTab === tab.id
-                      ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                      : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                    'flex shrink-0 items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap transition-all sm:gap-2',
+                    summaryAgentBlocks.length > 0
+                      ? cn(
+                          '-mb-[2px] border-b-2 pb-2.5',
+                          activeTab === tab.id
+                            ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                        )
+                      : cn(
+                          'h-9 rounded-lg px-3 text-[12px] active:scale-95',
+                          activeTab === tab.id
+                            ? 'bg-[var(--primary-2)] text-[var(--primary-11)] shadow-[inset_0_0_0_1px_var(--primary-5)]'
+                            : 'text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]',
+                        ),
                   )}
                   onClick={() => selectTab(tab.id)}
                 >
@@ -812,6 +847,7 @@ const GenericRequestOverview = ({
   onFieldChange,
   onFieldsChange,
   onSignatureToggle,
+  onStagesChange,
 }: Props) => {
   const { t } = useLingui()
   const kanbanMissingFieldIds = requestStore(
@@ -873,6 +909,11 @@ const GenericRequestOverview = ({
       }),
     [rawWorkflowData, historyList, currentActivityId, isCompleted],
   )
+
+  // The header shows these as a compact trail instead of a full stage bar.
+  useEffect(() => {
+    onStagesChange?.(workflowStages)
+  }, [onStagesChange, workflowStages])
 
   const missingRequiredLabels = useMemo(() => {
     if (!kanbanMissingFieldIds?.length) return []
@@ -962,52 +1003,21 @@ const GenericRequestOverview = ({
     }
   }, [rawWorkflowData])
 
-  const readOnlyFieldIds = useMemo(() => {
-    const access = formAccessMode(blockSettings.formEditAccess)
-    const base =
-      access === 'NONE'
-        ? new Set(allFieldIds)
-        : access === 'CUSTOM'
-          ? (() => {
-            const rules = Array.isArray(blockSettings.formEditControls)
-              ? blockSettings.formEditControls
-              : []
-            const rule = rules.find(
-              (r: any) => String(r.userId) === currentUserId,
-            )
-            if (!rule) return undefined
-            const editable = new Set((rule?.formFields || []).map(String))
-            return new Set(allFieldIds.filter((id) => !editable.has(id)))
-          })()
-          : undefined
+  const readOnlyFieldIds = useMemo(
+    () =>
+      getStageReadOnlyFieldIds(
+        blockSettings,
+        allFieldIds,
+        currentUserId,
+        requestNumberFieldIds,
+      ),
+    [blockSettings, allFieldIds, currentUserId, requestNumberFieldIds],
+  )
 
-    if (requestNumberFieldIds.size === 0) return base
-    return new Set([...(base || []), ...requestNumberFieldIds])
-  }, [blockSettings, allFieldIds, currentUserId, requestNumberFieldIds])
-
-  const hiddenFieldIds = useMemo<Set<string> | undefined>(() => {
-    const access = formAccessMode(blockSettings.formVisibilityAccess)
-    if (access === 'ALL') return undefined
-    if (access === 'NONE') return new Set(allFieldIds)
-    const rules = Array.isArray(blockSettings.formSecureControls)
-      ? blockSettings.formSecureControls
-      : []
-    // Match rule for current user, or fallback to rule without userId (single user node)
-    const rule =
-      rules.find((r: any) => String(r.userId) === currentUserId) ||
-      rules.find((r: any) => !r.userId) ||
-      (rules.length === 1 ? rules[0] : null)
-    // No rule for this user under a CUSTOM policy - default to visible
-    // rather than surprising the user by hiding fields nobody configured.
-    if (!rule) return undefined
-    const specifiedFields = new Set<string>((rule.formFields || []).map(String))
-    const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
-    if (mode === 'SHOW') {
-      return new Set<string>(allFieldIds.filter((id) => !specifiedFields.has(id)))
-    }
-    // HIDE mode (default): the selected fields are hidden
-    return specifiedFields
-  }, [blockSettings, allFieldIds, currentUserId])
+  const hiddenFieldIds = useMemo(
+    () => getStageHiddenFieldIds(blockSettings, allFieldIds, currentUserId),
+    [blockSettings, allFieldIds, currentUserId],
+  )
 
   const summaryHiddenFieldIds = useMemo(() => {
     const ids = new Set(hiddenFieldIds || [])
@@ -1043,7 +1053,12 @@ const GenericRequestOverview = ({
     return blocks.filter((b: any) => b.type && b.type.includes('AGENT') && b.type !== 'FTP_AGENT' && b.type !== 'CLASSIFICATION_AGENT')
   }, [rawWorkflowData])
 
-  const showAgentProcess = agentBlocks.some((block) => {
+  // Status cards at the top only for agents with "Show agent on request page".
+  const summaryAgentBlocks = useMemo(
+    () => agentBlocks.filter(isShownInRequestPage),
+    [agentBlocks],
+  )
+  const showAgentProcess = summaryAgentBlocks.some((block) => {
     const type = String(block.type || '')
     const subtype = String(block.settings?.subtype || '').toUpperCase()
     return type !== 'DOCUMENT_GENERATE_AGENT' && subtype !== 'DOCUMENT_GENERATE'
@@ -1366,7 +1381,6 @@ const GenericRequestOverview = ({
                 currentActivityId={currentActivityId}
                 disableOwnScroll={true}
                 formModel={formModel}
-                stages={workflowStages}
                 hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                 hiddenFieldIds={hiddenFieldIds}
                 hidePanels={true}
@@ -1444,7 +1458,6 @@ const GenericRequestOverview = ({
                 currentActivityId={currentActivityId}
                 disableOwnScroll={true}
                 formModel={formModel}
-                stages={workflowStages}
                 hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                 hiddenFieldIds={summaryHiddenFieldIds}
                 hidePanels={agentBlocks.length > 0}
@@ -1491,7 +1504,6 @@ const GenericRequestOverview = ({
                   currentActivityId={currentActivityId}
                   disableOwnScroll={true}
                   formModel={formModel}
-                  stages={workflowStages}
                   hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                   hiddenFieldIds={lineItemsHiddenFieldIds.ids}
                   hidePanels={agentBlocks.length > 0}
@@ -1533,7 +1545,7 @@ const GenericRequestOverview = ({
             {showAgentProcess && (
               <div className='px-6 pt-5 pb-1'>
                 <AgentSummaryBoxes
-                  agentBlocks={agentBlocks}
+                  agentBlocks={summaryAgentBlocks}
                   requestData={selectedItem}
                   workflow={rawWorkflowData}
                 />
@@ -1585,7 +1597,6 @@ const GenericRequestOverview = ({
                     currentActivityId={currentActivityId}
                     disableOwnScroll={true}
                     formModel={formModel}
-                    stages={workflowStages}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
                     // Table controls are only held back when agent steps show
                     // them in their own detail view; a plain workflow has no

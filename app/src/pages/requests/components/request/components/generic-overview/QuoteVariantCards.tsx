@@ -69,6 +69,8 @@ const emptyTitleFor = (id: QuoteVariantId) =>
 
 type Props = {
   activeId: QuoteTabId
+  /** Quotes edited since the PDF was generated ("Edited" marker). */
+  changedIds?: QuoteVariantId[]
   /** QuoteVariantDescription: highlighted "Copied from …" badge. */
   copiedFromLabel?: string | null
   emptyMetaByVariant?: Partial<Record<'alt' | 'opt', QuoteVariantEmptyMeta>>
@@ -78,6 +80,7 @@ type Props = {
 
 export default function QuoteVariantCards({
   activeId,
+  changedIds,
   emptyMetaByVariant,
   variants,
   onSelect,
@@ -124,13 +127,24 @@ export default function QuoteVariantCards({
               type='button'
               onClick={() => onSelect(variant.id)}
             >
-              <span
-                className={cn(
-                  'text-[9px] font-bold tracking-[0.06em] uppercase',
-                  styles.badge,
-                )}
-              >
-                {variant.shortLabel}
+              <span className='flex items-center justify-between gap-2'>
+                <span
+                  className={cn(
+                    'text-[9px] font-bold tracking-[0.06em] uppercase',
+                    styles.badge,
+                  )}
+                >
+                  {variant.shortLabel}
+                </span>
+                {changedIds?.includes(variant.id) ? (
+                  <span
+                    className='inline-flex shrink-0 animate-in items-center gap-1 rounded-full bg-orange-2 px-1.5 py-px text-[9px] font-semibold text-orange-11 fade-in zoom-in-95'
+                    title={t`Changed since the PDF was generated`}
+                  >
+                    <span className='size-1.5 rounded-full bg-orange-9' />
+                    {t`Edited`}
+                  </span>
+                ) : null}
               </span>
               {isEmpty ? (
                 <>

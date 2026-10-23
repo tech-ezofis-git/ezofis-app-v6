@@ -36,6 +36,7 @@ import {
   createSettingsRootBreadcrumbs,
   markOpenedFromSettings,
 } from './helpers/settingsBreadcrumbs'
+import { RESET_SETTINGS_VIEW_EVENT } from './helpers/settingsNavigation'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
 
 type SettingsItem = {
@@ -137,6 +138,13 @@ export default function SettingsMain() {
       // ignore
     }
   }, [activePage])
+
+  // Sidebar re-click on Settings: show the main settings menu.
+  useEffect(() => {
+    const reset = () => setActivePage('settings')
+    window.addEventListener(RESET_SETTINGS_VIEW_EVENT, reset)
+    return () => window.removeEventListener(RESET_SETTINGS_VIEW_EVENT, reset)
+  }, [])
 
   useEffect(() => {
     if (activePage !== 'playground') return

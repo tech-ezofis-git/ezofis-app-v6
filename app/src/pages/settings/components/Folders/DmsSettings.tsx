@@ -78,6 +78,7 @@ import {
   writeCachedFolderPiiSettings,
 } from '@/pages/folders/utils/folderPiiSettings'
 import authUserStore from '@/stores/authUserStore'
+import { useLeaveGuard } from '@/stores/useLeaveGuardStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
@@ -857,6 +858,9 @@ export default function DmsFolderConfiguration({
     storedState?.activeFilters ?? {},
   )
   const folderDraftIdRef = useRef<string | null>(null)
+  // Leave guard: wizard values at open / last save, compared per field.
+  const wizardBaselineRef = useRef<null | Record<string, string>>(null)
+  const rebaselineWizardRef = useRef(false)
   const folderDraftsByIdRef = useRef<Map<string, WizardDraftRecord>>(new Map())
 
   const persistFolderWizardDraft = useCallback(
@@ -874,7 +878,10 @@ export default function DmsFolderConfiguration({
           message: error,
           variant: 'warning',
         })
+        return false
       }
+      rebaselineWizardRef.current = true
+      return true
     },
     [],
   )
@@ -969,6 +976,7 @@ export default function DmsFolderConfiguration({
         )
       }
       setStep(folderStepFromDraft(currentStep, currentStepKey))
+      rebaselineWizardRef.current = true
     },
     [],
   )
@@ -1648,6 +1656,51 @@ export default function DmsFolderConfiguration({
     storageConnectorLabel,
     storageDrive,
     versioning,
+  })
+
+  const serializeWizardSnapshot = () => {
+    const {
+      editingRepositoryId: _id,
+      source: _source,
+      ...values
+    } = buildManualFolderSnapshot()
+    return Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        JSON.stringify(value),
+      ]),
+    )
+  }
+
+  // Baseline when the wizard opens; again after a draft loads or saves.
+  useEffect(() => {
+    wizardBaselineRef.current = showWizard ? serializeWizardSnapshot() : null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWizard])
+
+  useEffect(() => {
+    if (!rebaselineWizardRef.current) return
+    rebaselineWizardRef.current = false
+    if (showWizard) wizardBaselineRef.current = serializeWizardSnapshot()
+  })
+
+  useLeaveGuard(showWizard, {
+    discard: () => {
+      try {
+        sessionStorage.removeItem(SESSION_KEY)
+      } catch {
+        // ignore
+      }
+    },
+    save: () => persistFolderWizardDraft(step, buildManualFolderSnapshot()),
+    getChangeCount: () => {
+      const baseline = wizardBaselineRef.current
+      if (!baseline) return 0
+      const current = serializeWizardSnapshot()
+      return Object.keys(current).filter(
+        (key) => current[key] !== baseline[key],
+      ).length
+    },
   })
 
   const goNext = () => {

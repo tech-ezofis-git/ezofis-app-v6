@@ -15,8 +15,8 @@ export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_FOLDER_PAGE_SIZE = 100
 export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 
-/** Matches FolderTable visibility: files hide when there are 10+ folders. */
-export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
+/** Files section shows beside up to this many folders (defined with the API). */
+export { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../api/folderApi'
 
 export type FolderFilterOption = { label: string; value: string }
 

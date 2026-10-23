@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import LeaveGuardDialog from '@/components/common/LeaveGuardDialog'
 import authUserStore from '@/stores/authUserStore'
 import { isPermissionVisible } from '@/utils/sessionPermissions'
 import type { Menus } from '../../types'
@@ -76,6 +77,7 @@ const Sidebar = () => {
     <>
       <SidebarSmall menus={filteredMenu} />
       <SidebarLarge menus={filteredMenu} />
+      <LeaveGuardDialog />
     </>
   )
 }

@@ -61,6 +61,9 @@ const getErrorMessage = (error: any): string => {
 
 export type { RepositoryItemFacet, RepositoryItemFilterField }
 
+/** Folders at or below this count also show the files section beneath them. */
+export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
+
 export interface DynamicRepositoryColumn {
   key: string
   label: string
@@ -1346,6 +1349,22 @@ export const folderApi = {
         fieldIconMap,
       )
       folderPage = toPage(childrenResult.data?.groups)
+    }
+
+    // Few sub-folders (repository root, top-level browse path): also list
+    // this scope's files below them, paged like any file listing.
+    const folderTotal = Math.max(folderPage.totalCount || 0, folders.length)
+    if (
+      !shouldFetchFiles &&
+      includeFiles &&
+      folderTotal <= FOLDER_FILES_SECTION_MAX_FOLDERS
+    ) {
+      const fileResult = await fetchRepositoryFiles(
+        fileItemFilters,
+        effectiveSearchText,
+      )
+      files = fileResult.files
+      filePageResult = fileResult.filePage
     }
 
     return {
