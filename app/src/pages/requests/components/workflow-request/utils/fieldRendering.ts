@@ -37,7 +37,7 @@ import {
   hasMeaningfulTableRows,
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
 import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
-import authUserStore from '@/stores/authUserStore'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import {
   getFileNameWithoutExtension,
   isFilenameField,
@@ -133,7 +133,7 @@ export const getDateTimeLimits = (field: any): DateTimeLimits => {
 export const resolveShortTextFillValue = (field: any): string | undefined => {
   const specific = field?.settings?.specific || {}
   const type = specific.fillValueType || 'CUSTOM'
-  const session = authUserStore.getState().session
+  const session = getCurrentFormUser()
 
   switch (type) {
     case 'CUSTOM':
@@ -151,11 +151,11 @@ export const resolveShortTextFillValue = (field: any): string | undefined => {
       return `${prefix}_${stamp}`
     }
     case 'USER_EMAIL':
-      return session?.email || undefined
+      return session.email || undefined
     case 'USER_NAME':
-      return session?.firstName || session?.name?.split(' ')[0] || undefined
+      return session.firstName || session.name.split(' ')[0] || undefined
     case 'LOGIN_NAME':
-      return session?.name || undefined
+      return session.name || undefined
     case 'CURRENT_YEAR': {
       const now = dayjs()
       if (specific.yearType === 'FINANCIAL_YEAR') {
@@ -260,21 +260,19 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       ) {
         const defaultMode = specific.defaultValueInSelectField
         if (defaultMode === 'USER_EMAIL') {
-          const email = authUserStore.getState().session?.email
+          const email = getCurrentFormUser().email
           if (email) {
             model[field.id] = email
           }
         } else if (defaultMode === 'USER_NAME') {
-          const s = authUserStore.getState().session
-          const name = s
-            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
-            : ''
+          const s = getCurrentFormUser()
+          const name = `${s.firstName} ${s.lastName}`.trim()
           if (name) {
             model[field.id] = name
           }
         } else if (defaultMode === 'LOGIN_NAME') {
-          const s = authUserStore.getState().session
-          const loginName = s?.name || s?.email?.split('@')[0] || ''
+          const s = getCurrentFormUser()
+          const loginName = s.name || s.email.split('@')[0] || ''
           if (loginName) {
             model[field.id] = loginName
           }
@@ -305,21 +303,19 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       } else if (fieldType === 'SHORT_TEXT' || fieldType === 'FULL_NAME') {
         const defaultMode = specific.defaultValueInSelectField
         if (defaultMode === 'USER_EMAIL') {
-          const email = authUserStore.getState().session?.email
+          const email = getCurrentFormUser().email
           if (email) {
             model[field.id] = email
           }
         } else if (defaultMode === 'USER_NAME') {
-          const s = authUserStore.getState().session
-          const name = s
-            ? `${s.firstName || ''} ${s.lastName || ''}`.trim()
-            : ''
+          const s = getCurrentFormUser()
+          const name = `${s.firstName} ${s.lastName}`.trim()
           if (name) {
             model[field.id] = name
           }
         } else if (defaultMode === 'LOGIN_NAME') {
-          const s = authUserStore.getState().session
-          const loginName = s?.name || s?.email?.split('@')[0] || ''
+          const s = getCurrentFormUser()
+          const loginName = s.name || s.email.split('@')[0] || ''
           if (loginName) {
             model[field.id] = loginName
           }

@@ -56,7 +56,7 @@ import {
   getWorkflowInitiateType,
   isDocumentFormWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
-import authUserStore from '@/stores/authUserStore'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import cn from '@/utils/cn'
 import {
   formPanelSectionId,
@@ -216,7 +216,7 @@ const PortalWizard = ({
       ? getStartStageHiddenFieldIds(
           source.workflow,
           panels,
-          String(authUserStore.getState().session?.id || ''),
+          getCurrentFormUser().id,
         )
       : new Set<string>()
     if (!needsDocumentSection) {

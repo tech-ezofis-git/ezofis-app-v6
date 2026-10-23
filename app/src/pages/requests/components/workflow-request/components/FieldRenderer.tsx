@@ -29,7 +29,7 @@ import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import authUserStore from '@/stores/authUserStore'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import cn from '@/utils/cn'
 import {
   buildMasterConditions,
@@ -1054,9 +1054,9 @@ const FieldRendererBase = ({
       queryKey: ['userListForDropdown'],
       queryFn: async () => {
         const res = await getUsers()
-        const session = authUserStore.getState().session
-        const currentUserEmail = session?.email?.trim().toLowerCase()
-        const currentUserId = session?.id ? String(session.id) : undefined
+        const session = getCurrentFormUser()
+        const currentUserEmail = session.email.trim().toLowerCase()
+        const currentUserId = session.id || undefined
 
         return res.data
           .filter((user) => {

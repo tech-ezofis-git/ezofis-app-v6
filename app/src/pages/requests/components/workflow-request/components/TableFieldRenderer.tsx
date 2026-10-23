@@ -119,7 +119,7 @@ import {
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import authUserStore from '@/stores/authUserStore'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import cn from '@/utils/cn'
 
 const generateRowId = () => {
@@ -2180,9 +2180,9 @@ const TableFieldRenderer = ({
       queryKey: ['tableColumnUserListOptions'],
       queryFn: async () => {
         const res = await getUsers()
-        const session = authUserStore.getState().session
-        const currentUserEmail = session?.email?.trim().toLowerCase()
-        const currentUserId = session?.id ? String(session.id) : undefined
+        const session = getCurrentFormUser()
+        const currentUserEmail = session.email.trim().toLowerCase()
+        const currentUserId = session.id || undefined
         return res.data
           .filter((user: any) => {
             const userEmail = user.email?.trim().toLowerCase()
