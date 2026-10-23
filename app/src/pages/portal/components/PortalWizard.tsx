@@ -1069,6 +1069,7 @@ const PortalWizard = ({
           )
           showToast({
             message: t`Request created. You can track it from My Submissions.`,
+            variant: 'success',
           })
           if (commentError) {
             showToast({ message: commentError, variant: 'error' })
@@ -1133,6 +1134,7 @@ const PortalWizard = ({
       )
       showToast({
         message: t`Request created. You can track it from My Submissions.`,
+        variant: 'success',
       })
       if (commentError) showToast({ message: commentError, variant: 'error' })
       onSubmitted()
