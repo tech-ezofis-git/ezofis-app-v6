@@ -19,6 +19,7 @@ import {
   applyFilenamePreFillToFormModel,
   buildInitialFormModel,
   buildRepoFieldDescriptors,
+  withoutRequestNumberMandatory,
   buildRepoFieldHints,
   buildRepoMetadata,
   ensureNormalizedRuntimeFormJson,
@@ -32,7 +33,7 @@ import {
   resolveRuntimeFieldType,
 } from '../utils/fieldRendering'
 
-const readStartedInstanceId = (data: unknown): string | null => {
+export const readStartedInstanceId = (data: unknown): string | null => {
   if (data == null) return null
   if (typeof data === 'number') return String(data)
   if (typeof data === 'string') {
@@ -305,7 +306,10 @@ export const useWorkflowForm = (
     [repositoryFields],
   )
   const repoFieldDescriptors = useMemo(
-    () => buildRepoFieldDescriptors(repositoryFields, panels),
+    () =>
+      withoutRequestNumberMandatory(
+        buildRepoFieldDescriptors(repositoryFields, panels),
+      ),
     [repositoryFields, panels],
   )
   // Every file the user has uploaded so far — sidebar attachments and

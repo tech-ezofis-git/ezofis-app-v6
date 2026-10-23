@@ -9,6 +9,7 @@ vi.mock('@/api/form/form', () => ({
   default: {
     getFormDataById: vi.fn(),
     getFormEntries: vi.fn(),
+    getFormEntriesByColumn: vi.fn(),
     searchFormEntries: vi.fn(),
   },
 }))
@@ -162,31 +163,50 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
           },
         },
       })
-      ;(formApi.getFormEntries as any).mockResolvedValue({
-        data: [
-          {
-            formData: {
-              'Company Unit': 'Amlion Toothpaste',
-              'Material Code ': 'TUB-101',
-              'Brand ': 'Toothpaste Brand A',
-            },
+      const entries = [
+        {
+          formData: {
+            'Company Unit': 'Amlion Toothpaste',
+            'Material Code ': 'TUB-101',
+            'Brand ': 'Toothpaste Brand A',
           },
-          {
-            formData: {
-              'Company Unit': 'Amlion Toothpaste',
-              'Material Code ': 'PMC001',
-              'Brand ': 'Toothpaste Brand B',
-            },
+        },
+        {
+          formData: {
+            'Company Unit': 'Amlion Toothpaste',
+            'Material Code ': 'PMC001',
+            'Brand ': 'Toothpaste Brand B',
           },
-          {
-            formData: {
-              'Company Unit': 'Amlion Personal Care',
-              'Material Code ': 'APC-001',
-              'Brand ': 'Personal Care Brand X',
-            },
+        },
+        {
+          formData: {
+            'Company Unit': 'Amlion Personal Care',
+            'Material Code ': 'APC-001',
+            'Brand ': 'Personal Care Brand X',
           },
-        ],
-      })
+        },
+      ]
+      ;(formApi.getFormEntries as any).mockResolvedValue({ data: entries })
+      // Mirrors the by-column endpoint: no value loads the column, a value
+      // returns only the entries whose column equals it.
+      ;(formApi.getFormEntriesByColumn as any).mockImplementation(
+        async (_formId: string, columnName: string, columnValue?: string) => ({
+          data: {
+            entries:
+              columnValue === undefined
+                ? entries
+                : entries.filter(
+                    (e) =>
+                      (e.formData as Record<string, string>)[
+                        Object.keys(e.formData).find(
+                          (k) => k.trim() === columnName.trim(),
+                        ) || ''
+                      ] === columnValue,
+                  ),
+          },
+          error: '',
+        }),
+      )
     })
 
     it('filters Brand options by Company Unit when immediate parent (Material Code) is empty and showAllData is true', async () => {
@@ -212,6 +232,12 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
       ])
       // Personal Care Brand X should NOT be present!
       expect(options.some((o) => o.id === 'Personal Care Brand X')).toBe(false)
+      // No parent value: the column is loaded by name only
+      expect(formApi.getFormEntriesByColumn).toHaveBeenCalledWith(
+        'master-1',
+        'Brand',
+      )
+      expect(formApi.getFormEntries).not.toHaveBeenCalled()
     })
 
     it('further filters Brand options when immediate parent (Material Code) has a value', async () => {
@@ -234,6 +260,13 @@ describe('Chained Cascading Master Dropdown Filtering', () => {
       expect(options).toEqual([
         { id: 'Toothpaste Brand B', name: 'Toothpaste Brand B' },
       ])
+      // Parent has a value: the parent's column is queried with that value
+      expect(formApi.getFormEntriesByColumn).toHaveBeenCalledWith(
+        'master-1',
+        'Material Code',
+        'PMC001',
+      )
+      expect(formApi.getFormEntries).not.toHaveBeenCalled()
     })
 
     it('returns empty list when parent is empty and showAllData is false', async () => {

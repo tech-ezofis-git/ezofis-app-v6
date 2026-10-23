@@ -38,7 +38,7 @@ function stageWindowStart(activeIndex: number, total: number) {
   return Math.min(Math.max(0, centered), maxStart)
 }
 
-function WorkflowStageBar({
+export function WorkflowStageBar({
   currentActivityId,
   stages,
 }: {

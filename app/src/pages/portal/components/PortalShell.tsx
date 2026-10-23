@@ -4,13 +4,68 @@ import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
+import {
+  PORTAL_SECTION_ATTACHMENTS,
+  PORTAL_SECTION_COMMENTS,
+  scrollToPortalSection,
+} from '../helpers/portalDetail'
 import PortalBackButton from './PortalBackButton'
 import PortalBrandMark from './PortalBrandMark'
+
+// Attachments / Comments shortcuts beside the header actions, as in the
+// in-app new request header: each shows its count and scrolls to its section.
+function PortalSectionButtons({
+  attachmentCount = 0,
+  commentCount = 0,
+}: {
+  attachmentCount?: number
+  commentCount?: number
+}) {
+  const { t } = useLingui()
+  const buttons = [
+    {
+      count: attachmentCount,
+      icon: 'tabler:paperclip',
+      id: PORTAL_SECTION_ATTACHMENTS,
+      label: t`Attachments`,
+    },
+    {
+      count: commentCount,
+      icon: 'tabler:message-circle',
+      id: PORTAL_SECTION_COMMENTS,
+      label: t`Comments`,
+    },
+  ]
+  return (
+    <div className='flex shrink-0 items-center gap-1'>
+      {buttons.map((button) => (
+        <Tooltip content={button.label} key={button.id} position='bottom'>
+          <button
+            aria-label={button.label}
+            className='relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95 active:bg-gray-4'
+            type='button'
+            onClick={() => scrollToPortalSection(button.id)}
+          >
+            <Icon className='size-4.5' name={button.icon} />
+            {button.count > 0 ? (
+              <span className='absolute -top-0.5 -right-0.5 flex h-4 min-w-4 animate-in items-center justify-center rounded-full bg-primary-9 px-1 text-[10px] font-bold text-text-on-accent zoom-in-50'>
+                {button.count}
+              </span>
+            ) : null}
+          </button>
+        </Tooltip>
+      ))}
+    </div>
+  )
+}
 
 type PortalDetailHeader = {
   acting?: boolean
   actions?: { label: string; value: string }[]
+  attachmentCount?: number
+  commentCount?: number
   requestNo: string
   status: string
   statusClassName: string
@@ -29,7 +84,9 @@ type PortalShellProps = {
 }
 
 type PortalWizardHeader = {
+  attachmentCount?: number
   canSubmit: boolean
+  commentCount?: number
   stageLabel?: string
   submitLabel?: string
   submitting: boolean
@@ -111,13 +168,19 @@ export default function PortalShell({
                   </span>
                 ) : null}
               </div>
-              <Button
-                className='shrink-0 rounded-lg'
-                disabled={!wizard.canSubmit}
-                label={wizard.submitLabel || t`Submit`}
-                loading={wizard.submitting}
-                onClick={wizard.onSubmit}
-              />
+              <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
+                <PortalSectionButtons
+                  attachmentCount={wizard.attachmentCount}
+                  commentCount={wizard.commentCount}
+                />
+                <Button
+                  className='shrink-0 rounded-lg'
+                  disabled={!wizard.canSubmit}
+                  label={wizard.submitLabel || t`Submit`}
+                  loading={wizard.submitting}
+                  onClick={wizard.onSubmit}
+                />
+              </div>
             </div>
           </div>
         ) : detail ? (
@@ -143,9 +206,12 @@ export default function PortalShell({
                   {detail.status}
                 </span>
               </div>
-              {detail.actions && detail.actions.length > 0 ? (
-                <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
-                  {detail.actions.map((action) => {
+              <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
+                <PortalSectionButtons
+                  attachmentCount={detail.attachmentCount}
+                  commentCount={detail.commentCount}
+                />
+                {(detail.actions || []).map((action) => {
                     const label = action.label.toLowerCase()
                     const color = label.includes('reject')
                       ? 'red'
@@ -163,8 +229,7 @@ export default function PortalShell({
                       />
                     )
                   })}
-                </div>
-              ) : null}
+              </div>
             </div>
           </div>
         ) : null}

@@ -128,6 +128,78 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
+// True when the workflow starts from an uploaded document ("Document Form"),
+// read from settings / workflowJson / flowJson the same way the in-app new
+// request does.
+export function isDocumentFormWorkflow(workflow: any): boolean {
+  if (!workflow) return false
+  const parse = (value: any) => {
+    if (typeof value !== 'string') return value || null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  const initiateType = String(
+    workflow.settings?.general?.initiateUsing?.type ||
+      parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
+      parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+  return initiateType === 'DOCUMENTFORM'
+}
+
+// Field ids the workflow's start block hides from the initiator on a new
+// request (its "form visibility" access and secure-control rules). Shared by
+// the in-app new request and the portal so both hide the same fields.
+export function getStartStageHiddenFieldIds(
+  workflow: any,
+  panels: any[],
+  currentUserId: string,
+): Set<string> {
+  const blocks = extractBlocks(workflow)
+  // Find the first trigger / start / manual user block for New Request
+  const startBlock =
+    blocks.find((b: any) => {
+      const type = String(b.type || b.toolType || '').toUpperCase()
+      return (
+        type === 'START' ||
+        type === 'INITIATOR' ||
+        type === 'TRIGGER' ||
+        type === 'MANUAL_USER' ||
+        type === 'FORM_SUBMISSION'
+      )
+    }) || blocks[0]
+
+  const settings = startBlock?.settings || {}
+  const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
+  const allFieldIds = panels.flatMap((p: any) =>
+    (p.fields || []).map((f: any) => String(f.id)),
+  )
+  if (access === 'ALL') return new Set<string>()
+  if (access === 'NONE') return new Set(allFieldIds)
+
+  const rules = Array.isArray(settings.formSecureControls)
+    ? settings.formSecureControls
+    : []
+  const rule =
+    rules.find((r: any) => String(r.userId) === currentUserId) ||
+    rules.find((r: any) => !r.userId) ||
+    (rules.length === 1 ? rules[0] : null)
+
+  if (!rule) return new Set<string>()
+  const specifiedFields = new Set<string>((rule.formFields || []).map(String))
+  const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
+  if (mode === 'SHOW') {
+    return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
+  }
+  // HIDE mode (default)
+  return specifiedFields
+}
+
 export function getStageNameFromWorkflow(
   activityId?: string | null,
   workflow?: any,

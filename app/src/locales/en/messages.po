@@ -51,12 +51,12 @@ msgstr "\"{fileName}\" successfully indexed to {folderName}."
 msgid "({0} Folders)"
 msgstr "({0} Folders)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3540
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3541
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3660
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3661
 msgid "(empty row)"
 msgstr "(empty row)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3597
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3717
 msgid "(remove column)"
 msgstr "(remove column)"
 
@@ -136,12 +136,12 @@ msgstr "{0} granted"
 #~ msgstr "{0} invites sent"
 
 #. placeholder {0}: variant.itemCount
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:115
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:110
 msgid "{0} item"
 msgstr "{0} item"
 
 #. placeholder {0}: variant.itemCount
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:116
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:111
 msgid "{0} items"
 msgstr "{0} items"
 
@@ -190,7 +190,7 @@ msgid "{0} remaining"
 msgstr "{0} remaining"
 
 #. placeholder {0}: selectedRowIds.size
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2991
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3095
 msgid "{0} row(s) selected"
 msgstr "{0} row(s) selected"
 
@@ -289,7 +289,7 @@ msgstr "{0}. {1} Complete the fields on this step, then continue when you are re
 #~ msgid "{activeWorkflows} active workflows"
 #~ msgstr "{activeWorkflows} active workflows"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3032
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3136
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} line item(s) found in the uploaded document."
 
@@ -658,18 +658,26 @@ msgstr "A quantity on the invoice does not match the purchase order or the recei
 msgid "a trigger field"
 msgstr "a trigger field"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1161
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1310
 msgid "Accept"
 msgstr "Accept"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:837
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:928
 msgid "Accept all"
 msgstr "Accept all"
 
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1313
+msgid "Accept line item"
+msgstr "Accept line item"
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1147
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1149
-msgid "Accepted"
-msgstr "Accepted"
+#~ msgid "Accepted"
+#~ msgstr "Accepted"
+
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1310
+msgid "Accepted — click to undo"
+msgstr "Accepted — click to undo"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:171
 msgid "Accepted formats: CSV, XLSX"
@@ -741,10 +749,10 @@ msgstr "Action Required"
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:306
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:874
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:401
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1002
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3299
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3403
 #: src/pages/settings/components/Menus.tsx:415
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -883,15 +891,15 @@ msgstr "Add card"
 msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 msgstr "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3278
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3646
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3382
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3771
 msgid "Add column"
 msgstr "Add column"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:269
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:339
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2946
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2957
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3050
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3061
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:89
 msgid "Add Column"
 msgstr "Add Column"
@@ -981,7 +989,7 @@ msgstr "Add Line Item"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1052
-#: src/pages/requests/components/request/components/Header.tsx:1850
+#: src/pages/requests/components/request/components/Header.tsx:1906
 msgid "Add message (optional)"
 msgstr "Add message (optional)"
 
@@ -991,13 +999,13 @@ msgstr "Add more files"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:629
-#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1551
 msgid "Add more people..."
 msgstr "Add more people..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:630
-#: src/pages/requests/components/request/components/Header.tsx:1496
+#: src/pages/requests/components/request/components/Header.tsx:1552
 msgid "Add names or emails"
 msgstr "Add names or emails"
 
@@ -1018,10 +1026,10 @@ msgid "Add Portal"
 msgstr "Add Portal"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:281
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:846
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2967
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2978
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:357
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:937
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3071
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3082
 msgid "Add Row"
 msgstr "Add Row"
 
@@ -1037,7 +1045,7 @@ msgstr "Add Signature Box"
 msgid "Add tab"
 msgstr "Add tab"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2797
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2901
 msgid "Add the first column"
 msgstr "Add the first column"
 
@@ -1179,10 +1187,13 @@ msgstr "AI Insight & Verification Summary"
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:767
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:779
-#: src/pages/requests/components/request/components/Header.tsx:911
-#: src/pages/requests/components/request/components/Header.tsx:1370
+#: src/pages/requests/components/request/components/Header.tsx:101
 msgid "AI Insights"
 msgstr "AI Insights"
+
+#: src/pages/requests/components/request/components/Header.tsx:100
+msgid "AI Insights · {value}% confidence"
+msgstr "AI Insights · {value}% confidence"
 
 #: src/pages/folders/components/AiSummaryView.tsx:510
 msgid "AI is analysing the document..."
@@ -1584,7 +1595,7 @@ msgid "API URL"
 msgstr "API URL"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2908
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3012
 msgid "Append"
 msgstr "Append"
 
@@ -1638,15 +1649,15 @@ msgstr "Approval delay heat map"
 #~ msgid "Approval Rate"
 #~ msgstr "Approval Rate"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:378
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3297
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3434
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3556
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:480
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:482
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3401
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3543
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3676
 msgid "Approve"
 msgstr "Approve"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3001
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3105
 msgid "Approve selected"
 msgstr "Approve selected"
 
@@ -1654,10 +1665,10 @@ msgstr "Approve selected"
 #: src/pages/portal/components/PortalHome.tsx:89
 #: src/pages/portal/components/PortalHome.tsx:134
 #: src/pages/requests/components/QuickFilters.tsx:88
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:366
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:368
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3421
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3547
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3530
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3667
 #: src/pages/requests/utils/localizeRequestUi.ts:43
 msgid "Approved"
 msgstr "Approved"
@@ -1796,7 +1807,7 @@ msgstr "Assign user access groups"
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Assign users to roles once users are available in the platform."
 
-#: src/pages/requests/components/request/components/Header.tsx:655
+#: src/pages/requests/components/request/components/Header.tsx:749
 msgid "Assigned User"
 msgstr "Assigned User"
 
@@ -1862,7 +1873,7 @@ msgstr "Attachment"
 #: src/pages/portal/components/PortalWizard.tsx:1063
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:565
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:597
-#: src/pages/requests/components/request/components/Header.tsx:776
+#: src/pages/requests/components/request/components/Header.tsx:870
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:50
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
@@ -2044,7 +2055,7 @@ msgstr "Awaiting Verification"
 #: src/pages/portal/components/PortalShell.tsx:132
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2331
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2368
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:64
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1166
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1292
@@ -2122,8 +2133,8 @@ msgstr "Back to PO Setup"
 msgid "Back to Prompt"
 msgstr "Back to Prompt"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2328
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2333
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2365
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2370
 msgid "Back to quotation details"
 msgstr "Back to quotation details"
 
@@ -2156,20 +2167,20 @@ msgstr "Back to versions"
 msgid "Back to workflows"
 msgstr "Back to workflows"
 
-#: src/pages/requests/components/request/components/Header.tsx:1241
+#: src/pages/requests/components/request/components/Header.tsx:1316
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Backorder"
 msgstr "Backorder"
 
-#: src/pages/requests/components/request/components/Header.tsx:746
+#: src/pages/requests/components/request/components/Header.tsx:840
 msgid "Backorder Check"
 msgstr "Backorder Check"
 
-#: src/pages/requests/components/request/components/Header.tsx:750
+#: src/pages/requests/components/request/components/Header.tsx:844
 msgid "Backorder Detected"
 msgstr "Backorder Detected"
 
-#: src/pages/requests/components/request/components/Header.tsx:1235
+#: src/pages/requests/components/request/components/Header.tsx:1310
 msgid "Backorder detected on purchase order fulfillment"
 msgstr "Backorder detected on purchase order fulfillment"
 
@@ -2587,7 +2598,7 @@ msgstr "Change Theme"
 #~ msgid "Change to normal field"
 #~ msgstr "Change to normal field"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3224
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3328
 msgid "Change Type"
 msgstr "Change Type"
 
@@ -2917,7 +2928,7 @@ msgstr "Client Number"
 #: src/pages/folders/components/SignRequestAssignForm.tsx:537
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:537
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1630
-#: src/pages/requests/components/request/components/Header.tsx:625
+#: src/pages/requests/components/request/components/Header.tsx:719
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
@@ -2926,8 +2937,8 @@ msgstr "Client Number"
 msgid "Close"
 msgstr "Close"
 
-#: src/pages/requests/components/request/components/Header.tsx:943
-#: src/pages/requests/components/request/components/Header.tsx:1402
+#: src/pages/requests/components/request/components/Header.tsx:1018
+#: src/pages/requests/components/request/components/Header.tsx:1458
 msgid "Close AI Insights"
 msgstr "Close AI Insights"
 
@@ -2972,7 +2983,7 @@ msgstr "Collapse"
 #~ msgid "Collapse All"
 #~ msgstr "Collapse All"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3570
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3690
 msgid "Collapse row"
 msgstr "Collapse row"
 
@@ -2998,7 +3009,7 @@ msgstr "Column name"
 msgid "Column Name"
 msgstr "Column Name"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3206
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3310
 msgid "Column options"
 msgstr "Column options"
 
@@ -3038,7 +3049,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:571
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:603
-#: src/pages/requests/components/request/components/Header.tsx:782
+#: src/pages/requests/components/request/components/Header.tsx:876
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:56
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
@@ -3049,8 +3060,8 @@ msgstr ""
 msgid "Comments"
 msgstr "Comments"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:188
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:414
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:181
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:422
 msgid "Compare"
 msgstr "Compare"
 
@@ -3449,12 +3460,12 @@ msgstr "Control with Readiness Timelines"
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:208
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:215
 msgid "Copied from"
 msgstr "Copied from"
 
 #. placeholder {0}: QUOTE_VARIANT_META[sourceId].shortLabel
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1922
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1930
 msgid "Copied from {0}"
 msgstr "Copied from {0}"
 
@@ -3466,7 +3477,7 @@ msgstr "Copied to clipboard"
 #~ msgid "Copy"
 #~ msgstr "Copy"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:518
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:525
 msgid "Copy from"
 msgstr "Copy from"
 
@@ -3523,11 +3534,11 @@ msgstr "Could not generate fields. Try Recommend fields again."
 msgid "Could not generate folder configuration. Try again."
 msgstr "Could not generate folder configuration. Try again."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2763
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2867
 msgid "Could not read that file."
 msgstr "Could not read that file."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2578
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2682
 msgid "Could not read the document: {failure}"
 msgstr "Could not read the document: {failure}"
 
@@ -3820,7 +3831,7 @@ msgstr "Current Role"
 #: src/pages/folders/components/DocumentsListView.tsx:537
 #: src/pages/folders/components/FolderTable.tsx:1380
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1721
-#: src/pages/requests/components/request/components/Header.tsx:642
+#: src/pages/requests/components/request/components/Header.tsx:736
 msgid "Current Stage"
 msgstr "Current Stage"
 
@@ -4011,8 +4022,8 @@ msgstr "December"
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Decide how document revisions are tracked when files are updated."
 
-#: src/pages/requests/components/request/components/Header.tsx:939
-#: src/pages/requests/components/request/components/Header.tsx:1398
+#: src/pages/requests/components/request/components/Header.tsx:1014
+#: src/pages/requests/components/request/components/Header.tsx:1454
 msgid "Decision Details"
 msgstr "Decision Details"
 
@@ -4117,7 +4128,7 @@ msgstr "Delete card"
 #~ msgid "Delete column"
 #~ msgstr "Delete column"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3251
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3355
 msgid "Delete Column"
 msgstr "Delete Column"
 
@@ -4164,12 +4175,12 @@ msgid "Delete Role"
 msgstr "Delete Role"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:472
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:394
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:396
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1357
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1359
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3439
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3561
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:496
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:498
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1546
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1548
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3548
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3681
 msgid "Delete row"
 msgstr "Delete row"
 
@@ -4182,7 +4193,7 @@ msgid "Delete Rule"
 msgstr "Delete Rule"
 
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:264
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3011
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3115
 msgid "Delete selected"
 msgstr "Delete selected"
 
@@ -4338,8 +4349,8 @@ msgstr "Describe what you want to report on for"
 
 #: src/pages/forms/FormsPage.tsx:234
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:96
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1178
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1199
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1347
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1368
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:627
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
@@ -4444,7 +4455,7 @@ msgstr "Direct Upload"
 msgid "Disabled"
 msgstr "Disabled"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1317
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1503
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "Discount"
 msgstr "Discount"
@@ -4572,11 +4583,11 @@ msgstr "Document owners are notified beforehand."
 msgid "Document Preview"
 msgstr "Document Preview"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1022
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1030
 msgid "Document preview failed"
 msgstr "Document preview failed"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1041
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:1049
 msgid "Document preview is not available for this workflow"
 msgstr "Document preview is not available for this workflow"
 
@@ -4664,7 +4675,7 @@ msgstr "Documents will be hidden when:"
 msgid "Documents will be shown when:"
 msgstr "Documents will be shown when:"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1303
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1489
 msgid "Dollar discount"
 msgstr "Dollar discount"
 
@@ -4704,7 +4715,7 @@ msgstr "Done Customizing"
 #~ msgid "Done editing"
 #~ msgstr "Done editing"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3154
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3258
 msgid "Double click to rename or drag to reorder"
 msgstr "Double click to rename or drag to reorder"
 
@@ -4813,6 +4824,8 @@ msgstr ""
 
 #: src/pages/folders/components/FolderSharePopover.tsx:945
 #: src/pages/folders/components/SignRequestAssignForm.tsx:373
+#: src/pages/requests/components/request/components/generic-overview/SortableRows.tsx:103
+#: src/pages/requests/components/request/components/generic-overview/SortableRows.tsx:105
 #: src/pages/settings/components/SettingsSortableDataTable.tsx:275
 msgid "Drag to reorder"
 msgstr "Drag to reorder"
@@ -4929,16 +4942,16 @@ msgstr "Due Today"
 #~ msgid "Dummy results"
 #~ msgstr "Dummy results"
 
-#: src/pages/requests/components/request/components/Header.tsx:1225
+#: src/pages/requests/components/request/components/Header.tsx:1300
 #: src/pages/requests/utils/localizeRequestUi.ts:45
 msgid "Duplicate"
 msgstr "Duplicate"
 
-#: src/pages/requests/components/request/components/Header.tsx:734
+#: src/pages/requests/components/request/components/Header.tsx:828
 msgid "Duplicate Check"
 msgstr "Duplicate Check"
 
-#: src/pages/requests/components/request/components/Header.tsx:738
+#: src/pages/requests/components/request/components/Header.tsx:832
 msgid "Duplicate Detected"
 msgstr "Duplicate Detected"
 
@@ -5183,7 +5196,7 @@ msgstr "Edit Metadata"
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3219
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3323
 msgid "Edit Name"
 msgstr "Edit Name"
 
@@ -5626,7 +5639,7 @@ msgstr "Expand"
 msgid "Expand all steps"
 msgstr "Expand all steps"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3570
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3690
 msgid "Expand row"
 msgstr "Expand row"
 
@@ -5697,7 +5710,7 @@ msgid "Export staged files"
 msgstr "Export staged files"
 
 #: src/pages/requests/components/InboxList.tsx:2083
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2933
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3037
 msgid "Export to Excel"
 msgstr "Export to Excel"
 
@@ -6753,7 +6766,7 @@ msgstr "Generate Dashboard Design"
 msgid "Generate KPIs and charts from your prompt, then load live data."
 msgstr "Generate KPIs and charts from your prompt, then load live data."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:153
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:162
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:164
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:225
 msgid "Generate PDF documents from the template set on this step."
@@ -7163,7 +7176,7 @@ msgstr "Historical Match & Integrity Results"
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:573
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:605
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1627
-#: src/pages/requests/components/request/components/Header.tsx:784
+#: src/pages/requests/components/request/components/Header.tsx:878
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:476
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:512
@@ -7253,15 +7266,15 @@ msgstr "Immediate Invoice Processing"
 #~ msgid "Import CSV/Excel"
 #~ msgstr "Import CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2922
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3026
 msgid "Import CSV/Excel (adds to existing rows)"
 msgstr "Import CSV/Excel (adds to existing rows)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2921
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3025
 msgid "Import CSV/Excel (replaces existing rows)"
 msgstr "Import CSV/Excel (replaces existing rows)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3041
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3145
 msgid "Import extracted items"
 msgstr "Import extracted items"
 
@@ -7455,6 +7468,18 @@ msgstr "Initializing upload..."
 msgid "Initiating..."
 msgstr "Initiating..."
 
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:94
+msgid "Insert row above"
+msgstr "Insert row above"
+
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:96
+msgid "Insert row below"
+msgstr "Insert row below"
+
+#: src/pages/requests/components/request/components/generic-overview/RowInsertRail.tsx:97
+msgid "Insert row here"
+msgstr "Insert row here"
+
 #: src/layouts/app/components/sidebar/Sidebar.tsx:41
 msgid "Insights"
 msgstr "Insights"
@@ -7521,7 +7546,7 @@ msgstr "Interactive Dashboard Preview"
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "Interactive preview of your customized dashboard design for {repositoryName}."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2654
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2712
 msgid "Internal Notes"
 msgstr "Internal Notes"
 
@@ -7569,7 +7594,7 @@ msgstr "Invite People"
 #~ msgstr "Invite sent"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1747
+#: src/pages/requests/components/request/components/Header.tsx:1803
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Invited"
@@ -7690,7 +7715,7 @@ msgstr "Invoice Tax Amount"
 msgid "Invoice Total"
 msgstr "Invoice Total"
 
-#: src/pages/requests/components/request/components/Header.tsx:1316
+#: src/pages/requests/components/request/components/Header.tsx:1391
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
 msgid "Invoice Value"
 msgstr "Invoice Value"
@@ -7754,6 +7779,10 @@ msgstr "Is Not Empty"
 #: src/pages/sign-in/components/SignInForm.tsx:575
 #~ msgid "is used with more than one account. Which account do you want to use?"
 #~ msgstr "is used with more than one account. Which account do you want to use?"
+
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:361
+msgid "is working"
+msgstr "is working"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3405
 msgid "ISO Currency Code"
@@ -7933,7 +7962,7 @@ msgstr "Last Action At"
 msgid "Last Action By"
 msgstr "Last Action By"
 
-#: src/pages/requests/components/request/components/Header.tsx:712
+#: src/pages/requests/components/request/components/Header.tsx:806
 msgid "Last Activity"
 msgstr "Last Activity"
 
@@ -8098,8 +8127,8 @@ msgstr "line item reconciled"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:824
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:558
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2509
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:827
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2567
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:908
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1519
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
@@ -8368,7 +8397,7 @@ msgid "Loading your branded sign-in"
 msgstr "Loading your branded sign-in"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:874
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2255
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2330
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:220
 msgid "Loading..."
 msgstr "Loading..."
@@ -9092,7 +9121,7 @@ msgstr "Move down"
 msgid "Move Entry to Trash"
 msgstr "Move Entry to Trash"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3171
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3275
 msgid "Move left"
 msgstr "Move left"
 
@@ -9100,12 +9129,12 @@ msgstr "Move left"
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Move matched documents out of active storage into the archive."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3185
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3289
 msgid "Move right"
 msgstr "Move right"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:350
-#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:352
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:454
 msgid "Move to matched items"
 msgstr "Move to matched items"
 
@@ -9227,7 +9256,7 @@ msgstr "Narrow down rows"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Narrow down which rows this report includes. Leave empty to include every row."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1219
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1388
 msgid "needs engineering review"
 msgstr "needs engineering review"
 
@@ -9254,7 +9283,7 @@ msgstr "Net Value"
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
-#: src/pages/requests/components/request/components/Header.tsx:1880
+#: src/pages/requests/components/request/components/Header.tsx:1936
 #: src/pages/requests/RequestsPage.tsx:1896
 msgid "New"
 msgstr ""
@@ -9363,8 +9392,8 @@ msgstr "Next file"
 msgid "Next page"
 msgstr "Next page"
 
-#: src/pages/requests/components/request/components/Header.tsx:824
-#: src/pages/requests/components/request/components/Header.tsx:1091
+#: src/pages/requests/components/request/components/Header.tsx:918
+#: src/pages/requests/components/request/components/Header.tsx:1166
 msgid "Next Request"
 msgstr "Next Request"
 
@@ -9477,11 +9506,11 @@ msgstr "No consumption data for this period."
 msgid "No Dashboard Configured"
 msgstr "No Dashboard Configured"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:145
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:138
 msgid "No data"
 msgstr "No data"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:371
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:379
 msgid "NO DATA"
 msgstr "NO DATA"
 
@@ -9502,13 +9531,13 @@ msgstr "No Data Found"
 msgid "No data loss, no rework — just choose how your trial carries over."
 msgstr "No data loss, no rework — just choose how your trial carries over."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2459
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2517
 msgid "No data to preview"
 msgstr "No data to preview"
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:784
-#: src/pages/requests/components/request/components/Header.tsx:953
-#: src/pages/requests/components/request/components/Header.tsx:1412
+#: src/pages/requests/components/request/components/Header.tsx:1028
+#: src/pages/requests/components/request/components/Header.tsx:1468
 msgid "No decision details available for this request."
 msgstr "No decision details available for this request."
 
@@ -9648,7 +9677,7 @@ msgstr "No form panels found for this request."
 #~ msgid "No generated document yet"
 #~ msgstr "No generated document yet"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:321
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:330
 msgid "No generated document yet. It will appear here when this stage completes."
 msgstr "No generated document yet. It will appear here when this stage completes."
 
@@ -9682,7 +9711,7 @@ msgstr "No integrations"
 msgid "No key facts extracted."
 msgstr "No key facts extracted."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:490
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:497
 msgid "No line items available for this quote."
 msgstr "No line items available for this quote."
 
@@ -9698,7 +9727,7 @@ msgstr "No line items found for this back order record"
 msgid "No logs found"
 msgstr "No logs found"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2753
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2857
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "No matching columns found — CSV/Excel headers must match table column names."
 
@@ -9851,7 +9880,7 @@ msgstr "No retention policies configured yet. Click 'Create Policy' to set up th
 msgid "No roles yet"
 msgstr "No roles yet"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3657
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3782
 msgid "No rows yet."
 msgstr "No rows yet."
 
@@ -9912,7 +9941,7 @@ msgstr "No supplier trend insight available."
 msgid "No suppliers found"
 msgstr "No suppliers found"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2803
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2907
 msgid "No table columns configured."
 msgstr "No table columns configured."
 
@@ -9988,7 +10017,7 @@ msgstr ""
 msgid "No valid files selected."
 msgstr "No valid files selected."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2581
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2685
 msgid "No values were found in the document for: {wantedNames}"
 msgstr "No values were found in the document for: {wantedNames}"
 
@@ -10060,7 +10089,7 @@ msgstr "Not scheduled"
 msgid "Not selected"
 msgstr "Not selected"
 
-#: src/pages/requests/components/request/components/Header.tsx:648
+#: src/pages/requests/components/request/components/Header.tsx:742
 msgid "Not specified"
 msgstr "Not specified"
 
@@ -10091,7 +10120,7 @@ msgid "Notify document owner beforehand"
 msgstr "Notify document owner beforehand"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:1877
+#: src/pages/requests/components/request/components/Header.tsx:1933
 msgid "Notify me when accessed"
 msgstr "Notify me when accessed"
 
@@ -10198,7 +10227,7 @@ msgstr "Only visible to you"
 
 #: src/pages/folders/components/FolderTable.tsx:561
 #: src/pages/portal/components/PortalHome.tsx:360
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:427
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:435
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
 msgstr "Open"
@@ -10431,7 +10460,7 @@ msgstr "Overdue and due-soonest first — process top-down"
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
 #: src/pages/reports/components/ReportsListView.tsx:212
-#: src/pages/requests/components/request/components/Header.tsx:1739
+#: src/pages/requests/components/request/components/Header.tsx:1795
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -10646,7 +10675,7 @@ msgstr "Pending PO Balance"
 msgid "Pending Review"
 msgstr "Pending Review"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1289
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1475
 msgid "Percent discount"
 msgstr "Percent discount"
 
@@ -11381,7 +11410,7 @@ msgstr "PO Reference"
 msgid "PO Setup"
 msgstr "PO Setup"
 
-#: src/pages/requests/components/request/components/Header.tsx:1335
+#: src/pages/requests/components/request/components/Header.tsx:1410
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5359
 msgid "PO Value"
@@ -11500,7 +11529,7 @@ msgstr "Portals"
 #~ msgid "Posting..."
 #~ msgstr "Posting..."
 
-#: src/pages/requests/components/request/components/Header.tsx:1219
+#: src/pages/requests/components/request/components/Header.tsx:1294
 msgid "Potential duplicate invoice detected in ERP records"
 msgstr "Potential duplicate invoice detected in ERP records"
 
@@ -11536,7 +11565,7 @@ msgstr "Prepare your file"
 msgid "Preparing redacted file..."
 msgstr "Preparing redacted file..."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:222
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:231
 #: src/pages/requests/utils/localizeRequestUi.ts:60
 msgid "Preparing your request..."
 msgstr "Preparing your request..."
@@ -11575,7 +11604,7 @@ msgstr "Preview Data"
 msgid "Preview Data (3 sample rows):"
 msgstr "Preview Data (3 sample rows):"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2340
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2377
 msgid "Preview Mode"
 msgstr "Preview Mode"
 
@@ -11596,8 +11625,8 @@ msgstr "Previous file"
 msgid "Previous page"
 msgstr "Previous page"
 
-#: src/pages/requests/components/request/components/Header.tsx:802
-#: src/pages/requests/components/request/components/Header.tsx:1068
+#: src/pages/requests/components/request/components/Header.tsx:896
+#: src/pages/requests/components/request/components/Header.tsx:1143
 msgid "Previous Request"
 msgstr "Previous Request"
 
@@ -11609,7 +11638,7 @@ msgstr "Previous stages"
 msgid "Previous step"
 msgstr "Previous step"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1263
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1444
 msgid "Price"
 msgstr "Price"
 
@@ -11733,7 +11762,7 @@ msgstr "Procurement (POs & Requisitions)"
 msgid "Procurement Agent"
 msgstr "Procurement Agent"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1077
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1232
 msgid "Product"
 msgstr "Product"
 
@@ -11830,7 +11859,7 @@ msgstr "Purged"
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "Put overdue first in red. Donut on the left in blue..."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1239
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1415
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:631
 msgid "Qty"
@@ -11902,19 +11931,19 @@ msgstr "Quick Try"
 #~ msgid "Quickly view resources created during your evaluation"
 #~ msgstr "Quickly view resources created during your evaluation"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:191
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:184
 msgid "Quote 1 → 2 / 3"
 msgstr "Quote 1 → 2 / 3"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:391
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:444
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:451
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:399
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:459
 msgid "Quote 1 → Quote 2"
 msgstr "Quote 1 → Quote 2"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:391
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:444
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:451
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:399
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:452
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:459
 msgid "Quote 1 → Quote 3"
 msgstr "Quote 1 → Quote 3"
 
@@ -11926,21 +11955,21 @@ msgstr "Quote 1 → Quote 3"
 msgid "Quote Estimator"
 msgstr "Quote Estimator"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2404
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2431
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2462
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2489
 msgid "Quote Number"
 msgstr "Quote Number"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2445
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2454
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2503
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2512
 msgid "Quote Preview"
 msgstr "Quote Preview"
 
-#: src/pages/requests/components/request/components/Header.tsx:860
+#: src/pages/requests/components/request/components/Header.tsx:954
 msgid "Quote Total"
 msgstr "Quote Total"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:100
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:95
 msgid "Quotes"
 msgstr "Quotes"
 
@@ -11950,7 +11979,7 @@ msgstr "Raised At"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1917
-#: src/pages/requests/components/request/components/Header.tsx:680
+#: src/pages/requests/components/request/components/Header.tsx:774
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Raised By"
@@ -11959,7 +11988,7 @@ msgstr "Raised By"
 #~ msgid "Raised Date"
 #~ msgstr "Raised Date"
 
-#: src/pages/requests/components/request/components/Header.tsx:694
+#: src/pages/requests/components/request/components/Header.tsx:788
 msgid "Raised On"
 msgstr "Raised On"
 
@@ -12139,8 +12168,13 @@ msgstr "Redaction level"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2783
 #: src/pages/folders/components/DocumentSigningPage.tsx:2902
 #: src/pages/folders/components/DocumentSigningPage.tsx:2909
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:127
 msgid "Redo"
 msgstr "Redo"
+
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:125
+msgid "Redo (Ctrl+Y)"
+msgstr "Redo (Ctrl+Y)"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3697
 msgid "Reference Document Number"
@@ -12228,7 +12262,7 @@ msgstr "Related documents not found"
 msgid "Remaining files ready for indexing."
 msgstr "Remaining files ready for indexing."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2626
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2684
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Remarks"
 msgstr "Remarks"
@@ -12320,8 +12354,13 @@ msgstr "Rename"
 #~ msgid "Rendering dashboard preview..."
 #~ msgstr "Rendering dashboard preview..."
 
+#: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:380
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:959
+msgid "Reorder"
+msgstr "Reorder"
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2909
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3013
 msgid "Replace"
 msgstr "Replace"
 
@@ -12458,8 +12497,8 @@ msgstr "Request {resolvedRequestNo} is being processed."
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Request {resolvedRequestNo} submitted successfully"
 
-#: src/pages/requests/components/request/components/Header.tsx:582
-#: src/pages/requests/components/request/components/Header.tsx:621
+#: src/pages/requests/components/request/components/Header.tsx:676
+#: src/pages/requests/components/request/components/Header.tsx:715
 msgid "Request & Stage Details"
 msgstr "Request & Stage Details"
 
@@ -12491,11 +12530,11 @@ msgstr "Request moved"
 msgid "Request No"
 msgstr "Request No"
 
-#: src/pages/requests/components/request/components/Header.tsx:670
+#: src/pages/requests/components/request/components/Header.tsx:764
 msgid "Request Number"
 msgstr "Request Number"
 
-#: src/pages/requests/components/request/components/Header.tsx:1671
+#: src/pages/requests/components/request/components/Header.tsx:1727
 msgid "Request Owner"
 msgstr "Request Owner"
 
@@ -12503,7 +12542,7 @@ msgstr "Request Owner"
 msgid "Request saved successfully"
 msgstr "Request saved successfully"
 
-#: src/pages/requests/components/request/components/Header.tsx:498
+#: src/pages/requests/components/request/components/Header.tsx:603
 #: src/pages/requests/components/request/Request.tsx:2944
 msgid "Request shared successfully"
 msgstr "Request shared successfully"
@@ -13022,7 +13061,7 @@ msgstr "SAP Table Field Mapping"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2706
 #: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1922
+#: src/pages/requests/components/request/components/Header.tsx:1978
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
 #: src/pages/settings/components/SettingsWizardLayout.tsx:88
 msgid "Save"
@@ -13143,7 +13182,7 @@ msgid "Save User"
 msgstr "Save User"
 
 #: src/pages/folders/components/Upload/Upload.tsx:4705
-#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1345
+#: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1534
 msgid "Saved"
 msgstr "Saved"
 
@@ -13184,7 +13223,7 @@ msgid "Scan QR"
 msgstr "Scan QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2884
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2988
 msgid "Scan QR / Barcode"
 msgstr "Scan QR / Barcode"
 
@@ -13566,7 +13605,7 @@ msgstr ""
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3098
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3202
 #: src/pages/settings/components/ManageUser.tsx:1910
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -13691,7 +13730,7 @@ msgstr "Select All"
 msgid "Select all files"
 msgstr "Select all files"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3073
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3177
 msgid "Select all rows"
 msgstr "Select all rows"
 
@@ -13870,7 +13909,7 @@ msgstr "Select password field"
 #~ msgid "Select Platform Version"
 #~ msgstr "Select Platform Version"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2460
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2518
 msgid "Select Quote 1, 2, or 3 to preview"
 msgstr "Select Quote 1, 2, or 3 to preview"
 
@@ -13887,8 +13926,8 @@ msgstr "Select request"
 msgid "Select role"
 msgstr "Select role"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3345
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3501
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3449
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3610
 msgid "Select row"
 msgstr "Select row"
 
@@ -14059,7 +14098,7 @@ msgstr "Send for Signature"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1046
-#: src/pages/requests/components/request/components/Header.tsx:1844
+#: src/pages/requests/components/request/components/Header.tsx:1900
 msgid "Send notification"
 msgstr "Send notification"
 
@@ -14231,8 +14270,8 @@ msgstr "Severity"
 #: src/pages/folders/components/FolderTable.tsx:1540
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1439
-#: src/pages/requests/components/request/components/Header.tsx:1867
+#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1923
 msgid "Share"
 msgstr "Share"
 
@@ -14248,7 +14287,7 @@ msgstr "Share link not found or expired."
 msgid "Share Report"
 msgstr "Share Report"
 
-#: src/pages/requests/components/request/components/Header.tsx:1464
+#: src/pages/requests/components/request/components/Header.tsx:1520
 msgid "Share Request"
 msgstr "Share Request"
 
@@ -14283,7 +14322,7 @@ msgstr "Sharing"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1070
-#: src/pages/requests/components/request/components/Header.tsx:1867
+#: src/pages/requests/components/request/components/Header.tsx:1923
 msgid "Sharing..."
 msgstr "Sharing..."
 
@@ -14789,7 +14828,7 @@ msgstr "Standard SLA timeline. No pricing exceptions found."
 msgid "Start"
 msgstr "Start"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:507
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:514
 msgid "Start from an existing quote:"
 msgstr "Start from an existing quote:"
 
@@ -14835,7 +14874,7 @@ msgstr "Static credit trend for {selectedMonth}"
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:192
-#: src/pages/requests/components/request/components/Header.tsx:723
+#: src/pages/requests/components/request/components/Header.tsx:817
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2282
@@ -15236,7 +15275,7 @@ msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 #~ msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 #~ msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2872
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2976
 msgid "Switch to Advance (card) view"
 msgstr "Switch to Advance (card) view"
 
@@ -15255,7 +15294,7 @@ msgstr "Switch to Fields view"
 msgid "Switch to JSON view"
 msgstr "Switch to JSON view"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2871
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2975
 msgid "Switch to Normal (grid) view"
 msgstr "Switch to Normal (grid) view"
 
@@ -15295,7 +15334,7 @@ msgstr "Sync Master Form data with corresponding folder fields."
 msgid "Sync with existing OneDrive folders"
 msgstr "Sync with existing OneDrive folders"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2854
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2958
 msgid "Syncing from master table..."
 msgstr "Syncing from master table..."
 
@@ -15428,7 +15467,7 @@ msgstr "Tenant is missing. Sign in again and retry."
 msgid "Test Connection"
 msgstr "Test Connection"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2460
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2551
 msgid "Text could not be read from the document: no repository is available for this form."
 msgstr "Text could not be read from the document: no repository is available for this form."
 
@@ -15449,7 +15488,7 @@ msgstr "Text could not be read from the document: no repository is available for
 msgid "That's everything for this section. Continue when you're ready."
 msgstr "That's everything for this section. Continue when you're ready."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:334
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:343
 msgid "The agent stopped. Review the request and try again."
 msgstr "The agent stopped. Review the request and try again."
 
@@ -15663,7 +15702,7 @@ msgstr "This portal is missing a master form or username field."
 msgid "This portal link is invalid or has not been published yet."
 msgstr "This portal link is invalid or has not been published yet."
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:376
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:384
 msgid "This quote has no line items to compare against Quote 1."
 msgstr "This quote has no line items to compare against Quote 1."
 
@@ -15707,7 +15746,7 @@ msgstr "This sign area belongs to another user."
 msgid "This sign request link is invalid."
 msgstr "This sign request link is invalid."
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:331
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:340
 msgid "This step could not be completed."
 msgstr "This step could not be completed."
 
@@ -15835,10 +15874,10 @@ msgstr "Top agents by credit usage · {periodSubtitle}"
 #~ msgstr "Top-3 Concentration"
 
 #: src/pages/forms/FormEntriesPage.tsx:1338
-#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2469
+#: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2527
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:1008
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3457
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3566
 msgid "Total"
 msgstr "Total"
 
@@ -16057,7 +16096,7 @@ msgid "Type:"
 msgstr "Type:"
 
 #. placeholder {0}: col.type || 'SHORT_TEXT'
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3160
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3264
 msgid "Type: {0}"
 msgstr "Type: {0}"
 
@@ -16225,7 +16264,7 @@ msgid "Unable to verify OTP"
 msgstr "Unable to verify OTP"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:127
-#: src/pages/requests/components/request/components/Header.tsx:661
+#: src/pages/requests/components/request/components/Header.tsx:755
 msgid "Unassigned"
 msgstr "Unassigned"
 
@@ -16236,8 +16275,13 @@ msgstr "Undercharged"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2768
 #: src/pages/folders/components/DocumentSigningPage.tsx:2892
 #: src/pages/folders/components/DocumentSigningPage.tsx:2899
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:116
 msgid "Undo"
 msgstr "Undo"
+
+#: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:114
+msgid "Undo (Ctrl+Z)"
+msgstr "Undo (Ctrl+Z)"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:11
 msgid "Unique PO Identifier"
@@ -17199,7 +17243,7 @@ msgstr "Welcome to {0}"
 msgid "Welcome to AP Automation Setup"
 msgstr "Welcome to AP Automation Setup"
 
-#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:194
+#: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:187
 msgid "What changed vs Quote 1"
 msgstr "What changed vs Quote 1"
 
@@ -17336,7 +17380,7 @@ msgstr "Workflows List"
 msgid "Working"
 msgstr "Working"
 
-#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:223
+#: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:232
 msgid "Working on this request..."
 msgstr "Working on this request..."
 

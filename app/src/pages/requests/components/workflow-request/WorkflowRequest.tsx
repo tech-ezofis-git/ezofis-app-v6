@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -15,6 +15,7 @@ import {
 import {
   computeWorkflowStages,
   extractBlocks,
+  getStartStageHiddenFieldIds,
   listWorkflowStages,
 } from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
@@ -32,7 +33,21 @@ import RepoFieldsPanel from './components/RepoFieldsPanel'
 import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
-import { WorkflowNameContext } from './WorkflowNameContext'
+import {
+  WorkflowNameContext,
+  WorkflowRepositoryIdContext,
+  WorkflowTableUploadContext,
+  type TableUploadRequest,
+} from './WorkflowNameContext'
+import { getWorkflowRepositoryId } from './utils/gmailFormAttachment'
+import {
+  buildRepoFieldDescriptors,
+  getMissingMandatoryFieldIds,
+  getRepoFieldValue,
+  stringifyFieldValue,
+  syntheticFieldId,
+  withoutRequestNumberMandatory,
+} from './utils/fieldRendering'
 import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
 interface Props {
@@ -67,7 +82,13 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
+  const workflowRepositoryId = getWorkflowRepositoryId(workflow)
   const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
+  const [tableUploads, setTableUploads] = useState<TableUploadRequest[]>([])
+  const [tableUploadValues, setTableUploadValues] = useState<
+    Record<string, any>
+  >({})
+  const [isConfirmingTableUpload, setIsConfirmingTableUpload] = useState(false)
   // Clicking a repository field highlights its value in the file preview —
   // focusRequestId is bumped on every click (even re-clicking the same
   // field) so the viewer re-scrolls to it each time.
@@ -381,47 +402,15 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setFieldValue,
   } = useWorkflowForm(workflow)
 
-  const stageHiddenFieldIds = useMemo(() => {
-    const blocks = extractBlocks(workflow)
-    // Find the first trigger / start / manual user block for New Request
-    const startBlock =
-      blocks.find((b: any) => {
-        const type = String(b.type || b.toolType || '').toUpperCase()
-        return (
-          type === 'START' ||
-          type === 'INITIATOR' ||
-          type === 'TRIGGER' ||
-          type === 'MANUAL_USER' ||
-          type === 'FORM_SUBMISSION'
-        )
-      }) || blocks[0]
-
-    const settings = startBlock?.settings || {}
-    const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
-    const allFieldIds = panels.flatMap((p: any) =>
-      (p.fields || []).map((f: any) => String(f.id)),
-    )
-    if (access === 'ALL') return new Set<string>()
-    if (access === 'NONE') return new Set(allFieldIds)
-
-    const rules = Array.isArray(settings.formSecureControls)
-      ? settings.formSecureControls
-      : []
-    const currentUserId = String(authUserStore.getState().session?.id || '')
-    const rule =
-      rules.find((r: any) => String(r.userId) === currentUserId) ||
-      rules.find((r: any) => !r.userId) ||
-      (rules.length === 1 ? rules[0] : null)
-
-    if (!rule) return new Set<string>()
-    const specifiedFields = new Set((rule.formFields || []).map(String))
-    const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
-    if (mode === 'SHOW') {
-      return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
-    }
-    // HIDE mode (default)
-    return specifiedFields
-  }, [workflow, panels])
+  const stageHiddenFieldIds = useMemo(
+    () =>
+      getStartStageHiddenFieldIds(
+        workflow,
+        panels,
+        String(authUserStore.getState().session?.id || ''),
+      ),
+    [workflow, panels],
+  )
 
   const summaryHiddenFieldIds = useMemo(() => {
     const ids = new Set<string>(stageHiddenFieldIds)
@@ -579,6 +568,80 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     onClose()
   }
 
+  // Table file waiting on mandatory repository fields: queued by the table,
+  // shown in the viewer with the repository fields beside it.
+  const requestTableUpload = useCallback((request: TableUploadRequest) => {
+    setTableUploads((prev) => [...prev, request])
+  }, [])
+  const activeTableUpload = tableUploads[0] ?? null
+
+  useEffect(() => {
+    if (!activeTableUpload) {
+      setTableUploadValues({})
+      return
+    }
+    const seeded: Record<string, any> = {}
+    for (const [name, value] of Object.entries(
+      activeTableUpload.initialValues,
+    )) {
+      if (value) seeded[syntheticFieldId(name)] = value
+    }
+    setTableUploadValues(seeded)
+  }, [activeTableUpload])
+
+  const tableUploadDescriptors = useMemo(
+    () =>
+      activeTableUpload
+        ? withoutRequestNumberMandatory(
+            buildRepoFieldDescriptors(activeTableUpload.repoFields, panels),
+          )
+        : [],
+    [activeTableUpload, panels],
+  )
+  const tableUploadModel = useMemo(
+    () => ({ ...formModel, ...tableUploadValues }),
+    [formModel, tableUploadValues],
+  )
+  const missingTableUploadIds = useMemo(
+    () =>
+      getMissingMandatoryFieldIds(
+        tableUploadDescriptors,
+        panels,
+        tableUploadModel,
+        { hasUploadedFile: true, repoOnly: true },
+      ),
+    [tableUploadDescriptors, panels, tableUploadModel],
+  )
+
+  const finishTableUpload = () => setTableUploads((prev) => prev.slice(1))
+
+  const handleCancelTableUpload = () => {
+    activeTableUpload?.onCancel()
+    finishTableUpload()
+  }
+
+  const handleConfirmTableUpload = async () => {
+    if (!activeTableUpload || missingTableUploadIds.size > 0) return
+    const values: Record<string, string> = {}
+    for (const descriptor of tableUploadDescriptors) {
+      values[descriptor.repoField.name!] = stringifyFieldValue(
+        getRepoFieldValue(descriptor, tableUploadModel),
+      )
+    }
+    setIsConfirmingTableUpload(true)
+    try {
+      await activeTableUpload.onConfirm(values)
+      finishTableUpload()
+    } catch {
+      showToast({
+        message: t`Failed to upload the file. Please try again.`,
+        variant: 'error',
+      })
+    } finally {
+      setIsConfirmingTableUpload(false)
+    }
+  }
+
   const handleConfirmUpload = async () => {
     setIsConfirmingUpload(true)
     const result = await confirmUpload()
@@ -593,12 +656,16 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
   return (
     <WorkflowNameContext.Provider value={String(workflow?.name || '')}>
+      <WorkflowRepositoryIdContext.Provider value={workflowRepositoryId}>
+      <WorkflowTableUploadContext.Provider value={requestTableUpload}>
       <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
         <Header
           activePanel={activePanel}
           attachmentCount={attachments.length}
           commentCount={comments.length}
-          isSubmitDisabled={isLoadingForm || !!loadError}
+          isSubmitDisabled={
+            isLoadingForm || !!loadError || Boolean(activeTableUpload)
+          }
           isSubmitting={isSubmitting}
           title={t`New Request`}
           onClose={onClose}
@@ -631,6 +698,81 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           </AnimateFadeIn>
         ) : (
           <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
+            {activeTableUpload ? (
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+                  <button
+                    className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+                    type='button'
+                    onClick={handleCancelTableUpload}
+                  >
+                    <Icon
+                      className='size-4 transition-transform group-hover:-translate-x-0.5'
+                      name='tabler:arrow-left'
+                    />
+                    <span>{t`Back`}</span>
+                  </button>
+                </div>
+                <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+                  <div className='min-w-0 flex-1'>
+                    <UploadedFilePreview
+                      activeHighlightTerm={activeHighlightTerm}
+                      activeKey={null}
+                      focusRequestId={focusRequestId}
+                      files={[
+                        {
+                          fileName: activeTableUpload.file.name,
+                          key: 'table-file',
+                          rawFile: activeTableUpload.file,
+                        },
+                      ]}
+                      onSelectKey={() => {}}
+                    />
+                  </div>
+                  <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                    <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                      <RepoFieldsPanel
+                        descriptors={tableUploadDescriptors}
+                        formModel={tableUploadModel}
+                        hasAttemptedSubmit
+                        missingMandatoryFieldIds={missingTableUploadIds}
+                        repoFieldHints={repoFieldHints}
+                        repositoryId={workflowRepositoryId}
+                        onFieldChange={(fieldId, value) =>
+                          setTableUploadValues((prev) => ({
+                            ...prev,
+                            [fieldId]: value,
+                          }))
+                        }
+                        onFieldFocus={handleFieldFocus}
+                      />
+                    </div>
+                    <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+                      <Button
+                        label={t`Cancel`}
+                        variant='outline'
+                        onClick={handleCancelTableUpload}
+                      />
+                      <Button
+                        disabled={missingTableUploadIds.size > 0}
+                        label={t`Upload`}
+                        loading={isConfirmingTableUpload}
+                        variant='solid'
+                        onClick={handleConfirmTableUpload}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            {/* Kept mounted (just hidden) while a table file is being indexed,
+                so the form and its table keep their state. */}
+            <div
+              className={cn(
+                'flex min-h-0 min-w-0 flex-1 overflow-hidden',
+                activeTableUpload && 'hidden',
+              )}
+            >
             {isDocumentForm &&
             uploadedFiles.length === 0 &&
             !createdInstanceId &&
@@ -746,7 +888,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           panels={panels}
                           presentation='extracted'
                           repoFieldHints={repoFieldHints}
-                          repositoryId={workflow?.repositoryId}
+                          repositoryId={workflowRepositoryId}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -765,7 +907,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           missingMandatoryFieldIds={missingMandatoryFieldIds}
                           panels={panels}
                           repoFieldHints={repoFieldHints}
-                          repositoryId={workflow?.repositoryId}
+                          repositoryId={workflowRepositoryId}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -813,7 +955,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   panels={panels}
                   stages={workflowStages}
                   repoFieldHints={repoFieldHints}
-                  repositoryId={workflow?.repositoryId}
+                  repositoryId={workflowRepositoryId}
                   onFieldChange={setFieldValue}
                   onAddAttachments={addAttachment}
                   onOcrFieldList={applyOcrFieldList}
@@ -862,7 +1004,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         hasAttemptedSubmit={hasAttemptedSubmit}
                         missingMandatoryFieldIds={missingMandatoryFieldIds}
                         repoFieldHints={repoFieldHints}
-                        repositoryId={workflow?.repositoryId}
+                        repositoryId={workflowRepositoryId}
                         onFieldChange={setFieldValue}
                         onFieldFocus={handleFieldFocus}
                         onOcrFieldList={applyOcrFieldList}
@@ -886,6 +1028,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 </div>
               </div>
             )}
+            </div>
             {activePanel ? (
               <WorkflowRequestSidebar
                 activePanel={activePanel}
@@ -903,6 +1046,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           </div>
         )}
       </div>
+      </WorkflowTableUploadContext.Provider>
+      </WorkflowRepositoryIdContext.Provider>
     </WorkflowNameContext.Provider>
   )
 }

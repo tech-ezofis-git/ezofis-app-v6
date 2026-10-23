@@ -203,6 +203,53 @@ const searchFormEntries = async (
   return response
 }
 
+// Loads a master form's entries by column (POST /form/{id}/entry/by-column).
+// `columnName` may be the field label, physical column name or jsonId.
+// Without `columnValue` the whole column is loaded; with it, only the entries
+// whose column equals that value. A 404 means no entry matched, so it is
+// returned as an empty list rather than an error.
+const getFormEntriesByColumn = async (
+  formId: string,
+  columnName: string,
+  columnValue?: string,
+  tenantIdOverride?: string,
+) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId =
+      tenantIdOverride ||
+      store.session?.tenantId ||
+      store.identity?.tenantId ||
+      ''
+    const payload: Record<string, string> = { columnName }
+    if (columnValue !== undefined) payload.columnValue = columnValue
+    const { data, status } = await axiosV6.post(
+      `/form/${formId}/entry/by-column`,
+      payload,
+      {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+        skipCancellation: true,
+      },
+    )
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e: any) {
+    if (e?.response?.status === 404) {
+      response.data = { entries: [] }
+      return response
+    }
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.message ||
+      'Error fetching form entries by column'
+  }
+  return response
+}
+
 const getForms = async (payload: any) => {
   const response: any = { data: null, error: '' }
   try {
@@ -327,6 +374,7 @@ const formApi = {
   uploadMasterFile,
   getFormDataById,
   getFormEntries,
+  getFormEntriesByColumn,
   getForms,
 }
 
