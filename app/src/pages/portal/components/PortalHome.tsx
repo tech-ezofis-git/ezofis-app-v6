@@ -202,10 +202,10 @@ export default function PortalHome({
           <p className='text-[13px] text-gray-9'>
             {t`Welcome back, ${displayName}.`}
           </p>
-          <h1 className='mt-0.5 text-[25px] font-bold tracking-tight text-gray-13'>
+          <h1 className='mt-0.5 text-[22px] font-bold tracking-tight text-gray-13 sm:text-[25px]'>
             {t`My Submissions`}
           </h1>
-          <p className='mt-1 text-[14px] text-gray-10'>
+          <p className='mt-1 text-[13px] text-gray-10 sm:text-[14px]'>
             {t`Track the status of everything you've submitted.`}
           </p>
         </div>
@@ -226,7 +226,7 @@ export default function PortalHome({
         <PortalStatCardsSkeleton />
       ) : (
         <AnimateStagger
-          className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'
+          className='grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'
           staggerDelay={0.05}
         >
           {statCards.map((stat) => {
@@ -236,7 +236,7 @@ export default function PortalHome({
                 key={stat.label}
                 type='button'
                 className={cn(
-                  'flex h-full w-full min-w-0 items-center gap-3.5 rounded-xl border bg-surface px-[18px] py-4 text-left transition',
+                  'flex h-full w-full min-w-0 items-center gap-2.5 rounded-xl border bg-surface px-3 py-3 text-left transition sm:gap-3.5 sm:px-[18px] sm:py-4',
                   'hover:border-primary-6 active:scale-[0.99]',
                   isActive ? 'border-primary-7' : 'border-gray-4',
                 )}
@@ -244,17 +244,17 @@ export default function PortalHome({
               >
                 <span
                   className={cn(
-                    'flex size-[38px] shrink-0 items-center justify-center rounded-[10px]',
+                    'flex size-8 shrink-0 items-center justify-center rounded-[10px] sm:size-[38px]',
                     stat.iconWrap,
                   )}
                 >
                   <Icon className='size-[18px]' name={stat.icon} />
                 </span>
                 <div className='min-w-0'>
-                  <div className='text-[22px] leading-none font-bold text-gray-13'>
+                  <div className='text-[19px] leading-none font-bold text-gray-13 sm:text-[22px]'>
                     {stat.value}
                   </div>
-                  <div className='mt-[3px] truncate text-[12.5px] text-gray-10'>
+                  <div className='mt-[3px] truncate text-[11.5px] text-gray-10 sm:text-[12.5px]'>
                     {stat.label}
                   </div>
                 </div>
@@ -372,7 +372,7 @@ export default function PortalHome({
         </>
       ) : (
         <AnimateSlideUp
-          className='rounded-xl border border-gray-4 bg-surface p-5'
+          className='rounded-xl border border-gray-4 bg-surface p-3.5 sm:p-5'
           delay={0.1}
         >
           <div className='mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
@@ -460,7 +460,7 @@ export default function PortalHome({
                   : t`No submissions yet.`}
             </div>
           ) : (
-            <div className='mt-2'>
+            <div className='mt-2 max-md:mt-3'>
               {filteredSubmissions.map((row, index) => (
                 <motion.div
                   animate={{ opacity: 1, y: 0 }}

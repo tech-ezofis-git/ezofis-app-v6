@@ -14,8 +14,9 @@ import PortalShell from './components/PortalShell'
 import PortalWizard from './components/PortalWizard'
 import { applyPortalBranding } from './helpers/portalBranding'
 import {
+  getLastActionLabel,
+  lastActionTone,
   listPortalSubmissions,
-  PORTAL_STATUS_TONE,
   type PortalSubmission,
 } from './helpers/portalSubmissions'
 import {
@@ -348,6 +349,9 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     return <PortalLogin portal={portal} onAuthenticated={handleAuthenticated} />
   }
 
+  const lastActionLabel = selectedSubmission
+    ? getLastActionLabel(selectedSubmission.raw)
+    : ''
   const selectedWorkflowName = portalWorkflowLabel(
     workflowSummaries.find(
       (workflow) => workflow.id === String(selectedWorkflowId),
@@ -451,8 +455,12 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
               attachmentCount: sectionCounts.attachments,
               commentCount: sectionCounts.comments,
               requestNo: selectedSubmission.requestNo,
-              status: selectedSubmission.status,
-              statusClassName: PORTAL_STATUS_TONE[selectedSubmission.status],
+              // Last action taken on the ticket, as on the list; empty when
+              // none is recorded (no status fallback)
+              status: lastActionLabel,
+              statusClassName: lastActionLabel
+                ? lastActionTone(lastActionLabel)
+                : '',
               onAction: (value) => detailActionRef.current(value),
               onBack: () => {
                 setSelectedSubmission(null)
