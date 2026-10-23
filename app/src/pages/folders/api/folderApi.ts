@@ -805,8 +805,8 @@ const normalizeChildren = (
       groupField,
       groupValue: String(group.name),
       hasChildren: !isLeaf,
-      // Last browse stage: file icon (not folder) in tree + list.
-      iconKey: isLeaf ? 'fileText' : fieldIconMap.get(groupField) || 'folder',
+      // The last browse stage is still a folder (it holds the files)
+      iconKey: fieldIconMap.get(groupField) || 'folder',
       isLeaf,
       itemCount: group.itemCount,
       level: response.level ?? Object.keys(currentFilters).length + 1,
@@ -855,11 +855,7 @@ export const foldersToTreeNodes = (folders: FolderItem[]): TreeNode[] =>
     return {
       children: isLeaf ? undefined : [],
       hasChildren: !isLeaf,
-      iconKey: isLeaf
-        ? folder.iconKey === 'folder' || !folder.iconKey
-          ? 'fileText'
-          : folder.iconKey
-        : folder.iconKey || 'folder',
+      iconKey: folder.iconKey || 'folder',
       id: folder.id,
       isLoaded: false,
       title: folder.title,

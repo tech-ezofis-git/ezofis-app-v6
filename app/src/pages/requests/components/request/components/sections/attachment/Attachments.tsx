@@ -19,7 +19,7 @@ import {
 } from '@/pages/requests/utils/instanceAttachmentUpload'
 import { toUploadMetadata } from '@/pages/requests/utils/repoFolderMetadata'
 import authUserStore from '@/stores/authUserStore'
-import { formatUtcToLocalDate } from '@/utils/utcDate'
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import AttachmentSplitView from '../../generic-overview/AttachmentSplitView'
 import RelatedDocumentsFinder from '../overview/RelatedDocumentsFinder'
 
@@ -849,7 +849,7 @@ export default function Attachments({
                         <>
                           <span className='shrink-0 text-[11px] text-gray-8'>
                             {file.createdAt
-                              ? formatUtcToLocalDate(file.createdAt)
+                              ? formatUtcToLocalDateTime(file.createdAt)
                               : 'Unknown date'}
                           </span>
                           {file.uploadedBy && (

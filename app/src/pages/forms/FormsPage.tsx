@@ -91,7 +91,7 @@ const FormsPage = () => {
   const queryClient = useQueryClient()
   const storedState = useMemo(() => getStoredState(), [])
   const [page, setPage] = useState(storedState?.page ?? 1)
-  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 10)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 50)
   const [showAiBuilder, setShowAiBuilder] = useState(
     storedState?.showAiBuilder ?? false,
   )

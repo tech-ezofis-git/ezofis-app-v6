@@ -94,7 +94,6 @@ export default function PortalTicketComments({
       isLoading={isLoading}
       isSending={sending}
       subtitle={t`Discuss this request with the approvers`}
-      timeFormat='DD-MMM-YYYY hh:mm A'
       onDraftChange={setDraft}
       onSend={() => void send()}
     />
