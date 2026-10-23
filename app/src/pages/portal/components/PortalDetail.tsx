@@ -4,15 +4,21 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import Comments from '@/pages/requests/components/request/components/sections/comment/Comments'
+import WorkflowFormRenderer, {
+  WorkflowStageBar,
+} from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { WorkflowNameContext } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import { useAttachments } from '@/pages/requests/hooks/useAttachments'
+import { useComments } from '@/pages/requests/hooks/useComments'
+import { useHistory } from '@/pages/requests/hooks/useHistory'
+import { computeWorkflowStages } from '@/pages/requests/utils/workflow.utils'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   buildDetailFormModel,
   formPanelSectionId,
-  orderWorkflowSteps,
-  pickStageLabel,
-  resolveStepStatuses,
+  PORTAL_SECTION_ATTACHMENTS,
+  PORTAL_SECTION_COMMENTS,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
 import {
@@ -26,7 +32,6 @@ import {
 } from '../helpers/portalWorkflowAccess'
 import PortalActivity from './PortalActivity'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
-import PortalProgressCard from './PortalProgressCard'
 import PortalSubmissionDetails from './PortalSubmissionDetails'
 
 type PortalDetailChrome = {
@@ -39,6 +44,7 @@ type PortalDetailProps = {
   submission: PortalSubmission
   userId?: string
   onChromeChange?: (chrome: PortalDetailChrome | null) => void
+  onCountsChange?: (counts: { attachments: number; comments: number }) => void
   onMoved?: () => void
 }
 
@@ -46,6 +52,7 @@ export default function PortalDetail({
   submission,
   userId,
   onChromeChange,
+  onCountsChange,
   onMoved,
 }: PortalDetailProps) {
   const { t } = useLingui()
@@ -61,6 +68,26 @@ export default function PortalDetail({
     () => submissionInstanceIds(submission),
     [submission],
   )
+
+  // The request's attachments and comments, for the header counts and the
+  // Comments section
+  const { data: attachmentList, refetch: refetchAttachments } = useAttachments(
+    submission.workflowId,
+    instanceId || processId,
+    true,
+  )
+  const {
+    data: commentList,
+    isLoading: commentsLoading,
+    refetch: refetchComments,
+  } = useComments(submission.workflowId, instanceId || processId, true)
+
+  useEffect(() => {
+    onCountsChange?.({
+      attachments: attachmentList.length,
+      comments: commentList.length,
+    })
+  }, [attachmentList.length, commentList.length, onCountsChange])
 
   useEffect(() => {
     let cancelled = false
@@ -99,19 +126,33 @@ export default function PortalDetail({
     setFormModel(loadedFormModel)
   }, [loadedFormModel])
 
-  const workflowSteps = useMemo(
-    () => orderWorkflowSteps(source?.workflow),
-    [source?.workflow],
+  // Same stage computation the request page uses, so the bar matches it
+  const { data: historyRows } = useHistory(
+    submission.workflowId,
+    instanceId || processId,
+    true,
   )
-  const workflowStepStatuses = useMemo(
+  const isCompleted = [
+    'completed',
+    'approved',
+    'closed',
+    'paid',
+    'success',
+    'succeeded',
+  ].includes(
+    String(submission.raw?.status || submission.status || '')
+      .toLowerCase()
+      .trim(),
+  )
+  const workflowStages = useMemo(
     () =>
-      resolveStepStatuses(
-        workflowSteps,
-        activityId,
-        submission.status,
-        pickStageLabel(submission.raw),
-      ),
-    [activityId, submission.raw, submission.status, workflowSteps],
+      computeWorkflowStages({
+        currentActivityId: activityId ? String(activityId) : undefined,
+        history: historyRows,
+        isCompleted,
+        workflow: source?.workflow,
+      }),
+    [activityId, historyRows, isCompleted, source?.workflow],
   )
 
   useEffect(() => {
@@ -303,10 +344,12 @@ export default function PortalDetail({
   return (
     <div className='h-full min-h-0 overflow-y-auto'>
       <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
-        <PortalProgressCard
-          statuses={workflowStepStatuses}
-          steps={workflowSteps}
-        />
+        {workflowStages.length > 0 && (
+          <WorkflowStageBar
+            currentActivityId={activityId ? String(activityId) : undefined}
+            stages={workflowStages}
+          />
+        )}
 
         {panels.length > 0 ? (
           isInbox ? (
@@ -348,7 +391,10 @@ export default function PortalDetail({
           </div>
         )}
 
-        <div className='rounded-xl border border-gray-4 bg-surface p-6 shadow-sm sm:px-8 sm:py-7'>
+        <div
+          className='scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-6 shadow-sm transition-shadow sm:px-8 sm:py-7'
+          id={PORTAL_SECTION_ATTACHMENTS}
+        >
           <div className='mb-4 text-15 font-semibold text-gray-13'>
             {t`Attachments`}
           </div>
@@ -361,7 +407,27 @@ export default function PortalDetail({
             showRelatedFinder={false}
             workflowId={submission.workflowId}
             enabled
+            onAttachmentsChanged={() => void refetchAttachments()}
             onSelect={(file) => setOpenedAttachment(file)}
+          />
+        </div>
+
+        <div
+          className='scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-6 shadow-sm transition-shadow sm:px-8 sm:py-7'
+          id={PORTAL_SECTION_COMMENTS}
+        >
+          <div className='mb-2 text-15 font-semibold text-gray-13'>
+            {t`Comments`}
+          </div>
+          <Comments
+            attachments={attachmentList}
+            comments={commentList}
+            instanceId={instanceId}
+            isLoading={commentsLoading}
+            processId={processId ? Number(processId) : undefined}
+            refetch={refetchComments}
+            workflowId={Number(submission.workflowId)}
+            enabled
           />
         </div>
 
