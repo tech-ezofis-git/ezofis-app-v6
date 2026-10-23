@@ -585,6 +585,8 @@ interface CellActions {
   awaitingFile?: string
   /** The row's file is being read by OCR; the cell stays disabled until it is filled. */
   awaitingOcr?: boolean
+  /** The dropdown's options are still loading; shown inside the field. */
+  optionsLoading?: boolean
   row?: Record<string, unknown>
   onFilesAdded?: (files: File[]) => Promise<OcrStatus | void> | void
   onRowPatch?: (patch: Record<string, unknown>) => void
@@ -1226,6 +1228,7 @@ const TableCellSelect = ({
   asChoice,
   col,
   isMulti,
+  loading,
   options,
   val,
   onCellChange,
@@ -1233,6 +1236,7 @@ const TableCellSelect = ({
   asChoice?: boolean
   col: TableColumn
   isMulti?: boolean
+  loading?: boolean
   options: { id: string; name: string }[]
   val: any
   onCellChange: (newVal: any) => void
@@ -1330,6 +1334,7 @@ const TableCellSelect = ({
     <InputSelectMultiple
       className='w-full'
       creatable={allowNew}
+      loading={loading}
       options={displayOptions}
       searchable
       placeholder={getColumnPlaceholder(col)}
@@ -1346,6 +1351,7 @@ const TableCellSelect = ({
     <InputSelect
       className='w-full'
       creatable={allowNew}
+      loading={loading}
       options={displayOptions}
       searchable
       placeholder={getColumnPlaceholder(col)}
@@ -1596,6 +1602,7 @@ const renderCellInput = (
         <TableCellSelect
           asChoice={cellType === 'SINGLE_CHOICE'}
           col={col}
+          loading={actions?.optionsLoading}
           options={options}
           val={val}
           onCellChange={onCellChange}
@@ -1610,6 +1617,7 @@ const renderCellInput = (
         <TableCellSelect
           asChoice={cellType === 'MULTIPLE_CHOICE'}
           col={col}
+          loading={actions?.optionsLoading}
           options={options}
           val={val}
           isMulti
@@ -2356,6 +2364,19 @@ const TableFieldRenderer = ({
         : isUserListLoading
     }
     return false
+  }
+
+  // Dropdown cells show their loader inside the field (like top-level
+  // selects); everything else gets the stand-in loader below.
+  const showCellLoader = (
+    col: TableColumn,
+    row: Record<string, any>,
+    rowIndex: number,
+  ) => {
+    if (!isColumnLoading(col, row, rowIndex)) return false
+    if (isMasterSyncing) return true
+    const type = resolveRuntimeFieldType(col)
+    return type !== 'SINGLE_SELECT' && type !== 'MULTI_SELECT'
   }
 
   const cellLoader = (
@@ -3615,7 +3636,7 @@ const TableFieldRenderer = ({
                           </Td>
                           {effectiveColumns.map((col) => (
                             <Td className='p-1.5 align-middle' key={col.id}>
-                              {isColumnLoading(col, resolvedRow, rowIndex)
+                              {showCellLoader(col, resolvedRow, rowIndex)
                                 ? cellLoader
                                 : renderCellInput(
                                     col,
@@ -3652,6 +3673,11 @@ const TableFieldRenderer = ({
                                         resolvedRow,
                                       ),
                                       awaitingOcr: isAwaitingOcr(
+                                        col,
+                                        resolvedRow,
+                                        rowIndex,
+                                      ),
+                                      optionsLoading: isColumnLoading(
                                         col,
                                         resolvedRow,
                                         rowIndex,
@@ -3871,7 +3897,7 @@ const TableFieldRenderer = ({
                             </button>
                           )}
                         </div>
-                        {isColumnLoading(col, resolvedRow, rowIndex)
+                        {showCellLoader(col, resolvedRow, rowIndex)
                           ? cellLoader
                           : renderCellInput(
                               col,
@@ -3900,6 +3926,11 @@ const TableFieldRenderer = ({
                                   resolvedRow,
                                 ),
                                 awaitingOcr: isAwaitingOcr(
+                                  col,
+                                  resolvedRow,
+                                  rowIndex,
+                                ),
+                                optionsLoading: isColumnLoading(
                                   col,
                                   resolvedRow,
                                   rowIndex,
