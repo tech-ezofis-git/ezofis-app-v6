@@ -418,7 +418,7 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
                   <div className='flex flex-col space-y-0.5'>
                     <span className='text-13 font-medium leading-none text-gray-12'>
                       {conn.action
-                        ? `${conn.action} âž” ${conn.targetLabel}`
+                        ? `${conn.action} \u2192 ${conn.targetLabel}`
                         : conn.targetLabel}
                     </span>
                     <span className='text-11 leading-tight text-gray-9'>
@@ -690,7 +690,6 @@ function ButtonColorPicker({
   return (
     <div className='flex items-center justify-between gap-3 border-t border-gray-3 pt-3'>
       <div className='flex flex-col gap-1.5'>
-        <span className='text-12 font-medium text-gray-12'>Button Color</span>
         <div aria-label='Button color' className='flex items-center gap-2' role='radiogroup'>
           {BUTTON_COLOR_OPTIONS.map((option) => {
             const selected = option.id === value

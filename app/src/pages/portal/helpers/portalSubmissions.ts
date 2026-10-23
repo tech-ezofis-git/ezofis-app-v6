@@ -162,6 +162,36 @@ const classifyStatus = (
   return 'Pending'
 }
 
+// The last action taken on a ticket (e.g. "Approve", "Reject", "Submit"), from
+// the mailbox item's lastAction / review fields; '' when none is recorded.
+export const getLastActionLabel = (item: Record<string, unknown>): string => {
+  const lastAction = asRecord(item.lastAction)
+  return (
+    textOf(lastAction.review) ||
+    textOf(lastAction.action) ||
+    textOf(lastAction.actionName) ||
+    textOf(lastAction.name) ||
+    textOf(item.lastActionName) ||
+    textOf(item.lastReview) ||
+    textOf(item.review) ||
+    textOf(item.lastAction)
+  )
+}
+
+export const lastActionTone = (label: string): string => {
+  const text = label.toLowerCase()
+  if (text.includes('reject') || text.includes('denied')) {
+    return 'bg-red-3 text-red-11'
+  }
+  if (text.includes('approv') || text.includes('complete')) {
+    return 'bg-green-3 text-green-11'
+  }
+  if (text.includes('return') || text.includes('rework')) {
+    return 'bg-orange-3 text-orange-11'
+  }
+  return 'bg-blue-3 text-blue-11'
+}
+
 const instanceIdOf = (item: Record<string, unknown>) =>
   String(
     item.workflowInstanceId ||

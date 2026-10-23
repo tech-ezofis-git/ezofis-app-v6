@@ -21,7 +21,8 @@ import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 import { submissionInstanceIds } from '../helpers/portalDetail'
 import {
-  PORTAL_STATUS_TONE,
+  getLastActionLabel,
+  lastActionTone,
   type PortalSubmission,
 } from '../helpers/portalSubmissions'
 
@@ -135,6 +136,8 @@ export default function PortalSubmissionRow({
     row.actionDate ||
     startedAt
 
+  const lastActionLabel = getLastActionLabel(submission.raw)
+
   const { currentLabel, isTerminal, previousLabel } = getGenericStageInfo(
     workflow,
     row,
@@ -183,15 +186,23 @@ export default function PortalSubmissionRow({
           </div>
 
           <div className='flex min-w-0 justify-start'>
-            <span
-              className={cn(
-                'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-                PORTAL_STATUS_TONE[submission.status],
-              )}
-            >
-              <span className='size-1.5 shrink-0 rounded-full bg-current' />
-              <span className='truncate'>{submission.status}</span>
-            </span>
+            {/* Last action taken on the ticket; empty when none is recorded */}
+            {lastActionLabel ? (
+              <Tooltip
+                content={`Last action: ${lastActionLabel}`}
+                position='bottom'
+              >
+                <span
+                  className={cn(
+                    'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
+                    lastActionTone(lastActionLabel),
+                  )}
+                >
+                  <span className='size-1.5 shrink-0 rounded-full bg-current' />
+                  <span className='truncate'>{lastActionLabel}</span>
+                </span>
+              </Tooltip>
+            ) : null}
           </div>
 
           <div className='flex min-w-0 items-center'>

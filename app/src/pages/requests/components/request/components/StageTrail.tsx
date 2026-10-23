@@ -50,13 +50,20 @@ export default function StageTrail({
           <Fragment key={`${step.id}-${number}`}>
             {index > 0 ? (
               <Icon
-                className='size-3.5 shrink-0 text-gray-8'
+                className='hidden size-3.5 shrink-0 text-gray-8 lg:block'
                 name='lucide:chevron-right'
                 aria-hidden
               />
             ) : null}
+            {/* Narrow headers keep only the current step; the others return
+                at lg. Each step shrinks and ellipsizes its label instead of
+                pushing the header wider. */}
             <Tooltip
               position='bottom'
+              className={cn(
+                'min-w-0 shrink',
+                isCurrent ? 'min-w-[4.5rem]' : 'hidden lg:inline-flex',
+              )}
               content={
                 showAge ? t`${stepLabel} · since ${sinceLabel}` : stepLabel
               }

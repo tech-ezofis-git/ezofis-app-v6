@@ -4,7 +4,6 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import Comments from '@/pages/requests/components/request/components/sections/comment/Comments'
 import WorkflowFormRenderer, {
   WorkflowStageBar,
 } from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
@@ -17,8 +16,10 @@ import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   buildDetailFormModel,
   formPanelSectionId,
+  PORTAL_FORM_WRAPPER_CLASS,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
+  PORTAL_SECTION_HISTORY,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
 import {
@@ -33,6 +34,7 @@ import {
 import PortalActivity from './PortalActivity'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
 import PortalSubmissionDetails from './PortalSubmissionDetails'
+import PortalTicketComments from './PortalTicketComments'
 
 type PortalDetailChrome = {
   acting: boolean
@@ -361,21 +363,23 @@ export default function PortalDetail({
                   '',
               )}
             >
-              <WorkflowFormRenderer
-                formModel={formModel}
-                instanceId={instanceId}
-                panels={panels}
-                readOnlyFieldIds={readOnlyFieldIds}
-                repositoryId={resolvedRepositoryId}
-                disableOwnScroll
-                getPanelValue={(panel, index) =>
-                  formPanelSectionId(panel, index)
-                }
-                onFieldChange={(fieldId, value) =>
-                  setFormModel((prev) => ({ ...prev, [fieldId]: value }))
-                }
-                onOpenAttachment={(att) => setOpenedAttachment(att)}
-              />
+              <div className={PORTAL_FORM_WRAPPER_CLASS}>
+                <WorkflowFormRenderer
+                  formModel={formModel}
+                  instanceId={instanceId}
+                  panels={panels}
+                  readOnlyFieldIds={readOnlyFieldIds}
+                  repositoryId={resolvedRepositoryId}
+                  disableOwnScroll
+                  getPanelValue={(panel, index) =>
+                    formPanelSectionId(panel, index)
+                  }
+                  onFieldChange={(fieldId, value) =>
+                    setFormModel((prev) => ({ ...prev, [fieldId]: value }))
+                  }
+                  onOpenAttachment={(att) => setOpenedAttachment(att)}
+                />
+              </div>
             </WorkflowNameContext.Provider>
           ) : (
             <PortalSubmissionDetails
@@ -412,26 +416,24 @@ export default function PortalDetail({
           />
         </div>
 
+        {/* Same Comments card as the new submission, on the live thread */}
         <div
-          className='scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-6 shadow-sm transition-shadow sm:px-8 sm:py-7'
+          className='scroll-mt-3 rounded-xl transition-shadow'
           id={PORTAL_SECTION_COMMENTS}
         >
-          <div className='mb-2 text-15 font-semibold text-gray-13'>
-            {t`Comments`}
-          </div>
-          <Comments
-            attachments={attachmentList}
+          <PortalTicketComments
             comments={commentList}
-            instanceId={instanceId}
+            instanceId={instanceId || processId}
             isLoading={commentsLoading}
-            processId={processId ? Number(processId) : undefined}
             refetch={refetchComments}
-            workflowId={Number(submission.workflowId)}
-            enabled
+            workflowId={submission.workflowId}
           />
         </div>
 
-        <div className='rounded-xl border border-gray-4 bg-surface p-6 shadow-sm sm:px-8 sm:py-7'>
+        <div
+          className='scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-6 shadow-sm transition-shadow sm:px-8 sm:py-7'
+          id={PORTAL_SECTION_HISTORY}
+        >
           <div className='mb-4 text-15 font-semibold text-gray-13'>
             {t`Activity`}
           </div>

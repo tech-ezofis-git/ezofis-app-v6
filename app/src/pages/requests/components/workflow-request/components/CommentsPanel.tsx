@@ -23,6 +23,8 @@ const getInitials = (fullNameOrEmail: string): string => {
 }
 
 export interface LocalComment {
+  // Who wrote it; omitted for the current user's own notes ("You")
+  authorName?: string
   createdAt: string
   id: string
   text: string
@@ -31,6 +33,12 @@ export interface LocalComment {
 interface Props {
   comments: LocalComment[]
   draft: string
+  isLoading?: boolean
+  isSending?: boolean
+  // Line under the "Comments" title of the inline card
+  subtitle?: string
+  // Comment timestamp format of the inline card
+  timeFormat?: string
   onDraftChange: (value: string) => void
   onSend: () => void
   onClose?: () => void
@@ -44,6 +52,10 @@ interface Props {
 const CommentsPanel = ({
   comments,
   draft,
+  isLoading = false,
+  isSending = false,
+  subtitle,
+  timeFormat = 'hh:mm A',
   onClose,
   onDraftChange,
   onSend,
@@ -54,7 +66,7 @@ const CommentsPanel = ({
     session?.name || session?.firstName || session?.email || 'You'
   const initials = getInitials(displayName)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const canSend = draft.trim().length > 0
+  const canSend = draft.trim().length > 0 && !isSending
 
   if (onClose) {
     return (
@@ -154,7 +166,9 @@ const CommentsPanel = ({
           </div>
           <div>
             <h3 className='text-14 font-bold text-gray-13'>{t`Comments`}</h3>
-            <p className='text-11 text-gray-9'>{t`Add a note for the approver`}</p>
+            <p className='text-11 text-gray-9'>
+              {subtitle ?? t`Add a note for the approver`}
+            </p>
           </div>
         </div>
         {comments.length > 0 && (
@@ -166,21 +180,26 @@ const CommentsPanel = ({
 
       {comments.length === 0 ? (
         <div className='mb-3 flex items-center gap-2 rounded-lg border border-dashed border-gray-3 px-3 py-2.5 text-12 text-gray-8'>
-          <Icon className='size-3.5 shrink-0' name='tabler:messages-off' />
-          {t`No comments yet`}
+          <Icon
+            className={cn('size-3.5 shrink-0', isLoading && 'animate-spin')}
+            name={isLoading ? 'tabler:loader-2' : 'tabler:messages-off'}
+          />
+          {isLoading ? t`Loading comments…` : t`No comments yet`}
         </div>
       ) : (
         <div className='mb-3 flex max-h-[220px] flex-col gap-3 overflow-y-auto pr-1'>
           {comments.map((c) => (
             <div className='flex items-start gap-2.5' key={c.id}>
               <div className='flex size-7 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-11 font-bold text-primary-9'>
-                {initials}
+                {c.authorName ? getInitials(c.authorName) : initials}
               </div>
               <div className='min-w-0 flex-1'>
                 <div className='flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5'>
-                  <span className='text-12 font-bold text-gray-13'>{t`You`}</span>
+                  <span className='text-12 font-bold text-gray-13'>
+                    {c.authorName || t`You`}
+                  </span>
                   <span className='text-11 font-medium text-gray-9'>
-                    {formatDatetime(c.createdAt, 'hh:mm A')}
+                    {formatDatetime(c.createdAt, timeFormat)}
                   </span>
                 </div>
                 <p className='text-12 leading-relaxed font-medium break-words whitespace-pre-wrap text-gray-11'>

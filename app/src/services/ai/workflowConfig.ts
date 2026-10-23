@@ -649,6 +649,9 @@ export function ensureStartAndEndNodes(
       const actionName = r.action || r.proceedAction || 'Submit'
       return {
         action: actionName,
+        // Request-page action button color picked on the connection; rules
+        // saved before it existed have none and fall back to the default.
+        ...(r.buttonColor ? { buttonColor: r.buttonColor } : {}),
         confirm: r.confirm ?? false,
         fromBlockId: fromId,
         id: r.id || `r_${fromId}_${toId}`,

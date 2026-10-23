@@ -9,19 +9,23 @@ import cn from '@/utils/cn'
 import {
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
+  PORTAL_SECTION_HISTORY,
   scrollToPortalSection,
 } from '../helpers/portalDetail'
 import PortalBackButton from './PortalBackButton'
 import PortalBrandMark from './PortalBrandMark'
 
-// Attachments / Comments shortcuts beside the header actions, as in the
-// in-app new request header: each shows its count and scrolls to its section.
+// Attachments / Comments (and, on a ticket, History) shortcuts beside the
+// header actions, as in the in-app new request header: each scrolls to its
+// section, Attachments and Comments with their counts.
 function PortalSectionButtons({
   attachmentCount = 0,
   commentCount = 0,
+  showHistory = false,
 }: {
   attachmentCount?: number
   commentCount?: number
+  showHistory?: boolean
 }) {
   const { t } = useLingui()
   const buttons = [
@@ -37,6 +41,16 @@ function PortalSectionButtons({
       id: PORTAL_SECTION_COMMENTS,
       label: t`Comments`,
     },
+    ...(showHistory
+      ? [
+          {
+            count: 0,
+            icon: 'tabler:history',
+            id: PORTAL_SECTION_HISTORY,
+            label: t`History`,
+          },
+        ]
+      : []),
   ]
   return (
     <div className='flex shrink-0 items-center gap-1'>
@@ -87,6 +101,8 @@ type PortalWizardHeader = {
   attachmentCount?: number
   canSubmit: boolean
   commentCount?: number
+  // Attachments / Comments shortcuts: only for form-initiated workflows
+  showSectionButtons?: boolean
   stageLabel?: string
   submitLabel?: string
   submitting: boolean
@@ -118,12 +134,8 @@ export default function PortalShell({
     >
       <AnimateFadeIn className='shrink-0'>
         <header className='border-b border-gray-4 bg-surface px-4 py-3 sm:px-6 lg:px-8'>
-          <div
-            className={cn(
-              'mx-auto flex items-center justify-between gap-3',
-              contentWidth,
-            )}
-          >
+          {/* Full width on every view, as on the request pages */}
+          <div className='mx-auto flex w-full items-center justify-between gap-3'>
             <PortalBrandMark
               branding={portal.branding}
               fallbackName={brandName}
@@ -158,21 +170,22 @@ export default function PortalShell({
             >
               <div className='flex min-w-0 flex-1 items-center gap-3'>
                 <PortalBackButton label={t`Back`} onClick={wizard.onCancel} />
-                <h1 className='min-w-0 truncate text-15 font-semibold text-gray-13'>
-                  {wizard.title}
+                {/* The current stage (the workflow's start step), falling
+                    back to the workflow name */}
+                <h1
+                  className='min-w-0 truncate text-15 font-semibold text-gray-13'
+                  title={wizard.stageLabel ? wizard.title : undefined}
+                >
+                  {wizard.stageLabel || wizard.title}
                 </h1>
-                {wizard.stageLabel ? (
-                  <span className='inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-11'>
-                    <span className='size-1.5 rounded-full bg-purple-6' />
-                    {wizard.stageLabel}
-                  </span>
-                ) : null}
               </div>
               <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
-                <PortalSectionButtons
-                  attachmentCount={wizard.attachmentCount}
-                  commentCount={wizard.commentCount}
-                />
+                {wizard.showSectionButtons ? (
+                  <PortalSectionButtons
+                    attachmentCount={wizard.attachmentCount}
+                    commentCount={wizard.commentCount}
+                  />
+                ) : null}
                 <Button
                   className='shrink-0 rounded-lg'
                   disabled={!wizard.canSubmit}
@@ -210,6 +223,7 @@ export default function PortalShell({
                 <PortalSectionButtons
                   attachmentCount={detail.attachmentCount}
                   commentCount={detail.commentCount}
+                  showHistory
                 />
                 {(detail.actions || []).map((action) => {
                     const label = action.label.toLowerCase()
