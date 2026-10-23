@@ -54,12 +54,8 @@ function TreeItem({
   const isActive = activeId === node.id
   const canExpand = Boolean(node.hasChildren || node.children?.length)
   const children = node.children || []
-  // Last stage (no further folders): show file icon instead of folder.
-  const iconName = canExpand
-    ? node.iconKey || 'folder'
-    : node.iconKey && node.iconKey !== 'folder'
-      ? node.iconKey
-      : 'fileText'
+  // The last stage (no further folders) is still a folder
+  const iconName = node.iconKey || 'folder'
 
   const handleNodeClick = () => {
     onSelect(node.id)
