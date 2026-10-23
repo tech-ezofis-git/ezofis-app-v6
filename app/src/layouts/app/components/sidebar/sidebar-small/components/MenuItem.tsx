@@ -10,6 +10,7 @@ import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
 import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
+import useGuardedMenuClick from '../../useGuardedMenuClick'
 
 interface Props extends Menu {
   iconClassName?: string
@@ -31,6 +32,7 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,
   )
   const isLinkDisabled = isNavigationLocked && route !== '/'
+  const guardedClick = useGuardedMenuClick(route)
 
   return (
     <li key={label}>
@@ -48,20 +50,22 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
             isLinkDisabled &&
               'pointer-events-none cursor-not-allowed opacity-40',
           )}
-          onClick={() => {
-            closeDemoForm()
-            clearOpenedFromSettings()
-            // Full-view AI: minimize to side panel so this menu can open + highlight
-            if (isAskAIMaximized) {
-              exitFullView()
-            }
-            if (route === '/') {
-              exitSetupToDashboard()
-            }
-            if (route === '/folders') {
-              triggerResetFolderView()
-            }
-          }}
+          onClick={(event) =>
+            guardedClick(event, () => {
+              closeDemoForm()
+              clearOpenedFromSettings()
+              // Full-view AI: minimize to side panel so this menu can open + highlight
+              if (isAskAIMaximized) {
+                exitFullView()
+              }
+              if (route === '/') {
+                exitSetupToDashboard()
+              }
+              if (route === '/folders') {
+                triggerResetFolderView()
+              }
+            })
+          }
         >
           <Icon
             name={icon}

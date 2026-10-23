@@ -1,8 +1,15 @@
 import { Icon } from '@iconify/react'
 import { useLingui } from '@lingui/react/macro'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
+import {
+  type RegenerateAgentResponse,
+  workflowsApiV6,
+} from '@/api/v6/workflows'
+import Button from '@/components/base/button/Button'
+import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import {
   getFirstReceivedAttachment,
@@ -19,6 +26,7 @@ import {
   type AgentBlock,
   documentGenerateIsComplete,
   formatAgentDisplayLabel,
+  isAgentStepBefore,
   isFailedAgentBlock,
 } from './AgentSummaryBoxes'
 import QualifyAgentResultView from './QualifyAgentResultView'
@@ -53,6 +61,16 @@ const attachmentIdOf = (file: AttachmentItem | null | undefined) =>
   String(file?.itemId || file?.fileId || file?.id || '')
 
 const textOf = (value: unknown) => String(value || '').trim()
+
+const parseJson = (value: unknown) => {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
 
 /** 4s, 1m 05s */
 const formatElapsed = (ms: number) => {
@@ -214,6 +232,112 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   )
   const isProcessing = !hasAgentResponse && !isDone && !thisAgentFailed
 
+  // --- Re-qualify / Re-quote (RFQ) ---------------------------------------
+  // Offered on the agent's own step or the step right after it; the API is
+  // given the agent step's id as activityId.
+  const queryClient = useQueryClient()
+  const regenerateKind: 'qualifier' | 'quote' | null = isDocGen
+    ? null
+    : isQualify
+      ? 'qualifier'
+      : isQuote
+        ? 'quote'
+        : null
+  const currentActivityId = textOf(
+    requestData?.activityId || requestData?.currentActivityId,
+  )
+  const currentStageType = textOf(requestData?.stageType).toUpperCase()
+  const isOnThisAgentStep =
+    isAgentStepBefore(
+      rawWorkflowData,
+      String(agentBlock.id || ''),
+      currentActivityId,
+    ) ||
+    (regenerateKind === 'qualifier' && currentStageType === 'QUALIFY_AGENT') ||
+    (regenerateKind === 'quote' && currentStageType === 'QUOTE_AGENT')
+  const canRegenerate =
+    Boolean(regenerateKind) && !viewOnly && isOnThisAgentStep
+  const [regenerateState, setRegenerateState] = useState<
+    'error' | 'idle' | 'running'
+  >('idle')
+  const [regenerateError, setRegenerateError] = useState('')
+  const [regenerateStartedAt, setRegenerateStartedAt] = useState(0)
+  const isRegenerating = regenerateState === 'running'
+
+  /** Put the new agent result + form data on the open request. */
+  const applyRegenerated = (data: RegenerateAgentResponse) => {
+    const agentResponse = parseJson(data.agentResponseJson)
+    const formData = parseJson(data.formDataJson)
+    const responseKey =
+      regenerateKind === 'qualifier'
+        ? 'qualifyAgentResponse'
+        : 'quoteAgentResponse'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch = (item: any) => {
+      if (!item) return item
+      const next = { ...item }
+      if (agentResponse) next[responseKey] = agentResponse
+      if (formData) {
+        // Keep the shape the request already uses (JSON string or object).
+        next.formData =
+          typeof item.formData === 'string' ? data.formDataJson : formData
+      }
+      return next
+    }
+    const processId = String(requestData?.processId ?? '')
+    queryClient.setQueriesData(
+      {
+        predicate: (query) =>
+          query.queryKey[0] === 'request-detail' &&
+          String(query.queryKey[2]) === processId,
+      },
+      patch,
+    )
+    const { selectedItem } = requestStore.getState()
+    if (selectedItem && String(selectedItem.processId) === processId) {
+      requestStore.setState({ selectedItem: patch(selectedItem) })
+    }
+  }
+
+  const runRegenerate = async () => {
+    if (!regenerateKind || isRegenerating) return
+    const workflowId = requestData?.workflowId || rawWorkflowData?.id
+    const instanceId =
+      requestData?.workflowInstanceId || requestData?.processId
+    const agentActivityId = String(agentBlock.id || '') || currentActivityId
+    if (!workflowId || !instanceId || !agentActivityId) {
+      setRegenerateState('error')
+      setRegenerateError(t`This request is missing its workflow step details.`)
+      return
+    }
+    setRegenerateState('running')
+    setRegenerateError('')
+    setRegenerateStartedAt(Date.now())
+    const { data, error } = await workflowsApiV6.regenerateAgent(
+      regenerateKind,
+      workflowId,
+      instanceId,
+      { activityId: agentActivityId },
+    )
+    if (error || !data) {
+      setRegenerateState('error')
+      setRegenerateError(error || t`The agent did not return a result.`)
+      return
+    }
+    applyRegenerated(data)
+    setRegenerateState('idle')
+    showToast({
+      message:
+        regenerateKind === 'qualifier'
+          ? t`Qualification refreshed with the new agent result.`
+          : t`Quote refreshed with the new agent result.`,
+      variant: 'success',
+    })
+  }
+
+  const regenerateLabel =
+    regenerateKind === 'qualifier' ? t`Re-qualify` : t`Re-quote`
+
   const jobMessage = useMemo(
     () => resolveApAgentJobMessage(requestData),
     // Recompute when store job status updates.
@@ -270,10 +394,12 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
   }, [historyScope, isProcessing, jobMessage])
 
   useEffect(() => {
-    if (!isProcessing || messageHistory.length === 0) return
+    if (!isRegenerating && (!isProcessing || messageHistory.length === 0)) {
+      return
+    }
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
-  }, [isProcessing, messageHistory.length])
+  }, [isProcessing, isRegenerating, messageHistory.length])
 
   const isPdf = Boolean(mimeType?.includes('pdf'))
   const isImage = Boolean(mimeType?.startsWith('image/'))
@@ -304,6 +430,54 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
         </div>
       )}
 
+      {canRegenerate && regenerateState === 'error' ? (
+        <div
+          className='flex animate-in flex-wrap items-center gap-3 rounded-xl border border-red-5 bg-red-1 px-4 py-3 duration-300 fade-in slide-in-from-top-1'
+          role='alert'
+        >
+          <span className='flex size-8 shrink-0 items-center justify-center rounded-full bg-red-3 text-red-11'>
+            <Icon className='size-4' icon='lucide:alert-triangle' />
+          </span>
+          <div className='min-w-0 flex-1'>
+            <p className='text-13 font-semibold text-gray-12'>
+              {t`The agent could not finish this run.`}
+            </p>
+            <p className='mt-0.5 line-clamp-2 text-12 text-gray-11'>
+              {regenerateError}
+            </p>
+          </div>
+          <Button
+            color='red'
+            icon='lucide:rotate-ccw'
+            label={t`Retry`}
+            size='sm'
+            type='button'
+            variant='outline'
+            onClick={() => void runRegenerate()}
+          />
+        </div>
+      ) : canRegenerate &&
+        hasAgentResponse &&
+        !isRegenerating &&
+        !thisAgentFailed ? (
+        <div className='flex animate-in flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-3 bg-surface-primary px-4 py-2.5 duration-300 fade-in'>
+          <p className='min-w-0 flex-1 text-12 text-gray-10'>
+            {regenerateKind === 'qualifier'
+              ? t`Something missed or extracted wrong? Run the Qualify Agent again on the same file.`
+              : t`Need a fresh price? Run the Quote Agent again. Fields you filled in yourself are kept.`}
+          </p>
+          <Button
+            color='gray'
+            icon='lucide:refresh-cw'
+            label={regenerateLabel}
+            size='sm'
+            type='button'
+            variant='outline'
+            onClick={() => void runRegenerate()}
+          />
+        </div>
+      ) : null}
+
       <div
         className={
           showDocPreview
@@ -311,7 +485,42 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
             : 'rounded-xl border border-gray-3 bg-surface-primary p-4 shadow-sm'
         }
       >
-        {showDocPreview ? (
+        {isRegenerating ? (
+          <div
+            aria-busy='true'
+            aria-live='polite'
+            className='flex animate-in flex-col gap-4 duration-300 fade-in'
+          >
+            <div className='flex min-w-0 items-center gap-2'>
+              <span className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-2)] text-[var(--primary-11)]'>
+                <Icon className='size-4 animate-spin' icon='tabler:loader-2' />
+              </span>
+              <span className='min-w-0 truncate text-sm font-semibold text-gray-12'>
+                {regenerateKind === 'qualifier'
+                  ? t`Re-running the Qualify Agent`
+                  : t`Re-running the Quote Agent`}
+              </span>
+              <span className='shrink-0 text-xs text-gray-9 tabular-nums'>
+                · {formatElapsed(now - regenerateStartedAt)}
+              </span>
+            </div>
+            <p className='text-12 text-gray-10'>
+              {regenerateKind === 'qualifier'
+                ? t`Reading the uploaded RFQ again. The new values replace the current ones when it finishes.`
+                : t`Pricing the RFQ again. Line items, quotes and totals refresh when it finishes.`}
+            </p>
+            {/* Skeleton of the result while the agent works. */}
+            <div className='grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2'>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div className='flex items-center gap-2' key={index}>
+                  <span className='h-3 w-24 animate-pulse rounded bg-gray-3' />
+                  <span className='h-3 flex-1 animate-pulse rounded bg-gray-2' />
+                </div>
+              ))}
+            </div>
+            <div className='h-24 animate-pulse rounded-lg bg-gray-2' />
+          </div>
+        ) : showDocPreview ? (
           <div className='min-h-[420px] flex-1'>
             <DocumentPreviewViewer
               fileName={docFileName}
@@ -343,6 +552,16 @@ const AgentDetailPlaceholder: React.FC<AgentDetailPlaceholderProps> = ({
                 {t`The agent stopped. Review the request and try again.`}
               </p>
             </div>
+            {canRegenerate ? (
+              <Button
+                color='primary'
+                icon='lucide:rotate-ccw'
+                label={t`Retry`}
+                size='sm'
+                type='button'
+                onClick={() => void runRegenerate()}
+              />
+            ) : null}
           </div>
         ) : isProcessing ? (
           <div

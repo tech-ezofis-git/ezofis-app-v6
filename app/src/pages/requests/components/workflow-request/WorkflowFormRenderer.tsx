@@ -427,11 +427,9 @@ const WorkflowFormRenderer = ({
     const isReadOnlyByRule = Boolean(state?.disabled)
     const baseReadOnly = isFieldReadOnly(field) || isReadOnlyByRule
 
-    // Workflow setting takes precedence: if readOnlyFieldIds is explicitly provided by stage rules
-    if (readOnlyFieldIds !== undefined) {
-      return readOnlyFieldIds.has(String(field.id))
-    }
-    return baseReadOnly
+    // Editable only when the form (settings + rules) and the stage's
+    // Security & Form Access both allow it.
+    return baseReadOnly || Boolean(readOnlyFieldIds?.has(String(field.id)))
   }
 
   const renderVisibleFields = (visibleFields: any[]) => {

@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { fetchStageFileBlob } from '@/api/v6/uploadAndIndex'
 import Skeleton from '@/components/base/Skeleton'
 import cn from '@/utils/cn'
+import {
+  acquireThumbSlot,
+  releaseThumbSlot,
+  useNearViewport,
+} from './thumbnailQueue'
 
 type WordThumbnailProps = {
   cacheKey?: string
@@ -9,6 +14,8 @@ type WordThumbnailProps = {
   fallback?: ReactNode
   fileName: string
   fileUrl?: string
+  /** Render ahead of other cards (files from the current upload). */
+  priority?: boolean
   stageFileId?: string
 }
 
@@ -36,15 +43,19 @@ export default function WordThumbnail({
   fallback = null,
   fileName,
   fileUrl,
+  priority = false,
   stageFileId,
 }: WordThumbnailProps) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
+  // Off-screen cards wait until scrolled near, so visible ones render first.
+  const nearViewport = useNearViewport(frameRef)
 
   useEffect(() => {
     const host = hostRef.current
-    if (!host) return
+    if (!host || !nearViewport) return
 
     let cancelled = false
     setFailed(false)
@@ -52,6 +63,11 @@ export default function WordThumbnail({
     host.replaceChildren()
 
     const render = async () => {
+      await acquireThumbSlot(priority)
+      if (cancelled) {
+        releaseThumbSlot()
+        return
+      }
       try {
         const buffer = await loadDocxBuffer(stageFileId, fileUrl)
         if (cancelled) return
@@ -91,6 +107,8 @@ export default function WordThumbnail({
         if (!cancelled) setReady(true)
       } catch {
         if (!cancelled) setFailed(true)
+      } finally {
+        releaseThumbSlot()
       }
     }
 
@@ -99,13 +117,14 @@ export default function WordThumbnail({
     return () => {
       cancelled = true
     }
-  }, [fileUrl, stageFileId])
+  }, [fileUrl, nearViewport, priority, stageFileId])
 
   if (failed) return <>{fallback}</>
 
   return (
     <div
       aria-label={fileName}
+      ref={frameRef}
       className={cn(
         'relative h-full w-full overflow-hidden bg-white',
         className,

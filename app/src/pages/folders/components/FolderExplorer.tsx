@@ -26,6 +26,7 @@ import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
 import { EditMetadataView } from './EditMetadataView'
+import ExplorerLocationBar from './ExplorerLocationBar'
 import { ExplorerToolbar } from './ExplorerToolbar'
 import FolderTable from './FolderTable'
 import IntelligentUploadView from './IntelligentUpload/IntelligentUploadView'
@@ -41,6 +42,7 @@ export function FolderExplorer() {
     appView,
     beginFilterDefer,
     breadcrumbs,
+    canGoBackInExplorer,
     changePageSize,
     changeServerPage,
     changeViewMode,
@@ -61,6 +63,7 @@ export function FolderExplorer() {
     folderPage,
     folders,
     folderSearch,
+    goBackInExplorer,
     itemFilterFields,
     loading,
     loadingFolders,
@@ -1083,6 +1086,15 @@ export function FolderExplorer() {
         />
 
         <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
+          {activeFolder ? (
+            <ExplorerLocationBar
+              breadcrumbs={breadcrumbs}
+              canGoBack={canGoBackInExplorer}
+              loading={loading}
+              onBack={goBackInExplorer}
+              onSelect={openFolder}
+            />
+          ) : null}
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
               fileColumns={fileColumns}

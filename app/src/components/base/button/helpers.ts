@@ -30,6 +30,11 @@ function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
         color: 'green',
         variant: 'solid',
       },
+      {
+        class: 'bg-orange-9 hover:bg-orange-10',
+        color: 'orange',
+        variant: 'solid',
+      },
 
       {
         class: 'border-gray-6 text-gray-11 hover:bg-gray-4 hover:text-gray-12',
@@ -54,6 +59,11 @@ function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
       {
         class: 'border-green-6 text-green-11 hover:bg-green-4',
         color: 'green',
+        variant: 'outline',
+      },
+      {
+        class: 'border-orange-6 text-orange-11 hover:bg-orange-4',
+        color: 'orange',
         variant: 'outline',
       },
 
@@ -82,6 +92,11 @@ function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
         color: 'green',
         variant: 'subtle',
       },
+      {
+        class: 'bg-orange-3 text-orange-11 hover:bg-orange-4',
+        color: 'orange',
+        variant: 'subtle',
+      },
 
       {
         class: 'text-gray-11 hover:bg-gray-4 hover:text-gray-12',
@@ -108,11 +123,17 @@ function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
         color: 'green',
         variant: 'ghost',
       },
+      {
+        class: 'text-orange-11 hover:bg-orange-4',
+        color: 'orange',
+        variant: 'ghost',
+      },
     ],
     variants: {
       color: {
         gray: '',
         green: '',
+        orange: '',
         primary: '',
         red: '',
         secondary: '',

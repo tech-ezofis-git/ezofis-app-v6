@@ -63,8 +63,9 @@ import {
 } from './../../../../components/common/animations'
 import { RequiredProgressPie } from './DraftAttachmentFields'
 import DraftFilesMediaLibrary from './DraftFilesMediaLibrary'
+import { DeleteFileDialog, LeaveFileDialog } from './FileExitDialogs'
 import TableFieldInput from './TableFieldInput'
-import UploadQueueFileCard from './UploadQueueFileCard'
+import UploadQueueFileCard, { formatCreatedAt } from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
@@ -1231,16 +1232,17 @@ const intelligentUploadScopeId = (
   folderId: string | number | null | undefined,
 ) => String(repositoryId || folderId || '')
 
+// Off by default; users switch Intelligent Document Processing on per repository.
 const readIntelligentUploadEnabled = (scopeId: string) => {
-  if (!scopeId) return true
+  if (!scopeId) return false
   try {
     const stored = localStorage.getItem(
       `${INTELLIGENT_UPLOAD_CACHE_PREFIX}${scopeId}`,
     )
-    if (stored === null) return true
+    if (stored === null) return false
     return stored === '1'
   } catch {
-    return true
+    return false
   }
 }
 
@@ -1394,12 +1396,24 @@ export default function Upload({
   const [draftCounts, setDraftCounts] = useState(emptyDraftCounts)
   const [isLoadingDraftCount, setIsLoadingDraftCount] = useState(false)
   const [viewingDrafts, setViewingDrafts] = useState(false)
+  /** Files from the current upload: shown first on the Draft Files page. */
+  const [sessionUploadIds, setSessionUploadIds] = useState<string[]>([])
+  const sessionUploadIdsRef = useRef<string[]>([])
+  sessionUploadIdsRef.current = sessionUploadIds
+  /** Older drafts load only when the user asks for them. */
+  const [otherDraftsState, setOtherDraftsState] = useState<
+    'hidden' | 'loaded' | 'loading'
+  >('hidden')
+  /** Not-exported drafts that existed before this upload (count only). */
+  const [earlierDraftsTotal, setEarlierDraftsTotal] = useState(0)
   const [queueListTab, setQueueListTab] = useState<'uploading' | 'export'>(
     'export',
   )
   const [isDeletingStageFile, setIsDeletingStageFile] = useState(false)
   const [deleteStageConfirmOpen, setDeleteStageConfirmOpen] = useState(false)
   const [backConfirmOpen, setBackConfirmOpen] = useState(false)
+  /** Delete was chosen from "Leave this file?": leave after deleting. */
+  const [deleteFromLeave, setDeleteFromLeave] = useState(false)
   const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([])
   const [focusedDraftId, setFocusedDraftId] = useState<string | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
@@ -1462,6 +1476,10 @@ export default function Upload({
     () => queue.find((entry) => entry.id === openFileId) ?? null,
     [queue, openFileId],
   )
+  // Shown in the delete dialog's file card.
+  const activeEntryUploadedAt = activeEntry?.createdAt
+    ? formatCreatedAt(activeEntry.createdAt)
+    : ''
 
   const updateEntry = useCallback(
     (
@@ -1558,25 +1576,42 @@ export default function Upload({
             )
             if (missing.length === 0) break
 
-            const ordered = [...missing].sort((a, b) => {
-              if (a.id === openId) return -1
-              if (b.id === openId) return 1
-              if (a.id === focusId) return -1
-              if (b.id === focusId) return 1
-              return 0
-            })
+            // Open file, then focused, then this upload's files, then the
+            // rest in grid order — so thumbnails fill in top-down.
+            const sessionIds = new Set(sessionUploadIdsRef.current)
+            const rank = (entry: QueuedUploadFile) =>
+              entry.id === openId
+                ? 0
+                : entry.id === focusId
+                  ? 1
+                  : sessionIds.has(entry.id)
+                    ? 2
+                    : 3
+            const ordered = [...missing].sort((a, b) => rank(a) - rank(b))
 
-            const batchSize = 16
-            for (let index = 0; index < ordered.length; index += batchSize) {
-              const batch = ordered.slice(index, index + batchSize)
-              await Promise.all(
-                batch.map(async (entry) => {
+            // A small worker pool: each finished preview immediately starts
+            // the next one, instead of waiting on the slowest of a batch.
+            let nextIndex = 0
+            const workerCount = Math.min(4, ordered.length)
+            await Promise.all(
+              Array.from({ length: workerCount }, async () => {
+                while (nextIndex < ordered.length) {
+                  const entry = ordered[nextIndex++]
                   if (
                     draftPreviewLoadIdsRef.current.has(entry.id) ||
                     draftPreviewInFlightRef.current.has(entry.id) ||
                     softFailedThisPass.has(entry.id)
                   ) {
-                    return
+                    continue
+                  }
+
+                  // Just-uploaded files are already in memory.
+                  if (entry.file && entry.file.size > 0) {
+                    updateEntry(entry.id, {
+                      previewUrl: URL.createObjectURL(entry.file),
+                    })
+                    draftPreviewLoadIdsRef.current.add(entry.id)
+                    continue
                   }
 
                   const stageId = String(
@@ -1584,14 +1619,14 @@ export default function Upload({
                   )
                   if (!stageId) {
                     draftPreviewLoadIdsRef.current.add(entry.id)
-                    return
+                    continue
                   }
 
                   const attempts =
                     draftPreviewAttemptsRef.current.get(entry.id) ?? 0
                   if (attempts >= 4) {
                     draftPreviewLoadIdsRef.current.add(entry.id)
-                    return
+                    continue
                   }
 
                   draftPreviewInFlightRef.current.add(entry.id)
@@ -1626,9 +1661,9 @@ export default function Upload({
                   } finally {
                     draftPreviewInFlightRef.current.delete(entry.id)
                   }
-                }),
-              )
-            }
+                }
+              }),
+            )
 
             if (softFailedThisPass.size > 0) {
               softFailedThisPass.clear()
@@ -2032,6 +2067,8 @@ export default function Upload({
   const openDraftFilesView = useCallback(
     async (options?: {
       preferredLocal?: QueuedUploadFile[]
+      /** Show only this upload's files; older drafts load on request. */
+      sessionOnly?: boolean
       tab?: 'auto' | 'export' | 'uploading'
     }) => {
       const tab = options?.tab ?? 'auto'
@@ -2044,6 +2081,37 @@ export default function Upload({
         })
         return
       }
+
+      if (options?.sessionOnly && preferredLocal.length > 0) {
+        const sessionEntries = preferredLocal.filter(
+          (entry) => entry.status !== 'indexed',
+        )
+        const previous = new Map(
+          queueRef.current.map((entry) => [entry.id, entry]),
+        )
+        const next = sessionEntries.map((entry) => ({
+          ...entry,
+          previewUrl: entry.previewUrl ?? previous.get(entry.id)?.previewUrl ?? null,
+        }))
+        setSessionUploadIds(next.map((entry) => entry.id))
+        setOtherDraftsState('hidden')
+        setDraftCounts(countQueueDraftGroups(next, repositoryFields))
+        setQueueListTab(tab === 'auto' ? 'uploading' : tab)
+        setViewingDrafts(true)
+        setOpenFileId(null)
+        setQueue(next)
+        // Keep the user's pick; otherwise the library selects the first ready file.
+        const current = focusedDraftIdRef.current
+        if (!current || !next.some((entry) => entry.id === current)) {
+          setFocusedDraftId(null)
+          setSelectedDraftIds([])
+        }
+        return
+      }
+
+      // Full draft list: no "current upload" section.
+      setSessionUploadIds([])
+      setOtherDraftsState('loaded')
 
       if (tab === 'uploading' || tab === 'export') {
         setQueueListTab(tab)
@@ -2166,6 +2234,34 @@ export default function Upload({
     },
     [activeRepositoryId, repositoryFields, t],
   )
+
+  /** "Show other draft files": append older drafts below this upload's files. */
+  const loadOtherDrafts = useCallback(async () => {
+    if (!activeRepositoryId) return
+    setOtherDraftsState('loading')
+    try {
+      const drafts = await collectDraftStageFiles(activeRepositoryId)
+      const current = queueRef.current
+      const knownStageIds = new Set(
+        current.map((entry) => entry.stageFileId).filter(Boolean),
+      )
+      const knownIds = new Set(current.map((entry) => entry.id))
+      const others = drafts
+        .filter(
+          (summary) =>
+            !knownStageIds.has(summary.id) &&
+            !knownIds.has(`staged-${summary.id}`),
+        )
+        .map((summary) => draftSummaryToQueueEntry(summary, repositoryFields))
+      const next = [...current, ...others]
+      setQueue(next)
+      setDraftCounts(countQueueDraftGroups(next, repositoryFields))
+      setOtherDraftsState('loaded')
+    } catch {
+      setOtherDraftsState('hidden')
+      showToast({ message: t`Unable to load draft files.`, variant: 'error' })
+    }
+  }, [activeRepositoryId, repositoryFields, t])
 
   // Batches every newly-added 'queued' entry into a single bulkUpload call
   // (one network call per drop/selection, not one per file) and stores the
@@ -2321,6 +2417,7 @@ export default function Upload({
             if (onSuccess) await onSuccess()
             await openDraftFilesView({
               preferredLocal: [stagedEntry],
+              sessionOnly: true,
               tab: 'uploading',
             })
           }
@@ -2400,6 +2497,7 @@ export default function Upload({
         if (stayOnDrafts) {
           await openDraftFilesView({
             preferredLocal,
+            sessionOnly: true,
             tab: 'uploading',
           })
           // Refresh folder data in the background; do not leave this page.
@@ -2548,9 +2646,10 @@ export default function Upload({
     if (invoiceInputRef.current) invoiceInputRef.current.value = ''
   }
 
-  const handleDeleteStageFile = async (id: string) => {
+  /** Resolves true when the file was deleted. */
+  const handleDeleteStageFile = async (id: string): Promise<boolean> => {
     const entry = queue.find((item) => item.id === id)
-    if (!entry || entry.status === 'indexing') return
+    if (!entry || entry.status === 'indexing') return false
 
     // Immediately abort any active in-flight upload request for this file
     const inFlightController = uploadAbortControllersRef.current.get(id)
@@ -2574,7 +2673,7 @@ export default function Upload({
             message: String(error),
             variant: 'error',
           })
-          return
+          return false
         }
       }
 
@@ -2607,8 +2706,10 @@ export default function Upload({
       if (onSuccess) {
         void onSuccess()
       }
+      return true
     } catch (err) {
       console.error(err)
+      return false
     } finally {
       setIsDeletingStageFile(false)
     }
@@ -2735,13 +2836,17 @@ export default function Upload({
           setViewingDrafts(false)
         } else if (isBulkUpload) {
           // Multi-file: go straight to Draft Files media library (same as drafts).
+          // This upload's files lead; older drafts stay behind "Show other drafts".
+          setSessionUploadIds(newEntries.map((entry) => entry.id))
+          setOtherDraftsState(queue.length > 0 ? 'loaded' : 'hidden')
+          setEarlierDraftsTotal(draftCounts.total)
           setQueueListTab('uploading')
           setOpenFileId(null)
           setViewingDrafts(true)
-          setFocusedDraftId(newEntries[0]?.id ?? null)
-          setSelectedDraftIds(
-            newEntries[0]?.id ? [newEntries[0].id] : [],
-          )
+          // Nothing is selected until a file finishes extracting; the library
+          // then auto-selects the first ready one.
+          setFocusedDraftId(null)
+          setSelectedDraftIds([])
         }
 
         if (newFiles.length < validFiles.length) {
@@ -3818,6 +3923,12 @@ export default function Upload({
   const isListOnlyPage = isVerticalQueueLayout && !activeEntry
   const isDraftFullPage = viewingDrafts && isListOnlyPage
   const draftFileCount = draftQueue.length
+  // Current upload + earlier drafts not loaded yet.
+  const draftTitleCount =
+    draftFileCount +
+    (sessionUploadIds.length > 0 && otherDraftsState !== 'loaded'
+      ? earlierDraftsTotal
+      : 0)
   const draftNavIndex = draftQueue.findIndex((entry) => entry.id === openFileId)
   const previousDraft =
     draftNavIndex > 0 ? draftQueue[draftNavIndex - 1] : null
@@ -3910,10 +4021,13 @@ export default function Upload({
           fullPage={isDraftFullPage}
           isBulkDeleting={isBulkDeleting}
           isBulkExporting={isBulkExporting}
+          otherDraftsState={otherDraftsState}
+          otherDraftsTotal={earlierDraftsTotal}
+          primaryIds={sessionUploadIds}
           repositoryFields={repositoryFields}
           selectedIds={selectedDraftIds}
           someSelected={someVisibleSelected}
-          title={`${t`Draft Files`} (${draftFileCount})`}
+          title={`${t`Draft Files`} (${draftTitleCount})`}
           missingMandatoryById={Object.fromEntries(
             draftQueue.map((entry) => [
               entry.id,
@@ -3931,10 +4045,13 @@ export default function Upload({
             setFocusedDraftId(null)
             setSelectedDraftIds([])
             setQueue([])
+            setSessionUploadIds([])
+            setOtherDraftsState('hidden')
           }}
           onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
           onBulkExport={() => setBulkExportConfirmOpen(true)}
           onExport={handleExportQueuedFile}
+          onShowOtherDrafts={() => void loadOtherDrafts()}
           onFieldChange={(entryId, fieldKey, value) => {
             updateEntry(entryId, (entry) => {
               if (String(entry.fieldValues?.[fieldKey] ?? '') === value) {
@@ -4961,19 +5078,40 @@ export default function Upload({
         )}
       </div>
 
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Delete`}
-        description={t`Are you sure you want to delete this staged file?`}
-        isConfirming={isDeletingStageFile}
+      <DeleteFileDialog
+        fileName={activeEntry?.fileName}
+        isDeleting={isDeletingStageFile}
         opened={deleteStageConfirmOpen}
-        title={t`Delete Staged File`}
-        variant='danger'
+        fileMeta={
+          activeEntry
+            ? [
+                activeEntry.fileSize > 0
+                  ? formatFileSize(activeEntry.fileSize)
+                  : '',
+                activeEntryUploadedAt
+                  ? t`uploaded ${activeEntryUploadedAt}`
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            : undefined
+        }
         onCancel={() => {
-          if (!isDeletingStageFile) setDeleteStageConfirmOpen(false)
+          if (isDeletingStageFile) return
+          setDeleteStageConfirmOpen(false)
+          // Step back to "Leave this file?" when Delete came from there.
+          if (deleteFromLeave) {
+            setDeleteFromLeave(false)
+            setBackConfirmOpen(true)
+          }
         }}
-        onConfirm={() => {
-          if (activeEntry) void handleDeleteStageFile(activeEntry.id)
+        onConfirm={async () => {
+          if (!activeEntry) return
+          const deleted = await handleDeleteStageFile(activeEntry.id)
+          if (!deleted || !deleteFromLeave) return
+          setDeleteFromLeave(false)
+          if (viewingDrafts) setOpenFileId(null)
+          else onBack()
         }}
       />
       <ConfirmDialog
@@ -5034,26 +5172,15 @@ export default function Upload({
           void handleBulkExportDrafts()
         }}
       />
-      <ConfirmDialog
-        cancelLabel={t`Go back`}
-        confirmLabel={t`Delete`}
-        description={t`Going back keeps this file in Draft Files. Delete removes it.`}
-        isConfirming={isDeletingStageFile}
+      <LeaveFileDialog
         opened={backConfirmOpen}
-        title={t`Go back`}
-        variant='danger'
-        onCancel={() => {
+        onClose={() => setBackConfirmOpen(false)}
+        onDelete={() => {
           setBackConfirmOpen(false)
-          if (viewingDrafts) {
-            setOpenFileId(null)
-          } else {
-            onBack()
-          }
+          setDeleteFromLeave(true)
+          setDeleteStageConfirmOpen(true)
         }}
-        onConfirm={async () => {
-          if (activeEntry) {
-            await handleDeleteStageFile(activeEntry.id)
-          }
+        onLeave={() => {
           setBackConfirmOpen(false)
           if (viewingDrafts) {
             setOpenFileId(null)

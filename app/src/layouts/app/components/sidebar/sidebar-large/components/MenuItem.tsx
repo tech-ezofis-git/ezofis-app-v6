@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
@@ -8,6 +9,7 @@ import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
 import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
+import useGuardedMenuClick from '../../useGuardedMenuClick'
 
 interface Props extends Menu {
   iconClassName?: string
@@ -29,22 +31,25 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   )
   const isLinkDisabled = isNavigationLocked && route !== '/'
 
-  const handleClick = () => {
-    // Close demo even when already on this route (pathname won't change).
-    closeDemoForm()
-    clearOpenedFromSettings()
-    // Full-view AI: minimize to side panel so this menu can open + highlight
-    if (isAskAIMaximized) {
-      exitFullView()
-    }
-    if (route === '/') {
-      exitSetupToDashboard()
-    }
-    if (route === '/folders') {
-      triggerResetFolderView()
-    }
-    onClick()
-  }
+  const guardedClick = useGuardedMenuClick(route)
+
+  const handleClick = (event: MouseEvent) =>
+    guardedClick(event, () => {
+      // Close demo even when already on this route (pathname won't change).
+      closeDemoForm()
+      clearOpenedFromSettings()
+      // Full-view AI: minimize to side panel so this menu can open + highlight
+      if (isAskAIMaximized) {
+        exitFullView()
+      }
+      if (route === '/') {
+        exitSetupToDashboard()
+      }
+      if (route === '/folders') {
+        triggerResetFolderView()
+      }
+      onClick()
+    })
 
   return (
     <li key={label}>

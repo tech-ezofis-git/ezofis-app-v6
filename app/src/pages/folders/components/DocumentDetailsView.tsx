@@ -3767,19 +3767,36 @@ export function DocumentDetailsView({
                       const plainVal = toDisplayValue(row.value)
                       const maskedTail =
                         plainVal.length <= 3 ? plainVal : plainVal.slice(-3)
+                      const canFocusField = Boolean(fieldValue) && !maskField
+                      const focusField = () => {
+                        if (!canFocusField) return
+                        setActiveFieldKey(rowKey)
+                        setFieldFocusRequestId((previous) => previous + 1)
+                      }
                       return (
-                        <button
+                        // A div (not a button) so the label / value text can
+                        // be selected and copied like normal text.
+                        <div
                           key={rowKey}
-                          type='button'
-                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
+                          role={canFocusField ? 'button' : undefined}
+                          tabIndex={canFocusField ? 0 : undefined}
+                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all outline-none select-text last:border-0 focus-visible:ring-2 focus-visible:ring-primary-6 ${
                             isActive
                               ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
                               : 'hover:bg-gray-1'
-                          } ${fieldValue && !maskField ? 'cursor-pointer' : 'cursor-default'}`}
+                          } ${canFocusField ? 'cursor-pointer' : 'cursor-default'}`}
                           onClick={() => {
-                            if (maskField || !fieldValue) return
-                            setActiveFieldKey(rowKey)
-                            setFieldFocusRequestId((previous) => previous + 1)
+                            // Selecting text to copy shouldn't jump the preview.
+                            const selection = window.getSelection()
+                            if (selection && !selection.isCollapsed) return
+                            focusField()
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') {
+                              return
+                            }
+                            event.preventDefault()
+                            focusField()
                           }}
                         >
                           {/* 1. OCR Icon Only with Tooltip */}
@@ -3820,7 +3837,7 @@ export function DocumentDetailsView({
                               </b>
                             )}
                           </div>
-                        </button>
+                        </div>
                       )
                     })}
                   </div>

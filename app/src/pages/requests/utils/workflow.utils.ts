@@ -656,6 +656,87 @@ export const computeWorkflowStages = ({
   return result
 }
 
+export type StageTrailItem = {
+  /** 1-based position of the step in the whole flow. */
+  number: number
+  step: WorkflowStageStep
+}
+
+/**
+ * Compact 3-step window for the request header: previous, current and next
+ * (a condition when the route branches). On the first stage it shows steps
+ * 1–3, looking one block further ahead along a single path when needed.
+ * When the flow is finished it shows the last three steps.
+ */
+export const getStageTrail = (
+  stages: WorkflowStageStep[],
+  workflow?: any,
+): StageTrailItem[] => {
+  if (!stages.length) return []
+  const items: StageTrailItem[] = stages.map((step, index) => ({
+    number: index + 1,
+    step,
+  }))
+  const currentIndex = stages.findIndex((step) => step.status === 'current')
+
+  if (currentIndex === -1) return items.slice(-3)
+  if (currentIndex > 0) return items.slice(currentIndex - 1, currentIndex + 2)
+
+  // First stage: extend one step past the known next one when the path is linear.
+  const last = items[items.length - 1]
+  if (
+    items.length < 3 &&
+    workflow &&
+    !last.step.isCondition &&
+    !last.step.isEnd &&
+    last.step.status === 'future'
+  ) {
+    const { blocks, rules } = extractWorkflowGraph(workflow)
+    const targets = Array.from(
+      new Set(
+        rules
+          .filter(
+            (rule: any) =>
+              String(rule.fromBlockId || rule.from || rule.source || '') ===
+              last.step.id,
+          )
+          .map((rule: any) => String(rule.toBlockId || rule.to || rule.target || ''))
+          .filter(Boolean),
+      ),
+    )
+    if (targets.length >= 2) {
+      items.push({
+        number: items.length + 1,
+        step: {
+          id: '__conditional_next_2__',
+          isCondition: true,
+          label: t`Conditional flow`,
+          status: 'future',
+        },
+      })
+    } else if (targets.length === 1) {
+      const block = blocks.find((b: any) => String(b.id) === targets[0])
+      if (block) {
+        const type = String(block.type || '').toUpperCase()
+        const isCondition =
+          type === 'CONDITION' || type === 'DECISION' || type === 'BRANCH'
+        items.push({
+          number: items.length + 1,
+          step: {
+            id: String(block.id),
+            isCondition,
+            isEnd: type === 'END',
+            label: isCondition ? t`Conditional flow` : stageLabel(block),
+            status: 'future',
+          },
+        })
+      }
+    }
+  }
+
+  return items.slice(0, 3)
+}
+
 export const listWorkflowStages = (
   workflow: any,
   history?: any[],
