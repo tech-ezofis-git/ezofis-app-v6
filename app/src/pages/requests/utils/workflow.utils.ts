@@ -128,6 +128,30 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
+// True when the workflow starts from an uploaded document ("Document Form"),
+// read from settings / workflowJson / flowJson the same way the in-app new
+// request does.
+export function isDocumentFormWorkflow(workflow: any): boolean {
+  if (!workflow) return false
+  const parse = (value: any) => {
+    if (typeof value !== 'string') return value || null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  const initiateType = String(
+    workflow.settings?.general?.initiateUsing?.type ||
+      parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
+      parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+  return initiateType === 'DOCUMENTFORM'
+}
+
 // Field ids the workflow's start block hides from the initiator on a new
 // request (its "form visibility" access and secure-control rules). Shared by
 // the in-app new request and the portal so both hide the same fields.

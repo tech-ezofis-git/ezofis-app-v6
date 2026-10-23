@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { uploadForOcr } from '@/api/v6/folder/folder'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
@@ -30,11 +30,27 @@ import {
   isFieldFilled,
   isFieldHidden,
   isFieldRequired,
+  getRepoFieldValue,
   mergeOcrFieldHints,
+  stringifyFieldValue,
+  syntheticFieldId,
+  withoutRequestNumberMandatory,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import RepoFieldsPanel from '@/pages/requests/components/workflow-request/components/RepoFieldsPanel'
+import UploadedFilePreview from '@/pages/requests/components/workflow-request/components/UploadedFilePreview'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
-import { WorkflowNameContext } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
-import { getStartStageHiddenFieldIds } from '@/pages/requests/utils/workflow.utils'
+import {
+  WorkflowNameContext,
+  WorkflowRepositoryIdContext,
+  WorkflowTableUploadContext,
+  type TableUploadRequest,
+} from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
+import Button from '@/components/base/button/Button'
+import {
+  getStartStageHiddenFieldIds,
+  isDocumentFormWorkflow,
+} from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
@@ -92,6 +108,7 @@ type PortalWizardProps = {
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
+const TABLE_FIELD_TYPES = new Set(['TABLE', 'DYNAMIC_TABLE'])
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const PortalWizard = ({
@@ -165,11 +182,12 @@ const PortalWizard = ({
   }, [t, workflowId, workflowName])
 
   const panels = useMemo(() => source?.panels || [], [source])
+  // Same rule as the in-app new request: the document upload is only for
+  // workflows that start from a document (plus Accounts Payable invoices).
+  // Other forms keep their file fields inline and use Attachments below.
   const needsDocumentSection = Boolean(
     source &&
-    (source.isAccountsPayable ||
-      source.repositoryId ||
-      source.fileFields.length > 0),
+    (source.isAccountsPayable || isDocumentFormWorkflow(source.workflow)),
   )
   const documentTitle =
     source?.fileFields[0]?.label ||
@@ -227,10 +245,36 @@ const PortalWizard = ({
       ),
     )
   }, [repoFieldHints, source?.panels])
-  const repoFieldDescriptors = useMemo(
-    () => buildRepoFieldDescriptors(repositoryFields, source?.panels || []),
-    [repositoryFields, source?.panels],
+  // A table file column indexes each file through the file viewer, which asks
+  // for the repository's own mandatory fields there. Those fields are not
+  // form fields, so they are not added to the form or required on submit.
+  const hasTableFileColumns = useMemo(
+    () =>
+      (source?.panels || []).some((panel: any) =>
+        (panel.fields || []).some(
+          (field: any) =>
+            TABLE_FIELD_TYPES.has(String(field.type || '').toUpperCase()) &&
+            (field.settings?.specific?.tableColumns || []).some((col: any) =>
+              isFileColumnType(col?.type),
+            ),
+        ),
+      ),
+    [source?.panels],
   )
+  const repoFieldDescriptors = useMemo(() => {
+    const descriptors = withoutRequestNumberMandatory(
+      buildRepoFieldDescriptors(repositoryFields, source?.panels || []),
+    )
+    if (!hasTableFileColumns) return descriptors
+    return descriptors.map((descriptor) =>
+      descriptor.matchedFieldId || !descriptor.repoField.isMandatory
+        ? descriptor
+        : {
+            ...descriptor,
+            repoField: { ...descriptor.repoField, isMandatory: false },
+          },
+    )
+  }, [hasTableFileColumns, repositoryFields, source?.panels])
   const formPanels = useMemo(
     () => applyRepoMandatoryToFormPanels(panels, repoFieldDescriptors),
     [panels, repoFieldDescriptors],
@@ -250,6 +294,87 @@ const PortalWizard = ({
       ),
     [answers, pendingUploadFileName, repoFieldDescriptors, source?.questions],
   )
+  // Table file waiting on mandatory repository fields: queued by the table and
+  // shown in the file viewer with the repository fields beside it.
+  const [tableUploads, setTableUploads] = useState<TableUploadRequest[]>([])
+  const [tableUploadValues, setTableUploadValues] = useState<
+    Record<string, unknown>
+  >({})
+  const [confirmingTableUpload, setConfirmingTableUpload] = useState(false)
+  const [highlightTerm, setHighlightTerm] = useState<string | null>(null)
+  const [highlightRequestId, setHighlightRequestId] = useState(0)
+  const activeTableUpload = tableUploads[0] ?? null
+  const requestTableUpload = useCallback((request: TableUploadRequest) => {
+    setTableUploads((prev) => [...prev, request])
+  }, [])
+
+  useEffect(() => {
+    if (!activeTableUpload) {
+      setTableUploadValues({})
+      return
+    }
+    const seeded: Record<string, unknown> = {}
+    for (const [name, value] of Object.entries(
+      activeTableUpload.initialValues,
+    )) {
+      if (value) seeded[syntheticFieldId(name)] = value
+    }
+    setTableUploadValues(seeded)
+  }, [activeTableUpload])
+
+  const tableUploadDescriptors = useMemo(
+    () =>
+      activeTableUpload
+        ? withoutRequestNumberMandatory(
+            buildRepoFieldDescriptors(activeTableUpload.repoFields, panels),
+          )
+        : [],
+    [activeTableUpload, panels],
+  )
+  const tableUploadModel = useMemo(
+    () => ({ ...portalFormModel, ...tableUploadValues }),
+    [portalFormModel, tableUploadValues],
+  )
+  const missingTableUploadIds = useMemo(
+    () =>
+      getMissingMandatoryFieldIds(
+        tableUploadDescriptors,
+        panels,
+        tableUploadModel,
+        { hasUploadedFile: true, repoOnly: true },
+      ),
+    [tableUploadDescriptors, panels, tableUploadModel],
+  )
+
+  const finishTableUpload = () => setTableUploads((prev) => prev.slice(1))
+
+  const handleCancelTableUpload = () => {
+    activeTableUpload?.onCancel()
+    finishTableUpload()
+  }
+
+  const handleConfirmTableUpload = async () => {
+    if (!activeTableUpload || missingTableUploadIds.size > 0) return
+    const values: Record<string, string> = {}
+    for (const descriptor of tableUploadDescriptors) {
+      values[descriptor.repoField.name!] = stringifyFieldValue(
+        getRepoFieldValue(descriptor, tableUploadModel),
+      )
+    }
+    setConfirmingTableUpload(true)
+    try {
+      await activeTableUpload.onConfirm(values)
+      finishTableUpload()
+    } catch {
+      showToast({
+        message: t`Failed to upload the file. Please try again.`,
+        variant: 'error',
+      })
+    } finally {
+      setConfirmingTableUpload(false)
+    }
+  }
+
   const missingMandatoryFields = useMemo(
     () => getMissingMandatoryFields(repoFieldDescriptors, portalFormModel),
     [portalFormModel, repoFieldDescriptors],
@@ -830,6 +955,7 @@ const PortalWizard = ({
   const submitLabel = source ? getStartActionLabel(source.workflow) : t`Submit`
   const canSubmit =
     Boolean(source) &&
+    !activeTableUpload &&
     !processing &&
     !submitting &&
     !staging &&
@@ -1050,7 +1176,89 @@ const PortalWizard = ({
   }
 
   return (
-    <div className='h-full min-h-0 overflow-y-auto' ref={setScrollEl}>
+    <WorkflowRepositoryIdContext.Provider value={source.repositoryId || ''}>
+    <WorkflowTableUploadContext.Provider value={requestTableUpload}>
+    {activeTableUpload ? (
+      <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+        <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+          <button
+            className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+            type='button'
+            onClick={handleCancelTableUpload}
+          >
+            <Icon
+              className='size-4 transition-transform group-hover:-translate-x-0.5'
+              name='tabler:arrow-left'
+            />
+            <span>{t`Back`}</span>
+          </button>
+        </div>
+        <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+          <div className='min-w-0 flex-1'>
+            <UploadedFilePreview
+              activeHighlightTerm={highlightTerm}
+              activeKey={null}
+              focusRequestId={highlightRequestId}
+              files={[
+                {
+                  fileName: activeTableUpload.file.name,
+                  key: 'table-file',
+                  rawFile: activeTableUpload.file,
+                },
+              ]}
+              onSelectKey={() => {}}
+            />
+          </div>
+          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+            <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+              <RepoFieldsPanel
+                descriptors={tableUploadDescriptors}
+                formModel={tableUploadModel}
+                hasAttemptedSubmit
+                missingMandatoryFieldIds={missingTableUploadIds}
+                repoFieldHints={repoFieldHints}
+                repositoryId={source.repositoryId}
+                onFieldChange={(fieldId, value) =>
+                  setTableUploadValues((prev) => ({
+                    ...prev,
+                    [fieldId]: value,
+                  }))
+                }
+                onFieldFocus={(value) => {
+                  const text = value == null ? '' : String(value).trim()
+                  if (!text) return
+                  setHighlightTerm(text)
+                  setHighlightRequestId((id) => id + 1)
+                }}
+              />
+            </div>
+            <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+              <Button
+                label={t`Cancel`}
+                variant='outline'
+                onClick={handleCancelTableUpload}
+              />
+              <Button
+                disabled={missingTableUploadIds.size > 0}
+                label={t`Upload`}
+                loading={confirmingTableUpload}
+                variant='solid'
+                onClick={handleConfirmTableUpload}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    {/* Kept mounted (just hidden) while a table file is being indexed, so the
+        form and its table keep their state. */}
+    <div
+      className={cn(
+        'h-full min-h-0 overflow-y-auto',
+        activeTableUpload && 'hidden',
+      )}
+      ref={setScrollEl}
+    >
       <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
         {needsDocumentSection ? (
           <div className='scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
@@ -1136,6 +1344,8 @@ const PortalWizard = ({
         </div>
       </div>
     </div>
+    </WorkflowTableUploadContext.Provider>
+    </WorkflowRepositoryIdContext.Provider>
   )
 }
 
