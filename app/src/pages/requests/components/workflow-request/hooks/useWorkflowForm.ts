@@ -467,6 +467,7 @@ export const useWorkflowForm = (
       setAttachments((prev) => [
         ...prev,
         {
+          addedAt: new Date().toISOString(),
           fileName: file.name,
           localId,
           ocrChecked: false,

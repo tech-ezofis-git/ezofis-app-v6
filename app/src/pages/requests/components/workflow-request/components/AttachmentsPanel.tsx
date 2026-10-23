@@ -13,6 +13,8 @@ import { formatFileSize, getFileExtension } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 
 export interface AttachmentEntry {
+  // When the file was added to the request (UTC ISO)
+  addedAt?: string
   fileName: string
   localId: string
   repositoryId: string
@@ -139,7 +141,9 @@ const AttachmentsPanel = ({
                       </div>
                       <div className='mt-0.5 flex min-w-0 items-center gap-2'>
                         <span className='shrink-0 text-[11px] text-gray-8'>
-                          {formatDatetime(new Date().toISOString(), 'DD-MMM-YYYY')}
+                          {file.addedAt
+                            ? formatDatetime(file.addedAt, 'datetime')
+                            : null}
                         </span>
                         {uploadedBy ? (
                           <>

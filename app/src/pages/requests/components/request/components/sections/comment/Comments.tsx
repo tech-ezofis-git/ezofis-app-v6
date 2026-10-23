@@ -254,10 +254,7 @@ export default function Comments({
                   : c?.createdByEmail || t`User`
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
-            ? formatDatetime(
-                parseCommentDate(c.createdAt),
-                'YYYY-MM-DD hh:mm A',
-              )
+            ? formatDatetime(parseCommentDate(c.createdAt), 'datetime')
             : ''
           const initials = isMe
             ? myInitials

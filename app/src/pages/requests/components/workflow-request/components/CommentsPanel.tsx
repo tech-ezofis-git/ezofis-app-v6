@@ -55,7 +55,7 @@ const CommentsPanel = ({
   isLoading = false,
   isSending = false,
   subtitle,
-  timeFormat = 'hh:mm A',
+  timeFormat = 'datetime',
   onClose,
   onDraftChange,
   onSend,
@@ -104,7 +104,7 @@ const CommentsPanel = ({
                       {t`You`}
                     </span>
                     <span className='text-[11px] font-medium text-gray-9'>
-                      {formatDatetime(comment.createdAt, 'YYYY-MM-DD hh:mm A')}
+                      {formatDatetime(comment.createdAt, 'datetime')}
                     </span>
                   </div>
                   <div className='text-[13px] leading-relaxed font-medium break-words whitespace-pre-wrap text-gray-12'>
