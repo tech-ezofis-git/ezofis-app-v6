@@ -575,6 +575,12 @@ export const PORTAL_SECTION_ATTACHMENTS = 'portal-section-attachments'
 export const PORTAL_SECTION_HISTORY = 'portal-section-history'
 export const PORTAL_SECTION_COMMENTS = 'portal-section-comments'
 
+// Wraps the shared form renderer on portal pages: cancels its own px-3 py-3
+// so the form cards line up with the Attachments / Comments cards, and gives
+// each form section more room below its last field.
+export const PORTAL_FORM_WRAPPER_CLASS =
+  'min-w-0 -m-3 [&_.mantine-Accordion-panel]:pb-6'
+
 // Scrolls a portal section into view and briefly rings it so the user sees
 // which block the header shortcut jumped to.
 export const scrollToPortalSection = (id: string) => {

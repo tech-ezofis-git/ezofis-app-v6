@@ -128,11 +128,11 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
-// True when the workflow starts from an uploaded document ("Document Form"),
-// read from settings / workflowJson / flowJson the same way the in-app new
-// request does.
-export function isDocumentFormWorkflow(workflow: any): boolean {
-  if (!workflow) return false
+// How the workflow is initiated ("initiate using"), read from settings /
+// workflowJson / flowJson the same way the in-app new request does, upper-cased
+// without separators: 'FORM', 'DOCUMENT', 'DOCUMENTFORM', or '' when unset.
+export function getWorkflowInitiateType(workflow: any): string {
+  if (!workflow) return ''
   const parse = (value: any) => {
     if (typeof value !== 'string') return value || null
     try {
@@ -141,7 +141,7 @@ export function isDocumentFormWorkflow(workflow: any): boolean {
       return null
     }
   }
-  const initiateType = String(
+  return String(
     workflow.settings?.general?.initiateUsing?.type ||
       parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
       parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
@@ -149,7 +149,11 @@ export function isDocumentFormWorkflow(workflow: any): boolean {
   )
     .toUpperCase()
     .replace(/[-_\s]/g, '')
-  return initiateType === 'DOCUMENTFORM'
+}
+
+// True when the workflow starts from an uploaded document ("Document Form")
+export function isDocumentFormWorkflow(workflow: any): boolean {
+  return getWorkflowInitiateType(workflow) === 'DOCUMENTFORM'
 }
 
 // Field ids the workflow's start block hides from the initiator on a new

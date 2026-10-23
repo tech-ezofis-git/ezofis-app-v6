@@ -53,6 +53,7 @@ import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
 import Button from '@/components/base/button/Button'
 import {
   getStartStageHiddenFieldIds,
+  getWorkflowInitiateType,
   isDocumentFormWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
@@ -60,6 +61,7 @@ import cn from '@/utils/cn'
 import {
   formPanelSectionId,
   getInitiateNodeLabel,
+  PORTAL_FORM_WRAPPER_CLASS,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
   PORTAL_SECTION_DOCUMENT,
@@ -102,6 +104,8 @@ type PortalWizardProps = {
   onChromeChange?: (
     chrome: {
       canSubmit: boolean
+      // Initiated by a form (not a document / document form)
+      isFormInitiated: boolean
       stageLabel?: string
       submitLabel: string
       submitting: boolean
@@ -1154,10 +1158,13 @@ const PortalWizard = ({
     if (!source?.workflow) return ''
     return getInitiateNodeLabel(source.workflow)
   }, [source?.workflow])
+  const isFormInitiated =
+    Boolean(source) && getWorkflowInitiateType(source?.workflow) === 'FORM'
 
   useEffect(() => {
     onChromeChange?.({
       canSubmit,
+      isFormInitiated,
       stageLabel: initiateNodeLabel,
       submitLabel,
       submitting,
@@ -1169,6 +1176,7 @@ const PortalWizard = ({
   }, [
     canSubmit,
     initiateNodeLabel,
+    isFormInitiated,
     onChromeChange,
     submitLabel,
     submitting,
@@ -1361,24 +1369,28 @@ const PortalWizard = ({
           <WorkflowNameContext.Provider
             value={String(source.workflow?.name || source.workflowName || '')}
           >
-            <WorkflowFormRenderer
-              formModel={portalFormModel}
-              hasAttemptedSubmit={attemptedSubmit}
-              hiddenFieldIds={hiddenFileFieldIds}
-              missingMandatoryFieldIds={missingMandatoryFieldIds}
-              panels={formPanels}
-              preparingFieldId={preparingFieldId}
-              repoFieldHints={repoFieldHints}
-              repositoryId={source.repositoryId}
-              disableOwnScroll
-              preparePhase={
-                processing ? 'extracting' : staging ? 'uploading' : null
-              }
-              getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
-              onFieldChange={handleFieldChange}
-              onOcrFieldList={applyOcrToAnswers}
-              onRequestUpload={handleRequestUpload}
-            />
+            <div className={PORTAL_FORM_WRAPPER_CLASS}>
+              <WorkflowFormRenderer
+                formModel={portalFormModel}
+                hasAttemptedSubmit={attemptedSubmit}
+                hiddenFieldIds={hiddenFileFieldIds}
+                missingMandatoryFieldIds={missingMandatoryFieldIds}
+                panels={formPanels}
+                preparingFieldId={preparingFieldId}
+                repoFieldHints={repoFieldHints}
+                repositoryId={source.repositoryId}
+                disableOwnScroll
+                preparePhase={
+                  processing ? 'extracting' : staging ? 'uploading' : null
+                }
+                getPanelValue={(panel, index) =>
+                  formPanelSectionId(panel, index)
+                }
+                onFieldChange={handleFieldChange}
+                onOcrFieldList={applyOcrToAnswers}
+                onRequestUpload={handleRequestUpload}
+              />
+            </div>
           </WorkflowNameContext.Provider>
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>

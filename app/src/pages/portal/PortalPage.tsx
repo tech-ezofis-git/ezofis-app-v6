@@ -68,6 +68,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   const [submissionsTick, setSubmissionsTick] = useState(0)
   const [wizardChrome, setWizardChrome] = useState<{
     canSubmit: boolean
+    isFormInitiated: boolean
     stageLabel?: string
     submitLabel: string
     submitting: boolean
@@ -95,6 +96,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     (
       chrome: {
         canSubmit: boolean
+        isFormInitiated: boolean
         stageLabel?: string
         submitLabel: string
         submitting: boolean
@@ -107,6 +109,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         if (!chrome) return prev ? null : prev
         if (
           prev?.canSubmit === chrome.canSubmit &&
+          prev?.isFormInitiated === chrome.isFormInitiated &&
           prev?.stageLabel === chrome.stageLabel &&
           prev?.submitLabel === chrome.submitLabel &&
           prev?.submitting === chrome.submitting &&
@@ -116,6 +119,8 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         }
         return {
           canSubmit: chrome.canSubmit,
+          isFormInitiated: chrome.isFormInitiated,
+          stageLabel: chrome.stageLabel,
           submitLabel: chrome.submitLabel,
           submitting: chrome.submitting,
           title: chrome.title,
@@ -462,6 +467,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
               attachmentCount: sectionCounts.attachments,
               canSubmit: Boolean(wizardChrome?.canSubmit),
               commentCount: sectionCounts.comments,
+              showSectionButtons: Boolean(wizardChrome?.isFormInitiated),
               stageLabel: wizardChrome?.stageLabel,
               submitLabel: wizardChrome?.submitLabel,
               submitting: Boolean(wizardChrome?.submitting),

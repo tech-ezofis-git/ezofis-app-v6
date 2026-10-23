@@ -932,11 +932,15 @@ export const fetchMasterFormColumnOptions = async (
         addKeys(f?.id)
         addKeys(f?.label)
         addKeys(f?.name)
+        const rawValues = extractScalarStrings(c.value)
+          .map((s) => s.trim())
+          .filter(Boolean)
         return {
+          // Master column label, sent as a by-column filter
+          columnName: String(f?.label || c.masterColumn).trim(),
           keys,
-          values: new Set(
-            extractScalarStrings(c.value).map((s) => s.trim().toLowerCase()),
-          ),
+          rawValues,
+          values: new Set(rawValues.map((s) => s.toLowerCase())),
         }
       })
     const hasConditions = activeConditions.length > 0
@@ -1018,50 +1022,101 @@ export const fetchMasterFormColumnOptions = async (
     }
 
     // 2. Fetch master entries by column (POST /form/{id}/entry/by-column):
-    // with a parent, only the rows whose parent column equals the parent's
-    // value; without one, just the field's own column.
+    // the field's own column, filtered by the parent's column = value when
+    // it has a parent, e.g. { columnName: 'Expenses', filters:
+    // [{ columnName: 'Category', columnValue: 'Travel' }] }.
     let rawEntries: any[] = []
     let byColumnFailed = false
+    // The column's distinct values, as by-column returns them in `values`
+    // (already filtered by the parent); used as the options directly.
+    let serverValues: string[] | null = null
+    const collectServerValues = (data: any) => {
+      if (!Array.isArray(data?.values)) return
+      serverValues = [...(serverValues || []), ...data.values]
+    }
     const ownColumnName = String(
       matchedField?.label || columnKeyOrLabel || '',
     ).trim()
-    if (hasParentFilter && targetParentSet.size > 0 && parentColumnName) {
+    // Condition mappings / chained ancestors become extra filters. A filter
+    // holds one value, so a multi-value condition falls back to loading the
+    // entries and matching them here.
+    const conditionFilters = conditionsToApply.map((c) => ({
+      columnName: c.columnName,
+      columnValue: c.rawValues[0],
+    }))
+    if (conditionsToApply.some((c) => c.rawValues.length > 1)) {
+      byColumnFailed = true
+    }
+    const filterKey = (filters: { columnName: string; columnValue: string }[]) =>
+      filters.map((f) => `${f.columnName}=${f.columnValue}`).join('&')
+    if (byColumnFailed) {
+      // skip the by-column call
+    } else if (
+      hasParentFilter &&
+      targetParentSet.size > 0 &&
+      parentColumnName &&
+      ownColumnName
+    ) {
       const parentVals = Array.from(
         new Set(targetParentVals.map((s) => s.trim()).filter(Boolean)),
       )
       for (const parentVal of parentVals) {
+        const filters = [
+          { columnName: parentColumnName, columnValue: parentVal },
+          ...conditionFilters,
+        ]
         const res = await cachedMasterCall(
-          `bycol:${parentColumnName}:${parentVal}`,
+          `bycol:${ownColumnName}:${filterKey(filters)}`,
           masterFormId,
           () =>
             formApi.getFormEntriesByColumn(
               masterFormId,
-              parentColumnName,
-              parentVal,
+              ownColumnName,
+              filters,
             ),
         )
         if (res.error) {
           byColumnFailed = true
           break
         }
+        collectServerValues(res.data)
         rawEntries.push(...parseEntriesData(res.data))
-        addUnderscoreKeys(parentCandidateKeys, res.data?.resolvedColumn)
+        addUnderscoreKeys(candidateKeys, res.data?.resolvedColumn)
       }
     } else if (ownColumnName) {
       const res = await cachedMasterCall(
-        `bycol:${ownColumnName}`,
+        `bycol:${ownColumnName}:${filterKey(conditionFilters)}`,
         masterFormId,
-        () => formApi.getFormEntriesByColumn(masterFormId, ownColumnName),
+        () =>
+          formApi.getFormEntriesByColumn(
+            masterFormId,
+            ownColumnName,
+            conditionFilters,
+          ),
       )
       if (res.error) {
         byColumnFailed = true
       } else {
+        collectServerValues(res.data)
         rawEntries = parseEntriesData(res.data)
         addUnderscoreKeys(candidateKeys, res.data?.resolvedColumn)
       }
     } else {
       byColumnFailed = true
     }
+
+    if (!byColumnFailed && serverValues !== null) {
+      for (const raw of serverValues as unknown[]) {
+        for (const rawStr of extractScalarStrings(raw)) {
+          for (const item of splitStoredSelectValues(rawStr)) {
+            const itemStr = item.trim()
+            if (itemStr) uniqueValues.add(itemStr)
+          }
+        }
+      }
+      return Array.from(uniqueValues).map((v) => ({ id: v, name: v }))
+    }
+
     addUnderscoreKeys(candidateKeys)
     addUnderscoreKeys(parentCandidateKeys)
     activeConditions.forEach((c) => addUnderscoreKeys(c.keys))
@@ -1345,12 +1400,21 @@ export const fetchMasterTableRows = async (
       }
     }
 
-    // Fetch master entries by column (POST /form/{id}/entry/by-column): with
-    // a parent, only the rows whose parent column equals the parent's value;
-    // without one, just the first mapped column.
+    // Fetch master entries by column (POST /form/{id}/entry/by-column): the
+    // first mapped column, filtered by the parent's column = value when the
+    // table has a parent.
     let rawEntries: any[] = []
     let byColumnFailed = false
-    if (hasParentFilter) {
+    let serverValues: string[] | null = null
+    const collectServerValues = (data: any) => {
+      if (!Array.isArray(data?.values)) return
+      serverValues = [...(serverValues || []), ...data.values]
+    }
+    const firstMapped = columnMappings.find((m) => m.masterColumn)
+    const ownColumnName = firstMapped
+      ? columnLabelOf(firstMapped.masterColumn)
+      : ''
+    if (hasParentFilter && ownColumnName) {
       const parentColumnName = columnLabelOf(parentMasterColumnKey || '')
       const parentVals = Array.from(
         new Set(
@@ -1361,27 +1425,21 @@ export const fetchMasterTableRows = async (
       )
       for (const parentVal of parentVals) {
         const res = await cachedMasterCall(
-          `bycol:${parentColumnName}:${parentVal}`,
+          `bycol:${ownColumnName}:${parentColumnName}:${parentVal}`,
           masterFormId,
           () =>
-            formApi.getFormEntriesByColumn(
-              masterFormId,
-              parentColumnName,
-              parentVal,
-            ),
+            formApi.getFormEntriesByColumn(masterFormId, ownColumnName, [
+              { columnName: parentColumnName, columnValue: parentVal },
+            ]),
         )
         if (res.error) {
           byColumnFailed = true
           break
         }
+        collectServerValues(res.data)
         rawEntries.push(...parseEntriesData(res.data))
-        addUnderscoreKeys(parentCandidateKeys, res.data?.resolvedColumn)
       }
     } else {
-      const firstMapped = columnMappings.find((m) => m.masterColumn)
-      const ownColumnName = firstMapped
-        ? columnLabelOf(firstMapped.masterColumn)
-        : ''
       if (ownColumnName) {
         const res = await cachedMasterCall(
           `bycol:${ownColumnName}`,
@@ -1389,12 +1447,39 @@ export const fetchMasterTableRows = async (
           () => formApi.getFormEntriesByColumn(masterFormId, ownColumnName),
         )
         if (res.error) byColumnFailed = true
-        else rawEntries = parseEntriesData(res.data)
+        else {
+          collectServerValues(res.data)
+          rawEntries = parseEntriesData(res.data)
+        }
       } else {
         byColumnFailed = true
       }
     }
     addUnderscoreKeys(parentCandidateKeys)
+
+    // by-column returns only the requested column's `values` (no entries):
+    // enough to fill a table mapped from that one column. With more mapped
+    // columns the other cells need whole entries, so load those instead.
+    if (!byColumnFailed && rawEntries.length === 0 && serverValues !== null) {
+      const mapped = columnMappings.filter(
+        (m) => m.masterColumn && m.tableColumn,
+      )
+      if (mapped.length === 1) {
+        const tableColumn = mapped[0].tableColumn
+        const seen = new Set<string>()
+        const rows: Record<string, any>[] = []
+        for (const raw of serverValues as unknown[]) {
+          for (const value of extractScalarStrings(raw)) {
+            const text = value.trim()
+            if (!text || seen.has(text)) continue
+            seen.add(text)
+            rows.push({ [tableColumn]: text })
+          }
+        }
+        return rows
+      }
+      byColumnFailed = true
+    }
 
     // Fall back to loading every entry if the by-column call is unavailable
     if (byColumnFailed) {

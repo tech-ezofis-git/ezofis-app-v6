@@ -156,6 +156,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     .toUpperCase()
     .replace(/[-_\s]/g, '')
   const isDocumentForm = initiateType === 'DOCUMENTFORM'
+  // Attachments / Comments header shortcuts: only for form-initiated workflows
+  const isFormInitiated = initiateType === 'FORM'
 
   const isCompleted =
     Boolean(requestData?.isCompleted) ||
@@ -669,8 +671,11 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           isSubmitting={isSubmitting}
           title={t`New Request`}
           onClose={onClose}
-          onTogglePanel={(panel) =>
-            setActivePanel((current) => (current === panel ? null : panel))
+          onTogglePanel={
+            isFormInitiated
+              ? (panel) =>
+                  setActivePanel((current) => (current === panel ? null : panel))
+              : undefined
           }
           onSubmit={
             createdInstanceId || (isDocumentForm && hasAgents)

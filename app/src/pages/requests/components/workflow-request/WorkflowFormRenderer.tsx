@@ -568,7 +568,7 @@ const WorkflowFormRenderer = ({
               className={cn(
                 sizeClass,
                 'max-w-full min-w-0 px-2',
-                isTableField ? 'pb-3' : 'pb-2',
+                isTableField ? 'pb-5' : 'pb-4',
               )}
             >
               <FieldRenderer
