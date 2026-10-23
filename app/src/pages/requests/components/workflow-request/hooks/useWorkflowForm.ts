@@ -33,7 +33,7 @@ import {
   resolveRuntimeFieldType,
 } from '../utils/fieldRendering'
 
-const readStartedInstanceId = (data: unknown): string | null => {
+export const readStartedInstanceId = (data: unknown): string | null => {
   if (data == null) return null
   if (typeof data === 'number') return String(data)
   if (typeof data === 'string') {

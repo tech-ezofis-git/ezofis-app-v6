@@ -12,7 +12,11 @@ import {
   getFileIcon,
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import CommentsPanel, {
+  type LocalComment,
+} from '@/pages/requests/components/workflow-request/components/CommentsPanel'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
+import { readStartedInstanceId } from '@/pages/requests/components/workflow-request/hooks/useWorkflowForm'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
 import {
   applyFilenamePreFillToFormModel,
@@ -57,6 +61,7 @@ import {
   formPanelSectionId,
   getInitiateNodeLabel,
   PORTAL_SECTION_ATTACHMENTS,
+  PORTAL_SECTION_COMMENTS,
   PORTAL_SECTION_DOCUMENT,
 } from '../helpers/portalDetail'
 import {
@@ -104,6 +109,7 @@ type PortalWizardProps = {
       onSubmit: () => void
     } | null,
   ) => void
+  onCountsChange?: (counts: { attachments: number; comments: number }) => void
   onSubmitted: () => void
 }
 
@@ -116,9 +122,14 @@ const PortalWizard = ({
   workflowName,
   onCancel,
   onChromeChange,
+  onCountsChange,
   onSubmitted,
 }: PortalWizardProps) => {
   const { t } = useLingui()
+  // Notes for the approver, posted to the request once it is created (same as
+  // the in-app new request's Comments panel)
+  const [comments, setComments] = useState<LocalComment[]>([])
+  const [commentDraft, setCommentDraft] = useState('')
   const [source, setSource] = useState<PortalWizardSource | null>(null)
   const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -158,6 +169,8 @@ const PortalWizard = ({
         )
         setFiles([])
         setExtraFiles([])
+        setComments([])
+        setCommentDraft('')
         setApInstanceId(null)
         setPrimaryPending(null)
         setExtraPending([])
@@ -995,6 +1008,39 @@ const PortalWizard = ({
     return labels
   }
 
+  const addComment = () => {
+    const text = commentDraft.trim()
+    if (!text) return
+    setComments((prev) => [
+      ...prev,
+      { createdAt: new Date().toISOString(), id: crypto.randomUUID(), text },
+    ])
+    setCommentDraft('')
+  }
+
+  // Posts the locally composed comments to the started request. Returns an
+  // error message when they could not be attached (the request itself exists).
+  const postPendingComments = async (
+    instanceId: string | null,
+    texts: string[],
+  ): Promise<string> => {
+    if (!source || texts.length === 0) return ''
+    if (!instanceId) {
+      return t`Request was created, but the comments could not be attached.`
+    }
+    for (const text of texts) {
+      const posted = await workflowsApiV6.addInstanceComment(
+        String(source.workflowId),
+        instanceId,
+        { comments: text, showTo: 2 },
+      )
+      if (posted.error) {
+        return t`Request was created, but the comments could not be attached.`
+      }
+    }
+    return ''
+  }
+
   const handleSubmit = async () => {
     setAttemptedSubmit(true)
     if (!source || processing || submitting || staging) return
@@ -1013,9 +1059,16 @@ const PortalWizard = ({
     try {
       if (source.isAccountsPayable) {
         if (apInstanceId) {
+          const commentError = await postPendingComments(
+            apInstanceId,
+            comments.map((comment) => comment.text.trim()).filter(Boolean),
+          )
           showToast({
             message: t`Request created. You can track it from My Submissions.`,
           })
+          if (commentError) {
+            showToast({ message: commentError, variant: 'error' })
+          }
           onSubmitted()
         }
         return
@@ -1055,20 +1108,29 @@ const PortalWizard = ({
         }
       }
 
+      const pendingComments = comments
+        .map((comment) => comment.text.trim())
+        .filter(Boolean)
       const payload = buildStartWorkflowPayload(
         source.panels,
         formModel,
         extraAttachments,
+        pendingComments.join('\n\n'),
       )
-      const { error } = await workflowsApiV6.startWorkflowJson(
+      const { data, error } = await workflowsApiV6.startWorkflowJson(
         source.workflowId,
         payload,
       )
       if (error) throw new Error(String(error))
 
+      const commentError = await postPendingComments(
+        readStartedInstanceId(data),
+        pendingComments,
+      )
       showToast({
         message: t`Request created. You can track it from My Submissions.`,
       })
+      if (commentError) showToast({ message: commentError, variant: 'error' })
       onSubmitted()
     } catch (error) {
       console.error(error)
@@ -1119,6 +1181,16 @@ const PortalWizard = ({
     },
     [onChromeChange],
   )
+
+  // Files added at the request level (the document upload and Attachments)
+  const attachmentCount =
+    extraFiles.length + (needsDocumentSection ? files.length : 0)
+  useEffect(() => {
+    onCountsChange?.({
+      attachments: attachmentCount,
+      comments: comments.length,
+    })
+  }, [attachmentCount, comments.length, onCountsChange])
 
   const renderFileList = (list: File[], onRemove: (index: number) => void) =>
     list.length > 0 ? (
@@ -1341,6 +1413,18 @@ const PortalWizard = ({
             />
           )}
           {renderFileList(extraFiles, removeExtraFile)}
+        </div>
+
+        <div
+          className='scroll-mt-3 rounded-xl transition-shadow'
+          id={PORTAL_SECTION_COMMENTS}
+        >
+          <CommentsPanel
+            comments={comments}
+            draft={commentDraft}
+            onDraftChange={setCommentDraft}
+            onSend={addComment}
+          />
         </div>
       </div>
     </div>

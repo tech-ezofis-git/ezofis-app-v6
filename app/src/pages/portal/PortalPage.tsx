@@ -74,6 +74,23 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     title: string
   } | null>(null)
   const wizardSubmitRef = useRef<() => void>(() => {})
+  // Attachment / comment counts for the header shortcuts on the wizard and
+  // the request detail
+  const [sectionCounts, setSectionCounts] = useState({
+    attachments: 0,
+    comments: 0,
+  })
+  const handleSectionCountsChange = useCallback(
+    (counts: { attachments: number; comments: number }) => {
+      setSectionCounts((prev) =>
+        prev.attachments === counts.attachments &&
+        prev.comments === counts.comments
+          ? prev
+          : counts,
+      )
+    },
+    [],
+  )
   const handleWizardChromeChange = useCallback(
     (
       chrome: {
@@ -393,6 +410,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         workflowName={selectedWorkflowName}
         onCancel={() => setView('home')}
         onChromeChange={handleWizardChromeChange}
+        onCountsChange={handleSectionCountsChange}
         onSubmitted={() => {
           setSubmissionsTick((tick) => tick + 1)
           setView('home')
@@ -405,6 +423,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         submission={selectedSubmission}
         userId={session.userId}
         onChromeChange={handleDetailChromeChange}
+        onCountsChange={handleSectionCountsChange}
         onMoved={() => {
           setSubmissionsTick((tick) => tick + 1)
           setSelectedSubmission(null)
@@ -424,6 +443,8 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
           ? {
               acting: Boolean(detailChrome?.acting),
               actions: detailChrome?.actions || [],
+              attachmentCount: sectionCounts.attachments,
+              commentCount: sectionCounts.comments,
               requestNo: selectedSubmission.requestNo,
               status: selectedSubmission.status,
               statusClassName: PORTAL_STATUS_TONE[selectedSubmission.status],
@@ -438,7 +459,9 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       wizard={
         view === 'wizard'
           ? {
+              attachmentCount: sectionCounts.attachments,
               canSubmit: Boolean(wizardChrome?.canSubmit),
+              commentCount: sectionCounts.comments,
               stageLabel: wizardChrome?.stageLabel,
               submitLabel: wizardChrome?.submitLabel,
               submitting: Boolean(wizardChrome?.submitting),
