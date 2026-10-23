@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/vite-env.d.ts",
+    "src/**/*.d.ts",
+    "src/pages/requests/components/workflow-request/WorkflowRequest.tsx",
+    "src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx",
+    "src/pages/requests/components/workflow-request/utils/gmailFormAttachment.ts"
+  ]
+}

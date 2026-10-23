@@ -24,8 +24,10 @@ import {
   useWorkflowAttachments,
   useWorkflowName,
   useWorkflowOpenAttachment,
+  useWorkflowRepositoryId,
   useWorkflowTableUpload,
 } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import { getWorkflowRepositoryId } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -857,6 +859,8 @@ const TableCellFileInput = ({
   const onOpenAttachment = useWorkflowOpenAttachment()
   const storeSelectedItem = requestStore((state) => state.selectedItem)
   const storeRawWorkflow = requestStore((state) => state.rawWorkflowData)
+  const storeSelectedWorkflow = requestStore((state) => state.selectedWorkflow)
+  const workflowRepositoryId = useWorkflowRepositoryId()
 
   const allAvailableAttachments = useMemo(() => {
     const list: any[] = []
@@ -911,7 +915,8 @@ const TableCellFileInput = ({
       if (matched) {
         return {
           ...fileEntry,
-          fileName: matched.fileName || matched.name || fileEntry.fileName,
+          // The cell's own name wins; attachments only fill in a missing one.
+          fileName: fileEntry.fileName || matched.fileName || matched.name,
           fileSize: matched.fileSize ?? fileEntry.fileSize,
           itemId: matched.itemId || fileEntry.itemId || matched.id,
           repositoryId: matched.repositoryId || fileEntry.repositoryId,
@@ -997,11 +1002,15 @@ const TableCellFileInput = ({
       window.open(url, '_blank')
       return
     }
+    // The file's own repository, else the workflow JSON's repository
+    // (settings.general.initiateUsing.repositoryId).
     const targetRepoId = String(
       resolved.repositoryId ||
         fileObj.repositoryId ||
+        workflowRepositoryId ||
+        getWorkflowRepositoryId(storeRawWorkflow) ||
+        getWorkflowRepositoryId(storeSelectedWorkflow) ||
         storeSelectedItem?.repositoryId ||
-        storeRawWorkflow?.repositoryId ||
         '3',
     )
     const fileId = String(
@@ -1717,7 +1726,7 @@ const TableFieldRenderer = ({
   masterSyncParentValue,
   ocrLineItems,
   readOnly,
-  repositoryId,
+  repositoryId: repositoryIdProp,
   required,
   showRowApprove,
   value,
@@ -1725,6 +1734,8 @@ const TableFieldRenderer = ({
   onChange,
 }: Props) => {
   const { t } = useLingui()
+  const contextRepositoryId = useWorkflowRepositoryId()
+  const repositoryId = repositoryIdProp || contextRepositoryId
   const workflowName = useWorkflowName()
   const isExpenseReimbursement =
     workflowName.trim().toLowerCase() === 'expense reimbursement'
@@ -3780,6 +3791,7 @@ const TableFieldRenderer = ({
                                   .map(
                                     (item) =>
                                       item?.fileName ||
+                                      item?.filename ||
                                       item?.name ||
                                       item?.label ||
                                       '',
@@ -3789,6 +3801,7 @@ const TableFieldRenderer = ({
                               }
                               return (
                                 (v as any).fileName ||
+                                (v as any).filename ||
                                 (v as any).name ||
                                 (v as any).label ||
                                 null

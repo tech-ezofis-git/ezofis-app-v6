@@ -7,7 +7,14 @@ export const WorkflowNameContext = createContext('')
 
 export const useWorkflowName = () => useContext(WorkflowNameContext)
 
-export const WorkflowAttachmentsContext = createContext<any[]>([])
+// Repository from the workflow JSON (settings.general.initiateUsing), where
+// files saved in the request's table cells live.
+export const WorkflowRepositoryIdContext = createContext('')
+
+export const useWorkflowRepositoryId = () =>
+  useContext(WorkflowRepositoryIdContext)
+
+export const WorkflowAttachmentsContext =createContext<any[]>([])
 
 export const useWorkflowAttachments = () => useContext(WorkflowAttachmentsContext)
 

@@ -34,9 +34,11 @@ import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
 import {
   WorkflowNameContext,
+  WorkflowRepositoryIdContext,
   WorkflowTableUploadContext,
   type TableUploadRequest,
 } from './WorkflowNameContext'
+import { getWorkflowRepositoryId } from './utils/gmailFormAttachment'
 import {
   buildRepoFieldDescriptors,
   getMissingMandatoryFieldIds,
@@ -79,6 +81,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
+  const workflowRepositoryId = getWorkflowRepositoryId(workflow)
   const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
   const [tableUploads, setTableUploads] = useState<TableUploadRequest[]>([])
   const [tableUploadValues, setTableUploadValues] = useState<
@@ -684,6 +687,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
   return (
     <WorkflowNameContext.Provider value={String(workflow?.name || '')}>
+      <WorkflowRepositoryIdContext.Provider value={workflowRepositoryId}>
       <WorkflowTableUploadContext.Provider value={requestTableUpload}>
       <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
         <Header
@@ -764,7 +768,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         hasAttemptedSubmit
                         missingMandatoryFieldIds={missingTableUploadIds}
                         repoFieldHints={repoFieldHints}
-                        repositoryId={workflow?.repositoryId}
+                        repositoryId={workflowRepositoryId}
                         onFieldChange={(fieldId, value) =>
                           setTableUploadValues((prev) => ({
                             ...prev,
@@ -915,7 +919,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           panels={panels}
                           presentation='extracted'
                           repoFieldHints={repoFieldHints}
-                          repositoryId={workflow?.repositoryId}
+                          repositoryId={workflowRepositoryId}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -934,7 +938,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           missingMandatoryFieldIds={missingMandatoryFieldIds}
                           panels={panels}
                           repoFieldHints={repoFieldHints}
-                          repositoryId={workflow?.repositoryId}
+                          repositoryId={workflowRepositoryId}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -982,7 +986,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   panels={panels}
                   stages={workflowStages}
                   repoFieldHints={repoFieldHints}
-                  repositoryId={workflow?.repositoryId}
+                  repositoryId={workflowRepositoryId}
                   onFieldChange={setFieldValue}
                   onAddAttachments={addAttachment}
                   onOcrFieldList={applyOcrFieldList}
@@ -1031,7 +1035,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                         hasAttemptedSubmit={hasAttemptedSubmit}
                         missingMandatoryFieldIds={missingMandatoryFieldIds}
                         repoFieldHints={repoFieldHints}
-                        repositoryId={workflow?.repositoryId}
+                        repositoryId={workflowRepositoryId}
                         onFieldChange={setFieldValue}
                         onFieldFocus={handleFieldFocus}
                         onOcrFieldList={applyOcrFieldList}
@@ -1074,6 +1078,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         )}
       </div>
       </WorkflowTableUploadContext.Provider>
+      </WorkflowRepositoryIdContext.Provider>
     </WorkflowNameContext.Provider>
   )
 }

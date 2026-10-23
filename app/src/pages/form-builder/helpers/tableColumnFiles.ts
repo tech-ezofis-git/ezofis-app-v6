@@ -58,7 +58,7 @@ const normalizeName = (s: string) =>
   s.replace(/\*/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
 
 const fileKey = (entry: Record<string, any>) =>
-  `${entry?.fileName ?? entry?.name ?? ''}|${entry?.fileSize ?? entry?.size ?? ''}`
+  `${entry?.fileName ?? entry?.filename ?? entry?.name ?? ''}|${entry?.fileSize ?? entry?.size ?? ''}`
 
 /**
  * New picks added to a cell's value. A multiple-files column appends (skipping
@@ -211,7 +211,7 @@ export function getStoredFileInfo(value: unknown): ColumnFileInfo {
   const v = value as Record<string, any>
   const size = v.fileSize ?? v.size ?? v.rawFile?.size
   return {
-    name: v.fileName ?? v.name ?? v.rawFile?.name,
+    name: v.fileName ?? v.filename ?? v.name ?? v.rawFile?.name,
     size: typeof size === 'number' ? size : undefined,
   }
 }
@@ -336,12 +336,29 @@ export function removeFileFromValue(
   return next.length > 0 ? next : null
 }
 
+// Saved cells can hold the backend's lowercase keys (`{ itemid, filename }`);
+// the UI reads `fileName` / `itemId`, so expose those from the entry itself.
+const withFileAliases = (entry: Record<string, any>): Record<string, any> => {
+  const fileName = entry.fileName ?? entry.filename
+  const itemId = entry.itemId ?? entry.itemid
+  if (fileName === entry.fileName && itemId === entry.itemId) return entry
+  return {
+    ...entry,
+    ...(fileName !== undefined ? { fileName } : {}),
+    ...(itemId !== undefined ? { itemId } : {}),
+  }
+}
+
 /** Files held by a cell, whether it stores none, one object, or a list. */
 export function toFileList(value: unknown): Array<Record<string, any>> {
   if (isBlank(value)) return []
   if (Array.isArray(value)) {
-    return value.filter((v) => v && typeof v === 'object')
+    return value
+      .filter((v) => v && typeof v === 'object')
+      .map(withFileAliases)
   }
   if (typeof value === 'string') return [{ fileName: value }]
-  return typeof value === 'object' ? [value as Record<string, any>] : []
+  return typeof value === 'object'
+    ? [withFileAliases(value as Record<string, any>)]
+    : []
 }
