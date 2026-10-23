@@ -63,6 +63,7 @@ import {
   getColumnCurrencyOptions,
   getNumberBounds,
   getNumberCellProps,
+  isGeneratedDefaultCell,
   parseScannedNumber,
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
 import {
@@ -235,6 +236,43 @@ const getColumnPlaceholder = (col: TableColumn) =>
   col.settings?.specific?.placeholder || getEffectiveColumnLabel(col) || '...'
 
 const getColumnLabel = (col: TableColumn) => getEffectiveColumnLabel(col)
+
+// Same rule as the submit validation (runtimeValidation getTableFieldErrors)
+const isColumnRequired = (col: TableColumn) =>
+  col.settings?.validation?.fieldRule === 'REQUIRED' ||
+  Boolean((col as any).isRequired || (col as any).required)
+
+// A cell's value as short display text for the list-view row summary: file
+// names for file cells, the label of an option object, else the plain value.
+const cellSummaryText = (v: unknown): string => {
+  if (v == null || v === '') return ''
+  if (Array.isArray(v)) {
+    return v
+      .map((item) =>
+        item && typeof item === 'object'
+          ? String(
+              (item as any).fileName ||
+                (item as any).filename ||
+                (item as any).name ||
+                (item as any).label ||
+                '',
+            )
+          : String(item ?? ''),
+      )
+      .filter(Boolean)
+      .join(', ')
+  }
+  if (typeof v === 'object') {
+    return String(
+      (v as any).fileName ||
+        (v as any).filename ||
+        (v as any).name ||
+        (v as any).label ||
+        '',
+    )
+  }
+  return String(v)
+}
 
 const isColumnReadOnly = (col: TableColumn) =>
   col.settings?.general?.visibility === 'READ_ONLY' ||
@@ -1893,6 +1931,19 @@ const TableFieldRenderer = ({
     isDynamicTable && dynamicColumns.some((c) => c.id === col.id)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
 
+  // List view: open the first row when the view is shown, so its fields are
+  // visible straight away (a collapsed blank row reads as nothing there)
+  const listViewAutoExpanded = useRef(false)
+  useEffect(() => {
+    if (activeView !== 'ADVANCE') {
+      listViewAutoExpanded.current = false
+      return
+    }
+    if (listViewAutoExpanded.current || rows.length === 0) return
+    listViewAutoExpanded.current = true
+    setExpandedRowIndex((current) => current ?? 0)
+  }, [activeView, rows.length])
+
   const updateDynamicColumns = (next: TableColumn[]) => {
     onChange(rows.map((row) => ({ ...row, _dynamicColumns: next })))
   }
@@ -3142,10 +3193,15 @@ const TableFieldRenderer = ({
                   ? 'lucide:table-2'
                   : 'eva:menu-2-outline'
               }
+              ariaLabel={
+                activeView === 'ADVANCE'
+                  ? t`Switch to table view`
+                  : t`Switch to list view`
+              }
               tooltip={
                 activeView === 'ADVANCE'
-                  ? t`Switch to Normal (grid) view`
-                  : t`Switch to Advance (card) view`
+                  ? t`Switch to table view`
+                  : t`Switch to list view`
               }
               onClick={() =>
                 setViewOverride(activeView === 'ADVANCE' ? 'NORMAL' : 'ADVANCE')
@@ -3535,6 +3591,15 @@ const TableFieldRenderer = ({
                       ) : (
                         <span className='inline-flex items-center gap-1 truncate'>
                           {getColumnLabel(col)}
+                          {isColumnRequired(col) && (
+                            <span
+                              aria-hidden
+                              className='-ml-0.5 text-red-9'
+                              title={t`Required`}
+                            >
+                              *
+                            </span>
+                          )}
                           {col.settings?.general?.tooltip && (
                             <Icon
                               className='shrink-0 text-gray-8'
@@ -3769,19 +3834,67 @@ const TableFieldRenderer = ({
             const isSelected = selectedRowIds.has(rowId)
             const resolvedRow = resolvedRows[rowIndex] || row
             const isExpanded = expandedRowIndex === rowIndex
-            const summaryColumns = effectiveColumns.slice(0, 2)
+            const toggleExpanded = () =>
+              setExpandedRowIndex(isExpanded ? null : rowIndex)
+            const cellValueOf = (col: TableColumn) =>
+              resolvedRow[col.id] ??
+              (col.name ? resolvedRow[col.name] : undefined)
+            // Only what the user enters counts: calculated columns (a 0 total
+            // before anything is typed) and untouched column defaults don't
+            const inputColumns = effectiveColumns.filter(
+              (col) => String(col.type || '').toUpperCase() !== 'CALCULATED',
+            )
+            const sessionUser = getSessionTableUser()
+            const hasUserValue = (col: TableColumn) => {
+              const value = cellValueOf(col)
+              return (
+                cellSummaryText(value) !== '' &&
+                !isGeneratedDefaultCell(
+                  col,
+                  value,
+                  sessionUser,
+                  rows.slice(0, rowIndex),
+                )
+              )
+            }
+            const filledColumns = inputColumns.filter(hasUserValue)
+            const missingRequired = inputColumns.filter(
+              (col) =>
+                isColumnRequired(col) &&
+                cellSummaryText(cellValueOf(col)) === '',
+            ).length
+            // Up to three filled values as the row's title, text before files
+            const summary = [
+              ...filledColumns.filter((col) => !isFileColumnType(col.type)),
+              ...filledColumns.filter((col) => isFileColumnType(col.type)),
+            ]
+              .slice(0, 3)
+              .map((col) => cellSummaryText(cellValueOf(col)))
+              .join(' · ')
+            const rowLabel =
+              rowsType === 'FIXED' && fixedRowLabels[rowIndex]
+                ? String(fixedRowLabels[rowIndex])
+                : ''
+            const rowName = field.label || t`Row`
+            const rowNumber = rowIndex + 1
+            const emptyRowTitle = t`${rowName} ${rowNumber}`
 
             return (
               <div
                 key={rowId}
                 className={cn(
-                  'rounded-xl border bg-surface shadow-2xs transition-colors',
+                  'animate-in overflow-hidden rounded-xl border bg-surface shadow-2xs transition-all fade-in',
                   isExpanded
-                    ? 'border-primary-5'
-                    : 'border-[var(--gray-3)] hover:border-gray-4',
+                    ? 'border-primary-5 shadow-xs'
+                    : 'border-[var(--gray-3)] hover:border-gray-5 hover:shadow-xs',
                 )}
               >
-                <div className='flex items-center gap-2 px-3 py-2'>
+                <div
+                  className={cn(
+                    'flex items-center gap-2.5 px-3 py-2.5',
+                    isExpanded && 'bg-primary-1/40',
+                  )}
+                >
                   {rowSelection !== 'NONE' && (
                     <input
                       aria-label={t`Select row`}
@@ -3792,52 +3905,53 @@ const TableFieldRenderer = ({
                       onChange={() => toggleRowSelected(rowId)}
                     />
                   )}
-                  <span className='text-xs font-semibold text-gray-8'>
-                    {rowsType === 'FIXED' && fixedRowLabels[rowIndex]
-                      ? fixedRowLabels[rowIndex]
-                      : `#${rowIndex + 1}`}
+                  <span
+                    className={cn(
+                      'flex size-7 shrink-0 items-center justify-center rounded-full text-12 font-bold',
+                      isExpanded
+                        ? 'bg-primary-9 text-text-on-accent'
+                        : 'bg-primary-2 text-primary-11',
+                    )}
+                  >
+                    {rowIndex + 1}
                   </span>
                   <button
-                    className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 truncate text-left text-xs text-gray-11'
+                    className='flex min-w-0 flex-1 cursor-pointer flex-col items-start text-left'
                     type='button'
-                    onClick={() =>
-                      setExpandedRowIndex(isExpanded ? null : rowIndex)
-                    }
+                    onClick={toggleExpanded}
                   >
-                    {summaryColumns.length > 0
-                      ? summaryColumns
-                          .map((col) => {
-                            const v =
-                              resolvedRow[col.id] ??
-                              (col.name ? resolvedRow[col.name] : undefined)
-                            if (v == null || v === '') return null
-                            if (typeof v === 'object') {
-                              if (Array.isArray(v)) {
-                                const names = v
-                                  .map(
-                                    (item) =>
-                                      item?.fileName ||
-                                      item?.filename ||
-                                      item?.name ||
-                                      item?.label ||
-                                      '',
-                                  )
-                                  .filter(Boolean)
-                                return names.join(', ') || null
-                              }
-                              return (
-                                (v as any).fileName ||
-                                (v as any).filename ||
-                                (v as any).name ||
-                                (v as any).label ||
-                                null
-                              )
-                            }
-                            return String(v)
-                          })
-                          .filter(Boolean)
-                          .join(' · ') || t`(empty row)`
-                      : t`(empty row)`}
+                    <span
+                      className={cn(
+                        'w-full truncate text-13 font-semibold',
+                        summary || rowLabel ? 'text-gray-13' : 'text-gray-9',
+                      )}
+                    >
+                      {rowLabel || summary || emptyRowTitle}
+                    </span>
+                    <span className='mt-0.5 flex flex-wrap items-center gap-1.5 text-11 text-gray-9'>
+                      {rowLabel && summary ? (
+                        <span className='max-w-full truncate'>{summary}</span>
+                      ) : !summary && !isExpanded && !readOnly ? (
+                        <span>{t`Tap to add the details`}</span>
+                      ) : null}
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full px-1.5 py-px font-semibold',
+                          inputColumns.length > 0 &&
+                            filledColumns.length === inputColumns.length
+                            ? 'bg-green-2 text-green-11'
+                            : 'bg-gray-2 text-gray-10',
+                        )}
+                      >
+                        {t`${filledColumns.length} of ${inputColumns.length} filled`}
+                      </span>
+                      {missingRequired > 0 ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-red-2 px-1.5 py-px font-semibold text-red-11'>
+                          <span className='text-red-9'>*</span>
+                          {t`${missingRequired} required missing`}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                   {showRowApprove &&
                     (row._approved ? (
@@ -3865,27 +3979,46 @@ const TableFieldRenderer = ({
                       onClick={() => handleDeleteRow(rowIndex)}
                     />
                   )}
-                  <IconButton
+                  <button
+                    aria-expanded={isExpanded}
                     aria-label={isExpanded ? t`Collapse row` : t`Expand row`}
-                    color='gray'
-                    size='xs'
-                    variant='ghost'
-                    icon={
-                      isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'
-                    }
-                    onClick={() =>
-                      setExpandedRowIndex(isExpanded ? null : rowIndex)
-                    }
-                  />
+                    type='button'
+                    className={cn(
+                      'inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-11 font-semibold transition-all active:scale-95',
+                      isExpanded
+                        ? 'text-gray-10 hover:bg-gray-3'
+                        : 'bg-primary-2 text-primary-11 hover:bg-primary-3',
+                    )}
+                    onClick={toggleExpanded}
+                  >
+                    <span className='max-sm:hidden'>
+                      {isExpanded ? t`Hide details` : t`Show details`}
+                    </span>
+                    <Icon
+                      className='size-3.5'
+                      name={
+                        isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'
+                      }
+                    />
+                  </button>
                 </div>
 
                 {isExpanded && (
-                  <div className='space-y-3 border-t border-[var(--gray-3)] px-3 py-3'>
+                  <div className='animate-in space-y-3 border-t border-[var(--gray-3)] px-3 py-3 fade-in slide-in-from-top-1'>
                     {effectiveColumns.map((col) => (
                       <div key={col.id}>
                         <div className='mb-1 flex items-center gap-1.5'>
                           <label className='block text-11 font-bold text-gray-8'>
                             {getColumnLabel(col)}
+                            {isColumnRequired(col) && (
+                              <span
+                                aria-hidden
+                                className='ml-0.5 text-red-9'
+                                title={t`Required`}
+                              >
+                                *
+                              </span>
+                            )}
                           </label>
                           {isDynamicColumn(col) && !readOnly && (
                             <button

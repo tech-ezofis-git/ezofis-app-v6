@@ -110,7 +110,9 @@ const Host = ({
 }
 
 const pickFile = (container: HTMLElement, file: File) => {
-  fireEvent.click(screen.getAllByLabelText('Expand row')[0])
+  // The list view opens row 1 itself; expand it only if it is collapsed
+  const expand = screen.queryAllByLabelText('Expand row')[0]
+  if (expand) fireEvent.click(expand)
   const input = container.querySelector(
     'input[type="file"]',
   ) as HTMLInputElement

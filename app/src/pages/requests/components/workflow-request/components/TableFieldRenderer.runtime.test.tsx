@@ -401,9 +401,11 @@ const fileInputs = (container: HTMLElement) =>
     container.querySelectorAll('input[type="file"]'),
   ) as HTMLInputElement[]
 
-// Tables with an upload column use the expandable card view: open row 1 first.
+// Tables with an upload column use the expandable card view, which opens row 1
+// itself; expand it only if it is collapsed.
 const openFirstRow = () => {
-  fireEvent.click(screen.getAllByLabelText('Expand row')[0])
+  const expand = screen.queryAllByLabelText('Expand row')[0]
+  if (expand) fireEvent.click(expand)
 }
 
 const pick = (input: HTMLInputElement, files: File[]) => {
