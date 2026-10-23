@@ -9,19 +9,23 @@ import cn from '@/utils/cn'
 import {
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
+  PORTAL_SECTION_HISTORY,
   scrollToPortalSection,
 } from '../helpers/portalDetail'
 import PortalBackButton from './PortalBackButton'
 import PortalBrandMark from './PortalBrandMark'
 
-// Attachments / Comments shortcuts beside the header actions, as in the
-// in-app new request header: each shows its count and scrolls to its section.
+// Attachments / Comments (and, on a ticket, History) shortcuts beside the
+// header actions, as in the in-app new request header: each scrolls to its
+// section, Attachments and Comments with their counts.
 function PortalSectionButtons({
   attachmentCount = 0,
   commentCount = 0,
+  showHistory = false,
 }: {
   attachmentCount?: number
   commentCount?: number
+  showHistory?: boolean
 }) {
   const { t } = useLingui()
   const buttons = [
@@ -37,6 +41,16 @@ function PortalSectionButtons({
       id: PORTAL_SECTION_COMMENTS,
       label: t`Comments`,
     },
+    ...(showHistory
+      ? [
+          {
+            count: 0,
+            icon: 'tabler:history',
+            id: PORTAL_SECTION_HISTORY,
+            label: t`History`,
+          },
+        ]
+      : []),
   ]
   return (
     <div className='flex shrink-0 items-center gap-1'>
@@ -209,6 +223,7 @@ export default function PortalShell({
                 <PortalSectionButtons
                   attachmentCount={detail.attachmentCount}
                   commentCount={detail.commentCount}
+                  showHistory
                 />
                 {(detail.actions || []).map((action) => {
                     const label = action.label.toLowerCase()

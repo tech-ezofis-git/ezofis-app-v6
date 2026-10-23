@@ -19,6 +19,7 @@ import {
   PORTAL_FORM_WRAPPER_CLASS,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
+  PORTAL_SECTION_HISTORY,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
 import {
@@ -429,7 +430,10 @@ export default function PortalDetail({
           />
         </div>
 
-        <div className='rounded-xl border border-gray-4 bg-surface p-6 shadow-sm sm:px-8 sm:py-7'>
+        <div
+          className='scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-6 shadow-sm transition-shadow sm:px-8 sm:py-7'
+          id={PORTAL_SECTION_HISTORY}
+        >
           <div className='mb-4 text-15 font-semibold text-gray-13'>
             {t`Activity`}
           </div>
