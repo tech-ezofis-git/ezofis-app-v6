@@ -861,6 +861,8 @@ export const fetchMasterFormColumnOptions = async (
     // Prepare parent column candidate keys if parent filtering is active
     const parentCandidateKeys = new Set<string>()
     let parentColumnResolved = false
+    // Parent's column name as the master form labels it, for the by-column API
+    let parentColumnName = parentMasterColumn?.trim() || ''
     if (parentMasterColumn) {
       parentCandidateKeys.add(parentMasterColumn)
       parentCandidateKeys.add(parentMasterColumn.trim())
@@ -881,6 +883,8 @@ export const fetchMasterFormColumnOptions = async (
       )
       if (matchedParentField) {
         parentColumnResolved = true
+        parentColumnName =
+          String(matchedParentField.label || '').trim() || parentColumnName
         if (matchedParentField.id) {
           parentCandidateKeys.add(matchedParentField.id)
           parentCandidateKeys.add(matchedParentField.id.trim())
@@ -980,11 +984,6 @@ export const fetchMasterFormColumnOptions = async (
 
     const uniqueValues = new Set<string>()
 
-    // 2. Fetch Master Form Entries (GET first, fallback to POST search if needed)
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 10000),
-    )
-    let rawEntries: any[] = []
     const parseEntriesData = (data: any): any[] => {
       if (!data) return []
       if (Array.isArray(data)) return data
@@ -1006,9 +1005,77 @@ export const fetchMasterFormColumnOptions = async (
       return []
     }
 
-    rawEntries = parseEntriesData(entriesRes.data)
+    // by-column rows are keyed by the physical column name (e.g. "PO_Number"),
+    // so also match labels with their spaces as underscores.
+    const addUnderscoreKeys = (keys: Set<string>, extra?: string) => {
+      if (extra) {
+        keys.add(extra)
+        keys.add(extra.trim().toLowerCase())
+      }
+      for (const k of Array.from(keys)) {
+        if (/\s/.test(k.trim())) keys.add(k.trim().replace(/\s+/g, '_'))
+      }
+    }
 
-    if (rawEntries.length === 0) {
+    // 2. Fetch master entries by column (POST /form/{id}/entry/by-column):
+    // with a parent, only the rows whose parent column equals the parent's
+    // value; without one, just the field's own column.
+    let rawEntries: any[] = []
+    let byColumnFailed = false
+    const ownColumnName = String(
+      matchedField?.label || columnKeyOrLabel || '',
+    ).trim()
+    if (hasParentFilter && targetParentSet.size > 0 && parentColumnName) {
+      const parentVals = Array.from(
+        new Set(targetParentVals.map((s) => s.trim()).filter(Boolean)),
+      )
+      for (const parentVal of parentVals) {
+        const res = await cachedMasterCall(
+          `bycol:${parentColumnName}:${parentVal}`,
+          masterFormId,
+          () =>
+            formApi.getFormEntriesByColumn(
+              masterFormId,
+              parentColumnName,
+              parentVal,
+            ),
+        )
+        if (res.error) {
+          byColumnFailed = true
+          break
+        }
+        rawEntries.push(...parseEntriesData(res.data))
+        addUnderscoreKeys(parentCandidateKeys, res.data?.resolvedColumn)
+      }
+    } else if (ownColumnName) {
+      const res = await cachedMasterCall(
+        `bycol:${ownColumnName}`,
+        masterFormId,
+        () => formApi.getFormEntriesByColumn(masterFormId, ownColumnName),
+      )
+      if (res.error) {
+        byColumnFailed = true
+      } else {
+        rawEntries = parseEntriesData(res.data)
+        addUnderscoreKeys(candidateKeys, res.data?.resolvedColumn)
+      }
+    } else {
+      byColumnFailed = true
+    }
+    addUnderscoreKeys(candidateKeys)
+    addUnderscoreKeys(parentCandidateKeys)
+    activeConditions.forEach((c) => addUnderscoreKeys(c.keys))
+
+    // Fall back to loading every entry if the by-column call is unavailable
+    if (byColumnFailed) {
+      rawEntries = []
+      const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+        formApi.getFormEntries(masterFormId, 1, 10000),
+      )
+      rawEntries = parseEntriesData(entriesRes.data)
+    }
+
+    if (byColumnFailed && rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
@@ -1256,11 +1323,87 @@ export const fetchMasterTableRows = async (
       return []
     }
 
-    const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
-      formApi.getFormEntries(masterFormId, 1, 10000),
-    )
-    let rawEntries = parseEntriesData(entriesRes.data)
-    if (rawEntries.length === 0) {
+    // Master form label for a column key, as the by-column API expects
+    const columnLabelOf = (keyOrLabel: string): string => {
+      const key = keyOrLabel.trim()
+      const matched = formFields.find(
+        (f: any) =>
+          f.id === key ||
+          f.label?.trim().toLowerCase() === key.toLowerCase() ||
+          f.name?.trim().toLowerCase() === key.toLowerCase(),
+      )
+      return String(matched?.label || key).trim()
+    }
+    // by-column rows are keyed by the physical column name (e.g. "PO_Number")
+    const addUnderscoreKeys = (keys: Set<string>, extra?: string) => {
+      if (extra) {
+        keys.add(extra)
+        keys.add(extra.trim().toLowerCase())
+      }
+      for (const k of Array.from(keys)) {
+        if (/\s/.test(k.trim())) keys.add(k.trim().replace(/\s+/g, '_'))
+      }
+    }
+
+    // Fetch master entries by column (POST /form/{id}/entry/by-column): with
+    // a parent, only the rows whose parent column equals the parent's value;
+    // without one, just the first mapped column.
+    let rawEntries: any[] = []
+    let byColumnFailed = false
+    if (hasParentFilter) {
+      const parentColumnName = columnLabelOf(parentMasterColumnKey || '')
+      const parentVals = Array.from(
+        new Set(
+          extractScalarStrings(parentValue)
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      )
+      for (const parentVal of parentVals) {
+        const res = await cachedMasterCall(
+          `bycol:${parentColumnName}:${parentVal}`,
+          masterFormId,
+          () =>
+            formApi.getFormEntriesByColumn(
+              masterFormId,
+              parentColumnName,
+              parentVal,
+            ),
+        )
+        if (res.error) {
+          byColumnFailed = true
+          break
+        }
+        rawEntries.push(...parseEntriesData(res.data))
+        addUnderscoreKeys(parentCandidateKeys, res.data?.resolvedColumn)
+      }
+    } else {
+      const firstMapped = columnMappings.find((m) => m.masterColumn)
+      const ownColumnName = firstMapped
+        ? columnLabelOf(firstMapped.masterColumn)
+        : ''
+      if (ownColumnName) {
+        const res = await cachedMasterCall(
+          `bycol:${ownColumnName}`,
+          masterFormId,
+          () => formApi.getFormEntriesByColumn(masterFormId, ownColumnName),
+        )
+        if (res.error) byColumnFailed = true
+        else rawEntries = parseEntriesData(res.data)
+      } else {
+        byColumnFailed = true
+      }
+    }
+    addUnderscoreKeys(parentCandidateKeys)
+
+    // Fall back to loading every entry if the by-column call is unavailable
+    if (byColumnFailed) {
+      const entriesRes = await cachedMasterCall('entries', masterFormId, () =>
+        formApi.getFormEntries(masterFormId, 1, 10000),
+      )
+      rawEntries = parseEntriesData(entriesRes.data)
+    }
+    if (byColumnFailed && rawEntries.length === 0) {
       const searchRes = await cachedMasterCall('search', masterFormId, () =>
         formApi.searchFormEntries(masterFormId, {
           currentPage: 1,
@@ -1314,10 +1457,11 @@ export const fetchMasterTableRows = async (
 
     const mappingKeySets = columnMappings
       .filter((m) => m.masterColumn && m.tableColumn)
-      .map((m) => ({
-        keys: buildCandidateKeys(m.masterColumn),
-        tableColumn: m.tableColumn,
-      }))
+      .map((m) => {
+        const keys = buildCandidateKeys(m.masterColumn)
+        addUnderscoreKeys(keys)
+        return { keys, tableColumn: m.tableColumn }
+      })
 
     const rows: Record<string, any>[] = []
     for (const entry of rawEntries) {

@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { uploadForOcr } from '@/api/v6/folder/folder'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
@@ -16,19 +17,25 @@ import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-
 import {
   applyFilenamePreFillToFormModel,
   buildFormFieldOcrHints,
+  buildInitialFormModel,
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
   buildRepoMetadata,
   extractOcrText,
+  getDependentChildFieldIds,
   getFileExtension,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
+  hydrateFormModel,
   isFieldFilled,
   isFieldHidden,
   isFieldRequired,
   mergeOcrFieldHints,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { WorkflowNameContext } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
+import { getStartStageHiddenFieldIds } from '@/pages/requests/utils/workflow.utils'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
   formPanelSectionId,
@@ -123,7 +130,15 @@ const PortalWizard = ({
       .then((result) => {
         if (cancelled) return
         setSource(result)
-        setAnswers({})
+        // Seed the form's configured defaults (user email/name, today's date,
+        // single-option selects, table starting rows, calculated fields) the
+        // same way the in-app new request does.
+        setAnswers(
+          hydrateFormModel(result.panels, null, {
+            formRules: result.formRules,
+            initialDefaults: buildInitialFormModel(result.panels),
+          }),
+        )
         setFiles([])
         setExtraFiles([])
         setApInstanceId(null)
@@ -161,8 +176,18 @@ const PortalWizard = ({
     (source?.isAccountsPayable ? t`Invoice` : t`Document`)
 
   const hiddenFileFieldIds = useMemo(() => {
-    if (!needsDocumentSection) return undefined
-    const ids = new Set<string>()
+    // Fields the workflow's start step hides from the initiator
+    const stageHidden = source
+      ? getStartStageHiddenFieldIds(
+          source.workflow,
+          panels,
+          String(authUserStore.getState().session?.id || ''),
+        )
+      : new Set<string>()
+    if (!needsDocumentSection) {
+      return stageHidden.size > 0 ? stageHidden : undefined
+    }
+    const ids = new Set<string>(stageHidden)
     source?.fileFields.forEach((field) => {
       if (field.id) ids.add(field.id)
     })
@@ -178,7 +203,7 @@ const PortalWizard = ({
       )
     })
     return ids
-  }, [needsDocumentSection, panels, source?.fileFields])
+  }, [needsDocumentSection, panels, source])
 
   const repositoryFields = useMemo(
     () => source?.repositoryFields || [],
@@ -432,7 +457,11 @@ const PortalWizard = ({
         if (question.field.id) next[String(question.field.id)] = value
         if (question.field.jsonId) next[String(question.field.jsonId)] = value
       })
-      return next
+      return applyCalculatedFields(
+        source.panels as any[],
+        next,
+        source.formRules,
+      )
     })
     const firstPanel = source.panels[0]
     if (firstPanel) selectSection(formPanelSectionId(firstPanel, 0))
@@ -442,6 +471,22 @@ const PortalWizard = ({
     setFieldError('')
     setAnswers((prev) => {
       const next = { ...prev, [fieldId]: value }
+      // Same as the in-app new request: clear fields that depend on this one
+      // and recompute calculated fields.
+      const finish = (model: AnswerMap) => {
+        if (!source) return model
+        for (const childId of getDependentChildFieldIds(
+          fieldId,
+          source.panels,
+        )) {
+          delete model[childId]
+        }
+        return applyCalculatedFields(
+          source.panels as any[],
+          model,
+          source.formRules,
+        )
+      }
       const question = source?.questions.find(
         (item) =>
           item.id === fieldId ||
@@ -463,7 +508,7 @@ const PortalWizard = ({
           question.label.trim().toLowerCase()
         )
       })
-      if (!descriptor) return next
+      if (!descriptor) return finish(next)
       next[descriptor.fieldId] = value
       if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
       const matchedQuestion = source?.questions.find(
@@ -481,7 +526,7 @@ const PortalWizard = ({
           next[String(matchedQuestion.field.jsonId)] = value
         }
       }
-      return next
+      return finish(next)
     })
   }
 
@@ -1031,24 +1076,30 @@ const PortalWizard = ({
         ) : null}
 
         {formPanels.length > 0 ? (
-          <WorkflowFormRenderer
-            formModel={portalFormModel}
-            hasAttemptedSubmit={attemptedSubmit}
-            hiddenFieldIds={hiddenFileFieldIds}
-            missingMandatoryFieldIds={missingMandatoryFieldIds}
-            panels={formPanels}
-            preparingFieldId={preparingFieldId}
-            repoFieldHints={repoFieldHints}
-            repositoryId={source.repositoryId}
-            disableOwnScroll
-            preparePhase={
-              processing ? 'extracting' : staging ? 'uploading' : null
-            }
-            getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
-            onFieldChange={handleFieldChange}
-            onOcrFieldList={applyOcrToAnswers}
-            onRequestUpload={handleRequestUpload}
-          />
+          // Same workflow-name context as the in-app new request, so table
+          // file columns pick workflow-specific OCR (e.g. expense reimbursement)
+          <WorkflowNameContext.Provider
+            value={String(source.workflow?.name || source.workflowName || '')}
+          >
+            <WorkflowFormRenderer
+              formModel={portalFormModel}
+              hasAttemptedSubmit={attemptedSubmit}
+              hiddenFieldIds={hiddenFileFieldIds}
+              missingMandatoryFieldIds={missingMandatoryFieldIds}
+              panels={formPanels}
+              preparingFieldId={preparingFieldId}
+              repoFieldHints={repoFieldHints}
+              repositoryId={source.repositoryId}
+              disableOwnScroll
+              preparePhase={
+                processing ? 'extracting' : staging ? 'uploading' : null
+              }
+              getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
+              onFieldChange={handleFieldChange}
+              onOcrFieldList={applyOcrToAnswers}
+              onRequestUpload={handleRequestUpload}
+            />
+          </WorkflowNameContext.Provider>
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
             {t`No form panels found for this request.`}

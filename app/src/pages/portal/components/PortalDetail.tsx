@@ -5,6 +5,7 @@ import showToast from '@/components/base/toast/showToast'
 import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { WorkflowNameContext } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   buildDetailFormModel,
@@ -309,19 +310,30 @@ export default function PortalDetail({
 
         {panels.length > 0 ? (
           isInbox ? (
-            <WorkflowFormRenderer
-              formModel={formModel}
-              instanceId={instanceId}
-              panels={panels}
-              readOnlyFieldIds={readOnlyFieldIds}
-              repositoryId={resolvedRepositoryId}
-              disableOwnScroll
-              getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
-              onFieldChange={(fieldId, value) =>
-                setFormModel((prev) => ({ ...prev, [fieldId]: value }))
-              }
-              onOpenAttachment={(att) => setOpenedAttachment(att)}
-            />
+            <WorkflowNameContext.Provider
+              value={String(
+                source?.workflow?.name ||
+                  source?.workflowName ||
+                  submission.workflowName ||
+                  '',
+              )}
+            >
+              <WorkflowFormRenderer
+                formModel={formModel}
+                instanceId={instanceId}
+                panels={panels}
+                readOnlyFieldIds={readOnlyFieldIds}
+                repositoryId={resolvedRepositoryId}
+                disableOwnScroll
+                getPanelValue={(panel, index) =>
+                  formPanelSectionId(panel, index)
+                }
+                onFieldChange={(fieldId, value) =>
+                  setFormModel((prev) => ({ ...prev, [fieldId]: value }))
+                }
+                onOpenAttachment={(att) => setOpenedAttachment(att)}
+              />
+            </WorkflowNameContext.Provider>
           ) : (
             <PortalSubmissionDetails
               formModel={formModel}

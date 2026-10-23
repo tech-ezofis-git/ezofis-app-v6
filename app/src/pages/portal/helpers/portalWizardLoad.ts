@@ -2,6 +2,7 @@ import type { RepositoryFieldDto } from '@/api/v6/folder/folder'
 import formApi from '@/api/form/form'
 import workflowsApiV6, { type V6WorkflowDetail } from '@/api/v6/workflows'
 import folderApi from '@/pages/folders/api/folderApi'
+import { ensureNormalizedRuntimeFormJson } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
 import {
   collectFormPanels,
@@ -16,6 +17,8 @@ import {
 
 export type PortalWizardSource = {
   fileFields: PortalFileField[]
+  // Form rules (conditional logic, formulas), as the in-app new request reads them
+  formRules: any[]
   isAccountsPayable: boolean
   panels: FormPanel[]
   questionPanels: PortalQuestionPanel[]
@@ -81,6 +84,7 @@ export const loadPortalWizard = async (
 
   return {
     fileFields: parseFileFields(formJson),
+    formRules: ensureNormalizedRuntimeFormJson(formJson).rules,
     isAccountsPayable: isPayable,
     panels: normalizeFormPanels(collectFormPanels(formJson)),
     questionPanels,
