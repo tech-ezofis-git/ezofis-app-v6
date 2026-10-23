@@ -60,6 +60,7 @@ import cn from '@/utils/cn'
 import {
   formPanelSectionId,
   getInitiateNodeLabel,
+  PORTAL_FORM_WRAPPER_CLASS,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_COMMENTS,
   PORTAL_SECTION_DOCUMENT,
@@ -1361,24 +1362,28 @@ const PortalWizard = ({
           <WorkflowNameContext.Provider
             value={String(source.workflow?.name || source.workflowName || '')}
           >
-            <WorkflowFormRenderer
-              formModel={portalFormModel}
-              hasAttemptedSubmit={attemptedSubmit}
-              hiddenFieldIds={hiddenFileFieldIds}
-              missingMandatoryFieldIds={missingMandatoryFieldIds}
-              panels={formPanels}
-              preparingFieldId={preparingFieldId}
-              repoFieldHints={repoFieldHints}
-              repositoryId={source.repositoryId}
-              disableOwnScroll
-              preparePhase={
-                processing ? 'extracting' : staging ? 'uploading' : null
-              }
-              getPanelValue={(panel, index) => formPanelSectionId(panel, index)}
-              onFieldChange={handleFieldChange}
-              onOcrFieldList={applyOcrToAnswers}
-              onRequestUpload={handleRequestUpload}
-            />
+            <div className={PORTAL_FORM_WRAPPER_CLASS}>
+              <WorkflowFormRenderer
+                formModel={portalFormModel}
+                hasAttemptedSubmit={attemptedSubmit}
+                hiddenFieldIds={hiddenFileFieldIds}
+                missingMandatoryFieldIds={missingMandatoryFieldIds}
+                panels={formPanels}
+                preparingFieldId={preparingFieldId}
+                repoFieldHints={repoFieldHints}
+                repositoryId={source.repositoryId}
+                disableOwnScroll
+                preparePhase={
+                  processing ? 'extracting' : staging ? 'uploading' : null
+                }
+                getPanelValue={(panel, index) =>
+                  formPanelSectionId(panel, index)
+                }
+                onFieldChange={handleFieldChange}
+                onOcrFieldList={applyOcrToAnswers}
+                onRequestUpload={handleRequestUpload}
+              />
+            </div>
           </WorkflowNameContext.Provider>
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>

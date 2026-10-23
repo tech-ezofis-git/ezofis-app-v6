@@ -116,6 +116,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         }
         return {
           canSubmit: chrome.canSubmit,
+          stageLabel: chrome.stageLabel,
           submitLabel: chrome.submitLabel,
           submitting: chrome.submitting,
           title: chrome.title,
