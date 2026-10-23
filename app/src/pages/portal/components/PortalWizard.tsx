@@ -53,6 +53,7 @@ import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
 import Button from '@/components/base/button/Button'
 import {
   getStartStageHiddenFieldIds,
+  getWorkflowInitiateType,
   isDocumentFormWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
@@ -103,6 +104,8 @@ type PortalWizardProps = {
   onChromeChange?: (
     chrome: {
       canSubmit: boolean
+      // Initiated by a form (not a document / document form)
+      isFormInitiated: boolean
       stageLabel?: string
       submitLabel: string
       submitting: boolean
@@ -1155,10 +1158,13 @@ const PortalWizard = ({
     if (!source?.workflow) return ''
     return getInitiateNodeLabel(source.workflow)
   }, [source?.workflow])
+  const isFormInitiated =
+    Boolean(source) && getWorkflowInitiateType(source?.workflow) === 'FORM'
 
   useEffect(() => {
     onChromeChange?.({
       canSubmit,
+      isFormInitiated,
       stageLabel: initiateNodeLabel,
       submitLabel,
       submitting,
@@ -1170,6 +1176,7 @@ const PortalWizard = ({
   }, [
     canSubmit,
     initiateNodeLabel,
+    isFormInitiated,
     onChromeChange,
     submitLabel,
     submitting,

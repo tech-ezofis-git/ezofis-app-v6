@@ -23,7 +23,6 @@ import { submissionInstanceIds } from '../helpers/portalDetail'
 import {
   getLastActionLabel,
   lastActionTone,
-  PORTAL_STATUS_TONE,
   type PortalSubmission,
 } from '../helpers/portalSubmissions'
 
@@ -187,25 +186,23 @@ export default function PortalSubmissionRow({
           </div>
 
           <div className='flex min-w-0 justify-start'>
-            {/* Last action taken on the ticket; the status when none yet */}
-            <Tooltip
-              content={lastActionLabel ? `Last action: ${lastActionLabel}` : 'Status'}
-              position='bottom'
-            >
-              <span
-                className={cn(
-                  'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-                  lastActionLabel
-                    ? lastActionTone(lastActionLabel)
-                    : PORTAL_STATUS_TONE[submission.status],
-                )}
+            {/* Last action taken on the ticket; empty when none is recorded */}
+            {lastActionLabel ? (
+              <Tooltip
+                content={`Last action: ${lastActionLabel}`}
+                position='bottom'
               >
-                <span className='size-1.5 shrink-0 rounded-full bg-current' />
-                <span className='truncate'>
-                  {lastActionLabel || submission.status}
+                <span
+                  className={cn(
+                    'inline-flex h-6 w-full max-w-[9.75rem] items-center justify-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
+                    lastActionTone(lastActionLabel),
+                  )}
+                >
+                  <span className='size-1.5 shrink-0 rounded-full bg-current' />
+                  <span className='truncate'>{lastActionLabel}</span>
                 </span>
-              </span>
-            </Tooltip>
+              </Tooltip>
+            ) : null}
           </div>
 
           <div className='flex min-w-0 items-center'>

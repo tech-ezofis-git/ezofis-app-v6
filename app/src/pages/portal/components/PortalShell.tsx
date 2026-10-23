@@ -87,6 +87,8 @@ type PortalWizardHeader = {
   attachmentCount?: number
   canSubmit: boolean
   commentCount?: number
+  // Attachments / Comments shortcuts: only for form-initiated workflows
+  showSectionButtons?: boolean
   stageLabel?: string
   submitLabel?: string
   submitting: boolean
@@ -164,10 +166,12 @@ export default function PortalShell({
                 </h1>
               </div>
               <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
-                <PortalSectionButtons
-                  attachmentCount={wizard.attachmentCount}
-                  commentCount={wizard.commentCount}
-                />
+                {wizard.showSectionButtons ? (
+                  <PortalSectionButtons
+                    attachmentCount={wizard.attachmentCount}
+                    commentCount={wizard.commentCount}
+                  />
+                ) : null}
                 <Button
                   className='shrink-0 rounded-lg'
                   disabled={!wizard.canSubmit}
