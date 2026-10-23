@@ -35,7 +35,7 @@
         "dataType": "SHORT_TEXT",
         "level": 4,
         "isMandatory": true,
-        "includeInFolderStructure": false,
+        "includeInFolderStructure": true,
         "orderId": 4
       },
       {
