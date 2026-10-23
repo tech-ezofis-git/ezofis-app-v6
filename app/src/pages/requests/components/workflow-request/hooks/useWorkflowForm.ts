@@ -19,6 +19,7 @@ import {
   applyFilenamePreFillToFormModel,
   buildInitialFormModel,
   buildRepoFieldDescriptors,
+  withoutRequestNumberMandatory,
   buildRepoFieldHints,
   buildRepoMetadata,
   ensureNormalizedRuntimeFormJson,
@@ -305,7 +306,10 @@ export const useWorkflowForm = (
     [repositoryFields],
   )
   const repoFieldDescriptors = useMemo(
-    () => buildRepoFieldDescriptors(repositoryFields, panels),
+    () =>
+      withoutRequestNumberMandatory(
+        buildRepoFieldDescriptors(repositoryFields, panels),
+      ),
     [repositoryFields, panels],
   )
   // Every file the user has uploaded so far — sidebar attachments and

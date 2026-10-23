@@ -1907,6 +1907,31 @@ export const buildRepoFieldDescriptors = (
     }
   })
 
+const REQUEST_NUMBER_NAMES = new Set([
+  'requestno',
+  'requestnumber',
+  'requestnum',
+  'reqno',
+  'reqnumber',
+])
+
+// "Request Number", "Request No.", "Request No", "RequestNo" ... — the system
+// assigns the request number, so it is never asked for on the new-request
+// page. Compared case- and punctuation-insensitively.
+export const isRequestNumberFieldName = (name?: string): boolean =>
+  REQUEST_NUMBER_NAMES.has((name || '').toLowerCase().replace(/[^a-z0-9]/g, ''))
+
+// Repo field descriptors with the request-number field no longer mandatory
+// (new-request / workflow upload screens only).
+export const withoutRequestNumberMandatory = (
+  descriptors: RepoFieldDescriptor[],
+): RepoFieldDescriptor[] =>
+  descriptors.map((d) =>
+    d.repoField.isMandatory && isRequestNumberFieldName(d.repoField.name)
+      ? { ...d, repoField: { ...d.repoField, isMandatory: false } }
+      : d,
+  )
+
 // A repo field's current value: its own slot if set, else whatever the
 // matching form field already holds (e.g. typed before any file was
 // uploaded, back when the plain form was the only thing on screen).
@@ -2240,6 +2265,78 @@ export const fillRepoMetadataFromTableRow = (
     if (repoName) next[repoName] = value
   }
   return next
+}
+
+const NUMERIC_REPO_TYPES = new Set([
+  'NUMBER',
+  'COUNTER',
+  'CURRENCY_AMOUNT',
+  'INTEGER',
+  'DECIMAL',
+])
+
+// Repository metadata for a file picked in a table row, plus the names of the
+// mandatory repository fields that are still empty. Values come from the
+// row's matching columns, the form's matching top-level fields, and the file
+// name (Filename / DocumentType), the same sources the Upload step uses.
+// `extra` holds values the user entered in the repository fields panel; they
+// win over the derived ones.
+export const getTableRowRepoMetadata = (
+  repositoryFields: {
+    dataType?: string
+    isMandatory?: boolean
+    level?: number
+    name?: string
+    sqlColumnName?: string
+  }[],
+  panels: any[],
+  formModel: Record<string, any>,
+  columns: any[],
+  row: Record<string, any> | undefined,
+  fileName: string,
+  extra?: Record<string, string>,
+): { metadata: Record<string, string>; missing: string[] } => {
+  const descriptors = withoutRequestNumberMandatory(
+    buildRepoFieldDescriptors(repositoryFields, panels),
+  )
+  const metadata = fillRepoMetadataFromTableRow(
+    buildRepoMetadata(repositoryFields, panels, formModel, fileName),
+    columns,
+    row,
+  )
+  const cleanFileName = getFileNameWithoutExtension(fileName)
+  const missing: string[] = []
+  for (const descriptor of descriptors) {
+    const name = descriptor.repoField.name!
+    if (extra?.[name]?.trim()) metadata[name] = extra[name].trim()
+    // Year / Month repository fields default to today's year and month
+    // (the month as a number for numeric fields, else its name).
+    if (!metadata[name]) {
+      const key = normalizeName(name)
+      const now = new Date()
+      if (key === 'year') {
+        metadata[name] = String(now.getFullYear())
+      } else if (key === 'month') {
+        metadata[name] = NUMERIC_REPO_TYPES.has(
+          descriptor.repoField.dataType || '',
+        )
+          ? String(now.getMonth() + 1)
+          : now.toLocaleString('en-US', { month: 'long' })
+      }
+    }
+    if (
+      !metadata[name] &&
+      cleanFileName &&
+      isFilenameField({
+        name,
+        sqlColumnName: descriptor.repoField.sqlColumnName || '',
+      })
+    ) {
+      metadata[name] = cleanFileName
+    }
+    if (descriptor.repoField.isMandatory && !metadata[name]) missing.push(name)
+  }
+  return { metadata, missing }
 }
 
 // Maps an uploadForOcr/uploadWithOcr response's `ocrFieldList` (matched by

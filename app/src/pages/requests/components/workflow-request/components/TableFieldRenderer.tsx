@@ -19,10 +19,12 @@ import {
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
 import { getUsers } from '@/api/v6/user'
+import folderApi from '@/pages/folders/api/folderApi'
 import {
   useWorkflowAttachments,
   useWorkflowName,
   useWorkflowOpenAttachment,
+  useWorkflowTableUpload,
 } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import IconButton from '@/components/base/button/IconButton'
@@ -108,6 +110,7 @@ import {
   getDateTimeLimits,
   getEffectiveColumnLabel,
   getEffectiveFieldLabel,
+  getTableRowRepoMetadata,
   normalizeScannedValue,
   resolveRuntimeFieldType,
   shouldShowTableSummaryRow,
@@ -588,6 +591,30 @@ interface CellActions {
 interface OcrStatus {
   text: string
   tone: 'error' | 'info'
+}
+
+/**
+ * A row's file that has been read by OCR and is about to be staged with
+ * uploadWithOcr, once the repository's mandatory values are present.
+ */
+interface PendingStage {
+  colId: string
+  file: File
+  hints: string[]
+  ocrFieldList: Array<{ name?: string; value?: unknown }>
+  ocrJson?: string
+  ocrText?: string
+  repoFields: Array<{
+    dataType?: string
+    isMandatory?: boolean
+    level?: number
+    name?: string
+    sqlColumnName?: string
+  }>
+  repoId: string
+  rowKey: string
+  /** Repository values entered in the viewer panel (name -> value). */
+  values: Record<string, string>
 }
 
 // NUMBER / COUNTER cell: number input honoring the column's content rule,
@@ -1715,6 +1742,7 @@ const TableFieldRenderer = ({
   // Rows whose uploaded file is still being read by OCR; the cells it will
   // fill stay locked until the result (or a failure) comes back.
   const [ocrPendingRows, setOcrPendingRows] = useState<Set<string>>(new Set())
+  const requestTableUpload = useWorkflowTableUpload()
   // `rowKey:columnId` cells being filled from a master table after their
   // source column changed.
   const [masterFillPending, setMasterFillPending] = useState<Set<string>>(
@@ -2533,6 +2561,124 @@ const TableFieldRenderer = ({
     onChange(next)
   }
 
+  // The repository's fields, whose mandatory ones must have a value before a
+  // table file is staged. A failed lookup means nothing is enforced.
+  const loadRepositoryFields = async (
+    repoId: string,
+  ): Promise<PendingStage['repoFields']> => {
+    try {
+      const repo = await folderApi.getRepositoryFullData(repoId)
+      return repo?.fields || []
+    } catch {
+      return []
+    }
+  }
+
+  // Repository metadata for the entry's row (row columns, matching form
+  // fields, file name, plus values typed inline) and what is still missing.
+  const getRepoMetadataForEntry = (entry: PendingStage) => {
+    const current = rowsRef.current
+    const row = current.find((r, i) => rowKeyOf(r, i) === entry.rowKey)
+    return getTableRowRepoMetadata(
+      entry.repoFields,
+      [{ fields: allFields || [] }],
+      formModel || {},
+      tableColumns,
+      row,
+      entry.file.name,
+      entry.values,
+    )
+  }
+
+  // Stages the entry's file with uploadWithOcr and puts the returned file
+  // reference into the row's file cell.
+  const stageRowFile = async (entry: PendingStage) => {
+    const col = tableColumns.find((c) => c.id === entry.colId)
+    if (!col) return
+    const before = rowsRef.current
+    const beforeIdx = before.findIndex(
+      (r, i) => rowKeyOf(r, i) === entry.rowKey,
+    )
+    if (beforeIdx < 0) return
+    const { metadata } = getRepoMetadataForEntry(entry)
+    const metaEntries: Record<string, any> = {}
+    for (const [k, v] of Object.entries(before[beforeIdx])) {
+      if (v !== undefined && v !== null && typeof v !== 'object') {
+        const colDef = tableColumns.find((c) => c.id === k)
+        const nameKey = colDef?.name || colDef?.label || k
+        metaEntries[nameKey] = String(v)
+        metaEntries[k] = String(v)
+      }
+    }
+    Object.assign(metaEntries, metadata)
+
+    let stagedFileObj: Record<string, unknown> | null = null
+    try {
+      const stageRes = await uploadAndIndexApi.uploadWithOcr({
+        fields: entry.hints,
+        file: entry.file,
+        metadata: metaEntries,
+        ocrFieldList: entry.ocrFieldList as any,
+        ocrJson: entry.ocrJson,
+        ocrText: entry.ocrText,
+        repositoryId: entry.repoId,
+      })
+      if (stageRes.data?.fileId) {
+        stagedFileObj = {
+          fileId: stageRes.data.fileId,
+          fileName: entry.file.name,
+          fileSize: entry.file.size,
+          repositoryId: stageRes.data.repositoryId || entry.repoId,
+        }
+      }
+    } catch (uploadErr) {
+      console.warn('[table uploadWithOcr] Error staging file:', uploadErr)
+    }
+    if (!stagedFileObj) return
+
+    // Re-read the rows: the user may have kept editing during the upload.
+    const current = rowsRef.current
+    const idx = current.findIndex((r, i) => rowKeyOf(r, i) === entry.rowKey)
+    if (idx < 0) return
+    const cellVal = current[idx]?.[col.id]
+    let stagedCellVal: unknown = stagedFileObj
+    if (isMultiFileColumn(col)) {
+      const existingList = Array.isArray(cellVal) ? cellVal : []
+      stagedCellVal = [
+        ...existingList.filter(
+          (item: any) => item?.fileName !== entry.file.name,
+        ),
+        stagedFileObj,
+      ]
+    }
+    editedRowKeys.current.add(entry.rowKey)
+    const next = current.map((r, i) =>
+      i === idx ? { ...r, [col.id]: stagedCellVal } : r,
+    )
+    rowsRef.current = next
+    onChange(next)
+  }
+
+  // Drops the waiting file from its row, as if it had never been picked.
+  const cancelPendingStage = (entry: PendingStage) => {
+    const col = tableColumns.find((c) => c.id === entry.colId)
+    const current = rowsRef.current
+    const idx = current.findIndex((r, i) => rowKeyOf(r, i) === entry.rowKey)
+    if (!col || idx < 0) return
+    const cellVal = current[idx]?.[col.id]
+    const fileIndex = toFileList(cellVal).findIndex(
+      (f: any) => f.rawFile === entry.file,
+    )
+    if (fileIndex < 0) return
+    const next = current.map((r, i) =>
+      i === idx
+        ? { ...r, [col.id]: removeFileFromValue(col, cellVal, fileIndex) }
+        : r,
+    )
+    rowsRef.current = next
+    onChange(next)
+  }
+
   // A file column set to "fill other columns": send each new document to the
   // OCR upload with the chosen sibling columns as the field list, then write
   // the extracted values into those cells of the same row.
@@ -2556,6 +2702,7 @@ const TableFieldRenderer = ({
     const rowKey = rowKeyOf(rows[rowIndex], rowIndex)
     setOcrPendingRows((prev) => new Set(prev).add(rowKey))
     const filled = new Set<string>()
+    const waiting: string[] = []
     let failure = ''
     try {
       for (const file of files) {
@@ -2601,60 +2748,46 @@ const TableFieldRenderer = ({
           !isMultiFileColumn(col),
         )
 
-        // Step 2: Call uploadWithOcr with metadata to stage the file and obtain fileId
-        const targetRepoId = String(ocrRepositoryId || repositoryId || '3')
-        const mergedRowData = { ...current[idx], ...patch }
-        const metaEntries: Record<string, any> = {}
-        for (const [k, v] of Object.entries(mergedRowData)) {
-          if (v !== undefined && v !== null && typeof v !== 'object') {
-            const colDef = tableColumns.find((c) => c.id === k)
-            const nameKey = colDef?.name || colDef?.label || k
-            metaEntries[nameKey] = String(v)
-            metaEntries[k] = String(v)
-          }
-        }
-
-        let stagedCellVal = current[idx]?.[col.id]
-        try {
-          const stageRes = await uploadAndIndexApi.uploadWithOcr({
-            fields: hints,
-            file,
-            metadata: metaEntries,
-            ocrFieldList: ocrFieldList as any,
-            ocrJson,
-            ocrText,
-            repositoryId: targetRepoId,
-          })
-          if (stageRes.data?.fileId) {
-            const stagedFileObj = {
-              fileId: stageRes.data.fileId,
-              fileName: file.name,
-              fileSize: file.size,
-              repositoryId: stageRes.data.repositoryId || targetRepoId,
-            }
-            if (isMultiFileColumn(col)) {
-              const existingList = Array.isArray(stagedCellVal)
-                ? stagedCellVal
-                : []
-              stagedCellVal = [
-                ...existingList.filter(
-                  (item: any) => item?.fileName !== file.name,
-                ),
-                stagedFileObj,
-              ]
-            } else {
-              stagedCellVal = stagedFileObj
-            }
-          }
-        } catch (uploadErr) {
-          console.warn('[table uploadWithOcr] Error staging file:', uploadErr)
-        }
-
-        patch[col.id] = stagedCellVal
+        // Step 2: fill the row from the OCR values first, so the repository's
+        // mandatory fields can be checked against what the row now holds.
         editedRowKeys.current.add(rowKey)
-        const next = current.map((r, i) => (i === idx ? { ...r, ...patch } : r))
-        rowsRef.current = next
-        onChange(next)
+        const filledRows = current.map((r, i) =>
+          i === idx ? { ...r, ...patch } : r,
+        )
+        rowsRef.current = filledRows
+        onChange(filledRows)
+
+        // Step 3: stage the file (uploadWithOcr) only once every mandatory
+        // repository field has a value; otherwise ask for the rest inline.
+        const targetRepoId = String(ocrRepositoryId || repositoryId || '3')
+        const repoFields = await loadRepositoryFields(targetRepoId)
+        const entry: PendingStage = {
+          colId: col.id,
+          file,
+          hints,
+          ocrFieldList,
+          ocrJson,
+          ocrText,
+          repoFields,
+          repoId: targetRepoId,
+          rowKey,
+          values: {},
+        }
+        const { metadata, missing } = getRepoMetadataForEntry(entry)
+        if (missing.length > 0 && requestTableUpload) {
+          // Hand over to the request screen: the file opens in the viewer
+          // with the repository fields beside it.
+          waiting.push(...missing)
+          requestTableUpload({
+            file,
+            initialValues: metadata,
+            repoFields,
+            onCancel: () => cancelPendingStage(entry),
+            onConfirm: (values) => stageRowFile({ ...entry, values }),
+          })
+        } else {
+          await stageRowFile(entry)
+        }
         for (const id of Object.keys(patch)) {
           const target = targets.find((tg) => tg.id === id)
           if (
@@ -2675,6 +2808,13 @@ const TableFieldRenderer = ({
       })
     }
     const wantedNames = targetNames.join(', ')
+    if (waiting.length > 0) {
+      const waitingNames = Array.from(new Set(waiting)).join(', ')
+      return {
+        text: t`Fill the mandatory repository fields (${waitingNames}) in the file viewer to upload this file.`,
+        tone: 'info',
+      }
+    }
     // Success needs no line under the cell: the info icon already lists the
     // columns the file fills.
     if (filled.size > 0) return
