@@ -8,6 +8,7 @@ import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
@@ -56,7 +57,8 @@ export default function ProcurementAgentSettingsPanel({
   const [autoApproveWithinBudget, setAutoApproveWithinBudget] =
     useState<boolean>(nodeData.autoApproveWithinBudget ?? false)
 
-  const [openBasic, setOpenBasic] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
   const [openMatching, setOpenMatching] = useState(false)
   const [openBudget, setOpenBudget] = useState(false)
 

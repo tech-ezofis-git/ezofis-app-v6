@@ -2,6 +2,7 @@ import { type Node, useNodes, useReactFlow } from '@xyflow/react'
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import SettingsSection from './SettingsSection'
 
 /**
@@ -12,7 +13,8 @@ import SettingsSection from './SettingsSection'
 export default function RequestPageVisibilitySetting({ node }: { node: Node }) {
   const { setNodes } = useReactFlow()
   const liveNodes = useNodes()
-  const [isOpen, setIsOpen] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [isOpen, setIsOpen] = useState(defaultOpen)
 
   const currentNode = liveNodes.find((n) => n.id === node.id) || node
   const data = (currentNode.data || {}) as Record<string, unknown>

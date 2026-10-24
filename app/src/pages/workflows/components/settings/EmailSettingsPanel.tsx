@@ -21,6 +21,7 @@ import {
   openWorkflowOAuthAuthorize,
   parseOAuthConnectionSuccess,
 } from '@/pages/workflows/utils/oauthAuthorize'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
@@ -45,8 +46,9 @@ export default function EmailSettingsPanel({
     liveNodes.find((n) => n.id === initialNode?.id) || initialNode
   const nodeData = (currentNode?.data || {}) as any
 
-  const [openBasic, setOpenBasic] = useState(true)
-  const [openTrigger, setOpenTrigger] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
+  const [openTrigger, setOpenTrigger] = useState(defaultOpen)
 
   // Connection States
   const [isConnectionOpen, setIsConnectionOpen] = useState(false)

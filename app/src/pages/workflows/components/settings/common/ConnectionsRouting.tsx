@@ -45,8 +45,8 @@ export type ConnectionButtonColor = Extract<
 >
 
 interface ConnectionsRoutingProps {
-  defaultOpen?: boolean
   node: Node
+  defaultOpen?: boolean
 }
 
 const BUTTON_COLOR_OPTIONS: Array<{
@@ -109,23 +109,23 @@ export default function ConnectionsRouting({
     }
   }, [node.id, defaultOpen])
 
-const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
-  if (!sourceNode || !targetNode)
-    return { sourceHandle: 's-bottom', targetHandle: 't-top' }
-  const dx = targetNode.position.x - sourceNode.position.x
-  const dy = targetNode.position.y - sourceNode.position.y
-  const isHorizontal = Math.abs(dx) > Math.abs(dy) + 100
-  if (isHorizontal) {
+  const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
+    if (!sourceNode || !targetNode)
+      return { sourceHandle: 's-bottom', targetHandle: 't-top' }
+    const dx = targetNode.position.x - sourceNode.position.x
+    const dy = targetNode.position.y - sourceNode.position.y
+    const isHorizontal = Math.abs(dx) > Math.abs(dy) + 100
+    if (isHorizontal) {
+      return {
+        sourceHandle: dx > 0 ? 's-right' : 's-left',
+        targetHandle: dx > 0 ? 't-left' : 't-right',
+      }
+    }
     return {
-      sourceHandle: dx > 0 ? 's-right' : 's-left',
-      targetHandle: dx > 0 ? 't-left' : 't-right',
+      sourceHandle: dy > 0 ? 's-bottom' : 's-top',
+      targetHandle: dy > 0 ? 't-top' : 't-bottom',
     }
   }
-  return {
-    sourceHandle: dy > 0 ? 's-bottom' : 's-top',
-    targetHandle: dy > 0 ? 't-top' : 't-bottom',
-  }
-}
 
   const updateEdgesAndStore = (updater: (eds: any[]) => any[]) => {
     setEdges((eds) => {
@@ -178,7 +178,10 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
     )
   }
 
-  const onUpdateColor = (edgeId: string, buttonColor: ConnectionButtonColor) => {
+  const onUpdateColor = (
+    edgeId: string,
+    buttonColor: ConnectionButtonColor,
+  ) => {
     updateEdgesAndStore((eds) =>
       eds.map((e) =>
         e.id === edgeId ? { ...e, data: { ...e.data, buttonColor } } : e,
@@ -380,99 +383,263 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
 
   return (
     <>
-    {isAgentNode ? <RequestPageVisibilitySetting node={node} /> : null}
-    {/* Every block type can sync its data (configured per block). */}
-    <DataIntegrationSection node={node} />
-    <SettingsSection
-      icon='lucide:git-branch'
-      isOpen={isOpen}
-      title='Connections & Routing'
-      variant='premium'
-      onToggle={() => setIsOpen(!isOpen)}
-    >
-      <div className='flex flex-col gap-2.5 py-1'>
-        {connections.length > 0 ? (
-          <DndContext
-            collisionDetection={closestCenter}
-            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-            sensors={sensors}
-            onDragEnd={onReorder}
-          >
-          <SortableContext
-            items={connections.map((conn) => conn.edgeId)}
-            strategy={verticalListSortingStrategy}
-          >
-          <div className='flex flex-col gap-2.5'>
-          {connections.map((conn) => (
-            <SortableConnectionCard
-              disabled={connections.length < 2}
-              id={conn.edgeId}
-              key={conn.edgeId}
+      {isAgentNode ? <RequestPageVisibilitySetting node={node} /> : null}
+      {/* Every block type can sync its data (configured per block). */}
+      <DataIntegrationSection node={node} />
+      <SettingsSection
+        icon='lucide:git-branch'
+        isOpen={isOpen}
+        title='Connections & Routing'
+        variant='premium'
+        onToggle={() => setIsOpen(!isOpen)}
+      >
+        <div className='flex flex-col gap-2.5 py-1'>
+          {connections.length > 0 ? (
+            <DndContext
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              sensors={sensors}
+              onDragEnd={onReorder}
             >
-              {(dragHandle) => (
-              <>
-              <div className='flex items-start justify-between gap-2.5'>
-                <div className='flex items-start gap-2.5'>
-                  {dragHandle}
-                  <Icon
-                    className='mt-0.5 h-4 w-4 stroke-[2] text-purple-10'
-                    name='lucide:link-2'
-                  />
-                  <div className='flex flex-col space-y-0.5'>
-                    <span className='text-13 font-medium leading-none text-gray-12'>
-                      {conn.action
-                        ? `${conn.action} \u2192 ${conn.targetLabel}`
-                        : conn.targetLabel}
-                    </span>
-                    <span className='text-11 leading-tight text-gray-9'>
-                      {getTargetDescription(conn)}
-                    </span>
-                  </div>
-                </div>
-                <IconButton
-                  ariaLabel='Delete connection route'
-                  color='gray'
-                  icon='lucide:trash-2'
-                  size='xs'
-                  tooltip='Remove this action route'
-                  type='button'
-                  variant='ghost'
-                  onClick={() => onDeleteEdge(conn.edgeId)}
-                />
-              </div>
+              <SortableContext
+                items={connections.map((conn) => conn.edgeId)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className='flex flex-col gap-2.5'>
+                  {connections.map((conn) => (
+                    <SortableConnectionCard
+                      disabled={connections.length < 2}
+                      id={conn.edgeId}
+                      key={conn.edgeId}
+                    >
+                      {(dragHandle) => (
+                        <>
+                          <div className='flex items-start justify-between gap-2.5'>
+                            <div className='flex items-start gap-2.5'>
+                              {dragHandle}
+                              <Icon
+                                className='mt-0.5 h-4 w-4 stroke-[2] text-purple-10'
+                                name='lucide:link-2'
+                              />
+                              <div className='flex flex-col space-y-0.5'>
+                                <span className='text-13 leading-none font-medium text-gray-12'>
+                                  {conn.action
+                                    ? `${conn.action} \u2192 ${conn.targetLabel}`
+                                    : conn.targetLabel}
+                                </span>
+                                <span className='text-11 leading-tight text-gray-9'>
+                                  {getTargetDescription(conn)}
+                                </span>
+                              </div>
+                            </div>
+                            <IconButton
+                              ariaLabel='Delete connection route'
+                              color='gray'
+                              icon='lucide:trash-2'
+                              size='xs'
+                              tooltip='Remove this action route'
+                              type='button'
+                              variant='ghost'
+                              onClick={() => onDeleteEdge(conn.edgeId)}
+                            />
+                          </div>
 
-              <div className='animate-in fade-in slide-in-from-top-1 grid grid-cols-2 gap-3 pt-1 duration-300'>
+                          <div className='animate-in fade-in slide-in-from-top-1 grid grid-cols-2 gap-3 pt-1 duration-300'>
+                            <div className='space-y-1.5'>
+                              <div className='text-12 font-medium text-gray-12'>
+                                Action Button Label
+                              </div>
+                              <InputSelect
+                                className='bg-surface'
+                                options={dynamicActions}
+                                placeholder='Select or type action...'
+                                rightSectionIcon='lucide:chevrons-up-down'
+                                searchable
+                                creatable={
+                                  !isQualifyAgent &&
+                                  !isConditionNode &&
+                                  !isApAgent &&
+                                  !isFtpAgent
+                                }
+                                value={
+                                  dynamicActions.find(
+                                    (o) => o.name === conn.action,
+                                  ) ||
+                                  (conn.action
+                                    ? { id: -1, name: conn.action }
+                                    : null)
+                                }
+                                onChange={(val) => {
+                                  if (val) {
+                                    onUpdateAction(conn.edgeId, val.name)
+                                  }
+                                }}
+                              />
+                            </div>
+
+                            <div className='space-y-1.5'>
+                              <div className='text-12 font-medium text-gray-12'>
+                                Target Destination Step
+                              </div>
+                              <InputSelect
+                                className='bg-surface'
+                                options={targetNodeOptions}
+                                placeholder='Select target step...'
+                                rightSectionIcon='lucide:chevrons-up-down'
+                                searchable
+                                value={
+                                  targetNodeOptions.find(
+                                    (o) =>
+                                      String(o.id) === String(conn.targetId),
+                                  ) || null
+                                }
+                                onChange={(val) => {
+                                  if (val) {
+                                    onUpdateTarget(conn.edgeId, String(val.id))
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <ButtonColorPicker
+                            action={conn.action}
+                            value={conn.buttonColor || 'primary'}
+                            onChange={(color) =>
+                              onUpdateColor(conn.edgeId, color)
+                            }
+                          />
+
+                          {isManualUser && (
+                            <div className='grid grid-cols-2 gap-x-3 gap-y-2 border-t border-gray-3 pt-1'>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-12 text-gray-11'>
+                                  Remarks required
+                                </span>
+                                <InputSwitch
+                                  checked={conn.remarks}
+                                  onChange={(checked) =>
+                                    onUpdateFlag(
+                                      conn.edgeId,
+                                      'remarks',
+                                      checked,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-12 text-gray-11'>
+                                  Confirmation dialog
+                                </span>
+                                <InputSwitch
+                                  checked={conn.confirm}
+                                  onChange={(checked) =>
+                                    onUpdateFlag(
+                                      conn.edgeId,
+                                      'confirm',
+                                      checked,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-12 text-gray-11'>
+                                  Password verification
+                                </span>
+                                <InputSwitch
+                                  checked={conn.passwordAccess}
+                                  onChange={(checked) =>
+                                    onUpdateFlag(
+                                      conn.edgeId,
+                                      'passwordAccess',
+                                      checked,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-12 text-gray-11'>
+                                  Signature required
+                                </span>
+                                <InputSwitch
+                                  checked={conn.signature}
+                                  onChange={(checked) =>
+                                    onUpdateFlag(
+                                      conn.edgeId,
+                                      'signature',
+                                      checked,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </SortableConnectionCard>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            <div className='py-4 text-center'>
+              <p className='text-12 text-gray-8 italic'>
+                No outgoing connections from this node.
+              </p>
+            </div>
+          )}
+
+          <div className='mt-2 border-t border-gray-4 pt-3'>
+            {!isAddingRoute ? (
+              <Button
+                className='w-full'
+                color='primary'
+                icon='lucide:plus'
+                size='sm'
+                variant='outline'
+                onClick={() => setIsAddingRoute(true)}
+              >
+                Add Action Route
+              </Button>
+            ) : (
+              <div className='animate-in fade-in space-y-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm duration-200'>
+                <div className='flex items-center justify-between text-13 font-medium text-gray-12'>
+                  <span>New Action Route</span>
+                  <IconButton
+                    ariaLabel='Cancel'
+                    color='gray'
+                    icon='lucide:x'
+                    size='xs'
+                    type='button'
+                    variant='ghost'
+                    onClick={() => setIsAddingRoute(false)}
+                  />
+                </div>
+
                 <div className='space-y-1.5'>
                   <div className='text-12 font-medium text-gray-12'>
                     Action Button Label
                   </div>
                   <InputSelect
                     className='bg-surface'
-                    creatable={
-                      !isQualifyAgent &&
-                      !isConditionNode &&
-                      !isApAgent &&
-                      !isFtpAgent
-                    }
                     options={dynamicActions}
-                    placeholder='Select or type action...'
+                    placeholder='Select or type action (e.g. Approve, Reject)...'
                     rightSectionIcon='lucide:chevrons-up-down'
+                    creatable
                     searchable
                     value={
-                      dynamicActions.find((o) => o.name === conn.action) ||
-                      (conn.action ? { id: -1, name: conn.action } : null)
+                      dynamicActions.find((o) => o.name === newAction) ||
+                      (newAction ? { id: -1, name: newAction } : null)
                     }
                     onChange={(val) => {
-                      if (val) {
-                        onUpdateAction(conn.edgeId, val.name)
-                      }
+                      if (val) setNewAction(val.name)
                     }}
                   />
                 </div>
 
                 <div className='space-y-1.5'>
                   <div className='text-12 font-medium text-gray-12'>
-                    Target Destination Step
+                    Target Step
                   </div>
                   <InputSelect
                     className='bg-surface'
@@ -482,200 +649,59 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
                     searchable
                     value={
                       targetNodeOptions.find(
-                        (o) => String(o.id) === String(conn.targetId),
+                        (o) => String(o.id) === String(newTargetId),
                       ) || null
                     }
                     onChange={(val) => {
-                      if (val) {
-                        onUpdateTarget(conn.edgeId, String(val.id))
-                      }
+                      if (val) setNewTargetId(String(val.id))
                     }}
                   />
                 </div>
-              </div>
 
-              <ButtonColorPicker
-                action={conn.action}
-                value={conn.buttonColor || 'primary'}
-                onChange={(color) => onUpdateColor(conn.edgeId, color)}
-              />
-
-              {isManualUser && (
-                <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1 border-t border-gray-3'>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>
-                      Remarks required
-                    </span>
-                    <InputSwitch
-                      checked={conn.remarks}
-                      onChange={(checked) =>
-                        onUpdateFlag(conn.edgeId, 'remarks', checked)
-                      }
-                    />
-                  </div>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>
-                      Confirmation dialog
-                    </span>
-                    <InputSwitch
-                      checked={conn.confirm}
-                      onChange={(checked) =>
-                        onUpdateFlag(conn.edgeId, 'confirm', checked)
-                      }
-                    />
-                  </div>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>
-                      Password verification
-                    </span>
-                    <InputSwitch
-                      checked={conn.passwordAccess}
-                      onChange={(checked) =>
-                        onUpdateFlag(conn.edgeId, 'passwordAccess', checked)
-                      }
-                    />
-                  </div>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-12 text-gray-11'>
-                      Signature required
-                    </span>
-                    <InputSwitch
-                      checked={conn.signature}
-                      onChange={(checked) =>
-                        onUpdateFlag(conn.edgeId, 'signature', checked)
-                      }
-                    />
-                  </div>
+                <div className='flex items-center justify-end gap-2 pt-1'>
+                  <Button
+                    color='gray'
+                    size='sm'
+                    variant='ghost'
+                    onClick={() => setIsAddingRoute(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    color='primary'
+                    disabled={!newTargetId || !newAction}
+                    size='sm'
+                    variant='solid'
+                    onClick={() => {
+                      if (!newTargetId || !newAction) return
+                      const targetNode = nodes.find((n) => n.id === newTargetId)
+                      const handles = computeHandlesForNodes(node, targetNode)
+                      const edgeId = `e-${node.id}-${newTargetId}-${Date.now()}`
+                      updateEdgesAndStore((eds) => [
+                        ...eds,
+                        {
+                          data: { action: newAction, proceedAction: newAction },
+                          id: edgeId,
+                          source: node.id,
+                          sourceHandle: handles.sourceHandle,
+                          target: newTargetId,
+                          targetHandle: handles.targetHandle,
+                          type: 'custom',
+                        },
+                      ])
+                      setIsAddingRoute(false)
+                      setNewAction('Submit')
+                      setNewTargetId('')
+                    }}
+                  >
+                    Create Action Route
+                  </Button>
                 </div>
-              )}
-              </>
-              )}
-            </SortableConnectionCard>
-          ))}
+              </div>
+            )}
           </div>
-          </SortableContext>
-          </DndContext>
-        ) : (
-          <div className='py-4 text-center'>
-            <p className='text-12 italic text-gray-8'>
-              No outgoing connections from this node.
-            </p>
-          </div>
-        )}
-
-        <div className='mt-2 border-t border-gray-4 pt-3'>
-          {!isAddingRoute ? (
-            <Button
-              className='w-full'
-              color='primary'
-              icon='lucide:plus'
-              size='sm'
-              variant='outline'
-              onClick={() => setIsAddingRoute(true)}
-            >
-              Add Action Route
-            </Button>
-          ) : (
-            <div className='animate-in fade-in space-y-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm duration-200'>
-              <div className='flex items-center justify-between text-13 font-medium text-gray-12'>
-                <span>New Action Route</span>
-                <IconButton
-                  ariaLabel='Cancel'
-                  color='gray'
-                  icon='lucide:x'
-                  size='xs'
-                  type='button'
-                  variant='ghost'
-                  onClick={() => setIsAddingRoute(false)}
-                />
-              </div>
-
-              <div className='space-y-1.5'>
-                <div className='text-12 font-medium text-gray-12'>
-                  Action Button Label
-                </div>
-                <InputSelect
-                  className='bg-surface'
-                  creatable
-                  options={dynamicActions}
-                  placeholder='Select or type action (e.g. Approve, Reject)...'
-                  rightSectionIcon='lucide:chevrons-up-down'
-                  searchable
-                  value={
-                    dynamicActions.find((o) => o.name === newAction) ||
-                    (newAction ? { id: -1, name: newAction } : null)
-                  }
-                  onChange={(val) => {
-                    if (val) setNewAction(val.name)
-                  }}
-                />
-              </div>
-
-              <div className='space-y-1.5'>
-                <div className='text-12 font-medium text-gray-12'>
-                  Target Step
-                </div>
-                <InputSelect
-                  className='bg-surface'
-                  options={targetNodeOptions}
-                  placeholder='Select target step...'
-                  rightSectionIcon='lucide:chevrons-up-down'
-                  searchable
-                  value={
-                    targetNodeOptions.find(
-                      (o) => String(o.id) === String(newTargetId),
-                    ) || null
-                  }
-                  onChange={(val) => {
-                    if (val) setNewTargetId(String(val.id))
-                  }}
-                />
-              </div>
-
-              <div className='flex items-center justify-end gap-2 pt-1'>
-                <Button
-                  color='gray'
-                  size='sm'
-                  variant='ghost'
-                  onClick={() => setIsAddingRoute(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color='primary'
-                  disabled={!newTargetId || !newAction}
-                  size='sm'
-                  variant='solid'
-                  onClick={() => {
-                    if (!newTargetId || !newAction) return
-                    const targetNode = nodes.find((n) => n.id === newTargetId)
-                    const handles = computeHandlesForNodes(node, targetNode)
-                    const edgeId = `e-${node.id}-${newTargetId}-${Date.now()}`
-                    updateEdgesAndStore((eds) => [
-                      ...eds,
-                      {
-                        data: { action: newAction, proceedAction: newAction },
-                        id: edgeId,
-                        source: node.id,
-                        sourceHandle: handles.sourceHandle,
-                        target: newTargetId,
-                        targetHandle: handles.targetHandle,
-                        type: 'custom',
-                      },
-                    ])
-                    setIsAddingRoute(false)
-                    setNewAction('Submit')
-                    setNewTargetId('')
-                  }}
-                >
-                  Create Action Route
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    </SettingsSection>
+      </SettingsSection>
     </>
   )
 }
@@ -693,7 +719,11 @@ function ButtonColorPicker({
   return (
     <div className='flex items-center justify-between gap-3 border-t border-gray-3 pt-3'>
       <div className='flex flex-col gap-1.5'>
-        <div aria-label='Button color' className='flex items-center gap-2' role='radiogroup'>
+        <div
+          aria-label='Button color'
+          className='flex items-center gap-2'
+          role='radiogroup'
+        >
           {BUTTON_COLOR_OPTIONS.map((option) => {
             const selected = option.id === value
             return (
