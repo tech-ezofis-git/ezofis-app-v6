@@ -1948,22 +1948,37 @@ const Request = ({
     return itemTab === 'inbox' || itemTab === 'invoices'
   }, [requestListTab, selectedItem?._listTab, t])
 
-  const headerActions = useMemo(() => {
-    if (isApAgentStage || isAutoRoutedAgentStage) return []
+  // Whether the signed-in user can act on this request at its current stage.
+  // Drives both the header actions and whether the form is editable, so a
+  // request with no action for this user (completed, someone else's stage,
+  // an agent stage) is fully read-only.
+  const canActOnRequest = useMemo(() => {
+    if (isApAgentStage || isAutoRoutedAgentStage) return false
 
     const completedAt = stageRow?.completedAtUtc || selectedItem?.completedAtUtc
-    if (completedAt) return []
+    if (completedAt) return false
 
     if (hasCustomTabConfig) {
       // Configured tabs replace Inbox / Sent / Completed. A request opened
       // from any of those tabs shows actions when the signed-in email is
       // the activity assignee.
-      if (!isUserEmailMatched && !isAssignedToCurrentUser) return []
-    } else {
-      // No tab configuration: actions only from Inbox.
-      if (!isInboxTab) return []
-      if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
+      return isUserEmailMatched || isAssignedToCurrentUser
     }
+    // No tab configuration: actions only from Inbox.
+    return isInboxTab && (isAssignedToCurrentUser || isUserEmailMatched)
+  }, [
+    isApAgentStage,
+    isAutoRoutedAgentStage,
+    hasCustomTabConfig,
+    isInboxTab,
+    isUserEmailMatched,
+    isAssignedToCurrentUser,
+    stageRow?.completedAtUtc,
+    selectedItem?.completedAtUtc,
+  ])
+
+  const headerActions = useMemo(() => {
+    if (!canActOnRequest) return []
 
     if (ruleActions.length > 0) return ruleActions
     if (actions.length > 0) return actions
@@ -1979,23 +1994,13 @@ const Request = ({
       selectedWorkflow?.flowJson
     return getActionsForActivity(String(currentActivityId || ''), graphSource)
   }, [
-    isApAgentStage,
-    isAutoRoutedAgentStage,
-    hasCustomTabConfig,
-    isInboxTab,
-    isUserEmailMatched,
-    isAssignedToCurrentUser,
+    canActOnRequest,
     ruleActions,
     actions,
     currentActivityId,
     workflowGraph,
     rawWorkflowData,
     selectedWorkflow?.flowJson,
-    stageRow?.completedAtUtc,
-    stageRow?.activityUserEmail,
-    selectedItem?.completedAtUtc,
-    selectedItem?.activityUserEmail,
-    request?.activityUserEmail,
   ])
 
   const [formModel, setFormModel] = useState<any>({})
@@ -3210,11 +3215,7 @@ const Request = ({
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
-                viewOnly={
-                  hasCustomTabConfig
-                    ? !isUserEmailMatched && !isAssignedToCurrentUser
-                    : !isInboxTab
-                }
+                viewOnly={!canActOnRequest}
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
                     ? currentBlockSettings.checklistItems
