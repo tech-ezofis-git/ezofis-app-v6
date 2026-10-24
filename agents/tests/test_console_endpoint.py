@@ -74,6 +74,9 @@ def test_console_serves_html(client):
     assert 'id="reportRepositoryName"' in response.text
     assert "/api/report-agent/scope-options" in response.text
     assert 'id="reportPromptOverride"' in response.text
+    assert 'id="reportSpecDefaultColumns"' in response.text
+    assert 'id="reportSpecUserColumns"' in response.text
+    assert 'id="reportSpecAgentColumns"' in response.text
     assert 'id="reportPlanPreview"' in response.text
     assert "sendReportPlanJob" in response.text
     assert "sendReportPromptJob" in response.text

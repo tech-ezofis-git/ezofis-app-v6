@@ -52,6 +52,9 @@ from app.report_agent.report_spec import (
     normalize_report_spec,
     parse_report_spec_json,
     report_spec_to_prompt,
+    spec_from_prompt_json,
+    attach_column_palettes,
+    apply_selected_columns,
 )
 from app.report_agent.report_types import (
     get_report_type,
@@ -770,6 +773,12 @@ class ReportAgentService:
                 update={"available_columns": available_columns_from_tables(tables)}
             )
 
+        schema_tables = [
+            f"{t.schema_name + '.' if t.schema_name else ''}{t.table}" for t in tables
+        ]
+        spec = attach_column_palettes(spec, tables=tables, schema_tables=schema_tables)
+        spec = apply_selected_columns(spec)
+
         prompt_text = report_spec_to_prompt(
             spec,
             workflow_name=request.workflow_name,
@@ -794,9 +803,9 @@ class ReportAgentService:
             report_prompt=prompt_text,
             report_spec=spec,
             warnings=list(spec.warnings or []),
-            schema_tables=[
+            schema_tables=list(spec.schema_tables or [
                 f"{t.schema_name + '.' if t.schema_name else ''}{t.table}" for t in tables
-            ],
+            ]),
             duration_ms=duration_ms,
         )
 
@@ -887,6 +896,26 @@ class ReportAgentService:
         spec = request.report_spec
         if spec is not None and not isinstance(spec, ReportSpec):
             spec = normalize_report_spec(spec)
+        parsed_prompt = spec_from_prompt_json(prompt)
+        if spec is None:
+            spec = parsed_prompt
+        elif parsed_prompt is not None:
+            spec = spec.model_copy(
+                update={
+                    "objective": spec.objective or parsed_prompt.objective,
+                    "userdefined_columns": spec.userdefined_columns or parsed_prompt.userdefined_columns,
+                    "default_columns": spec.default_columns or parsed_prompt.default_columns,
+                    "agent_columns": spec.agent_columns or parsed_prompt.agent_columns,
+                    "schema_tables": spec.schema_tables or parsed_prompt.schema_tables,
+                    "source_schema": spec.source_schema or parsed_prompt.source_schema,
+                    "source_table": spec.source_table or parsed_prompt.source_table,
+                    "sort": spec.sort or parsed_prompt.sort,
+                    "group_by": spec.group_by or parsed_prompt.group_by,
+                    "filters": spec.filters or parsed_prompt.filters,
+                }
+            )
+        if spec is not None:
+            spec = apply_selected_columns(spec)
         if not prompt and spec is not None:
             prompt = report_spec_to_prompt(
                 spec,
