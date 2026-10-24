@@ -10,22 +10,18 @@ import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayo
 import type { Report, ReportStatus } from '../types'
 import {
   usePublishReportBuilderReportMutation,
+  useSaveReportAiMutation,
   useSaveReportBuilderReportMutation,
 } from '../hooks/useReportBuilderApi'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
+import { buildAgentConfigFromDraft } from '../utils/agentReport'
 import SourceStep from './steps/SourceStep'
 import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
 import FiltersStep from './steps/FiltersStep'
 import ScheduleStep from './steps/ScheduleStep'
 
-const STEP_IDS = [
-  'source',
-  'details',
-  'fields',
-  'filters',
-  'schedule',
-] as const
+const STEP_IDS = ['source', 'details', 'fields', 'filters', 'schedule'] as const
 
 interface Props {
   onBack: () => void
@@ -41,15 +37,13 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const resetDraft = useReportBuilderDraftStore((state) => state.resetDraft)
   const saveReportMutation = useSaveReportBuilderReportMutation()
+  const saveAiReportMutation = useSaveReportAiMutation()
   const publishReportMutation = usePublishReportBuilderReportMutation()
 
   const isEditing = Boolean(draft.editingReportId)
   const rawStep = search.step as string
   const normalizedStep = rawStep === 'ask-ai' ? 'source' : (rawStep as StepId)
-  const initialIndex = Math.max(
-    0,
-    STEP_IDS.indexOf(normalizedStep || 'source'),
-  )
+  const initialIndex = Math.max(0, STEP_IDS.indexOf(normalizedStep || 'source'))
   const [activeIndex, setActiveIndex] = useState(initialIndex)
   const [maxVisitedStep, setMaxVisitedStep] = useState(
     isEditing ? STEP_IDS.length - 1 : initialIndex,
@@ -58,7 +52,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const [hasAiPlanGenerated, setHasAiPlanGenerated] = useState(false)
 
   useEffect(() => {
-    if (normalizedStep && (STEP_IDS as readonly string[]).includes(normalizedStep)) {
+    if (
+      normalizedStep &&
+      (STEP_IDS as readonly string[]).includes(normalizedStep)
+    ) {
       const idx = STEP_IDS.indexOf(normalizedStep as StepId)
       if (idx !== -1 && idx !== activeIndex) {
         setActiveIndex(idx)
@@ -74,14 +71,17 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     { description: string; label: string }
   > = useMemo(
     () => ({
-      'source': {
+      source: {
         description: t`Choose data source`,
         label: t`Source`,
       },
-      'details': { description: t`Name, description & sharing`, label: t`Details` },
-      'fields': { description: t`Choose columns`, label: t`Fields` },
-      'filters': { description: t`Narrow down rows`, label: t`Filters` },
-      'schedule': { description: t`Automated delivery`, label: t`Schedule` },
+      details: {
+        description: t`Name, description & sharing`,
+        label: t`Details`,
+      },
+      fields: { description: t`Choose columns`, label: t`Fields` },
+      filters: { description: t`Narrow down rows`, label: t`Filters` },
+      schedule: { description: t`Automated delivery`, label: t`Schedule` },
     }),
     [t],
   )
@@ -108,10 +108,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const isNextDisabled = useMemo(() => {
     if (STEP_IDS[activeIndex] === 'source') {
-      return (
-        !draft.sourceType ||
-        (!draft.sourceId && !draft.domain.trim())
-      )
+      return !draft.sourceType || (!draft.sourceId && !draft.domain.trim())
     }
     if (STEP_IDS[activeIndex] === 'details') {
       return !draft.name.trim()
@@ -166,12 +163,23 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const persistAndExit = async (status: ReportStatus) => {
     setIsSaving(true)
-    const report = buildReportFromDraft(status)
 
     try {
-      const saved = await saveReportMutation.mutateAsync(report)
-      if (status === 'Published') {
-        await publishReportMutation.mutateAsync(saved.id)
+      if (draft.agent) {
+        // AI reports were saved by generate; PATCH their edits (columns,
+        // labels, filters, highlights) under the same id.
+        await saveAiReportMutation.mutateAsync({
+          agent: buildAgentConfigFromDraft(draft.agent, draft),
+          description: draft.description,
+          name: draft.name || t`Untitled Report`,
+        })
+      } else {
+        const saved = await saveReportMutation.mutateAsync(
+          buildReportFromDraft(status),
+        )
+        if (status === 'Published') {
+          await publishReportMutation.mutateAsync(saved.id)
+        }
       }
       resetDraft()
       showToast({
@@ -238,6 +246,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   return (
     <SettingsWizardLayout
       activeStep={activeIndex}
+      // The Fields step lays out two column lists side by side plus inline
+      // highlight-rule editors, so it gets more room than the other steps.
+      contentClassName={
+        STEP_IDS[activeIndex] === 'fields' ? 'max-w-7xl' : undefined
+      }
       headerDescription={t`Build a custom report from any of your organization's data domains.`}
       headerTitle={draft.editingReportId ? t`Edit Report` : t`Report Builder`}
       isNextDisabled={isNextDisabled}
@@ -261,7 +274,8 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       onStepChange={goToStep}
     >
       {renderStep()}
-      {activeIndex === steps.length - 1 && (
+      {/* /report-ai-builder has no publish endpoint, so AI reports save as drafts. */}
+      {activeIndex === steps.length - 1 && !draft.agent && (
         <div className='flex justify-end border-t border-gray-3 pt-4'>
           <button
             className='text-13 font-medium text-primary-10 underline-offset-2 hover:underline'

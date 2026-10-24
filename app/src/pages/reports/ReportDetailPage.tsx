@@ -65,7 +65,7 @@ const ReportDetailPage = ({ reportId }: Props) => {
             {report.domain}
           </span>
         </div>
-        <ReportShareButton reportId={report.id} />
+        {!report.isAiReport && <ReportShareButton reportId={report.id} />}
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>

@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import type {
   Report,
+  ReportAgentConfig,
   ReportFieldSetting,
   ReportFilter,
   ReportSchedule,
@@ -19,6 +20,8 @@ export interface ReportDraftAiSuggestion {
 }
 
 export interface ReportDraft {
+  /** Report agent prompt/spec when the report was generated with AI. */
+  agent?: ReportAgentConfig | null
   aiPrompt?: string
   aiSuggestion?: ReportDraftAiSuggestion | null
   customFields: Question[]
@@ -42,6 +45,7 @@ export interface ReportDraft {
 }
 
 export const EMPTY_DRAFT: ReportDraft = {
+  agent: null,
   aiPrompt: '',
   aiSuggestion: null,
   customFields: [],
@@ -79,6 +83,7 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
       loadFromReport: (report) =>
         set({
           draft: {
+            agent: report.agentConfig ?? null,
             aiPrompt: '',
             aiSuggestion: null,
             customFields: report.customFields ?? [],

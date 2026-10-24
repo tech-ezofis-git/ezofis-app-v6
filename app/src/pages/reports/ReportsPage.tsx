@@ -1,7 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import type { Report } from '@/pages/report-builder/types'
+import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
+import { getAnyReportById } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { openReportBuilder } from '@/pages/report-builder/navigation'
 import useReportBuilderDraftStore from '@/pages/report-builder/stores/useReportBuilderDraftStore'
 import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
@@ -26,8 +28,23 @@ const ReportsPage = () => {
     goToBuilder()
   }
 
-  const handleEdit = (report: Report) => {
-    loadFromReport(report)
+  // AI list rows are summaries; load the saved prompt/spec by id first.
+  const loadFull = async (report: Report) => {
+    if (!report.isAiReport) return report
+    const { data, error } = await getAnyReportById(report.id)
+    if (!data) {
+      showToast({
+        message: error || t`Failed to load report`,
+        variant: 'error',
+      })
+    }
+    return data
+  }
+
+  const handleEdit = async (report: Report) => {
+    const full = await loadFull(report)
+    if (!full) return
+    loadFromReport(full)
     goToBuilder()
   }
 
@@ -47,7 +64,7 @@ const ReportsPage = () => {
     <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
       <ReportsListView
         onCreateReport={handleCreate}
-        onEditReport={handleEdit}
+        onEditReport={(report) => void handleEdit(report)}
         onOpenReport={handleOpen}
         onScheduleReport={handleSchedule}
       />

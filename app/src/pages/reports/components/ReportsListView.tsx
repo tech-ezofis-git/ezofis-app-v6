@@ -16,6 +16,7 @@ import {
   useReportBuilderListQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { formatDatetime } from '@/utils/dayjs'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ReportShareButton from './ReportShareButton'
 import RowActionsMenu from './RowActionsMenu'
 import Table from './Table'
@@ -122,6 +123,12 @@ const ReportsListView = ({
               className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
               onClick={() => onOpenReport(row)}
             >
+              {row.isAiReport && (
+                <AiBrandIcon
+                  className='mr-1.5 inline size-3.5 align-[-2px]'
+                  variant='outline-purple'
+                />
+              )}
               {row.name}
             </span>
           ),
@@ -167,6 +174,12 @@ const ReportsListView = ({
             className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
             onClick={() => onOpenReport(row)}
           >
+            {row.isAiReport && (
+              <AiBrandIcon
+                className='mr-1.5 inline size-3.5 align-[-2px]'
+                variant='outline-purple'
+              />
+            )}
             {row.name}
           </span>
         ),
@@ -230,7 +243,10 @@ const ReportsListView = ({
         size: 40,
         renderCell: (row: Report) => (
           <div className='flex items-center justify-center gap-1'>
-            <ReportShareButton reportId={row.id} iconOnly />
+            {/* /report-ai-builder has no share endpoint yet. */}
+            {!row.isAiReport && (
+              <ReportShareButton reportId={row.id} iconOnly />
+            )}
             <RowActionsMenu
               report={row}
               onDelete={setDeletingReport}

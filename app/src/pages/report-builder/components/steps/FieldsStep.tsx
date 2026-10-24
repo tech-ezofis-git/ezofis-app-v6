@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
+import FieldsStepAgent from './FieldsStepAgent'
 import FieldsStepFormSource from './FieldsStepFormSource'
 import FieldsStepLegacyDomain from './FieldsStepLegacyDomain'
 
@@ -20,7 +21,9 @@ const FieldsStep = () => {
         <p className='text-13 text-gray-10'>{t`Pick which fields appear in this report, then configure column labels, calculations, and computed status.`}</p>
       </div>
 
-      {draft.sourceFormId || draft.sourceId || draft.sourceType ? (
+      {draft.agent ? (
+        <FieldsStepAgent />
+      ) : draft.sourceFormId || draft.sourceId || draft.sourceType ? (
         <FieldsStepFormSource />
       ) : draft.domain ? (
         <FieldsStepLegacyDomain />
