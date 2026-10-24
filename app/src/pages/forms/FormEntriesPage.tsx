@@ -85,6 +85,7 @@ import {
   shouldShowTableSummaryRow,
   updateCurrencyFieldValue,
   updatePhoneFieldValue,
+  selectOptionStoredValue,
   withExtraFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
@@ -553,8 +554,14 @@ const FormEntriesSelectInput = ({
         placeholder={
           field.settings?.general?.placeholder || 'Select options...'
         }
+        // A newly added option carries a generated numeric id; store its
+        // typed text instead.
         onChange={(vals: Option[]) =>
-          onChange(vals.map((v) => String(v.id ?? v.value ?? v.name)).join(','))
+          onChange(
+            vals
+              .map((v) => selectOptionStoredValue(v as any, selectOptions))
+              .join(','),
+          )
         }
       />
     )
@@ -574,7 +581,7 @@ const FormEntriesSelectInput = ({
         selectedOpt ? [selectedOpt] : [],
       )}
       onChange={(opt) =>
-        onChange(opt ? String(opt.id ?? opt.value ?? opt.name) : '')
+        onChange(opt ? selectOptionStoredValue(opt as any, selectOptions) : '')
       }
     />
   )
