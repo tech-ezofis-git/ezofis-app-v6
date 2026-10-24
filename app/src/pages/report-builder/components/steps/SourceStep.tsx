@@ -5,22 +5,56 @@ import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
+  generateReportPrompt,
+  runSavedReport,
+  type ReportAiSpec,
+} from '@/api/v6/reportAiBuilder'
+import {
   createPublishedWorkflowBrowsePayload,
   mapPublishedBrowseResponseToOptions,
   workflowsApiV6,
 } from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import Button from '@/components/base/button/Button'
-import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import type { PreviewColumn } from '../../utils/previewSampleData'
-import { sampleTypeForQuestionType } from '../../utils/previewSampleData'
 import type { ReportSourceType } from '../../types'
 import { createDefaultFieldSetting } from '../../types'
 import FieldsPreviewTable from './FieldsPreviewTable'
+
+const EMPTY_AI_DRAFT = {
+  aiPrompt: '',
+  aiReportId: null as string | null,
+  aiReportPrompt: '',
+  aiReportSpec: null as ReportAiSpec | null,
+  aiReportType: '',
+  aiRun: null,
+  aiSessionId: '',
+  aiSuggestion: null,
+  aiTitle: '',
+  aiWarnings: [] as string[],
+  showAiBuilder: false,
+}
+
+const columnsFromSpec = (spec?: ReportAiSpec | null): PreviewColumn[] => {
+  const selected =
+    spec?.columns?.length
+      ? spec.columns
+      : [
+          ...(spec?.defaultColumns ?? []),
+          ...(spec?.userdefinedColumns ?? []),
+          ...(spec?.agentColumns ?? []),
+        ].filter((column) => column.selected !== false)
+  return selected.map((column) => ({
+    id: column.key,
+    label: column.label || column.key,
+    sampleType: 'text' as const,
+  }))
+}
 
 const PROMPT_EXAMPLES_WORKFLOW = [
   {
@@ -57,12 +91,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const [selectedSourceType, setSelectedSourceType] =
     useState<ReportSourceType>(draft.sourceType || 'Workflow')
   const [isThinking, setIsThinking] = useState(false)
+  const [isRunning, setIsRunning] = useState(false)
   const isEditing = Boolean(draft.editingReportId)
 
   // Persistent AI view states bound to draft store so they persist across navigation
   const showAiBuilder = Boolean(draft.showAiBuilder)
   const prompt = draft.aiPrompt ?? ''
-  const suggestion = draft.aiSuggestion ?? null
 
   const setShowAiBuilder = (val: boolean) => setDraft({ showAiBuilder: val })
   const setPrompt = (val: string) => setDraft({ aiPrompt: val })
@@ -112,14 +146,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectSourceType = (type: ReportSourceType) => {
     setSelectedSourceType(type)
     setDraft({
-      aiPrompt: '',
-      aiSuggestion: null,
+      ...EMPTY_AI_DRAFT,
       customFields: [],
       domain: '',
       fields: [],
       fieldSettings: {},
       filters: [],
-      showAiBuilder: false,
       sourceFormId: '',
       sourceId: '',
       sourceType: type,
@@ -130,14 +162,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectWorkflow = async (option: Option | null) => {
     if (!option) {
       setDraft({
-        aiPrompt: '',
-        aiSuggestion: null,
+        ...EMPTY_AI_DRAFT,
         customFields: [],
         domain: '',
         fields: [],
         fieldSettings: {},
         filters: [],
-        showAiBuilder: false,
         sourceFormId: '',
         sourceId: '',
       })
@@ -165,14 +195,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     }
 
     setDraft({
-      aiPrompt: '',
-      aiSuggestion: null,
+      ...EMPTY_AI_DRAFT,
       customFields: [],
       domain: workflowName,
       fields: [],
       fieldSettings: {},
       filters: [],
-      showAiBuilder: false,
       sourceFormId: wFormId,
       sourceId: workflowId,
       sourceType: 'Workflow',
@@ -183,14 +211,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectFolder = (option: Option | null) => {
     if (!option) {
       setDraft({
-        aiPrompt: '',
-        aiSuggestion: null,
+        ...EMPTY_AI_DRAFT,
         customFields: [],
         domain: '',
         fields: [],
         fieldSettings: {},
         filters: [],
-        showAiBuilder: false,
         sourceFormId: '',
         sourceId: '',
       })
@@ -202,14 +228,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const folderName = String(option.name)
 
     setDraft({
-      aiPrompt: '',
-      aiSuggestion: null,
+      ...EMPTY_AI_DRAFT,
       customFields: [],
       domain: folderName,
       fields: [],
       fieldSettings: {},
       filters: [],
-      showAiBuilder: false,
       sourceFormId: '',
       sourceId: folderId,
       sourceType: 'Folder',
@@ -218,70 +242,114 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   }
 
   const isSourceReady = Boolean(draft.sourceId && draft.domain)
+  const reportType =
+    draft.sourceType === 'Folder' ? 'specific_repository' : 'specific_workflow'
+  const specColumns = columnsFromSpec(draft.aiReportSpec)
+  const runColumns =
+    draft.aiRun?.columns?.map((column) => ({
+      id: column.key,
+      label: column.label || column.key,
+      sampleType: 'text' as const,
+    })) ?? specColumns
+  const runRows = (draft.aiRun?.rows ?? []).map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [key, String(value ?? '')]),
+    ),
+  )
 
-  const runPrompt = (value: string) => {
+  const runPrompt = async (value: string) => {
     const text = value.trim()
-    if (!text || sourceFields.length === 0) return
+    if (!text || isThinking) return
     setPrompt(text)
     setIsThinking(true)
-
-    window.setTimeout(() => {
-      const lower = text.toLowerCase()
-      const matchingFields = sourceFields.filter((f) =>
-        lower.includes((f.label || '').toLowerCase()),
-      )
-      const selectedFieldList =
-        matchingFields.length > 0
-          ? matchingFields.slice(0, 6)
-          : sourceFields.slice(0, 5)
-
-      const fieldIds = selectedFieldList.map((f) => f.id)
-      const summary = `Based on "${draft.domain}" (${draft.sourceType}), I've prepared a report with ${selectedFieldList.length} relevant fields.`
-      const name = text.length > 48 ? `${text.slice(0, 45)}...` : text
-
-      // Prime the draft with fields and persist the AI plan state
+    const sessionId =
+      draft.aiSessionId ||
+      `report-${crypto.randomUUID().replaceAll('-', '')}`
+    try {
+      const generated = await generateReportPrompt({
+        description: text,
+        id: draft.aiReportId,
+        name: text.length > 80 ? `${text.slice(0, 77)}...` : text,
+        reportType,
+        repositoryName:
+          reportType === 'specific_repository' ? draft.domain : null,
+        sessionId,
+        workflowName:
+          reportType === 'specific_workflow' ? draft.domain : null,
+      })
+      const spec = generated.reportSpec ?? null
+      const fieldIds = columnsFromSpec(spec).map((column) => column.id)
       const fieldSettings = Object.fromEntries(
         fieldIds.map((id) => {
-          const field = sourceFields.find((f) => f.id === id)
-          return [id, createDefaultFieldSetting(field?.label || id)]
+          const fromSpec = spec?.columns?.find((column) => column.key === id)
+          const field = sourceFields.find((item) => item.id === id)
+          return [
+            id,
+            createDefaultFieldSetting(fromSpec?.label || field?.label || id),
+          ]
         }),
       )
-
       setDraft({
         aiPrompt: text,
+        aiReportId: generated.id,
+        aiReportPrompt: generated.reportPrompt,
+        aiReportSpec: spec,
+        aiReportType: generated.reportType || reportType,
+        aiRun: null,
+        aiSessionId: generated.sessionId || sessionId,
         aiSuggestion: {
           fieldIds,
-          name,
-          summary,
+          name: generated.title || text,
+          summary: generated.title || text,
         },
-        description: summary,
+        aiTitle: generated.title || text,
+        aiWarnings: generated.warnings ?? [],
+        description: text,
         fields: fieldIds,
         fieldSettings,
-        name: name || draft.domain,
+        name: generated.title || draft.domain,
         showAiBuilder: true,
       })
-
-      setIsThinking(false)
       onPlanGenerated?.(true)
-    }, 700)
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error
+            ? error.message
+            : t`Failed to generate report prompt`,
+        variant: 'error',
+      })
+    } finally {
+      setIsThinking(false)
+    }
+  }
+
+  const runGeneratedReport = async () => {
+    if (!draft.aiReportId || isRunning) return
+    setIsRunning(true)
+    try {
+      const result = await runSavedReport(draft.aiReportId, {
+        page: 1,
+        pageSize: 25,
+        reportPrompt: draft.aiReportPrompt,
+        reportSpec: draft.aiReportSpec,
+      })
+      setDraft({ aiRun: result, aiWarnings: result.warnings ?? [] })
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to run report`,
+        variant: 'error',
+      })
+    } finally {
+      setIsRunning(false)
+    }
   }
 
   const promptExamples =
     draft.sourceType === 'Folder'
       ? PROMPT_EXAMPLES_FOLDER
       : PROMPT_EXAMPLES_WORKFLOW
-
-  const previewColumns: PreviewColumn[] = useMemo(() => {
-    if (!suggestion) return []
-    return suggestion.fieldIds.map((id) => {
-      const field = sourceFields.find((f) => f.id === id)
-      return {
-        id,
-        label: field?.label || id,
-        sampleType: sampleTypeForQuestionType(field?.type || 'TEXT'),
-      }
-    })
-  }, [suggestion, sourceFields])
 
   return (
     <div className='flex flex-col gap-6'>
@@ -464,7 +532,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault()
-                      runPrompt(prompt)
+                      void runPrompt(prompt)
                     }
                   }}
                 />
@@ -478,7 +546,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
 
                   <Button
                     color='primary'
-                    disabled={!prompt.trim() || isThinking || isFieldsLoading}
+                    disabled={!prompt.trim() || isThinking}
                     label={isThinking ? t`Thinking...` : t`Generate Report`}
                     loading={isThinking}
                     size='sm'
@@ -486,7 +554,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                     leftSection={
                       <AiBrandIcon className='size-4' variant='outline-white' />
                     }
-                    onClick={() => runPrompt(prompt)}
+                    onClick={() => void runPrompt(prompt)}
                   />
                 </div>
               </div>
@@ -499,7 +567,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                     className='inline-flex items-center gap-1.5 rounded-full border border-gray-3 bg-gray-1/50 px-3 py-1 text-12 text-gray-11 transition-all duration-200 hover:scale-[1.02] hover:border-primary-6 hover:bg-primary-1/30 hover:text-primary-11 active:scale-95'
                     key={example.title}
                     type='button'
-                    onClick={() => runPrompt(example.query)}
+                    onClick={() => void runPrompt(example.query)}
                   >
                     <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
                     <span>{example.title}</span>
@@ -507,9 +575,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                 ))}
               </div>
 
-              {/* Suggested report card with smooth entrance animation and live sample preview */}
               <AnimatePresence>
-                {suggestion && (
+                {draft.aiReportId && (
                   <motion.div
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     className='flex flex-col gap-4 rounded-xl border border-primary-5 bg-primary-1/40 p-4.5 duration-300'
@@ -517,36 +584,62 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                     initial={{ opacity: 0, scale: 0.98, y: 12 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <div className='flex items-center gap-2'>
-                      <AiBrandIcon className='size-4' variant='outline-purple' />
-                      <p className='text-14 font-semibold text-gray-13'>
-                        {t`Suggested Report`}
+                    <div className='flex items-center justify-between gap-3'>
+                      <div className='flex items-center gap-2'>
+                        <AiBrandIcon className='size-4' variant='outline-purple' />
+                        <p className='text-14 font-semibold text-gray-13'>
+                          {draft.aiTitle || t`Generated report`}
+                        </p>
+                      </div>
+                      <Button
+                        color='primary'
+                        disabled={isRunning || !draft.aiReportPrompt}
+                        label={isRunning ? t`Running...` : t`Run report`}
+                        loading={isRunning}
+                        size='sm'
+                        variant='solid'
+                        onClick={() => void runGeneratedReport()}
+                      />
+                    </div>
+
+                    {draft.aiWarnings && draft.aiWarnings.length > 0 && (
+                      <p className='text-12 text-orange-11'>
+                        {draft.aiWarnings[0]}
                       </p>
-                    </div>
-                    <p className='text-13 text-gray-11'>{suggestion.summary}</p>
+                    )}
 
-                    {/* Selected fields pills */}
                     <div className='flex flex-wrap gap-1.5'>
-                      {suggestion.fieldIds.map((id) => {
-                        const field = sourceFields.find((f) => f.id === id)
-                        return (
-                          <span
-                            className='rounded-full border border-gray-3 bg-surface px-2.5 py-1 text-11 text-gray-11'
-                            key={id}
-                          >
-                            {field?.label || id}
-                          </span>
-                        )
-                      })}
+                      {specColumns.map((column) => (
+                        <span
+                          className='rounded-full border border-gray-3 bg-surface px-2.5 py-1 text-11 text-gray-11'
+                          key={column.id}
+                        >
+                          {column.label}
+                        </span>
+                      ))}
                     </div>
 
-                    {/* Live preview table with 3 data rows */}
+                    <textarea
+                      className='min-h-[120px] w-full resize-y rounded-lg border border-gray-3 bg-surface p-3 font-mono text-12 text-gray-12 outline-none focus:border-primary-8'
+                      value={draft.aiReportPrompt ?? ''}
+                      onChange={(event) =>
+                        setDraft({ aiReportPrompt: event.target.value })
+                      }
+                    />
+
                     <div className='flex flex-col gap-1.5'>
                       <span className='text-12 font-medium text-gray-10'>
-                        {t`Preview Data (3 sample rows):`}
+                        {draft.aiRun
+                          ? t`Report data`
+                          : t`Generate, then run to load rows`}
                       </span>
                       <div className='overflow-hidden rounded-lg border border-gray-3 bg-surface'>
-                        <FieldsPreviewTable columns={previewColumns} rowCount={3} />
+                        <FieldsPreviewTable
+                          columns={runColumns}
+                          isLive
+                          isLoading={isRunning}
+                          rows={runRows}
+                        />
                       </div>
                     </div>
                   </motion.div>
