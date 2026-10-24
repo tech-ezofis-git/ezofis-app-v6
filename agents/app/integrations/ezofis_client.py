@@ -280,47 +280,84 @@ class EzofisClient:
             logger.warning("ezofis_get_repository_error", extra={"error_type": type(exc).__name__})
             return {"ok": False, "error_type": type(exc).__name__, "detail": str(exc)[:300]}
 
+    async def _list_rows(
+        self,
+        *,
+        tenant_id: str,
+        paths: tuple[str, ...],
+        limit: int = 200,
+        get_params: Optional[dict[str, Any]] = None,
+        post_body: Optional[dict[str, Any]] = None,
+    ) -> list[dict[str, Any]]:
+        if not self._live_enabled() or not (tenant_id or "").strip():
+            return []
+        try:
+            headers = await self._auth_headers(tenant_id)
+        except Exception as exc:
+            logger.warning("ezofis_list_rows_auth_failed", extra={"error_type": type(exc).__name__})
+            return []
+        timeout = self._cfg().ezofis_timeout_seconds
+        browse = post_body or {"CurrentPage": 1, "ItemsPerPage": int(limit), "Mode": "browse"}
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            for path in paths:
+                url = f"{self._base()}{path}"
+                try:
+                    response = await client.get(url, headers=headers, params=get_params)
+                    if response.status_code != 200:
+                        response = await client.get(url, headers=headers)
+                    if response.status_code != 200:
+                        response = await client.post(url, headers=headers, json=browse)
+                    if response.status_code != 200:
+                        logger.warning(
+                            "ezofis_list_rows_failed",
+                            extra={"path": path, "status_code": response.status_code},
+                        )
+                        continue
+                    data = response.json() if response.content else {}
+                    rows = [row for row in self._flatten_browse(data) if isinstance(row, dict)]
+                    if rows:
+                        return rows[: max(1, int(limit))]
+                except Exception as exc:
+                    logger.warning(
+                        "ezofis_list_rows_error",
+                        extra={"path": path, "error_type": type(exc).__name__, "error": str(exc)[:200]},
+                    )
+                    continue
+        return []
+
     async def list_workflow_instances(
         self, *, tenant_id: str, workflow_id: str, limit: int = 200
     ) -> list[dict[str, Any]]:
         wf_id = str(workflow_id or "").strip()
-        if not wf_id or not self._live_enabled():
+        if not wf_id:
             return []
-        try:
-            headers = await self._auth_headers(tenant_id)
-            url = f"{self._base()}/workflows/{wf_id}/instances"
-            async with httpx.AsyncClient(timeout=self._cfg().ezofis_timeout_seconds) as client:
-                response = await client.get(url, headers=headers, params={"ItemsPerPage": int(limit)})
-                if response.status_code != 200:
-                    return []
-                data = response.json() if response.content else {}
-            rows = self._flatten_browse(data)
-            return [row for row in rows if isinstance(row, dict)][: max(1, int(limit))]
-        except Exception as exc:
-            logger.warning("ezofis_list_instances_error", extra={"error_type": type(exc).__name__})
-            return []
+        return await self._list_rows(
+            tenant_id=tenant_id,
+            paths=(
+                f"/Workflows/{wf_id}/instances",
+                f"/workflows/{wf_id}/instances",
+                f"/workflow/{wf_id}/instances",
+            ),
+            limit=limit,
+            get_params={"ItemsPerPage": int(limit), "CurrentPage": 1},
+        )
 
     async def list_repository_items(
         self, *, tenant_id: str, repository_id: str, limit: int = 200
     ) -> list[dict[str, Any]]:
         rid = str(repository_id or "").strip()
-        if not rid or not self._live_enabled():
+        if not rid:
             return []
-        try:
-            headers = await self._auth_headers(tenant_id)
-            url = f"{self._base()}/repositories/{rid}/items"
-            async with httpx.AsyncClient(timeout=self._cfg().ezofis_timeout_seconds) as client:
-                response = await client.get(
-                    url, headers=headers, params={"page": 1, "pageSize": int(limit)}
-                )
-                if response.status_code != 200:
-                    return []
-                data = response.json() if response.content else {}
-            rows = self._flatten_browse(data)
-            return [row for row in rows if isinstance(row, dict)][: max(1, int(limit))]
-        except Exception as exc:
-            logger.warning("ezofis_list_repo_items_error", extra={"error_type": type(exc).__name__})
-            return []
+        return await self._list_rows(
+            tenant_id=tenant_id,
+            paths=(
+                f"/repositories/{rid}/items",
+                f"/Repositories/{rid}/items",
+                f"/repository/{rid}/items",
+            ),
+            limit=limit,
+            get_params={"page": 1, "pageSize": int(limit)},
+        )
 
     async def fetch_document(self, document_id: str) -> dict[str, Any]:
         return {

@@ -1557,3 +1557,79 @@ async def test_run_report_all_workflows_keeps_generated_columns(monkeypatch):
     assert resp.total_count >= 1
     assert resp.rows
     assert all(row.get("Request_Count") for row in resp.rows)
+
+
+def test_run_request_accepts_prompt_json_filters_list():
+    req = RunReportRequest.model_validate(
+        {
+            "reportType": "all_workflows",
+            "reportPrompt": '{"Objective":"Aging","sourceTable":"workflow_instances_all"}',
+            "filters": [{"field": "completedAtUtc", "op": "is_null", "value": None}],
+            "tenantId": "tenant-1",
+        }
+    )
+    assert req.filters == {}
+    assert req.report_type == "all_workflows"
+
+
+@pytest.mark.asyncio
+async def test_run_report_uses_generated_json_prompt(monkeypatch):
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, ReportSpecSort
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "w1", "name": "RFQ Process"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "workflowName": "RFQ Process",
+                    "status": "Pending",
+                    "createdAtUtc": "2026-10-20T00:00:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Aging",
+        objective="Open requests across all workflows",
+        report_type="all_workflows",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="id", label="Req No", kind="default", selected=False),
+        ],
+        agent_columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        sort=ReportSpecSort(field="Request_Count", direction="desc"),
+        available_columns=["workflowName", "status", "createdAtUtc", "id"],
+        source_schema="workflow",
+        source_table="workflow_instances_all",
+        schema_tables=["workflow.workflow_instances_all"],
+    )
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="all_workflows",
+            tenant_id="tenant-1",
+        )
+    )
+    keys = [c.key for c in resp.columns]
+    assert "Aging_Bucket" in keys
+    assert "Request_Count" in keys
+    assert resp.rows
+    assert resp.total_count >= 1

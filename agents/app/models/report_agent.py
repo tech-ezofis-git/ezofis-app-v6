@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 
 class ReportTypeInfo(BaseModel):
@@ -211,6 +211,15 @@ class RunReportRequest(BaseModel):
     )
     filters: dict[str, Any] = Field(default_factory=dict)
     page: int = Field(default=1, ge=1)
+
+    @field_validator("filters", mode="before")
+    @classmethod
+    def _coerce_filters(cls, value: Any) -> dict[str, Any]:
+        if value is None or isinstance(value, list):
+            return {}
+        if isinstance(value, dict):
+            return value
+        return {}
     page_size: int = Field(
         default=25,
         ge=1,

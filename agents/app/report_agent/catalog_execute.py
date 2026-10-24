@@ -84,21 +84,17 @@ async def execute_catalog_spec(
     if report_type == "all_workflows" or table == "workflow_instances_all":
         rows = await _workflow_rows(ezofis, spec, tenant_id)
         page_rows, total = _paginate(rows, page, page_size)
-        return (
-            _col_outs(spec),
-            page_rows,
-            total,
-            ["Counted live EZOFIS workflow instances across the tenant catalog."],
-        )
+        warnings = ["Counted live EZOFIS workflow instances across the tenant catalog."]
+        if total == 0:
+            warnings.append("EZOFIS returned no open workflow instances to count.")
+        return (_col_outs(spec), page_rows, total, warnings)
     if report_type == "all_repositories" or table == "items_all":
         rows = await _repository_rows(ezofis, spec, tenant_id)
         page_rows, total = _paginate(rows, page, page_size)
-        return (
-            _col_outs(spec),
-            page_rows,
-            total,
-            ["Counted live EZOFIS repository items across the tenant catalog."],
-        )
+        warnings = ["Counted live EZOFIS repository items across the tenant catalog."]
+        if total == 0:
+            warnings.append("EZOFIS returned no repository items to count.")
+        return (_col_outs(spec), page_rows, total, warnings)
     return None
 
 
