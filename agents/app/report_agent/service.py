@@ -871,7 +871,20 @@ class ReportAgentService:
                 "report_agent_catalog_execute_failed",
                 extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
             )
-            return None
+            duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+            return RunReportResponse(
+                title=spec.title or "Report",
+                report_type=report_type or spec.report_type,
+                columns=[ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns],
+                rows=[],
+                total_count=0,
+                page=request.page,
+                page_size=request.page_size,
+                filters=[],
+                summary={},
+                warnings=list(spec.warnings or []) + [f"EZOFIS catalog execute failed: {exc}"],
+                duration_ms=duration_ms,
+            )
         if result is None:
             return None
         columns, rows, total, warnings = result
@@ -915,6 +928,15 @@ class ReportAgentService:
                 }
             )
         if spec is not None:
+            if not spec.source_table and spec.schema_tables:
+                qualified = str(spec.schema_tables[0])
+                if "." in qualified:
+                    schema_name, table_name = qualified.split(".", 1)
+                    spec = spec.model_copy(
+                        update={"source_schema": spec.source_schema or schema_name, "source_table": table_name}
+                    )
+                else:
+                    spec = spec.model_copy(update={"source_table": qualified})
             spec = apply_selected_columns(spec)
         if not prompt and spec is not None:
             prompt = report_spec_to_prompt(
@@ -945,7 +967,7 @@ class ReportAgentService:
             report_type_key = rt.key if rt else (request.report_type or spec.report_type or "")
             spec = self._align_report_spec(
                 spec,
-                description=spec.title or prompt,
+                description=spec.title or spec.objective or "",
                 report_type=report_type_key,
                 workflow_name=request.workflow_name,
                 repository_name=request.repository_name,
@@ -961,6 +983,26 @@ class ReportAgentService:
             catalog_resp = await self._run_virtual_catalog(request, spec, report_type_key, t0)
             if catalog_resp is not None:
                 return catalog_resp
+            from app.report_agent.catalog_execute import is_virtual_catalog_table
+
+            if report_type_key in ("all_workflows", "all_repositories") or is_virtual_catalog_table(
+                spec.source_table
+            ):
+                duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+                return RunReportResponse(
+                    title=spec.title or "Report",
+                    report_type=report_type_key or spec.report_type,
+                    columns=[ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns],
+                    rows=[],
+                    total_count=0,
+                    page=request.page,
+                    page_size=request.page_size,
+                    filters=[],
+                    summary={},
+                    warnings=list(spec.warnings or [])
+                    + ["Could not count live EZOFIS rows for this catalog report."],
+                    duration_ms=duration_ms,
+                )
 
         db = await self._resolve_db(request.tenant_id)
         if db is None:

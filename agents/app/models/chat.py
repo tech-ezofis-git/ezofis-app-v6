@@ -302,6 +302,13 @@ class DocumentPayload(BaseModel):
         default=None,
         description="Report Agent UI filters map (phase=run).",
     )
+
+    @field_validator("filters", mode="before")
+    @classmethod
+    def _coerce_report_filters(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return {}
+        return value
     sort: Optional[dict[str, Any]] = Field(
         default=None,
         description="Report Agent sort {field, direction} (phase=run).",
