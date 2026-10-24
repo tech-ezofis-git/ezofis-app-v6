@@ -209,15 +209,17 @@ export default function PortalShell({
                 <h1 className='min-w-0 truncate text-15 font-semibold text-gray-13'>
                   {detail.requestNo}
                 </h1>
-                <span
-                  className={cn(
-                    'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-                    detail.statusClassName,
-                  )}
-                >
-                  <span className='size-1.5 rounded-full bg-current' />
-                  {detail.status}
-                </span>
+                {detail.status ? (
+                  <span
+                    className={cn(
+                      'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
+                      detail.statusClassName,
+                    )}
+                  >
+                    <span className='size-1.5 rounded-full bg-current' />
+                    {detail.status}
+                  </span>
+                ) : null}
               </div>
               <div className='flex shrink-0 flex-wrap items-center gap-2 sm:gap-3'>
                 <PortalSectionButtons

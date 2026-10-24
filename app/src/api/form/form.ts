@@ -1,11 +1,12 @@
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || ''
+    // The portal's tenant on a portal page, else the app session's
+    const tenantId = getCurrentFormUser().tenantId
     const { data, status } = await axiosV6.get(`/form/${id}`, {
       headers: {
         'X-Tenant-Id': tenantId,
@@ -146,12 +147,8 @@ const getFormEntries = async (
 ) => {
   const response: any = { data: null, error: '' }
   try {
-    const store = authUserStore.getState()
-    const tenantId =
-      tenantIdOverride ||
-      store.session?.tenantId ||
-      store.identity?.tenantId ||
-      ''
+    // The portal's tenant on a portal page, else the app session's
+    const tenantId = tenantIdOverride || getCurrentFormUser().tenantId
     const { data, status } = await axiosV6.get(`/form/${formId}/entry/all`, {
       headers: {
         'X-Tenant-Id': tenantId,
@@ -178,12 +175,8 @@ const searchFormEntries = async (
 ) => {
   const response: any = { data: null, error: '' }
   try {
-    const store = authUserStore.getState()
-    const tenantId =
-      tenantIdOverride ||
-      store.session?.tenantId ||
-      store.identity?.tenantId ||
-      ''
+    // The portal's tenant on a portal page, else the app session's
+    const tenantId = tenantIdOverride || getCurrentFormUser().tenantId
     const { data, status } = await axiosV6.post(
       `/form/${formId}/entry/all`,
       payload,
@@ -223,12 +216,8 @@ const getFormEntriesByColumn = async (
 ) => {
   const response: any = { data: null, error: '' }
   try {
-    const store = authUserStore.getState()
-    const tenantId =
-      tenantIdOverride ||
-      store.session?.tenantId ||
-      store.identity?.tenantId ||
-      ''
+    // The portal's tenant on a portal page, else the app session's
+    const tenantId = tenantIdOverride || getCurrentFormUser().tenantId
     const payload: {
       columnName: string
       filters?: FormEntryColumnFilter[]
