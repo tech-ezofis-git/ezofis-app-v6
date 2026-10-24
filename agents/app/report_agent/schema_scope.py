@@ -33,6 +33,24 @@ _ORCH_SKIP = frozenset(
     }
 )
 
+_CATALOG_TABLES = frozenset(
+    {
+        "wworkflow",
+        "wworkflows",
+        "workflows",
+        "workflowdefinitions",
+        "wrepository",
+        "wrepositories",
+        "repositories",
+        "repositorydefinitions",
+        "wform",
+        "wforms",
+        "forms",
+        "formdefinitions",
+        "ezfb_forms",
+    }
+)
+
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (text or "").lower())
@@ -49,6 +67,31 @@ def _is_plumbing(table: str) -> bool:
     if t in _ORCH_SKIP:
         return True
     return any(t.startswith(p) for p in _WORKFLOW_PLUMBING_PREFIXES)
+
+
+def is_catalog_table(table: str) -> bool:
+    return (table or "").lower() in _CATALOG_TABLES
+
+
+def is_fact_table(table: str) -> bool:
+    t = (table or "").lower()
+    if not t or is_catalog_table(t):
+        return False
+    return (
+        (t.startswith("ezfb_") and "_items" in t)
+        or t.startswith("items_")
+        or "items_" in t
+        or t.startswith("inbox_")
+        or t.startswith("workflow_instances_")
+        or t.startswith("workflow_tasks_")
+    )
+
+
+def preferred_fact_table(tables: list[SchemaTableSlice]) -> Optional[SchemaTableSlice]:
+    for table in tables:
+        if is_fact_table(table.table):
+            return table
+    return tables[0] if tables else None
 
 
 def _table_matches_focus(schema: str, table: str, focus: tuple[str, ...]) -> bool:
@@ -99,6 +142,8 @@ def scope_schema(
 
     Defaults stay intentionally small so Phase 1/2 prompts fit within
     typical provider timeouts (large tenant schemas were timing out).
+    Catalog definition tables (Workflows, Repositories, wForm) are omitted
+    when a real items/form table exists — those catalogs have no report rows.
     """
     candidates: list[tuple[str, str, list[ColumnMeta]]] = []
     for schema_name, table in schema_obj.tables:
@@ -113,40 +158,52 @@ def scope_schema(
                 "wrepository",
                 "wrepositories",
                 "repositories",
-            ):
+            ) and not is_fact_table(table):
                 continue
         if report_type.key == "specific_workflow" and workflow_name:
-            if table.lower() not in ("wworkflow", "wworkflows", "workflows") and not _workflow_match(
-                schema_obj, table, workflow_name
-            ):
+            if is_catalog_table(table) and table.lower() not in ("wworkflow", "wworkflows", "workflows"):
+                continue
+            if not is_catalog_table(table) and not _workflow_match(schema_obj, table, workflow_name):
                 continue
         if report_type.key == "specific_repository" and repository_name:
-            if table.lower() not in ("wrepository", "wrepositories", "repositories") and not _repo_match(
-                schema_obj, table, repository_name
-            ):
+            if is_catalog_table(table) and table.lower() not in ("wrepository", "wrepositories", "repositories"):
+                continue
+            if not is_catalog_table(table) and not _repo_match(schema_obj, table, repository_name):
                 continue
         cols = schema_obj.get_columns_for_table(schema_name, table)
         if not cols:
             continue
         candidates.append((schema_name, table, cols))
 
-    # Prefer workflow/repo schemas first
-    def _rank(item: tuple[str, str, list[ColumnMeta]]) -> tuple[int, str]:
+    facts = [item for item in candidates if is_fact_table(item[1])]
+    if not facts and report_type.key in ("all_workflows", "all_repositories"):
+        for schema_name, table in schema_obj.tables:
+            if _is_plumbing(table) or not is_fact_table(table):
+                continue
+            cols = schema_obj.get_columns_for_table(schema_name, table)
+            if cols:
+                facts.append((schema_name, table, cols))
+    if facts:
+        candidates = facts
+
+    def _rank(item: tuple[str, str, list[ColumnMeta]]) -> tuple[int, int, str]:
         s, t, _ = item
         sl = s.lower()
-        order = 0 if sl in ("workflow", "repository", "dbo") else 1
-        return (order, t.lower())
+        fact = 0 if is_fact_table(t) else (2 if is_catalog_table(t) else 1)
+        schema_order = 0 if sl in ("dbo", "workflow", "repository") else 1
+        return (fact, schema_order, t.lower())
 
     candidates.sort(key=_rank)
     out: list[SchemaTableSlice] = []
     for schema_name, table, cols in candidates[:max_tables]:
+        col_limit = 80 if is_fact_table(table) else max_columns_per_table
         out.append(
             SchemaTableSlice(
                 schema_name=schema_name,
                 table=table,
                 columns=[
                     SchemaColumnSlice(name=c.column, type=c.data_type)
-                    for c in cols[:max_columns_per_table]
+                    for c in cols[:col_limit]
                 ],
             )
         )
@@ -154,7 +211,17 @@ def scope_schema(
 
 
 def schema_slice_to_prompt_block(tables: list[SchemaTableSlice]) -> str:
-    lines: list[str] = ["Approved live schema slice (use ONLY these tables/columns):"]
+    lines: list[str] = [
+        "Approved live schema slice (use ONLY these tables/columns):",
+        "These are report row sources. Do not query catalog definition tables "
+        "(Workflows, Repositories, wForm) for report rows.",
+    ]
+    preferred = preferred_fact_table(tables)
+    if preferred:
+        lines.append(
+            "Preferred source table: "
+            f"{_qualified(preferred.schema_name or '', preferred.table)}"
+        )
     if not tables:
         lines.append("(no matching tables discovered)")
         return "\n".join(lines)
@@ -175,12 +242,13 @@ def list_workflow_options(schema_obj: DatabaseSchema) -> list[ScopeOption]:
             continue
         seen.add(_norm(name))
         options.append(ScopeOption(id=wid or name, name=name))
-    # also names from table_to_workflow that look like workflows
+    if options:
+        options.sort(key=lambda o: o.name.lower())
+        return options
     for key, name in schema_obj.table_to_workflow.items():
         n = (name or "").strip()
         if not n or _norm(n) in seen:
             continue
-        # skip if key looks like a pure repo token without workflow entry — still useful as names
         seen.add(_norm(n))
         options.append(ScopeOption(id=key, name=n))
     options.sort(key=lambda o: o.name.lower())
@@ -188,23 +256,27 @@ def list_workflow_options(schema_obj: DatabaseSchema) -> list[ScopeOption]:
 
 
 def list_repository_options(schema_obj: DatabaseSchema) -> list[ScopeOption]:
-    """Repositories discovered via metadata (names in table_to_workflow from repo meta)."""
-    # Prefer tables named wrepository rows if workflows list is empty of repos —
-    # metadata_service stores repo id->name in table_to_workflow.
     options: list[ScopeOption] = []
     seen: set[str] = set()
+    for repo in getattr(schema_obj, "repositories", None) or []:
+        n = (repo.name or "").strip()
+        if not n or _norm(n) in seen:
+            continue
+        seen.add(_norm(n))
+        options.append(ScopeOption(id=repo.repository_id or n, name=n))
+    if options:
+        options.sort(key=lambda o: o.name.lower())
+        return options
     for key, name in schema_obj.table_to_workflow.items():
         n = (name or "").strip()
         if not n or _norm(n) in seen:
             continue
-        # Heuristic: repo tokens often map to items_* tables
         if any(
             t.lower().startswith("items_") and _norm(key) in _norm(t)
             for _, t in schema_obj.tables
-        ) or _norm(key):
+        ):
             seen.add(_norm(n))
             options.append(ScopeOption(id=key, name=n))
-    # Also include names from repositories definition tables via workflows-like list if present
     options.sort(key=lambda o: o.name.lower())
     return options
 

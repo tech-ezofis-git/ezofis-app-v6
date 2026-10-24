@@ -12,7 +12,7 @@ from app.models.report_agent import (
 )
 from app.report_agent.definition_lock import parse_definition_json
 from app.report_agent.metadata_service import DatabaseSchema
-from app.report_agent.schema_scope import SchemaTableSlice
+from app.report_agent.schema_scope import SchemaTableSlice, preferred_fact_table
 
 
 def available_columns_from_tables(tables: list[SchemaTableSlice], *, limit: int = 80) -> list[str]:
@@ -136,6 +136,8 @@ def normalize_report_spec(
         group_by=group_by,
         sort=sort,
         available_columns=avail or [],
+        source_schema=str(data.get("sourceSchema") or data.get("source_schema") or "").strip() or None,
+        source_table=str(data.get("sourceTable") or data.get("source_table") or "").strip() or None,
         warnings=warn,
     )
 
@@ -152,69 +154,18 @@ def fallback_report_spec(
     tables: list[SchemaTableSlice],
     warnings: Optional[list[str]] = None,
 ) -> ReportSpec:
+    from app.report_agent.report_catalog import match_report_intent, spec_from_intent
+
     avail = available_columns_from_tables(tables)
-    lower_map = {c.lower(): c for c in avail}
-    desc = (description or "").strip()
-    picked: list[str] = []
-    for token in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", desc):
-        hit = lower_map.get(token.lower())
-        if hit and hit not in picked:
-            picked.append(hit)
-        if len(picked) >= 8:
-            break
-    if not picked:
-        for preferred in (
-            "Invoice_No",
-            "PO_Number",
-            "Supplier",
-            "Matched_Status",
-            "PO_Amount",
-            "Invoice_Amount",
-            "status",
-            "name",
-            "fileName",
-        ):
-            hit = lower_map.get(preferred.lower())
-            if hit and hit not in picked:
-                picked.append(hit)
-            if len(picked) >= 6:
-                break
-    if not picked:
-        picked = avail[:6]
-
-    columns = [ReportSpecColumn(key=k, label=_label_from_key(k)) for k in picked]
-    # common total formula when both amount fields exist
-    amount_keys = {c.lower(): c for c in avail}
-    po = amount_keys.get("po_amount")
-    inv = amount_keys.get("invoice_amount")
-    if po and inv and not any(c.key.lower() == "total_amount" for c in columns):
-        columns.append(
-            ReportSpecColumn(
-                key="Total_Amount",
-                label="Total Amount",
-                formula=f"{po} + {inv}",
-            )
-        )
-
-    filters: list[ReportSpecFilter] = []
-    matched = amount_keys.get("matched_status") or lower_map.get("status")
-    if matched and re.search(r"approv|match", desc, re.I):
-        filters.append(ReportSpecFilter(field=matched, op="not_null", value=None))
-
-    warn = list(warnings or [])
-    if "score" in desc.lower() and "score" not in lower_map:
-        warn.append("Score column not found in schema — not included.")
-
-    return ReportSpec(
-        title=desc[:80] or "Report",
-        objective=desc or "Generate the requested report.",
+    preferred = preferred_fact_table(tables)
+    return spec_from_intent(
+        intent=match_report_intent(description, report_type=report_type),
+        description=description,
         report_type=report_type,
-        columns=columns,
-        filters=filters,
-        group_by=[],
-        sort=ReportSpecSort(field=columns[-1].key, direction="desc") if columns else None,
         available_columns=avail,
-        warnings=warn,
+        source_schema=(preferred.schema_name if preferred else None),
+        source_table=(preferred.table if preferred else None),
+        warnings=warnings,
     )
 
 
@@ -234,6 +185,12 @@ def report_spec_to_prompt(
         if repository_name:
             scope += f" Repository name is {repository_name}."
         lines.append(f"Report type and scope: {scope}")
+    if spec.source_table:
+        qualified = f"{spec.source_schema}.{spec.source_table}" if spec.source_schema else spec.source_table
+        lines.append(
+            f"Data sources: Use the table {qualified}. "
+            "Do not query Workflows, Repositories, or wForm catalog tables for report rows."
+        )
     if spec.columns:
         col_bits = []
         for c in spec.columns:
@@ -281,20 +238,38 @@ def enrich_spec_with_schema(
     lower = {c.lower(): c for c in avail}
     # also allow any schema column name as available
     for col in getattr(schema, "all_columns", []) or []:
-        name = getattr(col, "name", None) or ""
+        name = getattr(col, "column", None) or getattr(col, "name", None) or ""
         if name and name.lower() not in lower:
             lower[name.lower()] = name
             avail.append(name)
 
+    def _match_name(key: str) -> Optional[str]:
+        if not key:
+            return None
+        hit = lower.get(key.lower())
+        if hit:
+            return hit
+        needle = re.sub(r"[^a-z0-9]", "", key.lower())
+        if len(needle) < 3:
+            return None
+        for low, real in lower.items():
+            compact = re.sub(r"[^a-z0-9]", "", low)
+            if needle == compact or needle in compact or compact in needle:
+                return real
+        return None
+
+    virtual = (spec.source_table or "").lower() in {"workflow_instances_all", "items_all"}
     kept: list[ReportSpecColumn] = []
     warnings = list(spec.warnings or [])
     for col in spec.columns:
         if col.formula:
             kept.append(col)
             continue
-        hit = lower.get(col.key.lower())
+        hit = _match_name(col.key)
         if hit:
             kept.append(ReportSpecColumn(key=hit, label=col.label or _label_from_key(hit), formula=None, editable=col.editable))
+        elif virtual:
+            kept.append(col)
         else:
             warnings.append(f"Column '{col.key}' not found in schema slice; dropped from short prompt.")
     if not kept and avail:
@@ -302,28 +277,43 @@ def enrich_spec_with_schema(
 
     filters: list[ReportSpecFilter] = []
     for f in spec.filters:
-        hit = lower.get(f.field.lower())
+        hit = _match_name(f.field)
         if hit:
             filters.append(ReportSpecFilter(field=hit, op=f.op, value=f.value, editable=f.editable))
+        elif virtual:
+            filters.append(f)
         else:
             warnings.append(f"Filter field '{f.field}' not found in schema slice; dropped.")
 
     group_by = []
+    formula_keys = {c.key.lower() for c in kept if c.formula}
     for g in spec.group_by:
-        hit = lower.get(g.lower())
+        hit = _match_name(g)
         if hit:
             group_by.append(hit)
+        elif g.lower() in formula_keys or virtual:
+            group_by.append(g)
 
     sort = spec.sort
     if sort and sort.field:
-        # sort may target a formula column
         formula_keys = {c.key.lower() for c in kept if c.formula}
-        hit = lower.get(sort.field.lower())
+        hit = _match_name(sort.field)
         if hit:
             sort = ReportSpecSort(field=hit, direction=sort.direction)
         elif sort.field.lower() not in formula_keys:
             warnings.append(f"Sort field '{sort.field}' not found; cleared.")
             sort = None
+
+    preferred = preferred_fact_table(tables)
+    source_table = spec.source_table
+    source_schema = spec.source_schema
+    if not source_table and preferred:
+        source_schema = preferred.schema_name
+        source_table = preferred.table
+    elif source_table:
+        resolved = schema.resolve_table(source_schema, source_table) if hasattr(schema, "resolve_table") else None
+        if resolved:
+            source_schema, source_table = resolved
 
     return ReportSpec(
         title=spec.title,
@@ -334,5 +324,7 @@ def enrich_spec_with_schema(
         group_by=group_by,
         sort=sort,
         available_columns=avail[:80],
+        source_schema=source_schema,
+        source_table=source_table,
         warnings=warnings,
     )
