@@ -14,6 +14,7 @@ import {
   getFieldOptions,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
+import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import type { AgentBlock } from './AgentSummaryBoxes'
 import {
   collectFormFields,
@@ -240,7 +241,7 @@ interface HoverEditProps {
   editor: ReactNode
   fieldId: string
   className?: string
-  /** When set, pencil sits top-right on the same row as this heading. */
+  /** When set, shown above the editable value. */
   heading?: ReactNode
   inline?: boolean
   label?: string
@@ -287,21 +288,6 @@ const HoverEditShell = ({
     }
   }, [isActive, onActivate])
 
-  const editButton = (
-    <button
-      aria-label='Edit'
-      className='inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-      type='button'
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onActivate(fieldId)
-      }}
-    >
-      <Icon className='size-3.5' icon='lucide:pencil' />
-    </button>
-  )
-
   const wrapLabel = (node: ReactNode) => (
     <span
       className={cn(
@@ -338,21 +324,36 @@ const HoverEditShell = ({
     )
   }
 
+  const activate = () => onActivate(fieldId)
+  // The value itself is the edit target: a field outline on hover / focus.
+  const editableValue = (
+    <span
+      aria-label='Edit'
+      className={cn(
+        'min-w-0 overflow-hidden',
+        inline ? 'inline-block max-w-full align-baseline' : 'block w-full',
+        editableValueClass,
+      )}
+      role='button'
+      tabIndex={0}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        activate()
+      }}
+      onKeyDown={onEditableValueKeyDown(activate)}
+    >
+      {children}
+    </span>
+  )
+
   if (heading) {
     return wrapLabel(
-      <span
-        className='group flex w-full min-w-0 flex-col gap-1 rounded px-0.5 transition-colors'
-        ref={rootRef}
-      >
+      <span ref={rootRef} className='flex w-full min-w-0 flex-col gap-1'>
         <span className='flex min-w-0 items-center justify-between gap-2'>
           {heading}
-          {!isActive ? editButton : <span className='size-6 shrink-0' />}
         </span>
-        {isActive ? (
-          editor
-        ) : (
-          <span className='block min-w-0 w-full'>{children}</span>
-        )}
+        {isActive ? editor : editableValue}
       </span>,
     )
   }
@@ -361,37 +362,11 @@ const HoverEditShell = ({
     <span
       ref={rootRef}
       className={cn(
-        'group relative min-w-0 rounded px-0.5 transition-colors',
-        isActive
-          ? inline
-            ? 'inline-flex items-baseline align-baseline'
-            : 'block w-full'
-          : inline
-            ? 'inline-flex max-w-full items-baseline pr-5 align-baseline'
-            : 'flex w-full items-baseline pr-5',
+        'min-w-0',
+        inline ? 'inline-flex max-w-full items-baseline align-baseline' : 'block w-full',
       )}
     >
-      {isActive ? (
-        editor
-      ) : (
-        <>
-          <span className='min-w-0 flex-1 overflow-hidden align-baseline'>
-            {children}
-          </span>
-          <button
-            aria-label='Edit'
-            type='button'
-            className='absolute top-1/2 right-0 inline-flex size-5 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onActivate(fieldId)
-            }}
-          >
-            <Icon className='size-3.5' icon='lucide:pencil' />
-          </button>
-        </>
-      )}
+      {isActive ? editor : editableValue}
     </span>,
   )
 }

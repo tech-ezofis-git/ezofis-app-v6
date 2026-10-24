@@ -92,14 +92,14 @@ export default function QuoteVariantCards({
   const isCompareActive = activeId === 'compare'
 
   return (
-    <div className='flex flex-col gap-2.5'>
+    <div className='flex flex-col gap-2'>
       <div className='flex items-center justify-between gap-2'>
         <h4 className='text-sm font-semibold text-gray-12'>
           {t`Quotes`} ({variants.length})
         </h4>
       </div>
 
-      <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4'>
+      <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4'>
         {variants.map((variant) => {
           const styles = VARIANT_STYLES[variant.id]
           const isActive = activeId === variant.id
@@ -120,7 +120,7 @@ export default function QuoteVariantCards({
             <button
               aria-pressed={isActive}
               className={cn(
-                'flex min-h-[4.25rem] flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-all active:scale-[0.99]',
+                'flex min-h-[3.75rem] flex-col gap-0.5 rounded-lg px-3 py-1.5 text-left transition-all active:scale-[0.99]',
                 isActive ? styles.active : styles.idle,
               )}
               key={variant.id}
@@ -183,7 +183,7 @@ export default function QuoteVariantCards({
         <button
           aria-pressed={isCompareActive}
           className={cn(
-            'flex min-h-[4.25rem] flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-all active:scale-[0.99]',
+            'flex min-h-[3.75rem] flex-col gap-0.5 rounded-lg px-3 py-1.5 text-left transition-all active:scale-[0.99]',
             isCompareActive
               ? 'border-2 border-[var(--indigo-8)] bg-[var(--indigo-2)] shadow-[0_0_0_1px_var(--indigo-6)]'
               : 'border border-t-[3px] border-x-gray-3 border-t-[var(--indigo-8)] border-b-gray-3 bg-surface hover:bg-[var(--indigo-1)]',

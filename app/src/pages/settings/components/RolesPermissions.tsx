@@ -49,6 +49,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { ROLE_SETUP_GUIDES } from '@/constants/pageGuides'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
@@ -1024,6 +1025,7 @@ function CreateRolePage({
       clickable: isEditMode ? true : undefined,
       description: i18n._(step.description),
       disabled: isEditMode ? false : undefined,
+      guide: ROLE_SETUP_GUIDES[step.key],
       icon:
         step.key === 'details'
           ? 'tabler:shield'

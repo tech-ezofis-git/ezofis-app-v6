@@ -46,6 +46,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { USER_SETUP_GUIDES } from '@/constants/pageGuides'
 import PasswordRequirements, {
   requirementsConfig,
 } from '@/layouts/auth/components/PasswordRequirements'
@@ -2774,6 +2775,7 @@ function UserSetup({
       clickable: isEditMode ? true : undefined,
       description: s.description,
       disabled: isEditMode ? false : undefined,
+      guide: USER_SETUP_GUIDES[s.key],
       icon:
         s.key === 'login'
           ? 'tabler:user'

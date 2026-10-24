@@ -35,6 +35,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import { MENU_SETUP_GUIDES } from '@/constants/pageGuides'
 import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import {
   getFieldRequiredError,
@@ -725,6 +726,7 @@ function MenuSetup({
       clickable: undefined,
       description: s.description,
       disabled: undefined,
+      guide: MENU_SETUP_GUIDES[s.key],
       icon:
         s.key === 'details'
           ? 'tabler:menu-2'

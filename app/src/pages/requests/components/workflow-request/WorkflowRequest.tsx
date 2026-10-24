@@ -15,6 +15,7 @@ import {
 import {
   computeWorkflowStages,
   extractBlocks,
+  getStageTrail,
   getStartStageHiddenFieldIds,
   listWorkflowStages,
 } from '@/pages/requests/utils/workflow.utils'
@@ -188,6 +189,12 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         isCompleted,
       }),
     [workflow, requestData?._history, currentActivityId, isCompleted],
+  )
+
+  // Previous / current / next step for the header (replaces the stepper card).
+  const stageTrail = useMemo(
+    () => getStageTrail(workflowStages, workflow),
+    [workflow, workflowStages],
   )
 
   const agentBlocks = useMemo(() => {
@@ -669,6 +676,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
             isLoadingForm || !!loadError || Boolean(activeTableUpload)
           }
           isSubmitting={isSubmitting}
+          stageTrail={stageTrail}
           title={t`New Request`}
           onClose={onClose}
           onTogglePanel={
@@ -887,7 +895,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           formModel={formModel}
                           hasAttemptedSubmit={hasAttemptedSubmit}
                           hiddenFieldIds={summaryHiddenFieldIds}
-                          stages={workflowStages}
                           hidePanels={agentBlocks.length > 0}
                           missingMandatoryFieldIds={missingMandatoryFieldIds}
                           panels={panels}
@@ -907,7 +914,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                           formModel={formModel}
                           hasAttemptedSubmit={hasAttemptedSubmit}
                           hiddenFieldIds={lineItemsHiddenFieldIds.ids}
-                          stages={workflowStages}
                           hidePanels={agentBlocks.length > 0}
                           missingMandatoryFieldIds={missingMandatoryFieldIds}
                           panels={panels}
@@ -958,7 +964,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                   hiddenFieldIds={stageHiddenFieldIds}
                   missingMandatoryFieldIds={missingMandatoryFieldIds}
                   panels={panels}
-                  stages={workflowStages}
                   repoFieldHints={repoFieldHints}
                   repositoryId={workflowRepositoryId}
                   onFieldChange={setFieldValue}

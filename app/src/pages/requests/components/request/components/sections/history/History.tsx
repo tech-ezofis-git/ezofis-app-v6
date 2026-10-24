@@ -91,11 +91,11 @@ const pickActor = (h: HistoryRow) => {
   return userName
 }
 
-// Formats timestamp matching user's layout: YYYY-MM-DD hh:mm A
+// The step's UTC timestamp in the system time zone: DD-MMM-YYYY hh:mm A
 const getFormattedTimestamp = (h: HistoryRow) => {
   const d = toDate(h.processedOn) || toDate(h.receivedOn) || toDate(h.actionAt)
   if (!d) return ''
-  return formatDatetime(d, 'YYYY-MM-DD hh:mm A')
+  return formatDatetime(d, 'datetime')
 }
 
 // Config for Icons and Badge Colors based on status matching sample layout

@@ -2,7 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useRef } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import authUserStore from '@/stores/authUserStore'
+import { useCurrentFormUser } from '@/utils/currentFormUser'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 
@@ -55,15 +55,15 @@ const CommentsPanel = ({
   isLoading = false,
   isSending = false,
   subtitle,
-  timeFormat = 'hh:mm A',
+  timeFormat = 'datetime',
   onClose,
   onDraftChange,
   onSend,
 }: Props) => {
   const { t } = useLingui()
-  const session = authUserStore((state) => state.session)
+  const session = useCurrentFormUser()
   const displayName =
-    session?.name || session?.firstName || session?.email || 'You'
+    session.name || session.firstName || session.email || 'You'
   const initials = getInitials(displayName)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const canSend = draft.trim().length > 0 && !isSending
@@ -104,7 +104,7 @@ const CommentsPanel = ({
                       {t`You`}
                     </span>
                     <span className='text-[11px] font-medium text-gray-9'>
-                      {formatDatetime(comment.createdAt, 'YYYY-MM-DD hh:mm A')}
+                      {formatDatetime(comment.createdAt, 'datetime')}
                     </span>
                   </div>
                   <div className='text-[13px] leading-relaxed font-medium break-words whitespace-pre-wrap text-gray-12'>

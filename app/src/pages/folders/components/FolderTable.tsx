@@ -187,7 +187,6 @@ type SplitViewMode = 'split' | 'folders-only' | 'files-only'
 
 const SPLIT_DIVIDER_HEIGHT = 36
 const FULL_PANEL_FOLDER_HEIGHT = 'calc(100vh - 248px)'
-const FULL_PANEL_FILE_HEIGHT = 'calc(100vh - 300px)'
 
 const getSplitFolderBodyHeight = (folderCount: number) =>
   Math.min(260, Math.max(48, folderCount * 40 + 40))
@@ -1081,8 +1080,6 @@ export default function FolderTableDataTableSplit({
             fileSearch={fileSearch || folderSearch}
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
-            foldersLength={folders.length}
-            isSplitView={isSplitView}
             loading={loading || loadingArchived}
             loadingPage={loadingPage}
             permissions={permissions}
@@ -1090,11 +1087,6 @@ export default function FolderTableDataTableSplit({
               canResizeSplit && splitViewMode === 'files-only'
                 ? renderSplitDivider()
                 : undefined
-            }
-            isExpanded={
-              splitViewMode === 'files-only' ||
-              folders.length === 0 ||
-              !canResizeSplit
             }
             skipSearchFilter={
               searchResultsCurrent && fileCategory !== 'archived'
@@ -1199,10 +1191,7 @@ function FileDataTableSection({
   fileSearch = '',
   folderContextFilters = {},
   folderFilters = {},
-  foldersLength,
   footerDivider,
-  isExpanded = false,
-  isSplitView = false,
   loading,
   loadingPage,
   permissions,
@@ -1227,10 +1216,7 @@ function FileDataTableSection({
   fileSearch?: string
   folderContextFilters?: Record<string, string>
   folderFilters?: Record<string, string>
-  foldersLength: number
   footerDivider?: ReactNode
-  isExpanded?: boolean
-  isSplitView?: boolean
   loading: boolean
   loadingPage: boolean
   permissions?: {
@@ -1393,7 +1379,10 @@ function FileDataTableSection({
         id: column.key,
         maxSize: sizing.maxSize,
         meta: EXPLORER_CELL_META,
-        minSize: sizing.minSize,
+        // Columns keep their width and the table scrolls sideways (Name
+        // stays pinned) instead of squeezing every column to fit, matching
+        // the folder list view.
+        minSize: sizing.size,
         size: sizing.size,
         cell: ({ row, getValue }) => {
           const fileId = row.original.id
@@ -1628,28 +1617,17 @@ function FileDataTableSection({
 
   if (!showFiles) return null
 
-  const folderReservedHeight = isExpanded
-    ? SPLIT_DIVIDER_HEIGHT + 24
-    : isSplitView
-      ? getSplitFolderBodyHeight(foldersLength) + SPLIT_DIVIDER_HEIGHT + 32
-      : foldersLength > 0
-        ? Math.min(220, Math.max(96, foldersLength * 56 + 52)) + 84
-        : 15
-
-  const fileTableMaxHeight = isExpanded
-    ? FULL_PANEL_FILE_HEIGHT
-    : `calc(100vh - ${folderReservedHeight + 200}px)`
-
   return (
     <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-      <div className='min-h-0 flex-1 overflow-hidden'>
+      {/* The table fills the space left under the folders, so its own
+          scroll area (and horizontal scrollbar) stays fully on screen. */}
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <DataTable
           isLoading={(loading || loadingPage) && filteredFiles.length === 0}
           isReLoading={loadingPage || (loading && filteredFiles.length > 0)}
           pageSize={pageSize}
           rowSize='compact'
           table={fileTable}
-          tableBodyMaxHeight={fileTableMaxHeight}
           hideActionBar
           hideGrouping
           isSticky

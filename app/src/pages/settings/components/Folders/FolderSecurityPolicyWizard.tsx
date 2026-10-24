@@ -28,6 +28,7 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import { FOLDER_SECURITY_POLICY_GUIDES } from '@/constants/pageGuides'
 import cn from '@/utils/cn'
 import SettingsSelectedChips from '../SettingsSelectedChips'
 
@@ -271,7 +272,7 @@ export default function FolderSecurityPolicyWizard({
   onClose: () => void
   onSaveSuccess?: () => void
 }) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
   const [step, setStep] = useState<Step>(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -1078,9 +1079,10 @@ export default function FolderSecurityPolicyWizard({
           <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
             <InfoCard
               className='mb-5'
-              description={t`Choose who can open this folder and what they can do. Review each step, then save the policy. You can return to a step before you finish.`}
+              description={i18n._(FOLDER_SECURITY_POLICY_GUIDES[step].description)}
+              key={step}
+              title={i18n._(FOLDER_SECURITY_POLICY_GUIDES[step].title)}
               showVideo
-              title={t`What should I do on this page?`}
             />
             {renderStepContent()}
 

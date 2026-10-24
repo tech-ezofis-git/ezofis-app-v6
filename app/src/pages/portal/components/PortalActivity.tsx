@@ -92,7 +92,8 @@ const PortalActivity = ({
       ) : null}
       {flows.map((row, index) => {
         const dateValue = getActivityDate(row)
-        const date = dateValue ? formatDatetime(dateValue, 'D MMM YYYY') : ''
+        // UTC timestamp shown in the system time zone, with the time
+        const date = dateValue ? formatDatetime(dateValue, 'datetime') : ''
         const name = getActivityName(row)
         const meta = [date, name].filter(Boolean).join(', ')
 

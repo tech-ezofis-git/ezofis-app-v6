@@ -1,9 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
+import type { StageTrailItem } from '@/pages/requests/utils/workflow.utils'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
+import StageTrail from '../StageTrail'
 
 interface Props {
   activePanel?: SidePanel | null
@@ -12,6 +14,8 @@ interface Props {
   commentCount?: number
   isSubmitDisabled?: boolean
   isSubmitting?: boolean
+  /** Workflow steps (previous / current / next), shown in the header. */
+  stageTrail?: StageTrailItem[]
   title?: string
   onClose: () => void
   onSubmit?: () => void
@@ -27,6 +31,7 @@ const Header = ({
   commentCount = 0,
   isSubmitDisabled,
   isSubmitting,
+  stageTrail = [],
   title,
   onClose,
   onSubmit,
@@ -43,23 +48,23 @@ const Header = ({
     id: SidePanel
     label: string
   }[] = [
-      {
-        count: attachmentCount,
-        icon: 'tabler:paperclip',
-        id: 'attachments',
-        label: t`Attachments`,
-      },
-      {
-        count: commentCount,
-        icon: 'tabler:message-circle',
-        id: 'comments',
-        label: t`Comments`,
-      },
-    ]
+    {
+      count: attachmentCount,
+      icon: 'tabler:paperclip',
+      id: 'attachments',
+      label: t`Attachments`,
+    },
+    {
+      count: commentCount,
+      icon: 'tabler:message-circle',
+      id: 'comments',
+      label: t`Comments`,
+    },
+  ]
 
   return (
-    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
-      <div className='flex items-center gap-1.5'>
+    <div className='flex h-13 items-center justify-between gap-3 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
+      <div className='flex shrink-0 items-center gap-1.5'>
         <IconButton
           aria-label={t`Back`}
           className='-ml-2'
@@ -83,7 +88,14 @@ const Header = ({
         </div>
       </div>
 
-      <div className='flex items-center gap-1'>
+      {/* Same compact stage trail as the request details header. */}
+      {stageTrail.length > 0 ? (
+        <div className='hidden min-w-0 flex-auto items-center justify-center md:flex'>
+          <StageTrail items={stageTrail} />
+        </div>
+      ) : null}
+
+      <div className='flex shrink-0 items-center gap-1'>
         {/* <Tooltip content={t`Console / Workflow API`} position='bottom'>
           <button
             aria-label={t`Console`}
@@ -131,23 +143,34 @@ const Header = ({
           ))}
 
         {onSubmit && (
-          <button
-            aria-label={t`Submit`}
-            disabled={isSubmitDisabled || isSubmitting}
-            type='button'
+          // Divider between the panel icons and the primary action.
+          <div
             className={cn(
-              'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[var(--primary-9)] px-3 text-white shadow-sm transition-all duration-200 hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60',
+              'flex items-center',
+              onTogglePanel && 'ml-2 border-l border-gray-3 pl-3',
             )}
-            onClick={onSubmit}
           >
-            <Icon
-              className={cn('size-4 shrink-0', isSubmitting && 'animate-spin')}
-              name={isSubmitting ? 'tabler:loader-2' : 'tabler:send-2'}
-            />
-            <span className='text-13 font-semibold whitespace-nowrap'>
-              {t`Submit`}
-            </span>
-          </button>
+            <button
+              aria-label={t`Submit`}
+              disabled={isSubmitDisabled || isSubmitting}
+              type='button'
+              className={cn(
+                'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[var(--primary-9)] px-3 text-white shadow-sm transition-all duration-200 hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60',
+              )}
+              onClick={onSubmit}
+            >
+              <Icon
+                className={cn(
+                  'size-4 shrink-0',
+                  isSubmitting && 'animate-spin',
+                )}
+                name={isSubmitting ? 'tabler:loader-2' : 'tabler:send-2'}
+              />
+              <span className='text-13 font-semibold whitespace-nowrap'>
+                {t`Submit`}
+              </span>
+            </button>
+          </div>
         )}
       </div>
     </div>

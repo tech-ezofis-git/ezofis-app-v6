@@ -9,6 +9,7 @@ import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import AiDisclaimer from '@/components/common/AiDisclaimer'
+import { WORKFLOW_AI_BUILDER_GUIDE } from '@/constants/pageGuides'
 import {
   generateWorkflowConfigViaQwen,
   shortenDescription,
@@ -54,7 +55,7 @@ export default function AiWorkflowBuilder({
   onBack,
   onManualCreate,
 }: AiWorkflowBuilderProps) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
 
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -133,9 +134,9 @@ export default function AiWorkflowBuilder({
       <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-6 sm:pt-8 md:pt-10'>
         <div className='w-full max-w-3xl'>
           <InfoCard
-            description={t`Describe the workflow you want. The builder turns that into steps you can review, rename, and save. You can also build the workflow manually.`}
+            description={i18n._(WORKFLOW_AI_BUILDER_GUIDE.description)}
             showVideo
-            title={t`What should I do on this page?`}
+            title={i18n._(WORKFLOW_AI_BUILDER_GUIDE.title)}
           />
         </div>
         <div className='flex flex-col items-center gap-3 text-center'>

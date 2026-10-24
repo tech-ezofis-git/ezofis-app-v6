@@ -37,6 +37,7 @@ import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { UPLOAD_GUIDE } from '@/constants/pageGuides'
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import type { QueuedFileStatus, QueuedUploadFile } from './uploadQueueTypes'
@@ -1360,7 +1361,7 @@ export default function Upload({
   onIntelligentUpload,
   onSuccess,
 }: UploadProps) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
 
   const processStepLabels: Record<ProcessStepKey, string> = {
     Analysis: t`Analysis`,
@@ -4160,6 +4161,11 @@ export default function Upload({
         </div>
         <AnimateFadeIn className='relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-muted px-4 py-3 sm:px-5'>
           <div className='mx-auto mt-4 flex w-full max-w-5xl flex-col gap-3'>
+            <InfoCard
+              description={i18n._(UPLOAD_GUIDE.description)}
+              title={i18n._(UPLOAD_GUIDE.title)}
+              showVideo
+            />
             <AnimateSlideUp className='shrink-0 space-y-0.5 text-center'>
               <h1 className='text-xl font-bold tracking-tight text-gray-13'>
                 {t`Upload`}{' '}

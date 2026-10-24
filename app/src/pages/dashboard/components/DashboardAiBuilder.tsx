@@ -41,6 +41,7 @@ import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import AiDisclaimer from '@/components/common/AiDisclaimer'
 import CustomFilter from '@/components/common/CustomFilter'
+import { DASHBOARD_BUILDER_GUIDES } from '@/constants/pageGuides'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import {
@@ -78,7 +79,7 @@ export default function DashboardAiBuilder({
   repositoryName,
   workflowId = '',
 }: Props) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
 
   const {
     currency,
@@ -917,9 +918,16 @@ export default function DashboardAiBuilder({
     >
       <InfoCard
         className='mb-4'
-        description={t`Set the repository and the business scope for this dashboard. Review each step, then save when the layout matches what people should see.`}
+        key={activeStep}
+        description={i18n._(
+          (DASHBOARD_BUILDER_GUIDES[activeStep] ?? DASHBOARD_BUILDER_GUIDES[1])
+            .description,
+        )}
         showVideo
-        title={t`What should I do on this page?`}
+        title={i18n._(
+          (DASHBOARD_BUILDER_GUIDES[activeStep] ?? DASHBOARD_BUILDER_GUIDES[1])
+            .title,
+        )}
       />
       {/* PROCEDURE STEP 1: DASHBOARD CONFIGURATION */}
       <BuilderTimelineStep

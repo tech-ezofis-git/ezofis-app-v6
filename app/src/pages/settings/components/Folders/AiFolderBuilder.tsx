@@ -15,6 +15,7 @@ import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InfoCard from '@/components/base/InfoCard'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -26,6 +27,7 @@ import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import AiDisclaimer from '@/components/common/AiDisclaimer'
+import { AI_FOLDER_BUILDER_GUIDES } from '@/constants/pageGuides'
 import {
   type FolderConfigField,
   type FolderConfigSuggestion,
@@ -1211,7 +1213,7 @@ export default function AiFolderBuilder({
   onBack,
   onBackToSettings,
 }: AiFolderBuilderProps) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
   const initialGreetingId = useMemo(() => crypto.randomUUID(), [])
   const folderDraftIdRef = useRef<string | null>(null)
   const persistReadyRef = useRef(false)
@@ -2889,6 +2891,21 @@ export default function AiFolderBuilder({
 
       <div className='min-h-0 flex-1 overflow-y-auto' ref={listRef}>
         <div className='mx-auto flex w-full max-w-[720px] flex-col px-4 py-8 sm:px-6'>
+          {/* Page guide for the stage being worked on (Review once ready). */}
+          {(() => {
+            const guideStep =
+              phase === 'ready' && !editingFromReview ? 6 : activeStep
+            const guide = AI_FOLDER_BUILDER_GUIDES[guideStep]
+            return guide ? (
+              <InfoCard
+                className='mb-5'
+                description={i18n._(guide.description)}
+                key={guideStep}
+                title={i18n._(guide.title)}
+                showVideo
+              />
+            ) : null
+          })()}
           {phase === 'ready' && !editingFromReview ? (
             <div className='mb-4 flex items-center justify-between rounded-[12px] border border-primary-4 bg-primary-1/30 px-4 py-2.5'>
               <div className='flex items-center gap-2'>

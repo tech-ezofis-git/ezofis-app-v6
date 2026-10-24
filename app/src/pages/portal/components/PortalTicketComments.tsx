@@ -6,7 +6,7 @@ import CommentsPanel, {
   type LocalComment,
 } from '@/pages/requests/components/workflow-request/components/CommentsPanel'
 import type { CommentItem } from '@/pages/requests/hooks/useComments'
-import authUserStore from '@/stores/authUserStore'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
 import { parseUtcDate } from '@/utils/utcDate'
 
 const UUID_RE =
@@ -34,9 +34,9 @@ export default function PortalTicketComments({
   const [sending, setSending] = useState(false)
 
   const items = useMemo<LocalComment[]>(() => {
-    const { session } = authUserStore.getState()
-    const myEmail = session?.email?.trim().toLowerCase()
-    const myId = session?.id ? String(session.id) : ''
+    const me = getCurrentFormUser()
+    const myEmail = me.email.trim().toLowerCase()
+    const myId = me.id
     return comments
       .map((comment, index) => {
         const isAgent =
@@ -94,7 +94,6 @@ export default function PortalTicketComments({
       isLoading={isLoading}
       isSending={sending}
       subtitle={t`Discuss this request with the approvers`}
-      timeFormat='DD-MMM-YYYY hh:mm A'
       onDraftChange={setDraft}
       onSend={() => void send()}
     />

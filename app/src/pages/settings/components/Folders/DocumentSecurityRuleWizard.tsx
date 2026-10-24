@@ -32,6 +32,7 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import { DOCUMENT_SECURITY_RULE_GUIDES } from '@/constants/pageGuides'
 import cn from '@/utils/cn'
 import SettingsSelectedChips from '../SettingsSelectedChips'
 
@@ -200,7 +201,7 @@ export default function DocumentSecurityRuleWizard({
   onClose: () => void
   onSaveSuccess?: () => void
 }) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
   const [step, setStep] = useState<Step>(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -1201,9 +1202,10 @@ export default function DocumentSecurityRuleWizard({
           <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
             <InfoCard
               className='mb-5'
-              description={t`Set the conditions that decide which documents this rule covers, then choose the security action. Review each step before you save.`}
+              description={i18n._(DOCUMENT_SECURITY_RULE_GUIDES[step].description)}
+              key={step}
+              title={i18n._(DOCUMENT_SECURITY_RULE_GUIDES[step].title)}
               showVideo
-              title={t`What should I do on this page?`}
             />
             {renderStepContent()}
 

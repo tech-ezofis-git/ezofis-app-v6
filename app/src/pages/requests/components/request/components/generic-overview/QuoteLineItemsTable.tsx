@@ -6,6 +6,7 @@ import { fetchFtlCatalogProduct } from '@/api/v6/ftlCatalog'
 import Tooltip from '@/components/base/Tooltip'
 import { ApiCatalogSelect } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import cn from '@/utils/cn'
+import { editableValueClass } from './editableValue'
 import {
   collectFormTableFields,
   isLineItemHeading,
@@ -44,7 +45,7 @@ const lineItemAcceptBtnClass =
 
 /** Purple outline for + Add Row (white fill, primary border/text). */
 /** Qty / Price / Discount / Subtotal share one width. */
-const amountColumnClass = 'w-[8.5rem] min-w-[8.5rem]'
+const amountColumnClass = 'w-[8rem] min-w-[8rem]'
 
 const lineItemAddRowBtnClass =
   'inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--primary-4)] bg-surface px-3 py-1.5 text-[11px] font-semibold text-[var(--primary-11)] transition-all hover:bg-[var(--primary-2)] active:scale-95'
@@ -891,7 +892,7 @@ const QuoteLineItemsTable = ({
   return (
     // Focusable so Ctrl+Z / Ctrl+Y work after clicking anywhere in the table.
     <div
-      className='flex flex-col gap-3 outline-none'
+      className='flex flex-col gap-2 outline-none'
       tabIndex={canEdit ? -1 : undefined}
       onKeyDown={
         canEdit
@@ -960,13 +961,13 @@ const QuoteLineItemsTable = ({
                       className='w-8 border border-gray-3 p-1'
                     />
                   ) : null}
-                  <th className='min-w-[220px] border border-gray-3 p-3 text-left font-semibold'>
+                  <th className='min-w-[220px] border border-gray-3 px-3 py-2 text-left font-semibold'>
                     Product
                   </th>
                   <th
                     className={cn(
                       amountColumnClass,
-                      'border border-gray-3 p-3 text-center font-semibold',
+                      'border border-gray-3 px-3 py-2 text-center font-semibold',
                     )}
                   >
                     Qty
@@ -974,7 +975,7 @@ const QuoteLineItemsTable = ({
                   <th
                     className={cn(
                       amountColumnClass,
-                      'border border-gray-3 p-3 text-center font-semibold',
+                      'border border-gray-3 px-3 py-2 text-center font-semibold',
                     )}
                   >
                     Price
@@ -983,7 +984,7 @@ const QuoteLineItemsTable = ({
                     <th
                       className={cn(
                         amountColumnClass,
-                        'border border-gray-3 p-3 text-center font-semibold whitespace-nowrap',
+                        'border border-gray-3 px-3 py-2 text-center font-semibold whitespace-nowrap',
                       )}
                     >
                       Discount
@@ -992,7 +993,7 @@ const QuoteLineItemsTable = ({
                   <th
                     className={cn(
                       amountColumnClass,
-                      'border border-gray-3 p-3 text-center font-semibold',
+                      'border border-gray-3 px-3 py-2 text-center font-semibold',
                     )}
                   >
                     Subtotal
@@ -1134,18 +1135,21 @@ function HoverValue({
     <div
       ref={rootRef}
       className={cn(
-        'group relative flex min-w-0 gap-1',
+        'flex min-w-0',
         fill || align === 'left' ? 'items-start' : 'items-center',
         fill && 'w-full flex-1',
-        align === 'right' && 'w-full justify-end pr-6',
+        align === 'right' && 'w-full justify-end',
         align === 'center' && 'w-full justify-center',
         align === 'left' && !fill && 'w-full',
       )}
     >
+      {/* The value is the edit target: a field outline on hover / focus. */}
       <button
+        aria-label='Edit'
         type='button'
         className={cn(
-          'min-w-0 cursor-text border-0 bg-transparent p-0 text-inherit',
+          'min-w-0 bg-transparent text-inherit',
+          editableValueClass,
           fill && 'flex-1 text-left',
           align === 'right' && 'text-right',
           align === 'center' && 'text-center',
@@ -1154,24 +1158,6 @@ function HoverValue({
         onClick={() => setOpen(true)}
       >
         {display}
-      </button>
-      {/* Absolute pencil keeps centered/right values visually aligned. */}
-      <button
-        aria-label='Edit'
-        type='button'
-        className={cn(
-          'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-3 hover:text-gray-12 active:scale-95',
-          align === 'center' || align === 'right'
-            ? 'absolute top-1/2 right-0 -translate-y-1/2'
-            : '',
-        )}
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          setOpen(true)
-        }}
-      >
-        <Icon className='size-3.5' icon='lucide:pencil' />
       </button>
     </div>
   )
@@ -1263,7 +1249,7 @@ function QuoteLineRow({
           <div className='pt-2'>{handle}</div>
         </td>
       ) : null}
-      <td className='min-w-[220px] border border-gray-3 p-3 text-left align-top'>
+      <td className='min-w-[220px] border border-gray-3 px-3 py-2.5 text-left align-top'>
         <div className='flex min-w-0 flex-col items-start gap-1 text-left'>
           <div className='flex w-full items-start gap-2'>
             <HoverValue
@@ -1317,16 +1303,15 @@ function QuoteLineRow({
                     'inline-flex size-6 cursor-pointer items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95',
                     approved
                       ? 'text-green-9 hover:text-green-10'
-                      : 'text-[var(--orange-9)] hover:text-[var(--orange-10)]',
+                      : 'text-gray-8 hover:text-green-9',
                   )}
                   onClick={() => onApprovedChange(!approved)}
                 >
+                  {/* Unchecked box until accepted, then the green check. */}
                   <Icon
                     className='size-5'
                     icon={
-                      approved
-                        ? 'tabler:circle-check-filled'
-                        : 'tabler:circle-check'
+                      approved ? 'tabler:circle-check-filled' : 'tabler:circle'
                     }
                   />
                 </button>
@@ -1398,7 +1383,7 @@ function QuoteLineRow({
       <td
         className={cn(
           amountColumnClass,
-          'border border-gray-3 p-3 text-center align-top text-gray-12',
+          'border border-gray-3 px-3 py-2.5 text-center align-top text-gray-12',
         )}
       >
         <HoverValue
@@ -1427,7 +1412,7 @@ function QuoteLineRow({
       <td
         className={cn(
           amountColumnClass,
-          'border border-gray-3 p-3 text-center align-top text-gray-12',
+          'border border-gray-3 px-3 py-2.5 text-center align-top text-gray-12',
         )}
       >
         <HoverValue
@@ -1455,7 +1440,7 @@ function QuoteLineRow({
         <td
           className={cn(
             amountColumnClass,
-            'border border-gray-3 p-3 text-center align-top text-gray-12',
+            'border border-gray-3 px-3 py-2.5 text-center align-top text-gray-12',
           )}
         >
           <HoverValue
@@ -1519,7 +1504,7 @@ function QuoteLineRow({
       <td
         className={cn(
           amountColumnClass,
-          'border border-gray-3 p-3 text-center align-top',
+          'border border-gray-3 px-3 py-2.5 text-center align-top',
         )}
       >
         {hasLineSavings ? (
