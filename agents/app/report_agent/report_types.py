@@ -34,8 +34,8 @@ REPORT_TYPES: dict[str, ReportTypeDefinition] = {
         name="All Workflows",
         description="Report across all workflows based on the user description.",
         scope="workflows",
-        example_description="Awaiting for your action",
-        schema_focus=("workflow", "wworkflow", "inbox_", "workflow_instances_", "workflow_tasks_"),
+        example_description="Aging, SLA, Total Inbox, or Total tickets processed",
+        schema_focus=("workflow", "wworkflow", "inbox_", "workflow_instances_", "workflow_tasks_", "ezfb_"),
     ),
     "specific_workflow": ReportTypeDefinition(
         key="specific_workflow",
@@ -51,7 +51,7 @@ REPORT_TYPES: dict[str, ReportTypeDefinition] = {
         name="All Repositories",
         description="Report across all repositories based on the user description.",
         scope="repositories",
-        example_description="Total Archived Documents",
+        example_description="Total documents, Document aging, or Document Retention Status",
         schema_focus=("repository", "wrepository", "items_"),
     ),
     "specific_repository": ReportTypeDefinition(
