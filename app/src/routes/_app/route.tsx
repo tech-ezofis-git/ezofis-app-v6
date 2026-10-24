@@ -5,6 +5,12 @@ import { resolveSignInPath } from '@/lib/branding/session'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { shouldLockToShareResource } from '@/pages/sign-in/utils/shareGuestLock'
 import authUserStore from '@/stores/authUserStore'
+import {
+  getDefaultLandingPath,
+  hasAppliedLanding,
+  markLandingApplied,
+  resetLandingApplied,
+} from '@/utils/landingPage'
 import { isPermissionVisible } from '@/utils/sessionPermissions'
 
 export const Route = createFileRoute('/_app')({
@@ -23,6 +29,7 @@ export const Route = createFileRoute('/_app')({
     const { isAuthenticated, session } = authUserStore.getState()
 
     if (!isAuthenticated) {
+      resetLandingApplied()
       const signInPath = resolveSignInPath()
       if (signInPath !== '/sign-in' && signInPath.startsWith('/')) {
         throw redirect({
@@ -58,6 +65,22 @@ export const Route = createFileRoute('/_app')({
 
     const sessionPermissions = session?.permissionKeys
 
+    // First visit to "/" after signing in: open Workflows if the user can see
+    // it, otherwise Folders. Later visits to "/" (the Dashboard menu) are left
+    // alone, and the AP setup lock keeps its own "/" behaviour.
+    if (location.pathname === '/' && !hasAppliedLanding()) {
+      markLandingApplied()
+      const landingPath = shouldLockAppNavigation()
+        ? null
+        : getDefaultLandingPath(sessionPermissions, session?.role)
+      if (landingPath) {
+        throw redirect({
+          replace: true,
+          to: landingPath,
+        })
+      }
+    }
+
     if (sessionPermissions && sessionPermissions.length > 0) {
       const routeToPermissionKey: Record<string, string> = {
         '/': 'dashboard',
@@ -87,13 +110,15 @@ export const Route = createFileRoute('/_app')({
           )
         ) {
           const firstAllowedRoute =
+            getDefaultLandingPath(sessionPermissions, session?.role) ||
             Object.keys(routeToPermissionKey).find((r) =>
               isPermissionVisible(
                 routeToPermissionKey[r],
                 sessionPermissions,
                 session?.role,
               ),
-            ) || '/'
+            ) ||
+            '/'
 
           if (location.pathname !== firstAllowedRoute) {
             throw redirect({

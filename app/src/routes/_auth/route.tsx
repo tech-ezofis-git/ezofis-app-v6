@@ -2,6 +2,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AuthLayout from '@/layouts/auth/AuthLayout'
 import authUserStore from '@/stores/authUserStore'
+import { resetLandingApplied } from '@/utils/landingPage'
 
 export const Route = createFileRoute('/_auth')({
   component: RouteComponent,
@@ -41,6 +42,8 @@ export const Route = createFileRoute('/_auth')({
           to: '/', // or '/_app' or '/_app/dashboard' depending on your home route
         })
       }
+      // Signed out: the next sign-in gets the landing redirect again.
+      resetLandingApplied()
     }
   },
 })
