@@ -94,6 +94,14 @@ const TableSearch = <TData,>({
     commitSearch('', '')
   }
 
+  // Clear: empty the typed text only (no column chosen), keep typing.
+  const handleClear = () => {
+    handleValueChange.cancel()
+    setInputValue('')
+    commitSearch(searchState.id, '')
+    document.getElementById('table-search-input')?.focus()
+  }
+
   // Search inside the column picker. Cleared and focused with the menu.
   const [columnQuery, setColumnQuery] = useState('')
   const columnQueryRef = useRef<HTMLInputElement>(null)
@@ -231,6 +239,23 @@ const TableSearch = <TData,>({
             tooltip={t`Search`}
             variant='ghost'
             onClick={handleSearchNow}
+          />
+        </div>
+      ) : null}
+
+      {isExpanded && !selectedColumnLabel && inputValue ? (
+        <div
+          className='flex shrink-0 items-center'
+          onClick={(e) => e.stopPropagation()}
+        >
+          <IconButton
+            ariaLabel={t`Clear search`}
+            color='gray'
+            icon='lucide:x'
+            size='xs'
+            tooltip={t`Clear`}
+            variant='ghost'
+            onClick={handleClear}
           />
         </div>
       ) : null}
