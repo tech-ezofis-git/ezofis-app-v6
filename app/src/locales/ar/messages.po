@@ -658,12 +658,12 @@ msgid "A 6-digit verification code has been sent to {targetEmail}."
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:601
-msgid "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
-msgstr ""
+#~ msgid "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
+#~ msgstr ""
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:600
-msgid "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
-msgstr ""
+#~ msgid "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:774
 msgid "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
@@ -1191,7 +1191,7 @@ msgid "AI Context"
 msgstr "سياق الذكاء الاصطناعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1005
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:715
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:717
 msgid "AI Dashboard Designer"
 msgstr "مصمم لوحة القيادة بالذكاء الاصطناعي"
 
@@ -1692,7 +1692,7 @@ msgid "Apply"
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1087
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:762
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:764
 msgid "Apply & Preview"
 msgstr "تطبيق ومعاينة"
 
@@ -2174,7 +2174,7 @@ msgstr ""
 msgid "Back to Configuration"
 msgstr "العودة إلى التكوين"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:798
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:800
 msgid "Back to Designer"
 msgstr "العودة إلى المصمم"
 
@@ -2208,7 +2208,7 @@ msgstr "Back to نموذجs"
 msgid "Back to PO Setup"
 msgstr "العودة إلى إعداد أمر الشراء"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:754
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:756
 msgid "Back to Prompt"
 msgstr "العودة إلى الموجه"
 
@@ -2518,7 +2518,7 @@ msgstr "يمكنه العرض"
 #~ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسير العمل هذا."
 
 #: src/components/common/LeaveGuardDialog.tsx:89
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:687
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:689
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:108
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
@@ -2702,7 +2702,7 @@ msgid "Changed your mind?"
 msgstr "هل غيرت رأيك؟"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1055
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:744
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:746
 msgid "Charts"
 msgstr "المخططات البيانية"
 
@@ -3403,7 +3403,7 @@ msgstr "تكوين الموافقين"
 msgid "Configure ERP or system integrations later."
 msgstr "قم بتكوين ERP أو عمليات تكامل النظام لاحقًا."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:608
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:610
 msgid "Configure Folder Dashboard"
 msgstr ""
 
@@ -3419,7 +3419,7 @@ msgstr "تكوين الأذونات"
 #~ msgid "Configure user account details, business hierarchy, and permissions"
 #~ msgstr "قم بتكوين تفاصيل حساب المستخدم والتسلسل الهرمي للأعمال والصلاحيات"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:607
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:609
 msgid "Configure Workflow Dashboard"
 msgstr ""
 
@@ -3451,8 +3451,8 @@ msgstr "تأكيد وتفعيل السياسة"
 msgid "Confirm Decline"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:306
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:320
+#: src/pages/sign-in/components/ShareSignInForm.tsx:307
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:321
 msgid "Confirm Password"
 msgstr "تأكيد كلمة المرور"
 
@@ -3618,18 +3618,18 @@ msgstr "يتضمن"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1119
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:90
-#: src/pages/sign-in/components/SignInForm.tsx:1048
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:336
+#: src/pages/sign-in/components/SignInForm.tsx:1050
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:337
 msgid "Continue"
 msgstr "متابعة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1102
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:777
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:779
 msgid "Continue from configuration to generate KPIs and charts from your prompt."
 msgstr "تابع من التكوين لإنشاء مؤشرات الأداء الرئيسية والمخططات البيانية من مطالبتك."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:986
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:696
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:698
 msgid "Continue to Dashboard Designer"
 msgstr "تابع إلى مصمم لوحة المعلومات"
 
@@ -4124,11 +4124,11 @@ msgstr "تكوين لوحة القيادة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:810
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1183
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:839
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:841
 msgid "Dashboard preview"
 msgstr "معاينة لوحة المعلومات"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:789
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:791
 msgid "Dashboard Preview"
 msgstr "معاينة لوحة المعلومات"
 
@@ -4514,12 +4514,12 @@ msgstr "القسم والتسلسل الهرمي للأعمال"
 msgid "Describe structure or fields…"
 msgstr "صف الهيكل أو الحقول…"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:637
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:639
 msgid "Describe the dashboard you want to create."
 msgstr "صف لوحة المعلومات التي تريد إنشاءها."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:976
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:676
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:678
 msgid "Describe the dashboard you want to create..."
 msgstr "صف لوحة المعلومات التي ترغب في إنشائها..."
 
@@ -5516,13 +5516,13 @@ msgstr "تاريخ النفاذ"
 #: src/pages/settings/components/RolesPermissions.tsx:2093
 #: src/pages/settings/components/RolesPermissions.tsx:2095
 #: src/pages/sign-in/components/SignInForm.tsx:979
-#: src/pages/sign-in/components/SignInForm.tsx:1029
+#: src/pages/sign-in/components/SignInForm.tsx:1030
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
 #: src/pages/portal/components/ClassicPortalLogin.tsx:108
 #: src/pages/sign-in/components/ShareSignInForm.tsx:286
-#: src/pages/sign-in/components/SignInForm.tsx:1104
+#: src/pages/sign-in/components/SignInForm.tsx:1107
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:300
 msgid "Email / Username"
 msgstr "البريد / اسم المستخدم"
@@ -5697,7 +5697,7 @@ msgstr "أدخل رقم الهاتف"
 msgid "Enter Portal Name"
 msgstr ""
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:642
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:644
 msgid "Enter Prompt"
 msgstr "أدخل الموجه"
 
@@ -6914,7 +6914,7 @@ msgstr "توقعات الاستخدام لنهاية الشهر"
 msgid "Forgot Password"
 msgstr "نسيت كلمة المرور"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1161
+#: src/pages/sign-in/components/SignInForm.tsx:1165
 msgid "Forgot password?"
 msgstr "نسيت كلمة المرور؟"
 
@@ -7083,12 +7083,12 @@ msgid "Generated by AI"
 msgstr "مُولَّد بالذكاء الاصطناعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1014
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:724
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:726
 msgid "Generating dashboard schema..."
 msgstr "جارٍ إنشاء مخطط لوحة المعلومات..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:967
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:667
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:669
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2310
 msgid "Generating description…"
 msgstr "جاري إنشاء الوصف…"
@@ -8180,7 +8180,7 @@ msgstr "عرض كانبان"
 msgid "Keep draft & leave"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:1151
+#: src/pages/sign-in/components/SignInForm.tsx:1155
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
 
@@ -8199,7 +8199,7 @@ msgid "Kindly draw the signature"
 msgstr "يرجى رسم التوقيع"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1025
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:735
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:737
 msgid "KPIs"
 msgstr "مؤشرات الأداء الرئيسية"
 
@@ -8522,7 +8522,7 @@ msgstr "يسرد كل مستند مطابق للتأكيد قبل تشغيل ا�
 #~ msgid "LIVE"
 #~ msgstr "مباشر"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:786
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:788
 msgid "Live dashboard generated from your selected widgets."
 msgstr "لوحة معلومات مباشرة تم إنشاؤها من الأدوات المصغرة المحددة."
 
@@ -8611,7 +8611,7 @@ msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1177
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:829
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:831
 msgid "Loading live dashboard data..."
 msgstr "جارٍ تحميل بيانات لوحة المعلومات المباشرة..."
 
@@ -9871,7 +9871,7 @@ msgstr "لا يوجد تقييم للامتثال متاح."
 msgid "No consumption data for this period."
 msgstr "لا توجد بيانات استهلاك لهذه الفترة."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:610
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:612
 msgid "No Dashboard Configured"
 msgstr ""
 
@@ -10188,7 +10188,7 @@ msgstr "لا توجد بوابات بعد"
 msgid "No preview rows available in this file."
 msgstr "لا توجد صفوف معاينة في هذا الملف."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:843
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:845
 msgid "No preview yet"
 msgstr "لا توجد معاينة بعد"
 
@@ -10718,9 +10718,9 @@ msgstr "أو"
 
 #: src/pages/portal/components/ClassicPortalLogin.tsx:455
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:602
-#: src/pages/sign-in/components/ShareSignInForm.tsx:355
-#: src/pages/sign-in/components/SignInForm.tsx:1181
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:374
+#: src/pages/sign-in/components/ShareSignInForm.tsx:356
+#: src/pages/sign-in/components/SignInForm.tsx:1185
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:375
 msgid "Or"
 msgstr "أو"
 
@@ -10891,13 +10891,13 @@ msgstr ""
 #: src/pages/settings/components/ManageUser.tsx:2070
 #: src/pages/settings/components/ManageUser.tsx:2468
 #: src/pages/settings/components/ManageUser.tsx:2473
-#: src/pages/sign-in/components/ShareSignInForm.tsx:296
-#: src/pages/sign-in/components/ShareSignInForm.tsx:330
-#: src/pages/sign-in/components/SignInForm.tsx:997
-#: src/pages/sign-in/components/SignInForm.tsx:1084
-#: src/pages/sign-in/components/SignInForm.tsx:1122
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:310
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:347
+#: src/pages/sign-in/components/ShareSignInForm.tsx:297
+#: src/pages/sign-in/components/ShareSignInForm.tsx:331
+#: src/pages/sign-in/components/SignInForm.tsx:998
+#: src/pages/sign-in/components/SignInForm.tsx:1087
+#: src/pages/sign-in/components/SignInForm.tsx:1126
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:311
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:348
 msgid "Password"
 msgstr "كلمة المرور"
 
@@ -12647,7 +12647,7 @@ msgstr "رقم المستند المرجعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:791
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1150
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:807
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:809
 #: src/pages/dashboard/DashboardPage.tsx:395
 #: src/pages/dashboard/DashboardPage.tsx:402
 #: src/pages/folders/components/FolderFilterBar.tsx:759
@@ -12684,7 +12684,7 @@ msgid "Refreshing..."
 msgstr "منعش..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:955
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:657
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:659
 #: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:270
 #: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:272
 #: src/pages/folders/components/Upload/Upload.tsx:4847
@@ -13629,7 +13629,7 @@ msgid "Save changes before leaving?"
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1166
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:818
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:820
 msgid "Save Dashboard"
 msgstr "حفظ لوحة القيادة"
 
@@ -14119,6 +14119,10 @@ msgstr "بروتوكول الأمان"
 msgid "See the Attachments section for uploaded files."
 msgstr "راجع قسم المرفقات للاطلاع على الملفات التي تم تحميلها."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:603
+msgid "See this folder's documents, metadata and activity in one view."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3430
 #: src/pages/settings/components/ManageUser.tsx:1911
 #: src/pages/settings/components/SettingsSelectField.tsx:55
@@ -14462,7 +14466,7 @@ msgstr ""
 msgid "Select Storage"
 msgstr "حدد التخزين"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:711
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:713
 msgid "Select suggested KPIs and charts from your data."
 msgstr "حدد مؤشرات الأداء الرئيسية والرسوم البيانية المقترحة من بياناتك."
 
@@ -14526,7 +14530,7 @@ msgstr "تحديد المستخدمين أو المجموعات..."
 msgid "Select users..."
 msgstr "حدد المستخدمين..."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:846
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:848
 msgid "Select widgets in step 2, then click Apply & Preview to load live data."
 msgstr "حدد عناصر واجهة المستخدم في الخطوة 2، ثم انقر فوق «تطبيق ومعاينة» لتحميل البيانات المباشرة."
 
@@ -15031,7 +15035,7 @@ msgstr ""
 msgid "Sign here"
 msgstr "وقّع هنا"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1014
+#: src/pages/sign-in/components/SignInForm.tsx:1015
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
@@ -15040,10 +15044,10 @@ msgstr "تسجيل الدخول"
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/portal/components/ClassicPortalLogin.tsx:445
 #: src/pages/portal/components/PortalLogin.tsx:365
-#: src/pages/sign-in/components/ShareSignInForm.tsx:319
-#: src/pages/sign-in/components/ShareSignInForm.tsx:344
-#: src/pages/sign-in/components/SignInForm.tsx:1168
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:361
+#: src/pages/sign-in/components/ShareSignInForm.tsx:320
+#: src/pages/sign-in/components/ShareSignInForm.tsx:345
+#: src/pages/sign-in/components/SignInForm.tsx:1172
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:362
 msgid "Sign In"
 msgstr "تسجيل الدخول"
 
@@ -15648,7 +15652,7 @@ msgstr ""
 #~ msgstr "خطة التقرير المقترحة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1017
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:727
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:729
 msgid "Suggesting KPIs and charts for {repositoryName}..."
 msgstr "جارٍ اقتراح مؤشرات الأداء الرئيسية والرسوم البيانية لـ {repositoryName}..."
 
@@ -16537,6 +16541,10 @@ msgstr "تتبع حالة المعالجة والموافقات والتحليل
 msgid "Track the status of everything you've submitted."
 msgstr "تتبع حالة كل ما قدمته."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:602
+msgid "Track this workflow's requests, stages and turnaround in one view."
+msgstr ""
+
 #: src/pages/settings/components/AuditMonitoring.tsx:171
 msgid "Track user activity, configuration changes, and security events across the platform."
 msgstr "تتبع نشاط المستخدم وتغييرات التكوين والأحداث الأمنية عبر النظام الأساسي."
@@ -17348,7 +17356,7 @@ msgstr "البريد الإلكتروني للمستخدم"
 msgid "User Management"
 msgstr "إدارة المستخدمين"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1068
+#: src/pages/sign-in/components/SignInForm.tsx:1070
 msgid "User name"
 msgstr "اسم المستخدم"
 
@@ -17364,7 +17372,7 @@ msgstr "ملخص المستخدم"
 msgid "User updated successfully"
 msgstr "تم تحديث المستخدم بنجاح"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1069
+#: src/pages/sign-in/components/SignInForm.tsx:1071
 msgid "username"
 msgstr "اسم المستخدم"
 
@@ -17737,7 +17745,7 @@ msgid "Waiting for user approval"
 msgstr "في انتظار موافقة المستخدم"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1099
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:774
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:776
 msgid "Waiting to generate dashboard schema"
 msgstr "في انتظار إنشاء مخطط لوحة المعلومات"
 
