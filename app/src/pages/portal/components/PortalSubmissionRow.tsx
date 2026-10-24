@@ -150,7 +150,7 @@ export default function PortalSubmissionRow({
 
   return (
     <button
-      className='group w-full cursor-pointer bg-surface text-left transition max-md:animate-in max-md:rounded-2xl max-md:p-4 max-md:shadow-2xs max-md:fade-in max-md:slide-in-from-bottom-1 max-md:active:scale-[0.98] md:border-t md:border-gray-3 hover:bg-gray-2 active:bg-gray-3'
+      className='group max-md:animate-in max-md:fade-in max-md:slide-in-from-bottom-1 w-full cursor-pointer bg-surface text-left transition hover:bg-gray-2 active:bg-gray-3 max-md:rounded-2xl max-md:p-4 max-md:shadow-2xs max-md:active:scale-[0.98] md:border-t md:border-gray-3'
       type='button'
       onClick={() => onOpen(submission)}
     >
@@ -187,9 +187,14 @@ export default function PortalSubmissionRow({
           {dynamicFields.length > 0 ? (
             <div className='flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-13 text-gray-11'>
               {dynamicFields.map((col, idx) => (
-                <span className='flex min-w-0 items-center gap-1.5' key={col.id}>
+                <span
+                  className='flex min-w-0 items-center gap-1.5'
+                  key={col.id}
+                >
                   {idx > 0 && <span className='text-gray-6'>·</span>}
-                  <span className='truncate'>{col.renderCell?.(row) ?? '-'}</span>
+                  <span className='truncate'>
+                    {col.renderCell?.(row) ?? '-'}
+                  </span>
                 </span>
               ))}
             </div>
@@ -199,46 +204,45 @@ export default function PortalSubmissionRow({
             </span>
           ) : null}
 
-          <div className='flex flex-wrap items-center gap-1.5'>
-            <GenericStagePill
-              currentLabel={currentLabel}
-              isTerminal={isTerminal}
-              previousLabel={previousLabel}
-            />
-            {lastActionLabel ? (
-              <span
-                className={cn(
-                  'inline-flex h-[22px] max-w-full items-center gap-1.5 rounded-md px-2 text-11 font-semibold',
-                  lastActionTone(lastActionLabel),
-                )}
-              >
-                <span className='size-1.5 shrink-0 rounded-full bg-current' />
-                <span className='truncate'>{lastActionLabel}</span>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+              <GenericStagePill
+                currentLabel={currentLabel}
+                isTerminal={isTerminal}
+                previousLabel={previousLabel}
+              />
+              {lastActionLabel ? (
+                <span
+                  className={cn(
+                    'inline-flex h-[22px] max-w-full items-center gap-1.5 rounded-md px-2 text-11 font-semibold',
+                    lastActionTone(lastActionLabel),
+                  )}
+                >
+                  <span className='size-1.5 shrink-0 rounded-full bg-current' />
+                  <span className='truncate'>{lastActionLabel}</span>
+                </span>
+              ) : null}
+            </div>
+            {/* Raised date on the right of the stage row */}
+            {startedLabel ? (
+              <span className='inline-flex h-[22px] shrink-0 items-center gap-1 text-11 whitespace-nowrap text-gray-9'>
+                <Icon
+                  className='size-3 shrink-0 text-gray-8'
+                  name='tabler:calendar'
+                />
+                {startedLabel}
               </span>
             ) : null}
           </div>
 
-          {raisedBy || startedLabel ? (
-            <div className='flex min-w-0 flex-col gap-0.5 text-12 text-gray-9'>
-              {raisedBy ? (
-                <span className='flex min-w-0 items-center gap-1.5'>
-                  <Icon
-                    className='size-3.5 shrink-0 text-gray-8'
-                    name='tabler:user'
-                  />
-                  <span className='truncate'>{raisedBy}</span>
-                </span>
-              ) : null}
-              {startedLabel ? (
-                <span className='flex min-w-0 items-center gap-1.5'>
-                  <Icon
-                    className='size-3.5 shrink-0 text-gray-8'
-                    name='tabler:calendar'
-                  />
-                  <span className='truncate'>{startedLabel}</span>
-                </span>
-              ) : null}
-            </div>
+          {raisedBy ? (
+            <span className='flex min-w-0 items-center gap-1.5 text-12 text-gray-9'>
+              <Icon
+                className='size-3.5 shrink-0 text-gray-8'
+                name='tabler:user'
+              />
+              <span className='truncate'>{raisedBy}</span>
+            </span>
           ) : null}
         </div>
 

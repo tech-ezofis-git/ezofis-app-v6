@@ -469,7 +469,7 @@ export default function PortalHome({
           className='md:rounded-xl md:border md:border-gray-4 md:bg-surface md:p-5'
           delay={0.1}
         >
-          <div className='mb-4 flex flex-col gap-3 max-md:mb-1 lg:flex-row lg:items-center lg:justify-between'>
+          <div className='mb-4 flex flex-col gap-3 max-md:mb-3 lg:flex-row lg:items-center lg:justify-between'>
             <div className='flex min-w-0 items-start gap-2 max-md:items-center'>
               {onBackToWorkflows ? (
                 <button
@@ -597,18 +597,18 @@ export default function PortalHome({
         </AnimateSlideUp>
       )}
 
-      {/* Phones: New Submission as an extended floating action button */}
+      {/* Phones: New Submission as an icon-only floating action button */}
       {canCreateSubmission ? (
         <AnimateSlideUp
           className='fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] z-30 md:hidden'
           delay={0.2}
         >
-          <Button
-            className='h-14 rounded-full pr-6 pl-5 text-15 shadow-lg transition hover:shadow-xl active:scale-95'
+          <IconButton
+            ariaLabel={t`New Submission`}
+            className='size-14 rounded-full shadow-lg transition hover:shadow-xl active:scale-90'
             color='primary'
             icon='lucide:plus'
-            label={t`New Submission`}
-            size='lg'
+            iconClass='size-6'
             variant='solid'
             onClick={onNewSubmission}
           />

@@ -8,6 +8,7 @@ import {
   isExternalPoMaster,
   resolveMasterOption,
 } from '@/pages/workflows/utils/poSourceConfig'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import AgentKnowledgeSkillPanel from './common/AgentKnowledgeSkillPanel'
 import PoSourceSettings from './common/PoSourceSettings'
 import SettingsSection from './common/SettingsSection'
@@ -109,7 +110,8 @@ function QuoteTableEditableSetting({ node: initialNode }: { node?: Node }) {
     : null
   const nodeData = (currentNode?.data || {}) as Record<string, unknown>
   const showTableAsEditable = Boolean(nodeData.showTableAsEditable)
-  const [openTable, setOpenTable] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openTable, setOpenTable] = useState(defaultOpen)
 
   const updateNodeData = (patch: Record<string, unknown>) => {
     if (!currentNode) return

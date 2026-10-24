@@ -195,6 +195,10 @@ export default function CustomFilter({
   )
   const [filterSearchQuery, setFilterSearchQuery] = useState('')
   const [moreFilterFieldSearch, setMoreFilterFieldSearch] = useState('')
+  // While the user types in "Search fields...", the first match opens its value
+  // menu; that menu must not pull the cursor out of the field search.
+  const [isMoreFieldSearchFocused, setIsMoreFieldSearchFocused] =
+    useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(
     () => defaultSearchExpanded || Boolean(searchQuery),
   )
@@ -515,7 +519,9 @@ export default function CustomFilter({
                     type='text'
                     value={moreFilterFieldSearch}
                     autoFocus
+                    onBlur={() => setIsMoreFieldSearchFocused(false)}
                     onChange={(e) => setMoreFilterFieldSearch(e.target.value)}
+                    onFocus={() => setIsMoreFieldSearchFocused(true)}
                   />
                   {moreFilterFieldSearch ? (
                     <button
@@ -621,6 +627,7 @@ export default function CustomFilter({
                 if (group.options) {
                   return (
                     <CategoryFilterMenu
+                      autoFocusSearch={!isMoreFieldSearchFocused}
                       isLoading={isLoading}
                       key={group.id}
                       label={group.label}
@@ -643,6 +650,7 @@ export default function CustomFilter({
                 if (group.actions && group.actions.length > 0) {
                   return (
                     <CategoryFilterMenu
+                      autoFocusSearch={!isMoreFieldSearchFocused}
                       isLoading={isLoading}
                       key={group.id}
                       label={group.label}
@@ -670,11 +678,11 @@ export default function CustomFilter({
                         <Search className='h-3.5 w-3.5' />
                       </span>
                       <input
+                        autoFocus={!isMoreFieldSearchFocused}
                         className='min-w-0 flex-1 bg-transparent py-2.5 pr-3 pl-3 text-12 text-text-primary outline-none placeholder:text-text-muted'
                         placeholder={`Filter ${group.label.toLowerCase()}...`}
                         type='text'
                         value={filterSearchQuery}
-                        autoFocus
                         onChange={(e) => setFilterSearchQuery(e.target.value)}
                       />
                     </div>

@@ -9,6 +9,7 @@ import InputLabel from '@/components/base/inputs/InputLabel'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { generateId } from '../../utils/generateId'
@@ -92,7 +93,8 @@ export default function ConditionSettingsPanel({
 
   const { data: workflowForms = [] } = useQuery(getWorkflowFormsQueryOptions())
 
-  const [openBasic, setOpenBasic] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
 
   const updateNodeData = (key: string, value: any) => {
     setNodes((nds: any[]) =>

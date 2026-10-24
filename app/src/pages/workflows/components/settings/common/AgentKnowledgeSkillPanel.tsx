@@ -5,6 +5,7 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputLabel from '@/components/base/inputs/InputLabel'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './ConnectionsRouting'
 import SettingsSection from './SettingsSection'
@@ -99,7 +100,8 @@ export default function AgentKnowledgeSkillPanel({
   const [skillText, setSkillText] = useState(nodeData.skillText || '')
   const [instructions, setInstructions] = useState(nodeData.instructions || '')
 
-  const [openKnowledge, setOpenKnowledge] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openKnowledge, setOpenKnowledge] = useState(defaultOpen)
   const [openSkill, setOpenSkill] = useState(false)
   const [openInstructions, setOpenInstructions] = useState(false)
 
