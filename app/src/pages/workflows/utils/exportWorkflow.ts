@@ -2,6 +2,8 @@ import type { Edge, Node } from '@xyflow/react'
 import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
+import { resolvePoSource } from './poSourceConfig'
+import { getDefaultShortName } from './workflowShortName'
 
 const mapToolTypeToLegacyType = (
   toolType: string | undefined,
@@ -262,69 +264,10 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
         )
         connectorId = ''
       } else {
-        // Determine PO Master Source Type
-        let sourceType =
-          data.poMasterSourceType ||
-          data.poMasterType ||
-          data.poMaster?.sourceType ||
-          data.resource ||
-          existingApAgent.resource
-
-        if (!sourceType) {
-          if (
-            data.poMasterSapAccount?.id ||
-            data.sapAccount?.id ||
-            String(data.connectorId || '').startsWith('sap_')
-          ) {
-            sourceType = 'sap'
-          } else if (
-            data.poMasterQbAccount?.id ||
-            data.qbAccount?.id ||
-            String(data.connectorId || '').startsWith('qb_')
-          ) {
-            sourceType = 'quickbooks'
-          } else {
-            sourceType = 'internal'
-          }
-        }
-
-        const normSource = String(sourceType).toUpperCase().trim()
-
-        if (normSource === 'SAP') {
-          resource = 'SAP'
-          connectorId = String(
-            data.poMasterSapAccount?.id ??
-              data.sapAccount?.id ??
-              data.connectorId ??
-              existingApAgent.connectorId ??
-              '',
-          )
-          formId = ''
-        } else if (normSource === 'QUICKBOOKS' || normSource === 'QB') {
-          resource = 'QUICKBOOKS'
-          connectorId = String(
-            data.poMasterQbAccount?.id ??
-              data.qbAccount?.id ??
-              data.connectorId ??
-              existingApAgent.connectorId ??
-              '',
-          )
-          formId = ''
-        } else {
-          resource = 'FORM'
-          const rawForm =
-            data.poMaster?.id ??
-            data.poMaster ??
-            data.formId ??
-            existingApAgent.formId ??
-            ''
-          formId =
-            String(rawForm).startsWith('sap_') ||
-            String(rawForm).startsWith('qb_')
-              ? ''
-              : String(rawForm)
-          connectorId = ''
-        }
+        ;({ connectorId, formId, resource } = resolvePoSource(
+          data,
+          existingApAgent,
+        ))
       }
 
       const fieldScore = Array.isArray(data.weights)
@@ -374,6 +317,15 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       delete settings.matterSource
       delete settings.duplicateDetection
       delete settings.backOrderDetection
+    }
+
+    // Quote Agent "Sync Source": same source keys as the AP Agent's PO source.
+    if (
+      toolType === NODE_TOOL_TYPE.QUOTE_AGENT &&
+      (data.poMasterSourceType || data.poMaster || data.resource)
+    ) {
+      Object.assign(settings, resolvePoSource(data, settings))
+      delete settings.poMaster
     }
 
     if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
@@ -522,6 +474,10 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
         requestTabs: storeState.requestTabs || [],
         requestTitleField: storeState.requestTitleField,
         scheduleReport: {},
+        // Saved as typed; empty falls back to the name's first word.
+        shortName:
+          storeState.workflowShortName?.trim() ||
+          getDefaultShortName(storeState.workflowName),
         slaRules: [],
         slaSettings: {
           emailNotify: true,

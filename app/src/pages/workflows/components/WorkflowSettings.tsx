@@ -1,6 +1,6 @@
 import type { Node } from '@xyflow/react'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
@@ -35,6 +35,7 @@ import {
   normalizeInitiateUsing,
   validateWorkflowSettings,
 } from '../utils/validateWorkflowSettings'
+import { getDefaultShortName } from '../utils/workflowShortName'
 import SettingsSection from './settings/common/SettingsSection'
 import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
@@ -69,6 +70,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     requestTitleField,
     workflowDescription,
     workflowName,
+    workflowShortName,
     workflowStatus,
     setFolder,
     setForm,
@@ -82,8 +84,28 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     settingsValidationErrors,
     setWorkflowDescription,
     setWorkflowName,
+    setWorkflowShortName,
     setWorkflowStatus,
   } = useWorkflowStore((state) => state)
+
+  // Short Name defaults to the name's first word ("Accounts Payable" →
+  // "Accounts") and keeps following the name until the user types their own.
+  // Left empty, it is filled again once the field loses focus.
+  const [isShortNameFocused, setIsShortNameFocused] = useState(false)
+  const lastAutoShortNameRef = useRef('')
+  useEffect(() => {
+    if (isShortNameFocused) return
+    const current = workflowShortName.trim()
+    if (current && current !== lastAutoShortNameRef.current) return
+    const derived = getDefaultShortName(workflowName)
+    lastAutoShortNameRef.current = derived
+    if (derived !== workflowShortName) setWorkflowShortName(derived)
+  }, [
+    isShortNameFocused,
+    setWorkflowShortName,
+    workflowName,
+    workflowShortName,
+  ])
 
   const currentInitiateType = normalizeInitiateUsing(initiateUsing)
   const isFolderRequired =
@@ -326,6 +348,20 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               }
             }}
           />
+
+          {/* Short Name: follows the name's first word until edited */}
+          <div
+            onBlur={() => setIsShortNameFocused(false)}
+            onFocus={() => setIsShortNameFocused(true)}
+          >
+            <Input
+              label='Short Name'
+              placeholder={getDefaultShortName(workflowName) || 'Short name'}
+              value={workflowShortName}
+              clearable
+              onChange={(val) => setWorkflowShortName(val)}
+            />
+          </div>
 
           {/* Description */}
           <div>

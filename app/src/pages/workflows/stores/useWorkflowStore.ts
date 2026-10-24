@@ -93,6 +93,8 @@ type Store = {
   workflowDescription: string
   workflowId: number | null
   workflowName: string
+  /** Short label for the workflow; defaults to the name's first word. */
+  workflowShortName: string
   workflowStatus: 'draft' | 'published'
   closeAddMenu: () => void
   closeBuilder: () => void
@@ -119,6 +121,7 @@ type Store = {
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
+  setWorkflowShortName: (shortName: string) => void
   setWorkflowStatus: (status: 'draft' | 'published') => void
   startTestRun: () => void
   stopTestRun: () => void
@@ -162,6 +165,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     })
     .replace(',', '')
     .replace(/\//g, '-')}`,
+  workflowShortName: '',
   workflowStatus: 'draft',
   closeAddMenu: () =>
     set((state) => ({
@@ -234,6 +238,9 @@ const useWorkflowStore = create<Store>()((set) => ({
       legacyJson.name ||
       apiData?.name ||
       'Imported Workflow'
+    const workflowShortName = String(
+      legacyJson.settings?.general?.shortName ?? '',
+    )
     const workflowDescription =
       legacyJson.settings?.general?.description ||
       legacyJson.description ||
@@ -272,6 +279,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
       workflowName,
+      workflowShortName,
       workflowStatus: isPublished ? 'published' : 'draft',
     })
   },
@@ -313,6 +321,7 @@ const useWorkflowStore = create<Store>()((set) => ({
         })
         .replace(',', '')
         .replace(/\//g, '-')}`,
+      workflowShortName: '',
       workflowStatus: 'draft',
       settingsValidationErrors: null,
     }),
@@ -350,6 +359,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     set({ workflowDescription: description }),
   setWorkflowId: (workflowId) => set({ workflowId }),
   setWorkflowName: (name) => set({ workflowName: name }),
+  setWorkflowShortName: (shortName) => set({ workflowShortName: shortName }),
   setWorkflowStatus: (status) => set({ workflowStatus: status }),
 }))
 
