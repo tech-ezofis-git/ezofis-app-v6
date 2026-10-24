@@ -34,6 +34,7 @@ import {
 } from '@/pages/workflows/utils/nodeToolTypes'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../../../stores/useWorkflowStore'
+import DataIntegrationSection from './DataIntegrationSection'
 import RequestPageVisibilitySetting from './RequestPageVisibilitySetting'
 import SettingsSection from './SettingsSection'
 
@@ -380,6 +381,8 @@ const computeHandlesForNodes = (sourceNode?: Node, targetNode?: Node) => {
   return (
     <>
     {isAgentNode ? <RequestPageVisibilitySetting node={node} /> : null}
+    {/* Every block type can sync its data (configured per block). */}
+    <DataIntegrationSection node={node} />
     <SettingsSection
       icon='lucide:git-branch'
       isOpen={isOpen}

@@ -9,6 +9,7 @@ import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
+import { validateDataSync } from '../../utils/dataIntegrationMapping'
 import { exportWorkflow } from '../../utils/exportWorkflow'
 import {
   getNodeToolType,
@@ -57,6 +58,22 @@ const BuilderHeader = () => {
     }
 
     state.setSettingsValidationErrors(null)
+
+    // Each block's Data Integration must be complete before it is saved.
+    const syncErrors = getNodes().flatMap((node) => {
+      const label = String((node.data as any)?.label || 'Step')
+      return validateDataSync((node.data as any)?.endSync).map(
+        (message) => `${label}: ${message}`,
+      )
+    })
+    if (syncErrors.length > 0) {
+      showToast({
+        message: syncErrors[0],
+        toastTitle: 'Data Integration',
+        variant: 'default',
+      })
+      return
+    }
 
     const isPublished = String(currentStatus).toLowerCase() === 'published'
 
