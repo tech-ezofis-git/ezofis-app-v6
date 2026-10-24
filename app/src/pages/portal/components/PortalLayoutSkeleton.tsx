@@ -17,6 +17,14 @@ export const PortalStatCardsSkeleton = () => (
   </div>
 )
 
+export const PortalStatChipsSkeleton = () => (
+  <div className='flex gap-2 overflow-hidden'>
+    {[0, 1, 2, 3].map((index) => (
+      <Skeleton className='h-9 w-24 shrink-0 rounded-full' key={index} />
+    ))}
+  </div>
+)
+
 export const PortalWizardSkeleton = () => (
   <div className='mx-auto flex w-full max-w-3xl flex-col gap-5'>
     <div className='flex items-end justify-between gap-3'>
