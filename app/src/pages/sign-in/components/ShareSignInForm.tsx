@@ -286,6 +286,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           label={t`Email / Username`}
           leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
           value={email}
+          autoFocus
           disabled
           onChange={() => {}}
         />

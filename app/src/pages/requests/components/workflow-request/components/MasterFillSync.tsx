@@ -13,6 +13,9 @@ interface Props {
   value: any
   readOnly?: boolean
   onChange: (value: any) => void
+  // Reports while the master value is being fetched, so the input can show
+  // its loader.
+  onLoadingChange?: (loading: boolean) => void
 }
 
 /**
@@ -58,6 +61,7 @@ const MasterFillSync = ({
   readOnly,
   value,
   onChange,
+  onLoadingChange,
 }: Props) => {
   const specific = field?.settings?.specific || {}
   const info = getMasterFormInfo(field)
@@ -146,8 +150,8 @@ const MasterFillSync = ({
 
   const conditionsKey = JSON.stringify(conditions)
 
-  const { data: fillValue } = useQuery({
-    enabled: isActive && Boolean(parentKey),
+  const { data: fillValue, isFetching } = useQuery({
+    enabled: isActive && !readOnly && Boolean(parentKey),
     queryKey: [
       'masterFillValue',
       info.masterFormId,
@@ -168,6 +172,10 @@ const MasterFillSync = ({
       return opts[0]?.name ?? ''
     },
   })
+
+  useEffect(() => {
+    onLoadingChange?.(isFetching)
+  }, [isFetching, onLoadingChange])
 
   useEffect(() => {
     if (!isActive || readOnly) return

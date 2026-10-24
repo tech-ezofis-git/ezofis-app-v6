@@ -150,84 +150,102 @@ export default function PortalSubmissionRow({
 
   return (
     <button
-      className='group w-full cursor-pointer bg-surface text-left transition max-md:mb-2.5 max-md:animate-in max-md:rounded-xl max-md:border max-md:border-gray-4 max-md:p-3.5 max-md:shadow-2xs max-md:fade-in max-md:active:scale-[0.99] md:border-t md:border-gray-3 hover:bg-gray-2 active:bg-gray-3'
+      className='group w-full cursor-pointer bg-surface text-left transition max-md:animate-in max-md:rounded-2xl max-md:p-4 max-md:shadow-2xs max-md:fade-in max-md:slide-in-from-bottom-1 max-md:active:scale-[0.98] md:border-t md:border-gray-3 hover:bg-gray-2 active:bg-gray-3'
       type='button'
       onClick={() => onOpen(submission)}
     >
-      {/* Phones: a stacked card with every field, like a mobile app list */}
-      <div className='flex flex-col gap-2.5 md:hidden'>
-        <div className='flex items-start justify-between gap-2'>
-          <div className='flex min-w-0 flex-wrap items-center gap-2'>
-            <span className='text-14 font-bold text-gray-13'>{requestNo}</span>
+      {/* Phones: a lightweight list card — status icon, request no and
+          last-action time up top, then stage, details and who/when */}
+      <div className='flex items-start gap-3 md:hidden'>
+        <span
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform group-active:scale-95',
+            isTerminal
+              ? 'bg-green-3 text-green-11'
+              : 'bg-primary-3 text-primary-11',
+          )}
+        >
+          <Icon
+            className='size-5'
+            name={isTerminal ? 'tabler:circle-check' : 'tabler:progress'}
+          />
+        </span>
+
+        <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+          <div className='flex items-center justify-between gap-2'>
+            <span className='truncate text-15 font-semibold text-gray-13'>
+              {requestNo}
+            </span>
+            {runningLabel ? (
+              <span className='inline-flex shrink-0 items-center gap-1 text-12 font-medium whitespace-nowrap text-orange-11'>
+                <Icon className='size-3.5 text-orange-9' name='tabler:clock' />
+                {runningLabel}
+              </span>
+            ) : null}
+          </div>
+
+          {dynamicFields.length > 0 ? (
+            <div className='flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-13 text-gray-11'>
+              {dynamicFields.map((col, idx) => (
+                <span className='flex min-w-0 items-center gap-1.5' key={col.id}>
+                  {idx > 0 && <span className='text-gray-6'>·</span>}
+                  <span className='truncate'>{col.renderCell?.(row) ?? '-'}</span>
+                </span>
+              ))}
+            </div>
+          ) : submission.title !== submission.requestNo ? (
+            <span className='truncate text-13 text-gray-11'>
+              {submission.title}
+            </span>
+          ) : null}
+
+          <div className='flex flex-wrap items-center gap-1.5'>
             <GenericStagePill
               currentLabel={currentLabel}
               isTerminal={isTerminal}
               previousLabel={previousLabel}
             />
-          </div>
-          <Icon
-            className='mt-0.5 size-4 shrink-0 text-gray-6 transition-colors group-hover:text-gray-9'
-            name='tabler:chevron-right'
-          />
-        </div>
-
-        {dynamicFields.length > 0 ? (
-          <div className='flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-12 font-medium text-gray-10'>
-            {dynamicFields.map((col, idx) => (
-              <span className='flex min-w-0 items-center gap-1.5' key={col.id}>
-                {idx > 0 && <span className='text-gray-6'>·</span>}
-                <span className='truncate'>{col.renderCell?.(row) ?? '-'}</span>
-              </span>
-            ))}
-          </div>
-        ) : submission.title !== submission.requestNo ? (
-          <span className='truncate text-12 font-medium text-gray-10'>
-            {submission.title}
-          </span>
-        ) : null}
-
-        {lastActionLabel ? (
-          <span
-            className={cn(
-              'inline-flex h-6 w-fit max-w-full items-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-              lastActionTone(lastActionLabel),
-            )}
-          >
-            <span className='size-1.5 shrink-0 rounded-full bg-current' />
-            <span className='truncate'>{lastActionLabel}</span>
-          </span>
-        ) : null}
-
-        <div className='flex flex-col gap-1.5 border-t border-gray-3 pt-2.5 text-12'>
-          {raisedBy ? (
-            <div className='flex min-w-0 items-center gap-1.5 font-medium text-gray-11'>
-              <Icon
-                className='size-3.5 shrink-0 text-gray-8'
-                name='tabler:user'
-              />
-              <span className='truncate'>{raisedBy}</span>
-            </div>
-          ) : null}
-          <div className='flex items-center justify-between gap-2'>
-            {startedLabel ? (
-              <span className='flex min-w-0 items-center gap-1 text-11 text-gray-9'>
-                <Icon
-                  className='size-3 shrink-0 text-gray-7'
-                  name='tabler:calendar'
-                />
-                <span className='truncate'>{startedLabel}</span>
-              </span>
-            ) : (
-              <span />
-            )}
-            {runningLabel ? (
-              <span className='inline-flex shrink-0 items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2 py-0.5 text-11 font-semibold whitespace-nowrap text-orange-11'>
-                <Icon className='size-3 text-orange-9' name='tabler:clock' />
-                <span>{runningLabel}</span>
+            {lastActionLabel ? (
+              <span
+                className={cn(
+                  'inline-flex h-[22px] max-w-full items-center gap-1.5 rounded-md px-2 text-11 font-semibold',
+                  lastActionTone(lastActionLabel),
+                )}
+              >
+                <span className='size-1.5 shrink-0 rounded-full bg-current' />
+                <span className='truncate'>{lastActionLabel}</span>
               </span>
             ) : null}
           </div>
+
+          {raisedBy || startedLabel ? (
+            <div className='flex min-w-0 flex-col gap-0.5 text-12 text-gray-9'>
+              {raisedBy ? (
+                <span className='flex min-w-0 items-center gap-1.5'>
+                  <Icon
+                    className='size-3.5 shrink-0 text-gray-8'
+                    name='tabler:user'
+                  />
+                  <span className='truncate'>{raisedBy}</span>
+                </span>
+              ) : null}
+              {startedLabel ? (
+                <span className='flex min-w-0 items-center gap-1.5'>
+                  <Icon
+                    className='size-3.5 shrink-0 text-gray-8'
+                    name='tabler:calendar'
+                  />
+                  <span className='truncate'>{startedLabel}</span>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
+
+        <Icon
+          className='mt-2.5 size-4 shrink-0 text-gray-6 transition-all group-hover:translate-x-0.5 group-hover:text-gray-9'
+          name='tabler:chevron-right'
+        />
       </div>
 
       {/* Tablets and up: the one-line grid */}

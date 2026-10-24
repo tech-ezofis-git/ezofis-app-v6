@@ -274,6 +274,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
         placeholder={`${isWhiteLabel ? 'hello@exmaple.com' : 'hello@ezofis.com'}`}
         value={email}
+        autoFocus
         onChange={(v) => {
           setEmail(v)
           clearError()

@@ -683,12 +683,12 @@ msgid "A 6-digit verification code has been sent to {targetEmail}."
 msgstr "A 6-digit verification code has been sent to {targetEmail}."
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:601
-msgid "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
-msgstr "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
+#~ msgid "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
+#~ msgstr "A dashboard has not been configured for the \"{repositoryName}\" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity."
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:600
-msgid "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
-msgstr "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
+#~ msgid "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
+#~ msgstr "A dashboard has not been configured for the \"{repositoryName}\" workflow yet. Build a dashboard to track requests, statuses, and performance analytics."
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:774
 msgid "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
@@ -783,13 +783,14 @@ msgstr "Action"
 msgid "Action needed"
 msgstr "Action needed"
 
-#: src/pages/portal/components/PortalHome.tsx:91
-#: src/pages/portal/components/PortalHome.tsx:148
+#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:153
+#: src/pages/portal/components/PortalHome.tsx:158
 msgid "Action Required"
 msgstr "Action Required"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
-#: src/pages/forms/FormEntriesPage.tsx:2164
+#: src/pages/forms/FormEntriesPage.tsx:2192
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
@@ -866,15 +867,15 @@ msgid "Actual vs projected"
 msgstr "Actual vs projected"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:296
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:293
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:296
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:516
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:299
 msgid "Add"
 msgstr "Add"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1459
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1502
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1554
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1470
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1565
 msgid "Add \"{query}\""
 msgstr "Add \"{query}\""
 
@@ -960,8 +961,8 @@ msgstr "Add condition"
 msgid "Add connection"
 msgstr "Add connection"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:312
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:532
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:315
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:535
 msgid "Add custom option"
 msgstr "Add custom option"
 
@@ -970,7 +971,7 @@ msgstr "Add custom option"
 msgid "Add Document Rule"
 msgstr "Add Document Rule"
 
-#: src/pages/forms/FormEntriesPage.tsx:2995
+#: src/pages/forms/FormEntriesPage.tsx:3023
 msgid "Add Entry"
 msgstr "Add Entry"
 
@@ -1220,7 +1221,7 @@ msgid "AI Context"
 msgstr "AI Context"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1005
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:715
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:717
 msgid "AI Dashboard Designer"
 msgstr "AI Dashboard Designer"
 
@@ -1383,6 +1384,7 @@ msgstr "Aligning CSV/XLSX headers with database mapping schema."
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
+#: src/pages/portal/components/PortalHome.tsx:126
 #: src/pages/requests/components/InboxList.tsx:2045
 #: src/pages/search/SearchPage.tsx:309
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
@@ -1460,7 +1462,7 @@ msgstr "All folders"
 msgid "All Mandatory fields are filled."
 msgstr "All Mandatory fields are filled."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:543
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:546
 msgid "All options must be checked to fulfill requirements."
 msgstr "All options must be checked to fulfill requirements."
 
@@ -1476,12 +1478,12 @@ msgstr "All purchase order quantities match this invoice. No outstanding back or
 msgid "All search results for “{searchLabel}”"
 msgstr "All search results for “{searchLabel}”"
 
-#: src/pages/portal/components/PortalHome.tsx:88
-#: src/pages/portal/components/PortalHome.tsx:424
+#: src/pages/portal/components/PortalHome.tsx:89
+#: src/pages/portal/components/PortalHome.tsx:534
 msgid "All Status"
 msgstr "All Status"
 
-#: src/pages/portal/components/PortalHome.tsx:396
+#: src/pages/portal/components/PortalHome.tsx:490
 msgid "All Submissions"
 msgstr "All Submissions"
 
@@ -1541,7 +1543,7 @@ msgid "An error occurred during indexing."
 msgstr "An error occurred during indexing."
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2696
+#: src/pages/requests/components/request/Request.tsx:2738
 msgid "An error occurred: {0}"
 msgstr "An error occurred: {0}"
 
@@ -1717,7 +1719,7 @@ msgid "Apply"
 msgstr "Apply"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1087
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:762
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:764
 msgid "Apply & Preview"
 msgstr "Apply & Preview"
 
@@ -1754,8 +1756,9 @@ msgid "Approve selected"
 msgstr "Approve selected"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2665
-#: src/pages/portal/components/PortalHome.tsx:89
-#: src/pages/portal/components/PortalHome.tsx:134
+#: src/pages/portal/components/PortalHome.tsx:90
+#: src/pages/portal/components/PortalHome.tsx:135
+#: src/pages/portal/components/PortalHome.tsx:140
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
@@ -1866,11 +1869,11 @@ msgstr "Are you sure you want to export 1 selected staged file?"
 #~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 #~ msgstr "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 
-#: src/pages/forms/FormEntriesPage.tsx:3020
+#: src/pages/forms/FormEntriesPage.tsx:3048
 msgid "Are you sure you want to move"
 msgstr "Are you sure you want to move"
 
-#: src/pages/forms/FormEntriesPage.tsx:3028
+#: src/pages/forms/FormEntriesPage.tsx:3056
 msgid "Are you sure you want to permanently delete"
 msgstr "Are you sure you want to permanently delete"
 
@@ -1966,7 +1969,7 @@ msgid "Attachment"
 msgstr "Attachment"
 
 #: src/pages/portal/components/PortalDetail.tsx:403
-#: src/pages/portal/components/PortalShell.tsx:36
+#: src/pages/portal/components/PortalShell.tsx:38
 #: src/pages/portal/components/PortalWizard.tsx:1408
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
@@ -2149,8 +2152,8 @@ msgstr "Awaiting Verification"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
-#: src/pages/portal/components/PortalShell.tsx:172
-#: src/pages/portal/components/PortalShell.tsx:208
+#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:228
 #: src/pages/portal/components/PortalWizard.tsx:1275
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
@@ -2199,7 +2202,7 @@ msgstr "Back to {parentLabel}"
 msgid "Back to Configuration"
 msgstr "Back to Configuration"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:798
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:800
 msgid "Back to Designer"
 msgstr "Back to Designer"
 
@@ -2208,7 +2211,7 @@ msgstr "Back to Designer"
 msgid "Back to Document"
 msgstr "Back to Document"
 
-#: src/pages/forms/FormEntriesPage.tsx:2447
+#: src/pages/forms/FormEntriesPage.tsx:2475
 msgid "Back to Entries"
 msgstr "Back to Entries"
 
@@ -2224,8 +2227,8 @@ msgstr "Back to folder"
 msgid "Back to folder explorer"
 msgstr "Back to folder explorer"
 
-#: src/pages/forms/FormEntriesPage.tsx:2369
-#: src/pages/forms/FormEntriesPage.tsx:2973
+#: src/pages/forms/FormEntriesPage.tsx:2397
+#: src/pages/forms/FormEntriesPage.tsx:3001
 msgid "Back to Forms"
 msgstr "Back to Forms"
 
@@ -2233,7 +2236,7 @@ msgstr "Back to Forms"
 msgid "Back to PO Setup"
 msgstr "Back to PO Setup"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:754
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:756
 msgid "Back to Prompt"
 msgstr "Back to Prompt"
 
@@ -2267,7 +2270,7 @@ msgstr "Back to sign in"
 msgid "Back to versions"
 msgstr "Back to versions"
 
-#: src/pages/portal/components/PortalHome.tsx:391
+#: src/pages/portal/components/PortalHome.tsx:485
 msgid "Back to workflows"
 msgstr "Back to workflows"
 
@@ -2375,7 +2378,7 @@ msgstr "Breadcrumb"
 msgid "browse"
 msgstr "browse"
 
-#: src/pages/forms/FormEntriesPage.tsx:2986
+#: src/pages/forms/FormEntriesPage.tsx:3014
 msgid "Browse"
 msgstr "Browse"
 
@@ -2443,7 +2446,7 @@ msgstr "Built-in secure storage"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Bulk action \"{0}\" applied to {1} requests successfully!"
 
-#: src/pages/forms/FormEntriesPage.tsx:3103
+#: src/pages/forms/FormEntriesPage.tsx:3131
 msgid "Bulk Import"
 msgstr "Bulk Import"
 
@@ -2543,7 +2546,7 @@ msgstr "Can View"
 #~ msgstr "Can't upload: this workflow has no repository configured."
 
 #: src/components/common/LeaveGuardDialog.tsx:89
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:687
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:689
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:108
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:99
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
@@ -2561,8 +2564,8 @@ msgstr "Can View"
 #: src/pages/folders/components/Upload/Upload.tsx:5163
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
 #: src/pages/forms/FormEntriesPage.tsx:1025
-#: src/pages/forms/FormEntriesPage.tsx:2946
-#: src/pages/forms/FormEntriesPage.tsx:3045
+#: src/pages/forms/FormEntriesPage.tsx:2974
+#: src/pages/forms/FormEntriesPage.tsx:3073
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1319
@@ -2572,8 +2575,8 @@ msgstr "Can View"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1570
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1166
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:302
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:522
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:305
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:525
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:765
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:1025
 #: src/pages/requests/RequestsPage.tsx:1873
@@ -2727,7 +2730,7 @@ msgid "Changed your mind?"
 msgstr "Changed your mind?"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1055
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:744
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:746
 msgid "Charts"
 msgstr "Charts"
 
@@ -2838,7 +2841,7 @@ msgstr "Choose a version"
 msgid "Choose a workflow to report on..."
 msgstr "Choose a workflow to report on..."
 
-#: src/pages/portal/components/PortalHome.tsx:278
+#: src/pages/portal/components/PortalHome.tsx:372
 msgid "Choose a workflow to view its submissions."
 msgstr "Choose a workflow to view its submissions."
 
@@ -2870,7 +2873,7 @@ msgstr "Choose fields"
 #~ msgid "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 #~ msgstr "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 
-#: src/pages/forms/FormEntriesPage.tsx:2852
+#: src/pages/forms/FormEntriesPage.tsx:2880
 msgid "Choose File"
 msgstr "Choose File"
 
@@ -3277,7 +3280,7 @@ msgstr ""
 #~ msgstr "Coming Soon"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
-#: src/pages/portal/components/PortalShell.tsx:42
+#: src/pages/portal/components/PortalShell.tsx:44
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
 #: src/pages/requests/components/request/components/Header.tsx:938
@@ -3316,7 +3319,7 @@ msgstr "Complete each stage, then continue"
 msgid "Complete editing session"
 msgstr "Complete editing session"
 
-#: src/pages/forms/FormEntriesPage.tsx:2466
+#: src/pages/forms/FormEntriesPage.tsx:2494
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Complete required form information using the metadata-driven enterprise canvas below."
 
@@ -3432,7 +3435,7 @@ msgstr ""
 msgid "Configure ERP or system integrations later."
 msgstr "Configure ERP or system integrations later."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:608
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:610
 msgid "Configure Folder Dashboard"
 msgstr "Configure Folder Dashboard"
 
@@ -3456,7 +3459,7 @@ msgstr "Configure permissions"
 #~ msgid "Configure user account details, business hierarchy, and permissions"
 #~ msgstr "Configure user account details, business hierarchy, and permissions"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:607
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:609
 msgid "Configure Workflow Dashboard"
 msgstr "Configure Workflow Dashboard"
 
@@ -3488,8 +3491,8 @@ msgstr "Confirm and activate the policy"
 msgid "Confirm Decline"
 msgstr "Confirm Decline"
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:306
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:320
+#: src/pages/sign-in/components/ShareSignInForm.tsx:307
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:321
 msgid "Confirm Password"
 msgstr "Confirm Password"
 
@@ -3655,18 +3658,18 @@ msgstr "Contains"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1119
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:90
-#: src/pages/sign-in/components/SignInForm.tsx:1048
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:336
+#: src/pages/sign-in/components/SignInForm.tsx:1050
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:337
 msgid "Continue"
 msgstr "Continue"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1102
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:777
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:779
 msgid "Continue from configuration to generate KPIs and charts from your prompt."
 msgstr "Continue from configuration to generate KPIs and charts from your prompt."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:986
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:696
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:698
 msgid "Continue to Dashboard Designer"
 msgstr "Continue to Dashboard Designer"
 
@@ -3962,8 +3965,8 @@ msgid "Created by"
 msgstr "Created by"
 
 #: src/pages/folders/components/FolderTable.tsx:520
-#: src/pages/forms/FormEntriesPage.tsx:2150
-#: src/pages/forms/FormEntriesPage.tsx:3122
+#: src/pages/forms/FormEntriesPage.tsx:2178
+#: src/pages/forms/FormEntriesPage.tsx:3150
 #: src/pages/forms/FormsPage.tsx:259
 #: src/pages/forms/FormsPage.tsx:651
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2359
@@ -3974,7 +3977,7 @@ msgstr "Created by"
 msgid "Created By"
 msgstr "Created By"
 
-#: src/pages/forms/FormEntriesPage.tsx:3130
+#: src/pages/forms/FormEntriesPage.tsx:3158
 #: src/pages/forms/FormsPage.tsx:662
 #: src/pages/settings/components/AuditMonitoring.tsx:361
 #: src/pages/workflows/components/Table.tsx:510
@@ -4169,11 +4172,11 @@ msgstr "Dashboard Configuration"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:810
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1183
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:839
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:841
 msgid "Dashboard preview"
 msgstr "Dashboard preview"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:789
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:791
 msgid "Dashboard Preview"
 msgstr "Dashboard Preview"
 
@@ -4442,8 +4445,8 @@ msgstr "Delete Group"
 msgid "Delete Menu"
 msgstr "Delete Menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2210
-#: src/pages/forms/FormEntriesPage.tsx:3063
+#: src/pages/forms/FormEntriesPage.tsx:2238
+#: src/pages/forms/FormEntriesPage.tsx:3091
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
@@ -4567,12 +4570,12 @@ msgstr "Department & business hierarchy"
 msgid "Describe structure or fields…"
 msgstr "Describe structure or fields…"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:637
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:639
 msgid "Describe the dashboard you want to create."
 msgstr "Describe the dashboard you want to create."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:976
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:676
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:678
 msgid "Describe the dashboard you want to create..."
 msgstr "Describe the dashboard you want to create..."
 
@@ -5116,7 +5119,7 @@ msgstr "Draft"
 msgid "Draft Files"
 msgstr "Draft Files"
 
-#: src/pages/forms/FormEntriesPage.tsx:2362
+#: src/pages/forms/FormEntriesPage.tsx:2390
 msgid "Draft forms do not have an entries page. Publish the form to view and collect entries."
 msgstr "Draft forms do not have an entries page. Publish the form to view and collect entries."
 
@@ -5398,7 +5401,7 @@ msgstr "Earlier drafts"
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:550
 #: src/pages/dashboard/DashboardPage.tsx:407
 #: src/pages/dashboard/DashboardPage.tsx:412
-#: src/pages/forms/FormEntriesPage.tsx:2187
+#: src/pages/forms/FormEntriesPage.tsx:2215
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
@@ -5479,11 +5482,11 @@ msgstr "Edit Folder Security Policy"
 #~ msgid "Edit Folder Setup"
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2375
+#: src/pages/forms/FormEntriesPage.tsx:2403
 msgid "Edit Form"
 msgstr "Edit Form"
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "Edit Form Entry"
 msgstr "Edit Form Entry"
 
@@ -5589,13 +5592,13 @@ msgstr "Effective Date"
 #: src/pages/settings/components/RolesPermissions.tsx:2093
 #: src/pages/settings/components/RolesPermissions.tsx:2095
 #: src/pages/sign-in/components/SignInForm.tsx:979
-#: src/pages/sign-in/components/SignInForm.tsx:1029
+#: src/pages/sign-in/components/SignInForm.tsx:1030
 msgid "Email"
 msgstr "Email"
 
 #: src/pages/portal/components/ClassicPortalLogin.tsx:108
 #: src/pages/sign-in/components/ShareSignInForm.tsx:286
-#: src/pages/sign-in/components/SignInForm.tsx:1104
+#: src/pages/sign-in/components/SignInForm.tsx:1107
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:300
 msgid "Email / Username"
 msgstr "Email / Username"
@@ -5641,8 +5644,8 @@ msgstr "empty"
 msgid "Empty"
 msgstr "Empty"
 
-#: src/pages/forms/FormEntriesPage.tsx:2130
-#: src/pages/forms/FormEntriesPage.tsx:2140
+#: src/pages/forms/FormEntriesPage.tsx:2158
+#: src/pages/forms/FormEntriesPage.tsx:2168
 msgid "Empty form field"
 msgstr "Empty form field"
 
@@ -5770,7 +5773,7 @@ msgstr "Enter phone number"
 msgid "Enter Portal Name"
 msgstr "Enter Portal Name"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:642
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:644
 msgid "Enter Prompt"
 msgstr "Enter Prompt"
 
@@ -5841,7 +5844,7 @@ msgstr "Enterprise-grade encryption at rest"
 msgid "Entity supplying goods"
 msgstr "Entity supplying goods"
 
-#: src/pages/forms/FormEntriesPage.tsx:3171
+#: src/pages/forms/FormEntriesPage.tsx:3199
 msgid "Entries"
 msgstr "Entries"
 
@@ -6125,7 +6128,7 @@ msgstr "Extracting data from document..."
 #: src/pages/portal/components/PortalWizard.tsx:1417
 #: src/pages/portal/components/PortalWizard.tsx:1424
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:198
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1887
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1898
 msgid "Extracting data from the document…"
 msgstr "Extracting data from the document…"
 
@@ -6381,7 +6384,7 @@ msgid "Failed to proceed request:"
 msgstr "Failed to proceed request:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2487
+#: src/pages/requests/components/request/Request.tsx:2529
 msgid "Failed to proceed request: {0}"
 msgstr "Failed to proceed request: {0}"
 
@@ -6407,7 +6410,7 @@ msgid "Failed to save report"
 msgstr "Failed to save report"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2634
+#: src/pages/requests/components/request/Request.tsx:2676
 msgid "Failed to save request: {0}"
 msgstr "Failed to save request: {0}"
 
@@ -6431,7 +6434,7 @@ msgstr "Failed to share file"
 msgid "Failed to share report"
 msgstr "Failed to share report"
 
-#: src/pages/requests/components/request/Request.tsx:2984
+#: src/pages/requests/components/request/Request.tsx:3026
 msgid "Failed to share request"
 msgstr "Failed to share request"
 
@@ -6456,7 +6459,7 @@ msgid "Failed to start workflow"
 msgstr "Failed to start workflow"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2635
+#: src/pages/requests/components/request/Request.tsx:2677
 msgid "Failed to submit request: {0}"
 msgstr "Failed to submit request: {0}"
 
@@ -6676,7 +6679,7 @@ msgid "File Upload"
 msgstr "File Upload"
 
 #: src/pages/portal/components/PortalWizard.tsx:868
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1813
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1824
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr "File upload isn't available for this request. Please contact your administrator."
 
@@ -6995,11 +6998,11 @@ msgstr "Forecast EOM usage"
 msgid "Forgot Password"
 msgstr "Forgot Password"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1161
+#: src/pages/sign-in/components/SignInForm.tsx:1165
 msgid "Forgot password?"
 msgstr "Forgot password?"
 
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 msgid "Form"
 msgstr "Form"
@@ -7032,7 +7035,7 @@ msgstr "Form deleted successfully"
 msgid "Form Entries"
 msgstr "Form Entries"
 
-#: src/pages/forms/FormEntriesPage.tsx:2360
+#: src/pages/forms/FormEntriesPage.tsx:2388
 msgid "Form is in Draft"
 msgstr "Form is in Draft"
 
@@ -7164,12 +7167,12 @@ msgid "Generated by AI"
 msgstr "Generated by AI"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1014
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:724
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:726
 msgid "Generating dashboard schema..."
 msgstr "Generating dashboard schema..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:967
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:667
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:669
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2310
 msgid "Generating description…"
 msgstr "Generating description…"
@@ -7559,7 +7562,7 @@ msgstr "Historical Match & Integrity Results"
 #~ msgid "Historical Match Results"
 #~ msgstr "Historical Match Results"
 
-#: src/pages/portal/components/PortalShell.tsx:50
+#: src/pages/portal/components/PortalShell.tsx:52
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
@@ -7721,7 +7724,7 @@ msgid "Inactive"
 msgstr "Inactive"
 
 #: src/pages/requests/components/request/components/Header.tsx:354
-#: src/pages/requests/components/request/Request.tsx:1929
+#: src/pages/requests/components/request/Request.tsx:1938
 #: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -8123,7 +8126,7 @@ msgstr "Invoiced Qty"
 #~ msgid "invoices"
 #~ msgstr "invoices"
 
-#: src/pages/requests/components/request/Request.tsx:1928
+#: src/pages/requests/components/request/Request.tsx:1937
 #: src/pages/requests/RequestsPage.tsx:329
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -8216,7 +8219,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "ITEM DESCRIPTION"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
-#: src/pages/forms/FormEntriesPage.tsx:2107
+#: src/pages/forms/FormEntriesPage.tsx:2135
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
 msgid "items"
 msgstr "items"
@@ -8265,7 +8268,7 @@ msgstr "Kanban View"
 msgid "Keep draft & leave"
 msgstr "Keep draft & leave"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1151
+#: src/pages/sign-in/components/SignInForm.tsx:1155
 msgid "Keep me logged in"
 msgstr ""
 
@@ -8284,7 +8287,7 @@ msgid "Kindly draw the signature"
 msgstr "Kindly draw the signature"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1025
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:735
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:737
 msgid "KPIs"
 msgstr "KPIs"
 
@@ -8396,11 +8399,11 @@ msgstr "Last Name"
 #~ msgid "Launch Workflow"
 #~ msgstr "Launch Workflow"
 
-#: src/pages/requests/components/request/Request.tsx:2095
+#: src/pages/requests/components/request/Request.tsx:2131
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr "Leave {site}? Changes you made may not be saved."
 
-#: src/pages/requests/components/request/Request.tsx:2094
+#: src/pages/requests/components/request/Request.tsx:2130
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr "Leave {site}? Request {requestNo} may not be saved."
 
@@ -8607,7 +8610,7 @@ msgstr "Lists every matched document for confirmation before the action runs."
 #~ msgid "LIVE"
 #~ msgstr "LIVE"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:786
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:788
 msgid "Live dashboard generated from your selected widgets."
 msgstr "Live dashboard generated from your selected widgets."
 
@@ -8696,7 +8699,7 @@ msgid "Loading History..."
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1177
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:829
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:831
 msgid "Loading live dashboard data..."
 msgstr "Loading live dashboard data..."
 
@@ -8712,8 +8715,8 @@ msgstr "Loading notifications..."
 msgid "Loading older comments..."
 msgstr "Loading older comments..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:207
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:427
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:210
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:430
 msgid "Loading options…"
 msgstr "Loading options…"
 
@@ -9459,7 +9462,7 @@ msgstr "Modified Date"
 msgid "Modify document content"
 msgstr "Modify document content"
 
-#: src/pages/forms/FormEntriesPage.tsx:2467
+#: src/pages/forms/FormEntriesPage.tsx:2495
 msgid "Modify existing form response answers and save changes."
 msgstr "Modify existing form response answers and save changes."
 
@@ -9528,7 +9531,7 @@ msgstr "More than one line price differs from the purchase order. Compare each l
 msgid "Move down"
 msgstr "Move down"
 
-#: src/pages/forms/FormEntriesPage.tsx:3014
+#: src/pages/forms/FormEntriesPage.tsx:3042
 msgid "Move Entry to Trash"
 msgstr "Move Entry to Trash"
 
@@ -9549,8 +9552,8 @@ msgstr "Move right"
 msgid "Move to matched items"
 msgstr "Move to matched items"
 
-#: src/pages/forms/FormEntriesPage.tsx:2193
-#: src/pages/forms/FormEntriesPage.tsx:3062
+#: src/pages/forms/FormEntriesPage.tsx:2221
+#: src/pages/forms/FormEntriesPage.tsx:3090
 msgid "Move to Trash"
 msgstr "Move to Trash"
 
@@ -9593,7 +9596,7 @@ msgstr "My Account"
 msgid "My Sign"
 msgstr "My Sign"
 
-#: src/pages/portal/components/PortalHome.tsx:206
+#: src/pages/portal/components/PortalHome.tsx:235
 msgid "My Submissions"
 msgstr "My Submissions"
 
@@ -9611,7 +9614,7 @@ msgstr "N/A (No value needed)"
 #: src/pages/folders/components/DocumentsListView.tsx:538
 #: src/pages/folders/components/FolderTable.tsx:480
 #: src/pages/folders/components/FolderTable.tsx:1360
-#: src/pages/forms/FormEntriesPage.tsx:3113
+#: src/pages/forms/FormEntriesPage.tsx:3141
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
 #: src/pages/reports/components/ReportsListView.tsx:118
@@ -9773,7 +9776,7 @@ msgstr "New Field"
 msgid "New Form"
 msgstr "New Form"
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "New Form Entry"
 msgstr "New Form Entry"
 
@@ -9810,7 +9813,8 @@ msgstr "New Request"
 #~ msgid "New Role Setup"
 #~ msgstr "New Role Setup"
 
-#: src/pages/portal/components/PortalHome.tsx:217
+#: src/pages/portal/components/PortalHome.tsx:246
+#: src/pages/portal/components/PortalHome.tsx:610
 #: src/pages/portal/components/PortalPicker.tsx:54
 #: src/pages/portal/components/PortalWizard.tsx:971
 #: src/pages/portal/PortalPage.tsx:485
@@ -9969,7 +9973,7 @@ msgstr "No compliance assessment available."
 msgid "No consumption data for this period."
 msgstr "No consumption data for this period."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:610
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:612
 msgid "No Dashboard Configured"
 msgstr "No Dashboard Configured"
 
@@ -10169,7 +10173,7 @@ msgstr ""
 msgid "No history found"
 msgstr "No history found"
 
-#: src/pages/requests/components/request/Request.tsx:2960
+#: src/pages/requests/components/request/Request.tsx:3002
 msgid "No instance ID available to share"
 msgstr "No instance ID available to share"
 
@@ -10290,7 +10294,7 @@ msgstr "No portals yet"
 msgid "No preview rows available in this file."
 msgstr "No preview rows available in this file."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:843
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:845
 msgid "No preview yet"
 msgstr "No preview yet"
 
@@ -10384,15 +10388,15 @@ msgstr "No signature place was assigned to your account on this document."
 msgid "No signers"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:457
+#: src/pages/portal/components/PortalHome.tsx:567
 msgid "No submissions match your search."
 msgstr "No submissions match your search."
 
-#: src/pages/portal/components/PortalHome.tsx:460
+#: src/pages/portal/components/PortalHome.tsx:570
 msgid "No submissions yet."
 msgstr "No submissions yet."
 
-#: src/pages/portal/components/PortalHome.tsx:459
+#: src/pages/portal/components/PortalHome.tsx:569
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr "No submissions yet. Start a new submission to see it here."
 
@@ -10497,7 +10501,7 @@ msgstr "No values were found in the document for: {wantedNames}"
 #~ msgid "No workflows are connected to this portal yet."
 #~ msgstr "No workflows are connected to this portal yet."
 
-#: src/pages/portal/components/PortalHome.tsx:302
+#: src/pages/portal/components/PortalHome.tsx:396
 #: src/pages/portal/components/PortalPicker.tsx:83
 msgid "No workflows match your search."
 msgstr "No workflows match your search."
@@ -10646,7 +10650,7 @@ msgid "October"
 msgstr "October"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:298
-#: src/pages/portal/components/PortalHome.tsx:399
+#: src/pages/portal/components/PortalHome.tsx:493
 msgid "of"
 msgstr "of"
 
@@ -10702,7 +10706,7 @@ msgid "Only visible to you"
 msgstr "Only visible to you"
 
 #: src/pages/folders/components/FolderTable.tsx:560
-#: src/pages/portal/components/PortalHome.tsx:360
+#: src/pages/portal/components/PortalHome.tsx:454
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:449
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
@@ -10830,9 +10834,9 @@ msgstr "or"
 
 #: src/pages/portal/components/ClassicPortalLogin.tsx:455
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:602
-#: src/pages/sign-in/components/ShareSignInForm.tsx:355
-#: src/pages/sign-in/components/SignInForm.tsx:1181
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:374
+#: src/pages/sign-in/components/ShareSignInForm.tsx:356
+#: src/pages/sign-in/components/SignInForm.tsx:1185
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:375
 msgid "Or"
 msgstr "Or"
 
@@ -11003,13 +11007,13 @@ msgstr "Partially verified"
 #: src/pages/settings/components/ManageUser.tsx:2070
 #: src/pages/settings/components/ManageUser.tsx:2468
 #: src/pages/settings/components/ManageUser.tsx:2473
-#: src/pages/sign-in/components/ShareSignInForm.tsx:296
-#: src/pages/sign-in/components/ShareSignInForm.tsx:330
-#: src/pages/sign-in/components/SignInForm.tsx:997
-#: src/pages/sign-in/components/SignInForm.tsx:1084
-#: src/pages/sign-in/components/SignInForm.tsx:1122
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:310
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:347
+#: src/pages/sign-in/components/ShareSignInForm.tsx:297
+#: src/pages/sign-in/components/ShareSignInForm.tsx:331
+#: src/pages/sign-in/components/SignInForm.tsx:998
+#: src/pages/sign-in/components/SignInForm.tsx:1087
+#: src/pages/sign-in/components/SignInForm.tsx:1126
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:311
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:348
 msgid "Password"
 msgstr "Password"
 
@@ -11136,8 +11140,9 @@ msgid "pending"
 msgstr "pending"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2669
-#: src/pages/portal/components/PortalHome.tsx:90
-#: src/pages/portal/components/PortalHome.tsx:141
+#: src/pages/portal/components/PortalHome.tsx:91
+#: src/pages/portal/components/PortalHome.tsx:144
+#: src/pages/portal/components/PortalHome.tsx:149
 #: src/pages/settings/components/ManageUser.tsx:1427
 #: src/pages/settings/components/ManageUser.tsx:2576
 msgid "Pending"
@@ -11179,7 +11184,7 @@ msgstr "Perfect PO validation."
 msgid "Permanent Delete"
 msgstr "Permanent Delete"
 
-#: src/pages/forms/FormEntriesPage.tsx:3015
+#: src/pages/forms/FormEntriesPage.tsx:3043
 msgid "Permanently Delete Entry"
 msgstr "Permanently Delete Entry"
 
@@ -11275,11 +11280,11 @@ msgstr "Place Signature"
 #~ msgid "Placeholder"
 #~ msgstr "Placeholder"
 
-#: src/pages/forms/FormEntriesPage.tsx:2126
+#: src/pages/forms/FormEntriesPage.tsx:2154
 msgid "Placeholder Column 1"
 msgstr "Placeholder Column 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:2136
+#: src/pages/forms/FormEntriesPage.tsx:2164
 msgid "Placeholder Column 2"
 msgstr "Placeholder Column 2"
 
@@ -11339,7 +11344,7 @@ msgstr "Please assign a folder for all files before proceeding."
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Please attach a file to continue."
 
-#: src/pages/requests/components/request/Request.tsx:2346
+#: src/pages/requests/components/request/Request.tsx:2388
 msgid "Please attach at least one file before continuing."
 msgstr "Please attach at least one file before continuing."
 
@@ -11356,12 +11361,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr "Please click 'Verify' to validate this supplier and ensure vendor compliance."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2335
+#: src/pages/requests/components/request/Request.tsx:2377
 msgid "Please complete \"{0}\" before continuing."
 msgstr "Please complete \"{0}\" before continuing."
 
 #: src/pages/portal/components/PortalWizard.tsx:1055
-#: src/pages/requests/components/request/Request.tsx:2373
+#: src/pages/requests/components/request/Request.tsx:2415
 msgid "Please complete all required fields before continuing."
 msgstr "Please complete all required fields before continuing."
 
@@ -11395,7 +11400,7 @@ msgstr "Please complete these required fields: {0} and {1}."
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr "Please complete these required fields: {rest}, and {last}."
 
-#: src/pages/requests/components/request/Request.tsx:2354
+#: src/pages/requests/components/request/Request.tsx:2396
 msgid "Please confirm your signature before continuing."
 msgstr "Please confirm your signature before continuing."
 
@@ -12487,7 +12492,7 @@ msgstr "Quote 1 → Quote 3"
 msgid "Quote changed after the PDF was generated"
 msgstr "Quote changed after the PDF was generated"
 
-#: src/pages/requests/components/request/Request.tsx:3037
+#: src/pages/requests/components/request/Request.tsx:3079
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr "Quote data has changed. Regenerate the PDF before you continue."
 
@@ -12586,7 +12591,7 @@ msgstr "Read more"
 #~ msgid "Read Only"
 #~ msgstr "Read Only"
 
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:773
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:775
 msgid "Read-Only at this step"
 msgstr "Read-Only at this step"
 
@@ -12763,15 +12768,16 @@ msgstr "Reference Document Number"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:791
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1150
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:807
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:809
 #: src/pages/dashboard/DashboardPage.tsx:395
 #: src/pages/dashboard/DashboardPage.tsx:402
 #: src/pages/folders/components/FolderFilterBar.tsx:759
 #: src/pages/folders/components/SignRequestAssignForm.tsx:473
-#: src/pages/forms/FormEntriesPage.tsx:3091
+#: src/pages/forms/FormEntriesPage.tsx:3119
 #: src/pages/forms/FormsPage.tsx:626
-#: src/pages/portal/components/PortalHome.tsx:434
-#: src/pages/portal/components/PortalHome.tsx:439
+#: src/pages/portal/components/PortalHome.tsx:500
+#: src/pages/portal/components/PortalHome.tsx:544
+#: src/pages/portal/components/PortalHome.tsx:549
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2074
@@ -12800,7 +12806,7 @@ msgid "Refreshing..."
 msgstr "Refreshing..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:955
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:657
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:659
 #: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:270
 #: src/pages/folders/components/Upload/DraftAttachmentFields.tsx:272
 #: src/pages/folders/components/Upload/Upload.tsx:4847
@@ -12830,7 +12836,9 @@ msgstr "Registry Verification Log"
 msgid "Reject Transaction"
 msgstr "Reject Transaction"
 
-#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:93
+#: src/pages/portal/components/PortalHome.tsx:170
+#: src/pages/portal/components/PortalHome.tsx:175
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:62
 msgid "Rejected"
@@ -12897,8 +12905,8 @@ msgstr "Remove field"
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1783
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1929
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1794
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1940
 msgid "Remove file"
 msgstr "Remove file"
 
@@ -13071,15 +13079,15 @@ msgstr "Request {requestNo} has been moved successfully."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Request {requestNo} moved successfully"
 
-#: src/pages/requests/components/request/Request.tsx:2546
+#: src/pages/requests/components/request/Request.tsx:2588
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 
-#: src/pages/requests/components/request/Request.tsx:2524
+#: src/pages/requests/components/request/Request.tsx:2566
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr "Request {resolvedRequestNo} is being processed."
 
-#: src/pages/requests/components/request/Request.tsx:2545
+#: src/pages/requests/components/request/Request.tsx:2587
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Request {resolvedRequestNo} submitted successfully"
 
@@ -13103,7 +13111,7 @@ msgstr "Request a Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Request created. You can track it from My Submissions."
 
-#: src/pages/requests/components/request/Request.tsx:2659
+#: src/pages/requests/components/request/Request.tsx:2701
 msgid "Request is being processed."
 msgstr "Request is being processed."
 
@@ -13124,12 +13132,12 @@ msgstr "Request Number"
 msgid "Request Owner"
 msgstr "Request Owner"
 
-#: src/pages/requests/components/request/Request.tsx:2678
+#: src/pages/requests/components/request/Request.tsx:2720
 msgid "Request saved successfully"
 msgstr "Request saved successfully"
 
 #: src/pages/requests/components/request/components/Header.tsx:665
-#: src/pages/requests/components/request/Request.tsx:2980
+#: src/pages/requests/components/request/Request.tsx:3022
 msgid "Request shared successfully"
 msgstr "Request shared successfully"
 
@@ -13140,7 +13148,7 @@ msgid "Request Status"
 msgstr "Request Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2679
+#: src/pages/requests/components/request/Request.tsx:2721
 msgid "Request submitted successfully"
 msgstr "Request submitted successfully"
 
@@ -13271,7 +13279,7 @@ msgstr "Reset to Suggested"
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
-#: src/pages/forms/FormEntriesPage.tsx:2204
+#: src/pages/forms/FormEntriesPage.tsx:2232
 msgid "Restore"
 msgstr "Restore"
 
@@ -13327,7 +13335,7 @@ msgstr "Retry"
 msgid "Retry Ingestion"
 msgstr "Retry Ingestion"
 
-#: src/pages/forms/FormEntriesPage.tsx:2402
+#: src/pages/forms/FormEntriesPage.tsx:2430
 msgid "Retry Loading"
 msgstr "Retry Loading"
 
@@ -13744,7 +13752,7 @@ msgstr "Save Branding"
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/forms/FormEntriesPage.tsx:1049
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Changes"
 msgstr "Save Changes"
 
@@ -13753,11 +13761,11 @@ msgid "Save changes before leaving?"
 msgstr "Save changes before leaving?"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1166
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:818
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:820
 msgid "Save Dashboard"
 msgstr "Save Dashboard"
 
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Entry"
 msgstr "Save Entry"
 
@@ -13865,7 +13873,7 @@ msgstr "Saving…"
 #~ msgid "Scan documents in this folder and mask PII in the preview."
 #~ msgstr "Scan documents in this folder and mask PII in the preview."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:194
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:197
 msgid "Scan QR"
 msgstr "Scan QR"
 
@@ -13874,7 +13882,7 @@ msgstr "Scan QR"
 msgid "Scan QR / Barcode"
 msgstr "Scan QR / Barcode"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:183
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:186
 msgid "Scan QR code to select"
 msgstr "Scan QR code to select"
 
@@ -14029,7 +14037,7 @@ msgstr "Search description..."
 msgid "Search email..."
 msgstr "Search email..."
 
-#: src/pages/forms/FormEntriesPage.tsx:3074
+#: src/pages/forms/FormEntriesPage.tsx:3102
 msgid "Search entries..."
 msgstr "Search entries..."
 
@@ -14107,7 +14115,7 @@ msgstr "Search manager..."
 msgid "Search media"
 msgstr "Search media"
 
-#: src/pages/forms/FormEntriesPage.tsx:3116
+#: src/pages/forms/FormEntriesPage.tsx:3144
 #: src/pages/forms/FormsPage.tsx:637
 #: src/pages/settings/components/GroupManagement.tsx:631
 #: src/pages/settings/components/ManageUser.tsx:1580
@@ -14151,7 +14159,8 @@ msgstr "Search rows..."
 msgid "Search status..."
 msgstr "Search status..."
 
-#: src/pages/portal/components/PortalHome.tsx:408
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:518
 msgid "Search submissions…"
 msgstr "Search submissions…"
 
@@ -14186,7 +14195,8 @@ msgstr "Search users..."
 msgid "Search workflows..."
 msgstr "Search workflows..."
 
-#: src/pages/portal/components/PortalHome.tsx:283
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:377
 msgid "Search workflows…"
 msgstr "Search workflows…"
 
@@ -14207,7 +14217,7 @@ msgid "Secondary"
 msgstr "Secondary"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:2477
+#: src/pages/forms/FormEntriesPage.tsx:2505
 msgid "Section {0}"
 msgstr "Section {0}"
 
@@ -14252,9 +14262,13 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1894
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1905
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:603
+msgid "See this folder's documents, metadata and activity in one view."
+msgstr "See this folder's documents, metadata and activity in one view."
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3430
 #: src/pages/settings/components/ManageUser.tsx:1911
@@ -14611,7 +14625,7 @@ msgstr "Select Storage"
 #~ msgid "Select storage provider"
 #~ msgstr ""
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:711
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:713
 msgid "Select suggested KPIs and charts from your data."
 msgstr "Select suggested KPIs and charts from your data."
 
@@ -14692,7 +14706,7 @@ msgstr "Select users or groups..."
 msgid "Select users..."
 msgstr "Select users..."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:846
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:848
 msgid "Select widgets in step 2, then click Apply & Preview to load live data."
 msgstr "Select widgets in step 2, then click Apply & Preview to load live data."
 
@@ -15202,7 +15216,7 @@ msgstr "Sign Document"
 msgid "Sign here"
 msgstr "Sign here"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1014
+#: src/pages/sign-in/components/SignInForm.tsx:1015
 msgid "Sign in"
 msgstr "Sign in"
 
@@ -15211,10 +15225,10 @@ msgstr "Sign in"
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/portal/components/ClassicPortalLogin.tsx:445
 #: src/pages/portal/components/PortalLogin.tsx:365
-#: src/pages/sign-in/components/ShareSignInForm.tsx:319
-#: src/pages/sign-in/components/ShareSignInForm.tsx:344
-#: src/pages/sign-in/components/SignInForm.tsx:1168
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:361
+#: src/pages/sign-in/components/ShareSignInForm.tsx:320
+#: src/pages/sign-in/components/ShareSignInForm.tsx:345
+#: src/pages/sign-in/components/SignInForm.tsx:1172
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:362
 msgid "Sign In"
 msgstr "Sign In"
 
@@ -15261,7 +15275,8 @@ msgstr "Sign invite not found or expired."
 msgid "Sign Mode"
 msgstr "Sign Mode"
 
-#: src/pages/portal/components/PortalShell.tsx:154
+#: src/pages/portal/components/PortalShell.tsx:158
+#: src/pages/portal/components/PortalShell.tsx:171
 msgid "Sign out"
 msgstr "Sign out"
 
@@ -15752,12 +15767,12 @@ msgstr "Subject"
 msgid "Submission Details"
 msgstr "Submission Details"
 
-#: src/pages/portal/components/PortalHome.tsx:357
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:451
+#: src/pages/portal/components/PortalHome.tsx:494
 msgid "submissions"
 msgstr "submissions"
 
-#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:212
 #: src/pages/portal/components/PortalWizard.tsx:972
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:170
@@ -15819,7 +15834,7 @@ msgstr "Suggested Report"
 #~ msgstr "Suggested report plan"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1017
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:727
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:729
 msgid "Suggesting KPIs and charts for {repositoryName}..."
 msgstr "Suggesting KPIs and charts for {repositoryName}..."
 
@@ -16244,7 +16259,7 @@ msgstr "The Document Approval workflow process is not configured yet. Please con
 msgid "The familiar EZOFIS experience, unchanged"
 msgstr "The familiar EZOFIS experience, unchanged"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2037
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2048
 msgid "the file"
 msgstr "the file"
 
@@ -16324,7 +16339,7 @@ msgstr "Thinking..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 
-#: src/pages/forms/FormEntriesPage.tsx:3032
+#: src/pages/forms/FormEntriesPage.tsx:3060
 #: src/pages/forms/FormsPage.tsx:561
 #: src/pages/reports/components/ReportsListView.tsx:291
 msgid "This action is permanent and cannot be undone."
@@ -16355,8 +16370,8 @@ msgstr "This email address has already been added."
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1951
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:466
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:523
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:593
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:524
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:595
 msgid "This field is required."
 msgstr "This field is required."
 
@@ -16575,7 +16590,7 @@ msgstr "To"
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 
-#: src/pages/forms/FormEntriesPage.tsx:3024
+#: src/pages/forms/FormEntriesPage.tsx:3052
 msgid "to Trash?"
 msgstr "to Trash?"
 
@@ -16692,7 +16707,7 @@ msgstr "Total runs"
 #~ msgid "Total submitted"
 #~ msgstr "Total submitted"
 
-#: src/pages/portal/components/PortalHome.tsx:127
+#: src/pages/portal/components/PortalHome.tsx:131
 msgid "Total Submitted"
 msgstr "Total Submitted"
 
@@ -16708,9 +16723,13 @@ msgstr "Touchless Rate"
 msgid "Track processing status, approvals, and analytics from a unified dashboard."
 msgstr "Track processing status, approvals, and analytics from a unified dashboard."
 
-#: src/pages/portal/components/PortalHome.tsx:209
+#: src/pages/portal/components/PortalHome.tsx:238
 msgid "Track the status of everything you've submitted."
 msgstr "Track the status of everything you've submitted."
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:602
+msgid "Track this workflow's requests, stages and turnaround in one view."
+msgstr "Track this workflow's requests, stages and turnaround in one view."
 
 #: src/pages/settings/components/AuditMonitoring.tsx:171
 msgid "Track user activity, configuration changes, and security events across the platform."
@@ -16733,7 +16752,7 @@ msgid "Transactions"
 msgstr "Transactions"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
-#: src/pages/forms/FormEntriesPage.tsx:2987
+#: src/pages/forms/FormEntriesPage.tsx:3015
 msgid "Trash"
 msgstr "Trash"
 
@@ -16817,8 +16836,8 @@ msgstr "Type · Actions"
 #~ msgid "Type an option and press Enter"
 #~ msgstr "Type an option and press Enter"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:278
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:498
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:281
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:501
 msgid "Type custom option..."
 msgstr "Type custom option..."
 
@@ -17101,7 +17120,7 @@ msgstr "Unsupported file type. Please upload a CSV or XLSX file."
 msgid "Untitled"
 msgstr "Untitled"
 
-#: src/pages/forms/FormEntriesPage.tsx:2017
+#: src/pages/forms/FormEntriesPage.tsx:2045
 msgid "Untitled Field"
 msgstr "Untitled Field"
 
@@ -17199,7 +17218,7 @@ msgstr "Upgrading…"
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:861
 #: src/pages/folders/components/Upload/Upload.tsx:4171
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 #: src/pages/portal/components/PortalWizard.tsx:1325
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:229
@@ -17213,7 +17232,7 @@ msgstr "Upgrading…"
 msgid "Upload"
 msgstr "Upload"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2043
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2054
 msgid "Upload \"{sourceLabel}\" first to fill this field."
 msgstr "Upload \"{sourceLabel}\" first to fill this field."
 
@@ -17388,7 +17407,7 @@ msgstr "Uploading file..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Uploading master file to process entries in the background..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1886
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1897
 msgid "Uploading the document…"
 msgstr "Uploading the document…"
 
@@ -17527,7 +17546,7 @@ msgstr "User Email"
 msgid "User Management"
 msgstr "User Management"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1068
+#: src/pages/sign-in/components/SignInForm.tsx:1070
 msgid "User name"
 msgstr "User name"
 
@@ -17543,7 +17562,7 @@ msgstr "User Summary"
 msgid "User updated successfully"
 msgstr "User updated successfully"
 
-#: src/pages/sign-in/components/SignInForm.tsx:1069
+#: src/pages/sign-in/components/SignInForm.tsx:1071
 msgid "username"
 msgstr "username"
 
@@ -17839,7 +17858,7 @@ msgstr "View Entries"
 msgid "View every document version"
 msgstr "View every document version"
 
-#: src/pages/forms/FormEntriesPage.tsx:2096
+#: src/pages/forms/FormEntriesPage.tsx:2124
 msgid "View Line Items Table"
 msgstr "View Line Items Table"
 
@@ -17920,7 +17939,7 @@ msgid "Waiting for user approval"
 msgstr "Waiting for user approval"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1099
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:774
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:776
 msgid "Waiting to generate dashboard schema"
 msgstr "Waiting to generate dashboard schema"
 
@@ -18009,7 +18028,7 @@ msgstr "We've sent a 6-digit code to {0}."
 msgid "Weekly credit consumption"
 msgstr "Weekly credit consumption"
 
-#: src/pages/portal/components/PortalHome.tsx:203
+#: src/pages/portal/components/PortalHome.tsx:232
 msgid "Welcome back, {displayName}."
 msgstr "Welcome back, {displayName}."
 
@@ -18133,7 +18152,7 @@ msgstr "Workflow started but did not return any data."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:25
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/portal/components/PortalHome.tsx:275
+#: src/pages/portal/components/PortalHome.tsx:369
 #: src/pages/search/SearchPage.tsx:322
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129

@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import Tooltip from '@/components/base/Tooltip'
@@ -132,8 +134,9 @@ export default function PortalShell({
         fill ? 'h-svh overflow-hidden' : 'min-h-svh',
       )}
     >
-      <AnimateFadeIn className='shrink-0'>
-        <header className='border-b border-gray-4 bg-surface px-4 py-3 sm:px-6 lg:px-8'>
+      {/* Phones: the header sticks, like a native app bar */}
+      <AnimateFadeIn className='z-30 shrink-0 max-md:sticky max-md:top-0'>
+        <header className='border-b border-gray-4 bg-surface px-4 py-3 max-md:h-14 max-md:py-0 sm:px-6 lg:px-8 max-md:[&>div]:h-full'>
           {/* Full width on every view, as on the request pages */}
           <div className='mx-auto flex w-full items-center justify-between gap-3'>
             <PortalBrandMark
@@ -149,6 +152,7 @@ export default function PortalShell({
                 <span className='truncate'>{email}</span>
               </span>
               <Button
+                className='max-sm:hidden'
                 color='gray'
                 icon='lucide:log-out'
                 label={t`Sign out`}
@@ -156,6 +160,22 @@ export default function PortalShell({
                 variant='outline'
                 onClick={onSignOut}
               />
+              {/* Phones: avatar + icon-only sign out instead of the
+                  outlined text button */}
+              <div className='flex animate-in items-center gap-1 fade-in sm:hidden'>
+                <Avatar
+                  initials={(email.trim()[0] || '?').toUpperCase()}
+                  size={32}
+                />
+                <IconButton
+                  ariaLabel={t`Sign out`}
+                  className='size-10 rounded-full transition active:scale-90'
+                  color='gray'
+                  icon='lucide:log-out'
+                  variant='ghost'
+                  onClick={onSignOut}
+                />
+              </div>
             </div>
           </div>
         </header>

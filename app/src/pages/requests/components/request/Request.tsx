@@ -11,6 +11,7 @@ import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { ensureNormalizedRuntimeFormJson } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
@@ -1032,8 +1033,16 @@ const fillBlankQuoteAdjustments = (
 const storeFormValues = (
   panels: any[] | undefined,
   values: Record<string, unknown>,
+  calc?: { panels: any[]; rules: any[] },
 ) => {
-  const calculated = applyCalculatedFields(panels, values) as Record<string, any>
+  // Calculate like the create screen: normalized panels (V6 formula tokens)
+  // plus the form's rules. Without them a calculated field falls back to its
+  // base formula and shows the wrong total.
+  const calculated = applyCalculatedFields(
+    calc?.panels.length ? calc.panels : panels,
+    values,
+    calc?.rules,
+  ) as Record<string, any>
   const fields = (panels || []).flatMap((panel) => panel?.fields || [])
   const headings = new Set<string>()
   const columnsByFieldId = new Map<string, any[]>()
@@ -1994,8 +2003,18 @@ const Request = ({
     {},
   )
 
-  // "Budget" from the master form behind the workflow's lookup fields,
-  // shown in the header like the quote total (0 when the cell is blank).
+  // Normalized panels + rules for calculated fields, as the create screen
+  // uses them.
+  const genericFormCalc = useMemo(() => {
+    const { panels, rules } = ensureNormalizedRuntimeFormJson(
+      rawWorkflowData?.formJson,
+    )
+    return { panels, rules }
+  }, [rawWorkflowData])
+
+  // Header budget: the request's "Available Budget" field when the form has
+  // one, else "Budget" from the master form behind the workflow's lookup
+  // fields (0 when the cell is blank).
   const genericFormPanels = useMemo(
     () => (isGenericWorkflow ? getFormPanels(overviewWorkflowData) : []),
     [isGenericWorkflow, overviewWorkflowData],
@@ -2006,6 +2025,23 @@ const Request = ({
     'Budget',
     '0',
   )
+  const availableBudgetFieldId = useMemo(() => {
+    const field = genericFormPanels
+      .flatMap((panel: any) => panel?.fields || [])
+      .find(
+        (item: any) =>
+          String(item?.label || '')
+            .toLowerCase()
+            .replace(/[\s_]+/g, '') === 'availablebudget',
+      )
+    return field?.id ? String(field.id) : ''
+  }, [genericFormPanels])
+  const availableBudget = availableBudgetFieldId
+    ? String(genericFormModel?.[availableBudgetFieldId] ?? '').trim()
+    : ''
+  const headerBudget = availableBudgetFieldId
+    ? availableBudget || '0'
+    : masterBudget
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
@@ -2122,10 +2158,12 @@ const Request = ({
           activeItem?.activityId,
           rawWorkflowData?.repositoryId || activeItem?.repositoryId,
         ),
+        genericFormCalc,
       )
     })
   }, [
     genericAttachments,
+    genericFormCalc,
     isGenericWorkflow,
     rawWorkflowData,
     request,
@@ -2169,6 +2207,7 @@ const Request = ({
           (request || selectedItem)?.activityId,
           stored.repositoryId,
         ),
+        genericFormCalc,
       ),
     )
 
@@ -2178,6 +2217,7 @@ const Request = ({
     }
   }, [
     genericAttachments,
+    genericFormCalc,
     genericInstanceId,
     isGenericWorkflow,
     rawWorkflowData,
@@ -2187,20 +2227,22 @@ const Request = ({
 
   const handleGenericFieldChange = (fieldId: string, value: any) =>
     setGenericFormModel((prev) =>
-      storeFormValues(getFormPanels(rawWorkflowData), {
-        ...prev,
-        [fieldId]: value,
-      }),
+      storeFormValues(
+        getFormPanels(rawWorkflowData),
+        { ...prev, [fieldId]: value },
+        genericFormCalc,
+      ),
     )
 
   // Quote 2/3 totals are calculated fields. A batch write restores the tab
   // values after formulas run so Quote 1's operands cannot replace them.
   const handleGenericFieldsChange = (patch: Record<string, any>) =>
     setGenericFormModel((prev) => {
-      const next = storeFormValues(getFormPanels(rawWorkflowData), {
-        ...prev,
-        ...patch,
-      })
+      const next = storeFormValues(
+        getFormPanels(rawWorkflowData),
+        { ...prev, ...patch },
+        genericFormCalc,
+      )
       for (const [key, value] of Object.entries(patch)) {
         if (Array.isArray(value) || !CONTROL_ID.test(key)) continue
         next[key] = value
@@ -2996,7 +3038,7 @@ const Request = ({
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
-          budget={masterBudget}
+          budget={headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}

@@ -979,6 +979,7 @@ const SignInForm = ({
                   label={t`Email`}
                   // size='lg'
                   value={email}
+                  autoFocus
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }
@@ -1029,6 +1030,7 @@ const SignInForm = ({
                   label={t`Email`}
                   // size='lg'
                   value={email}
+                  autoFocus
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }
@@ -1069,6 +1071,7 @@ const SignInForm = ({
                   placeholder={t`username`}
                   // size='lg'
                   value={email}
+                  autoFocus
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:user' />
                   }
@@ -1104,6 +1107,7 @@ const SignInForm = ({
                   label={t`Email / Username`}
                   // size='lg'
                   value={email}
+                  autoFocus
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }

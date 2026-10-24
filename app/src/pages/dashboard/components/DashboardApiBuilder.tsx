@@ -593,12 +593,14 @@ export default function DashboardApiBuilder({
   if (!html && !isConfiguring) {
     return (
       <AnimateFadeIn delay={0.1}>
-        <div className='flex min-h-[420px] w-full items-center justify-center rounded-2xl border border-gray-3 bg-surface p-8 text-center sm:p-12'>
+        {/* Sits directly on the page (no card), centred in the free space. */}
+        <div className='flex min-h-[60vh] w-full flex-1 items-center justify-center px-6 py-12 text-center'>
           <EmptyState
+            className='max-w-2xl'
             description={
               isWorkflow
-                ? t`A dashboard has not been configured for the "${repositoryName}" workflow yet. Build a dashboard to track requests, statuses, and performance analytics.`
-                : t`A dashboard has not been configured for the "${repositoryName}" folder yet. Build a dashboard to visualize documents, custom metadata fields, and repository activity.`
+                ? t`Track this workflow's requests, stages and turnaround in one view.`
+                : t`See this folder's documents, metadata and activity in one view.`
             }
             icon={isWorkflow ? 'lucide:workflow' : 'lucide:folder'}
             primaryActionIcon='tabler:arrow-right'

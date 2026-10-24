@@ -1818,6 +1818,34 @@ const FormEntriesPage = () => {
     setEditValues({})
   }
 
+  // Entries carry each value under the field id and under its label keys
+  // ("Allocated Budget" / "Allocated_Budget"). Inputs only write the id key,
+  // so mirror id values onto the label keys before saving or stale label
+  // values win on the backend.
+  const syncLabelKeysWithFieldIds = (values: Record<string, any>) => {
+    const next = { ...values }
+    const normalizeKey = (key: string) =>
+      key.toLowerCase().replace(/[\s_]+/g, '')
+    const fieldIds = new Set(fields.map((field: Question) => field.id))
+    const existingKeys = Object.keys(next).filter((key) => !fieldIds.has(key))
+
+    fields.forEach((field: Question) => {
+      if (!field?.id || !(field.id in next)) return
+      const label = getEffectiveFieldLabel(field, '').trim()
+      if (!label) return
+      const normalizedLabel = normalizeKey(label)
+      const matchingKeys = existingKeys.filter(
+        (key) => normalizeKey(key) === normalizedLabel,
+      )
+      const targetKeys = matchingKeys.length ? matchingKeys : [label]
+      targetKeys.forEach((key) => {
+        next[key] = next[field.id]
+      })
+    })
+
+    return next
+  }
+
   // Actions
   const handleSaveEntry = async () => {
     // Phase 4: Validate form fields before submitting
@@ -1867,7 +1895,7 @@ const FormEntriesPage = () => {
       const { data, error } = await formApi.saveFormEntry(
         formId,
         targetEntryId,
-        editValues,
+        syncLabelKeysWithFieldIds(editValues),
       )
 
       if (error) {
