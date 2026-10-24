@@ -177,6 +177,7 @@ def test_fallback_definition_from_prompt_uses_named_table():
 def test_report_spec_to_prompt_includes_formula():
     from app.models.report_agent import ReportSpec, ReportSpecColumn, ReportSpecFilter
     from app.report_agent.report_spec import report_spec_to_prompt
+    import json
 
     spec = ReportSpec(
         title="Total Approved",
@@ -189,11 +190,12 @@ def test_report_spec_to_prompt_includes_formula():
         filters=[ReportSpecFilter(field="Matched_Status", op="not_null")],
     )
     prompt = report_spec_to_prompt(spec, workflow_name="Accounts Payable Form")
-    assert "Sum approved amounts" in prompt
-    assert "Total_Amount" in prompt
-    assert "PO_Amount + Invoice_Amount" in prompt
-    assert "Matched_Status is not null" in prompt
-    assert "Accounts Payable Form" in prompt
+    payload = json.loads(prompt)
+    assert payload["Objective"] == "Sum approved amounts"
+    assert payload["workflowName"] == "Accounts Payable Form"
+    assert any(c["key"] == "Total_Amount" for c in payload["Agent generated columns"])
+    assert any(item["expression"] == "PO_Amount + Invoice_Amount" for item in payload["Formula"])
+    assert any(f["field"] == "Matched_Status" for f in payload["filters"])
 
 
 def test_fallback_report_spec_adds_total_formula():
@@ -219,6 +221,93 @@ def test_fallback_report_spec_adds_total_formula():
     )
     assert any(c.key == "Total_Amount" and c.formula for c in spec.columns)
     assert any("Score" in w for w in spec.warnings)
+
+
+def test_prompt_json_splits_default_userdefined_and_agent_columns():
+    import json
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.report_spec import (
+        apply_selected_columns,
+        attach_column_palettes,
+        report_spec_to_prompt,
+        spec_from_prompt_json,
+    )
+
+    spec = ReportSpec(
+        title="Aging",
+        objective="Open requests across all workflows",
+        report_type="all_workflows",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END"),
+            ReportSpecColumn(key="workflowName", label="Workflow"),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)"),
+        ],
+        available_columns=["workflowName", "status", "startedBy", "id", "createdAtUtc"],
+        source_schema="workflow",
+        source_table="workflow_instances_all",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="workflow",
+            table="workflow_instances_all",
+            columns=[
+                SchemaColumnSlice(name="id", type="uuid"),
+                SchemaColumnSlice(name="workflowName", type="text"),
+                SchemaColumnSlice(name="status", type="text"),
+                SchemaColumnSlice(name="startedBy", type="text"),
+                SchemaColumnSlice(name="createdAtUtc", type="date"),
+            ],
+        )
+    ]
+    spec = attach_column_palettes(spec, tables=tables, schema_tables=["workflow.workflow_instances_all"])
+    labels = {c.label for c in spec.default_columns}
+    assert {"Req No", "Stage", "Status", "Acted by", "Workflow", "Created At"} <= labels
+    assert any(c.key == "workflowName" and c.selected for c in spec.default_columns)
+    assert any(c.key == "createdAtUtc" for c in spec.default_columns)
+    assert spec.userdefined_columns == []
+    assert any(c.key == "Request_Count" and c.selected for c in spec.agent_columns)
+    prompt = json.loads(report_spec_to_prompt(spec))
+    assert prompt["Objective"] == "Open requests across all workflows"
+    assert prompt["schemaTables"] == ["workflow.workflow_instances_all"]
+    assert prompt["Sort"] is None or "field" in (prompt["Sort"] or {})
+    parsed = spec_from_prompt_json(json.dumps(prompt))
+    assert parsed is not None
+    parsed = apply_selected_columns(parsed)
+    assert {c.key for c in parsed.columns} >= {"Aging_Bucket", "workflowName", "Request_Count"}
+
+
+def test_userdefined_columns_come_from_form_table_only():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.report_spec import attach_column_palettes
+
+    spec = ReportSpec(
+        title="RFQ Estimation Report",
+        objective="RFQ Estimation Report",
+        report_type="specific_workflow",
+        columns=[ReportSpecColumn(key="Company_Name", label="Company Name")],
+        available_columns=["Company_Name", "Order_Number", "Total", "status"],
+        source_schema="dbo",
+        source_table="ezfb_787372d8_items",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="dbo",
+            table="ezfb_787372d8_items",
+            columns=[
+                SchemaColumnSlice(name="Company_Name", type="text"),
+                SchemaColumnSlice(name="Order_Number", type="text"),
+                SchemaColumnSlice(name="Total", type="numeric"),
+            ],
+        )
+    ]
+    spec = attach_column_palettes(spec, tables=tables)
+    user_keys = {c.key for c in spec.userdefined_columns}
+    assert user_keys == {"Company_Name", "Order_Number", "Total"}
+    assert any(c.key == "Company_Name" and c.selected for c in spec.userdefined_columns)
+    default_keys = {c.key for c in spec.default_columns}
+    assert "workflowName" in default_keys
+    assert "createdAtUtc" in default_keys
+    assert "Company_Name" not in default_keys
 
 
 def test_parse_definition_json_strips_fences():
@@ -520,6 +609,7 @@ def test_sql_soft_delete_uses_coalesce_not_false_eq():
 def test_report_spec_prompt_includes_source_table():
     from app.models.report_agent import ReportSpec, ReportSpecColumn
     from app.report_agent.report_spec import report_spec_to_prompt
+    import json
 
     spec = ReportSpec(
         title="Approved",
@@ -527,11 +617,13 @@ def test_report_spec_prompt_includes_source_table():
         report_type="specific_workflow",
         source_schema="dbo",
         source_table="ezfb_29171de4_items",
+        schema_tables=["dbo.ezfb_29171de4_items"],
         columns=[ReportSpecColumn(key="Invoice_No", label="Invoice No")],
     )
     prompt = report_spec_to_prompt(spec, workflow_name="Accounts Payable")
-    assert "dbo.ezfb_29171de4_items" in prompt
-    assert "Workflows" in prompt  # instruction not to query catalogs
+    payload = json.loads(prompt)
+    assert payload["sourceTable"] == "ezfb_29171de4_items"
+    assert "dbo.ezfb_29171de4_items" in payload["schemaTables"]
 
 
 @pytest.mark.asyncio

@@ -2233,6 +2233,11 @@
     background: rgba(16, 185, 129, 0.12);
     border-color: rgba(16, 185, 129, 0.35);
   }
+  .report-spec-chip.unselected {
+    background: #fff;
+    color: var(--ink-3);
+    border-style: dashed;
+  }
   .report-spec-chip button {
     border: 0;
     background: transparent;
@@ -3238,10 +3243,17 @@ vendor_validate</textarea>
               <textarea id="reportSpecObjective" rows="2" placeholder="Short business objective…"></textarea>
 
               <div class="report-spec-label-row">
-                <label style="margin:0">Columns</label>
-                <button type="button" class="btn-ghost" id="reportSpecAddColBtn" style="padding:2px 8px;font-size:11px">+ Add</button>
+                <label style="margin:0">Default columns</label>
               </div>
-              <div id="reportSpecColumns" class="report-spec-chips" aria-label="Editable columns"></div>
+              <div id="reportSpecDefaultColumns" class="report-spec-chips" aria-label="Default columns"></div>
+              <div class="report-spec-label-row">
+                <label style="margin:0">Userdefined Columns</label>
+              </div>
+              <div id="reportSpecUserColumns" class="report-spec-chips" aria-label="Userdefined columns"></div>
+              <div class="report-spec-label-row">
+                <label style="margin:0">Agent generated columns</label>
+              </div>
+              <div id="reportSpecAgentColumns" class="report-spec-chips" aria-label="Agent generated columns"></div>
               <datalist id="reportSpecColList"></datalist>
 
               <label for="reportSpecFormula">Formula (optional)</label>
@@ -3279,7 +3291,7 @@ vendor_validate</textarea>
             <details class="report-advanced-fold" id="reportAdvancedFold">
               <summary>Advanced (engine prompt)</summary>
               <textarea id="reportPromptOverride"
-                placeholder="Built automatically from the short prompt. Edit only if needed…"></textarea>
+                placeholder="Generated prompt JSON (Objective, columns, Formula, Sort, schemaTables)…"></textarea>
             </details>
             </div>
           </details>
@@ -9889,21 +9901,53 @@ let reportSpecState = {
   availableColumns: [],
   sourceSchema: null,
   sourceTable: null,
+  defaultColumns: [],
+  userdefinedColumns: [],
+  agentColumns: [],
+  schemaTables: [],
   warnings: [],
 };
 
+function mapSpecColumn(c, kind) {
+  if (typeof c === 'string') {
+    return { key: c, label: c, formula: null, editable: true, kind: kind || 'userdefined', selected: true };
+  }
+  return {
+    key: c.key,
+    label: c.label || c.key,
+    formula: c.formula || c.expression || null,
+    editable: c.editable !== false,
+    kind: c.kind || kind || null,
+    selected: c.selected !== false,
+  };
+}
+
 function reportSpecFromApi(spec) {
   if (!spec || typeof spec !== 'object') return null;
+  const userdefined = Array.isArray(spec.userdefinedColumns || spec.userdefined_columns || spec['Userdefined Columns'])
+    ? (spec.userdefinedColumns || spec.userdefined_columns || spec['Userdefined Columns']).map(c => mapSpecColumn(c, 'userdefined'))
+    : [];
+  const defaults = Array.isArray(spec.defaultColumns || spec.default_columns || spec['Default columns'])
+    ? (spec.defaultColumns || spec.default_columns || spec['Default columns']).map(c => mapSpecColumn(c, 'default'))
+    : [];
+  const agents = Array.isArray(spec.agentColumns || spec.agent_columns || spec['Agent generated columns'])
+    ? (spec.agentColumns || spec.agent_columns || spec['Agent generated columns']).map(c => mapSpecColumn(c, 'agent'))
+    : [];
+  let columns = Array.isArray(spec.columns) ? spec.columns.map(c => mapSpecColumn(c)) : [];
+  if (!userdefined.length && !defaults.length && !agents.length && columns.length) {
+    columns.forEach(c => {
+      if (c.formula) agents.push({ ...c, kind: 'agent', selected: true });
+      else userdefined.push({ ...c, kind: 'userdefined', selected: true });
+    });
+  }
+  if (!columns.length) {
+    columns = defaults.concat(userdefined, agents).filter(c => c.selected);
+  }
   return {
     title: spec.title || '',
-    objective: spec.objective || '',
+    objective: spec.objective || spec.Objective || '',
     reportType: spec.reportType || spec.report_type || null,
-    columns: Array.isArray(spec.columns) ? spec.columns.map(c => ({
-      key: c.key,
-      label: c.label || c.key,
-      formula: c.formula || null,
-      editable: c.editable !== false,
-    })) : [],
+    columns,
     filters: Array.isArray(spec.filters) ? spec.filters.map(f => ({
       field: f.field,
       op: f.op || 'eq',
@@ -9911,12 +9955,16 @@ function reportSpecFromApi(spec) {
       editable: f.editable !== false,
     })) : [],
     groupBy: Array.isArray(spec.groupBy || spec.group_by) ? (spec.groupBy || spec.group_by) : [],
-    sort: spec.sort || null,
+    sort: spec.sort || spec.Sort || null,
     availableColumns: Array.isArray(spec.availableColumns || spec.available_columns)
       ? (spec.availableColumns || spec.available_columns)
       : [],
     sourceSchema: spec.sourceSchema || spec.source_schema || null,
     sourceTable: spec.sourceTable || spec.source_table || null,
+    defaultColumns: defaults,
+    userdefinedColumns: userdefined,
+    agentColumns: agents,
+    schemaTables: Array.isArray(spec.schemaTables || spec.schema_tables) ? (spec.schemaTables || spec.schema_tables) : [],
     warnings: Array.isArray(spec.warnings) ? spec.warnings : [],
   };
 }
@@ -9932,13 +9980,22 @@ function fillReportSpecColList(available) {
   });
 }
 
-function renderReportSpecColumns() {
-  const wrap = document.getElementById('reportSpecColumns');
+function paletteList(kind) {
+  if (kind === 'default') return reportSpecState.defaultColumns || [];
+  if (kind === 'agent') return reportSpecState.agentColumns || [];
+  return reportSpecState.userdefinedColumns || [];
+}
+
+function renderPalette(elId, kind, emptyText) {
+  const wrap = document.getElementById(elId);
   if (!wrap) return;
   wrap.innerHTML = '';
-  (reportSpecState.columns || []).forEach((col, idx) => {
+  const list = paletteList(kind);
+  list.forEach((col, idx) => {
     const chip = document.createElement('span');
-    chip.className = 'report-spec-chip' + (col.formula ? ' formula' : '');
+    chip.className = 'report-spec-chip'
+      + (col.formula ? ' formula' : '')
+      + (col.selected ? '' : ' unselected');
     const label = document.createElement('span');
     label.textContent = col.label || col.key;
     chip.appendChild(label);
@@ -9950,19 +10007,25 @@ function renderReportSpecColumns() {
     }
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.setAttribute('aria-label', 'Remove ' + (col.label || col.key));
-    btn.textContent = '×';
+    btn.textContent = col.selected ? '×' : '+';
+    btn.setAttribute('aria-label', (col.selected ? 'Remove ' : 'Add ') + (col.label || col.key));
     btn.onclick = () => {
-      reportSpecState.columns.splice(idx, 1);
+      list[idx].selected = !list[idx].selected;
       renderReportSpecColumns();
       syncReportPromptFromSpec();
     };
     chip.appendChild(btn);
     wrap.appendChild(chip);
   });
-  if (!(reportSpecState.columns || []).length) {
-    wrap.innerHTML = '<span style="color:var(--ink-3);font-size:12px;font-style:italic;">No columns yet — Generate Prompt or Add</span>';
+  if (!list.length) {
+    wrap.innerHTML = '<span style="color:var(--ink-3);font-size:12px;font-style:italic;">' + emptyText + '</span>';
   }
+}
+
+function renderReportSpecColumns() {
+  renderPalette('reportSpecDefaultColumns', 'default', 'Generate a prompt to load Req No, Stage, Status, Acted by');
+  renderPalette('reportSpecUserColumns', 'userdefined', 'Form (ezfb_*) and repository fields appear here');
+  renderPalette('reportSpecAgentColumns', 'agent', 'Count, Sum, Avg appear here after Generate Prompt');
 }
 
 function applyReportSpecToForm(spec) {
@@ -9971,7 +10034,11 @@ function applyReportSpecToForm(spec) {
   const objEl = document.getElementById('reportSpecObjective');
   if (titleEl) titleEl.value = reportSpecState.title || '';
   if (objEl) objEl.value = reportSpecState.objective || '';
-  fillReportSpecColList(reportSpecState.availableColumns);
+  const paletteKeys = []
+    .concat(reportSpecState.defaultColumns || [], reportSpecState.userdefinedColumns || [], reportSpecState.agentColumns || [])
+    .map(c => c.key)
+    .filter(Boolean);
+  fillReportSpecColList(reportSpecState.availableColumns.length ? reportSpecState.availableColumns : paletteKeys);
   renderReportSpecColumns();
 
   const f = (reportSpecState.filters && reportSpecState.filters[0]) || null;
@@ -10010,14 +10077,26 @@ function applyReportSpecToForm(spec) {
   }
 }
 
+function dumpPromptColumn(c) {
+  const item = { key: c.key, label: c.label || c.key, selected: !!c.selected };
+  if (c.formula) item.formula = c.formula;
+  if (c.kind) item.kind = c.kind;
+  return item;
+}
+
 function readReportSpecFromForm() {
   const title = (document.getElementById('reportSpecTitle') || {}).value || '';
   const objective = (document.getElementById('reportSpecObjective') || {}).value || '';
-  const columns = (reportSpecState.columns || []).map(c => ({
+  const defaults = (reportSpecState.defaultColumns || []).map(c => ({ ...c }));
+  const userdefined = (reportSpecState.userdefinedColumns || []).map(c => ({ ...c }));
+  const agents = (reportSpecState.agentColumns || []).map(c => ({ ...c }));
+  const columns = defaults.concat(userdefined, agents).filter(c => c.selected).map(c => ({
     key: c.key,
     label: c.label || c.key,
     formula: c.formula || null,
     editable: true,
+    kind: c.kind || null,
+    selected: true,
   }));
   const ff = (document.getElementById('reportSpecFilterField') || {}).value || '';
   const fo = (document.getElementById('reportSpecFilterOp') || {}).value || 'eq';
@@ -10045,6 +10124,10 @@ function readReportSpecFromForm() {
     availableColumns: reportSpecState.availableColumns || [],
     sourceSchema: reportSpecState.sourceSchema || null,
     sourceTable: reportSpecState.sourceTable || null,
+    defaultColumns: defaults,
+    userdefinedColumns: userdefined,
+    agentColumns: agents,
+    schemaTables: reportSpecState.schemaTables || [],
     warnings: reportSpecState.warnings || [],
   };
 }
@@ -10052,32 +10135,31 @@ function readReportSpecFromForm() {
 function syncReportPromptFromSpec() {
   const spec = readReportSpecFromForm();
   reportSpecState = { ...reportSpecState, ...spec };
-  const lines = [];
-  lines.push('Report objective: ' + spec.objective);
-  if (spec.reportType) lines.push('Report type and scope: Report type is ' + spec.reportType + '.');
-  if (spec.sourceTable) {
-    const qualified = spec.sourceSchema ? (spec.sourceSchema + '.' + spec.sourceTable) : spec.sourceTable;
-    lines.push('Data sources: Use the table ' + qualified + '. Do not query Workflows, Repositories, or wForm catalog tables for report rows.');
-  }
-  if (spec.columns.length) {
-    lines.push('Output columns: ' + spec.columns.map(c => c.formula ? (c.key + ' (formula: ' + c.formula + ')') : c.key).join(', ') + '.');
-    lines.push('Required fields: ' + spec.columns.map(c => c.key).join(', ') + '.');
-  }
-  if (spec.filters.length) {
-    lines.push('Filters and conditions: ' + spec.filters.map(f => {
-      if (f.op === 'not_null') return f.field + ' is not null';
-      return f.field + ' ' + f.op + ' ' + (f.value == null ? '' : f.value);
-    }).join('; ') + '.');
-  }
-  if (spec.sort && spec.sort.field) {
-    lines.push('Sort the results by ' + spec.sort.field + ' in ' + ((spec.sort.direction || '').startsWith('desc') ? 'descending' : 'ascending') + ' order.');
-  }
-  const formulas = spec.columns.filter(c => c.formula);
-  if (formulas.length) {
-    lines.push('Formulas: ' + formulas.map(c => c.key + ' = ' + c.formula).join('; ') + '.');
-  }
+  const formulas = [];
+  const seen = {};
+  (spec.agentColumns || []).concat(spec.userdefinedColumns || [], spec.defaultColumns || []).forEach(c => {
+    if (!c.formula || seen[c.key]) return;
+    seen[c.key] = true;
+    formulas.push({ key: c.key, expression: c.formula });
+  });
+  const payload = {
+    title: spec.title,
+    Objective: spec.objective,
+    reportType: spec.reportType,
+    'Userdefined Columns': (spec.userdefinedColumns || []).map(dumpPromptColumn),
+    'Default columns': (spec.defaultColumns || []).map(dumpPromptColumn),
+    'Agent generated columns': (spec.agentColumns || []).map(dumpPromptColumn),
+    Formula: formulas,
+    Sort: spec.sort,
+    columns: (spec.columns || []).map(c => c.key),
+    groupBy: spec.groupBy || [],
+    filters: spec.filters || [],
+    schemaTables: spec.schemaTables || [],
+    sourceSchema: spec.sourceSchema,
+    sourceTable: spec.sourceTable,
+  };
   const box = document.getElementById('reportPromptOverride');
-  if (box) box.value = lines.join('\n\n');
+  if (box) box.value = JSON.stringify(payload, null, 2);
 }
 
 function bindReportSpecFormEvents() {
@@ -10116,12 +10198,18 @@ function bindReportSpecFormEvents() {
         addSystemMessage('Enter formula column key and expression (e.g. Total_Amount = PO_Amount + Invoice_Amount).');
         return;
       }
-      const existing = reportSpecState.columns.find(c => (c.key || '').toLowerCase() === key.toLowerCase());
+      const buckets = (reportSpecState.agentColumns || [])
+        .concat(reportSpecState.userdefinedColumns || [], reportSpecState.defaultColumns || []);
+      const existing = buckets.find(c => (c.key || '').toLowerCase() === key.toLowerCase());
       if (existing) {
         existing.formula = expr;
         existing.label = existing.label || key;
+        existing.selected = true;
+        existing.kind = existing.kind || 'agent';
       } else {
-        reportSpecState.columns.push({ key, label: key.replace(/_/g, ' '), formula: expr, editable: true });
+        reportSpecState.agentColumns.push({
+          key, label: key.replace(/_/g, ' '), formula: expr, editable: true, kind: 'agent', selected: true,
+        });
       }
       renderReportSpecColumns();
       syncReportPromptFromSpec();
@@ -10429,18 +10517,25 @@ async function sendReportPromptJob() {
       const promptText = data.reportPrompt || data.report_prompt || data.prompt || '';
       const spec = data.reportSpec || data.report_spec;
       if (spec) {
+        if (!(spec.schemaTables || spec.schema_tables || []).length && (data.schemaTables || data.schema_tables)) {
+          spec.schemaTables = data.schemaTables || data.schema_tables;
+        }
         applyReportSpecToForm(spec);
         syncReportPromptFromSpec();
       } else if (promptOverride && promptText) {
         promptOverride.value = promptText;
-        applyReportSpecToForm({
+        let parsed = null;
+        try { parsed = JSON.parse(promptText); } catch (e) { parsed = null; }
+        applyReportSpecToForm(parsed || {
           title: data.title || t.name,
-          objective: promptText.split('\n')[0].replace(/^Report objective:\s*/i, '').slice(0, 240),
+          objective: promptText.slice(0, 240),
           reportType: t.key,
           columns: [],
           filters: [],
+          schemaTables: data.schemaTables || [],
           warnings: data.warnings || [],
         });
+        if (parsed) syncReportPromptFromSpec();
       }
       lastGeneratedReportPrompt = promptText || (document.getElementById('reportPromptOverride') || {}).value || '';
       currentSavedReportId = '';

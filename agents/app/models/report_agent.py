@@ -72,6 +72,8 @@ class ReportSpecColumn(BaseModel):
     label: str = ""
     formula: Optional[str] = None
     editable: bool = True
+    kind: Optional[str] = None  # userdefined | default | agent
+    selected: bool = True
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -124,6 +126,38 @@ class ReportSpec(BaseModel):
         default=None,
         serialization_alias="sourceTable",
         validation_alias=AliasChoices("sourceTable", "source_table"),
+    )
+    userdefined_columns: list[ReportSpecColumn] = Field(
+        default_factory=list,
+        serialization_alias="userdefinedColumns",
+        validation_alias=AliasChoices(
+            "userdefinedColumns",
+            "userdefined_columns",
+            "Userdefined Columns",
+        ),
+    )
+    default_columns: list[ReportSpecColumn] = Field(
+        default_factory=list,
+        serialization_alias="defaultColumns",
+        validation_alias=AliasChoices(
+            "defaultColumns",
+            "default_columns",
+            "Default columns",
+        ),
+    )
+    agent_columns: list[ReportSpecColumn] = Field(
+        default_factory=list,
+        serialization_alias="agentColumns",
+        validation_alias=AliasChoices(
+            "agentColumns",
+            "agent_columns",
+            "Agent generated columns",
+        ),
+    )
+    schema_tables: list[str] = Field(
+        default_factory=list,
+        serialization_alias="schemaTables",
+        validation_alias=AliasChoices("schemaTables", "schema_tables"),
     )
     warnings: list[str] = Field(default_factory=list)
 

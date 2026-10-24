@@ -3,7 +3,8 @@
 This is the current Report Agent as implemented, plus why the **scope model has to be redesigned**. Use this file as the brief for the next rebuild.
 
 Console: `http://localhost:8011/console` (Docker `8011 → 8000`).  
-Live tenant used for checks: `b843b988-00ec-44e3-aca2-b8470133ef63`.
+Live tenant used for checks: `b843b988-00ec-44e3-aca2-b8470133ef63`.  
+HTTP samples: `docs/report-agent-api.md`.
 
 **Hard rule today (and it should stay):** the model never writes or runs SQL. Python chooses columns, locks names, builds SQL, or counts EZOFIS catalogs in memory.
 
