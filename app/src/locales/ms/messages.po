@@ -783,13 +783,14 @@ msgstr "Tindakan"
 msgid "Action needed"
 msgstr "Tindakan diperlukan"
 
-#: src/pages/portal/components/PortalHome.tsx:91
-#: src/pages/portal/components/PortalHome.tsx:148
+#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:153
+#: src/pages/portal/components/PortalHome.tsx:158
 msgid "Action Required"
 msgstr "Tindakan Diperlukan"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
-#: src/pages/forms/FormEntriesPage.tsx:2164
+#: src/pages/forms/FormEntriesPage.tsx:2192
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
@@ -866,15 +867,15 @@ msgid "Actual vs projected"
 msgstr "Sebenar vs diunjurkan"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:296
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:293
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:296
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:516
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:299
 msgid "Add"
 msgstr "Tambah"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1459
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1502
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1554
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1470
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1565
 msgid "Add \"{query}\""
 msgstr "Tambah \"{query}\""
 
@@ -960,8 +961,8 @@ msgstr "Tambah syarat"
 msgid "Add connection"
 msgstr "Tambah sambungan"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:312
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:532
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:315
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:535
 msgid "Add custom option"
 msgstr "Tambah pilihan tersuai"
 
@@ -970,7 +971,7 @@ msgstr "Tambah pilihan tersuai"
 msgid "Add Document Rule"
 msgstr "Tambah Peraturan Dokumen"
 
-#: src/pages/forms/FormEntriesPage.tsx:2995
+#: src/pages/forms/FormEntriesPage.tsx:3023
 msgid "Add Entry"
 msgstr "Tambah Entri"
 
@@ -1383,6 +1384,7 @@ msgstr "Menjajarkan pengepala CSV/XLSX dengan skema pemetaan pangkalan data."
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
+#: src/pages/portal/components/PortalHome.tsx:126
 #: src/pages/requests/components/InboxList.tsx:2045
 #: src/pages/search/SearchPage.tsx:309
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
@@ -1460,7 +1462,7 @@ msgstr "Semua folder"
 msgid "All Mandatory fields are filled."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:543
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:546
 msgid "All options must be checked to fulfill requirements."
 msgstr "Semua pilihan mesti disemak untuk memenuhi keperluan."
 
@@ -1476,12 +1478,12 @@ msgstr ""
 msgid "All search results for “{searchLabel}”"
 msgstr "Semua hasil carian untuk “{searchLabel}”"
 
-#: src/pages/portal/components/PortalHome.tsx:88
-#: src/pages/portal/components/PortalHome.tsx:424
+#: src/pages/portal/components/PortalHome.tsx:89
+#: src/pages/portal/components/PortalHome.tsx:534
 msgid "All Status"
 msgstr "Semua Status"
 
-#: src/pages/portal/components/PortalHome.tsx:396
+#: src/pages/portal/components/PortalHome.tsx:490
 msgid "All Submissions"
 msgstr "Semua Penyerahan"
 
@@ -1541,7 +1543,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2696
+#: src/pages/requests/components/request/Request.tsx:2738
 msgid "An error occurred: {0}"
 msgstr "Ralat berlaku: {0}"
 
@@ -1754,8 +1756,9 @@ msgid "Approve selected"
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2665
-#: src/pages/portal/components/PortalHome.tsx:89
-#: src/pages/portal/components/PortalHome.tsx:134
+#: src/pages/portal/components/PortalHome.tsx:90
+#: src/pages/portal/components/PortalHome.tsx:135
+#: src/pages/portal/components/PortalHome.tsx:140
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
@@ -1866,11 +1869,11 @@ msgstr ""
 #~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3020
+#: src/pages/forms/FormEntriesPage.tsx:3048
 msgid "Are you sure you want to move"
 msgstr "Adakah anda pasti mahu berpindah"
 
-#: src/pages/forms/FormEntriesPage.tsx:3028
+#: src/pages/forms/FormEntriesPage.tsx:3056
 msgid "Are you sure you want to permanently delete"
 msgstr "Adakah anda pasti mahu memadamkan secara kekal"
 
@@ -1966,7 +1969,7 @@ msgid "Attachment"
 msgstr "Lampiran"
 
 #: src/pages/portal/components/PortalDetail.tsx:403
-#: src/pages/portal/components/PortalShell.tsx:36
+#: src/pages/portal/components/PortalShell.tsx:38
 #: src/pages/portal/components/PortalWizard.tsx:1408
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
@@ -2149,8 +2152,8 @@ msgstr "Menunggu Pengesahan"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
-#: src/pages/portal/components/PortalShell.tsx:172
-#: src/pages/portal/components/PortalShell.tsx:208
+#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:228
 #: src/pages/portal/components/PortalWizard.tsx:1275
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
@@ -2208,7 +2211,7 @@ msgstr "Kembali ke Pereka Bentuk"
 msgid "Back to Document"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2447
+#: src/pages/forms/FormEntriesPage.tsx:2475
 msgid "Back to Entries"
 msgstr "Kembali ke Entri"
 
@@ -2224,8 +2227,8 @@ msgstr ""
 msgid "Back to folder explorer"
 msgstr "Kembali ke penjelajah folder"
 
-#: src/pages/forms/FormEntriesPage.tsx:2369
-#: src/pages/forms/FormEntriesPage.tsx:2973
+#: src/pages/forms/FormEntriesPage.tsx:2397
+#: src/pages/forms/FormEntriesPage.tsx:3001
 msgid "Back to Forms"
 msgstr "Kembali ke Borang"
 
@@ -2267,7 +2270,7 @@ msgstr ""
 msgid "Back to versions"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:391
+#: src/pages/portal/components/PortalHome.tsx:485
 msgid "Back to workflows"
 msgstr "Kembali ke aliran kerja"
 
@@ -2375,7 +2378,7 @@ msgstr "Serbuk roti"
 msgid "browse"
 msgstr "semak imbas"
 
-#: src/pages/forms/FormEntriesPage.tsx:2986
+#: src/pages/forms/FormEntriesPage.tsx:3014
 msgid "Browse"
 msgstr "Semak imbas"
 
@@ -2443,7 +2446,7 @@ msgstr "Storan selamat terbina dalam"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "Tindakan pukal \"{0}\" digunakan pada permintaan __XPH1X__ berjaya!"
 
-#: src/pages/forms/FormEntriesPage.tsx:3103
+#: src/pages/forms/FormEntriesPage.tsx:3131
 msgid "Bulk Import"
 msgstr "Import Pukal"
 
@@ -2561,8 +2564,8 @@ msgstr "Boleh Lihat"
 #: src/pages/folders/components/Upload/Upload.tsx:5163
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
 #: src/pages/forms/FormEntriesPage.tsx:1025
-#: src/pages/forms/FormEntriesPage.tsx:2946
-#: src/pages/forms/FormEntriesPage.tsx:3045
+#: src/pages/forms/FormEntriesPage.tsx:2974
+#: src/pages/forms/FormEntriesPage.tsx:3073
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1319
@@ -2572,8 +2575,8 @@ msgstr "Boleh Lihat"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1570
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1166
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:302
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:522
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:305
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:525
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:765
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:1025
 #: src/pages/requests/RequestsPage.tsx:1873
@@ -2838,7 +2841,7 @@ msgstr ""
 msgid "Choose a workflow to report on..."
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:278
+#: src/pages/portal/components/PortalHome.tsx:372
 msgid "Choose a workflow to view its submissions."
 msgstr "Pilih aliran kerja untuk melihat penyerahannya."
 
@@ -2870,7 +2873,7 @@ msgstr "Pilih medan"
 #~ msgid "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2852
+#: src/pages/forms/FormEntriesPage.tsx:2880
 msgid "Choose File"
 msgstr "Pilih Fail"
 
@@ -3277,7 +3280,7 @@ msgstr "Lajur yang Dimakan:"
 #~ msgstr "Akan Datang"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
-#: src/pages/portal/components/PortalShell.tsx:42
+#: src/pages/portal/components/PortalShell.tsx:44
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
 #: src/pages/requests/components/request/components/Header.tsx:938
@@ -3316,7 +3319,7 @@ msgstr "Lengkapkan setiap peringkat, kemudian teruskan"
 msgid "Complete editing session"
 msgstr "Selesai sesi penyuntingan"
 
-#: src/pages/forms/FormEntriesPage.tsx:2466
+#: src/pages/forms/FormEntriesPage.tsx:2494
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Lengkapkan maklumat borang yang diperlukan menggunakan kanvas perusahaan dipacu metadata di bawah."
 
@@ -3962,8 +3965,8 @@ msgid "Created by"
 msgstr "Dicipta oleh"
 
 #: src/pages/folders/components/FolderTable.tsx:520
-#: src/pages/forms/FormEntriesPage.tsx:2150
-#: src/pages/forms/FormEntriesPage.tsx:3122
+#: src/pages/forms/FormEntriesPage.tsx:2178
+#: src/pages/forms/FormEntriesPage.tsx:3150
 #: src/pages/forms/FormsPage.tsx:259
 #: src/pages/forms/FormsPage.tsx:651
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2359
@@ -3974,7 +3977,7 @@ msgstr "Dicipta oleh"
 msgid "Created By"
 msgstr "Dicipta Oleh"
 
-#: src/pages/forms/FormEntriesPage.tsx:3130
+#: src/pages/forms/FormEntriesPage.tsx:3158
 #: src/pages/forms/FormsPage.tsx:662
 #: src/pages/settings/components/AuditMonitoring.tsx:361
 #: src/pages/workflows/components/Table.tsx:510
@@ -4442,8 +4445,8 @@ msgstr "Padamkan Kumpulan"
 msgid "Delete Menu"
 msgstr "Padam Menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2210
-#: src/pages/forms/FormEntriesPage.tsx:3063
+#: src/pages/forms/FormEntriesPage.tsx:2238
+#: src/pages/forms/FormEntriesPage.tsx:3091
 msgid "Delete Permanently"
 msgstr "Padam Secara Kekal"
 
@@ -5116,7 +5119,7 @@ msgstr "Draf"
 msgid "Draft Files"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2362
+#: src/pages/forms/FormEntriesPage.tsx:2390
 msgid "Draft forms do not have an entries page. Publish the form to view and collect entries."
 msgstr ""
 
@@ -5398,7 +5401,7 @@ msgstr ""
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:550
 #: src/pages/dashboard/DashboardPage.tsx:407
 #: src/pages/dashboard/DashboardPage.tsx:412
-#: src/pages/forms/FormEntriesPage.tsx:2187
+#: src/pages/forms/FormEntriesPage.tsx:2215
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
@@ -5479,11 +5482,11 @@ msgstr "Edit Dasar Keselamatan Folder"
 #~ msgid "Edit Folder Setup"
 #~ msgstr "Edit Persediaan Folder"
 
-#: src/pages/forms/FormEntriesPage.tsx:2375
+#: src/pages/forms/FormEntriesPage.tsx:2403
 msgid "Edit Form"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "Edit Form Entry"
 msgstr "Edit Entri Borang"
 
@@ -5641,8 +5644,8 @@ msgstr "kosong"
 msgid "Empty"
 msgstr "kosong"
 
-#: src/pages/forms/FormEntriesPage.tsx:2130
-#: src/pages/forms/FormEntriesPage.tsx:2140
+#: src/pages/forms/FormEntriesPage.tsx:2158
+#: src/pages/forms/FormEntriesPage.tsx:2168
 msgid "Empty form field"
 msgstr "Medan borang kosong"
 
@@ -5841,7 +5844,7 @@ msgstr "Penyulitan gred perusahaan dalam keadaan rehat"
 msgid "Entity supplying goods"
 msgstr "Entiti membekalkan barangan"
 
-#: src/pages/forms/FormEntriesPage.tsx:3171
+#: src/pages/forms/FormEntriesPage.tsx:3199
 msgid "Entries"
 msgstr "entri"
 
@@ -6125,7 +6128,7 @@ msgstr "Mengekstrak data daripada dokumen..."
 #: src/pages/portal/components/PortalWizard.tsx:1417
 #: src/pages/portal/components/PortalWizard.tsx:1424
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:198
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1887
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1898
 msgid "Extracting data from the document…"
 msgstr "Mengekstrak data daripada dokumen…"
 
@@ -6381,7 +6384,7 @@ msgid "Failed to proceed request:"
 msgstr "Gagal meneruskan permintaan:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2487
+#: src/pages/requests/components/request/Request.tsx:2529
 msgid "Failed to proceed request: {0}"
 msgstr "Gagal meneruskan permintaan: {0}"
 
@@ -6407,7 +6410,7 @@ msgid "Failed to save report"
 msgstr "Gagal menyimpan laporan"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2634
+#: src/pages/requests/components/request/Request.tsx:2676
 msgid "Failed to save request: {0}"
 msgstr "Gagal menyimpan permintaan: {0}"
 
@@ -6431,7 +6434,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2984
+#: src/pages/requests/components/request/Request.tsx:3026
 msgid "Failed to share request"
 msgstr "Gagal berkongsi permintaan"
 
@@ -6456,7 +6459,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2635
+#: src/pages/requests/components/request/Request.tsx:2677
 msgid "Failed to submit request: {0}"
 msgstr "Gagal menyerahkan permintaan: {0}"
 
@@ -6676,7 +6679,7 @@ msgid "File Upload"
 msgstr "Muat Naik Fail"
 
 #: src/pages/portal/components/PortalWizard.tsx:868
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1813
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1824
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr ""
 
@@ -6999,7 +7002,7 @@ msgstr "Terlupa Kata Laluan"
 msgid "Forgot password?"
 msgstr "Lupa kata laluan?"
 
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 msgid "Form"
 msgstr "Borang"
@@ -7032,7 +7035,7 @@ msgstr "Borang berjaya dipadamkan"
 msgid "Form Entries"
 msgstr "Penyertaan Borang"
 
-#: src/pages/forms/FormEntriesPage.tsx:2360
+#: src/pages/forms/FormEntriesPage.tsx:2388
 msgid "Form is in Draft"
 msgstr ""
 
@@ -7559,7 +7562,7 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "Keputusan Perlawanan Sejarah"
 
-#: src/pages/portal/components/PortalShell.tsx:50
+#: src/pages/portal/components/PortalShell.tsx:52
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
@@ -7721,7 +7724,7 @@ msgid "Inactive"
 msgstr "Tidak Aktif"
 
 #: src/pages/requests/components/request/components/Header.tsx:354
-#: src/pages/requests/components/request/Request.tsx:1929
+#: src/pages/requests/components/request/Request.tsx:1938
 #: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -8123,7 +8126,7 @@ msgstr ""
 #~ msgid "invoices"
 #~ msgstr "invois"
 
-#: src/pages/requests/components/request/Request.tsx:1928
+#: src/pages/requests/components/request/Request.tsx:1937
 #: src/pages/requests/RequestsPage.tsx:329
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -8216,7 +8219,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "PENERANGAN ITEM"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
-#: src/pages/forms/FormEntriesPage.tsx:2107
+#: src/pages/forms/FormEntriesPage.tsx:2135
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
 msgid "items"
 msgstr "barang"
@@ -8396,11 +8399,11 @@ msgstr "Nama Keluarga"
 #~ msgid "Launch Workflow"
 #~ msgstr "Lancarkan Aliran Kerja"
 
-#: src/pages/requests/components/request/Request.tsx:2095
+#: src/pages/requests/components/request/Request.tsx:2131
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2094
+#: src/pages/requests/components/request/Request.tsx:2130
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -8712,8 +8715,8 @@ msgstr "Memuatkan pemberitahuan..."
 msgid "Loading older comments..."
 msgstr "Memuatkan ulasan lama..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:207
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:427
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:210
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:430
 msgid "Loading options…"
 msgstr ""
 
@@ -9459,7 +9462,7 @@ msgstr "Modified Tarikh"
 msgid "Modify document content"
 msgstr "Ubah suai kandungan dokumen"
 
-#: src/pages/forms/FormEntriesPage.tsx:2467
+#: src/pages/forms/FormEntriesPage.tsx:2495
 msgid "Modify existing form response answers and save changes."
 msgstr "Ubah suai jawapan respons borang sedia ada dan simpan perubahan."
 
@@ -9528,7 +9531,7 @@ msgstr ""
 msgid "Move down"
 msgstr "Alih ke bawah"
 
-#: src/pages/forms/FormEntriesPage.tsx:3014
+#: src/pages/forms/FormEntriesPage.tsx:3042
 msgid "Move Entry to Trash"
 msgstr "Move Entri to Trash"
 
@@ -9549,8 +9552,8 @@ msgstr ""
 msgid "Move to matched items"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2193
-#: src/pages/forms/FormEntriesPage.tsx:3062
+#: src/pages/forms/FormEntriesPage.tsx:2221
+#: src/pages/forms/FormEntriesPage.tsx:3090
 msgid "Move to Trash"
 msgstr "Beralih ke Sampah"
 
@@ -9593,7 +9596,7 @@ msgstr "Akaun Saya"
 msgid "My Sign"
 msgstr "Tanda Saya"
 
-#: src/pages/portal/components/PortalHome.tsx:206
+#: src/pages/portal/components/PortalHome.tsx:235
 msgid "My Submissions"
 msgstr "Penyerahan Saya"
 
@@ -9611,7 +9614,7 @@ msgstr "N/A (Tiada nilai diperlukan)"
 #: src/pages/folders/components/DocumentsListView.tsx:538
 #: src/pages/folders/components/FolderTable.tsx:480
 #: src/pages/folders/components/FolderTable.tsx:1360
-#: src/pages/forms/FormEntriesPage.tsx:3113
+#: src/pages/forms/FormEntriesPage.tsx:3141
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
 #: src/pages/reports/components/ReportsListView.tsx:118
@@ -9773,7 +9776,7 @@ msgstr ""
 msgid "New Form"
 msgstr "Borang Baharu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "New Form Entry"
 msgstr "Kemasukan Borang Baharu"
 
@@ -9810,7 +9813,8 @@ msgstr "Permintaan Baharu"
 #~ msgid "New Role Setup"
 #~ msgstr "Persediaan Peranan Baharu"
 
-#: src/pages/portal/components/PortalHome.tsx:217
+#: src/pages/portal/components/PortalHome.tsx:246
+#: src/pages/portal/components/PortalHome.tsx:610
 #: src/pages/portal/components/PortalPicker.tsx:54
 #: src/pages/portal/components/PortalWizard.tsx:971
 #: src/pages/portal/PortalPage.tsx:485
@@ -10169,7 +10173,7 @@ msgstr "Tiada kumpulan lagi"
 msgid "No history found"
 msgstr "Tiada sejarah ditemui"
 
-#: src/pages/requests/components/request/Request.tsx:2960
+#: src/pages/requests/components/request/Request.tsx:3002
 msgid "No instance ID available to share"
 msgstr "Tiada ID contoh tersedia untuk dikongsi"
 
@@ -10384,15 +10388,15 @@ msgstr "Tiada tempat tandatangan ditugaskan kepada akaun anda."
 msgid "No signers"
 msgstr "Tiada tandatangan"
 
-#: src/pages/portal/components/PortalHome.tsx:457
+#: src/pages/portal/components/PortalHome.tsx:567
 msgid "No submissions match your search."
 msgstr "Tiada penyerahan yang sepadan dengan carian anda."
 
-#: src/pages/portal/components/PortalHome.tsx:460
+#: src/pages/portal/components/PortalHome.tsx:570
 msgid "No submissions yet."
 msgstr "Tiada penyerahan lagi."
 
-#: src/pages/portal/components/PortalHome.tsx:459
+#: src/pages/portal/components/PortalHome.tsx:569
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr "Tiada penyerahan lagi. Mulakan penyerahan baharu untuk melihatnya di sini."
 
@@ -10497,7 +10501,7 @@ msgstr ""
 #~ msgid "No workflows are connected to this portal yet."
 #~ msgstr "Belum ada aliran kerja yang disambungkan ke portal ini."
 
-#: src/pages/portal/components/PortalHome.tsx:302
+#: src/pages/portal/components/PortalHome.tsx:396
 #: src/pages/portal/components/PortalPicker.tsx:83
 msgid "No workflows match your search."
 msgstr "Tiada aliran kerja yang sepadan dengan carian anda."
@@ -10646,7 +10650,7 @@ msgid "October"
 msgstr "Oktober"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:298
-#: src/pages/portal/components/PortalHome.tsx:399
+#: src/pages/portal/components/PortalHome.tsx:493
 msgid "of"
 msgstr "daripada"
 
@@ -10702,7 +10706,7 @@ msgid "Only visible to you"
 msgstr ""
 
 #: src/pages/folders/components/FolderTable.tsx:560
-#: src/pages/portal/components/PortalHome.tsx:360
+#: src/pages/portal/components/PortalHome.tsx:454
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:449
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
@@ -11140,8 +11144,9 @@ msgid "pending"
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2669
-#: src/pages/portal/components/PortalHome.tsx:90
-#: src/pages/portal/components/PortalHome.tsx:141
+#: src/pages/portal/components/PortalHome.tsx:91
+#: src/pages/portal/components/PortalHome.tsx:144
+#: src/pages/portal/components/PortalHome.tsx:149
 #: src/pages/settings/components/ManageUser.tsx:1427
 #: src/pages/settings/components/ManageUser.tsx:2576
 msgid "Pending"
@@ -11183,7 +11188,7 @@ msgstr "Pengesahan PO yang sempurna."
 msgid "Permanent Delete"
 msgstr "Padam Kekal"
 
-#: src/pages/forms/FormEntriesPage.tsx:3015
+#: src/pages/forms/FormEntriesPage.tsx:3043
 msgid "Permanently Delete Entry"
 msgstr "Padamkan Entri Secara Kekal"
 
@@ -11279,11 +11284,11 @@ msgstr "Tandatangan Tempat"
 #~ msgid "Placeholder"
 #~ msgstr "Pemegang tempat"
 
-#: src/pages/forms/FormEntriesPage.tsx:2126
+#: src/pages/forms/FormEntriesPage.tsx:2154
 msgid "Placeholder Column 1"
 msgstr "Lajur Pemegang Tempat 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:2136
+#: src/pages/forms/FormEntriesPage.tsx:2164
 msgid "Placeholder Column 2"
 msgstr "Lajur Pemegang Tempat 2"
 
@@ -11343,7 +11348,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Sila lampirkan fail untuk meneruskan."
 
-#: src/pages/requests/components/request/Request.tsx:2346
+#: src/pages/requests/components/request/Request.tsx:2388
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -11360,12 +11365,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr ""
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2335
+#: src/pages/requests/components/request/Request.tsx:2377
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:1055
-#: src/pages/requests/components/request/Request.tsx:2373
+#: src/pages/requests/components/request/Request.tsx:2415
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -11399,7 +11404,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2354
+#: src/pages/requests/components/request/Request.tsx:2396
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -12491,7 +12496,7 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:3037
+#: src/pages/requests/components/request/Request.tsx:3079
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
 
@@ -12590,7 +12595,7 @@ msgstr ""
 #~ msgid "Read Only"
 #~ msgstr "Baca Sahaja"
 
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:773
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:775
 msgid "Read-Only at this step"
 msgstr ""
 
@@ -12772,10 +12777,11 @@ msgstr "Nombor Dokumen Rujukan"
 #: src/pages/dashboard/DashboardPage.tsx:402
 #: src/pages/folders/components/FolderFilterBar.tsx:759
 #: src/pages/folders/components/SignRequestAssignForm.tsx:473
-#: src/pages/forms/FormEntriesPage.tsx:3091
+#: src/pages/forms/FormEntriesPage.tsx:3119
 #: src/pages/forms/FormsPage.tsx:626
-#: src/pages/portal/components/PortalHome.tsx:434
-#: src/pages/portal/components/PortalHome.tsx:439
+#: src/pages/portal/components/PortalHome.tsx:500
+#: src/pages/portal/components/PortalHome.tsx:544
+#: src/pages/portal/components/PortalHome.tsx:549
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2074
@@ -12834,7 +12840,9 @@ msgstr ""
 msgid "Reject Transaction"
 msgstr "Tolak Transaksi"
 
-#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:93
+#: src/pages/portal/components/PortalHome.tsx:170
+#: src/pages/portal/components/PortalHome.tsx:175
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:62
 msgid "Rejected"
@@ -12901,8 +12909,8 @@ msgstr ""
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1783
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1929
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1794
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1940
 msgid "Remove file"
 msgstr "Buang fail"
 
@@ -13075,15 +13083,15 @@ msgstr "Permintaan {requestNo} telah berjaya dipindahkan."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "Permintaan {requestNo} berjaya dipindahkan"
 
-#: src/pages/requests/components/request/Request.tsx:2546
+#: src/pages/requests/components/request/Request.tsx:2588
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "Tindakan \"{action}\" bagi permintaan {resolvedRequestNo} berjaya diselesaikan"
 
-#: src/pages/requests/components/request/Request.tsx:2524
+#: src/pages/requests/components/request/Request.tsx:2566
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2545
+#: src/pages/requests/components/request/Request.tsx:2587
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
@@ -13107,7 +13115,7 @@ msgstr "Minta Demo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Permintaan dibuat. Anda boleh menjejakinya daripada Penyerahan Saya."
 
-#: src/pages/requests/components/request/Request.tsx:2659
+#: src/pages/requests/components/request/Request.tsx:2701
 msgid "Request is being processed."
 msgstr ""
 
@@ -13128,12 +13136,12 @@ msgstr ""
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/Request.tsx:2678
+#: src/pages/requests/components/request/Request.tsx:2720
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
 #: src/pages/requests/components/request/components/Header.tsx:665
-#: src/pages/requests/components/request/Request.tsx:2980
+#: src/pages/requests/components/request/Request.tsx:3022
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
@@ -13144,7 +13152,7 @@ msgid "Request Status"
 msgstr "Permintaan Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2679
+#: src/pages/requests/components/request/Request.tsx:2721
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
@@ -13275,7 +13283,7 @@ msgstr "Tetapkan Semula kepada Cadangan"
 msgid "Reset zoom"
 msgstr "Set semula zum"
 
-#: src/pages/forms/FormEntriesPage.tsx:2204
+#: src/pages/forms/FormEntriesPage.tsx:2232
 msgid "Restore"
 msgstr "Pulihkan"
 
@@ -13331,7 +13339,7 @@ msgstr "Cuba semula"
 msgid "Retry Ingestion"
 msgstr "Cuba Semula Pengambilan"
 
-#: src/pages/forms/FormEntriesPage.tsx:2402
+#: src/pages/forms/FormEntriesPage.tsx:2430
 msgid "Retry Loading"
 msgstr "Retry Memuatkan"
 
@@ -13748,7 +13756,7 @@ msgstr "Simpan Penjenamaan"
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/forms/FormEntriesPage.tsx:1049
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Changes"
 msgstr "Simpan Perubahan"
 
@@ -13761,7 +13769,7 @@ msgstr ""
 msgid "Save Dashboard"
 msgstr "Simpan Papan Pemuka"
 
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Entry"
 msgstr "Simpan Entri"
 
@@ -13869,7 +13877,7 @@ msgstr "Menyimpan…"
 #~ msgid "Scan documents in this folder and mask PII in the preview."
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:194
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:197
 msgid "Scan QR"
 msgstr "Imbas QR"
 
@@ -13878,7 +13886,7 @@ msgstr "Imbas QR"
 msgid "Scan QR / Barcode"
 msgstr "Imbas QR / Kod Bar"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:183
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:186
 msgid "Scan QR code to select"
 msgstr "Imbas kod QR untuk memilih"
 
@@ -14033,7 +14041,7 @@ msgstr "Carian perihalan..."
 msgid "Search email..."
 msgstr "Cari e-mel..."
 
-#: src/pages/forms/FormEntriesPage.tsx:3074
+#: src/pages/forms/FormEntriesPage.tsx:3102
 msgid "Search entries..."
 msgstr "Cari entri..."
 
@@ -14111,7 +14119,7 @@ msgstr "Pengurus carian..."
 msgid "Search media"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3116
+#: src/pages/forms/FormEntriesPage.tsx:3144
 #: src/pages/forms/FormsPage.tsx:637
 #: src/pages/settings/components/GroupManagement.tsx:631
 #: src/pages/settings/components/ManageUser.tsx:1580
@@ -14155,7 +14163,8 @@ msgstr "Cari baris..."
 msgid "Search status..."
 msgstr "Status carian..."
 
-#: src/pages/portal/components/PortalHome.tsx:408
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:518
 msgid "Search submissions…"
 msgstr "Cari penyerahan…"
 
@@ -14190,7 +14199,8 @@ msgstr ""
 msgid "Search workflows..."
 msgstr "Cari aliran kerja..."
 
-#: src/pages/portal/components/PortalHome.tsx:283
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:377
 msgid "Search workflows…"
 msgstr "Cari aliran kerja…"
 
@@ -14211,7 +14221,7 @@ msgid "Secondary"
 msgstr "Menengah"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:2477
+#: src/pages/forms/FormEntriesPage.tsx:2505
 msgid "Section {0}"
 msgstr "Bahagian {0}"
 
@@ -14256,7 +14266,7 @@ msgstr "Protokol Keselamatan"
 #~ msgid "Security Summary"
 #~ msgstr "Ringkasan Keselamatan"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1894
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1905
 msgid "See the Attachments section for uploaded files."
 msgstr "Lihat bahagian Lampiran untuk fail yang dimuat naik."
 
@@ -15269,7 +15279,8 @@ msgstr ""
 msgid "Sign Mode"
 msgstr ""
 
-#: src/pages/portal/components/PortalShell.tsx:154
+#: src/pages/portal/components/PortalShell.tsx:158
+#: src/pages/portal/components/PortalShell.tsx:171
 msgid "Sign out"
 msgstr "Log keluar"
 
@@ -15760,12 +15771,12 @@ msgstr "Subjek"
 msgid "Submission Details"
 msgstr "Butiran Penyerahan"
 
-#: src/pages/portal/components/PortalHome.tsx:357
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:451
+#: src/pages/portal/components/PortalHome.tsx:494
 msgid "submissions"
 msgstr "penyerahan"
 
-#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:212
 #: src/pages/portal/components/PortalWizard.tsx:972
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:170
@@ -16252,7 +16263,7 @@ msgstr ""
 msgid "The familiar EZOFIS experience, unchanged"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2037
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2048
 msgid "the file"
 msgstr ""
 
@@ -16332,7 +16343,7 @@ msgstr "Sedang berfikir..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "Tindakan ini tidak membawa sebarang kesan pemusnahan — ruang kerja anda diteruskan tepat seperti hari ini, cuma ditandakan sebagai pengeluaran."
 
-#: src/pages/forms/FormEntriesPage.tsx:3032
+#: src/pages/forms/FormEntriesPage.tsx:3060
 #: src/pages/forms/FormsPage.tsx:561
 #: src/pages/reports/components/ReportsListView.tsx:291
 msgid "This action is permanent and cannot be undone."
@@ -16363,8 +16374,8 @@ msgstr ""
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1951
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:466
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:523
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:593
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:524
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:595
 msgid "This field is required."
 msgstr "Medan ini diperlukan."
 
@@ -16583,7 +16594,7 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jelas, pilih contoh di bawah, atau terangkan idea folder penuh untuk jana persediaan lengkap."
 
-#: src/pages/forms/FormEntriesPage.tsx:3024
+#: src/pages/forms/FormEntriesPage.tsx:3052
 msgid "to Trash?"
 msgstr "ke Sampah?"
 
@@ -16696,7 +16707,7 @@ msgstr "Jumlah larian"
 #~ msgid "Total submitted"
 #~ msgstr "Jumlah dihantar"
 
-#: src/pages/portal/components/PortalHome.tsx:127
+#: src/pages/portal/components/PortalHome.tsx:131
 msgid "Total Submitted"
 msgstr "Jumlah Dihantar"
 
@@ -16712,7 +16723,7 @@ msgstr "Kadar Tanpa Sentuhan"
 msgid "Track processing status, approvals, and analytics from a unified dashboard."
 msgstr "Jejaki status pemprosesan, kelulusan, dan analitik dari papan pemuka bersatu."
 
-#: src/pages/portal/components/PortalHome.tsx:209
+#: src/pages/portal/components/PortalHome.tsx:238
 msgid "Track the status of everything you've submitted."
 msgstr "Jejaki status semua yang anda serahkan."
 
@@ -16741,7 +16752,7 @@ msgid "Transactions"
 msgstr "Transaksi"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
-#: src/pages/forms/FormEntriesPage.tsx:2987
+#: src/pages/forms/FormEntriesPage.tsx:3015
 msgid "Trash"
 msgstr "Tong sampah"
 
@@ -16825,8 +16836,8 @@ msgstr ""
 #~ msgid "Type an option and press Enter"
 #~ msgstr "Taip pilihan dan tekan Enter"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:278
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:498
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:281
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:501
 msgid "Type custom option..."
 msgstr "Taip pilihan tersuai..."
 
@@ -17109,7 +17120,7 @@ msgstr "Jenis fail tidak disokong. Sila muat naik fail CSV atau XLSX."
 msgid "Untitled"
 msgstr "Tanpa tajuk"
 
-#: src/pages/forms/FormEntriesPage.tsx:2017
+#: src/pages/forms/FormEntriesPage.tsx:2045
 msgid "Untitled Field"
 msgstr "Tanpa tajuk Medan"
 
@@ -17207,7 +17218,7 @@ msgstr "Menaik taraf…"
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:861
 #: src/pages/folders/components/Upload/Upload.tsx:4171
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 #: src/pages/portal/components/PortalWizard.tsx:1325
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:229
@@ -17221,7 +17232,7 @@ msgstr "Menaik taraf…"
 msgid "Upload"
 msgstr "Muat naik"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2043
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2054
 msgid "Upload \"{sourceLabel}\" first to fill this field."
 msgstr ""
 
@@ -17396,7 +17407,7 @@ msgstr "Memuat naik fail..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Memuat naik fail induk untuk memproses entri di latar belakang..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1886
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1897
 msgid "Uploading the document…"
 msgstr "Memuat naik dokumen…"
 
@@ -17847,7 +17858,7 @@ msgstr ""
 msgid "View every document version"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2096
+#: src/pages/forms/FormEntriesPage.tsx:2124
 msgid "View Line Items Table"
 msgstr "Lihat Jadual Item Baris"
 
@@ -18017,7 +18028,7 @@ msgstr "Kami telah menghantar kod 6 digit kepada {0}."
 msgid "Weekly credit consumption"
 msgstr "Penggunaan Kredit Mingguan"
 
-#: src/pages/portal/components/PortalHome.tsx:203
+#: src/pages/portal/components/PortalHome.tsx:232
 msgid "Welcome back, {displayName}."
 msgstr "Selamat kembali, {displayName}."
 
@@ -18141,7 +18152,7 @@ msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:25
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/portal/components/PortalHome.tsx:275
+#: src/pages/portal/components/PortalHome.tsx:369
 #: src/pages/search/SearchPage.tsx:322
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129

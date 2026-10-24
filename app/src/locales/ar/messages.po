@@ -758,13 +758,14 @@ msgstr "الإجراء"
 msgid "Action needed"
 msgstr "مطلوب اتخاذ إجراء"
 
-#: src/pages/portal/components/PortalHome.tsx:91
-#: src/pages/portal/components/PortalHome.tsx:148
+#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:153
+#: src/pages/portal/components/PortalHome.tsx:158
 msgid "Action Required"
 msgstr "الإجراء مطلوب"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
-#: src/pages/forms/FormEntriesPage.tsx:2164
+#: src/pages/forms/FormEntriesPage.tsx:2192
 #: src/pages/forms/FormsPage.tsx:293
 #: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
@@ -841,15 +842,15 @@ msgid "Actual vs projected"
 msgstr "الفعلي مقابل المتوقع"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:296
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:293
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:296
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:516
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:299
 msgid "Add"
 msgstr "إضافة"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1459
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1502
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1554
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1470
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1513
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1565
 msgid "Add \"{query}\""
 msgstr "إضافة \"{query}\""
 
@@ -935,8 +936,8 @@ msgstr "إضافة شرط"
 msgid "Add connection"
 msgstr "إضافة اتصال"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:312
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:532
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:315
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:535
 msgid "Add custom option"
 msgstr "إضافة خيار مخصص"
 
@@ -945,7 +946,7 @@ msgstr "إضافة خيار مخصص"
 msgid "Add Document Rule"
 msgstr "إضافة قاعدة المستند"
 
-#: src/pages/forms/FormEntriesPage.tsx:2995
+#: src/pages/forms/FormEntriesPage.tsx:3023
 msgid "Add Entry"
 msgstr "إضافة إدخال"
 
@@ -1358,6 +1359,7 @@ msgstr "محاذاة رؤوس CSV/XLSX مع مخطط ربط قاعدة البي�
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
+#: src/pages/portal/components/PortalHome.tsx:126
 #: src/pages/requests/components/InboxList.tsx:2045
 #: src/pages/search/SearchPage.tsx:309
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
@@ -1435,7 +1437,7 @@ msgstr "كافة المجلدات"
 msgid "All Mandatory fields are filled."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:543
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:546
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
@@ -1451,12 +1453,12 @@ msgstr ""
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
-#: src/pages/portal/components/PortalHome.tsx:88
-#: src/pages/portal/components/PortalHome.tsx:424
+#: src/pages/portal/components/PortalHome.tsx:89
+#: src/pages/portal/components/PortalHome.tsx:534
 msgid "All Status"
 msgstr "كل الحالة"
 
-#: src/pages/portal/components/PortalHome.tsx:396
+#: src/pages/portal/components/PortalHome.tsx:490
 msgid "All Submissions"
 msgstr "جميع التقديمات"
 
@@ -1516,7 +1518,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2696
+#: src/pages/requests/components/request/Request.tsx:2738
 msgid "An error occurred: {0}"
 msgstr "حدث خطأ: {0}"
 
@@ -1729,8 +1731,9 @@ msgid "Approve selected"
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2665
-#: src/pages/portal/components/PortalHome.tsx:89
-#: src/pages/portal/components/PortalHome.tsx:134
+#: src/pages/portal/components/PortalHome.tsx:90
+#: src/pages/portal/components/PortalHome.tsx:135
+#: src/pages/portal/components/PortalHome.tsx:140
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
@@ -1841,11 +1844,11 @@ msgstr ""
 #~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3020
+#: src/pages/forms/FormEntriesPage.tsx:3048
 msgid "Are you sure you want to move"
 msgstr "هل أنت متأكد أنك تريد التحرك"
 
-#: src/pages/forms/FormEntriesPage.tsx:3028
+#: src/pages/forms/FormEntriesPage.tsx:3056
 msgid "Are you sure you want to permanently delete"
 msgstr "هل أنت متأكد أنك تريد الحذف نهائيًا"
 
@@ -1941,7 +1944,7 @@ msgid "Attachment"
 msgstr "مرفق"
 
 #: src/pages/portal/components/PortalDetail.tsx:403
-#: src/pages/portal/components/PortalShell.tsx:36
+#: src/pages/portal/components/PortalShell.tsx:38
 #: src/pages/portal/components/PortalWizard.tsx:1408
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
@@ -2124,8 +2127,8 @@ msgstr "في انتظار التحقق"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
-#: src/pages/portal/components/PortalShell.tsx:172
-#: src/pages/portal/components/PortalShell.tsx:208
+#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:228
 #: src/pages/portal/components/PortalWizard.tsx:1275
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
@@ -2183,7 +2186,7 @@ msgstr "العودة إلى المصمم"
 msgid "Back to Document"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2447
+#: src/pages/forms/FormEntriesPage.tsx:2475
 msgid "Back to Entries"
 msgstr "Back to الإدخالات"
 
@@ -2199,8 +2202,8 @@ msgstr ""
 msgid "Back to folder explorer"
 msgstr "العودة إلى مستكشف المجلدات"
 
-#: src/pages/forms/FormEntriesPage.tsx:2369
-#: src/pages/forms/FormEntriesPage.tsx:2973
+#: src/pages/forms/FormEntriesPage.tsx:2397
+#: src/pages/forms/FormEntriesPage.tsx:3001
 msgid "Back to Forms"
 msgstr "Back to نموذجs"
 
@@ -2242,7 +2245,7 @@ msgstr ""
 msgid "Back to versions"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:391
+#: src/pages/portal/components/PortalHome.tsx:485
 msgid "Back to workflows"
 msgstr "العودة إلى سير العمل"
 
@@ -2350,7 +2353,7 @@ msgstr "مسار التنقل"
 msgid "browse"
 msgstr "تصفح"
 
-#: src/pages/forms/FormEntriesPage.tsx:2986
+#: src/pages/forms/FormEntriesPage.tsx:3014
 msgid "Browse"
 msgstr "تصفح"
 
@@ -2418,7 +2421,7 @@ msgstr "تخزين آمن مدمج"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "تم تطبيق الإجراء المجمع \"{0}\" على طلبات {1} بنجاح!"
 
-#: src/pages/forms/FormEntriesPage.tsx:3103
+#: src/pages/forms/FormEntriesPage.tsx:3131
 msgid "Bulk Import"
 msgstr "استيراد بالجملة"
 
@@ -2536,8 +2539,8 @@ msgstr "يمكنه العرض"
 #: src/pages/folders/components/Upload/Upload.tsx:5163
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
 #: src/pages/forms/FormEntriesPage.tsx:1025
-#: src/pages/forms/FormEntriesPage.tsx:2946
-#: src/pages/forms/FormEntriesPage.tsx:3045
+#: src/pages/forms/FormEntriesPage.tsx:2974
+#: src/pages/forms/FormEntriesPage.tsx:3073
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1319
@@ -2547,8 +2550,8 @@ msgstr "يمكنه العرض"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1570
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1166
 #: src/pages/requests/components/request/ForwardPopover.tsx:192
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:302
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:522
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:305
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:525
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:765
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:1025
 #: src/pages/requests/RequestsPage.tsx:1873
@@ -2813,7 +2816,7 @@ msgstr ""
 msgid "Choose a workflow to report on..."
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:278
+#: src/pages/portal/components/PortalHome.tsx:372
 msgid "Choose a workflow to view its submissions."
 msgstr "اختر سير عمل لعرض التقديمات الخاصة به."
 
@@ -2841,7 +2844,7 @@ msgstr "اختيار الحقول"
 #~ msgid "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2852
+#: src/pages/forms/FormEntriesPage.tsx:2880
 msgid "Choose File"
 msgstr "اختر ملف"
 
@@ -3248,7 +3251,7 @@ msgstr "الأعمدة المستوردة:"
 #~ msgstr "قريباً"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
-#: src/pages/portal/components/PortalShell.tsx:42
+#: src/pages/portal/components/PortalShell.tsx:44
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
 #: src/pages/requests/components/request/components/Header.tsx:938
@@ -3287,7 +3290,7 @@ msgstr "أكمل كل مرحلة، ثم تابع"
 msgid "Complete editing session"
 msgstr "جلسة تحرير كاملة"
 
-#: src/pages/forms/FormEntriesPage.tsx:2466
+#: src/pages/forms/FormEntriesPage.tsx:2494
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "أكمل معلومات النموذج المطلوبة باستخدام لوحة المؤسسة المستندة إلى بيانات التعريف أدناه."
 
@@ -3917,8 +3920,8 @@ msgid "Created by"
 msgstr "تم إنشاؤها بواسطة"
 
 #: src/pages/folders/components/FolderTable.tsx:520
-#: src/pages/forms/FormEntriesPage.tsx:2150
-#: src/pages/forms/FormEntriesPage.tsx:3122
+#: src/pages/forms/FormEntriesPage.tsx:2178
+#: src/pages/forms/FormEntriesPage.tsx:3150
 #: src/pages/forms/FormsPage.tsx:259
 #: src/pages/forms/FormsPage.tsx:651
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2359
@@ -3929,7 +3932,7 @@ msgstr "تم إنشاؤها بواسطة"
 msgid "Created By"
 msgstr "إنشاءd By"
 
-#: src/pages/forms/FormEntriesPage.tsx:3130
+#: src/pages/forms/FormEntriesPage.tsx:3158
 #: src/pages/forms/FormsPage.tsx:662
 #: src/pages/settings/components/AuditMonitoring.tsx:361
 #: src/pages/workflows/components/Table.tsx:510
@@ -4389,8 +4392,8 @@ msgstr "حذف المجموعة"
 msgid "Delete Menu"
 msgstr "حذف القائمة"
 
-#: src/pages/forms/FormEntriesPage.tsx:2210
-#: src/pages/forms/FormEntriesPage.tsx:3063
+#: src/pages/forms/FormEntriesPage.tsx:2238
+#: src/pages/forms/FormEntriesPage.tsx:3091
 msgid "Delete Permanently"
 msgstr "حذف نهائيا"
 
@@ -5059,7 +5062,7 @@ msgstr "مسودة"
 msgid "Draft Files"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2362
+#: src/pages/forms/FormEntriesPage.tsx:2390
 msgid "Draft forms do not have an entries page. Publish the form to view and collect entries."
 msgstr ""
 
@@ -5333,7 +5336,7 @@ msgstr ""
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:550
 #: src/pages/dashboard/DashboardPage.tsx:407
 #: src/pages/dashboard/DashboardPage.tsx:412
-#: src/pages/forms/FormEntriesPage.tsx:2187
+#: src/pages/forms/FormEntriesPage.tsx:2215
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
@@ -5406,11 +5409,11 @@ msgstr "تحرير الملف"
 msgid "Edit Folder Security Policy"
 msgstr "تحرير سياسة أمان المجلد"
 
-#: src/pages/forms/FormEntriesPage.tsx:2375
+#: src/pages/forms/FormEntriesPage.tsx:2403
 msgid "Edit Form"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "Edit Form Entry"
 msgstr "تحرير إدخال النموذج"
 
@@ -5568,8 +5571,8 @@ msgstr "فارغ"
 msgid "Empty"
 msgstr "فارغ"
 
-#: src/pages/forms/FormEntriesPage.tsx:2130
-#: src/pages/forms/FormEntriesPage.tsx:2140
+#: src/pages/forms/FormEntriesPage.tsx:2158
+#: src/pages/forms/FormEntriesPage.tsx:2168
 msgid "Empty form field"
 msgstr "حقل نموذج فارغ"
 
@@ -5768,7 +5771,7 @@ msgstr "تشفير على مستوى المؤسسات أثناء الراحة"
 msgid "Entity supplying goods"
 msgstr "الجهة الموردة للسلع"
 
-#: src/pages/forms/FormEntriesPage.tsx:3171
+#: src/pages/forms/FormEntriesPage.tsx:3199
 msgid "Entries"
 msgstr "الإدخالات"
 
@@ -6052,7 +6055,7 @@ msgstr "جارٍ استخراج البيانات من المستند..."
 #: src/pages/portal/components/PortalWizard.tsx:1417
 #: src/pages/portal/components/PortalWizard.tsx:1424
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:198
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1887
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1898
 msgid "Extracting data from the document…"
 msgstr "جارٍ استخراج البيانات من المستند..."
 
@@ -6308,7 +6311,7 @@ msgid "Failed to proceed request:"
 msgstr "فشلت متابعة الطلب:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2487
+#: src/pages/requests/components/request/Request.tsx:2529
 msgid "Failed to proceed request: {0}"
 msgstr "فشلت متابعة الطلب: {0}"
 
@@ -6334,7 +6337,7 @@ msgid "Failed to save report"
 msgstr "فشل حفظ التقرير"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2634
+#: src/pages/requests/components/request/Request.tsx:2676
 msgid "Failed to save request: {0}"
 msgstr "فشل حفظ الطلب: {0}"
 
@@ -6358,7 +6361,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2984
+#: src/pages/requests/components/request/Request.tsx:3026
 msgid "Failed to share request"
 msgstr "فشلت مشاركة الطلب"
 
@@ -6383,7 +6386,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2635
+#: src/pages/requests/components/request/Request.tsx:2677
 msgid "Failed to submit request: {0}"
 msgstr "فشل إرسال الطلب: {0}"
 
@@ -6603,7 +6606,7 @@ msgid "File Upload"
 msgstr "رفع الملف"
 
 #: src/pages/portal/components/PortalWizard.tsx:868
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1813
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1824
 msgid "File upload isn't available for this request. Please contact your administrator."
 msgstr ""
 
@@ -6918,7 +6921,7 @@ msgstr "نسيت كلمة المرور"
 msgid "Forgot password?"
 msgstr "نسيت كلمة المرور؟"
 
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 msgid "Form"
 msgstr "استمارة"
@@ -6951,7 +6954,7 @@ msgstr "نموذج deleted successfully"
 msgid "Form Entries"
 msgstr "إدخالات النموذج"
 
-#: src/pages/forms/FormEntriesPage.tsx:2360
+#: src/pages/forms/FormEntriesPage.tsx:2388
 msgid "Form is in Draft"
 msgstr ""
 
@@ -7474,7 +7477,7 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "نتائج المطابقة التاريخية"
 
-#: src/pages/portal/components/PortalShell.tsx:50
+#: src/pages/portal/components/PortalShell.tsx:52
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
@@ -7636,7 +7639,7 @@ msgid "Inactive"
 msgstr "غير نشط"
 
 #: src/pages/requests/components/request/components/Header.tsx:354
-#: src/pages/requests/components/request/Request.tsx:1929
+#: src/pages/requests/components/request/Request.tsx:1938
 #: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
@@ -8038,7 +8041,7 @@ msgstr ""
 #~ msgid "invoices"
 #~ msgstr "فواتير"
 
-#: src/pages/requests/components/request/Request.tsx:1928
+#: src/pages/requests/components/request/Request.tsx:1937
 #: src/pages/requests/RequestsPage.tsx:329
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
@@ -8131,7 +8134,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "وصف البند"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
-#: src/pages/forms/FormEntriesPage.tsx:2107
+#: src/pages/forms/FormEntriesPage.tsx:2135
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
 msgid "items"
 msgstr "أغراض"
@@ -8311,11 +8314,11 @@ msgstr "اسم العائلة"
 #~ msgid "Launch Workflow"
 #~ msgstr "تشغيل سير العمل"
 
-#: src/pages/requests/components/request/Request.tsx:2095
+#: src/pages/requests/components/request/Request.tsx:2131
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2094
+#: src/pages/requests/components/request/Request.tsx:2130
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -8627,8 +8630,8 @@ msgstr "جارٍ تحميل الإشعارات..."
 msgid "Loading older comments..."
 msgstr "جارٍ تحميل التعليقات القديمة..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:207
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:427
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:210
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:430
 msgid "Loading options…"
 msgstr ""
 
@@ -9370,7 +9373,7 @@ msgstr "Modified التاريخ"
 msgid "Modify document content"
 msgstr "تعديل محتوى الوثيقة"
 
-#: src/pages/forms/FormEntriesPage.tsx:2467
+#: src/pages/forms/FormEntriesPage.tsx:2495
 msgid "Modify existing form response answers and save changes."
 msgstr "تعديل إجابات استجابة النموذج الموجودة وحفظ التغييرات."
 
@@ -9439,7 +9442,7 @@ msgstr ""
 msgid "Move down"
 msgstr "تحريك لأسفل"
 
-#: src/pages/forms/FormEntriesPage.tsx:3014
+#: src/pages/forms/FormEntriesPage.tsx:3042
 msgid "Move Entry to Trash"
 msgstr "نقل الإدخال إلى سلة المهملات"
 
@@ -9460,8 +9463,8 @@ msgstr ""
 msgid "Move to matched items"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2193
-#: src/pages/forms/FormEntriesPage.tsx:3062
+#: src/pages/forms/FormEntriesPage.tsx:2221
+#: src/pages/forms/FormEntriesPage.tsx:3090
 msgid "Move to Trash"
 msgstr "الانتقال إلى سلة المهملات"
 
@@ -9504,7 +9507,7 @@ msgstr "حسابي"
 msgid "My Sign"
 msgstr "علامة بلدي"
 
-#: src/pages/portal/components/PortalHome.tsx:206
+#: src/pages/portal/components/PortalHome.tsx:235
 msgid "My Submissions"
 msgstr "إرسالاتي"
 
@@ -9522,7 +9525,7 @@ msgstr "غير متوفر (لا توجد قيمة مطلوبة)"
 #: src/pages/folders/components/DocumentsListView.tsx:538
 #: src/pages/folders/components/FolderTable.tsx:480
 #: src/pages/folders/components/FolderTable.tsx:1360
-#: src/pages/forms/FormEntriesPage.tsx:3113
+#: src/pages/forms/FormEntriesPage.tsx:3141
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
 #: src/pages/reports/components/ReportsListView.tsx:118
@@ -9675,7 +9678,7 @@ msgstr ""
 msgid "New Form"
 msgstr "جديد نموذج"
 
-#: src/pages/forms/FormEntriesPage.tsx:2461
+#: src/pages/forms/FormEntriesPage.tsx:2489
 msgid "New Form Entry"
 msgstr "جديد نموذج Entry"
 
@@ -9712,7 +9715,8 @@ msgstr "طلب جديد"
 #~ msgid "New Role Setup"
 #~ msgstr "إعداد دور جديد"
 
-#: src/pages/portal/components/PortalHome.tsx:217
+#: src/pages/portal/components/PortalHome.tsx:246
+#: src/pages/portal/components/PortalHome.tsx:610
 #: src/pages/portal/components/PortalPicker.tsx:54
 #: src/pages/portal/components/PortalWizard.tsx:971
 #: src/pages/portal/PortalPage.tsx:485
@@ -10067,7 +10071,7 @@ msgstr "لا توجد مجموعات حتى الآن"
 msgid "No history found"
 msgstr "لم يتم العثور على التاريخ"
 
-#: src/pages/requests/components/request/Request.tsx:2960
+#: src/pages/requests/components/request/Request.tsx:3002
 msgid "No instance ID available to share"
 msgstr "لا يوجد معرف مثيل متاح للمشاركة"
 
@@ -10282,15 +10286,15 @@ msgstr "لم يُعيَّن موضع توقيع لحسابك على هذا ال�
 msgid "No signers"
 msgstr "لا يوجد موقّعون"
 
-#: src/pages/portal/components/PortalHome.tsx:457
+#: src/pages/portal/components/PortalHome.tsx:567
 msgid "No submissions match your search."
 msgstr "لا توجد طلبات تطابق بحثك."
 
-#: src/pages/portal/components/PortalHome.tsx:460
+#: src/pages/portal/components/PortalHome.tsx:570
 msgid "No submissions yet."
 msgstr "لا يوجد تقديمات حتى الآن."
 
-#: src/pages/portal/components/PortalHome.tsx:459
+#: src/pages/portal/components/PortalHome.tsx:569
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr "لا يوجد تقديمات حتى الآن. ابدأ إرسالًا جديدًا لرؤيته هنا."
 
@@ -10389,7 +10393,7 @@ msgstr ""
 #~ msgid "No workflows are connected to this portal yet."
 #~ msgstr "لا توجد مهام سير عمل متصلة بهذه البوابة بعد."
 
-#: src/pages/portal/components/PortalHome.tsx:302
+#: src/pages/portal/components/PortalHome.tsx:396
 #: src/pages/portal/components/PortalPicker.tsx:83
 msgid "No workflows match your search."
 msgstr "لا توجد مسارات عمل تتطابق مع بحثك."
@@ -10538,7 +10542,7 @@ msgid "October"
 msgstr "أكتوبر"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:298
-#: src/pages/portal/components/PortalHome.tsx:399
+#: src/pages/portal/components/PortalHome.tsx:493
 msgid "of"
 msgstr "ل"
 
@@ -10594,7 +10598,7 @@ msgid "Only visible to you"
 msgstr ""
 
 #: src/pages/folders/components/FolderTable.tsx:560
-#: src/pages/portal/components/PortalHome.tsx:360
+#: src/pages/portal/components/PortalHome.tsx:454
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:449
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:790
 msgid "Open"
@@ -11024,8 +11028,9 @@ msgid "pending"
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2669
-#: src/pages/portal/components/PortalHome.tsx:90
-#: src/pages/portal/components/PortalHome.tsx:141
+#: src/pages/portal/components/PortalHome.tsx:91
+#: src/pages/portal/components/PortalHome.tsx:144
+#: src/pages/portal/components/PortalHome.tsx:149
 #: src/pages/settings/components/ManageUser.tsx:1427
 #: src/pages/settings/components/ManageUser.tsx:2576
 msgid "Pending"
@@ -11067,7 +11072,7 @@ msgstr "تحقق مثالي من أمر الشراء."
 msgid "Permanent Delete"
 msgstr "الحذف الدائم"
 
-#: src/pages/forms/FormEntriesPage.tsx:3015
+#: src/pages/forms/FormEntriesPage.tsx:3043
 msgid "Permanently Delete Entry"
 msgstr "حذف الإدخال نهائيًا"
 
@@ -11163,11 +11168,11 @@ msgstr "مكان التوقيع"
 #~ msgid "Placeholder"
 #~ msgstr "النص التوضيحي"
 
-#: src/pages/forms/FormEntriesPage.tsx:2126
+#: src/pages/forms/FormEntriesPage.tsx:2154
 msgid "Placeholder Column 1"
 msgstr "العمود النائب 1"
 
-#: src/pages/forms/FormEntriesPage.tsx:2136
+#: src/pages/forms/FormEntriesPage.tsx:2164
 msgid "Placeholder Column 2"
 msgstr "العمود النائب 2"
 
@@ -11227,7 +11232,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "يرجى إرفاق ملف للمتابعة."
 
-#: src/pages/requests/components/request/Request.tsx:2346
+#: src/pages/requests/components/request/Request.tsx:2388
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -11244,12 +11249,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr ""
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2335
+#: src/pages/requests/components/request/Request.tsx:2377
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:1055
-#: src/pages/requests/components/request/Request.tsx:2373
+#: src/pages/requests/components/request/Request.tsx:2415
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -11283,7 +11288,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2354
+#: src/pages/requests/components/request/Request.tsx:2396
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -12371,7 +12376,7 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:3037
+#: src/pages/requests/components/request/Request.tsx:3079
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
 
@@ -12470,7 +12475,7 @@ msgstr ""
 #~ msgid "Read Only"
 #~ msgstr "للقراءة فقط"
 
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:773
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:775
 msgid "Read-Only at this step"
 msgstr ""
 
@@ -12652,10 +12657,11 @@ msgstr "رقم المستند المرجعي"
 #: src/pages/dashboard/DashboardPage.tsx:402
 #: src/pages/folders/components/FolderFilterBar.tsx:759
 #: src/pages/folders/components/SignRequestAssignForm.tsx:473
-#: src/pages/forms/FormEntriesPage.tsx:3091
+#: src/pages/forms/FormEntriesPage.tsx:3119
 #: src/pages/forms/FormsPage.tsx:626
-#: src/pages/portal/components/PortalHome.tsx:434
-#: src/pages/portal/components/PortalHome.tsx:439
+#: src/pages/portal/components/PortalHome.tsx:500
+#: src/pages/portal/components/PortalHome.tsx:544
+#: src/pages/portal/components/PortalHome.tsx:549
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2074
@@ -12714,7 +12720,9 @@ msgstr ""
 msgid "Reject Transaction"
 msgstr "رفض المعاملة"
 
-#: src/pages/portal/components/PortalHome.tsx:92
+#: src/pages/portal/components/PortalHome.tsx:93
+#: src/pages/portal/components/PortalHome.tsx:170
+#: src/pages/portal/components/PortalHome.tsx:175
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:62
 msgid "Rejected"
@@ -12781,8 +12789,8 @@ msgstr ""
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:158
 #: src/pages/folders/components/Upload/UploadQueueFileCard.tsx:160
 #: src/pages/portal/components/PortalDocumentUpload.tsx:135
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1783
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1929
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1794
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1940
 msgid "Remove file"
 msgstr "إزالة الملف"
 
@@ -12955,15 +12963,15 @@ msgstr "تم نقل الطلب {requestNo} بنجاح."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "تم نقل الطلب {requestNo} بنجاح"
 
-#: src/pages/requests/components/request/Request.tsx:2546
+#: src/pages/requests/components/request/Request.tsx:2588
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "اكتمل إجراء \"{action}\" للطلب {resolvedRequestNo} بنجاح"
 
-#: src/pages/requests/components/request/Request.tsx:2524
+#: src/pages/requests/components/request/Request.tsx:2566
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2545
+#: src/pages/requests/components/request/Request.tsx:2587
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "تم إرسال الطلب {resolvedRequestNo} بنجاح"
 
@@ -12987,7 +12995,7 @@ msgstr "اطلب عرضاً توضيحياً"
 msgid "Request created. You can track it from My Submissions."
 msgstr "تم إنشاء الطلب. يمكنك تتبع ذلك من التقديمات الخاصة بي."
 
-#: src/pages/requests/components/request/Request.tsx:2659
+#: src/pages/requests/components/request/Request.tsx:2701
 msgid "Request is being processed."
 msgstr ""
 
@@ -13008,12 +13016,12 @@ msgstr ""
 msgid "Request Owner"
 msgstr "مالك الطلب"
 
-#: src/pages/requests/components/request/Request.tsx:2678
+#: src/pages/requests/components/request/Request.tsx:2720
 msgid "Request saved successfully"
 msgstr "تم حفظ الطلب بنجاح"
 
 #: src/pages/requests/components/request/components/Header.tsx:665
-#: src/pages/requests/components/request/Request.tsx:2980
+#: src/pages/requests/components/request/Request.tsx:3022
 msgid "Request shared successfully"
 msgstr "تمت مشاركة الطلب بنجاح"
 
@@ -13024,7 +13032,7 @@ msgid "Request Status"
 msgstr "طلب Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2679
+#: src/pages/requests/components/request/Request.tsx:2721
 msgid "Request submitted successfully"
 msgstr "تم إرسال الطلب بنجاح"
 
@@ -13151,7 +13159,7 @@ msgstr "إعادة التعيين إلى المقترح"
 msgid "Reset zoom"
 msgstr "إعادة تعيين التكبير"
 
-#: src/pages/forms/FormEntriesPage.tsx:2204
+#: src/pages/forms/FormEntriesPage.tsx:2232
 msgid "Restore"
 msgstr "يعيد"
 
@@ -13207,7 +13215,7 @@ msgstr "إعادة المحاولة"
 msgid "Retry Ingestion"
 msgstr "إعادة محاولة الاستيراد"
 
-#: src/pages/forms/FormEntriesPage.tsx:2402
+#: src/pages/forms/FormEntriesPage.tsx:2430
 msgid "Retry Loading"
 msgstr "أعد محاولة التحميل"
 
@@ -13620,7 +13628,7 @@ msgstr "حفظ العلامة التجارية"
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/forms/FormEntriesPage.tsx:1049
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Changes"
 msgstr "حفظ التغييرات"
 
@@ -13633,7 +13641,7 @@ msgstr ""
 msgid "Save Dashboard"
 msgstr "حفظ لوحة القيادة"
 
-#: src/pages/forms/FormEntriesPage.tsx:2954
+#: src/pages/forms/FormEntriesPage.tsx:2982
 msgid "Save Entry"
 msgstr "حفظ الإدخال"
 
@@ -13741,7 +13749,7 @@ msgstr "جارٍ الحفظ..."
 #~ msgid "Scan documents in this folder and mask PII in the preview."
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:194
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:197
 msgid "Scan QR"
 msgstr "مسح QR"
 
@@ -13750,7 +13758,7 @@ msgstr "مسح QR"
 msgid "Scan QR / Barcode"
 msgstr "مسح QR / الباركود"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:183
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:186
 msgid "Scan QR code to select"
 msgstr "مسح رمز الاستجابة السريعة لتحديد"
 
@@ -13905,7 +13913,7 @@ msgstr "وصف البحث..."
 msgid "Search email..."
 msgstr "البحث في البريد الإلكتروني..."
 
-#: src/pages/forms/FormEntriesPage.tsx:3074
+#: src/pages/forms/FormEntriesPage.tsx:3102
 msgid "Search entries..."
 msgstr "بحث entries..."
 
@@ -13983,7 +13991,7 @@ msgstr "مدير البحث..."
 msgid "Search media"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3116
+#: src/pages/forms/FormEntriesPage.tsx:3144
 #: src/pages/forms/FormsPage.tsx:637
 #: src/pages/settings/components/GroupManagement.tsx:631
 #: src/pages/settings/components/ManageUser.tsx:1580
@@ -14027,7 +14035,8 @@ msgstr "البحث في الصفوف..."
 msgid "Search status..."
 msgstr "بحث status..."
 
-#: src/pages/portal/components/PortalHome.tsx:408
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:518
 msgid "Search submissions…"
 msgstr "بحث في التقديمات…"
 
@@ -14062,7 +14071,8 @@ msgstr ""
 msgid "Search workflows..."
 msgstr "بحث workflows..."
 
-#: src/pages/portal/components/PortalHome.tsx:283
+#: src/pages/portal/components/PortalHome.tsx:263
+#: src/pages/portal/components/PortalHome.tsx:377
 msgid "Search workflows…"
 msgstr "بحث سير العمل..."
 
@@ -14083,7 +14093,7 @@ msgid "Secondary"
 msgstr "ثانوي"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:2477
+#: src/pages/forms/FormEntriesPage.tsx:2505
 msgid "Section {0}"
 msgstr "القسم {0}"
 
@@ -14115,7 +14125,7 @@ msgstr "الأمان والتحقق"
 msgid "Security Protocol"
 msgstr "بروتوكول الأمان"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1894
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1905
 msgid "See the Attachments section for uploaded files."
 msgstr "راجع قسم المرفقات للاطلاع على الملفات التي تم تحميلها."
 
@@ -15094,7 +15104,8 @@ msgstr ""
 msgid "Sign Mode"
 msgstr ""
 
-#: src/pages/portal/components/PortalShell.tsx:154
+#: src/pages/portal/components/PortalShell.tsx:158
+#: src/pages/portal/components/PortalShell.tsx:171
 msgid "Sign out"
 msgstr "تسجيل الخروج"
 
@@ -15585,12 +15596,12 @@ msgstr "الموضوع"
 msgid "Submission Details"
 msgstr "تفاصيل التقديم"
 
-#: src/pages/portal/components/PortalHome.tsx:357
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:451
+#: src/pages/portal/components/PortalHome.tsx:494
 msgid "submissions"
 msgstr "التقديمات"
 
-#: src/pages/portal/components/PortalShell.tsx:192
+#: src/pages/portal/components/PortalShell.tsx:212
 #: src/pages/portal/components/PortalWizard.tsx:972
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:170
@@ -16077,7 +16088,7 @@ msgstr ""
 msgid "The familiar EZOFIS experience, unchanged"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2037
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2048
 msgid "the file"
 msgstr ""
 
@@ -16157,7 +16168,7 @@ msgstr "جارٍ التفكير..."
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "هذا الإجراء ليس له أي تأثير إتلافي — ستستمر مساحة عملك تماماً كما هي اليوم، مع تصنيفها فقط كإنتاج."
 
-#: src/pages/forms/FormEntriesPage.tsx:3032
+#: src/pages/forms/FormEntriesPage.tsx:3060
 #: src/pages/forms/FormsPage.tsx:561
 #: src/pages/reports/components/ReportsListView.tsx:291
 msgid "This action is permanent and cannot be undone."
@@ -16188,8 +16199,8 @@ msgstr ""
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1951
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:466
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:523
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:593
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:524
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:595
 msgid "This field is required."
 msgstr "هذه الخانة مطلوبه."
 
@@ -16408,7 +16419,7 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "للبدء: ما اسم هذا الممجلد؟ استخدم اسماً تجارياً واضحاً، أو اختر مثالاً أدناه، أو صف فكرة مجلد كاملة لإنشاء إعداد متكامل."
 
-#: src/pages/forms/FormEntriesPage.tsx:3024
+#: src/pages/forms/FormEntriesPage.tsx:3052
 msgid "to Trash?"
 msgstr "إلى سلة المهملات؟"
 
@@ -16521,7 +16532,7 @@ msgstr "إجمالي عمليات التشغيل"
 #~ msgid "Total submitted"
 #~ msgstr "إجمالي ما تم إرساله"
 
-#: src/pages/portal/components/PortalHome.tsx:127
+#: src/pages/portal/components/PortalHome.tsx:131
 msgid "Total Submitted"
 msgstr "إجمالي المقدم"
 
@@ -16537,7 +16548,7 @@ msgstr "معدل المعالجة الآلية"
 msgid "Track processing status, approvals, and analytics from a unified dashboard."
 msgstr "تتبع حالة المعالجة والموافقات والتحليلات من لوحة معلومات موحدة."
 
-#: src/pages/portal/components/PortalHome.tsx:209
+#: src/pages/portal/components/PortalHome.tsx:238
 msgid "Track the status of everything you've submitted."
 msgstr "تتبع حالة كل ما قدمته."
 
@@ -16566,7 +16577,7 @@ msgid "Transactions"
 msgstr "المعاملات"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
-#: src/pages/forms/FormEntriesPage.tsx:2987
+#: src/pages/forms/FormEntriesPage.tsx:3015
 msgid "Trash"
 msgstr "سلة المهملات"
 
@@ -16650,8 +16661,8 @@ msgstr ""
 #~ msgid "Type an option and press Enter"
 #~ msgstr "اكتب خيارًا واضغط على Enter"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:278
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:498
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:281
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:501
 msgid "Type custom option..."
 msgstr "اكتب خيارًا مخصصًا..."
 
@@ -16934,7 +16945,7 @@ msgstr "نوع ملف غير مدعوم. يرجى رفع ملف CSV أو XLSX."
 msgid "Untitled"
 msgstr "بدون عنوان"
 
-#: src/pages/forms/FormEntriesPage.tsx:2017
+#: src/pages/forms/FormEntriesPage.tsx:2045
 msgid "Untitled Field"
 msgstr "بدون عنوان Field"
 
@@ -17032,7 +17043,7 @@ msgstr "جارٍ الترقية…"
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:861
 #: src/pages/folders/components/Upload/Upload.tsx:4171
-#: src/pages/portal/components/PortalHome.tsx:348
+#: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
 #: src/pages/portal/components/PortalWizard.tsx:1325
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:229
@@ -17046,7 +17057,7 @@ msgstr "جارٍ الترقية…"
 msgid "Upload"
 msgstr "رفع"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2043
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:2054
 msgid "Upload \"{sourceLabel}\" first to fill this field."
 msgstr ""
 
@@ -17221,7 +17232,7 @@ msgstr "جاري رفع الملف..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "جارٍ تحميل الملف الرئيسي لمعالجة الإدخالات في الخلفية..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1886
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1897
 msgid "Uploading the document…"
 msgstr "جارٍ تحميل المستند…"
 
@@ -17664,7 +17675,7 @@ msgstr ""
 msgid "View every document version"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2096
+#: src/pages/forms/FormEntriesPage.tsx:2124
 msgid "View Line Items Table"
 msgstr "عرض Line Items Table"
 
@@ -17834,7 +17845,7 @@ msgstr "أرسلنا رمزاً مكوناً من 6 أرقام إلى {0}."
 msgid "Weekly credit consumption"
 msgstr "الاستهلاك الأسبوعي للرصيد"
 
-#: src/pages/portal/components/PortalHome.tsx:203
+#: src/pages/portal/components/PortalHome.tsx:232
 msgid "Welcome back, {displayName}."
 msgstr "مرحبًا بعودتك، {displayName}."
 
@@ -17958,7 +17969,7 @@ msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:25
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/portal/components/PortalHome.tsx:275
+#: src/pages/portal/components/PortalHome.tsx:369
 #: src/pages/search/SearchPage.tsx:322
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
