@@ -72,14 +72,32 @@ public sealed class ReportAiBuilderController : ControllerBase
         return ToActionResult(await _service.UpdateAsync(RequireTenantId(), id, request, cancellationToken));
     }
 
-    /// <summary>Load the saved prompt for this report id and run it. Returns columns + rows.</summary>
+    /// <summary>Soft-delete a saved AI report. Owner or Admin only.</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
+        ToActionResult(
+            await _service.DeleteAsync(RequireTenantId(), RequireUserId(), IsAdmin(), id, cancellationToken));
+
+    /// <summary>
+    /// Load the saved prompt for this report id and run it.
+    /// JSON rows by default; set download=true for CSV/PDF/Excel, sendEmail=true to mail the file.
+    /// </summary>
     [HttpPost("{id:guid}/run")]
     public async Task<IActionResult> Run(
         Guid id,
         [FromBody] ReportAiRunRequest? request,
+        [FromQuery] bool download = false,
+        [FromQuery] bool sendEmail = false,
+        [FromQuery] string? format = null,
         CancellationToken cancellationToken)
     {
         request ??= new ReportAiRunRequest();
+        if (download)
+            request.Download = true;
+        if (sendEmail)
+            request.SendEmail = true;
+        if (!string.IsNullOrWhiteSpace(format))
+            request.Format = format;
         return ToActionResult(await _service.RunSavedAsync(RequireTenantId(), id, request, cancellationToken));
     }
 
@@ -98,6 +116,15 @@ public sealed class ReportAiBuilderController : ControllerBase
         return id;
     }
 
-    private static IActionResult ToActionResult(ReportAiHttpResult result) =>
-        new ObjectResult(result.Payload) { StatusCode = result.StatusCode };
+    private bool IsAdmin() =>
+        User.IsInRole("Admin")
+        || User.HasClaim(ClaimTypes.Role, "Admin")
+        || User.HasClaim("role", "Admin");
+
+    private IActionResult ToActionResult(ReportAiHttpResult result)
+    {
+        if (result.File is not null)
+            return File(result.File.Content, result.File.ContentType, result.File.FileName);
+        return new ObjectResult(result.Payload) { StatusCode = result.StatusCode };
+    }
 }

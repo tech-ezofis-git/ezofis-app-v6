@@ -182,6 +182,34 @@ public sealed class ReportAiDefinitionService : IReportAiDefinitionService
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task<bool> DeleteAsync(
+        Guid tenantId,
+        Guid userId,
+        bool isAdmin,
+        Guid reportId,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await GetAsync(tenantId, reportId, cancellationToken);
+        if (existing is null)
+            return false;
+        if (!isAdmin && existing.OwnerUserId != userId)
+            throw new UnauthorizedAccessException("Only the owner or an Admin can delete this report.");
+
+        await using var connection = new NpgsqlConnection(RequireConnection());
+        await connection.OpenAsync(cancellationToken);
+        const string sql = """
+            UPDATE reporting."ReportAiDefinitions"
+            SET "IsDeleted" = true, "ModifiedAtUtc" = now(), "ModifiedBy" = @UserId
+            WHERE "Id" = @Id AND "TenantId" = @TenantId AND "IsDeleted" = false;
+            """;
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@Id", reportId);
+        cmd.Parameters.AddWithValue("@TenantId", tenantId);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+        var n = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return n > 0;
+    }
+
     private async Task EnsureSchemaAsync(CancellationToken cancellationToken)
     {
         await using var connection = new NpgsqlConnection(RequireConnection());

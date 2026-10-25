@@ -26,4 +26,11 @@ public interface IReportAiDefinitionService
         Guid tenantId,
         Guid reportId,
         CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteAsync(
+        Guid tenantId,
+        Guid userId,
+        bool isAdmin,
+        Guid reportId,
+        CancellationToken cancellationToken = default);
 }
