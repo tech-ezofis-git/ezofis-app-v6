@@ -277,7 +277,8 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
         item["key"] if isinstance(item, dict) else str(item)
         for item in prompt["columns"]
     }
-    assert {"requestNo", "workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
+    assert {"workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
+    assert "requestNo" not in prompt_col_keys
     parsed = spec_from_prompt_json(json.dumps(prompt))
     assert parsed is not None
     assert parsed.user_prompt == "Aging across all workflows"
@@ -326,6 +327,10 @@ def test_userdefined_columns_come_from_form_table_only():
     assert "createdAtUtc" in default_keys
     assert {"workflowId", "itemId", "instanceId"} <= default_keys
     assert "Company_Name" not in default_keys
+    assert any(c.key == "requestNo" and c.selected for c in spec.default_columns)
+    assert any(c.key == "stage" and c.selected for c in spec.default_columns)
+    listing_keys = {c.key for c in spec.columns}
+    assert {"requestNo", "stage", "status", "startedBy", "workflowName"} <= listing_keys
 
 
 def test_repository_default_columns_include_item_id():
