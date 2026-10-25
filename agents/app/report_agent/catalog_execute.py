@@ -6,6 +6,8 @@ from collections import defaultdict
 from datetime import date, datetime
 from typing import Any, Optional
 
+from app.data_import.ident import quote_ident
+from app.global_search.schema import fetch_columns, find_table, pick_id_column, qualified, row_get
 from app.models.report_agent import ReportColumnOut, ReportSpec
 from app.report_agent.highlight import column_outs
 
@@ -98,6 +100,7 @@ _WF_STATUS_LABELS = {
     4: "Rejected",
     5: "On Hold",
 }
+_HYDRATE_CONCURRENCY = 8
 
 
 def _pick(row: dict[str, Any], *names: str) -> Any:
@@ -177,6 +180,26 @@ def _current_stage(row: dict[str, Any]) -> str:
             if status in (1, "1", "InProgress", "inprogress", "In Progress"):
                 return str(_pick(step, "stepName", "name", "activity", "stage") or "").strip()
     return str(_pick(row, "stage", "currentStage", "activity", "stepName") or "").strip()
+
+
+def _compact_id(value: Any) -> str:
+    return str(value or "").replace("-", "").lower()
+
+
+def _sql_col(by_lower: dict[str, str], *names: str) -> str:
+    for name in names:
+        found = by_lower.get(name.lower())
+        if found:
+            return found
+    return ""
+
+
+def _needs_request_no(spec: ReportSpec) -> bool:
+    return bool(_keys(spec) & {"requestno", "id"})
+
+
+def _needs_stage(spec: ReportSpec) -> bool:
+    return "stage" in _keys(spec)
 
 
 def _request_no(row: dict[str, Any]) -> str:
@@ -279,6 +302,204 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
     return shaped
 
 
+def _merge_instance_detail(row: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(row or {})
+    for key, value in (detail or {}).items():
+        if key in {"ok", "error", "error_type", "detail", "status_code"}:
+            continue
+        if value in (None, "", [], {}):
+            continue
+        current = merged.get(key)
+        if current in (None, "", [], {}) or key in {
+            "stepInstances",
+            "step_instances",
+            "currentStepInstanceId",
+            "current_step_instance_id",
+        }:
+            merged[key] = value
+    return merged
+
+
+async def _hydrate_instance_details(
+    ezofis: Any,
+    *,
+    tenant_id: str,
+    workflow_id: str,
+    rows: list[dict[str, Any]],
+    spec: ReportSpec,
+) -> list[dict[str, Any]]:
+    """LIST /instances is a thin DTO; stage lives on GET /instances/{id}.stepInstances."""
+    if not rows or not _needs_stage(spec):
+        return rows
+    getter = getattr(ezofis, "get_workflow_instance", None)
+    if not callable(getter):
+        return rows
+    sem = asyncio.Semaphore(_HYDRATE_CONCURRENCY)
+
+    async def _one(row: dict[str, Any]) -> dict[str, Any]:
+        if _current_stage(row):
+            return row
+        inst_id = str(_pick(row, "instanceId", "instance_id", "id") or "").strip()
+        if not inst_id:
+            return row
+        async with sem:
+            try:
+                detail = await getter(
+                    tenant_id=tenant_id, workflow_id=workflow_id, instance_id=inst_id
+                )
+            except Exception:
+                return row
+        if not isinstance(detail, dict) or detail.get("ok") is False:
+            return row
+        return _merge_instance_detail(row, detail)
+
+    return list(await asyncio.gather(*[_one(row) for row in rows]))
+
+
+async def _sql_ticket_maps(
+    db: Any, suffix: str, instance_ids: list[str]
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Map compact instance id → requestNo / stage from workflow_instances_* then mailbox."""
+    req: dict[str, str] = {}
+    stage: dict[str, str] = {}
+    compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
+    if db is None or not suffix or not compact_ids:
+        return req, stage
+
+    async def _ingest(sql: str) -> None:
+        rows = await db.fetch(sql, compact_ids)
+        for row in rows or []:
+            cid = _compact_id(row_get(row, "instance_id"))
+            if not cid:
+                continue
+            number = str(row_get(row, "request_no") or "").strip()
+            if number and not _is_guid(number) and cid not in req:
+                req[cid] = number
+            named = str(row_get(row, "stage") or "").strip()
+            if named and cid not in stage:
+                stage[cid] = named
+
+    located = await find_table(
+        db,
+        (f"workflow_instances_{suffix}", f"workflowinstances_{suffix}"),
+        prefer_schemas=("workflow", "dbo", "public"),
+    )
+    if located:
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        id_col = pick_id_column(by_lower) or by_lower.get("id")
+        ref_col = _sql_col(by_lower, "reference_number", "referencenumber")
+        req_col = _sql_col(by_lower, "request_no", "requestno", "requestnumber", "request_number")
+        stage_col = _sql_col(
+            by_lower,
+            "stage",
+            "current_stage",
+            "currentstage",
+            "activity",
+            "step_name",
+            "current_step_name",
+        )
+        if id_col:
+            parts = [f"CAST({quote_ident(id_col)} AS text) AS instance_id"]
+            if ref_col and req_col and req_col != ref_col:
+                parts.append(
+                    f"COALESCE(NULLIF(TRIM(CAST({quote_ident(ref_col)} AS text)), ''), "
+                    f"NULLIF(TRIM(CAST({quote_ident(req_col)} AS text)), '')) AS request_no"
+                )
+            elif ref_col:
+                parts.append(f"CAST({quote_ident(ref_col)} AS text) AS request_no")
+            elif req_col:
+                parts.append(f"CAST({quote_ident(req_col)} AS text) AS request_no")
+            if stage_col:
+                parts.append(f"CAST({quote_ident(stage_col)} AS text) AS stage")
+            sql = (
+                f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+                f"WHERE lower(replace(CAST({quote_ident(id_col)} AS text), '-', '')) = ANY($1::text[])"
+            )
+            await _ingest(sql)
+
+    for prefix in ("inbox", "sent", "completed"):
+        located = await find_table(
+            db,
+            (f"{prefix}_{suffix}",),
+            prefer_schemas=("workflow", "dbo", "public"),
+        )
+        if located is None:
+            continue
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        inst_col = _sql_col(
+            by_lower,
+            "workflow_instance_id",
+            "workflowinstanceid",
+            "instanceid",
+            "instance_id",
+            "process_id",
+            "processid",
+        )
+        ref_col = _sql_col(
+            by_lower,
+            "reference_number",
+            "referencenumber",
+            "request_no",
+            "requestno",
+            "requestnumber",
+        )
+        stage_col = _sql_col(by_lower, "stage", "current_stage", "currentstage", "activity", "step_name")
+        if not inst_col:
+            continue
+        parts = [f"CAST({quote_ident(inst_col)} AS text) AS instance_id"]
+        if ref_col:
+            parts.append(f"CAST({quote_ident(ref_col)} AS text) AS request_no")
+        if stage_col:
+            parts.append(f"CAST({quote_ident(stage_col)} AS text) AS stage")
+        if len(parts) == 1:
+            continue
+        sql = (
+            f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+            f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
+        )
+        await _ingest(sql)
+    return req, stage
+
+
+async def _attach_sql_ticket_fields(
+    db: Any, workflow_id: str, rows: list[dict[str, Any]], spec: ReportSpec
+) -> list[dict[str, Any]]:
+    """V6 requestNo is SQL reference_number (LIST/GET instance DTO does not include it)."""
+    if db is None or not rows:
+        return rows
+    need_req = _needs_request_no(spec)
+    need_stage = _needs_stage(spec)
+    if not need_req and not need_stage:
+        return rows
+    if need_req and all(_request_no(row) for row in rows) and (
+        not need_stage or all(_current_stage(row) for row in rows)
+    ):
+        return rows
+    suffix = _compact_id(workflow_id)[:8]
+    if not suffix:
+        return rows
+    try:
+        req_map, stage_map = await _sql_ticket_maps(
+            db, suffix, [str(_pick(row, "instanceId", "instance_id", "id") or "") for row in rows]
+        )
+    except Exception:
+        return rows
+    if not req_map and not stage_map:
+        return rows
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        compact = _compact_id(_pick(item, "instanceId", "instance_id", "id"))
+        if need_req and not _request_no(item) and compact in req_map:
+            item["requestNo"] = req_map[compact]
+        if need_stage and not _current_stage(item) and compact in stage_map:
+            item["stage"] = stage_map[compact]
+        out.append(item)
+    return out
+
+
 async def execute_catalog_spec(
     ezofis: Any,
     spec: ReportSpec,
@@ -289,20 +510,23 @@ async def execute_catalog_spec(
     page_size: int = 25,
     workflow_name: Optional[str] = None,
     repository_name: Optional[str] = None,
+    db: Any = None,
 ) -> Optional[tuple[list[ReportColumnOut], list[dict[str, Any]], int, list[str]]]:
     table = (spec.source_table or "").lower()
     rt = (report_type or spec.report_type or "").lower()
     if rt == "specific_workflow":
         if not wants_instance_execute(spec, rt):
             return None
-        rows = await _workflow_rows(ezofis, spec, tenant_id, workflow_name=workflow_name)
+        rows = await _workflow_rows(
+            ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
+        )
         page_rows, total = _paginate(rows, page, page_size)
         warnings = [f"Loaded live EZOFIS instances for '{workflow_name or spec.title}'."]
         if total == 0:
             warnings.append("EZOFIS returned no workflow instances for this workflow.")
         return (_col_outs(spec), page_rows, total, warnings)
     if rt == "all_workflows" or table == "workflow_instances_all":
-        rows = await _workflow_rows(ezofis, spec, tenant_id)
+        rows = await _workflow_rows(ezofis, spec, tenant_id, db=db)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS workflow instances across the tenant catalog."]
         if total == 0:
@@ -333,6 +557,7 @@ async def _workflow_rows(
     tenant_id: str,
     *,
     workflow_name: Optional[str] = None,
+    db: Any = None,
 ) -> list[dict[str, Any]]:
     listed = _match_named(await ezofis.list_workflows(tenant_id), workflow_name or "")
 
@@ -342,7 +567,15 @@ async def _workflow_rows(
         if not wf_id:
             return []
         instances = await ezofis.list_workflow_instances(tenant_id=tenant_id, workflow_id=wf_id)
-        return [_normalize_instance(row, wf_id=wf_id, wf_name=wf_name) for row in instances or []]
+        instances = await _hydrate_instance_details(
+            ezofis,
+            tenant_id=tenant_id,
+            workflow_id=wf_id,
+            rows=list(instances or []),
+            spec=spec,
+        )
+        instances = await _attach_sql_ticket_fields(db, wf_id, instances, spec)
+        return [_normalize_instance(row, wf_id=wf_id, wf_name=wf_name) for row in instances]
 
     batches = await asyncio.gather(*[_one(item) for item in listed or []], return_exceptions=True)
     records: list[dict[str, Any]] = []
