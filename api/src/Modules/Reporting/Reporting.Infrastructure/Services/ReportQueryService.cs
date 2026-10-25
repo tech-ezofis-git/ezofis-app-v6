@@ -102,28 +102,63 @@ public sealed class ReportQueryService : IReportQueryService
         var controls = await LoadControlsAsync(connection, formId, cancellationToken);
         var columns = BuildColumns(config, controls, ezfbColumns);
 
-        string? processFormTable = null;
+        ReportWorkflowJoin? join = null;
         if (workflow != null)
         {
-            var pfName = $"process_form_{ReportEzfbNaming.WorkflowTableSuffix(workflow.Id)}";
-            if (await ReportEzfbNaming.TableExistsAsync(connection, "workflow", pfName, cancellationToken))
-                processFormTable = pfName;
+            var suffix = ReportEzfbNaming.WorkflowTableSuffix(workflow.Id);
+            var pfName = $"process_form_{suffix}";
+            var instances = $"workflow_instances_{suffix}";
+            var inbox = $"inbox_{suffix}";
+            var steps = $"workflow_step_instances_{suffix}";
+            var processForm = await ReportEzfbNaming.TableExistsAsync(connection, "workflow", pfName, cancellationToken)
+                ? pfName
+                : null;
+            var instancesTable = await ReportEzfbNaming.TableExistsAsync(connection, "workflow", instances, cancellationToken)
+                ? instances
+                : null;
+            var inboxTable = await ReportEzfbNaming.TableExistsAsync(connection, "workflow", inbox, cancellationToken)
+                ? inbox
+                : null;
+            var stepsTable = await ReportEzfbNaming.TableExistsAsync(connection, "workflow", steps, cancellationToken)
+                ? steps
+                : null;
+            if (processForm != null || instancesTable != null || inboxTable != null)
+            {
+                join = new ReportWorkflowJoin(
+                    processForm,
+                    instancesTable,
+                    inboxTable,
+                    stepsTable,
+                    ReportWorkflowIdentity.TryReadWaitingDays(config.Name, config.Description),
+                    (config.Filters ?? []).Any(f =>
+                        ReportWorkflowIdentity.LooksLikePendingFormFlag(f.Field, f.FieldId)));
+            }
         }
 
+        BindIdentityExpressions(columns, join);
+
         var rows = await TryReadRowsAsync(
-            connection, tableName, processFormTable, applyDeletedFilter: true,
+            connection, tableName, join, applyDeletedFilter: true,
             columns, config.Filters, ezfbColumns, controls, cancellationToken);
-        if (rows.Count == 0)
+        if (rows.Count == 0 && join != null)
         {
             rows = await TryReadRowsAsync(
-                connection, tableName, processFormTable: null, applyDeletedFilter: true,
+                connection, tableName, join with { WaitingDays = null }, applyDeletedFilter: true,
+                columns, config.Filters, ezfbColumns, controls, cancellationToken);
+        }
+
+        if (rows.Count == 0)
+        {
+            BindIdentityExpressions(columns, join: null);
+            rows = await TryReadRowsAsync(
+                connection, tableName, join: null, applyDeletedFilter: true,
                 columns, config.Filters, ezfbColumns, controls, cancellationToken);
         }
 
         if (rows.Count == 0)
         {
             rows = await TryReadRowsAsync(
-                connection, tableName, processFormTable: null, applyDeletedFilter: false,
+                connection, tableName, join: null, applyDeletedFilter: false,
                 columns, config.Filters, ezfbColumns, controls, cancellationToken);
         }
 
@@ -392,18 +427,31 @@ public sealed class ReportQueryService : IReportQueryService
                 key = $"{label}_{columns.Count}";
 
             var isCalculated = IsCalculated(setting?.ColType, setting?.Calc, setting?.Formula ?? setting?.Expression);
+            ReportWorkflowIdentityKind? identityKind = null;
+            if (!isCalculated && ReportWorkflowIdentity.TryMap(field, jsonId, label, out var mappedIdentity))
+                identityKind = mappedIdentity;
+            var hasIdentity = identityKind is not null;
+            var preferIdentity = hasIdentity && ReportWorkflowIdentity.PreferOverForm(identityKind!.Value);
+
             string? sqlColumn = null;
-            if (!isCalculated
+            if (!isCalculated && !preferIdentity
                 && ReportEzfbNaming.TryResolveColumn(control?.ColumnName, control?.Name ?? jsonId, jsonId, ezfbColumns, out var byStored)
                 && !string.IsNullOrWhiteSpace(byStored))
                 sqlColumn = byStored;
-            if (sqlColumn is null && !isCalculated && ReportEzfbNaming.TryResolveColumn(jsonId, ezfbColumns, out var byJson))
+            if (sqlColumn is null && !isCalculated && !preferIdentity && ReportEzfbNaming.TryResolveColumn(jsonId, ezfbColumns, out var byJson))
                 sqlColumn = byJson;
-            if (sqlColumn is null && !isCalculated && control?.Name != null
+            if (sqlColumn is null && !isCalculated && !preferIdentity && control?.Name != null
                 && ReportEzfbNaming.TryResolveColumn(control.Name, ezfbColumns, out var byName))
                 sqlColumn = byName;
-            if (sqlColumn is null && !isCalculated)
+            if (sqlColumn is null && !isCalculated && !preferIdentity)
                 ReportEzfbNaming.TryResolveColumn(field, ezfbColumns, out sqlColumn);
+
+            ReportWorkflowIdentityKind? boundIdentity = null;
+            if (hasIdentity && (preferIdentity || string.IsNullOrWhiteSpace(sqlColumn)))
+            {
+                sqlColumn = ReportWorkflowIdentity.Alias(identityKind!.Value);
+                boundIdentity = identityKind;
+            }
 
             columns.Add(new ResolvedColumn(
                 key,
@@ -414,7 +462,8 @@ public sealed class ReportQueryService : IReportQueryService
                 setting?.Width is > 0 ? setting.Width.Value : 160,
                 isCalculated,
                 setting?.Formula ?? setting?.Expression,
-                jsonId));
+                jsonId,
+                boundIdentity));
         }
 
         foreach (var custom in config.CustomFields ?? [])
@@ -470,7 +519,7 @@ public sealed class ReportQueryService : IReportQueryService
     private static async Task<List<Dictionary<string, string?>>> TryReadRowsAsync(
         NpgsqlConnection connection,
         string tableName,
-        string? processFormTable,
+        ReportWorkflowJoin? join,
         bool applyDeletedFilter,
         IReadOnlyList<ResolvedColumn> columns,
         IReadOnlyList<ReportFilter>? filters,
@@ -481,7 +530,7 @@ public sealed class ReportQueryService : IReportQueryService
         try
         {
             return await ReadRowsAsync(
-                connection, tableName, processFormTable, applyDeletedFilter,
+                connection, tableName, join, applyDeletedFilter,
                 columns, filters, ezfbColumns, controls, cancellationToken);
         }
         catch (PostgresException)
@@ -497,7 +546,7 @@ public sealed class ReportQueryService : IReportQueryService
     private static async Task<List<Dictionary<string, string?>>> ReadRowsAsync(
         NpgsqlConnection connection,
         string tableName,
-        string? processFormTable,
+        ReportWorkflowJoin? join,
         bool applyDeletedFilter,
         IReadOnlyList<ResolvedColumn> columns,
         IReadOnlyList<ReportFilter>? filters,
@@ -506,7 +555,7 @@ public sealed class ReportQueryService : IReportQueryService
         CancellationToken cancellationToken)
     {
         var selectSql = BuildSelect(
-            tableName, processFormTable, applyDeletedFilter,
+            tableName, join, applyDeletedFilter,
             columns, filters, ezfbColumns, controls, out var parameters);
         var rows = new List<Dictionary<string, string?>>();
 
@@ -536,10 +585,15 @@ public sealed class ReportQueryService : IReportQueryService
 
                 var cell = ReportEzfbNaming.DisplayCell(reader.IsDBNull(ord) ? null : reader.GetValue(ord));
                 row[col.Label] = cell;
+                if (!string.Equals(col.Key, col.Label, StringComparison.OrdinalIgnoreCase))
+                    row[col.Key] = cell;
             }
 
             foreach (var col in columns)
+            {
                 row.TryAdd(col.Label, string.Empty);
+                row.TryAdd(col.Key, string.Empty);
+            }
 
             rows.Add(row);
         }
@@ -549,7 +603,7 @@ public sealed class ReportQueryService : IReportQueryService
 
     private static string BuildSelect(
         string tableName,
-        string? processFormTable,
+        ReportWorkflowJoin? join,
         bool applyDeletedFilter,
         IReadOnlyList<ResolvedColumn> columns,
         IReadOnlyList<ReportFilter>? filters,
@@ -558,35 +612,41 @@ public sealed class ReportQueryService : IReportQueryService
         out List<NpgsqlParameter> parameters)
     {
         parameters = [];
-        var selectCols = columns
-            .Where(c => !string.IsNullOrWhiteSpace(c.SqlColumn))
-            .Select(c => c.SqlColumn!.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var hasInstances = !string.IsNullOrWhiteSpace(join?.InstancesTable);
+        var hasInbox = !string.IsNullOrWhiteSpace(join?.InboxTable);
+        var hasSteps = !string.IsNullOrWhiteSpace(join?.StepsTable);
+        var prefix = join == null ? "" : "e.";
 
-        if (selectCols.Count == 0)
-            selectCols.Add("item_id");
-
-        var prefix = processFormTable == null ? "" : "e.";
-        var selectList = string.Join(", ", selectCols.Select(c => $"{prefix}{ReportEzfbNaming.QuoteEzfbColumn(c)}"));
-        var sql = new StringBuilder();
-        sql.AppendLine($"SELECT {selectList}");
-        if (processFormTable == null)
+        var selectParts = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var col in columns.Where(c => !string.IsNullOrWhiteSpace(c.SqlColumn)))
         {
-            sql.AppendLine($"FROM dbo.\"{tableName}\"");
-            if (applyDeletedFilter)
-                sql.AppendLine("WHERE (is_deleted = false OR is_deleted IS NULL)");
+            var alias = col.SqlColumn!.Trim();
+            if (!seen.Add(alias))
+                continue;
+            if (!string.IsNullOrWhiteSpace(col.SelectExpr))
+                selectParts.Add($"{col.SelectExpr} AS \"{ReportEzfbNaming.EscapeColumn(alias)}\"");
             else
-                sql.AppendLine("WHERE 1 = 1");
+                selectParts.Add($"{prefix}{ReportEzfbNaming.QuoteEzfbColumn(alias)}");
         }
-        else
+
+        if (selectParts.Count == 0)
+            selectParts.Add($"{prefix}item_id");
+
+        var sql = new StringBuilder();
+        sql.AppendLine($"SELECT {string.Join(", ", selectParts)}");
+        AppendFrom(sql, tableName, join, applyDeletedFilter);
+
+        if (join?.RequirePending == true && hasInbox)
+            sql.AppendLine(" AND mb.stage IS NOT NULL");
+        else if (join?.RequirePending == true && hasInstances)
+            sql.AppendLine(" AND wi.status IN (0, 1, 2)");
+
+        if (join?.WaitingDays is int days and > 0)
         {
-            // Join ezfb.item_id (uuid) to process_form.form_entry_id (uuid) — never int.
-            sql.AppendLine($"FROM workflow.{processFormTable} pf");
-            sql.AppendLine($"INNER JOIN dbo.\"{tableName}\" e ON e.item_id = pf.form_entry_id");
-            sql.AppendLine("WHERE (pf.is_deleted = false OR pf.is_deleted IS NULL)");
-            if (applyDeletedFilter)
-                sql.AppendLine(" AND (e.is_deleted = false OR e.is_deleted IS NULL)");
+            var since = ReportWorkflowIdentity.WaitingSinceExpr(hasInstances, hasInbox, hasSteps);
+            sql.AppendLine($" AND {since} <= (NOW() AT TIME ZONE 'utc') - make_interval(days => @waitDays)");
+            parameters.Add(new NpgsqlParameter("@waitDays", days));
         }
 
         var index = 0;
@@ -601,18 +661,33 @@ public sealed class ReportQueryService : IReportQueryService
             if (string.IsNullOrWhiteSpace(rawValue) && op is not ("isempty" or "isnotempty"))
                 continue;
 
-            var control = FindControl(controls, filter.FieldId, filter.Field ?? fieldToken);
-            var jsonId = FirstNonEmpty(filter.FieldId, control?.JsonId, fieldToken)!;
-            if (!ReportEzfbNaming.TryResolveColumn(control?.ColumnName, control?.Name ?? jsonId, jsonId, ezfbColumns, out var col)
-                && (control?.Name == null || !ReportEzfbNaming.TryResolveColumn(control.Name, ezfbColumns, out col)))
-            {
+            if (join != null
+                && ReportWorkflowIdentity.LooksLikePendingFormFlag(fieldToken, filter.Field)
+                && (hasInbox || hasSteps))
                 continue;
+
+            string? ident = null;
+            if (ReportWorkflowIdentity.TryMap(fieldToken, filter.FieldId, filter.Field, out var identity)
+                && ReportWorkflowIdentity.PreferOverForm(identity))
+            {
+                ident = ReportWorkflowIdentity.FilterIdent(identity, hasInstances, hasInbox, hasSteps);
             }
 
-            if (string.IsNullOrWhiteSpace(col))
-                continue;
+            if (ident is null)
+            {
+                var control = FindControl(controls, filter.FieldId, filter.Field ?? fieldToken);
+                var jsonId = FirstNonEmpty(filter.FieldId, control?.JsonId, fieldToken)!;
+                if (!ReportEzfbNaming.TryResolveColumn(control?.ColumnName, control?.Name ?? jsonId, jsonId, ezfbColumns, out var col)
+                    && (control?.Name == null || !ReportEzfbNaming.TryResolveColumn(control.Name, ezfbColumns, out col)))
+                {
+                    continue;
+                }
 
-            var ident = $"{prefix}{ReportEzfbNaming.QuoteEzfbColumn(col)}";
+                if (string.IsNullOrWhiteSpace(col))
+                    continue;
+                ident = $"{prefix}{ReportEzfbNaming.QuoteEzfbColumn(col)}";
+            }
+
             var pName = $"@f{index++}";
 
             switch (op)
@@ -663,6 +738,79 @@ public sealed class ReportQueryService : IReportQueryService
         sql.AppendLine($"ORDER BY {prefix}item_id DESC");
         sql.AppendLine($"LIMIT {MaxRows}");
         return sql.ToString();
+    }
+
+    private static void AppendFrom(
+        StringBuilder sql,
+        string tableName,
+        ReportWorkflowJoin? join,
+        bool applyDeletedFilter)
+    {
+        if (join == null)
+        {
+            sql.AppendLine($"FROM dbo.\"{tableName}\"");
+            sql.AppendLine(applyDeletedFilter
+                ? "WHERE (is_deleted = false OR is_deleted IS NULL)"
+                : "WHERE 1 = 1");
+            return;
+        }
+
+        var hasProcess = !string.IsNullOrWhiteSpace(join.ProcessFormTable);
+        if (hasProcess)
+        {
+            sql.AppendLine($"FROM workflow.{join.ProcessFormTable} pf");
+            sql.AppendLine($"INNER JOIN dbo.\"{tableName}\" e ON e.item_id = pf.form_entry_id");
+            if (!string.IsNullOrWhiteSpace(join.InstancesTable))
+                sql.AppendLine($"LEFT JOIN workflow.{join.InstancesTable} wi ON wi.id = pf.workflow_instance_id");
+        }
+        else
+        {
+            sql.AppendLine($"FROM dbo.\"{tableName}\" e");
+        }
+
+        if (!string.IsNullOrWhiteSpace(join.InboxTable))
+        {
+            sql.AppendLine("LEFT JOIN LATERAL (");
+            sql.AppendLine("  SELECT stage, name, transaction_created_by, created_by_name, activity_user_email,");
+            sql.AppendLine("         created_at_utc, started_at_utc, transaction_created_at, workflow_instance_id");
+            sql.AppendLine($"  FROM workflow.{join.InboxTable} mb0");
+            if (hasProcess && !string.IsNullOrWhiteSpace(join.InstancesTable))
+                sql.AppendLine("  WHERE mb0.workflow_instance_id = wi.id::text OR mb0.form_entry_id = e.item_id::text");
+            else
+                sql.AppendLine("  WHERE mb0.form_entry_id = e.item_id::text");
+            sql.AppendLine("  ORDER BY COALESCE(mb0.started_at_utc, mb0.created_at_utc, mb0.transaction_created_at) DESC NULLS LAST");
+            sql.AppendLine("  LIMIT 1");
+            sql.AppendLine(") mb ON true");
+        }
+
+        if (!hasProcess && !string.IsNullOrWhiteSpace(join.InstancesTable))
+        {
+            sql.AppendLine(!string.IsNullOrWhiteSpace(join.InboxTable)
+                ? $"LEFT JOIN workflow.{join.InstancesTable} wi ON wi.id::text = mb.workflow_instance_id"
+                : $"LEFT JOIN workflow.{join.InstancesTable} wi ON false");
+        }
+
+        if (!string.IsNullOrWhiteSpace(join.StepsTable) && !string.IsNullOrWhiteSpace(join.InstancesTable))
+        {
+            sql.AppendLine("LEFT JOIN LATERAL (");
+            sql.AppendLine("  SELECT step_name, started_at_utc");
+            sql.AppendLine($"  FROM workflow.{join.StepsTable} s0");
+            sql.AppendLine("  WHERE s0.workflow_instance_id = wi.id AND s0.status IN (0, 1, 2)");
+            sql.AppendLine("  ORDER BY COALESCE(s0.started_at_utc, s0.created_at_utc) DESC NULLS LAST");
+            sql.AppendLine("  LIMIT 1");
+            sql.AppendLine(") si ON true");
+        }
+
+        if (hasProcess)
+        {
+            sql.AppendLine("WHERE (pf.is_deleted = false OR pf.is_deleted IS NULL)");
+            if (applyDeletedFilter)
+                sql.AppendLine(" AND (e.is_deleted = false OR e.is_deleted IS NULL)");
+        }
+        else if (applyDeletedFilter)
+            sql.AppendLine("WHERE (e.is_deleted = false OR e.is_deleted IS NULL)");
+        else
+            sql.AppendLine("WHERE 1 = 1");
     }
 
     private static void ApplyCalculatedColumns(
@@ -777,9 +925,35 @@ public sealed class ReportQueryService : IReportQueryService
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
+    private static void BindIdentityExpressions(List<ResolvedColumn> columns, ReportWorkflowJoin? join)
+    {
+        var hasInstances = !string.IsNullOrWhiteSpace(join?.InstancesTable);
+        var hasInbox = !string.IsNullOrWhiteSpace(join?.InboxTable);
+        var hasSteps = !string.IsNullOrWhiteSpace(join?.StepsTable);
+        for (var i = 0; i < columns.Count; i++)
+        {
+            var col = columns[i];
+            if (col.Identity is not { } identity)
+                continue;
+            columns[i] = col with
+            {
+                SqlColumn = col.SqlColumn ?? ReportWorkflowIdentity.Alias(identity),
+                SelectExpr = ReportWorkflowIdentity.SelectExpr(identity, hasInstances, hasInbox, hasSteps)
+            };
+        }
+    }
+
     private sealed record ResolvedWorkflow(Guid Id, string Name, string? FormId);
 
     private sealed record ControlRow(string? JsonId, string? Name, string? Type, bool IsMandatory, string? ColumnName = null);
+
+    private sealed record ReportWorkflowJoin(
+        string? ProcessFormTable,
+        string? InstancesTable,
+        string? InboxTable,
+        string? StepsTable,
+        int? WaitingDays,
+        bool RequirePending = false);
 
     private sealed record ResolvedColumn(
         string Key,
@@ -790,5 +964,7 @@ public sealed class ReportQueryService : IReportQueryService
         int Width,
         bool IsCalculated,
         string? Formula,
-        string? FieldId = null);
+        string? FieldId = null,
+        ReportWorkflowIdentityKind? Identity = null,
+        string? SelectExpr = null);
 }
