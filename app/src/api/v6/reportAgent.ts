@@ -121,6 +121,7 @@ export interface ReportAiUpdateRequest {
   name?: string
   reportPrompt?: string
   reportSpec?: Record<string, unknown>
+  status?: 'Draft' | 'Published'
 }
 
 /** Summary row from GET /report-ai-builder. */
