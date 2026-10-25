@@ -342,6 +342,42 @@ class EzofisClient:
             get_params={"ItemsPerPage": int(limit), "CurrentPage": 1},
         )
 
+    async def get_workflow_instance(
+        self, *, tenant_id: str, workflow_id: str, instance_id: str
+    ) -> dict[str, Any]:
+        """GET /Workflows/{wf}/instances/{id} — includes currentStepInstanceId + stepInstances."""
+        wf_id = str(workflow_id or "").strip()
+        inst_id = str(instance_id or "").strip()
+        if not wf_id or not inst_id:
+            return {}
+        if not self._live_enabled():
+            return {}
+        try:
+            headers = await self._auth_headers(tenant_id)
+            timeout = self._cfg().ezofis_timeout_seconds
+            paths = (
+                f"/Workflows/{wf_id}/instances/{inst_id}",
+                f"/workflows/{wf_id}/instances/{inst_id}",
+            )
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                for path in paths:
+                    response = await client.get(f"{self._base()}{path}", headers=headers)
+                    if response.status_code != 200:
+                        continue
+                    data = response.json() if response.content else {}
+                    if not isinstance(data, dict):
+                        continue
+                    if "id" not in data and "stepInstances" not in data:
+                        nested = data.get("data") or data.get("value") or data.get("item")
+                        if isinstance(nested, dict):
+                            data = nested
+                    if data.get("id") or data.get("stepInstances") or data.get("currentStepInstanceId"):
+                        return data
+            return {}
+        except Exception as exc:
+            logger.warning("ezofis_get_instance_error", extra={"error_type": type(exc).__name__})
+            return {}
+
     async def list_repository_items(
         self, *, tenant_id: str, repository_id: str, limit: int = 200
     ) -> list[dict[str, Any]]:

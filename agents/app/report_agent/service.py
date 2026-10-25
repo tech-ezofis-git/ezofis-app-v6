@@ -879,6 +879,11 @@ class ReportAgentService:
                 duration_ms=duration_ms,
             )
         try:
+            db = None
+            try:
+                db = await self._resolve_db(request.tenant_id)
+            except Exception:
+                db = None
             result = await execute_catalog_spec(
                 self._ezofis,
                 spec,
@@ -888,6 +893,7 @@ class ReportAgentService:
                 page_size=request.page_size,
                 workflow_name=request.workflow_name,
                 repository_name=request.repository_name,
+                db=db,
             )
         except Exception as exc:
             logger.warning(
