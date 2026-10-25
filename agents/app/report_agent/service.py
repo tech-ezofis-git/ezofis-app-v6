@@ -62,6 +62,7 @@ from app.report_agent.report_spec import (
     spec_from_prompt_json,
     attach_column_palettes,
     apply_selected_columns,
+    merge_identity_columns,
 )
 from app.report_agent.report_types import (
     get_report_type,
@@ -787,11 +788,15 @@ class ReportAgentService:
         spec = attach_column_palettes(spec, tables=tables, schema_tables=schema_tables)
         spec = apply_selected_columns(spec)
         spec = apply_recipe_highlights(spec)
+        user_prompt = (request.description or "").strip() or spec.user_prompt
+        if user_prompt and spec.user_prompt != user_prompt:
+            spec = spec.model_copy(update={"user_prompt": user_prompt})
 
         prompt_text = report_spec_to_prompt(
             spec,
             workflow_name=request.workflow_name,
             repository_name=request.repository_name,
+            user_prompt=user_prompt,
         )
         if not prompt_text.strip():
             raise RuntimeError("Failed to build report prompt from reportSpec.")
@@ -934,6 +939,7 @@ class ReportAgentService:
                     "sort": spec.sort or parsed_prompt.sort,
                     "group_by": spec.group_by or parsed_prompt.group_by,
                     "filters": spec.filters or parsed_prompt.filters,
+                    "user_prompt": spec.user_prompt or parsed_prompt.user_prompt,
                 }
             )
         if spec is not None:
@@ -983,6 +989,7 @@ class ReportAgentService:
                 repository_name=request.repository_name,
             )
             spec = merge_column_highlights(spec, before_align)
+            spec = merge_identity_columns(spec, before_align)
             spec = apply_recipe_highlights(spec)
             if not spec.source_table and report_type_key == "all_workflows":
                 spec = spec.model_copy(

@@ -79,6 +79,7 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
+_IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id"})
 
 
 def _parse_columns(raw_items: Any) -> list[ReportSpecColumn]:
@@ -197,6 +198,7 @@ def report_spec_to_prompt_json(
     *,
     workflow_name: Optional[str] = None,
     repository_name: Optional[str] = None,
+    user_prompt: Optional[str] = None,
 ) -> dict[str, Any]:
     """Client-facing generate-prompt JSON the UI can edit before Run."""
     userdefined = list(spec.userdefined_columns or [])
@@ -225,6 +227,7 @@ def report_spec_to_prompt_json(
         unique_formulas.append(item)
     payload: dict[str, Any] = {
         "title": spec.title,
+        "Userprompt": (user_prompt if user_prompt is not None else spec.user_prompt) or "",
         "Objective": spec.objective or spec.title,
         "reportType": spec.report_type,
         "Userdefined Columns": [_dump_column(c) for c in userdefined],
@@ -442,6 +445,21 @@ def apply_selected_columns(spec: ReportSpec) -> ReportSpec:
     return spec.model_copy(update={"columns": selected})
 
 
+def merge_identity_columns(spec: ReportSpec, previous: Optional[ReportSpec]) -> ReportSpec:
+    """Keep selected workflow/repository ID columns when align rebuilds recipe columns."""
+    if previous is None:
+        return spec
+    have = {c.key.lower() for c in spec.columns}
+    extras = [
+        col.model_copy(update={"selected": True})
+        for col in previous.columns
+        if col.key.lower() not in have and col.key.lower() in _IDENTITY_COLUMN_KEYS
+    ]
+    if not extras:
+        return spec
+    return spec.model_copy(update={"columns": extras + list(spec.columns)})
+
+
 def spec_from_prompt_json(raw: str, *, report_type: Optional[str] = None) -> Optional[ReportSpec]:
     text = (raw or "").strip()
     if not text.startswith("{"):
@@ -596,9 +614,17 @@ def normalize_report_spec(
         for t in (data.get("schemaTables") or data.get("schema_tables") or [])
         if str(t).strip()
     ]
+    user_prompt = str(
+        data.get("Userprompt")
+        or data.get("UserPrompt")
+        or data.get("userPrompt")
+        or data.get("user_prompt")
+        or ""
+    ).strip() or None
     return ReportSpec(
         title=title,
         objective=objective,
+        user_prompt=user_prompt,
         report_type=str(data.get("reportType") or data.get("report_type") or report_type or "").strip() or None,
         columns=columns,
         filters=filters,
@@ -647,6 +673,7 @@ def report_spec_to_prompt(
     *,
     workflow_name: Optional[str] = None,
     repository_name: Optional[str] = None,
+    user_prompt: Optional[str] = None,
 ) -> str:
     """Build the generate-prompt JSON the UI edits before Run."""
     return json.dumps(
@@ -654,6 +681,7 @@ def report_spec_to_prompt(
             spec,
             workflow_name=workflow_name,
             repository_name=repository_name,
+            user_prompt=user_prompt,
         ),
         indent=2,
         ensure_ascii=False,

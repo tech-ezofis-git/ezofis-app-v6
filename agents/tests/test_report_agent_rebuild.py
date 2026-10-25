@@ -268,7 +268,8 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     assert any(c.key == "createdAtUtc" for c in spec.default_columns)
     assert spec.userdefined_columns == []
     assert any(c.key == "Request_Count" and c.selected for c in spec.agent_columns)
-    prompt = json.loads(report_spec_to_prompt(spec))
+    prompt = json.loads(report_spec_to_prompt(spec, user_prompt="Aging across all workflows"))
+    assert prompt["Userprompt"] == "Aging across all workflows"
     assert prompt["Objective"] == "Open requests across all workflows"
     assert prompt["schemaTables"] == ["workflow.workflow_instances_all"]
     assert prompt["Sort"] is None or "field" in (prompt["Sort"] or {})
@@ -279,6 +280,7 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     assert {"id", "workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
     parsed = spec_from_prompt_json(json.dumps(prompt))
     assert parsed is not None
+    assert parsed.user_prompt == "Aging across all workflows"
     parsed = apply_selected_columns(parsed)
     assert {c.key for c in parsed.columns} >= {
         "Aging_Bucket",
@@ -1543,6 +1545,10 @@ async def test_generate_prompt_aging_keeps_metric_columns(monkeypatch):
     assert "Request_Count" in keys
     assert "workflowName" in keys
     assert len(keys) >= 3
+    import json
+    prompt = json.loads(resp.report_prompt)
+    assert prompt["Userprompt"] == "Aging"
+    assert resp.report_spec.user_prompt == "Aging"
 
 
 @pytest.mark.asyncio
@@ -1695,6 +1701,135 @@ async def test_run_report_uses_generated_json_prompt(monkeypatch):
     assert "Request_Count" in keys
     assert resp.rows
     assert resp.total_count >= 1
+
+
+@pytest.mark.asyncio
+async def test_run_report_returns_instance_id_values():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "wf-1", "name": "RFQ Process"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "workflowId": "wf-1",
+                    "workflowName": "RFQ Process",
+                    "status": "Pending",
+                    "createdAtUtc": "2026-10-20T00:00:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Aging",
+        objective="Open requests across all workflows",
+        report_type="all_workflows",
+        columns=[
+            ReportSpecColumn(key="instanceId", label="Instance Id", kind="default", selected=True),
+            ReportSpecColumn(key="workflowId", label="Workflow Id", kind="default", selected=True),
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="instanceId", label="Instance Id", kind="default", selected=True),
+            ReportSpecColumn(key="workflowId", label="Workflow Id", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+        ],
+        agent_columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        available_columns=["workflowName", "status", "createdAtUtc", "id", "workflowId", "instanceId"],
+        source_schema="workflow",
+        source_table="workflow_instances_all",
+        schema_tables=["workflow.workflow_instances_all"],
+    )
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="all_workflows",
+            tenant_id="tenant-1",
+        )
+    )
+    keys = [c.key for c in resp.columns]
+    assert "instanceId" in keys
+    assert "workflowId" in keys
+    assert resp.rows
+    assert resp.rows[0].get("instanceId") == "98c7b53b-dd08-4e04-8a59-0c43a315e2d6"
+    assert resp.rows[0].get("workflowId") == "wf-1"
+
+
+@pytest.mark.asyncio
+async def test_run_report_returns_repository_item_id_values():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+
+    class _CatalogEzofis:
+        async def list_repositories(self, tenant_id):
+            return [{"id": "repo-1", "name": "HR Records"}]
+
+        async def list_repository_items(self, *, tenant_id, repository_id, limit=200):
+            return [
+                {
+                    "id": {"itemId": "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C", "repositoryId": "repo-1"},
+                    "fileName": "payslip.pdf",
+                    "status": "Active",
+                    "createdAt": "2026-10-01T00:00:00Z",
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Documents",
+        objective="Documents across repositories",
+        report_type="all_repositories",
+        columns=[
+            ReportSpecColumn(key="itemId", label="Item Id", kind="default", selected=True),
+            ReportSpecColumn(key="Repository_Name", label="Repository", kind="default", selected=True),
+            ReportSpecColumn(key="FileName", label="File Name", kind="default", selected=True),
+            ReportSpecColumn(key="Document_Count", label="Documents", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="itemId", label="Item Id", kind="default", selected=True),
+            ReportSpecColumn(key="Repository_Name", label="Repository", kind="default", selected=True),
+            ReportSpecColumn(key="FileName", label="File Name", kind="default", selected=True),
+        ],
+        agent_columns=[
+            ReportSpecColumn(key="Document_Count", label="Documents", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        available_columns=["Repository_Name", "FileName", "itemId", "Status"],
+        source_schema="repository",
+        source_table="items_all",
+        schema_tables=["repository.items_all"],
+    )
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="all_repositories",
+            tenant_id="tenant-1",
+        )
+    )
+    assert "itemId" in [c.key for c in resp.columns]
+    assert resp.rows
+    assert resp.rows[0].get("itemId") == "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C"
 
 
 def test_column_highlight_parses_and_stays_off_palettes():

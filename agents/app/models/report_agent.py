@@ -124,6 +124,17 @@ class ReportSpec(BaseModel):
 
     title: str = "Report"
     objective: str = ""
+    user_prompt: Optional[str] = Field(
+        default=None,
+        serialization_alias="userPrompt",
+        validation_alias=AliasChoices(
+            "userPrompt",
+            "user_prompt",
+            "Userprompt",
+            "UserPrompt",
+        ),
+        description="Original user description from Generate Prompt. Echoed as Userprompt in reportPrompt JSON.",
+    )
     report_type: Optional[str] = Field(
         default=None,
         serialization_alias="reportType",
