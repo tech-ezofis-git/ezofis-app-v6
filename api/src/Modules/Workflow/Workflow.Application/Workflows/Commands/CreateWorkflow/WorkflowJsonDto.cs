@@ -132,7 +132,23 @@ public record WorkflowBlockSettingsDto(
     [property: JsonPropertyName("pdfTemplate")]
     JsonElement? PdfTemplate = null,
     [property: JsonPropertyName("generatePDFFields")]
-    string[]? GeneratePDFFields = null
+    string[]? GeneratePDFFields = null,
+    /// <summary>Designer Data Integration: copy mapped fields onto a master form on step complete.</summary>
+    [property: JsonPropertyName("endSync")]
+    WorkflowEndSyncSettingsDto? EndSync = null
+);
+
+public record WorkflowEndSyncSettingsDto(
+    bool? Enabled = null,
+    string? Target = null,
+    string? MasterFormId = null,
+    List<WorkflowEndSyncMappingDto>? FieldMappings = null
+);
+
+public record WorkflowEndSyncMappingDto(
+    string? WorkflowFieldId = null,
+    string? MasterFieldId = null,
+    bool? IsMainField = null
 );
 
 public record WorkflowFileSettingsDto(

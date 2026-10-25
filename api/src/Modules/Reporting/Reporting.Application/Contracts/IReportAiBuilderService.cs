@@ -30,13 +30,6 @@ public interface IReportAiBuilderService
         ReportAiUpdateRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<ReportAiHttpResult> DeleteAsync(
-        Guid tenantId,
-        Guid userId,
-        bool isAdmin,
-        Guid reportId,
-        CancellationToken cancellationToken = default);
-
     Task<ReportAiHttpResult> ListTypesAsync(CancellationToken cancellationToken = default);
 
     Task<ReportAiHttpResult> ListScopeOptionsAsync(

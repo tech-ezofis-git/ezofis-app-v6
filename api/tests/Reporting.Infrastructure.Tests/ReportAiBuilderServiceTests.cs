@@ -257,64 +257,6 @@ public sealed class ReportAiBuilderServiceTests
     }
 
     [Fact]
-    public async Task RunSaved_download_returns_exported_file()
-    {
-        var store = SpecifiedStore(out var id);
-        var query = SpecifiedQuery(id);
-        var export = new FakeExport();
-        var service = new ReportAiBuilderService(new FakeClient(), store, query, export);
-
-        var result = await service.RunSavedAsync(
-            TenantId,
-            id,
-            new ReportAiRunRequest { Download = true, Format = "CSV" });
-
-        Assert.Equal(200, result.StatusCode);
-        Assert.NotNull(result.File);
-        Assert.Equal("text/csv", result.File!.ContentType);
-        Assert.Equal("CSV", export.LastFormat);
-        Assert.Equal(2, export.LastData?.RowCount);
-    }
-
-    [Fact]
-    public async Task RunSaved_email_requires_recipients()
-    {
-        var store = SpecifiedStore(out var id);
-        var service = new ReportAiBuilderService(
-            new FakeClient(), store, SpecifiedQuery(id), new FakeExport(), new FakeMail());
-        var result = await service.RunSavedAsync(
-            TenantId,
-            id,
-            new ReportAiRunRequest { SendEmail = true, Format = "PDF" });
-        Assert.Equal(400, result.StatusCode);
-    }
-
-    [Fact]
-    public async Task RunSaved_email_sends_exported_file()
-    {
-        var store = SpecifiedStore(out var id);
-        var mail = new FakeMail();
-        var service = new ReportAiBuilderService(
-            new FakeClient(), store, SpecifiedQuery(id), new FakeExport(), mail);
-
-        var result = await service.RunSavedAsync(
-            TenantId,
-            id,
-            new ReportAiRunRequest
-            {
-                SendEmail = true,
-                Format = "PDF",
-                Recipients = ["ops@ezofis.com"]
-            });
-
-        Assert.Equal(200, result.StatusCode);
-        Assert.NotNull(mail.LastConfig);
-        Assert.Contains("ops@ezofis.com", mail.LastConfig!.Schedule!.Recipients);
-        Assert.Equal("PDF", mail.LastConfig.Schedule.Format);
-        Assert.Equal(2, mail.LastData?.RowCount);
-    }
-
-    [Fact]
     public async Task GenerateAndSave_requires_workflow_name_for_specific_workflow()
     {
         var service = new ReportAiBuilderService(new FakeClient(), new MemoryStore());
@@ -334,60 +276,6 @@ public sealed class ReportAiBuilderServiceTests
     }
 
     [Fact]
-    public async Task Delete_owner_removes_saved_report()
-    {
-        var store = new MemoryStore();
-        var id = Guid.NewGuid();
-        store.Rows[id] = new ReportAiDefinitionRecord
-        {
-            Id = id,
-            TenantId = TenantId,
-            OwnerUserId = UserId,
-            Name = "RFQ",
-            ReportType = "specific_workflow",
-            WorkflowName = "RFQ Process",
-            ReportPrompt = "{}",
-            ReportSpecJson = "{}"
-        };
-        var service = new ReportAiBuilderService(new FakeClient(), store);
-
-        var result = await service.DeleteAsync(TenantId, UserId, isAdmin: false, id);
-
-        Assert.Equal(200, result.StatusCode);
-        Assert.False(store.Rows.ContainsKey(id));
-        var missing = await service.GetAsync(TenantId, id);
-        Assert.Equal(404, missing.StatusCode);
-    }
-
-    [Fact]
-    public async Task Delete_other_user_is_403()
-    {
-        var store = new MemoryStore();
-        var id = Guid.NewGuid();
-        store.Rows[id] = new ReportAiDefinitionRecord
-        {
-            Id = id,
-            TenantId = TenantId,
-            OwnerUserId = UserId,
-            ReportType = "all_workflows",
-            ReportPrompt = "{}",
-            ReportSpecJson = "{}"
-        };
-        var service = new ReportAiBuilderService(new FakeClient(), store);
-        var result = await service.DeleteAsync(TenantId, Guid.NewGuid(), isAdmin: false, id);
-        Assert.Equal(403, result.StatusCode);
-        Assert.True(store.Rows.ContainsKey(id));
-    }
-
-    [Fact]
-    public async Task Delete_missing_id_is_404()
-    {
-        var service = new ReportAiBuilderService(new FakeClient(), new MemoryStore());
-        var result = await service.DeleteAsync(TenantId, UserId, isAdmin: true, Guid.NewGuid());
-        Assert.Equal(404, result.StatusCode);
-    }
-
-    [Fact]
     public async Task GenerateAndSave_timeout_is_504()
     {
         var service = new ReportAiBuilderService(
@@ -402,42 +290,6 @@ public sealed class ReportAiBuilderServiceTests
 
     private static ReportAgentProxyResult AgentResult(int status, string body) =>
         ReportAgentChatMapper.Parse(status, body);
-
-    private static MemoryStore SpecifiedStore(out Guid id)
-    {
-        var store = new MemoryStore();
-        id = Guid.NewGuid();
-        store.Rows[id] = new ReportAiDefinitionRecord
-        {
-            Id = id,
-            TenantId = TenantId,
-            OwnerUserId = UserId,
-            ReportType = "specific_workflow",
-            WorkflowName = "RFQ Process",
-            Name = "RFQ Estimation",
-            ReportPrompt = """{"Objective":"RFQ"}""",
-            ReportSpecJson = """{"title":"RFQ","columns":[{"key":"Company_Name","label":"Company Name"}]}"""
-        };
-        return store;
-    }
-
-    private static FakeQuery SpecifiedQuery(Guid id) =>
-        new()
-        {
-            Result = new ReportRunResult(
-                id,
-                "RFQ Estimation",
-                "RFQ Process",
-                [new ReportColumnDto("Company Name", "Company Name", "None", "value", 160, false)],
-                [
-                    new Dictionary<string, string?> { ["Company Name"] = "Acme" },
-                    new Dictionary<string, string?> { ["Company Name"] = "Globex" }
-                ],
-                null,
-                2,
-                Guid.NewGuid(),
-                "form-1")
-        };
 
     private sealed class MemoryStore : IReportAiDefinitionService
     {
@@ -495,21 +347,6 @@ public sealed class ReportAiBuilderServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<bool> DeleteAsync(
-            Guid tenantId,
-            Guid userId,
-            bool isAdmin,
-            Guid reportId,
-            CancellationToken cancellationToken = default)
-        {
-            if (!Rows.TryGetValue(reportId, out var row) || row.TenantId != tenantId)
-                return Task.FromResult(false);
-            if (!isAdmin && row.OwnerUserId != userId)
-                throw new UnauthorizedAccessException("Only the owner or an Admin can delete this report.");
-            Rows.Remove(reportId);
-            return Task.FromResult(true);
-        }
-
         private static ReportAiDefinitionRecord Clone(ReportAiDefinitionRecord row) =>
             new()
             {
@@ -562,39 +399,6 @@ public sealed class ReportAiBuilderServiceTests
         {
             LastConfig = config;
             return Task.FromResult(Result);
-        }
-    }
-
-    private sealed class FakeExport : IReportExportService
-    {
-        public string? LastFormat { get; private set; }
-        public ReportRunResult? LastData { get; private set; }
-
-        public ReportFileResult Export(ReportRunResult data, string? format)
-        {
-            LastData = data;
-            LastFormat = format;
-            return new ReportFileResult(
-                System.Text.Encoding.UTF8.GetBytes("name\nAcme"),
-                "text/csv",
-                "report.csv");
-        }
-    }
-
-    private sealed class FakeMail : IReportMailService
-    {
-        public ReportBuilderConfig? LastConfig { get; private set; }
-        public ReportRunResult? LastData { get; private set; }
-
-        public Task SendAsync(
-            Guid tenantId,
-            ReportBuilderConfig config,
-            ReportRunResult data,
-            CancellationToken cancellationToken = default)
-        {
-            LastConfig = config;
-            LastData = data;
-            return Task.CompletedTask;
         }
     }
 

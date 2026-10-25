@@ -294,67 +294,6 @@ public static class ReportAgentChatMapper
         };
     }
 
-    public static ReportRunResult ToExportResult(
-        ReportAiDefinitionRecord record,
-        JsonElement reportResult)
-    {
-        var domain = record.WorkflowName ?? record.RepositoryName ?? record.ReportType ?? "";
-        var name = string.IsNullOrWhiteSpace(record.Name) ? domain : record.Name;
-        var columnsEl = ReadProperty(reportResult, "columns");
-        var rowsEl = ReadProperty(reportResult, "rows");
-        var columns = new List<ReportColumnDto>();
-        if (columnsEl.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var item in columnsEl.EnumerateArray())
-            {
-                if (item.ValueKind != JsonValueKind.Object)
-                    continue;
-                var key = ReadString(item, "key", "id", "field")?.Trim();
-                if (string.IsNullOrWhiteSpace(key) || IsPlaceholder(key))
-                    continue;
-                var label = ReadString(item, "label", "name")?.Trim();
-                columns.Add(new ReportColumnDto(
-                    key,
-                    string.IsNullOrWhiteSpace(label) || IsPlaceholder(label) ? key : label,
-                    "None",
-                    "value",
-                    160,
-                    false));
-            }
-        }
-
-        var rows = new List<IReadOnlyDictionary<string, string?>>();
-        if (rowsEl.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var row in rowsEl.EnumerateArray())
-            {
-                if (row.ValueKind != JsonValueKind.Object)
-                    continue;
-                var mapped = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                foreach (var column in columns)
-                {
-                    var cell = ReadProperty(row, column.Key);
-                    if (cell.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
-                        cell = ReadProperty(row, column.Label);
-                    mapped[column.Label] = CellText(cell);
-                }
-
-                rows.Add(mapped);
-            }
-        }
-
-        return new ReportRunResult(
-            record.Id,
-            name,
-            domain,
-            columns,
-            rows,
-            null,
-            rows.Count,
-            null,
-            null);
-    }
-
     public static object MergeRunResponse(Guid id, JsonElement reportResult)
     {
         var columns = ReadProperty(reportResult, "columns");
@@ -444,17 +383,6 @@ public static class ReportAgentChatMapper
 
         return list;
     }
-
-    private static string CellText(JsonElement cell) =>
-        cell.ValueKind switch
-        {
-            JsonValueKind.String => cell.GetString() ?? "",
-            JsonValueKind.Number => cell.GetRawText(),
-            JsonValueKind.True => "true",
-            JsonValueKind.False => "false",
-            JsonValueKind.Undefined or JsonValueKind.Null => "",
-            _ => cell.GetRawText()
-        };
 
     private static double? ReadNumber(JsonElement obj, params string[] names)
     {
