@@ -89,6 +89,32 @@ _INSTANCE_DEFAULT_KEYS = frozenset(
         "createdatutc",
     }
 )
+_LISTING_COMPACT = frozenset(
+    {
+        "requestno",
+        "reqno",
+        "referencenumber",
+        "stage",
+        "currentstage",
+        "activity",
+        "stepname",
+        "status",
+        "startedby",
+        "actedby",
+        "updatedby",
+        "assignedto",
+        "workflowname",
+        "createdatutc",
+        "createdat",
+        "workflowid",
+        "itemid",
+        "instanceid",
+        "id",
+    }
+)
+_LISTING_OUTPUT_KEYS = frozenset(
+    {"requestno", "stage", "status", "startedby", "workflowname"}
+)
 _REPO_DEFAULT_KEYS = frozenset(
     {"itemid", "filename", "repository_name", "createdby", "createdat", "status"}
 )
@@ -227,11 +253,45 @@ def _request_no(row: dict[str, Any]) -> str:
     return ""
 
 
+def _listing_compact(key: str) -> str:
+    return "".join(ch for ch in (key or "").lower() if ch.isalnum())
+
+
+def _is_listing_key(key: str) -> bool:
+    return _listing_compact(key) in _LISTING_COMPACT
+
+
+def has_form_columns(spec: ReportSpec) -> bool:
+    """True when the spec asks for live form fields (Invoice Amount, today_task, ...)."""
+    for col in list(spec.columns or []) + [
+        c for c in (spec.userdefined_columns or []) if getattr(c, "selected", True)
+    ]:
+        formula = (getattr(col, "formula", None) or "").lower()
+        if (getattr(col, "kind", None) or "").lower() == "agent":
+            continue
+        if any(token in formula for token in ("count(", "sum(", "avg(", "case ")):
+            continue
+        if _is_listing_key(getattr(col, "key", "") or ""):
+            continue
+        return True
+    return False
+
+
+def needs_listing_fields(spec: ReportSpec) -> bool:
+    return bool(_keys(spec) & _LISTING_OUTPUT_KEYS)
+
+
 def wants_instance_execute(spec: ReportSpec, report_type: Optional[str] = None) -> bool:
-    """Specified workflow/repository listings of instance fields should use EZOFIS, not form-table SQL."""
+    """Specified workflow/repository listings of instance fields should use EZOFIS, not form-table SQL.
+
+    Mixed reports that also select form fields (Invoice Amount, today_task, ...) stay on
+    form SQL so those values and form filters survive; listing fields are joined after.
+    """
     rt = (report_type or spec.report_type or "").lower()
     keys = _keys(spec)
     if rt == "specific_workflow":
+        if has_form_columns(spec):
+            return False
         return bool(keys & _INSTANCE_DEFAULT_KEYS)
     if rt == "specific_repository":
         return bool(keys & _REPO_DEFAULT_KEYS)
@@ -403,13 +463,14 @@ async def _hydrate_instance_details(
 
 async def _sql_ticket_maps(
     db: Any, suffix: str, instance_ids: list[str]
-) -> tuple[dict[str, str], dict[str, str]]:
-    """Map compact instance id → requestNo / stage from workflow_instances_* then mailbox."""
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """Map compact instance id → requestNo / stage / itemId from workflow_instances_* then mailbox."""
     req: dict[str, str] = {}
     stage: dict[str, str] = {}
+    items: dict[str, str] = {}
     compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
     if db is None or not suffix or not compact_ids:
-        return req, stage
+        return req, stage, items
 
     async def _ingest(sql: str) -> None:
         rows = await db.fetch(sql, compact_ids)
@@ -423,6 +484,9 @@ async def _sql_ticket_maps(
             named = str(row_get(row, "stage") or "").strip()
             if named and cid not in stage:
                 stage[cid] = named
+            item = str(row_get(row, "item_id") or "").strip()
+            if item and cid not in items:
+                items[cid] = item
 
     located = await find_table(
         db,
@@ -457,6 +521,16 @@ async def _sql_ticket_maps(
                 parts.append(f"CAST({quote_ident(req_col)} AS text) AS request_no")
             if stage_col:
                 parts.append(f"CAST({quote_ident(stage_col)} AS text) AS stage")
+            item_col = _sql_col(
+                by_lower,
+                "item_id",
+                "itemid",
+                "form_entry_id",
+                "formentryid",
+                "repository_item_id",
+            )
+            if item_col:
+                parts.append(f"CAST({quote_ident(item_col)} AS text) AS item_id")
             sql = (
                 f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
                 f"WHERE lower(replace(CAST({quote_ident(id_col)} AS text), '-', '')) = ANY($1::text[])"
@@ -505,7 +579,7 @@ async def _sql_ticket_maps(
             f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
         )
         await _ingest(sql)
-    return req, stage
+    return req, stage, items
 
 
 async def _attach_sql_ticket_fields(
@@ -516,22 +590,25 @@ async def _attach_sql_ticket_fields(
         return rows
     need_req = _needs_request_no(spec)
     need_stage = _needs_stage(spec)
-    if not need_req and not need_stage:
+    need_item = any(not _pick(row, "itemId", "item_id", "formEntryId") for row in rows)
+    if not need_req and not need_stage and not need_item:
         return rows
-    if need_req and all(_request_no(row) for row in rows) and (
-        not need_stage or all(_current_stage(row) for row in rows)
+    if (
+        (not need_req or all(_request_no(row) for row in rows))
+        and (not need_stage or all(_current_stage(row) for row in rows))
+        and not need_item
     ):
         return rows
     suffix = _compact_id(workflow_id)[:8]
     if not suffix:
         return rows
     try:
-        req_map, stage_map = await _sql_ticket_maps(
+        req_map, stage_map, item_map = await _sql_ticket_maps(
             db, suffix, [str(_pick(row, "instanceId", "instance_id", "id") or "") for row in rows]
         )
     except Exception:
         return rows
-    if not req_map and not stage_map:
+    if not req_map and not stage_map and not item_map:
         return rows
     out: list[dict[str, Any]] = []
     for row in rows:
@@ -541,8 +618,77 @@ async def _attach_sql_ticket_fields(
             item["requestNo"] = req_map[compact]
         if need_stage and not _current_stage(item) and compact in stage_map:
             item["stage"] = stage_map[compact]
+        if compact in item_map and not _pick(item, "itemId", "item_id", "formEntryId"):
+            item["itemId"] = item_map[compact]
         out.append(item)
     return out
+
+
+async def _sql_item_instance_map(
+    db: Any, suffix: str, item_ids: list[str]
+) -> dict[str, str]:
+    """Map compact form/repository item_id → compact workflow instance id."""
+    mapping: dict[str, str] = {}
+    compact_ids = [_compact_id(item) for item in item_ids if _compact_id(item)]
+    if db is None or not suffix or not compact_ids:
+        return mapping
+
+    async def _ingest(sql: str) -> None:
+        rows = await db.fetch(sql, compact_ids)
+        for row in rows or []:
+            item = _compact_id(row_get(row, "item_id"))
+            inst = _compact_id(row_get(row, "instance_id"))
+            if item and inst and item not in mapping:
+                mapping[item] = inst
+
+    for names in (
+        (f"workflow_attachments_{suffix}", f"workflowattachments_{suffix}"),
+        (f"workflow_instances_{suffix}", f"workflowinstances_{suffix}"),
+        (f"inbox_{suffix}",),
+        (f"sent_{suffix}",),
+        (f"completed_{suffix}",),
+    ):
+        located = await find_table(db, names, prefer_schemas=("workflow", "dbo", "public"))
+        if located is None:
+            continue
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        item_col = _sql_col(
+            by_lower,
+            "item_id",
+            "itemid",
+            "form_entry_id",
+            "formentryid",
+            "repository_item_id",
+            "repositoryitemid",
+        )
+        inst_col = _sql_col(
+            by_lower,
+            "workflow_instance_id",
+            "workflowinstanceid",
+            "instance_id",
+            "instanceid",
+            "id",
+            "process_id",
+            "processid",
+        )
+        if names[0].startswith("workflow_instances"):
+            inst_col = pick_id_column(by_lower) or inst_col
+        if not item_col or not inst_col or item_col == inst_col:
+            continue
+        sql = (
+            f"SELECT CAST({quote_ident(item_col)} AS text) AS item_id, "
+            f"CAST({quote_ident(inst_col)} AS text) AS instance_id "
+            f"FROM {qualified(schema, table)} "
+            f"WHERE lower(replace(CAST({quote_ident(item_col)} AS text), '-', '')) = ANY($1::text[])"
+        )
+        try:
+            await _ingest(sql)
+        except Exception:
+            continue
+        if mapping:
+            break
+    return mapping
 
 
 async def execute_catalog_spec(
@@ -598,21 +744,24 @@ async def execute_catalog_spec(
     return None
 
 
-async def _workflow_rows(
+async def _load_workflow_instances(
     ezofis: Any,
     spec: ReportSpec,
     tenant_id: str,
     *,
     workflow_name: Optional[str] = None,
     db: Any = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Normalized instance rows plus workflow ids (for SQL item→instance maps)."""
+    if ezofis is None:
+        return [], []
     listed = _match_named(await ezofis.list_workflows(tenant_id), workflow_name or "")
 
-    async def _one(item: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _one(item: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
         wf_id = str((item or {}).get("id") or "").strip()
         wf_name = str((item or {}).get("name") or "").strip()
         if not wf_id:
-            return []
+            return [], ""
         instances = await ezofis.list_workflow_instances(tenant_id=tenant_id, workflow_id=wf_id)
         instances = await _hydrate_instance_details(
             ezofis,
@@ -622,15 +771,160 @@ async def _workflow_rows(
             spec=spec,
         )
         instances = await _attach_sql_ticket_fields(db, wf_id, instances, spec)
-        return [_normalize_instance(row, wf_id=wf_id, wf_name=wf_name) for row in instances]
+        return [_normalize_instance(row, wf_id=wf_id, wf_name=wf_name) for row in instances], wf_id
 
     batches = await asyncio.gather(*[_one(item) for item in listed or []], return_exceptions=True)
     records: list[dict[str, Any]] = []
+    wf_ids: list[str] = []
     for batch in batches:
         if isinstance(batch, Exception):
             continue
-        records.extend(batch)
+        rows, wf_id = batch
+        records.extend(rows)
+        if wf_id:
+            wf_ids.append(wf_id)
+    return records, wf_ids
+
+
+async def _workflow_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    tenant_id: str,
+    *,
+    workflow_name: Optional[str] = None,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    records, _wf_ids = await _load_workflow_instances(
+        ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
+    )
     return _shape_rows(spec, _aggregate_workflow(spec, records))
+
+
+def _form_row_ids(row: dict[str, Any]) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for name in (
+        "item_id",
+        "itemId",
+        "itemid",
+        "workflow_instance_id",
+        "workflowInstanceId",
+        "instanceId",
+        "instance_id",
+        "id",
+    ):
+        raw = _pick(row, name)
+        compact = _compact_id(raw)
+        if not compact or compact in seen:
+            continue
+        if _is_guid(raw) or len(compact) >= 8 or str(raw).strip().isdigit():
+            seen.add(compact)
+            ids.append(compact)
+    return ids
+
+
+def _index_instances(
+    instances: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    by_item: dict[str, dict[str, Any]] = {}
+    by_inst: dict[str, dict[str, Any]] = {}
+    for row in instances:
+        inst_id = _compact_id(row.get("instanceId"))
+        if inst_id:
+            by_inst[inst_id] = row
+        item_id = _compact_id(row.get("itemId"))
+        if item_id:
+            by_item[item_id] = row
+    return by_item, by_inst
+
+
+def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: ReportSpec) -> None:
+    payload = {
+        "RequestNo": inst.get("RequestNo") or inst.get("requestNo"),
+        "requestNo": inst.get("requestNo") or inst.get("RequestNo"),
+        "Stage": inst.get("Stage") or inst.get("stage"),
+        "stage": inst.get("stage") or inst.get("Stage"),
+        "status": inst.get("status"),
+        "startedBy": inst.get("startedBy"),
+        "workflowName": inst.get("workflowName"),
+        "workflowId": inst.get("workflowId"),
+        "instanceId": inst.get("instanceId"),
+        "itemId": inst.get("itemId"),
+        "createdAtUtc": inst.get("createdAtUtc"),
+    }
+    for key, value in payload.items():
+        if value in (None, ""):
+            continue
+        if row.get(key) not in (None, ""):
+            continue
+        row[key] = _cell(value)
+    for col in spec.columns or []:
+        key = col.key
+        if str(row.get(key) or "").strip():
+            continue
+        value = _pick(inst, key)
+        if value in (None, "") and _listing_compact(key) == "requestno":
+            value = inst.get("RequestNo") or inst.get("requestNo")
+        elif value in (None, "") and _listing_compact(key) == "stage":
+            value = inst.get("Stage") or inst.get("stage")
+        if value in (None, ""):
+            continue
+        row[key] = _cell(value)
+        if _listing_compact(key) == "requestno":
+            row["RequestNo"] = row[key]
+            row["requestNo"] = row[key]
+        elif _listing_compact(key) == "stage":
+            row["Stage"] = row[key]
+            row["stage"] = row[key]
+
+
+async def attach_listing_fields_to_form_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    rows: list[dict[str, Any]],
+    *,
+    tenant_id: str,
+    workflow_name: Optional[str] = None,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    """Copy RequestNo / Stage / Status / Acted by / Workflow onto form-table rows."""
+    if not rows or not needs_listing_fields(spec):
+        return rows
+    instances: list[dict[str, Any]] = []
+    wf_ids: list[str] = []
+    try:
+        instances, wf_ids = await _load_workflow_instances(
+            ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
+        )
+    except Exception:
+        instances, wf_ids = [], []
+    by_item, by_inst = _index_instances(instances)
+    item_ids = [cid for row in rows for cid in _form_row_ids(row)]
+    item_to_inst: dict[str, str] = {}
+    for wf_id in wf_ids:
+        suffix = _compact_id(wf_id)[:8]
+        if not suffix:
+            continue
+        try:
+            item_to_inst.update(await _sql_item_instance_map(db, suffix, item_ids))
+        except Exception:
+            continue
+        if item_to_inst:
+            break
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        inst = None
+        for cid in _form_row_ids(item):
+            inst = by_item.get(cid) or by_inst.get(cid)
+            if inst is None and cid in item_to_inst:
+                inst = by_inst.get(item_to_inst[cid])
+            if inst is not None:
+                break
+        if inst is not None:
+            _fill_listing_fields(item, inst, spec)
+        out.append(item)
+    return _shape_rows(spec, out)
 
 
 async def _repository_rows(

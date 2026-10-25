@@ -26,6 +26,7 @@ from app.models.report_agent import (
 from app.report_agent.library_store import ReportLibraryStore
 from app.report_agent.data_service import execute_report_query
 from app.report_agent.definition_lock import (
+    ensure_identity_columns,
     fallback_definition_from_prompt,
     lock_report_definition,
     merge_spec_into_definition,
@@ -1198,6 +1199,10 @@ class ReportAgentService:
             preferred_schema=preferred.schema_name if preferred else None,
             preferred_table=preferred.table if preferred else None,
         )
+        from app.report_agent.catalog_execute import has_form_columns, needs_listing_fields
+
+        if spec is not None and needs_listing_fields(spec) and has_form_columns(spec):
+            locked = ensure_identity_columns(locked, schema)
         warnings.extend(locked.get("warnings") or [])
 
         if not locked.get("sources") or not locked.get("columns"):
@@ -1316,12 +1321,35 @@ class ReportAgentService:
         # Prefer definition column order; fall back to query columns
         if not columns_out and report_data.columns:
             columns_out = [ReportColumnOut(key=c, label=c) for c in report_data.columns]
+        rows = report_data.rows
+        if spec is not None:
+            from app.report_agent.catalog_execute import (
+                attach_listing_fields_to_form_rows,
+                has_form_columns,
+                needs_listing_fields,
+                _keep_valued_columns,
+            )
+
+            if needs_listing_fields(spec) and has_form_columns(spec):
+                try:
+                    rows = await attach_listing_fields_to_form_rows(
+                        self._ezofis,
+                        spec,
+                        rows,
+                        tenant_id=request.tenant_id or "",
+                        workflow_name=request.workflow_name,
+                        db=db,
+                    )
+                except Exception as exc:
+                    warnings.append(f"Could not attach workflow Request No / Stage: {exc}")
+                spec, rows, listing_cols = _keep_valued_columns(spec, rows)
+                columns_out = listing_cols
 
         logger.info(
             "report_agent_run_completed",
             extra={
                 "report_type": locked.get("reportType"),
-                "rows": len(report_data.rows),
+                "rows": len(rows),
                 "total_count": total_count,
                 "duration_ms": duration_ms,
             },
@@ -1330,7 +1358,7 @@ class ReportAgentService:
             title=str(locked.get("title") or "Report"),
             report_type=locked.get("reportType"),
             columns=columns_out,
-            rows=report_data.rows,
+            rows=rows,
             total_count=total_count,
             page=request.page,
             page_size=request.page_size,
