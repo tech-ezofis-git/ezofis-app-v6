@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -121,15 +120,6 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(value);
             }
 
-            await ApplyBudgetRemainingAsync(
-                config.MasterFormId!,
-                mainMapping,
-                matchValue,
-                config.FieldMappings,
-                values,
-                fields,
-                cancellationToken);
-
             if (fields.Count == 0)
             {
                 _logger.LogInformation(
@@ -209,87 +199,6 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         return values;
     }
 
-    private async Task ApplyBudgetRemainingAsync(
-        string masterFormId,
-        WorkflowEndSyncFieldMapping mainMapping,
-        string matchValue,
-        IReadOnlyList<WorkflowEndSyncFieldMapping> mappings,
-        IReadOnlyDictionary<string, string> values,
-        Dictionary<string, JsonElement> fields,
-        CancellationToken cancellationToken)
-    {
-        if (!TryGetAmount(values, out var amount) || amount == 0)
-            return;
-
-        foreach (var mapping in mappings)
-        {
-            if (!IsBudgetMoneyField(mapping.MasterFieldId) && !IsBudgetMoneyField(mapping.WorkflowFieldId))
-                continue;
-
-            var current = await TryReadMasterNumberAsync(
-                masterFormId,
-                mainMapping.MasterFieldId,
-                matchValue,
-                mapping.MasterFieldId,
-                cancellationToken);
-            if (current is null
-                && fields.TryGetValue(mapping.MasterFieldId, out var mappedEl)
-                && TryParseNumber(FlattenJsonValue(mappedEl), out var mappedNumber))
-                current = mappedNumber;
-            if (current is null
-                && TryGetMappedValue(values, mapping.WorkflowFieldId, out var workflowBudget)
-                && TryParseNumber(workflowBudget, out var workflowNumber))
-                current = workflowNumber;
-            if (current is null)
-                continue;
-
-            var remaining = current.Value - amount;
-            fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(
-                remaining.ToString(CultureInfo.InvariantCulture));
-        }
-    }
-
-    private async Task<decimal?> TryReadMasterNumberAsync(
-        string masterFormId,
-        string matchColumnId,
-        string matchValue,
-        string budgetFieldId,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _formEntryService.GetEntriesByColumnAsync(
-                masterFormId,
-                matchColumnId,
-                matchValue,
-                columnId: matchColumnId,
-                cancellationToken: cancellationToken);
-            var row = result.Entries?.FirstOrDefault();
-            if (row is null)
-                return null;
-
-            var compact = Compact(budgetFieldId);
-            foreach (var (key, raw) in row)
-            {
-                if (Compact(key) != compact && !key.Equals(budgetFieldId, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                if (TryParseNumber(FlattenText(raw?.ToString()), out var number))
-                    return number;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(
-                ex,
-                "End-sync: could not read current master {BudgetField} for match {MatchKey}={MatchValue}.",
-                budgetFieldId,
-                matchColumnId,
-                matchValue);
-        }
-
-        return null;
-    }
-
     private static bool TryGetMappedValue(
         IReadOnlyDictionary<string, string> values,
         string fieldId,
@@ -322,124 +231,6 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         }
 
         return false;
-    }
-
-    private static bool TryGetAmount(IReadOnlyDictionary<string, string> values, out decimal amount)
-    {
-        amount = 0;
-        foreach (var (key, raw) in values)
-        {
-            if (!IsAmountField(key))
-                continue;
-            if (TryParseNumber(FlattenText(raw), out amount) && amount != 0)
-                return true;
-            if (TrySumTableAmounts(raw, out amount) && amount != 0)
-                return true;
-        }
-
-        decimal tableSum = 0;
-        var anyTable = false;
-        var seenTables = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var raw in values.Values)
-        {
-            if (string.IsNullOrWhiteSpace(raw) || !seenTables.Add(raw.Trim()))
-                continue;
-            if (!TrySumTableAmounts(raw, out var part) || part == 0)
-                continue;
-            tableSum += part;
-            anyTable = true;
-        }
-
-        if (anyTable)
-        {
-            amount = tableSum;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool TrySumTableAmounts(string? raw, out decimal sum)
-    {
-        sum = 0;
-        if (string.IsNullOrWhiteSpace(raw))
-            return false;
-        var trimmed = raw.Trim();
-        if (!trimmed.StartsWith('[') && !trimmed.StartsWith('{'))
-            return false;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(trimmed);
-            return TrySumJsonAmounts(doc.RootElement, out sum);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
-    private static bool TrySumJsonAmounts(JsonElement element, out decimal sum)
-    {
-        sum = 0;
-        var any = false;
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Array:
-                foreach (var item in element.EnumerateArray())
-                {
-                    if (!TrySumJsonAmounts(item, out var part) || part == 0)
-                        continue;
-                    sum += part;
-                    any = true;
-                }
-                return any;
-            case JsonValueKind.Object:
-                foreach (var prop in element.EnumerateObject())
-                {
-                    if (IsAmountField(prop.Name) && TryParseNumber(FlattenJsonValue(prop.Value), out var fieldAmount))
-                    {
-                        sum += fieldAmount;
-                        any = true;
-                        continue;
-                    }
-
-                    if (prop.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object
-                        && TrySumJsonAmounts(prop.Value, out var nested)
-                        && nested != 0)
-                    {
-                        sum += nested;
-                        any = true;
-                    }
-                }
-                return any;
-            default:
-                return false;
-        }
-    }
-
-    private static bool IsAmountField(string fieldId)
-    {
-        var compact = Compact(fieldId);
-        return compact is "amount" or "total" or "totalamount" or "requestamount"
-            or "requestedamount" or "invoiceamount" or "claimedamount" or "expenseamount"
-            or "netamount" or "grandtotal" or "totalcost" or "lineamount" or "totallineamount";
-    }
-
-    private static bool IsBudgetMoneyField(string fieldId)
-    {
-        var compact = Compact(fieldId);
-        return compact is "budget" or "availablebudget" or "remainingbudget"
-            or "totalbudget" or "budgetamount" or "budgetbalance" or "currentbudget";
-    }
-
-    private static bool TryParseNumber(string? text, out decimal value)
-    {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(text))
-            return false;
-        var cleaned = text.Replace(",", "", StringComparison.Ordinal).Trim();
-        return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
     }
 
     private static string Compact(string value) =>
