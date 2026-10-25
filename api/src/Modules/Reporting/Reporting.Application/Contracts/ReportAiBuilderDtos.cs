@@ -27,6 +27,16 @@ public sealed class ReportAiRunRequest
     public JsonElement ReportSpec { get; set; }
     /// <summary>Optional model override. Omit unless you intend to change the catalog model.</summary>
     public string? Model { get; set; }
+    /// <summary>When true, return a CSV/PDF/Excel file instead of JSON rows.</summary>
+    public bool Download { get; set; }
+    /// <summary>When true, email the exported file. Recipients are required.</summary>
+    public bool SendEmail { get; set; }
+    /// <summary>CSV, PDF, or Excel. Used with download or sendEmail.</summary>
+    public string? Format { get; set; }
+    public List<string> Recipients { get; set; } = [];
+    public List<string> Cc { get; set; } = [];
+    public string? Subject { get; set; }
+    public string? Message { get; set; }
 }
 
 public sealed class ReportAiUpdateRequest
@@ -85,6 +95,8 @@ public sealed class ReportAiListItemDto
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string ReportType { get; set; } = string.Empty;
+    public string? WorkflowName { get; set; }
+    public string? RepositoryName { get; set; }
     public string Status { get; set; } = "Draft";
     public int Runs { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -97,9 +109,13 @@ public sealed class ReportAiHttpResult
 {
     public int StatusCode { get; init; } = 200;
     public object? Payload { get; init; }
+    public ReportFileResult? File { get; init; }
 
     public static ReportAiHttpResult Ok(object payload) =>
         new() { StatusCode = 200, Payload = payload };
+
+    public static ReportAiHttpResult FileResult(ReportFileResult file) =>
+        new() { StatusCode = 200, File = file };
 
     public static ReportAiHttpResult Error(int statusCode, string error) =>
         new() { StatusCode = statusCode, Payload = new { error } };

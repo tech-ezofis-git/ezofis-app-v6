@@ -57,6 +57,20 @@ public sealed class ReportAgentChatMapperTests
     }
 
     [Fact]
+    public void ToExportResult_maps_column_keys_to_labels()
+    {
+        using var doc = JsonDocument.Parse("""
+            {"columns":[{"key":"Company_Name","label":"Company Name"}],"rows":[{"Company_Name":"Acme"}]}
+            """);
+        var data = ReportAgentChatMapper.ToExportResult(
+            new ReportAiDefinitionRecord { Name = "RFQ", WorkflowName = "RFQ Process" },
+            doc.RootElement);
+        Assert.Equal("RFQ", data.Name);
+        Assert.Equal("Company Name", data.Columns[0].Label);
+        Assert.Equal("Acme", data.Rows[0]["Company Name"]);
+    }
+
+    [Fact]
     public void IsLockFailure_detects_redirect_warnings()
     {
         Assert.True(ReportAgentChatMapper.IsLockFailure(

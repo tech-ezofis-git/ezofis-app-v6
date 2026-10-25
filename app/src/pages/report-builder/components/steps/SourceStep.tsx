@@ -1,11 +1,16 @@
 import { useLingui } from '@lingui/react/macro'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
+  deleteSavedReport,
+  emailSavedReport,
+  exportSavedReport,
   generateReportPrompt,
+  getSavedReport,
+  listSavedReports,
   runSavedReport,
   type ReportAiSpec,
 } from '@/api/v6/reportAiBuilder'
@@ -16,6 +21,7 @@ import {
 } from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import Button from '@/components/base/button/Button'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
@@ -85,6 +91,7 @@ interface Props {
 
 const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const { t } = useLingui()
+  const queryClient = useQueryClient()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
 
@@ -92,7 +99,14 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     useState<ReportSourceType>(draft.sourceType || 'Workflow')
   const [isThinking, setIsThinking] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  const [emailTo, setEmailTo] = useState('')
+  const [isEmailing, setIsEmailing] = useState(false)
   const isEditing = Boolean(draft.editingReportId)
+  const savedReportsQueryKey = ['report-ai-builder', 'list'] as const
 
   // Persistent AI view states bound to draft store so they persist across navigation
   const showAiBuilder = Boolean(draft.showAiBuilder)
@@ -311,6 +325,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
         showAiBuilder: true,
       })
       onPlanGenerated?.(true)
+      void queryClient.invalidateQueries({ queryKey: savedReportsQueryKey })
     } catch (error) {
       showToast({
         message:
@@ -343,6 +358,162 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
       })
     } finally {
       setIsRunning(false)
+    }
+  }
+
+  const savedReportsQuery = useQuery({
+    queryKey: savedReportsQueryKey,
+    queryFn: listSavedReports,
+    enabled: showAiBuilder && !isEditing,
+  })
+  const savedReports = useMemo(() => {
+    const rows = savedReportsQuery.data ?? []
+    const domain = draft.domain.trim().toLowerCase()
+    if (!domain) return rows
+    return rows.filter((row) => {
+      const scope =
+        row.workflowName?.trim().toLowerCase() ||
+        row.repositoryName?.trim().toLowerCase() ||
+        ''
+      return !scope || scope === domain
+    })
+  }, [draft.domain, savedReportsQuery.data])
+
+  const clearGeneratedReport = () => {
+    setDraft({
+      ...EMPTY_AI_DRAFT,
+      aiPrompt: prompt,
+      showAiBuilder: true,
+    })
+    onPlanGenerated?.(false)
+  }
+
+  const loadSavedAiReport = async (id: string) => {
+    try {
+      const saved = await getSavedReport(id)
+      const spec = saved.reportSpec ?? null
+      const fieldIds = columnsFromSpec(spec).map((column) => column.id)
+      const fieldSettings = Object.fromEntries(
+        fieldIds.map((fieldId) => {
+          const fromSpec = spec?.columns?.find((column) => column.key === fieldId)
+          return [
+            fieldId,
+            createDefaultFieldSetting(fromSpec?.label || fieldId),
+          ]
+        }),
+      )
+      setDraft({
+        aiReportId: saved.id,
+        aiReportPrompt: saved.reportPrompt,
+        aiReportSpec: spec,
+        aiReportType: saved.reportType || reportType,
+        aiRun: null,
+        aiSessionId: saved.sessionId || draft.aiSessionId,
+        aiSuggestion: {
+          fieldIds,
+          name: saved.title || saved.reportPrompt,
+          summary: saved.title || saved.reportPrompt,
+        },
+        aiTitle: saved.title,
+        aiWarnings: saved.warnings ?? [],
+        description: saved.reportPrompt,
+        fields: fieldIds,
+        fieldSettings,
+        name: saved.title || draft.domain,
+        showAiBuilder: true,
+      })
+      onPlanGenerated?.(true)
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to load saved report`,
+        variant: 'error',
+      })
+    }
+  }
+
+  const confirmDeleteSavedReport = async () => {
+    if (!pendingDeleteId || isDeleting) return
+    setIsDeleting(true)
+    try {
+      await deleteSavedReport(pendingDeleteId)
+      if (draft.aiReportId === pendingDeleteId) clearGeneratedReport()
+      void queryClient.invalidateQueries({ queryKey: savedReportsQueryKey })
+      showToast({ message: t`Report deleted`, variant: 'success' })
+      setPendingDeleteId(null)
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to delete report`,
+        variant: 'error',
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportGeneratedReport = async (format: 'CSV' | 'PDF' | 'Excel') => {
+    if (!draft.aiReportId || isExporting) return
+    setIsExporting(true)
+    try {
+      const file = await exportSavedReport(draft.aiReportId, format, {
+        reportPrompt: draft.aiReportPrompt,
+        reportSpec: draft.aiReportSpec,
+      })
+      downloadBlob(file.blob, file.fileName)
+      showToast({ message: t`Report downloaded`, variant: 'success' })
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to export report`,
+        variant: 'error',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const emailGeneratedReport = async () => {
+    if (!draft.aiReportId || isEmailing) return
+    const recipients = emailTo
+      .split(/[,\s;]+/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+    if (recipients.length === 0) {
+      showToast({
+        message: t`Enter at least one email address`,
+        variant: 'error',
+      })
+      return
+    }
+    setIsEmailing(true)
+    try {
+      await emailSavedReport(draft.aiReportId, {
+        format: 'PDF',
+        recipients,
+        reportPrompt: draft.aiReportPrompt,
+        reportSpec: draft.aiReportSpec,
+      })
+      showToast({ message: t`Report emailed`, variant: 'success' })
+      setShowEmail(false)
+      setEmailTo('')
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to email report`,
+        variant: 'error',
+      })
+    } finally {
+      setIsEmailing(false)
     }
   }
 
@@ -575,6 +746,38 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                 ))}
               </div>
 
+              {savedReports.length > 0 && (
+                <div className='flex flex-col gap-2'>
+                  <span className='text-12 font-medium text-gray-9'>
+                    {t`Saved AI reports`}
+                  </span>
+                  <div className='flex flex-col gap-1.5'>
+                    {savedReports.slice(0, 8).map((row) => (
+                      <div
+                        className='flex items-center justify-between gap-2 rounded-lg border border-gray-3 bg-gray-1/40 px-3 py-2'
+                        key={row.id}
+                      >
+                        <button
+                          className='min-w-0 flex-1 truncate text-left text-13 text-gray-12 hover:text-primary-11'
+                          type='button'
+                          onClick={() => void loadSavedAiReport(row.id)}
+                        >
+                          {row.name || t`Untitled report`}
+                        </button>
+                        <Button
+                          color='red'
+                          icon='lucide:trash-2'
+                          label={t`Delete`}
+                          size='xs'
+                          variant='ghost'
+                          onClick={() => setPendingDeleteId(row.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <AnimatePresence>
                 {draft.aiReportId && (
                   <motion.div
@@ -591,15 +794,25 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                           {draft.aiTitle || t`Generated report`}
                         </p>
                       </div>
-                      <Button
-                        color='primary'
-                        disabled={isRunning || !draft.aiReportPrompt}
-                        label={isRunning ? t`Running...` : t`Run report`}
-                        loading={isRunning}
-                        size='sm'
-                        variant='solid'
-                        onClick={() => void runGeneratedReport()}
-                      />
+                      <div className='flex items-center gap-2'>
+                        <Button
+                          color='red'
+                          icon='lucide:trash-2'
+                          label={t`Delete`}
+                          size='sm'
+                          variant='outline'
+                          onClick={() => setPendingDeleteId(draft.aiReportId!)}
+                        />
+                        <Button
+                          color='primary'
+                          disabled={isRunning || !draft.aiReportPrompt}
+                          label={isRunning ? t`Running...` : t`Run report`}
+                          loading={isRunning}
+                          size='sm'
+                          variant='solid'
+                          onClick={() => void runGeneratedReport()}
+                        />
+                      </div>
                     </div>
 
                     {draft.aiWarnings && draft.aiWarnings.length > 0 && (
@@ -641,6 +854,76 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                           rows={runRows}
                         />
                       </div>
+                      {draft.aiReportId && (
+                        <div className='flex flex-wrap items-center gap-2 pt-1'>
+                          <Button
+                            color='gray'
+                            disabled={isExporting}
+                            icon='lucide:file-spreadsheet'
+                            label={t`CSV`}
+                            loading={isExporting}
+                            size='xs'
+                            variant='outline'
+                            onClick={() => void exportGeneratedReport('CSV')}
+                          />
+                          <Button
+                            color='gray'
+                            disabled={isExporting}
+                            icon='lucide:file-text'
+                            label={t`PDF`}
+                            loading={isExporting}
+                            size='xs'
+                            variant='outline'
+                            onClick={() => void exportGeneratedReport('PDF')}
+                          />
+                          <Button
+                            color='gray'
+                            disabled={isExporting}
+                            icon='lucide:table'
+                            label={t`Excel`}
+                            loading={isExporting}
+                            size='xs'
+                            variant='outline'
+                            onClick={() => void exportGeneratedReport('Excel')}
+                          />
+                          <Button
+                            color='gray'
+                            icon='lucide:mail'
+                            label={t`Email`}
+                            size='xs'
+                            variant='outline'
+                            onClick={() => setShowEmail((open) => !open)}
+                          />
+                        </div>
+                      )}
+                      {showEmail && (
+                        <div className='flex flex-col gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
+                          <input
+                            className='h-8 w-full rounded-md border border-gray-4 bg-surface px-2.5 text-13 text-gray-13 outline-none focus:border-primary-8'
+                            placeholder={t`ops@company.com, finance@company.com`}
+                            value={emailTo}
+                            onChange={(event) => setEmailTo(event.target.value)}
+                          />
+                          <div className='flex justify-end gap-2'>
+                            <Button
+                              color='gray'
+                              label={t`Cancel`}
+                              size='xs'
+                              variant='ghost'
+                              onClick={() => setShowEmail(false)}
+                            />
+                            <Button
+                              color='primary'
+                              disabled={isEmailing}
+                              label={isEmailing ? t`Sending...` : t`Send PDF`}
+                              loading={isEmailing}
+                              size='xs'
+                              variant='solid'
+                              onClick={() => void emailGeneratedReport()}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -649,6 +932,18 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
           )}
         </AnimatePresence>
       )}
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`This removes the saved AI report. You can generate it again later.`}
+        isConfirming={isDeleting}
+        opened={Boolean(pendingDeleteId)}
+        title={t`Delete report?`}
+        variant='danger'
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => void confirmDeleteSavedReport()}
+      />
     </div>
   )
 }
