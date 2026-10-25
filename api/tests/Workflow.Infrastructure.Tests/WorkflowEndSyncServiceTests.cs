@@ -101,6 +101,60 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
+    public async Task TrySync_does_not_write_when_that_activity_endSync_is_disabled()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var json = """
+            {"blocks":[
+              {"id":"step-1","type":"INTERNAL_ACTOR","settings":{
+                "endSync":{
+                  "enabled":true,
+                  "target":"MASTER_FORM",
+                  "masterFormId":"master-form",
+                  "fieldMappings":[
+                    {"workflowFieldId":"Vendor_Name","masterFieldId":"Vendor","IsMainField":true}
+                  ]
+                }
+              }},
+              {"id":"step-2","type":"INTERNAL_ACTOR","settings":{
+                "endSync":{
+                  "enabled":false,
+                  "target":"MASTER_FORM",
+                  "masterFormId":"master-form",
+                  "fieldMappings":[
+                    {"workflowFieldId":"Vendor_Name","masterFieldId":"Vendor","IsMainField":true}
+                  ]
+                }
+              }}
+            ]}
+            """;
+        var service = CreateService(json, """{"Vendor_Name":"Acme"}""", formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-2",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        Assert.Null(formEntry.LastRequest);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-1",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        Assert.NotNull(formEntry.LastRequest);
+        Assert.Equal("Acme", formEntry.LastRequest!.MatchValue);
+    }
+
+    [Fact]
     public void Master_match_sql_is_case_insensitive()
     {
         var where = new List<string>();

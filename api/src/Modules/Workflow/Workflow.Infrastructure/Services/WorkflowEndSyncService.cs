@@ -52,13 +52,25 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         {
             var workflowJson = await _workflowJsonStorage.GetWorkflowJsonAsync(workflowId, cancellationToken);
             if (!WorkflowEndSyncJson.TryRead(workflowJson, activityId, out var config) || config is null)
+            {
+                _logger.LogDebug(
+                    "End-sync skipped: activity {ActivityId} on workflow {WorkflowId} has no enabled endSync in the designer JSON.",
+                    activityId,
+                    workflowId);
                 return;
+            }
 
             if (!config.Enabled
                 || !string.Equals(config.Target, "MASTER_FORM", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(config.MasterFormId)
                 || config.FieldMappings.Count == 0)
+            {
+                _logger.LogInformation(
+                    "End-sync skipped: activity {ActivityId} on workflow {WorkflowId} is not an enabled MASTER_FORM endSync.",
+                    activityId,
+                    workflowId);
                 return;
+            }
 
             // Step 1: the condition field is the mapping marked IsMainField -- it identifies which
             // master-form row this sync applies to. Without one, there is no row to find; nothing
