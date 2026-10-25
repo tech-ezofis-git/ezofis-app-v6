@@ -908,16 +908,19 @@ public sealed class FormEntryService : IFormEntryService
     }
 
     /// <summary>
-    /// Match a stored ezfb cell to a lookup/scalar: exact text, or the JSON
-    /// <c>name</c>/<c>value</c>/<c>label</c>/<c>id</c> inside a lookup object.
+    /// Case-insensitive match (lower + btrim on both sides, ILIKE-equivalent).
+    /// Also compares JSON lookup <c>name</c>/<c>value</c>/<c>label</c>/<c>id</c>
+    /// when either side is stored as an object string.
     /// </summary>
-    internal static string ScalarEqualsSql(string quotedColumn, string paramName) =>
-        $"""
-        (
-          lower(btrim(COALESCE({quotedColumn}::text, ''))) = lower(btrim({paramName}))
-          OR lower(btrim(COALESCE(dbo.try_json_scalar({quotedColumn}::text), ''))) = lower(btrim({paramName}))
-        )
-        """;
+    internal static string ScalarEqualsSql(string quotedColumn, string paramName)
+    {
+        var left = NormalizedScalarSql($"{quotedColumn}::text");
+        var right = NormalizedScalarSql($"{paramName}::text");
+        return $"({left} = {right} OR {left} ILIKE {right})";
+    }
+
+    internal static string NormalizedScalarSql(string textExpr) =>
+        $"lower(btrim(COALESCE(dbo.try_json_scalar({textExpr}), {textExpr}, '')))";
 
     private static void AddFilterParameters(
         NpgsqlCommand cmd,

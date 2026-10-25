@@ -211,14 +211,14 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
-    public async Task TrySync_deducts_amount_from_master_budget()
+    public async Task TrySync_copies_balance_after_expenses_onto_remaining_budget()
     {
         var formEntry = new CapturingFormEntryService
         {
             MasterRow = new Dictionary<string, object?>
             {
-                ["Code"] = "IT",
-                ["Budget"] = "5000"
+                ["Email"] = "student.lawyer@ezofis.com",
+                ["Remaining Budget"] = "10000"
             }
         };
         var service = CreateService(
@@ -227,15 +227,15 @@ public sealed class WorkflowEndSyncServiceTests
                   "endSync":{
                     "enabled":true,
                     "target":"MASTER_FORM",
-                    "masterFormId":"master-form",
+                    "masterFormId":"portal-users",
                     "fieldMappings":[
-                      {"workflowFieldId":"Cost_Center","masterFieldId":"Code","IsMainField":true},
-                      {"workflowFieldId":"Budget","masterFieldId":"Budget","IsMainField":false}
+                      {"workflowFieldId":"Email","masterFieldId":"Email","IsMainField":true},
+                      {"workflowFieldId":"Balance After Expenses","masterFieldId":"Remaining Budget","IsMainField":false}
                     ]
                   }
                 }}]}
                 """,
-            persistedJson: """{"Cost_Center":"IT","Amount":"120"}""",
+            persistedJson: """{"Email":"student.lawyer@ezofis.com","Balance After Expenses":"2655.40","Amount":"120"}""",
             formEntry);
 
         await service.TrySyncOnStepCompleteAsync(
@@ -248,51 +248,10 @@ public sealed class WorkflowEndSyncServiceTests
             formDataFields: null,
             stepName: "Approved");
 
-        Assert.NotNull(formEntry.LastRequest);
-        Assert.Equal("IT", formEntry.LastRequest!.MatchValue);
-        Assert.Equal("4880", ReadField(formEntry.LastRequest, "Budget"));
-    }
-
-    [Fact]
-    public async Task TrySync_sums_line_item_amounts_when_deducting_budget()
-    {
-        var formEntry = new CapturingFormEntryService
-        {
-            MasterRow = new Dictionary<string, object?>
-            {
-                ["Code"] = """{"id":"cc1","name":"IT"}""",
-                ["Budget"] = "5000"
-            }
-        };
-        var service = CreateService(
-            workflowJson: """
-                {"blocks":[{"id":"approved","settings":{
-                  "endSync":{
-                    "enabled":true,
-                    "target":"MASTER_FORM",
-                    "masterFormId":"master-form",
-                    "fieldMappings":[
-                      {"workflowFieldId":"Cost_Center","masterFieldId":"Code","IsMainField":true},
-                      {"workflowFieldId":"Budget","masterFieldId":"Budget","IsMainField":false}
-                    ]
-                  }
-                }}]}
-                """,
-            persistedJson: """{"Cost_Center":{"id":"cc1","name":"IT"},"LineItems":[{"Amount":100},{"Amount":20}]}""",
-            formEntry);
-
-        await service.TrySyncOnStepCompleteAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            "approved",
-            "workflow-form",
-            Guid.NewGuid(),
-            submittedFormDataJson: null,
-            formDataFields: null,
-            formLineItemsJson: """[{"Amount":100},{"Amount":20}]""");
-
-        Assert.Equal("IT", formEntry.LastRequest!.MatchValue);
-        Assert.Equal("4880", ReadField(formEntry.LastRequest, "Budget"));
+        Assert.Equal("portal-users", formEntry.LastFormId);
+        Assert.Equal("student.lawyer@ezofis.com", formEntry.LastRequest!.MatchValue);
+        Assert.Equal("2655.40", ReadField(formEntry.LastRequest, "Remaining Budget"));
+        Assert.Equal("student.lawyer@ezofis.com", ReadField(formEntry.LastRequest, "Email"));
     }
 
     [Fact]
@@ -301,8 +260,10 @@ public sealed class WorkflowEndSyncServiceTests
         var where = new List<string>();
         FormEntryService.AppendFilterPredicates(where, [("Vendor", "Acme")]);
         Assert.Single(where);
-        Assert.Contains("lower(btrim(COALESCE(\"Vendor\"::text, ''))) = lower(btrim(@Filter0))", where[0]);
-        Assert.Contains("dbo.try_json_scalar", where[0]);
+        Assert.Contains("dbo.try_json_scalar(\"Vendor\"::text)", where[0]);
+        Assert.Contains("dbo.try_json_scalar(@Filter0::text)", where[0]);
+        Assert.Contains("lower(btrim(", where[0]);
+        Assert.Contains("ILIKE", where[0]);
     }
 
     private static WorkflowEndSyncService CreateService(
