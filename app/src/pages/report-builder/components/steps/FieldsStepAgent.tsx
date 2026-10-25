@@ -19,6 +19,7 @@ import {
   agentRunToReportRunResult,
   buildAgentConfigFromDraft,
 } from '../../utils/agentReport'
+import { isIdColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
 import StatusRulesEditor from './StatusRulesEditor'
 
@@ -73,11 +74,22 @@ const FieldsStepAgent = () => {
     [catalog],
   )
 
+  // Default columns are always part of the report and identifier columns are
+  // never displayed, so neither is offered for selection here.
+  const isSelectable = (key: string) => {
+    const column = catalogByKey.get(key)
+    return (
+      kindOf(column) !== 'default' &&
+      !isIdColumn(key, draft.fieldSettings[key]?.label || column?.label)
+    )
+  }
+  const selectableFields = draft.fields.filter(isSelectable)
+
   // Every search word must appear somewhere in the label or key, in any
   // order; underscores count as spaces so "quote2 total" finds quote2_Total.
   const searchWords = search.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const unselected = catalog.filter(
-    (column) => !draft.fields.includes(column.key),
+    (column) => !draft.fields.includes(column.key) && isSelectable(column.key),
   )
   const available = unselected.filter((column) => {
     const haystack = `${column.label} ${column.key}`
@@ -94,11 +106,11 @@ const FieldsStepAgent = () => {
       <AiBrandIcon className='size-4' variant='outline-purple' />
     ) : (
       <Icon
+        name={kind === 'userdefined' ? 'lucide:file-text' : 'lucide:database'}
         className={cn(
           'size-4',
           kind === 'userdefined' ? 'text-blue-11' : 'text-gray-10',
         )}
-        name={kind === 'userdefined' ? 'lucide:file-text' : 'lucide:database'}
       />
     )
 
@@ -118,10 +130,12 @@ const FieldsStepAgent = () => {
     if (expandedKey === key) setExpandedKey(null)
   }
 
+  // Moves among the listed columns; hidden ones keep their positions.
   const moveColumn = (key: string, direction: -1 | 1) => {
+    const neighbor = selectableFields[selectableFields.indexOf(key) + direction]
+    if (!neighbor) return
     const index = draft.fields.indexOf(key)
-    const target = index + direction
-    if (index < 0 || target < 0 || target >= draft.fields.length) return
+    const target = draft.fields.indexOf(neighbor)
     const next = [...draft.fields]
     ;[next[index], next[target]] = [next[target], next[index]]
     setDraft({ fields: next })
@@ -186,11 +200,13 @@ const FieldsStepAgent = () => {
 
   const isPreviewPending = isPreviewing || runKey !== debouncedRunKey
 
-  const previewColumns = draft.fields.map((key) => ({
-    id: key,
-    label: settingFor(key).label,
-    sampleType: 'text' as const,
-  }))
+  const previewColumns = draft.fields
+    .filter((key) => !isIdColumn(key, settingFor(key).label))
+    .map((key) => ({
+      id: key,
+      label: settingFor(key).label,
+      sampleType: 'text' as const,
+    }))
 
   return (
     <div className='flex flex-col gap-5'>
@@ -206,12 +222,12 @@ const FieldsStepAgent = () => {
               <p className='text-11 text-gray-9'>{t`Shown in this order in the report`}</p>
             </div>
             <span className='rounded-full bg-primary-3 px-2 py-0.5 text-11 font-semibold text-primary-11'>
-              {draft.fields.length}
+              {selectableFields.length}
             </span>
           </header>
 
           <div className={cn('ez-scrollbar overflow-y-auto p-2', LIST_HEIGHT)}>
-            {draft.fields.length === 0 ? (
+            {selectableFields.length === 0 ? (
               <div className='flex h-full min-h-40 flex-col items-center justify-center gap-2 text-center'>
                 <Icon
                   className='size-6 text-gray-7'
@@ -223,7 +239,7 @@ const FieldsStepAgent = () => {
             ) : (
               <ul className='flex flex-col gap-1.5'>
                 <AnimatePresence initial={false}>
-                  {draft.fields.map((key, index) => {
+                  {selectableFields.map((key, index) => {
                     const column = catalogByKey.get(key)
                     const kind = kindOf(column)
                     const setting = settingFor(key)
@@ -301,7 +317,7 @@ const FieldsStepAgent = () => {
                             <IconButton
                               ariaLabel={t`Move ${setting.label} down`}
                               color='gray'
-                              disabled={index === draft.fields.length - 1}
+                              disabled={index === selectableFields.length - 1}
                               icon='lucide:chevron-down'
                               size='sm'
                               variant='ghost'
@@ -405,11 +421,11 @@ const FieldsStepAgent = () => {
               </span>
             </div>
             <InputText
+              placeholder={t`Search columns...`}
+              value={search}
               leftSection={
                 <Icon className='size-3.5 text-gray-9' name='lucide:search' />
               }
-              placeholder={t`Search columns...`}
-              value={search}
               onChange={setSearch}
             />
           </header>

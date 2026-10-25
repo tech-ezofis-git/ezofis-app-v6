@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
+  createReportAgentSessionId,
+  generateReportAiPrompt,
+  runReportAiReport,
+} from '@/api/v6/reportAgent'
+import {
   createPublishedWorkflowBrowsePayload,
   mapPublishedBrowseResponseToOptions,
   workflowsApiV6,
@@ -14,23 +19,19 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import {
-  createReportAgentSessionId,
-  generateReportAiPrompt,
-  runReportAiReport,
-} from '@/api/v6/reportAgent'
-import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
-import type { PreviewColumn } from '../../utils/previewSampleData'
 import type { ReportAgentConfig, ReportSourceType } from '../../types'
+import type { PreviewColumn } from '../../utils/previewSampleData'
+import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import {
-  ALL_FOLDERS_SOURCE_ID,
-  ALL_WORKFLOWS_SOURCE_ID,
   agentRunToReportRunResult,
   agentScopeForSource,
+  ALL_FOLDERS_SOURCE_ID,
+  ALL_WORKFLOWS_SOURCE_ID,
   buildAgentConfigFromDraft,
   draftPatchFromPromptResult,
   isAllScopeSource,
 } from '../../utils/agentReport'
+import { isIdColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
 
 const PROMPT_EXAMPLES_WORKFLOW = [
@@ -92,11 +93,9 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const isEditing = Boolean(draft.editingReportId)
 
   // Persistent AI view states bound to draft store so they persist across navigation
-  const showAiBuilder = Boolean(draft.showAiBuilder)
   const prompt = draft.aiPrompt ?? ''
   const suggestion = draft.aiSuggestion ?? null
 
-  const setShowAiBuilder = (val: boolean) => setDraft({ showAiBuilder: val })
   const setPrompt = (val: string) => setDraft({ aiPrompt: val })
 
   const sourceTypeOptions: Option[] = useMemo(
@@ -148,8 +147,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectSourceType = (type: ReportSourceType) => {
     setSelectedSourceType(type)
     setDraft({
-      aiPrompt: '',
       agent: null,
+      aiPrompt: '',
       aiSuggestion: null,
       customFields: [],
       domain: '',
@@ -167,8 +166,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectWorkflow = async (option: Option | null) => {
     if (!option) {
       setDraft({
-        aiPrompt: '',
         agent: null,
+        aiPrompt: '',
         aiSuggestion: null,
         customFields: [],
         domain: '',
@@ -205,8 +204,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     }
 
     setDraft({
-      aiPrompt: '',
       agent: null,
+      aiPrompt: '',
       aiSuggestion: null,
       customFields: [],
       domain: workflowName,
@@ -224,8 +223,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectFolder = (option: Option | null) => {
     if (!option) {
       setDraft({
-        aiPrompt: '',
         agent: null,
+        aiPrompt: '',
         aiSuggestion: null,
         customFields: [],
         domain: '',
@@ -244,8 +243,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const folderName = String(option.name)
 
     setDraft({
-      aiPrompt: '',
       agent: null,
+      aiPrompt: '',
       aiSuggestion: null,
       customFields: [],
       domain: folderName,
@@ -311,8 +310,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const { data, error } = await generateReportAiPrompt({
       description: text,
       id: draft.agent?.id || null,
-      repositoryName: scope.repositoryName,
       reportType: scope.reportType,
+      repositoryName: scope.repositoryName,
       sessionId,
       workflowName: scope.workflowName,
     })
@@ -356,14 +355,23 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Internal identifier columns stay in the report spec but aren't displayed.
+  const visibleFields = useMemo(
+    () =>
+      draft.fields.filter(
+        (id) => !isIdColumn(id, draft.fieldSettings[id]?.label),
+      ),
+    [draft.fields, draft.fieldSettings],
+  )
+
   const previewColumns: PreviewColumn[] = useMemo(() => {
     if (!suggestion) return []
-    return draft.fields.map((id) => ({
+    return visibleFields.map((id) => ({
       id,
       label: draft.fieldSettings[id]?.label || id,
       sampleType: 'text',
     }))
-  }, [suggestion, draft.fields, draft.fieldSettings])
+  }, [suggestion, visibleFields, draft.fieldSettings])
 
   return (
     <div className='flex flex-col gap-6'>
@@ -452,47 +460,11 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
         )}
       </div>
 
-      {/* Animated AI Section when Source is Ready (creation mode only) */}
-      {!isEditing && (
+      {/* AI builder is the default mode once a source is picked; it stays
+          available when editing an AI report so its prompt can be refined. */}
+      {(!isEditing || draft.agent) && (
         <AnimatePresence mode='wait'>
-          {isSourceReady && !showAiBuilder && (
-            <motion.div
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className='flex flex-col gap-3 rounded-xl border border-primary-4 bg-primary-1/30 p-5 shadow-sm'
-              exit={{ opacity: 0, scale: 0.98, y: -8 }}
-              initial={{ opacity: 0, scale: 0.98, y: 16 }}
-              key='mode-choice'
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <p className='text-13 font-medium text-gray-12'>
-                {t`How would you like to build your report for "${draft.domain}"?`}
-              </p>
-              <div className='flex flex-wrap items-center gap-3 pt-1'>
-                <Button
-                  color='primary'
-                  label={t`Build with AI`}
-                  size='md'
-                  variant='solid'
-                  leftSection={
-                    <AiBrandIcon className='size-4' variant='outline-white' />
-                  }
-                  onClick={() => setShowAiBuilder(true)}
-                />
-                {onProceedManual && !isAllScope && (
-                  <Button
-                    color='gray'
-                    icon='lucide:arrow-right'
-                    label={t`Build Manually`}
-                    size='md'
-                    variant='outline'
-                    onClick={onProceedManual}
-                  />
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {isSourceReady && showAiBuilder && (
+          {isSourceReady && (
             <motion.div
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className='flex flex-col gap-5 rounded-2xl border border-primary-4/50 bg-surface p-6 shadow-sm'
@@ -501,40 +473,47 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
               key='ai-builder'
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Header with Title and Switch Action */}
-              <div className='flex items-center justify-between gap-3'>
-                <div className='flex items-center gap-3'>
-                  <AiBrandIcon
-                    className='size-7 shrink-0'
-                    variant='outline-purple'
-                  />
-                  <div>
-                    <h3 className='text-16 font-semibold text-gray-13'>
-                      {t`Build with AI`}
-                    </h3>
-                    <p className='text-13 text-gray-10'>
-                      {t`Describe what you want to report on for`}{' '}
-                      <span className='font-semibold text-gray-12'>
-                        {draft.domain}
-                      </span>{' '}
-                      <span className='rounded bg-gray-2 px-1.5 py-0.5 text-11 text-gray-11'>
-                        {draft.sourceType}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {onProceedManual && !isAllScope && (
+              {/* Mode choice: Build with AI is selected, its prompt box below */}
+              <div className='flex flex-col gap-3'>
+                <p className='text-13 font-medium text-gray-12'>
+                  {t`How would you like to build your report for "${draft.domain}"?`}
+                </p>
+                <div className='flex flex-wrap items-center gap-3'>
                   <Button
-                    color='gray'
-                    icon='lucide:arrow-right'
-                    label={t`Build Manually`}
-                    size='sm'
-                    variant='ghost'
-                    onClick={onProceedManual}
+                    color='primary'
+                    label={t`Build with AI`}
+                    size='md'
+                    variant='solid'
+                    aria-pressed
+                    leftSection={
+                      <AiBrandIcon className='size-4' variant='outline-white' />
+                    }
+                    rightSection={
+                      <Icon className='size-4' name='lucide:check' />
+                    }
                   />
-                )}
+                  {onProceedManual && !isAllScope && (
+                    <Button
+                      color='gray'
+                      icon='lucide:arrow-right'
+                      label={t`Build Manually`}
+                      size='md'
+                      variant='outline'
+                      onClick={onProceedManual}
+                    />
+                  )}
+                </div>
               </div>
+
+              <p className='text-13 text-gray-10'>
+                {t`Describe what you want to report on for`}{' '}
+                <span className='font-semibold text-gray-12'>
+                  {draft.domain}
+                </span>{' '}
+                <span className='rounded bg-gray-2 px-1.5 py-0.5 text-11 text-gray-11'>
+                  {draft.sourceType}
+                </span>
+              </p>
 
               {/* Clean prompt input box */}
               <div className='relative rounded-xl border border-gray-4 bg-gray-1/30 transition-all focus-within:border-primary-8 focus-within:ring-2 focus-within:ring-primary-3/30'>
@@ -560,12 +539,12 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                   <Button
                     color='primary'
                     disabled={!prompt.trim() || isThinking}
-                    label={
-                      isThinking ? t`Generating prompt...` : t`Generate Report`
-                    }
                     loading={isThinking}
                     size='sm'
                     variant='solid'
+                    label={
+                      isThinking ? t`Generating prompt...` : t`Generate Report`
+                    }
                     leftSection={
                       <AiBrandIcon className='size-4' variant='outline-white' />
                     }
@@ -627,7 +606,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
 
                     {/* Selected column pills */}
                     <div className='flex flex-wrap gap-1.5'>
-                      {draft.fields.map((id) => (
+                      {visibleFields.map((id) => (
                         <span
                           className='rounded-full border border-gray-3 bg-surface px-2.5 py-1 text-11 text-gray-11'
                           key={id}

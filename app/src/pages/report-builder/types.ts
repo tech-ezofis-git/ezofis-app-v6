@@ -51,6 +51,8 @@ export interface Report {
   visibility: ReportVisibility
   /** Full agent config; present once a saved AI report is loaded by id. */
   agentConfig?: ReportAgentConfig | null
+  /** Prompt the user typed to generate an AI report (its `userPrompt`). */
+  aiPrompt?: string
   /** Lives in /report-ai-builder rather than /report-builder. */
   isAiReport?: boolean
   sourceFormId?: string

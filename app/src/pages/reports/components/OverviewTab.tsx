@@ -1,7 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useMemo, useState } from 'react'
+import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
-import type { FilterDefinition } from '@/components/common/CustomFilter'
+import type {
+  FilterDefinition,
+  FilterGroup,
+} from '@/components/common/CustomFilter'
 import type { Report } from '@/pages/report-builder/types'
 import Button from '@/components/base/button/Button'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -15,6 +19,7 @@ import {
   useReportAgentDataQuery,
   useReportBuilderDataQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
+import { isIdColumn } from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import {
   detectFieldType,
@@ -38,7 +43,7 @@ interface Props {
   report: Report
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 200
 
 const OverviewTab = ({ report }: Props) => {
   const { t } = useLingui()
@@ -64,13 +69,19 @@ const OverviewTab = ({ report }: Props) => {
 
   const previewColumns: OverviewColumn[] = useMemo(() => {
     const columns = runResult?.columns ?? []
-    return columns.map((col) => {
-      const fieldId = isAgentReport
-        ? col.key
-        : report.fields.find((id) => fieldSettings[id]?.label === col.label) ||
-          col.key
-      return { id: fieldId, label: col.label }
-    })
+    return (
+      columns
+        // Internal identifier columns are fetched but never displayed.
+        .filter((col) => !isIdColumn(col.key, col.label))
+        .map((col) => {
+          const fieldId = isAgentReport
+            ? col.key
+            : report.fields.find(
+                (id) => fieldSettings[id]?.label === col.label,
+              ) || col.key
+          return { id: fieldId, label: col.label }
+        })
+    )
   }, [runResult, isAgentReport, report.fields, fieldSettings])
 
   const sourceRows: Record<string, string>[] = useMemo(() => {
@@ -161,48 +172,99 @@ const OverviewTab = ({ report }: Props) => {
   const search = globalSearchState?.value || ''
   const selectedColumnId = globalSearchState?.id || ''
 
+  // Keys of the agent's default columns; their filters show inline, every
+  // other column's filter sits behind the "+" field picker.
+  const defaultColumnKeys = useMemo(() => {
+    const spec = report.agentConfig?.reportSpec as unknown as
+      | ReportSpec
+      | undefined
+    if (!spec) return null
+    return new Set(
+      [...(spec.defaultColumns ?? []), ...(spec.columns ?? [])]
+        .filter((column) => column.kind === 'default')
+        .map((column) => column.key),
+    )
+  }, [report.agentConfig])
+
   // Column-wise filter definitions
-  const filterDefinitions: FilterDefinition[] = useMemo(() => {
-    return previewColumns
-      .map((col) => {
-        const setting = fieldSettings[col.id]
-        const isStatus = setting?.colType === 'status'
-        const detectedType = isStatus
-          ? 'category'
-          : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
+  const allFilterDefinitions: FilterDefinition[] = useMemo(() => {
+    return previewColumns.map((col) => {
+      const setting = fieldSettings[col.id]
+      const isStatus = setting?.colType === 'status'
+      const detectedType = isStatus
+        ? 'category'
+        : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
 
-        let options: { count?: number; label: string; value: string }[] = []
+      let options: { count?: number; label: string; value: string }[] = []
 
-        if (isDateColumnType(detectedType)) {
-          options = generateDateRanges(sourceRows, col.id, (r) =>
-            valueForColumn(col, r),
-          )
-        } else if (isNumberColumnType(detectedType)) {
-          options = generateNumericBuckets(sourceRows, col.id, (r) =>
-            valueForColumn(col, r),
-          )
-          if (options.length === 0) {
-            options = generateCategoryOptions(sourceRows, col.id, (r) =>
-              valueForColumn(col, r),
-            )
-          }
-        } else {
+      if (isDateColumnType(detectedType)) {
+        options = generateDateRanges(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+      } else if (isNumberColumnType(detectedType)) {
+        options = generateNumericBuckets(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+        if (options.length === 0) {
           options = generateCategoryOptions(sourceRows, col.id, (r) =>
             valueForColumn(col, r),
           )
         }
+      } else {
+        options = generateCategoryOptions(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+      }
 
-        return {
-          dataType: detectedType,
-          id: col.id,
-          label: col.label,
-          options,
-          searchable: true,
-          searchPlaceholder: t`Search ${col.label}...`,
-        }
-      })
-      .filter((def) => def.options.length > 0)
+      return {
+        dataType: detectedType,
+        id: col.id,
+        label: col.label,
+        options,
+        searchable: true,
+        searchPlaceholder: t`Search ${col.label}...`,
+      }
+    })
   }, [previewColumns, fieldSettings, sourceRows, valueForColumn, t])
+
+  // Manual reports have no default/other split, so all their filters stay inline.
+  const isInlineFilter = useCallback(
+    (id: string) => !defaultColumnKeys || defaultColumnKeys.has(id),
+    [defaultColumnKeys],
+  )
+
+  const filterDefinitions = useMemo(
+    () =>
+      allFilterDefinitions.filter(
+        (def) => def.options.length > 0 && isInlineFilter(def.id),
+      ),
+    [allFilterDefinitions, isInlineFilter],
+  )
+
+  const moreFilterGroups: FilterGroup[] = useMemo(
+    () =>
+      allFilterDefinitions
+        .filter((def) => !isInlineFilter(def.id))
+        .map(
+          ({
+            dataType,
+            id,
+            label,
+            options,
+            searchable,
+            searchPlaceholder,
+          }) => ({
+            dataType,
+            id,
+            label,
+            // No options → the picker falls back to a free-text filter.
+            options: options.length > 0 ? options : undefined,
+            searchable,
+            searchPlaceholder,
+          }),
+        ),
+    [allFilterDefinitions, isInlineFilter],
+  )
 
   const filteredRows = useMemo(() => {
     return sourceRows.filter((row) => {
@@ -346,6 +408,8 @@ const OverviewTab = ({ report }: Props) => {
         activeFilters={activeFilters}
         customSearchComponent={<TableSearch table={table as any} />}
         filters={filterDefinitions}
+        moreFilters={moreFilterGroups}
+        moreFiltersLabel={t`Add filter`}
         showReset={Boolean(
           search ||
           selectedColumnId ||

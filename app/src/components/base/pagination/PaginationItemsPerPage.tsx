@@ -11,7 +11,7 @@ interface Props {
   onPageSizeChange: (value: number) => void
 }
 
-const options = [5, 10, 20, 30, 50, 100, 0]
+const options = [5, 10, 20, 30, 50, 100, 200, 0]
 
 const PaginationItemsPerPage = ({
   className,

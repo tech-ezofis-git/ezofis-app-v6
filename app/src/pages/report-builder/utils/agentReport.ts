@@ -21,6 +21,7 @@ import type {
 } from '../types'
 import { DEFAULT_SCHEDULE } from '../types'
 import { reportSpecColumnToFieldSetting } from './fromReportSpec'
+import { findUserPrompt } from './hiddenColumns'
 
 /** Sentinel source ids for the agent's tenant-wide scopes. */
 export const ALL_WORKFLOWS_SOURCE_ID = '__all_workflows__'
@@ -197,7 +198,17 @@ export const draftPatchFromPromptResult = (
   >,
 ) => {
   const spec = result.reportSpec
-  const selected = (spec.columns ?? []).filter((c) => c.selected !== false)
+  const picked = (spec.columns ?? []).filter((c) => c.selected !== false)
+  // Default columns are always part of the report, whatever the agent
+  // selected — they lead the table, followed by the agent's other picks.
+  const defaults = (spec.defaultColumns ?? []).map(
+    (column) => picked.find((c) => c.key === column.key) ?? column,
+  )
+  const defaultKeys = new Set(defaults.map((c) => c.key))
+  const selected = [
+    ...defaults,
+    ...picked.filter((c) => !defaultKeys.has(c.key)),
+  ]
   const fieldSettings: Record<string, ReportFieldSetting> = Object.fromEntries(
     selected.map((column) => [
       column.key,
@@ -205,18 +216,26 @@ export const draftPatchFromPromptResult = (
     ]),
   )
 
-  return {
-    agent: {
-      ...scope,
-      id: result.id,
-      reportPrompt: result.reportPrompt,
-      reportSpec: spec as unknown as Record<string, unknown>,
-    } satisfies ReportAgentConfig,
+  const draft = {
     description: spec.objective || '',
     fields: selected.map((c) => c.key),
     fieldSettings,
     filters: (spec.filters ?? []).map(specFilterToDraft),
     name: spec.title || result.title || '',
+  }
+
+  return {
+    ...draft,
+    // Rebuilt so the spec/prompt sent on run mark the default columns selected.
+    agent: buildAgentConfigFromDraft(
+      {
+        ...scope,
+        id: result.id,
+        reportPrompt: result.reportPrompt,
+        reportSpec: spec as unknown as Record<string, unknown>,
+      } satisfies ReportAgentConfig,
+      { ...draft, description: '', name: '' },
+    ),
   }
 }
 
@@ -423,6 +442,7 @@ export const aiRecordToReport = (record: ReportAiRecord): Report => {
   return {
     ...aiListItemToReport(record),
     agentConfig: patch.agent,
+    aiPrompt: findUserPrompt(record, record.reportSpec, record.reportPrompt),
     domain: isAllScope
       ? AGENT_TYPE_DOMAIN[record.reportType]
       : specificName || AGENT_TYPE_DOMAIN[record.reportType],
