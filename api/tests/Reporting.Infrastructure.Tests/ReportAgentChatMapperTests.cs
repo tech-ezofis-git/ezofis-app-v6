@@ -36,6 +36,27 @@ public sealed class ReportAgentChatMapperTests
     }
 
     [Fact]
+    public void ReadSpecColumns_prefers_selected_columns()
+    {
+        using var doc = JsonDocument.Parse("""
+            {"columns":[{"key":"Company_Name","label":"Company Name"}],"availableColumns":["Company_Name"]}
+            """);
+        var columns = ReportAgentChatMapper.ReadSpecColumns(doc.RootElement);
+        Assert.Single(columns);
+        Assert.Equal("Company_Name", columns[0].Key);
+        Assert.Equal("Company Name", columns[0].Label);
+    }
+
+    [Theory]
+    [InlineData("specific_workflow", true)]
+    [InlineData("specific_repository", true)]
+    [InlineData("all_workflows", false)]
+    public void IsSpecifiedScope_matches_form_and_folder_types(string reportType, bool expected)
+    {
+        Assert.Equal(expected, ReportAgentChatMapper.IsSpecifiedScope(reportType));
+    }
+
+    [Fact]
     public void IsLockFailure_detects_redirect_warnings()
     {
         Assert.True(ReportAgentChatMapper.IsLockFailure(

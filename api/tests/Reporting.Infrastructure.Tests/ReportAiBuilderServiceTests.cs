@@ -196,6 +196,67 @@ public sealed class ReportAiBuilderServiceTests
     }
 
     [Fact]
+    public async Task RunSaved_specified_workflow_uses_form_query()
+    {
+        var store = new MemoryStore();
+        var id = Guid.NewGuid();
+        store.Rows[id] = new ReportAiDefinitionRecord
+        {
+            Id = id,
+            TenantId = TenantId,
+            OwnerUserId = UserId,
+            ReportType = "specific_workflow",
+            WorkflowName = "RFQ Process",
+            Name = "RFQ Estimation",
+            ReportPrompt = """{"Objective":"RFQ"}""",
+            ReportSpecJson = """
+                {"title":"RFQ","columns":[{"key":"Company_Name","label":"Company Name"}]}
+                """
+        };
+        var client = new FakeClient
+        {
+            Run = AgentResult(200, """
+                {"reply":"Report ready.","report_result":{
+                  "warnings":["Dropped unknown source table 'ezfb_787372d8_items'."]
+                }}
+                """)
+        };
+        var query = new FakeQuery
+        {
+            Result = new ReportRunResult(
+                id,
+                "RFQ Estimation",
+                "RFQ Process",
+                [new ReportColumnDto("Company Name", "Company Name", "None", "value", 160, false)],
+                [
+                    new Dictionary<string, string?> { ["Company Name"] = "Acme" },
+                    new Dictionary<string, string?> { ["Company Name"] = "Globex" }
+                ],
+                null,
+                2,
+                Guid.NewGuid(),
+                "form-1")
+        };
+        var service = new ReportAiBuilderService(client, store, query);
+
+        var result = await service.RunSavedAsync(
+            TenantId,
+            id,
+            new ReportAiRunRequest { Page = 1, PageSize = 1 });
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Null(client.LastRun);
+        Assert.Equal("RFQ Process", query.LastConfig?.Domain);
+        Assert.Contains("Company_Name", query.LastConfig?.Fields ?? []);
+        Assert.Equal(1, store.Rows[id].Runs);
+        var json = JsonSerializer.Serialize(result.Payload);
+        Assert.Contains("Acme", json);
+        Assert.DoesNotContain("Globex", json);
+        Assert.Contains("\"totalCount\":2", json);
+        Assert.Contains("Counted live form rows", json);
+    }
+
+    [Fact]
     public async Task GenerateAndSave_requires_workflow_name_for_specific_workflow()
     {
         var service = new ReportAiBuilderService(new FakeClient(), new MemoryStore());
@@ -305,6 +366,40 @@ public sealed class ReportAiBuilderServiceTests
                 CreatedAtUtc = row.CreatedAtUtc,
                 ModifiedAtUtc = row.ModifiedAtUtc
             };
+    }
+
+    private sealed class FakeQuery : IReportQueryService
+    {
+        public ReportBuilderConfig? LastConfig { get; private set; }
+        public ReportRunResult Result { get; set; } = new(
+            null, "Untitled", "", [], [], null, 0, null, null);
+
+        public Task<IReadOnlyList<ReportDomainDto>> ListDomainsAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ReportDomainDto>>([]);
+
+        public Task<IReadOnlyList<ReportSourceFormDto>> ListSourceFormsAsync(
+            string? sourceType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ReportSourceFormDto>>([]);
+
+        public Task<IReadOnlyList<ReportAvailableFieldDto>> ListFieldsAsync(
+            Guid tenantId,
+            string? domain,
+            string? sourceFormId,
+            string? sourceForm = null,
+            string? sourceType = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ReportAvailableFieldDto>>([]);
+
+        public Task<ReportRunResult> ExecuteAsync(
+            Guid tenantId,
+            ReportBuilderConfig config,
+            CancellationToken cancellationToken = default)
+        {
+            LastConfig = config;
+            return Task.FromResult(Result);
+        }
     }
 
     private sealed class FakeClient : IReportAgentPythonClient

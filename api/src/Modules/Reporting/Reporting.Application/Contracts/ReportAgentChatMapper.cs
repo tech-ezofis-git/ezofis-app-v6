@@ -116,6 +116,77 @@ public static class ReportAgentChatMapper
         return false;
     }
 
+    public static bool IsSpecifiedScope(string? reportType) =>
+        reportType is not null
+        && (reportType.Equals("specific_workflow", StringComparison.OrdinalIgnoreCase)
+            || reportType.Equals("specific_repository", StringComparison.OrdinalIgnoreCase));
+
+    public static IReadOnlyList<ReportAiSpecColumn> ReadSpecColumns(JsonElement spec)
+    {
+        foreach (var name in new[]
+                 {
+                     "columns", "userdefinedColumns", "userdefined_columns",
+                     "defaultColumns", "default_columns", "agentColumns", "agent_columns"
+                 })
+        {
+            var prop = ReadProperty(spec, name);
+            if (prop.ValueKind != JsonValueKind.Array)
+                continue;
+
+            var list = new List<ReportAiSpecColumn>();
+            foreach (var item in prop.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
+                var key = ReadString(item, "key", "id", "field")?.Trim();
+                if (string.IsNullOrWhiteSpace(key) || IsPlaceholder(key))
+                    continue;
+                var label = ReadString(item, "label", "name")?.Trim();
+                var formula = ReadString(item, "formula", "expression")?.Trim();
+                list.Add(new ReportAiSpecColumn(
+                    key,
+                    string.IsNullOrWhiteSpace(label) || IsPlaceholder(label) ? key : label,
+                    string.IsNullOrWhiteSpace(formula) || IsPlaceholder(formula) ? null : formula));
+            }
+
+            if (list.Count > 0)
+                return list;
+        }
+
+        return [];
+    }
+
+    public static List<ReportFilter> ReadSpecFilters(JsonElement spec)
+    {
+        var prop = ReadProperty(spec, "filters");
+        if (prop.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var list = new List<ReportFilter>();
+        foreach (var item in prop.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+                continue;
+            var field = ReadString(item, "field", "key", "id")?.Trim();
+            if (string.IsNullOrWhiteSpace(field) || IsPlaceholder(field))
+                continue;
+            var op = ReadString(item, "op", "operator")?.Trim();
+            var value = ReadProperty(item, "value");
+            list.Add(new ReportFilter
+            {
+                Field = field,
+                FieldId = field,
+                Operator = string.IsNullOrWhiteSpace(op) || IsPlaceholder(op) ? "eq" : op,
+                Op = string.IsNullOrWhiteSpace(op) || IsPlaceholder(op) ? "eq" : op,
+                Value = value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
+                    ? default
+                    : value.Clone()
+            });
+        }
+
+        return list;
+    }
+
     public static IReadOnlyList<string> ReadWarnings(JsonElement result)
     {
         if (result.ValueKind != JsonValueKind.Object)

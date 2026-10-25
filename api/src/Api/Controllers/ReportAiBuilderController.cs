@@ -9,7 +9,9 @@ namespace SaaSApp.Api.Controllers;
 
 /// <summary>
 /// Report AI Builder: UI sends a generate-report prompt, V6 saves it, then run-by-id
-/// loads the saved prompt and executes via Agents <c>/chat</c> intent=report.
+/// loads the saved prompt. All-workflow/repository reports execute via Agents
+/// <c>/chat</c> intent=report; specified workflow/repository reports execute against
+/// the tenant form table.
 /// </summary>
 [ApiController]
 [Route("api/report-ai-builder")]
