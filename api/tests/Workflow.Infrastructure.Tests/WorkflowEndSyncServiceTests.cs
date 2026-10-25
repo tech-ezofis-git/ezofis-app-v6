@@ -155,6 +155,39 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
+    public async Task TrySync_writes_when_enabled_node_is_found_by_approved_label()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var json = """
+            {"blocks":[{"id":"node-xyz","type":"INTERNAL_ACTOR","settings":{
+              "label":"Approved",
+              "endSync":{
+                "enabled":true,
+                "target":"MASTER_FORM",
+                "masterFormId":"master-form",
+                "fieldMappings":[
+                  {"workflowFieldId":"Vendor_Name","masterFieldId":"Vendor","IsMainField":true}
+                ]
+              }
+            }}]}
+            """;
+        var service = CreateService(json, """{"Vendor_Name":"Acme"}""", formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "not-the-block-id",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null,
+            stepName: "Approved");
+
+        Assert.NotNull(formEntry.LastRequest);
+        Assert.Equal("Acme", formEntry.LastRequest!.MatchValue);
+    }
+
+    [Fact]
     public void Master_match_sql_is_case_insensitive()
     {
         var where = new List<string>();

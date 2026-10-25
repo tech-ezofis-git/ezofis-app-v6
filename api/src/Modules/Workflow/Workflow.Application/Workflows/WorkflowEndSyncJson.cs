@@ -23,7 +23,11 @@ public sealed record WorkflowEndSyncConfig(
 public static class WorkflowEndSyncJson
 {
     /// <summary>Finds the block whose <c>id</c> matches <paramref name="blockId"/> and reads its endSync config.</summary>
-    public static bool TryRead(string? workflowJson, string blockId, out WorkflowEndSyncConfig? config)
+    public static bool TryRead(
+        string? workflowJson,
+        string blockId,
+        out WorkflowEndSyncConfig? config,
+        string? stepName = null)
     {
         config = null;
         if (string.IsNullOrWhiteSpace(workflowJson) || string.IsNullOrWhiteSpace(blockId))
@@ -43,7 +47,7 @@ public static class WorkflowEndSyncJson
                 if (block.ValueKind != JsonValueKind.Object)
                     continue;
 
-                if (!BlockMatches(block, blockId))
+                if (!BlockMatches(block, blockId, stepName))
                     continue;
 
                 // Only this activity node, and only when its designer toggle is on.
@@ -89,24 +93,50 @@ public static class WorkflowEndSyncJson
         return new WorkflowEndSyncConfig(enabled, target, masterFormId, mappings);
     }
 
-    private static bool BlockMatches(JsonElement block, string blockId)
+    private static bool BlockMatches(JsonElement block, string blockId, string? stepName)
     {
         var id = ReadString(block, "id", "Id");
-        if (!string.IsNullOrWhiteSpace(id)
-            && string.Equals(id, blockId, StringComparison.OrdinalIgnoreCase))
+        if (KeyEquals(id, blockId) || KeyEquals(id, stepName))
+            return true;
+
+        var label = ReadString(block, "label", "Label");
+        if (TryGetObject(block, out var settings, "Settings", "settings"))
+            label = FirstNonBlank(label, ReadString(settings, "label", "Label"));
+        if (KeyEquals(label, blockId) || KeyEquals(label, stepName))
             return true;
 
         // Last-step complete often has no designer id on the END WorkflowStep.
         // Callers then pass "END" so we can still load Data Integration from that block.
-        if (string.Equals(blockId, "START", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(blockId, "END", StringComparison.OrdinalIgnoreCase))
+        if (IsSingletonStage(blockId) || IsSingletonStage(stepName))
         {
             var type = ReadString(block, "type", "Type");
-            if (string.Equals(type, blockId, StringComparison.OrdinalIgnoreCase))
+            if (IsSingletonStage(type)
+                && (IsSingletonStage(blockId) || IsSingletonStage(stepName))
+                && (KeyEquals(type, blockId) || KeyEquals(type, stepName)))
                 return true;
         }
 
         return false;
+    }
+
+    private static bool IsSingletonStage(string? value) =>
+        string.Equals(value, "START", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "END", StringComparison.OrdinalIgnoreCase);
+
+    private static bool KeyEquals(string? left, string? right) =>
+        !string.IsNullOrWhiteSpace(left)
+        && !string.IsNullOrWhiteSpace(right)
+        && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                return value.Trim();
+        }
+
+        return null;
     }
 
     private static bool TryReadEndSync(JsonElement block, out WorkflowEndSyncConfig? config)
@@ -115,16 +145,23 @@ public static class WorkflowEndSyncJson
         if (TryGetObject(block, out var settings, "Settings", "settings")
             && TryGetObject(settings, out var fromSettings, "endSync", "EndSync"))
         {
-            config = ParseConfig(fromSettings);
-            if (config is not null)
+            var parsed = ParseConfig(fromSettings);
+            if (parsed is { Enabled: true })
+            {
+                config = parsed;
                 return true;
+            }
         }
 
         if (TryGetObject(block, out var data, "data", "Data")
             && TryGetObject(data, out var fromData, "endSync", "EndSync"))
         {
-            config = ParseConfig(fromData);
-            return config is not null;
+            var parsed = ParseConfig(fromData);
+            if (parsed is { Enabled: true })
+            {
+                config = parsed;
+                return true;
+            }
         }
 
         return false;

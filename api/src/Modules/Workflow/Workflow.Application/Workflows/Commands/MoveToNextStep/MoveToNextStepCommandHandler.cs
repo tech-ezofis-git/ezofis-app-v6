@@ -107,8 +107,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             : request.ApAgent?.FormId;
         var formEntryId = ResolveFormEntryId(request);
 
-        if ((formEntryId is null || formEntryId == Guid.Empty)
-            && HasUserFormData(request))
+        if (string.IsNullOrWhiteSpace(formId) || formEntryId is null || formEntryId == Guid.Empty)
         {
             var fromProcess = await _mailboxSync.TryGetProcessFormIdentityAsync(
                 instance.WorkflowId,
@@ -118,7 +117,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             {
                 if (string.IsNullOrWhiteSpace(formId) && !string.IsNullOrWhiteSpace(fromProcess.Value.FormId))
                     formId = fromProcess.Value.FormId;
-                if (fromProcess.Value.FormEntryId is { } processEntry && processEntry != Guid.Empty)
+                if ((formEntryId is null || formEntryId == Guid.Empty)
+                    && fromProcess.Value.FormEntryId is { } processEntry && processEntry != Guid.Empty)
                     formEntryId = processEntry;
             }
         }
@@ -494,9 +494,12 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         if (!isCompleted && nextDefinitionStep != null)
             ftlJobId = await TryEnqueueFtlAgentAsync(instance, workflow, nextDefinitionStep, userId, formId, cancellationToken);
 
-        // Designer Data Integration: run only for the activity node just completed,
-        // and only when that block's settings.endSync.enabled is true. If the toggle
-        // is on the END node, run it when the workflow actually finishes.
+        // Designer Data Integration: run for each activity node whose
+        // settings.endSync.enabled is true — the step just completed, the
+        // destination after Approve, and END when the workflow finishes.
+        if (string.IsNullOrWhiteSpace(formId))
+            formId = workflow.FormId;
+
         if (!string.IsNullOrWhiteSpace(formId))
         {
             var completedActivityId = FirstNonBlank(
@@ -507,17 +510,39 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 instance.WorkflowId,
                 instance.Id,
                 completedActivityId,
+                targetDefinitionStep.Name,
                 formId,
                 formEntryId,
                 request.SubmittedFormDataJson,
                 request.FormDataFields,
                 cancellationToken);
 
+            if (!isCompleted && nextDefinitionStep != null)
+            {
+                var nextActivityId = FirstNonBlank(nextDefinitionStep.ActivityId, nextDefinitionStep.Name);
+                if (!string.Equals(
+                        nextActivityId,
+                        completedActivityId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    await TryEndSyncAsync(
+                        instance.WorkflowId,
+                        instance.Id,
+                        nextActivityId,
+                        nextDefinitionStep.Name,
+                        formId,
+                        formEntryId,
+                        request.SubmittedFormDataJson,
+                        request.FormDataFields,
+                        cancellationToken);
+                }
+            }
+
             if (isCompleted)
             {
                 var endStep = orderedSteps.FirstOrDefault(step =>
                     string.Equals(step.StageType, "END", StringComparison.OrdinalIgnoreCase));
-                var endActivityId = FirstNonBlank(endStep?.ActivityId, "END");
+                var endActivityId = FirstNonBlank(endStep?.ActivityId, endStep?.Name, "END");
                 if (!string.Equals(
                         endActivityId,
                         completedActivityId,
@@ -527,6 +552,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                         instance.WorkflowId,
                         instance.Id,
                         endActivityId,
+                        endStep?.Name,
                         formId,
                         formEntryId,
                         request.SubmittedFormDataJson,
@@ -802,6 +828,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         Guid workflowId,
         Guid instanceId,
         string? activityId,
+        string? stepName,
         string? formId,
         Guid? formEntryId,
         string? submittedFormDataJson,
@@ -819,7 +846,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             formEntryId,
             submittedFormDataJson,
             formDataFields,
-            cancellationToken);
+            cancellationToken,
+            stepName);
     }
 
 }
