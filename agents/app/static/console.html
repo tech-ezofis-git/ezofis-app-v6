@@ -2202,6 +2202,18 @@
     color: var(--ink);
   }
   .report-spec-form textarea { min-height: 54px; resize: vertical; }
+  .report-spec-userprompt {
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    background: var(--bg-2, #f6f7f9);
+    color: var(--ink);
+    white-space: pre-wrap;
+    font-size: 12px;
+  }
+  .report-spec-userprompt:empty,
+  .report-spec-userprompt[hidden] { display: none; }
   .report-spec-label-row {
     display: flex;
     align-items: center;
@@ -3241,6 +3253,8 @@ vendor_validate</textarea>
 
               <label for="reportSpecObjective">Objective</label>
               <textarea id="reportSpecObjective" rows="2" placeholder="Short business objective…"></textarea>
+              <label for="reportSpecUserprompt">User prompt</label>
+              <div id="reportSpecUserprompt" class="report-spec-userprompt" aria-live="polite"></div>
 
               <div class="report-spec-label-row">
                 <label style="margin:0">Default columns</label>
@@ -9947,6 +9961,7 @@ function reportSpecFromApi(spec) {
   return {
     title: spec.title || '',
     objective: spec.objective || spec.Objective || '',
+    userPrompt: spec.userPrompt || spec.user_prompt || spec.Userprompt || spec.UserPrompt || '',
     reportType: spec.reportType || spec.report_type || null,
     columns,
     filters: Array.isArray(spec.filters) ? spec.filters.map(f => ({
@@ -10035,6 +10050,12 @@ function applyReportSpecToForm(spec) {
   const objEl = document.getElementById('reportSpecObjective');
   if (titleEl) titleEl.value = reportSpecState.title || '';
   if (objEl) objEl.value = reportSpecState.objective || '';
+  const userPromptEl = document.getElementById('reportSpecUserprompt');
+  if (userPromptEl) {
+    const text = reportSpecState.userPrompt || '';
+    userPromptEl.textContent = text;
+    userPromptEl.hidden = !text;
+  }
   const paletteKeys = []
     .concat(reportSpecState.defaultColumns || [], reportSpecState.userdefinedColumns || [], reportSpecState.agentColumns || [])
     .map(c => c.key)
@@ -10117,6 +10138,7 @@ function readReportSpecFromForm() {
   return {
     title: title.trim() || 'Report',
     objective: objective.trim() || title.trim() || 'Report',
+    userPrompt: reportSpecState.userPrompt || '',
     reportType: reportSpecState.reportType || (currentReportType().key),
     columns,
     filters,
@@ -10145,6 +10167,7 @@ function syncReportPromptFromSpec() {
   });
   const payload = {
     title: spec.title,
+    Userprompt: spec.userPrompt || '',
     Objective: spec.objective,
     reportType: spec.reportType,
     'Userdefined Columns': (spec.userdefinedColumns || []).map(dumpPromptColumn),
@@ -10521,6 +10544,7 @@ async function sendReportPromptJob() {
         if (!(spec.schemaTables || spec.schema_tables || []).length && (data.schemaTables || data.schema_tables)) {
           spec.schemaTables = data.schemaTables || data.schema_tables;
         }
+        spec.userPrompt = spec.userPrompt || spec.user_prompt || spec.Userprompt || description;
         applyReportSpecToForm(spec);
         syncReportPromptFromSpec();
       } else if (promptOverride && promptText) {

@@ -164,6 +164,7 @@ Other `description` values that have recipes:
 ```json
 {
   "title": "Aging",
+  "Userprompt": "Aging",
   "Objective": "Open requests across all workflows, grouped by aging bucket and workflow.",
   "reportType": "all_workflows",
   "Userdefined Columns": [],
@@ -201,6 +202,7 @@ Other `description` values that have recipes:
 
 | Palette | Source |
 |---|---|
+| Userprompt | Original user `description` from Generate Prompt. Keep this string to show later. |
 | Default columns | Workflow: Req No, Stage, Status, Acted by, `workflowName`, `createdAtUtc`, `workflowId`, `itemId`, `instanceId`. Repository: Repository, File Name, Status, Created By, Created At, `itemId`. `columns` in the generated prompt always includes these Default columns plus selected Userdefined / Agent columns. |
 | Userdefined Columns | Form `ezfb_*_items` or repository designer fields (empty for All Workflows) |
 | Agent generated columns | COUNT / SUM / AVG / aging / SLA |

@@ -72,6 +72,55 @@ def _keys(spec: ReportSpec) -> set[str]:
     return {c.key.lower() for c in spec.columns}
 
 
+_ROW_ID_KEYS = frozenset({"instanceid", "itemid", "id"})
+
+
+def _pick(row: dict[str, Any], *names: str) -> Any:
+    if not isinstance(row, dict):
+        return ""
+    lower = {str(key).lower(): value for key, value in row.items()}
+    for name in names:
+        value = lower.get(name.lower())
+        if isinstance(value, dict):
+            nested = _pick(value, *names)
+            if nested not in (None, ""):
+                return nested
+            continue
+        if value not in (None, ""):
+            return value
+    nested_id = lower.get("id")
+    if isinstance(nested_id, dict):
+        return _pick(nested_id, *names)
+    return ""
+
+
+def _cell(value: Any) -> Any:
+    if value in (None, ""):
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, (int, float, bool, str)):
+        return value
+    return str(value)
+
+
+def _has_row_ids(spec: ReportSpec) -> bool:
+    return bool(_keys(spec) & _ROW_ID_KEYS)
+
+
+def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    keys = [c.key for c in spec.columns]
+    if not keys:
+        return rows
+    shaped: list[dict[str, Any]] = []
+    for row in rows:
+        lower = {str(key).lower(): value for key, value in (row or {}).items()}
+        shaped.append({key: _cell(lower.get(key.lower(), "")) for key in keys})
+    return shaped
+
+
 async def execute_catalog_spec(
     ezofis: Any,
     spec: ReportSpec,
@@ -110,17 +159,22 @@ async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[
         instances = await ezofis.list_workflow_instances(tenant_id=tenant_id, workflow_id=wf_id)
         out: list[dict[str, Any]] = []
         for row in instances or []:
-            created = _parse_date(row.get("createdAtUtc") or row.get("startedAtUtc"))
-            completed = _parse_date(row.get("completedAtUtc"))
+            created = _parse_date(
+                _pick(row, "createdAtUtc", "created_at_utc", "startedAtUtc", "started_at_utc")
+            )
+            completed = _parse_date(_pick(row, "completedAtUtc", "completed_at_utc"))
+            instance_id = _pick(row, "instanceId", "instance_id", "id")
             out.append(
                 {
-                    "id": row.get("id") or row.get("requestNo") or row.get("ReqNo") or "",
-                    "workflowId": row.get("workflowId") or row.get("workflow_id") or wf_id,
-                    "itemId": row.get("itemId") or row.get("item_id") or row.get("repositoryItemId") or "",
-                    "instanceId": row.get("instanceId") or row.get("instance_id") or row.get("id") or "",
-                    "workflowName": row.get("workflowName") or wf_name,
-                    "status": row.get("status") or "",
-                    "startedBy": row.get("startedBy") or "",
+                    "id": _pick(row, "requestNo", "ReqNo", "name", "id") or instance_id,
+                    "workflowId": _pick(row, "workflowId", "workflow_id") or wf_id,
+                    "itemId": _pick(
+                        row, "itemId", "item_id", "repositoryItemId", "repository_item_id", "formEntryId"
+                    ),
+                    "instanceId": instance_id,
+                    "workflowName": _pick(row, "workflowName", "workflow_name") or wf_name,
+                    "status": _pick(row, "status"),
+                    "startedBy": _pick(row, "startedBy", "started_by", "actedBy"),
                     "createdAtUtc": created,
                     "completedAtUtc": completed,
                     "open": completed is None,
@@ -134,7 +188,7 @@ async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[
         if isinstance(batch, Exception):
             continue
         records.extend(batch)
-    return _aggregate_workflow(spec, records)
+    return _shape_rows(spec, _aggregate_workflow(spec, records))
 
 
 async def _repository_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[dict[str, Any]]:
@@ -150,15 +204,15 @@ async def _repository_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> lis
         for row in docs or []:
             out.append(
                 {
-                    "itemId": row.get("itemId") or row.get("item_id") or row.get("id") or "",
+                    "itemId": _pick(row, "itemId", "item_id", "id"),
                     "Repository_Name": repo_name,
-                    "FileName": row.get("fileName") or row.get("FileName") or "",
-                    "FileVersion": row.get("fileVersion") or row.get("FileVersion") or "",
-                    "CreatedBy": row.get("createdBy") or row.get("CreatedBy") or "",
+                    "FileName": _pick(row, "fileName", "FileName"),
+                    "FileVersion": _pick(row, "fileVersion", "FileVersion"),
+                    "CreatedBy": _pick(row, "createdBy", "CreatedBy"),
                     "CreatedAt": _parse_date(
-                        row.get("createdAt") or row.get("documentDate") or row.get("createdAtUtc")
+                        _pick(row, "createdAt", "CreatedAt", "documentDate", "createdAtUtc")
                     ),
-                    "Status": row.get("status") or row.get("Status") or "",
+                    "Status": _pick(row, "status", "Status"),
                 }
             )
         return out
@@ -169,11 +223,38 @@ async def _repository_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> lis
         if isinstance(batch, Exception):
             continue
         records.extend(batch)
-    return _aggregate_repository(spec, records)
+    return _shape_rows(spec, _aggregate_repository(spec, records))
+
+
+def _workflow_detail_rows(spec: ReportSpec, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    keys = _keys(spec)
+    out: list[dict[str, Any]] = []
+    for row in records:
+        if "aging_bucket" in keys and not row.get("open"):
+            continue
+        if "processed_count" in keys and row.get("open"):
+            continue
+        if "inbox_count" in keys and not row.get("open"):
+            continue
+        item = dict(row)
+        item["Aging_Bucket"] = _aging_bucket(row.get("createdAtUtc"))
+        item["Sla_Bucket"] = _sla_bucket(row.get("createdAtUtc"), row.get("completedAtUtc"))
+        item["Request_Count"] = 1
+        item["Inbox_Count"] = 1 if row.get("open") else 0
+        item["Processed_Count"] = 0 if row.get("open") else 1
+        out.append(item)
+    return out
 
 
 def _aggregate_workflow(spec: ReportSpec, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if _has_row_ids(spec):
+        return _workflow_detail_rows(spec, records)
     keys = _keys(spec)
+    wf_ids: dict[str, Any] = {}
+    for row in records:
+        name = str(row.get("workflowName") or "")
+        if name and row.get("workflowId") and name not in wf_ids:
+            wf_ids[name] = row.get("workflowId")
     if "aging_bucket" in keys:
         buckets: dict[tuple[str, str], int] = defaultdict(int)
         for row in records:
@@ -182,7 +263,14 @@ def _aggregate_workflow(spec: ReportSpec, records: list[dict[str, Any]]) -> list
             buckets[(_aging_bucket(row.get("createdAtUtc")), str(row.get("workflowName") or ""))] += 1
         out = []
         for (bucket, workflow), count in sorted(buckets.items(), key=lambda item: (-item[1], item[0][0], item[0][1])):
-            out.append({"Aging_Bucket": bucket, "workflowName": workflow, "Request_Count": count})
+            out.append(
+                {
+                    "Aging_Bucket": bucket,
+                    "workflowName": workflow,
+                    "workflowId": wf_ids.get(workflow, ""),
+                    "Request_Count": count,
+                }
+            )
         return out
     if "sla_bucket" in keys:
         buckets: dict[tuple[str, str], int] = defaultdict(int)
@@ -190,7 +278,14 @@ def _aggregate_workflow(spec: ReportSpec, records: list[dict[str, Any]]) -> list
             buckets[(_sla_bucket(row.get("createdAtUtc"), row.get("completedAtUtc")), str(row.get("workflowName") or ""))] += 1
         out = []
         for (bucket, workflow), count in sorted(buckets.items(), key=lambda item: (-item[1], item[0][0], item[0][1])):
-            out.append({"Sla_Bucket": bucket, "workflowName": workflow, "Request_Count": count})
+            out.append(
+                {
+                    "Sla_Bucket": bucket,
+                    "workflowName": workflow,
+                    "workflowId": wf_ids.get(workflow, ""),
+                    "Request_Count": count,
+                }
+            )
         return out
     if "processed_count" in keys:
         buckets: dict[str, int] = defaultdict(int)
@@ -199,7 +294,11 @@ def _aggregate_workflow(spec: ReportSpec, records: list[dict[str, Any]]) -> list
                 continue
             buckets[str(row.get("workflowName") or "")] += 1
         return [
-            {"workflowName": name, "Processed_Count": count}
+            {
+                "workflowName": name,
+                "workflowId": wf_ids.get(name, ""),
+                "Processed_Count": count,
+            }
             for name, count in sorted(buckets.items(), key=lambda item: (-item[1], item[0]))
         ]
     buckets: dict[tuple[str, str], int] = defaultdict(int)
@@ -208,12 +307,31 @@ def _aggregate_workflow(spec: ReportSpec, records: list[dict[str, Any]]) -> list
             continue
         buckets[(str(row.get("workflowName") or ""), str(row.get("status") or ""))] += 1
     return [
-        {"workflowName": wf, "status": status, "Inbox_Count": count}
+        {
+            "workflowName": wf,
+            "workflowId": wf_ids.get(wf, ""),
+            "status": status,
+            "Inbox_Count": count,
+        }
         for (wf, status), count in sorted(buckets.items(), key=lambda item: (-item[1], item[0][0], item[0][1]))
     ]
 
 
+def _repository_detail_rows(spec: ReportSpec, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in records:
+        item = dict(row)
+        item["Aging_Bucket"] = _aging_bucket(row.get("CreatedAt"))
+        item["Request_Count"] = 1
+        item["Document_Count"] = 1
+        item["Version_Count"] = 1
+        out.append(item)
+    return out
+
+
 def _aggregate_repository(spec: ReportSpec, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if _has_row_ids(spec):
+        return _repository_detail_rows(spec, records)
     keys = _keys(spec)
     if "aging_bucket" in keys:
         buckets: dict[tuple[str, str], int] = defaultdict(int)

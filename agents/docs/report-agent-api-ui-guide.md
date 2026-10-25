@@ -115,6 +115,7 @@ Phase 1 `reportPrompt` is a JSON **string** with these keys:
 
 | Key | Meaning |
 |---|---|
+| `Userprompt` | Original user description from Generate Prompt. Keep and show later; do not overwrite. |
 | `Objective` | Business goal |
 | `Userdefined Columns` | Form table (`ezfb_*_items`) or repository designer fields. Empty for All Workflows. |
 | `Default columns` | Workflow: Req No, Stage, Status, Acted by, Workflow (`workflowName`), Created At (`createdAtUtc`), `workflowId`, `itemId`, `instanceId`. Repository: Repository, File Name, Status, Created By, Created At, `itemId`. |
@@ -162,6 +163,7 @@ Example (All Workflows Aging):
 ```json
 {
   "title": "Aging",
+  "Userprompt": "Aging",
   "Objective": "Open requests across all workflows, grouped by aging bucket and workflow.",
   "reportType": "all_workflows",
   "Userdefined Columns": [],
@@ -505,7 +507,9 @@ Use from response:
 
 | Field | UI use |
 |---|---|
-| reportPrompt | JSON textarea (Objective, column palettes, Formula, Sort, schemaTables) |
+| reportPrompt | JSON textarea (`Userprompt`, Objective, column palettes, Formula, Sort, schemaTables) |
+| reportPrompt `Userprompt` | Original typed description. Show it later to the user; do not edit. |
+| reportSpec.userPrompt | Same original description on reportSpec |
 | reportSpec.defaultColumns | Default chips (Req No, Stage, Status, Acted by, Workflow, Created At, workflowId, itemId, instanceId; repository also has itemId) |
 | reportSpec.userdefinedColumns | Form / repository field chips |
 | reportSpec.agentColumns | Count / Sum / Avg / aging chips |
