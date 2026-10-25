@@ -783,6 +783,8 @@ _ALL_WORKFLOW_COLUMNS: tuple[tuple[str, str], ...] = (
     ("completedAtUtc", "date"),
     ("id", "uuid"),
     ("workflowId", "uuid"),
+    ("itemId", "uuid"),
+    ("instanceId", "uuid"),
 )
 _ALL_REPOSITORY_COLUMNS: tuple[tuple[str, str], ...] = (
     ("Repository_Name", "text"),
@@ -792,6 +794,7 @@ _ALL_REPOSITORY_COLUMNS: tuple[tuple[str, str], ...] = (
     ("CreatedAt", "date"),
     ("Status", "text"),
     ("id", "uuid"),
+    ("itemId", "uuid"),
 )
 
 

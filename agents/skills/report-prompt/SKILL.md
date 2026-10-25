@@ -34,3 +34,17 @@ Your job:
 - `specific_repository` — scope to the given repository name only.
 
 Follow the attached rules for schema grounding, required fields, and output contract.
+
+To highlight a column's values, add a "highlight" object to that column in reportSpec.columns:
+"highlight": { "default": "<color id or null>", "rules": [ { "op": "...", "value": ..., "value2": ..., "compareField": "...", "color": "<color id>", "label": "..." } ] }
+- Put highlight only on reportSpec.columns. Do not add it to Userdefined / Default / Agent palettes or reportPrompt.
+- op: eq | neq | contains | notContains | gt | gte | lt | lte | between | empty | notEmpty
+- gt/gte/lt/lte/between compare numerically (currency symbols and commas are ignored); text ops are case-insensitive.
+- between uses value (min) and value2 (max).
+- compareField: another column key to compare against instead of value (e.g. Total gt ALT_Total).
+- label is optional; omit it to show the cell value itself.
+- Rules are checked in order and the first match wins, so put the most specific rule first.
+- default: color for values that match no rule; null leaves them gray.
+- Omit "highlight" (or use null) for columns that need no color.
+color must be exactly one of: gray, green, red, orange, yellow, blue, primary, secondary, tertiary, purple, violet, indigo, cyan, teal, pink, bronze, gold.
+If unsure, use "gray". Return the id only, never a hex code.

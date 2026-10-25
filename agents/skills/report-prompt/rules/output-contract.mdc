@@ -12,7 +12,8 @@ alwaysApply: true
   - `title` (short)
   - `objective` (1–2 short business sentences)
   - `reportType`
-  - `columns` — array of `{ "key", "label", "formula?" }`
+  - `columns` — array of `{ "key", "label", "formula?", "highlight?" }`
+- Optional `highlight` on a column: `{ "default": "<color id or null>", "rules": [ { "op", "color", "value?", "value2?", "compareField?", "label?" } ] }`. Color ids only (never hex). First matching rule wins. Do not put `highlight` on palettes or reportPrompt.
   - `filters` — array of `{ "field", "op", "value" }` (omit when none)
   - `groupBy` — array of field keys (may be empty)
   - `sort` — `{ "field", "direction" }` or null

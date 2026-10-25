@@ -4,7 +4,7 @@ This is the current Report Agent as implemented, plus why the **scope model has 
 
 Console: `http://localhost:8011/console` (Docker `8011 → 8000`).  
 Live tenant used for checks: `b843b988-00ec-44e3-aca2-b8470133ef63`.  
-HTTP samples: `docs/report-agent-api.md`.
+Share pack for API team: `docs/report-agent-api-ui-guide.md` (PART A) and `docs/report-agent-api.md`.
 
 **Hard rule today (and it should stay):** the model never writes or runs SQL. Python chooses columns, locks names, builds SQL, or counts EZOFIS catalogs in memory.
 
@@ -16,9 +16,9 @@ A real **Report Builder + Report Library**, not hardcoded catalog cards.
 
 1. Pick a **scope** (all workflows, one workflow, all repositories, one repository).
 2. Type a **description** (or click a chip: Aging, SLA, Total Inbox, …).
-3. **Generate Prompt** analyzes the **live schema of that scope** and returns an editable short spec (title, columns, filters).
-4. User can add/remove columns, add a formula, save to the library.
-5. **Run Report** returns a table whose columns **match the spec**.
+3. **Generate Prompt** analyzes the **live schema of that scope** and returns JSON `reportPrompt` (Objective, Default / Userdefined / Agent columns, Formula, Sort, schemaTables) plus editable `reportSpec`.
+4. User toggles `selected` on palettes, adds a formula, then save to the library.
+5. **Run Report** sends both JSON `reportPrompt` and `reportSpec` and returns a table whose columns **match the selected palettes**.
 
 What users actually need:
 
@@ -70,15 +70,15 @@ User flow:
 2. Workflow or repository select (shown only for specified types) from `GET /api/report-agent/scope-options`.
 3. Description + example chips (`#reportExampleChips`).
 4. Tenant ID (`#reportTenant`).
-5. **Generate Prompt** → fills title, objective, column chips, filter, sort, warnings.
-6. User can +Add column from `availableColumns`, apply formula, change filter/sort.
+5. **Generate Prompt** → fills JSON prompt (Objective, Default / Userdefined / Agent palettes), plus filter/sort/warnings.
+6. User toggles `selected` on palettes, applies formula, changes filter/sort. Keep `schemaTables`.
 7. **Save** → `saved_reports`.
 8. **Run Report** → table in `#reportPlanPreview`.
 
 Buttons call:
 
 - Generate → `POST /api/report-agent/generate-prompt`
-- Run → `POST /api/report-agent/run` with `reportSpec` (camelCase: `sourceTable`, `groupBy`, `availableColumns`)
+- Run → `POST /api/report-agent/run` with JSON `reportPrompt` **and** `reportSpec` (camelCase: `sourceTable`, `groupBy`, `availableColumns`)
 
 ---
 
@@ -112,7 +112,8 @@ Console / REST
       │     3. LLM (pack report-prompt)  OR  Python recipe fallback
       │     4. align_spec_to_intent (recipes always win for Aging/Inbox/SLA/…)
       │     5. enrich_spec_with_schema
-      │     → reportSpec
+      │     6. attach palettes + JSON reportPrompt
+      │     → reportPrompt (JSON) + reportSpec
       │
       └─ POST /run                 PHASE 2
             if sourceTable in {workflow_instances_all, items_all}
@@ -166,13 +167,27 @@ Entry points:
   "title": "Aging",
   "objective": "…",
   "reportType": "all_workflows",
-  "columns": [{ "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE …" }],
+  "columns": [{ "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE …", "highlight": { "default": "gray", "rules": [{ "op": "eq", "value": "0-5", "color": "green" }] } }],
   "filters": [{ "field": "completedAtUtc", "op": "is_null", "value": null }],
   "groupBy": ["Aging_Bucket", "workflowName"],
   "sort": { "field": "Request_Count", "direction": "desc" },
   "availableColumns": ["workflowName", "status", "createdAtUtc", "…"],
   "sourceSchema": "workflow",
   "sourceTable": "workflow_instances_all",
+  "schemaTables": ["workflow.workflow_instances_all"],
+  "defaultColumns": [
+    { "key": "id", "label": "Req No", "selected": false },
+    { "key": "workflowName", "label": "Workflow", "selected": true },
+    { "key": "createdAtUtc", "label": "Created At", "selected": false },
+    { "key": "workflowId", "label": "Workflow Id", "selected": true },
+    { "key": "itemId", "label": "Item Id", "selected": true },
+    { "key": "instanceId", "label": "Instance Id", "selected": true }
+  ],
+  "userdefinedColumns": [],
+  "agentColumns": [
+    { "key": "Aging_Bucket", "label": "Aging Bucket", "selected": true },
+    { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "selected": true }
+  ],
   "warnings": []
 }
 ```
@@ -183,7 +198,7 @@ Entry points:
 {
   "reportType": "all_workflows",
   "reportSpec": { },
-  "reportPrompt": "optional override",
+  "reportPrompt": "{JSON from generate: Objective, Default / Userdefined / Agent columns, Formula, Sort, schemaTables}",
   "tenantId": "…",
   "page": 1,
   "pageSize": 25,
@@ -219,15 +234,15 @@ Repo designer → columns: `extract_repository_fields` (`sqlColumnName`, prepend
 
 **`workflow.workflow_instances_all`**
 
-- workflowName, status, startedBy, createdAtUtc, startedAtUtc, completedAtUtc, id, workflowId
+- workflowName, status, startedBy, createdAtUtc, startedAtUtc, completedAtUtc, id, workflowId, itemId, instanceId
 
 **`repository.items_all`**
 
-- Repository_Name, FileName, FileVersion, CreatedBy, CreatedAt, Status, id
+- Repository_Name, FileName, FileVersion, CreatedBy, CreatedAt, Status, id, itemId
 
 These tables **do not exist in SQL**. They are a contract for the spec. Path A executes them in Python.
 
-Instance DTO keys from EZOFIS: `workflowName`, `status`, `startedBy`, `createdAtUtc`, `startedAtUtc`, `completedAtUtc`, `id`, `workflowId`.
+Instance DTO keys from EZOFIS: `workflowName`, `status`, `startedBy`, `createdAtUtc`, `startedAtUtc`, `completedAtUtc`, `id`, `workflowId`, `itemId`, `instanceId`.
 
 Do **not** take sample repository item keys as all-repo columns (AP invoice fields can appear on RFQ folder sample items).
 
@@ -258,7 +273,7 @@ Lock then treats EZOFIS form tables as unknown and falls back to `workflow.Workf
 9. If no columns: `fallback_report_spec` (recipes)
 10. `align_spec_to_intent` — rebuilds Aging/Inbox/SLA/… even if LLM returned 2 columns
 11. `enrich_spec_with_schema`
-12. Return `reportPrompt` (prose built from spec) + `reportSpec`
+12. Return `reportPrompt` (JSON palettes: Objective, Default / Userdefined / Agent columns, Formula, Sort, schemaTables) + `reportSpec`
 
 If the model is down (typical on this tenant):
 
