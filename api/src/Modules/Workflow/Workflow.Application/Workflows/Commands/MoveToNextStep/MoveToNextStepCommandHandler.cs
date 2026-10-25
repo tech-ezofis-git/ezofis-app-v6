@@ -515,6 +515,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 formEntryId,
                 request.SubmittedFormDataJson,
                 request.FormDataFields,
+                request.FormLineItemsJson,
                 cancellationToken);
 
             if (!isCompleted && nextDefinitionStep != null)
@@ -534,6 +535,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                         formEntryId,
                         request.SubmittedFormDataJson,
                         request.FormDataFields,
+                        request.FormLineItemsJson,
                         cancellationToken);
                 }
             }
@@ -557,6 +559,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                         formEntryId,
                         request.SubmittedFormDataJson,
                         request.FormDataFields,
+                        request.FormLineItemsJson,
                         cancellationToken);
                 }
             }
@@ -833,6 +836,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         Guid? formEntryId,
         string? submittedFormDataJson,
         IReadOnlyDictionary<string, string>? formDataFields,
+        string? formLineItemsJson,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(formId))
@@ -847,7 +851,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             submittedFormDataJson,
             formDataFields,
             cancellationToken,
-            stepName);
+            stepName,
+            formLineItemsJson);
     }
 
 }

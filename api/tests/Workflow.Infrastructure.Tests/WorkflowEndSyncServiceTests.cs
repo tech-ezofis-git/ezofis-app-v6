@@ -254,12 +254,55 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
+    public async Task TrySync_sums_line_item_amounts_when_deducting_budget()
+    {
+        var formEntry = new CapturingFormEntryService
+        {
+            MasterRow = new Dictionary<string, object?>
+            {
+                ["Code"] = """{"id":"cc1","name":"IT"}""",
+                ["Budget"] = "5000"
+            }
+        };
+        var service = CreateService(
+            workflowJson: """
+                {"blocks":[{"id":"approved","settings":{
+                  "endSync":{
+                    "enabled":true,
+                    "target":"MASTER_FORM",
+                    "masterFormId":"master-form",
+                    "fieldMappings":[
+                      {"workflowFieldId":"Cost_Center","masterFieldId":"Code","IsMainField":true},
+                      {"workflowFieldId":"Budget","masterFieldId":"Budget","IsMainField":false}
+                    ]
+                  }
+                }}]}
+                """,
+            persistedJson: """{"Cost_Center":{"id":"cc1","name":"IT"},"LineItems":[{"Amount":100},{"Amount":20}]}""",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "approved",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null,
+            formLineItemsJson: """[{"Amount":100},{"Amount":20}]""");
+
+        Assert.Equal("IT", formEntry.LastRequest!.MatchValue);
+        Assert.Equal("4880", ReadField(formEntry.LastRequest, "Budget"));
+    }
+
+    [Fact]
     public void Master_match_sql_is_case_insensitive()
     {
         var where = new List<string>();
         FormEntryService.AppendFilterPredicates(where, [("Vendor", "Acme")]);
         Assert.Single(where);
         Assert.Contains("lower(btrim(COALESCE(\"Vendor\"::text, ''))) = lower(btrim(@Filter0))", where[0]);
+        Assert.Contains("dbo.try_json_scalar", where[0]);
     }
 
     private static WorkflowEndSyncService CreateService(

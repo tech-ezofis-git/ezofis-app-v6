@@ -43,7 +43,8 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         string? submittedFormDataJson,
         IReadOnlyDictionary<string, string>? formDataFields,
         CancellationToken cancellationToken = default,
-        string? stepName = null)
+        string? stepName = null,
+        string? formLineItemsJson = null)
     {
         if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(workflowFormId))
             return;
@@ -88,7 +89,12 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
             }
 
             var values = await ResolveWorkflowFieldValuesAsync(
-                workflowFormId, formEntryId, submittedFormDataJson, formDataFields, cancellationToken);
+                workflowFormId,
+                formEntryId,
+                submittedFormDataJson,
+                formDataFields,
+                formLineItemsJson,
+                cancellationToken);
 
             // Step 2: the workflow's current value for the condition field.
             if (!TryGetMappedValue(values, mainMapping.WorkflowFieldId, out var matchValue)
@@ -176,6 +182,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         Guid workflowFormEntryId,
         string? submittedFormDataJson,
         IReadOnlyDictionary<string, string>? formDataFields,
+        string? formLineItemsJson,
         CancellationToken cancellationToken)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -188,6 +195,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         }
 
         MergeJsonObject(values, submittedFormDataJson);
+        MergeLineItems(values, formLineItemsJson);
 
         if (formDataFields != null)
         {
@@ -325,16 +333,97 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 continue;
             if (TryParseNumber(FlattenText(raw), out amount) && amount != 0)
                 return true;
+            if (TrySumTableAmounts(raw, out amount) && amount != 0)
+                return true;
+        }
+
+        decimal tableSum = 0;
+        var anyTable = false;
+        var seenTables = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var raw in values.Values)
+        {
+            if (string.IsNullOrWhiteSpace(raw) || !seenTables.Add(raw.Trim()))
+                continue;
+            if (!TrySumTableAmounts(raw, out var part) || part == 0)
+                continue;
+            tableSum += part;
+            anyTable = true;
+        }
+
+        if (anyTable)
+        {
+            amount = tableSum;
+            return true;
         }
 
         return false;
+    }
+
+    private static bool TrySumTableAmounts(string? raw, out decimal sum)
+    {
+        sum = 0;
+        if (string.IsNullOrWhiteSpace(raw))
+            return false;
+        var trimmed = raw.Trim();
+        if (!trimmed.StartsWith('[') && !trimmed.StartsWith('{'))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(trimmed);
+            return TrySumJsonAmounts(doc.RootElement, out sum);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TrySumJsonAmounts(JsonElement element, out decimal sum)
+    {
+        sum = 0;
+        var any = false;
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                {
+                    if (!TrySumJsonAmounts(item, out var part) || part == 0)
+                        continue;
+                    sum += part;
+                    any = true;
+                }
+                return any;
+            case JsonValueKind.Object:
+                foreach (var prop in element.EnumerateObject())
+                {
+                    if (IsAmountField(prop.Name) && TryParseNumber(FlattenJsonValue(prop.Value), out var fieldAmount))
+                    {
+                        sum += fieldAmount;
+                        any = true;
+                        continue;
+                    }
+
+                    if (prop.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object
+                        && TrySumJsonAmounts(prop.Value, out var nested)
+                        && nested != 0)
+                    {
+                        sum += nested;
+                        any = true;
+                    }
+                }
+                return any;
+            default:
+                return false;
+        }
     }
 
     private static bool IsAmountField(string fieldId)
     {
         var compact = Compact(fieldId);
         return compact is "amount" or "total" or "totalamount" or "requestamount"
-            or "invoiceamount" or "claimedamount" or "expenseamount" or "netamount";
+            or "requestedamount" or "invoiceamount" or "claimedamount" or "expenseamount"
+            or "netamount" or "grandtotal" or "totalcost" or "lineamount" or "totallineamount";
     }
 
     private static bool IsBudgetMoneyField(string fieldId)
@@ -356,6 +445,21 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
     private static string Compact(string value) =>
         new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
+    private static void MergeLineItems(Dictionary<string, string> values, string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        var trimmed = json.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            values["__lineItems"] = trimmed;
+            return;
+        }
+
+        MergeJsonObject(values, trimmed);
+    }
+
     private static void MergeJsonObject(Dictionary<string, string> values, string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -369,7 +473,9 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
 
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
-                var text = FlattenJsonValue(prop.Value);
+                var text = prop.Value.ValueKind == JsonValueKind.Array
+                    ? prop.Value.GetRawText()
+                    : FlattenJsonValue(prop.Value);
                 if (!string.IsNullOrWhiteSpace(text))
                     values[prop.Name] = text;
             }
