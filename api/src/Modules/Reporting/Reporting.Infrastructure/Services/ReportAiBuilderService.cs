@@ -8,15 +8,21 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
     private readonly IReportAgentPythonClient _client;
     private readonly IReportAiDefinitionService _store;
     private readonly IReportQueryService? _query;
+    private readonly IReportExportService? _export;
+    private readonly IReportMailService? _mail;
 
     public ReportAiBuilderService(
         IReportAgentPythonClient client,
         IReportAiDefinitionService store,
-        IReportQueryService? query = null)
+        IReportQueryService? query = null,
+        IReportExportService? export = null,
+        IReportMailService? mail = null)
     {
         _client = client;
         _store = store;
         _query = query;
+        _export = export;
+        _mail = mail;
     }
 
     public async Task<ReportAiHttpResult> GenerateAndSaveAsync(
@@ -163,7 +169,9 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
                         : null,
                     ReportSpec = spec,
                     Page = request.Page < 1 ? 1 : request.Page,
-                    PageSize = request.PageSize is < 1 or > 500 ? 25 : request.PageSize,
+                    PageSize = ExportRequested(request)
+                        ? 500
+                        : request.PageSize is < 1 or > 500 ? 25 : request.PageSize,
                     Model = ReportAgentChatMapper.UsableModel(request.Model)
                 },
                 cancellationToken);
@@ -184,7 +192,12 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
             return ReportAiHttpResult.Error(422, warnings[0]);
 
         await _store.IncrementRunsAsync(tenantId, reportId, cancellationToken);
-        return ReportAiHttpResult.Ok(ReportAgentChatMapper.MergeRunResponse(record.Id, proxy.ReportResult));
+        var payload = ReportAgentChatMapper.MergeRunResponse(record.Id, proxy.ReportResult);
+        if (!ExportRequested(request))
+            return ReportAiHttpResult.Ok(payload);
+
+        var exportData = ReportAgentChatMapper.ToExportResult(record, proxy.ReportResult);
+        return await DeliverAsync(tenantId, record, request, exportData, payload, cancellationToken);
     }
 
     public async Task<ReportAiHttpResult> GetAsync(
@@ -210,6 +223,8 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
             Name = row.Name,
             Description = row.Description,
             ReportType = row.ReportType,
+            WorkflowName = row.WorkflowName,
+            RepositoryName = row.RepositoryName,
             Status = row.Status,
             Runs = row.Runs,
             CreatedAtUtc = row.CreatedAtUtc,
@@ -234,6 +249,26 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         catch (KeyNotFoundException)
         {
             return ReportAiHttpResult.Error(404, "Report not found.");
+        }
+    }
+
+    public async Task<ReportAiHttpResult> DeleteAsync(
+        Guid tenantId,
+        Guid userId,
+        bool isAdmin,
+        Guid reportId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var ok = await _store.DeleteAsync(tenantId, userId, isAdmin, reportId, cancellationToken);
+            return ok
+                ? ReportAiHttpResult.Ok(new { deleted = true, id = reportId })
+                : ReportAiHttpResult.Error(404, "Report not found.");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return ReportAiHttpResult.Error(403, ex.Message);
         }
     }
 
@@ -348,7 +383,7 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         }).ToList();
 
         await _store.IncrementRunsAsync(tenantId, reportId, cancellationToken);
-        return ReportAiHttpResult.Ok(new
+        var payload = new
         {
             id = record.Id,
             title = string.IsNullOrWhiteSpace(record.Name) ? domain : record.Name,
@@ -364,8 +399,71 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
                     ? "Counted live folder rows from the selected repository."
                     : "Counted live form rows from the selected workflow."
             }
-        });
+        };
+        if (!ExportRequested(request))
+            return ReportAiHttpResult.Ok(payload);
+
+        return await DeliverAsync(tenantId, record, request, run, payload, cancellationToken);
     }
+
+    private async Task<ReportAiHttpResult> DeliverAsync(
+        Guid tenantId,
+        ReportAiDefinitionRecord record,
+        ReportAiRunRequest request,
+        ReportRunResult data,
+        object jsonPayload,
+        CancellationToken cancellationToken)
+    {
+        if (request.SendEmail)
+        {
+            var recipients = (request.Recipients ?? [])
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (recipients.Count == 0)
+                return ReportAiHttpResult.Error(400, "recipients are required to email this report.");
+            if (_mail is null)
+                return ReportAiHttpResult.Error(500, "Report email is not configured.");
+
+            try
+            {
+                await _mail.SendAsync(
+                    tenantId,
+                    new ReportBuilderConfig
+                    {
+                        Id = record.Id,
+                        Name = data.Name,
+                        Domain = data.Domain,
+                        OwnerUserId = record.OwnerUserId,
+                        Schedule = new ReportScheduleConfig
+                        {
+                            Format = string.IsNullOrWhiteSpace(request.Format) ? "PDF" : request.Format,
+                            Recipients = recipients,
+                            Cc = (request.Cc ?? []).Where(value => !string.IsNullOrWhiteSpace(value)).ToList(),
+                            Subject = request.Subject,
+                            Message = request.Message
+                        }
+                    },
+                    data,
+                    cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ReportAiHttpResult.Error(422, ex.Message);
+            }
+        }
+
+        if (!request.Download)
+            return ReportAiHttpResult.Ok(jsonPayload);
+        if (_export is null)
+            return ReportAiHttpResult.Error(500, "Report export is not configured.");
+
+        return ReportAiHttpResult.FileResult(_export.Export(data, request.Format));
+    }
+
+    private static bool ExportRequested(ReportAiRunRequest request) =>
+        request.Download || request.SendEmail;
 
     private static ReportAiHttpResult? MapProxy(ReportAgentProxyResult proxy)
     {
