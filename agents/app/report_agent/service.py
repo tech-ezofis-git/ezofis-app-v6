@@ -46,6 +46,13 @@ from app.report_agent.metadata_service import (
     RepositoryMeta,
 )
 from app.report_agent.pack import report_system_prompt
+from app.report_agent.highlight import (
+    HIGHLIGHT_PROMPT_SNIPPET,
+    apply_recipe_highlights,
+    column_outs,
+    column_outs_from_locked,
+    merge_column_highlights,
+)
 from app.report_agent.report_spec import (
     enrich_spec_with_schema,
     fallback_report_spec,
@@ -74,7 +81,8 @@ logger = logging.getLogger("orchestrator.report_agent")
 
 _FALLBACK_PROMPT_SYSTEM = (
     "You are the EZOFIS Report Agent Phase 1. Return ONLY one valid reportSpec JSON object "
-    "for the client short prompt UI. Never invent schema. Never write SQL."
+    "for the client short prompt UI. Never invent schema. Never write SQL.\n"
+    + HIGHLIGHT_PROMPT_SNIPPET
 )
 _FALLBACK_RUN_SYSTEM = (
     "You are the EZOFIS Report Agent Phase 2. Return locked reportDefinition JSON only. "
@@ -778,6 +786,7 @@ class ReportAgentService:
         ]
         spec = attach_column_palettes(spec, tables=tables, schema_tables=schema_tables)
         spec = apply_selected_columns(spec)
+        spec = apply_recipe_highlights(spec)
 
         prompt_text = report_spec_to_prompt(
             spec,
@@ -847,7 +856,7 @@ class ReportAgentService:
             return RunReportResponse(
                 title=spec.title or "Report",
                 report_type=report_type or spec.report_type,
-                columns=[ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns],
+                columns=column_outs(spec),
                 rows=[],
                 total_count=0,
                 page=request.page,
@@ -875,7 +884,7 @@ class ReportAgentService:
             return RunReportResponse(
                 title=spec.title or "Report",
                 report_type=report_type or spec.report_type,
-                columns=[ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns],
+                columns=column_outs(spec),
                 rows=[],
                 total_count=0,
                 page=request.page,
@@ -965,6 +974,7 @@ class ReportAgentService:
 
         if spec is not None:
             report_type_key = rt.key if rt else (request.report_type or spec.report_type or "")
+            before_align = spec
             spec = self._align_report_spec(
                 spec,
                 description=spec.title or spec.objective or "",
@@ -972,6 +982,8 @@ class ReportAgentService:
                 workflow_name=request.workflow_name,
                 repository_name=request.repository_name,
             )
+            spec = merge_column_highlights(spec, before_align)
+            spec = apply_recipe_highlights(spec)
             if not spec.source_table and report_type_key == "all_workflows":
                 spec = spec.model_copy(
                     update={"source_schema": spec.source_schema or "workflow", "source_table": "workflow_instances_all"}
@@ -992,7 +1004,7 @@ class ReportAgentService:
                 return RunReportResponse(
                     title=spec.title or "Report",
                     report_type=report_type_key or spec.report_type,
-                    columns=[ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns],
+                    columns=column_outs(spec),
                     rows=[],
                     total_count=0,
                     page=request.page,
@@ -1256,10 +1268,7 @@ class ReportAgentService:
             return RunReportResponse(
                 title=str(locked.get("title") or "Report"),
                 report_type=locked.get("reportType"),
-                columns=[
-                    ReportColumnOut(key=c["key"], label=c.get("label") or c["key"])
-                    for c in locked.get("columns") or []
-                ],
+                columns=column_outs_from_locked(locked.get("columns") or [], spec or ReportSpec()),
                 rows=[],
                 total_count=0,
                 page=request.page,
@@ -1281,10 +1290,7 @@ class ReportAgentService:
             )
 
         duration_ms = round((time.perf_counter() - t0) * 1000, 2)
-        columns_out = [
-            ReportColumnOut(key=c["key"], label=c.get("label") or c["key"])
-            for c in locked.get("columns") or []
-        ]
+        columns_out = column_outs_from_locked(locked.get("columns") or [], spec or ReportSpec())
         # Prefer definition column order; fall back to query columns
         if not columns_out and report_data.columns:
             columns_out = [ReportColumnOut(key=c, label=c) for c in report_data.columns]

@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from app.agent_packs.overlay import get_agent_skill
+from app.report_agent.highlight import HIGHLIGHT_PROMPT_SNIPPET
 
 logger = logging.getLogger("orchestrator.report_agent.pack")
 
@@ -28,6 +29,8 @@ async def report_system_prompt(
         skill = await get_agent_skill(agent, tenant_id=tenant_id, settings=settings)
         text = (skill.system_prompt or "").strip()
         if text:
+            if phase == "prompt" and "highlight" not in text.lower():
+                return f"{text}\n\n{HIGHLIGHT_PROMPT_SNIPPET}"
             return text
     except Exception as exc:
         logger.warning(

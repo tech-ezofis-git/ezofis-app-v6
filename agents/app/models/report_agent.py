@@ -67,6 +67,30 @@ class GeneratePromptRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class ReportSpecHighlightRule(BaseModel):
+    """One UI pill rule. First match in `rules` wins."""
+
+    op: str
+    color: str
+    value: Optional[Any] = None
+    value2: Optional[Any] = None
+    compare_field: Optional[str] = Field(
+        default=None,
+        serialization_alias="compareField",
+        validation_alias=AliasChoices("compareField", "compare_field"),
+    )
+    label: Optional[str] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ReportSpecHighlight(BaseModel):
+    default: Optional[str] = None
+    rules: list[ReportSpecHighlightRule] = Field(default_factory=list)
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class ReportSpecColumn(BaseModel):
     key: str
     label: str = ""
@@ -74,6 +98,7 @@ class ReportSpecColumn(BaseModel):
     editable: bool = True
     kind: Optional[str] = None  # userdefined | default | agent
     selected: bool = True
+    highlight: Optional[ReportSpecHighlight] = None
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -239,6 +264,9 @@ class RunReportRequest(BaseModel):
 class ReportColumnOut(BaseModel):
     key: str
     label: str
+    highlight: Optional[ReportSpecHighlight] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class AvailableFilterOut(BaseModel):

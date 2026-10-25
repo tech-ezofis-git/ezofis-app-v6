@@ -7,6 +7,7 @@ from datetime import date, datetime
 from typing import Any, Optional
 
 from app.models.report_agent import ReportColumnOut, ReportSpec
+from app.report_agent.highlight import column_outs
 
 VIRTUAL_CATALOG_TABLES = frozenset({"workflow_instances_all", "items_all"})
 
@@ -58,7 +59,7 @@ def _sla_bucket(created: Optional[date], completed: Optional[date], today: Optio
 
 
 def _col_outs(spec: ReportSpec) -> list[ReportColumnOut]:
-    return [ReportColumnOut(key=c.key, label=c.label or c.key) for c in spec.columns]
+    return column_outs(spec)
 
 
 def _paginate(rows: list[dict[str, Any]], page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
@@ -113,6 +114,10 @@ async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[
             completed = _parse_date(row.get("completedAtUtc"))
             out.append(
                 {
+                    "id": row.get("id") or row.get("requestNo") or row.get("ReqNo") or "",
+                    "workflowId": row.get("workflowId") or row.get("workflow_id") or wf_id,
+                    "itemId": row.get("itemId") or row.get("item_id") or row.get("repositoryItemId") or "",
+                    "instanceId": row.get("instanceId") or row.get("instance_id") or row.get("id") or "",
                     "workflowName": row.get("workflowName") or wf_name,
                     "status": row.get("status") or "",
                     "startedBy": row.get("startedBy") or "",
@@ -145,6 +150,7 @@ async def _repository_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> lis
         for row in docs or []:
             out.append(
                 {
+                    "itemId": row.get("itemId") or row.get("item_id") or row.get("id") or "",
                     "Repository_Name": repo_name,
                     "FileName": row.get("fileName") or row.get("FileName") or "",
                     "FileVersion": row.get("fileVersion") or row.get("FileVersion") or "",

@@ -20,10 +20,12 @@ The Report Agent builds a report in two phases:
 
 | Phase | Meaning |
 |---|---|
-| `prompt` (default) | From user description → generate `reportPrompt` + short editable `reportSpec` |
-| `run` | Execute report using `reportPrompt` and/or client-edited `reportSpec` → return rows |
+| `prompt` (default) | From user description → generate JSON `reportPrompt` + editable `reportSpec` |
+| `run` | Execute using that JSON `reportPrompt` **and** client-edited `reportSpec` → return rows |
 
-The model never writes SQL. Python locks names, builds SQL, or counts live EZOFIS catalogs.
+The model never writes SQL. All Workflows / All Repositories Run counts live EZOFIS instances. Specified workflow/repository Run is not ready.
+
+`reportPrompt` is **JSON**, not prose. The UI toggles `selected` on column palettes, then Run uses the selected columns plus `schemaTables` / `sourceTable`.
 
 ## 2. Downstream endpoint (Agents `/chat`)
 
@@ -97,42 +99,119 @@ Specified workflow example (RFQ Estimation Report):
     "phase": "run",
     "tenant_id": "{tenant-guid}",
     "report_type": "all_workflows",
-    "report_prompt": "…text from phase 1…",
-    "reportSpec": {
-      "title": "Aging",
-      "objective": "Open requests across all workflows, grouped by aging bucket and workflow.",
-      "reportType": "all_workflows",
-      "columns": [
-        { "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE WHEN (CURRENT_DATE - CAST(createdAtUtc AS date)) <= 5 THEN '0-5' WHEN (CURRENT_DATE - CAST(createdAtUtc AS date)) <= 15 THEN '6-15' WHEN (CURRENT_DATE - CAST(createdAtUtc AS date)) <= 30 THEN '16-30' ELSE '30+' END", "editable": true },
-        { "key": "workflowName", "label": "Workflow", "editable": true },
-        { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "editable": true }
-      ],
-      "filters": [
-        { "field": "completedAtUtc", "op": "is_null", "value": null, "editable": true }
-      ],
-      "groupBy": ["Aging_Bucket", "workflowName"],
-      "sort": { "field": "Request_Count", "direction": "desc" },
-      "availableColumns": ["workflowName", "status", "startedBy", "createdAtUtc", "completedAtUtc"],
-      "sourceSchema": "workflow",
-      "sourceTable": "workflow_instances_all",
-      "warnings": []
-    },
+    "report_prompt": "{…exact JSON string from phase 1 reportPrompt…}",
+    "reportSpec": { },
     "page": 1,
-    "pageSize": 25,
-    "filters": {},
-    "includeDebug": false
+    "pageSize": 25
   }
+}
+```
+
+Copy `report_result.reportPrompt` and `report_result.reportSpec` from phase 1 into phase 2. Do not put `reportSpec.filters` (an array) on `payload.filters` — that field is a map or omit it.
+
+### Generated prompt JSON (`reportPrompt`)
+
+Phase 1 `reportPrompt` is a JSON **string** with these keys:
+
+| Key | Meaning |
+|---|---|
+| `Objective` | Business goal |
+| `Userdefined Columns` | Form table (`ezfb_*_items`) or repository designer fields. Empty for All Workflows. |
+| `Default columns` | Workflow: Req No, Stage, Status, Acted by, Workflow (`workflowName`), Created At (`createdAtUtc`), `workflowId`, `itemId`, `instanceId`. Repository: Repository, File Name, Status, Created By, Created At, `itemId`. |
+| `columns` | Default columns plus selected Userdefined / Agent columns (objects with `selected`). Run uses `selected: true`. |
+| `Agent generated columns` | COUNT / SUM / AVG / aging / SLA buckets |
+| `Formula` | `{ key, expression }[]` |
+| `Sort` | `{ field, direction }` |
+| `schemaTables` | Keep and send back on Run (e.g. `workflow.workflow_instances_all`) |
+| `sourceTable` / `sourceSchema` | Keep and send back on Run |
+
+Each column object: `{ "key", "label", "selected", "formula?", "kind?" }`. UI sets `selected` true/false; Run uses selected columns.
+
+### Column highlight (`reportSpec.columns[].highlight`)
+
+The table UI colors cell values as pills. Add optional `highlight` **only** on `reportSpec.columns` (not palettes, not `reportPrompt`). Columns without `highlight` stay plain text.
+
+```json
+{
+  "key": "Aging_Bucket",
+  "label": "Aging Bucket",
+  "highlight": {
+    "default": "gray",
+    "rules": [
+      { "op": "eq", "value": "0-5", "color": "green" },
+      { "op": "eq", "value": "6-15", "color": "yellow" },
+      { "op": "eq", "value": "16-30", "color": "orange" },
+      { "op": "eq", "value": "30+", "color": "red" }
+    ]
+  }
+}
+```
+
+| Rule field | Notes |
+|---|---|
+| `op` | `eq`, `neq`, `contains`, `notContains`, `gt`, `gte`, `lt`, `lte`, `between`, `empty`, `notEmpty` |
+| `color` / `default` | Color **id** only: `gray`, `green`, `red`, `orange`, `yellow`, `blue`, `primary`, `secondary`, `tertiary`, `purple`, `violet`, `indigo`, `cyan`, `teal`, `pink`, `bronze`, `gold`. Never hex. |
+| `value` / `value2` | Compare target. `between` uses min + max. |
+| `compareField` | Another selected column `key` in the same row (instead of `value`). |
+| `label` | Optional pill text. Omit to show the cell value. |
+
+Rules are first-match-wins. Generate attaches recipe highlights for Aging / SLA / Status / Compare / Total when the model does not send any. Run echoes `highlight` on `columns`. Send client edits back on `reportSpec.columns`.
+
+Example (All Workflows Aging):
+
+```json
+{
+  "title": "Aging",
+  "Objective": "Open requests across all workflows, grouped by aging bucket and workflow.",
+  "reportType": "all_workflows",
+  "Userdefined Columns": [],
+  "Default columns": [
+    { "key": "id", "label": "Req No", "selected": false },
+    { "key": "stage", "label": "Stage", "selected": false },
+    { "key": "status", "label": "Status", "selected": false },
+    { "key": "startedBy", "label": "Acted by", "selected": false },
+    { "key": "workflowName", "label": "Workflow", "selected": true },
+    { "key": "createdAtUtc", "label": "Created At", "selected": false },
+    { "key": "workflowId", "label": "Workflow Id", "selected": true },
+    { "key": "itemId", "label": "Item Id", "selected": true },
+    { "key": "instanceId", "label": "Instance Id", "selected": true }
+  ],
+  "Agent generated columns": [
+    { "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE …", "selected": true },
+    { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "selected": true }
+  ],
+  "columns": [
+    { "key": "id", "label": "Req No", "selected": false },
+    { "key": "stage", "label": "Stage", "selected": false },
+    { "key": "status", "label": "Status", "selected": false },
+    { "key": "startedBy", "label": "Acted by", "selected": false },
+    { "key": "workflowName", "label": "Workflow", "selected": true },
+    { "key": "createdAtUtc", "label": "Created At", "selected": false },
+    { "key": "workflowId", "label": "Workflow Id", "selected": true },
+    { "key": "itemId", "label": "Item Id", "selected": true },
+    { "key": "instanceId", "label": "Instance Id", "selected": true },
+    { "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE …", "selected": true },
+    { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "selected": true }
+  ],
+  "Formula": [
+    { "key": "Request_Count", "expression": "COUNT(*)" }
+  ],
+  "Sort": { "field": "Request_Count", "direction": "desc" },
+  "schemaTables": ["workflow.workflow_instances_all"],
+  "sourceSchema": "workflow",
+  "sourceTable": "workflow_instances_all"
 }
 ```
 
 ### Rules for API team
 
 - `intent` must be `"report"`.
-- `payload.tenant_id` is required for EZOFIS catalog / tenant DB.
-- Phase `run` needs `report_prompt` or `reportSpec` (at least one). Prefer sending **both**; UI edits live in `reportSpec`.
-- Accept both camelCase and snake_case (`reportSpec` / `report_spec`, `pageSize` / `page_size`, `tenant_id` / `tenantId`).
-- Keep the same `session_id` across prompt → run for one user session.
-- Forward `X-Tenant-Id` if that is how other agent proxies send tenant.
+- `payload.tenant_id` is required.
+- Phase `run` needs `report_prompt` **and** `reportSpec` (send both; UI edits live in `reportSpec` palettes + `selected`).
+- Keep `sourceTable` / `schemaTables` from phase 1. Do not invent tables.
+- Accept camelCase and snake_case (`reportSpec` / `report_spec`, `pageSize` / `page_size`).
+- Keep the same `session_id` across prompt → run.
+- `payload.filters` must be an object `{}` or omitted. Spec filters stay inside `reportSpec.filters`.
 
 ## 4. report_type values
 
@@ -170,7 +249,7 @@ Agents return a chat envelope. Report data is in `report_result`.
   "report_result": {
     "reportType": "all_workflows",
     "title": "Aging",
-    "reportPrompt": "Report objective: Open requests across all workflows…",
+    "reportPrompt": "{ \"Objective\": \"Open requests across all workflows…\", \"Userdefined Columns\": [], \"Default columns\": […], \"Agent generated columns\": […], \"Formula\": […], \"Sort\": {…}, \"schemaTables\": [\"workflow.workflow_instances_all\"], \"sourceTable\": \"workflow_instances_all\" }",
     "reportSpec": {
       "title": "Aging",
       "objective": "Open requests across all workflows, grouped by aging bucket and workflow.",
@@ -178,14 +257,31 @@ Agents return a chat envelope. Report data is in `report_result`.
       "columns": [
         { "key": "Aging_Bucket", "label": "Aging Bucket", "formula": "CASE …", "editable": true },
         { "key": "workflowName", "label": "Workflow", "editable": true },
+        { "key": "workflowId", "label": "Workflow Id", "editable": true },
+        { "key": "itemId", "label": "Item Id", "editable": true },
+        { "key": "instanceId", "label": "Instance Id", "editable": true },
         { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "editable": true }
       ],
       "filters": [{ "field": "completedAtUtc", "op": "is_null", "value": null, "editable": true }],
       "groupBy": ["Aging_Bucket", "workflowName"],
       "sort": { "field": "Request_Count", "direction": "desc" },
-      "availableColumns": ["workflowName", "status", "startedBy", "createdAtUtc", "startedAtUtc", "completedAtUtc", "id", "workflowId"],
+      "defaultColumns": [
+        { "key": "id", "label": "Req No", "selected": false },
+        { "key": "workflowName", "label": "Workflow", "selected": true },
+        { "key": "createdAtUtc", "label": "Created At", "selected": false },
+        { "key": "workflowId", "label": "Workflow Id", "selected": true },
+        { "key": "itemId", "label": "Item Id", "selected": true },
+        { "key": "instanceId", "label": "Instance Id", "selected": true }
+      ],
+      "userdefinedColumns": [],
+      "agentColumns": [
+        { "key": "Aging_Bucket", "label": "Aging Bucket", "selected": true },
+        { "key": "Request_Count", "label": "Count", "formula": "COUNT(*)", "selected": true }
+      ],
+      "availableColumns": ["workflowName", "status", "startedBy", "createdAtUtc", "startedAtUtc", "completedAtUtc", "id", "workflowId", "itemId", "instanceId"],
       "sourceSchema": "workflow",
       "sourceTable": "workflow_instances_all",
+      "schemaTables": ["workflow.workflow_instances_all"],
       "warnings": []
     },
     "warnings": [],
@@ -203,7 +299,7 @@ Agents return a chat envelope. Report data is in `report_result`.
   "report_result": {
     "reportType": "specific_workflow",
     "title": "RFQ Estimation Report",
-    "reportPrompt": "Report objective: RFQ Estimation Report\n\nReport type and scope: Report type is specific_workflow. Workflow name is RFQ Process.\n\nData sources: Use the table dbo.ezfb_787372d8_items.",
+    "reportPrompt": "{ \"Objective\": \"RFQ Estimation Report\", \"Userdefined Columns\": [{ \"key\": \"Company_Name\", \"selected\": true }, …form fields…], \"Default columns\": [{ \"key\": \"workflowName\" }, { \"key\": \"createdAtUtc\" }, …], \"schemaTables\": [\"dbo.ezfb_787372d8_items\"] }",
     "reportSpec": {
       "title": "RFQ Estimation Report",
       "objective": "RFQ Estimation Report",
@@ -231,7 +327,7 @@ Agents return a chat envelope. Report data is in `report_result`.
 }
 ```
 
-UI may add columns from `availableColumns` before Run (Order_Number, Date, Total, quote_2_Total, quote_3_Total).
+UI toggles `selected` on `Userdefined Columns` (form `ezfb_*` fields such as Company_Name, Order_Number, Total). Default columns still include Req No / Stage / Status / Acted by / Workflow / Created At / workflowId / itemId / instanceId. **Do not Run specified workflow yet.**
 
 ### Phase 2 response (shape) — All Workflows Aging (works)
 
@@ -316,12 +412,10 @@ UI must not call Agents directly. API team should proxy, same pattern as chatbot
 {
   "sessionId": "report-{guid}",
   "reportType": "all_workflows",
-  "reportPrompt": "…",
+  "reportPrompt": "{…JSON from phase 1…}",
   "reportSpec": { },
   "page": 1,
-  "pageSize": 25,
-  "filters": {},
-  "sort": { "field": "Request_Count", "direction": "desc" }
+  "pageSize": 25
 }
 ```
 
@@ -380,9 +474,9 @@ Get token/tenant from the same place as chatbot (`authUserStore` / identity).
 
 1. User enters description (and optional report type / workflow / repository).
 2. UI calls **Prompt** API.
-3. Show editable Prompt text + editable `reportSpec` (title, columns, filters, groupBy, sort).
-4. User edits `reportSpec` (and optionally prompt). Offer `availableColumns` as add-column list.
-5. UI calls **Run** API with edited `reportPrompt` + `reportSpec`.
+3. Show JSON `reportPrompt` plus three column palettes: Default / Userdefined / Agent generated (`selected` + / ×).
+4. User toggles columns (and optionally Formula / Sort). Keep `schemaTables` / `sourceTable`.
+5. UI calls **Run** API with edited `reportPrompt` **and** `reportSpec`.
 6. Render `columns` + `rows` + paging from the response.
 7. Keep one `sessionId` (e.g. `crypto.randomUUID()`) for the whole wizard session.
 
@@ -411,10 +505,11 @@ Use from response:
 
 | Field | UI use |
 |---|---|
-| reportPrompt | Editable textarea |
-| reportSpec | Bind to form (title, columns, filters, groupBy, sort) |
-| reportSpec.availableColumns | + Add column list |
-| reportSpec.sourceTable | Debug / do not show as a user field unless needed |
+| reportPrompt | JSON textarea (Objective, column palettes, Formula, Sort, schemaTables) |
+| reportSpec.defaultColumns | Default chips (Req No, Stage, Status, Acted by, Workflow, Created At, workflowId, itemId, instanceId; repository also has itemId) |
+| reportSpec.userdefinedColumns | Form / repository field chips |
+| reportSpec.agentColumns | Count / Sum / Avg / aging chips |
+| reportSpec.sourceTable / schemaTables | Keep for Run; do not invent |
 | warnings | Banners |
 
 ### Step B — Run report
@@ -427,7 +522,7 @@ Body:
 {
   "sessionId": "3f2c…",
   "reportType": "all_workflows",
-  "reportPrompt": "…edited or original prompt…",
+  "reportPrompt": "{…edited JSON from phase 1…}",
   "reportSpec": {
     "title": "Aging",
     "objective": "Open requests across all workflows",
@@ -469,13 +564,14 @@ Send the **edited** `reportSpec` on Run so the agent uses UI changes (not only t
 
 | Field | Type | Notes |
 |---|---|---|
-| title | string | Report title |
-| objective | string | Short goal |
-| columns | `{ key, label, formula?, editable }[]` | Visible columns |
-| filters | `{ field, op, value, editable }[]` | Default filters (`eq`, `is_null`, `not_null`, …) |
-| groupBy | string[] | Grouping keys |
+| title / objective | string | Report title / goal |
+| defaultColumns | `{ key, label, selected }[]` | Workflow: Req No, Stage, Status, Acted by, workflowName, createdAtUtc, workflowId, itemId, instanceId. Repository adds itemId. |
+| userdefinedColumns | `{ key, label, selected }[]` | `ezfb_*` form fields or repository designer fields |
+| agentColumns | `{ key, label, formula, selected }[]` | COUNT / SUM / AVG / CASE |
+| columns | Default columns plus selected Userdefined / Agent palettes | What Run actually outputs (`selected: true`) |
+| filters | `{ field, op, value }[]` | Inside spec only (`eq`, `is_null`, `not_null`, …) |
 | sort | `{ field, direction }` | `asc` / `desc` |
-| sourceTable / sourceSchema | string | Keep from Phase 1; do not invent |
+| sourceTable / schemaTables | string / string[] | Keep from Phase 1; required for Run |
 
 ## 6. Loading / empty / error UX
 
@@ -493,13 +589,16 @@ type ReportSpec = {
   title: string
   objective?: string
   reportType?: string
-  columns: { key: string; label: string; formula?: string | null; editable?: boolean }[]
-  filters: { field: string; op: string; value?: unknown; editable?: boolean }[]
+  columns: { key: string; label: string; formula?: string | null; selected?: boolean }[]
+  defaultColumns?: { key: string; label: string; selected?: boolean }[]
+  userdefinedColumns?: { key: string; label: string; selected?: boolean }[]
+  agentColumns?: { key: string; label: string; formula?: string | null; selected?: boolean }[]
+  filters: { field: string; op: string; value?: unknown }[]
   groupBy?: string[]
   sort?: { field: string; direction: 'asc' | 'desc' }
   sourceSchema?: string | null
   sourceTable?: string | null
-  availableColumns?: string[]
+  schemaTables?: string[]
 }
 
 async function generateReportPrompt(body: {
@@ -548,10 +647,10 @@ Report Builder = save / publish / schedule config in V6 DB.
 
 | Call | Generate Prompt | Run |
 |---|---|---|
-| All Workflows + Aging / Inbox / SLA / tickets processed | Yes (2–3 columns) | Yes — same columns, live EZOFIS counts |
+| All Workflows + Aging / Inbox / SLA / tickets processed | Yes — JSON prompt, Default + Agent palettes | Yes — send `reportPrompt` + `reportSpec`; live EZOFIS instance counts |
 | All Repositories + Total documents | Yes | Yes |
-| Specified workflow RFQ Estimation Report | Yes — form fields in `availableColumns` | **No** — lock returns `Name` from `Workflows` |
-| Specified repository | Yes — designer fields | **No** — same lock path |
+| Specified workflow RFQ Estimation Report | Yes — Userdefined = `ezfb_*` form fields | **No** — do not proxy Run |
+| Specified repository | Yes — Userdefined = designer fields | **No** — do not proxy Run |
 
 Until specified Run is fixed, V6 should still proxy Prompt for all four types, and either:
 

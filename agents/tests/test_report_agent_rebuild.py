@@ -261,7 +261,9 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     ]
     spec = attach_column_palettes(spec, tables=tables, schema_tables=["workflow.workflow_instances_all"])
     labels = {c.label for c in spec.default_columns}
-    assert {"Req No", "Stage", "Status", "Acted by", "Workflow", "Created At"} <= labels
+    assert {"Req No", "Stage", "Status", "Acted by", "Workflow", "Created At", "Workflow Id", "Item Id", "Instance Id"} <= labels
+    default_keys = {c.key for c in spec.default_columns}
+    assert {"id", "workflowId", "itemId", "instanceId"} <= default_keys
     assert any(c.key == "workflowName" and c.selected for c in spec.default_columns)
     assert any(c.key == "createdAtUtc" for c in spec.default_columns)
     assert spec.userdefined_columns == []
@@ -270,10 +272,23 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     assert prompt["Objective"] == "Open requests across all workflows"
     assert prompt["schemaTables"] == ["workflow.workflow_instances_all"]
     assert prompt["Sort"] is None or "field" in (prompt["Sort"] or {})
+    prompt_col_keys = {
+        item["key"] if isinstance(item, dict) else str(item)
+        for item in prompt["columns"]
+    }
+    assert {"id", "workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
     parsed = spec_from_prompt_json(json.dumps(prompt))
     assert parsed is not None
     parsed = apply_selected_columns(parsed)
-    assert {c.key for c in parsed.columns} >= {"Aging_Bucket", "workflowName", "Request_Count"}
+    assert {c.key for c in parsed.columns} >= {
+        "Aging_Bucket",
+        "workflowName",
+        "Request_Count",
+        "workflowId",
+        "itemId",
+        "instanceId",
+    }
+    assert "id" not in {c.key for c in parsed.columns}
 
 
 def test_userdefined_columns_come_from_form_table_only():
@@ -307,7 +322,54 @@ def test_userdefined_columns_come_from_form_table_only():
     default_keys = {c.key for c in spec.default_columns}
     assert "workflowName" in default_keys
     assert "createdAtUtc" in default_keys
+    assert {"workflowId", "itemId", "instanceId"} <= default_keys
     assert "Company_Name" not in default_keys
+
+
+def test_repository_default_columns_include_item_id():
+    import json
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.report_spec import attach_column_palettes, report_spec_to_prompt
+
+    spec = ReportSpec(
+        title="Documents",
+        objective="Documents across repositories",
+        report_type="all_repositories",
+        columns=[
+            ReportSpecColumn(key="Repository_Name", label="Repository"),
+            ReportSpecColumn(key="Document_Count", label="Documents", formula="COUNT(*)"),
+        ],
+        available_columns=["Repository_Name", "FileName", "Status", "CreatedBy", "CreatedAt"],
+        source_schema="repository",
+        source_table="items_all",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="repository",
+            table="items_all",
+            columns=[
+                SchemaColumnSlice(name="Repository_Name", type="text"),
+                SchemaColumnSlice(name="FileName", type="text"),
+                SchemaColumnSlice(name="Status", type="text"),
+                SchemaColumnSlice(name="CreatedBy", type="text"),
+                SchemaColumnSlice(name="CreatedAt", type="date"),
+            ],
+        )
+    ]
+    spec = attach_column_palettes(spec, tables=tables, schema_tables=["repository.items_all"])
+    default_keys = {c.key for c in spec.default_columns}
+    assert "itemId" in default_keys
+    assert any(c.key == "itemId" and c.selected for c in spec.default_columns)
+    assert "workflowId" not in default_keys
+    assert "instanceId" not in default_keys
+    prompt = json.loads(report_spec_to_prompt(spec))
+    prompt_col_keys = {
+        item["key"] if isinstance(item, dict) else str(item)
+        for item in prompt["columns"]
+    }
+    assert "itemId" in prompt_col_keys
+    assert "Repository_Name" in prompt_col_keys
+    assert {c.key for c in spec.columns} >= {"itemId", "Repository_Name", "Document_Count"}
 
 
 def test_parse_definition_json_strips_fences():
@@ -1633,3 +1695,141 @@ async def test_run_report_uses_generated_json_prompt(monkeypatch):
     assert "Request_Count" in keys
     assert resp.rows
     assert resp.total_count >= 1
+
+
+def test_column_highlight_parses_and_stays_off_palettes():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.highlight import apply_recipe_highlights
+    from app.report_agent.report_spec import attach_column_palettes, report_spec_to_prompt_json
+
+    spec = ReportSpec(
+        title="Aging",
+        objective="Open requests",
+        report_type="all_workflows",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END"),
+            ReportSpecColumn(key="workflowName", label="Workflow"),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)"),
+        ],
+        available_columns=["workflowName", "status", "id", "createdAtUtc"],
+        source_table="workflow_instances_all",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="workflow",
+            table="workflow_instances_all",
+            columns=[
+                SchemaColumnSlice(name="workflowName", type="text"),
+                SchemaColumnSlice(name="status", type="text"),
+                SchemaColumnSlice(name="id", type="uuid"),
+                SchemaColumnSlice(name="createdAtUtc", type="date"),
+            ],
+        )
+    ]
+    spec = attach_column_palettes(spec, tables=tables, schema_tables=["workflow.workflow_instances_all"])
+    spec = apply_recipe_highlights(spec)
+    aging = next(c for c in spec.columns if c.key == "Aging_Bucket")
+    assert aging.highlight is not None
+    assert aging.highlight.rules[0].color == "green"
+    assert aging.highlight.rules[0].op == "eq"
+    assert all(c.highlight is None for c in spec.default_columns)
+    assert all(c.highlight is None for c in spec.agent_columns)
+    prompt = report_spec_to_prompt_json(spec)
+    assert "highlight" not in prompt["Agent generated columns"][0]
+    assert "highlight" not in prompt["Default columns"][0]
+
+
+def test_client_highlight_survives_align_merge():
+    from app.models.report_agent import (
+        ReportSpec,
+        ReportSpecColumn,
+        ReportSpecHighlight,
+        ReportSpecHighlightRule,
+    )
+    from app.report_agent.highlight import apply_recipe_highlights, merge_column_highlights
+
+    client_hl = ReportSpecHighlight(
+        default=None,
+        rules=[ReportSpecHighlightRule(op="eq", value="Open", color="blue", label="Open")],
+    )
+    previous = ReportSpec(
+        title="Aging",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket"),
+            ReportSpecColumn(key="status", label="Status", highlight=client_hl),
+        ],
+    )
+    rebuilt = ReportSpec(
+        title="Aging",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END"),
+            ReportSpecColumn(key="status", label="Status"),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)"),
+        ],
+    )
+    merged = apply_recipe_highlights(merge_column_highlights(rebuilt, previous))
+    by_key = {c.key: c for c in merged.columns}
+    assert by_key["status"].highlight.rules[0].label == "Open"
+    assert by_key["Aging_Bucket"].highlight.rules[0].value == "0-5"
+
+
+@pytest.mark.asyncio
+async def test_run_echoes_highlight_on_columns():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, ReportSpecSort, RunReportRequest
+    from app.report_agent.report_spec import report_spec_to_prompt
+    from app.report_agent.service import ReportAgentService
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "w1", "name": "RFQ Process"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "workflowName": "RFQ Process",
+                    "status": "Pending",
+                    "createdAtUtc": "2026-10-20T00:00:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Aging",
+        objective="Open requests across all workflows",
+        report_type="all_workflows",
+        columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="id", label="Req No", kind="default", selected=False),
+        ],
+        agent_columns=[
+            ReportSpecColumn(key="Aging_Bucket", label="Aging Bucket", formula="CASE WHEN 1=1 THEN '0-5' END", kind="agent", selected=True),
+            ReportSpecColumn(key="Request_Count", label="Count", formula="COUNT(*)", kind="agent", selected=True),
+        ],
+        sort=ReportSpecSort(field="Request_Count", direction="desc"),
+        available_columns=["workflowName", "status", "createdAtUtc", "id"],
+        source_schema="workflow",
+        source_table="workflow_instances_all",
+        schema_tables=["workflow.workflow_instances_all"],
+    )
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="all_workflows",
+            tenant_id="tenant-1",
+        )
+    )
+    by_key = {c.key: c for c in resp.columns}
+    assert by_key["Aging_Bucket"].highlight is not None
+    assert by_key["Aging_Bucket"].highlight.rules[0].value == "0-5"
+    assert by_key["Aging_Bucket"].highlight.rules[0].color == "green"

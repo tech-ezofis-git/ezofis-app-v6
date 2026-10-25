@@ -12,6 +12,7 @@ from app.models.report_agent import (
     ReportSpecSort,
 )
 from app.report_agent.definition_lock import parse_definition_json
+from app.report_agent.highlight import parse_highlight
 from app.report_agent.metadata_service import DatabaseSchema
 from app.report_agent.schema_scope import SchemaTableSlice, preferred_fact_table
 
@@ -65,6 +66,9 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("startedby", "actedby", "acted_by", "assignedto", "assigned_to"), "startedBy", "Acted by"),
     (("workflowname", "workflow_name"), "workflowName", "Workflow"),
     (("createdatutc", "created_at_utc", "createdat", "created_at"), "createdAtUtc", "Created At"),
+    (("workflowid", "workflow_id"), "workflowId", "Workflow Id"),
+    (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
+    (("instanceid", "instance_id", "workflowinstanceid"), "instanceId", "Instance Id"),
 )
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("repository_name", "repositoryname"), "Repository_Name", "Repository"),
@@ -72,7 +76,9 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("status",), "Status", "Status"),
     (("createdby", "created_by"), "CreatedBy", "Created By"),
     (("createdat", "created_at"), "CreatedAt", "Created At"),
+    (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
 )
+_ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
 
 
 def _parse_columns(raw_items: Any) -> list[ReportSpecColumn]:
@@ -98,6 +104,7 @@ def _parse_columns(raw_items: Any) -> list[ReportSpecColumn]:
                 editable=bool(item.get("editable", True)),
                 kind=(str(item.get("kind")).strip() or None) if item.get("kind") else None,
                 selected=bool(item.get("selected", True)),
+                highlight=parse_highlight(item.get("highlight")),
             )
         )
     return columns
@@ -159,6 +166,32 @@ def _dump_column(col: ReportSpecColumn) -> dict[str, Any]:
     return payload
 
 
+def _prompt_columns(
+    defaults: list[ReportSpecColumn],
+    userdefined: list[ReportSpecColumn],
+    agents: list[ReportSpecColumn],
+    spec_columns: list[ReportSpecColumn],
+) -> list[dict[str, Any]]:
+    """Generated prompt `columns` always includes Default columns, then selected others."""
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for col in list(defaults) + [c for c in (userdefined + agents) if c.selected]:
+        low = (col.key or "").lower()
+        if not low or low in seen:
+            continue
+        seen.add(low)
+        out.append(_dump_column(col))
+    if out:
+        return out
+    for col in spec_columns:
+        low = (col.key or "").lower()
+        if not low or low in seen:
+            continue
+        seen.add(low)
+        out.append(_dump_column(col.model_copy(update={"selected": True})))
+    return out
+
+
 def report_spec_to_prompt_json(
     spec: ReportSpec,
     *,
@@ -190,11 +223,6 @@ def report_spec_to_prompt_json(
             continue
         seen_formula.add(low)
         unique_formulas.append(item)
-    selected = [
-        c.key
-        for c in (defaults + userdefined + agents)
-        if c.selected
-    ] or [c.key for c in spec.columns]
     payload: dict[str, Any] = {
         "title": spec.title,
         "Objective": spec.objective or spec.title,
@@ -208,7 +236,7 @@ def report_spec_to_prompt_json(
             if spec.sort and spec.sort.field
             else None
         ),
-        "columns": selected,
+        "columns": _prompt_columns(defaults, userdefined, agents, list(spec.columns or [])),
         "groupBy": list(spec.group_by or []),
         "filters": [
             {"field": f.field, "op": f.op, "value": f.value, "editable": f.editable}
@@ -267,7 +295,8 @@ def attach_column_palettes(
                 formula=existing.formula if existing else None,
                 editable=True,
                 kind="default",
-                selected=existing is not None,
+                selected=existing is not None or canonical.lower() in _ALWAYS_SELECTED_DEFAULTS,
+                highlight=None,
             )
         )
         default_keys.add(key.lower())
@@ -280,7 +309,7 @@ def attach_column_palettes(
         if not _is_agent_column(col):
             continue
         agents.append(
-            col.model_copy(update={"kind": "agent", "selected": True, "editable": True})
+            col.model_copy(update={"kind": "agent", "selected": True, "editable": True, "highlight": None})
         )
         agent_keys.add(col.key.lower())
 
@@ -296,6 +325,7 @@ def attach_column_palettes(
                 editable=True,
                 kind="agent",
                 selected=existing is not None,
+                highlight=None,
             )
         )
         agent_keys.add(count_key.lower())
@@ -319,6 +349,7 @@ def attach_column_palettes(
                     editable=True,
                     kind="agent",
                     selected=existing is not None,
+                    highlight=None,
                 )
             )
             agent_keys.add(key.lower())
@@ -348,6 +379,7 @@ def attach_column_palettes(
                 editable=True,
                 kind="userdefined",
                 selected=existing is not None and not _is_agent_column(existing),
+                highlight=None,
             )
         )
         used.add(name.lower())
@@ -362,12 +394,13 @@ def attach_column_palettes(
             if _is_agent_column(col) or _is_default_key(col.key, spec.report_type):
                 continue
             userdefined.append(
-                col.model_copy(update={"kind": "userdefined", "selected": True, "editable": True})
+                col.model_copy(update={"kind": "userdefined", "selected": True, "editable": True, "highlight": None})
             )
             used.add(col.key.lower())
 
+    highlight_by_key = {c.key.lower(): c.highlight for c in spec.columns if c.highlight is not None}
     selected_columns = [
-        c.model_copy(update={"selected": True})
+        c.model_copy(update={"selected": True, "highlight": highlight_by_key.get(c.key.lower())})
         for c in (defaults + userdefined + agents)
         if c.selected
     ]
@@ -398,7 +431,12 @@ def apply_selected_columns(spec: ReportSpec) -> ReportSpec:
     )
     if not buckets:
         return spec
-    selected = [c.model_copy(update={"selected": True}) for c in buckets if c.selected]
+    highlight_by_key = {c.key.lower(): c.highlight for c in spec.columns if c.highlight is not None}
+    selected = [
+        c.model_copy(update={"selected": True, "highlight": highlight_by_key.get(c.key.lower())})
+        for c in buckets
+        if c.selected
+    ]
     if not selected:
         selected = [c.model_copy(update={"selected": True}) for c in spec.columns]
     return spec.model_copy(update={"columns": selected})
@@ -493,14 +531,19 @@ def normalize_report_spec(
         if not col.formula and col.key.lower() in formula_map:
             col.formula = formula_map[col.key.lower()]
 
-    columns = _parse_columns(data.get("columns") or [])
-    if columns and all(isinstance(item, str) for item in (data.get("columns") or []) if item):
+    raw_columns = data.get("columns") or []
+    columns = _parse_columns(raw_columns)
+    if columns and all(isinstance(item, str) for item in raw_columns if item):
         palette = {c.key.lower(): c for c in defaults + userdefined + agents}
         resolved: list[ReportSpecColumn] = []
         for col in columns:
             hit = palette.get(col.key.lower())
             resolved.append(hit.model_copy(update={"selected": True}) if hit else col)
         columns = resolved
+    elif columns:
+        selected_from_columns = [c for c in columns if c.selected]
+        if selected_from_columns:
+            columns = selected_from_columns
     if not columns:
         columns = [c for c in (defaults + userdefined + agents) if c.selected]
 
@@ -656,7 +699,17 @@ def enrich_spec_with_schema(
             continue
         hit = _match_name(col.key)
         if hit:
-            kept.append(ReportSpecColumn(key=hit, label=col.label or _label_from_key(hit), formula=None, editable=col.editable))
+            kept.append(
+                ReportSpecColumn(
+                    key=hit,
+                    label=col.label or _label_from_key(hit),
+                    formula=None,
+                    editable=col.editable,
+                    kind=col.kind,
+                    selected=col.selected,
+                    highlight=col.highlight,
+                )
+            )
         elif virtual:
             kept.append(col)
         else:
