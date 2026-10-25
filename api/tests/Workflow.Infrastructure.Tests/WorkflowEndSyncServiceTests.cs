@@ -188,6 +188,72 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
+    public async Task TrySync_flattens_lookup_json_values()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var service = CreateService(
+            workflowJson: EndSyncJson(blockId: "step-1"),
+            persistedJson: """{"Vendor_Name":{"id":"v1","name":"Acme"},"Amount":{"value":40}}""",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-1",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        Assert.Equal("Acme", formEntry.LastRequest!.MatchValue);
+        Assert.Equal("Acme", ReadField(formEntry.LastRequest, "Vendor"));
+        Assert.Equal("40", ReadField(formEntry.LastRequest, "Total"));
+    }
+
+    [Fact]
+    public async Task TrySync_deducts_amount_from_master_budget()
+    {
+        var formEntry = new CapturingFormEntryService
+        {
+            MasterRow = new Dictionary<string, object?>
+            {
+                ["Code"] = "IT",
+                ["Budget"] = "5000"
+            }
+        };
+        var service = CreateService(
+            workflowJson: """
+                {"blocks":[{"id":"approved","type":"INTERNAL_ACTOR","settings":{
+                  "endSync":{
+                    "enabled":true,
+                    "target":"MASTER_FORM",
+                    "masterFormId":"master-form",
+                    "fieldMappings":[
+                      {"workflowFieldId":"Cost_Center","masterFieldId":"Code","IsMainField":true},
+                      {"workflowFieldId":"Budget","masterFieldId":"Budget","IsMainField":false}
+                    ]
+                  }
+                }}]}
+                """,
+            persistedJson: """{"Cost_Center":"IT","Amount":"120"}""",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "approved",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null,
+            stepName: "Approved");
+
+        Assert.NotNull(formEntry.LastRequest);
+        Assert.Equal("IT", formEntry.LastRequest!.MatchValue);
+        Assert.Equal("4880", ReadField(formEntry.LastRequest, "Budget"));
+    }
+
+    [Fact]
     public void Master_match_sql_is_case_insensitive()
     {
         var where = new List<string>();
@@ -266,6 +332,7 @@ public sealed class WorkflowEndSyncServiceTests
     {
         public string? LastFormId { get; private set; }
         public FormEntryUpsertByColumnsRequest? LastRequest { get; private set; }
+        public Dictionary<string, object?>? MasterRow { get; init; }
 
         public Task<FormEntryByColumnResult> UpsertEntryByColumnsAsync(
             string formId,
@@ -310,8 +377,19 @@ public sealed class WorkflowEndSyncServiceTests
             string? columnValue = null,
             IReadOnlyList<FormEntryColumnFilter>? filters = null,
             string? columnId = null,
-            CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+            CancellationToken cancellationToken = default)
+        {
+            var entries = MasterRow is null
+                ? Array.Empty<Dictionary<string, object?>>()
+                : new[] { MasterRow };
+            return Task.FromResult(new FormEntryByColumnResult(
+                MasterRow is null ? FormEntryByColumnStatus.NotFound : FormEntryByColumnStatus.Found,
+                null,
+                formId,
+                columnName,
+                columnName,
+                entries));
+        }
 
         public Task<FormEntryByColumnResult> UpdateEntriesByColumnAsync(
             string formId,

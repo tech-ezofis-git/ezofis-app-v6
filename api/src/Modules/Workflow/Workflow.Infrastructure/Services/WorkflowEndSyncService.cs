@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -114,6 +115,15 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(value);
             }
 
+            await ApplyBudgetRemainingAsync(
+                config.MasterFormId!,
+                mainMapping,
+                matchValue,
+                config.FieldMappings,
+                values,
+                fields,
+                cancellationToken);
+
             if (fields.Count == 0)
             {
                 _logger.LogInformation(
@@ -191,6 +201,87 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         return values;
     }
 
+    private async Task ApplyBudgetRemainingAsync(
+        string masterFormId,
+        WorkflowEndSyncFieldMapping mainMapping,
+        string matchValue,
+        IReadOnlyList<WorkflowEndSyncFieldMapping> mappings,
+        IReadOnlyDictionary<string, string> values,
+        Dictionary<string, JsonElement> fields,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAmount(values, out var amount) || amount == 0)
+            return;
+
+        foreach (var mapping in mappings)
+        {
+            if (!IsBudgetMoneyField(mapping.MasterFieldId) && !IsBudgetMoneyField(mapping.WorkflowFieldId))
+                continue;
+
+            var current = await TryReadMasterNumberAsync(
+                masterFormId,
+                mainMapping.MasterFieldId,
+                matchValue,
+                mapping.MasterFieldId,
+                cancellationToken);
+            if (current is null
+                && fields.TryGetValue(mapping.MasterFieldId, out var mappedEl)
+                && TryParseNumber(FlattenJsonValue(mappedEl), out var mappedNumber))
+                current = mappedNumber;
+            if (current is null
+                && TryGetMappedValue(values, mapping.WorkflowFieldId, out var workflowBudget)
+                && TryParseNumber(workflowBudget, out var workflowNumber))
+                current = workflowNumber;
+            if (current is null)
+                continue;
+
+            var remaining = current.Value - amount;
+            fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(
+                remaining.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    private async Task<decimal?> TryReadMasterNumberAsync(
+        string masterFormId,
+        string matchColumnId,
+        string matchValue,
+        string budgetFieldId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _formEntryService.GetEntriesByColumnAsync(
+                masterFormId,
+                matchColumnId,
+                matchValue,
+                columnId: matchColumnId,
+                cancellationToken: cancellationToken);
+            var row = result.Entries?.FirstOrDefault();
+            if (row is null)
+                return null;
+
+            var compact = Compact(budgetFieldId);
+            foreach (var (key, raw) in row)
+            {
+                if (Compact(key) != compact && !key.Equals(budgetFieldId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (TryParseNumber(FlattenText(raw?.ToString()), out var number))
+                    return number;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(
+                ex,
+                "End-sync: could not read current master {BudgetField} for match {MatchKey}={MatchValue}.",
+                budgetFieldId,
+                matchColumnId,
+                matchValue);
+        }
+
+        return null;
+    }
+
     private static bool TryGetMappedValue(
         IReadOnlyDictionary<string, string> values,
         string fieldId,
@@ -199,25 +290,67 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         value = "";
         if (string.IsNullOrWhiteSpace(fieldId))
             return false;
-        if (values.TryGetValue(fieldId, out var found) && !string.IsNullOrWhiteSpace(found))
+        if (values.TryGetValue(fieldId, out var found))
         {
-            value = found;
-            return true;
+            var flattened = FlattenText(found);
+            if (!string.IsNullOrWhiteSpace(flattened))
+            {
+                value = flattened;
+                return true;
+            }
         }
 
         var compact = Compact(fieldId);
         foreach (var (key, mapped) in values)
         {
-            if (string.IsNullOrWhiteSpace(mapped))
+            var flattened = FlattenText(mapped);
+            if (string.IsNullOrWhiteSpace(flattened))
                 continue;
             if (Compact(key) == compact)
             {
-                value = mapped;
+                value = flattened;
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool TryGetAmount(IReadOnlyDictionary<string, string> values, out decimal amount)
+    {
+        amount = 0;
+        foreach (var (key, raw) in values)
+        {
+            if (!IsAmountField(key))
+                continue;
+            if (TryParseNumber(FlattenText(raw), out amount) && amount != 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsAmountField(string fieldId)
+    {
+        var compact = Compact(fieldId);
+        return compact is "amount" or "total" or "totalamount" or "requestamount"
+            or "invoiceamount" or "claimedamount" or "expenseamount" or "netamount";
+    }
+
+    private static bool IsBudgetMoneyField(string fieldId)
+    {
+        var compact = Compact(fieldId);
+        return compact is "budget" or "availablebudget" or "remainingbudget"
+            or "totalbudget" or "budgetamount" or "budgetbalance" or "currentbudget";
+    }
+
+    private static bool TryParseNumber(string? text, out decimal value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+        var cleaned = text.Replace(",", "", StringComparison.Ordinal).Trim();
+        return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
     }
 
     private static string Compact(string value) =>
@@ -236,13 +369,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
 
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
-                var text = prop.Value.ValueKind switch
-                {
-                    JsonValueKind.String => prop.Value.GetString(),
-                    JsonValueKind.Number => prop.Value.GetRawText(),
-                    JsonValueKind.True or JsonValueKind.False => prop.Value.GetRawText(),
-                    _ => null
-                };
+                var text = FlattenJsonValue(prop.Value);
                 if (!string.IsNullOrWhiteSpace(text))
                     values[prop.Name] = text;
             }
@@ -251,6 +378,69 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         {
             // Not a flat jsonId->value object (e.g. nested table JSON) -- skip, mappings
             // only apply to simple scalar fields.
+        }
+    }
+
+    private static string FlattenText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return "";
+        var trimmed = text.Trim();
+        if ((trimmed.StartsWith('{') && trimmed.EndsWith('}'))
+            || (trimmed.StartsWith('[') && trimmed.EndsWith(']')))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                return FlattenJsonValue(doc.RootElement);
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        return trimmed;
+    }
+
+    private static string FlattenJsonValue(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Null:
+            case JsonValueKind.Undefined:
+                return "";
+            case JsonValueKind.String:
+                return FlattenText(element.GetString());
+            case JsonValueKind.Number:
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                return element.GetRawText();
+            case JsonValueKind.Array:
+                return string.Join(
+                    ", ",
+                    element.EnumerateArray()
+                        .Select(FlattenJsonValue)
+                        .Where(v => !string.IsNullOrWhiteSpace(v)));
+            case JsonValueKind.Object:
+                foreach (var name in new[] { "amount", "value", "name", "label", "text", "displayName", "title" })
+                {
+                    foreach (var prop in element.EnumerateObject())
+                    {
+                        if (!prop.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        var nested = FlattenJsonValue(prop.Value);
+                        if (!string.IsNullOrWhiteSpace(nested))
+                            return nested;
+                    }
+                }
+
+                return string.Join(
+                    ", ",
+                    element.EnumerateObject()
+                        .Select(p => FlattenJsonValue(p.Value))
+                        .Where(v => !string.IsNullOrWhiteSpace(v)));
+            default:
+                return element.ToString();
         }
     }
 }
