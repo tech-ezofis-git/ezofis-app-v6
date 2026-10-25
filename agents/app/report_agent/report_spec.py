@@ -87,6 +87,7 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
+_LISTING_DEFAULTS = frozenset({"requestno", "stage", "status", "startedby", "workflowname"})
 _IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id", "requestno"})
 
 
@@ -181,10 +182,10 @@ def _prompt_columns(
     agents: list[ReportSpecColumn],
     spec_columns: list[ReportSpecColumn],
 ) -> list[dict[str, Any]]:
-    """Generated prompt `columns` always includes Default columns, then selected others."""
+    """Generated prompt `columns` is selected Default columns, then other selected palettes."""
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for col in list(defaults) + [c for c in (userdefined + agents) if c.selected]:
+    for col in [c for c in defaults if c.selected] + [c for c in (userdefined + agents) if c.selected]:
         low = (col.key or "").lower()
         if not low or low in seen:
             continue
@@ -290,6 +291,7 @@ def attach_column_palettes(
     report_type = (spec.report_type or "").lower()
     is_repo = "repositor" in report_type
     default_defs = _REPO_DEFAULTS if is_repo else _WORKFLOW_DEFAULTS
+    has_metric = any(_is_agent_column(col) or col.formula for col in spec.columns)
 
     defaults: list[ReportSpecColumn] = []
     default_keys: set[str] = set()
@@ -299,6 +301,11 @@ def attach_column_palettes(
         )
         key = live_key or canonical
         existing = selected_map.get(key.lower())
+        listing_default = (
+            not is_repo
+            and not has_metric
+            and canonical.lower() in _LISTING_DEFAULTS
+        )
         defaults.append(
             ReportSpecColumn(
                 key=key,
@@ -306,7 +313,9 @@ def attach_column_palettes(
                 formula=existing.formula if existing else None,
                 editable=True,
                 kind="default",
-                selected=existing is not None or canonical.lower() in _ALWAYS_SELECTED_DEFAULTS,
+                selected=existing is not None
+                or canonical.lower() in _ALWAYS_SELECTED_DEFAULTS
+                or listing_default,
                 highlight=None,
             )
         )
