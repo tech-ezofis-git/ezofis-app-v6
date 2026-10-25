@@ -89,7 +89,7 @@ public sealed class ReportAiBuilderController : ControllerBase
         [FromQuery] bool download = false,
         [FromQuery] bool sendEmail = false,
         [FromQuery] string? format = null,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         request ??= new ReportAiRunRequest();
         if (download)
