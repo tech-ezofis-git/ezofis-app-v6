@@ -61,11 +61,11 @@ _AGENT_KEY_HINTS = {
 _NUMERIC_TYPES = ("int", "numeric", "decimal", "float", "double", "money", "real", "number")
 _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (
-        ("requestno", "reqno", "request_no", "req_no", "referencenumber", "reference_number", "name"),
-        "requestNo",
-        "Req No",
+        ("requestno", "reqno", "request_no", "req_no", "referencenumber", "reference_number"),
+        "RequestNo",
+        "Request No",
     ),
-    (("stage", "currentstage", "activity", "activity_name", "step", "stepname"), "stage", "Stage"),
+    (("stage", "currentstage", "activity", "activity_name", "step", "stepname"), "Stage", "Stage"),
     (("status",), "status", "Status"),
     (
         ("startedby", "actedby", "acted_by", "updatedby", "updated_by", "assignedto", "assigned_to"),
@@ -740,6 +740,9 @@ def enrich_spec_with_schema(
     warnings = list(spec.warnings or [])
     for col in spec.columns:
         if col.formula:
+            kept.append(col)
+            continue
+        if _is_default_key(col.key, spec.report_type):
             kept.append(col)
             continue
         hit = _match_name(col.key)

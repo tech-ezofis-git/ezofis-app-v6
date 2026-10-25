@@ -265,7 +265,9 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
     completed = _parse_date(_pick(row, "completedAtUtc", "completed_at_utc"))
     instance_id = _pick(row, "instanceId", "instance_id", "id")
     request_no = _request_no(row)
+    stage = _current_stage(row)
     return {
+        "RequestNo": request_no,
         "requestNo": request_no,
         "id": request_no,
         "workflowId": _pick(row, "workflowId", "workflow_id") or wf_id,
@@ -275,7 +277,8 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
         "instanceId": instance_id,
         "workflowName": _pick(row, "workflowName", "workflow_name") or wf_name,
         "status": _status_label(_pick(row, "status")),
-        "stage": _current_stage(row),
+        "Stage": stage,
+        "stage": stage,
         "startedBy": _pick(
             row, "updatedBy", "updated_by", "actedBy", "acted_by", "startedBy", "started_by", "assignedTo"
         ),
@@ -298,8 +301,50 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
             if value in (None, "") and key.lower() in {"id", "requestno"}:
                 value = lower.get("requestno") or lower.get("id") or ""
             item[key] = _cell(value)
+            if key.lower() == "requestno":
+                item["RequestNo"] = item[key]
+                item["requestNo"] = item[key]
+            elif key.lower() == "stage":
+                item["Stage"] = item[key]
+                item["stage"] = item[key]
         shaped.append(item)
     return shaped
+
+
+def _keep_valued_columns(
+    spec: ReportSpec, rows: list[dict[str, Any]]
+) -> tuple[ReportSpec, list[dict[str, Any]], list[ReportColumnOut]]:
+    """Keep workflow fields that actually have values (RequestNo/Stage), drop empty form copies."""
+    if not spec.columns or not rows:
+        return spec, rows, _col_outs(spec)
+
+    def _filled(col: Any) -> bool:
+        low = (col.key or "").lower()
+        for row in rows:
+            lower = {str(key).lower(): value for key, value in (row or {}).items()}
+            if str(lower.get(low) or "").strip():
+                return True
+        return False
+
+    keep = [col for col in spec.columns if _filled(col)]
+    if not keep:
+        return spec, rows, _col_outs(spec)
+    keep_keys = [col.key for col in keep]
+    new_rows: list[dict[str, Any]] = []
+    for row in rows:
+        lower = {str(key).lower(): value for key, value in (row or {}).items()}
+        item: dict[str, Any] = {}
+        for key in keep_keys:
+            item[key] = row.get(key, lower.get(key.lower(), ""))
+            if key.lower() == "requestno":
+                item["RequestNo"] = item[key]
+                item["requestNo"] = item[key]
+            elif key.lower() == "stage":
+                item["Stage"] = item[key]
+                item["stage"] = item[key]
+        new_rows.append(item)
+    new_spec = spec.model_copy(update={"columns": keep})
+    return new_spec, new_rows, _col_outs(new_spec)
 
 
 def _merge_instance_detail(row: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
@@ -520,18 +565,20 @@ async def execute_catalog_spec(
         rows = await _workflow_rows(
             ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
         )
+        spec, rows, columns = _keep_valued_columns(spec, rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = [f"Loaded live EZOFIS instances for '{workflow_name or spec.title}'."]
         if total == 0:
             warnings.append("EZOFIS returned no workflow instances for this workflow.")
-        return (_col_outs(spec), page_rows, total, warnings)
+        return (columns, page_rows, total, warnings)
     if rt == "all_workflows" or table == "workflow_instances_all":
         rows = await _workflow_rows(ezofis, spec, tenant_id, db=db)
+        spec, rows, columns = _keep_valued_columns(spec, rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS workflow instances across the tenant catalog."]
         if total == 0:
             warnings.append("EZOFIS returned no open workflow instances to count.")
-        return (_col_outs(spec), page_rows, total, warnings)
+        return (columns, page_rows, total, warnings)
     if rt == "specific_repository":
         if not wants_instance_execute(spec, rt):
             return None
