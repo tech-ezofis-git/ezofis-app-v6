@@ -203,6 +203,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const handleCancel = () => {
     resetDraft()
+    // Drop `?step=` so the next new report starts on the first step.
+    void navigate({
+      to: '/settings',
+      search: (prev: { step?: string }) => ({ ...prev, step: undefined }),
+    })
     onBack()
   }
 

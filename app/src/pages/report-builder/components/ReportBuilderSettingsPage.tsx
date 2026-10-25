@@ -34,8 +34,10 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
   )
   const resetDraft = useReportBuilderDraftStore((state) => state.resetDraft)
 
-  const openBuilder = (step?: ReportBuilderStep) => {
-    openReportBuilder(navigate, step)
+  // Mount the wizard only once the URL carries the requested step; it reads
+  // `?step=` on mount, so mounting earlier picks up a stale step.
+  const openBuilder = async (step?: ReportBuilderStep) => {
+    await openReportBuilder(navigate, step)
     setView('builder')
   }
 
@@ -55,7 +57,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
       return
     }
     loadFromReport(data)
-    openBuilder(step)
+    await openBuilder(step)
   }
 
   if (view === 'builder') {
@@ -74,7 +76,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
           variant='settings'
           onCreateReport={() => {
             resetDraft()
-            openBuilder()
+            void openBuilder()
           }}
           onEditReport={(report: Report) => void openReportForEdit(report)}
           onOpenReport={(report: Report) => void openReportForEdit(report)}

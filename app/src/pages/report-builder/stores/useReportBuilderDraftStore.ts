@@ -84,7 +84,7 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
         set({
           draft: {
             agent: report.agentConfig ?? null,
-            aiPrompt: '',
+            aiPrompt: report.aiPrompt ?? '',
             aiSuggestion: null,
             customFields: report.customFields ?? [],
             description: report.description,

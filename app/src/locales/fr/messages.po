@@ -60,7 +60,7 @@ msgstr "({0} Dossiers)"
 #~ msgid "(empty row)"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4029
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4044
 msgid "(remove column)"
 msgstr ""
 
@@ -75,6 +75,11 @@ msgstr ""
 #: src/pages/settings/components/credits/components/CreditsChart.tsx:61
 msgid "{0} - Usage Details"
 msgstr "{0} - Détails d'utilisation"
+
+#. placeholder {0}: kindLabel[kind]
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:451
+msgid "{0} column · click to add"
+msgstr ""
 
 #. placeholder {0}: option.title
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:119
@@ -168,7 +173,7 @@ msgstr ""
 
 #. placeholder {0}: filledColumns.length
 #. placeholder {1}: inputColumns.length
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3946
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3959
 msgid "{0} of {1} filled"
 msgstr ""
 
@@ -200,14 +205,13 @@ msgid "{0} remaining"
 msgstr "{0} restant"
 
 #. placeholder {0}: selectedRowIds.size
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3323
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3336
 msgid "{0} row(s) selected"
 msgstr ""
 
-#. placeholder {0}: sourceFields.length
 #: src/pages/report-builder/components/steps/SourceStep.tsx:476
-msgid "{0} schema fields available"
-msgstr ""
+#~ msgid "{0} schema fields available"
+#~ msgstr ""
 
 #. placeholder {0}: selectedIds.size
 #: src/pages/requests/components/GridView.tsx:1787
@@ -301,7 +305,7 @@ msgstr "{0} : {1}"
 msgid "{age} ago"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3364
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3377
 msgid "{count} line item(s) found in the uploaded document."
 msgstr "{count} élément(s) de ligne trouvé(s) dans le document importé."
 
@@ -405,7 +409,7 @@ msgstr "{matchCount} correspond à{0}"
 #~ msgid "{matchCount} matches"
 #~ msgstr "{matchCount} correspondance(s)"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3951
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3964
 msgid "{missingRequired} required missing"
 msgstr ""
 
@@ -441,7 +445,7 @@ msgstr "{progress}% terminé"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} Obligatoire Mappé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3880
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3893
 msgid "{rowName} {rowNumber}"
 msgstr ""
 
@@ -790,14 +794,14 @@ msgid "Action Required"
 msgstr "Action requise"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
-#: src/pages/forms/FormEntriesPage.tsx:2192
+#: src/pages/forms/FormEntriesPage.tsx:2199
 #: src/pages/forms/FormsPage.tsx:293
-#: src/pages/reports/components/ReportsListView.tsx:228
+#: src/pages/reports/components/ReportsListView.tsx:241
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:401
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1003
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3640
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3653
 #: src/pages/settings/components/Menus.tsx:416
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -940,17 +944,22 @@ msgstr "Ajouter une carte"
 msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
 msgstr "Ajoutez des cartes pour regrouper les étapes du flux de travail en colonnes Kanban. Si aucune carte n'est enregistrée, Demandes affiche une colonne par étape."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3619
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4088
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3632
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4103
 msgid "Add column"
 msgstr ""
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:269
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:339
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3278
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3289
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3291
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3302
 #: src/pages/settings/components/Folders/FolderFieldSettingsPanel.tsx:89
 msgid "Add Column"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:237
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:274
+msgid "Add columns from the list."
 msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:890
@@ -971,7 +980,7 @@ msgstr "Ajouter une option personnalisée"
 msgid "Add Document Rule"
 msgstr "Ajouter une règle de document"
 
-#: src/pages/forms/FormEntriesPage.tsx:3023
+#: src/pages/forms/FormEntriesPage.tsx:3030
 msgid "Add Entry"
 msgstr "Ajouter une entrée"
 
@@ -1006,7 +1015,7 @@ msgstr ""
 msgid "Add fields in the Fields step first, or type a label below."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:41
+#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:56
 msgid "Add fields to see a live preview of the report table."
 msgstr "Ajoutez des champs pour voir un aperçu en direct du tableau de rapport."
 
@@ -1015,7 +1024,8 @@ msgstr "Ajoutez des champs pour voir un aperçu en direct du tableau de rapport.
 #~ msgid "Add files"
 #~ msgstr ""
 
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:79
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:85
+#: src/pages/reports/components/OverviewTab.tsx:412
 msgid "Add filter"
 msgstr "Ajouter un filtre"
 
@@ -1039,8 +1049,8 @@ msgstr "Ajouter un groupe"
 msgid "Add group members"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:913
-#: src/pages/forms/FormEntriesPage.tsx:1220
+#: src/pages/forms/FormEntriesPage.tsx:920
+#: src/pages/forms/FormEntriesPage.tsx:1227
 msgid "Add Line Item"
 msgstr "Ajouter un élément de ligne"
 
@@ -1085,12 +1095,12 @@ msgstr "Ajouter un portail"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:258
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:357
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:938
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3299
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3310
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3312
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3323
 msgid "Add Row"
 msgstr "Ajouter une ligne"
 
-#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:50
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:61
 msgid "Add rule"
 msgstr "Ajouter une règle"
 
@@ -1106,7 +1116,7 @@ msgstr "Ajouter un onglet"
 msgid "Add the conditions that decide which documents this rule covers, such as a field value or document type, then choose the security action to apply."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3124
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3137
 msgid "Add the first column"
 msgstr ""
 
@@ -1156,6 +1166,7 @@ msgstr "Conditions supplémentaires"
 #~ msgstr ""
 
 #: src/pages/portal/components/PortalTicketComments.tsx:51
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:60
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:220
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:247
 #: src/pages/settings/components/credits/Credits.tsx:478
@@ -1379,8 +1390,8 @@ msgstr "Alignez les colonnes de votre fichier avec les champs principaux pour ga
 msgid "Aligning CSV/XLSX headers with database mapping schema."
 msgstr "Alignement des en-têtes CSV/XLSX avec le schéma de mappage de la base de données."
 
-#: src/components/base/data-table/actions/TableSearch.tsx:119
-#: src/components/base/data-table/actions/TableSearch.tsx:274
+#: src/components/base/data-table/actions/TableSearch.tsx:127
+#: src/components/base/data-table/actions/TableSearch.tsx:299
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
@@ -1449,6 +1460,7 @@ msgstr "Tous les fichiers sont prêts pour l'ingestion et l'indexation."
 msgid "All files successfully ingested and indexed."
 msgstr ""
 
+#: src/pages/report-builder/components/steps/SourceStep.tsx:137
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:882
 msgid "All folders"
 msgstr "Tous les dossiers"
@@ -1486,6 +1498,10 @@ msgstr "Tous les statuts"
 #: src/pages/portal/components/PortalHome.tsx:490
 msgid "All Submissions"
 msgstr "Toutes les soumissions"
+
+#: src/pages/report-builder/components/steps/SourceStep.tsx:120
+msgid "All workflows"
+msgstr ""
 
 #: src/pages/settings/components/PortalConfiguration.tsx:1332
 msgid "Allow users to sign in with Google or Microsoft"
@@ -1543,7 +1559,7 @@ msgid "An error occurred during indexing."
 msgstr ""
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:2738
+#: src/pages/requests/components/request/Request.tsx:2743
 msgid "An error occurred: {0}"
 msgstr "Une erreur s'est produite : {0}"
 
@@ -1689,7 +1705,7 @@ msgid "API URL"
 msgstr "URL de l'API"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3240
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3253
 msgid "Append"
 msgstr "Ajouter"
 
@@ -1745,13 +1761,13 @@ msgstr "Carte thermique des délais d’approbation"
 
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:480
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:482
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3638
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3785
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3969
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3651
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3798
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3982
 msgid "Approve"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3333
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3346
 msgid "Approve selected"
 msgstr ""
 
@@ -1762,8 +1778,8 @@ msgstr ""
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:468
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:470
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3772
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3960
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3785
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3973
 #: src/pages/requests/utils/localizeRequestUi.ts:43
 msgid "Approved"
 msgstr "Approuvé"
@@ -1791,7 +1807,7 @@ msgid "Archived"
 msgstr "Archivé"
 
 #: src/pages/forms/FormsPage.tsx:553
-#: src/pages/reports/components/ReportsListView.tsx:287
+#: src/pages/reports/components/ReportsListView.tsx:303
 msgid "Are you sure you want to delete"
 msgstr "Etes-vous sûr de vouloir supprimer"
 
@@ -1869,11 +1885,11 @@ msgstr ""
 #~ msgid "Are you sure you want to go back? The current file will be deleted if you choose Delete."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3048
+#: src/pages/forms/FormEntriesPage.tsx:3055
 msgid "Are you sure you want to move"
 msgstr "Etes-vous sûr de vouloir déménager"
 
-#: src/pages/forms/FormEntriesPage.tsx:3056
+#: src/pages/forms/FormEntriesPage.tsx:3063
 msgid "Are you sure you want to permanently delete"
 msgstr "Etes-vous sûr de vouloir supprimer définitivement"
 
@@ -1923,6 +1939,10 @@ msgstr "Utilisateurs et groupes attribués ({0})"
 msgid "Associated Entity"
 msgstr ""
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:38
+msgid "At least"
+msgstr ""
+
 #: src/layouts/auth/components/PasswordRequirements.tsx:13
 msgid "At least 1 lowercase (a-z)"
 msgstr "Au moins 1 minuscule (a-z)"
@@ -1950,6 +1970,10 @@ msgstr "Au moins une pièce jointe est requise"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:332
 #~ msgid "At least one rule is required."
 #~ msgstr "Au moins une règle est requise."
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:40
+msgid "At most"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:343
 msgid "Attach file (optional)..."
@@ -2093,7 +2117,11 @@ msgstr "Lie automatiquement les colonnes du fichier"
 msgid "Automatically run and email this report on a recurring basis."
 msgstr "Exécuter et envoyer automatiquement ce rapport par e-mail de manière récurrente."
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:244
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:416
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:432
+msgid "Available columns"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:122
 msgid "Available fields"
 msgstr "Champs disponibles"
@@ -2211,7 +2239,7 @@ msgstr "Retour au concepteur"
 msgid "Back to Document"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2475
+#: src/pages/forms/FormEntriesPage.tsx:2482
 msgid "Back to Entries"
 msgstr "Retour aux entrées"
 
@@ -2227,8 +2255,8 @@ msgstr ""
 msgid "Back to folder explorer"
 msgstr "Retour à l'explorateur de dossiers"
 
-#: src/pages/forms/FormEntriesPage.tsx:2397
-#: src/pages/forms/FormEntriesPage.tsx:3001
+#: src/pages/forms/FormEntriesPage.tsx:2404
+#: src/pages/forms/FormEntriesPage.tsx:3008
 msgid "Back to Forms"
 msgstr "Retour aux formulaires"
 
@@ -2311,6 +2339,7 @@ msgstr "La numérisation de codes-barres/QR n'est pas prise en charge dans ce na
 msgid "Basic"
 msgstr "Basique"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:41
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:89
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:107
 msgid "Between"
@@ -2378,7 +2407,7 @@ msgstr "Fil d'Ariane"
 msgid "browse"
 msgstr "parcourir"
 
-#: src/pages/forms/FormEntriesPage.tsx:3014
+#: src/pages/forms/FormEntriesPage.tsx:3021
 msgid "Browse"
 msgstr "Parcourir"
 
@@ -2390,7 +2419,7 @@ msgstr "parcourir les fichiers"
 msgid "Budget"
 msgstr ""
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:241
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:259
 msgid "Build a custom report from any of your organization's data domains."
 msgstr "Créez un rapport personnalisé à partir de n'importe quel domaine de données de votre organisation."
 
@@ -2404,8 +2433,7 @@ msgstr "Créer et configurer des rapports personnalisés"
 
 #: src/pages/forms/components/AiFormBuilder.tsx:284
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:296
-#: src/pages/report-builder/components/steps/SourceStep.tsx:405
-#: src/pages/report-builder/components/steps/SourceStep.tsx:448
+#: src/pages/report-builder/components/steps/SourceStep.tsx:499
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:456
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:127
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:217
@@ -2425,8 +2453,7 @@ msgid "Build report from workflow form submissions, approval stages & metrics"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:286
-#: src/pages/report-builder/components/steps/SourceStep.tsx:393
-#: src/pages/report-builder/components/steps/SourceStep.tsx:430
+#: src/pages/report-builder/components/steps/SourceStep.tsx:484
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:428
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:444
 msgid "Build with AI"
@@ -2446,7 +2473,7 @@ msgstr "Stockage sécurisé intégré"
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "L'action groupée \"{0}\" a été appliquée avec succès à {1} requêtes !"
 
-#: src/pages/forms/FormEntriesPage.tsx:3131
+#: src/pages/forms/FormEntriesPage.tsx:3138
 msgid "Bulk Import"
 msgstr "Importation en masse"
 
@@ -2519,7 +2546,7 @@ msgstr "Par fournisseur/vendeur"
 msgid "Calculated"
 msgstr "Calculé"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:141
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:143
 msgid "Calculated Field"
 msgstr "Champ calculé"
 
@@ -2563,13 +2590,13 @@ msgstr "Peut voir"
 #: src/pages/folders/components/Upload/Upload.tsx:5144
 #: src/pages/folders/components/Upload/Upload.tsx:5163
 #: src/pages/forms/components/GenericFormImportModal.tsx:918
-#: src/pages/forms/FormEntriesPage.tsx:1025
-#: src/pages/forms/FormEntriesPage.tsx:2974
-#: src/pages/forms/FormEntriesPage.tsx:3073
+#: src/pages/forms/FormEntriesPage.tsx:1032
+#: src/pages/forms/FormEntriesPage.tsx:2981
+#: src/pages/forms/FormEntriesPage.tsx:3080
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1319
-#: src/pages/reports/components/ReportsListView.tsx:302
+#: src/pages/reports/components/ReportsListView.tsx:318
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:223
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1570
@@ -2680,7 +2707,11 @@ msgstr "Référentiel centralisé pour toute la documentation entrante et les an
 msgid "Change"
 msgstr "Changement"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:440
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:385
+msgid "Change field"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:386
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:314
 msgid "Change field..."
 msgstr "Changer de champ..."
@@ -2716,7 +2747,7 @@ msgstr "Changer de thème"
 #~ msgid "Change to normal field"
 #~ msgstr "Passer au champ normal"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3556
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3569
 msgid "Change Type"
 msgstr ""
 
@@ -2811,7 +2842,7 @@ msgstr ""
 #~ msgstr "Choisir un autre référentiel à remplacer..."
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:245
-#: src/pages/report-builder/components/steps/SourceStep.tsx:358
+#: src/pages/report-builder/components/steps/SourceStep.tsx:448
 msgid "Choose a folder to report on..."
 msgstr ""
 
@@ -2837,7 +2868,7 @@ msgid "Choose a version"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:207
-#: src/pages/report-builder/components/steps/SourceStep.tsx:327
+#: src/pages/report-builder/components/steps/SourceStep.tsx:417
 msgid "Choose a workflow to report on..."
 msgstr ""
 
@@ -2857,7 +2888,7 @@ msgstr "Choisissez un workflow pour afficher ses soumissions."
 msgid "Choose columns"
 msgstr "Choisir les colonnes"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:78
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:75
 msgid "Choose data source"
 msgstr ""
 
@@ -2865,7 +2896,7 @@ msgstr ""
 #~ msgid "Choose Datatype"
 #~ msgstr "Choisir le type de données"
 
-#: src/pages/report-builder/components/steps/FieldsStep.tsx:19
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:20
 msgid "Choose fields"
 msgstr "Choisir les champs"
 
@@ -2873,7 +2904,7 @@ msgstr "Choisir les champs"
 #~ msgid "Choose fields from the Fields step. Only the values of these fields are masked on files in this folder."
 #~ msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2880
+#: src/pages/forms/FormEntriesPage.tsx:2887
 msgid "Choose File"
 msgstr "Choisir un fichier"
 
@@ -2929,7 +2960,7 @@ msgstr "Choisir une signature"
 #~ msgid "Choose source & build mode"
 #~ msgstr ""
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:300
+#: src/pages/report-builder/components/steps/SourceStep.tsx:390
 msgid "Choose source type..."
 msgstr ""
 
@@ -2993,7 +3024,7 @@ msgstr "Choisissez où stocker vos documents de facturation. Les données sont c
 msgid "Choose whether the report reads from a workflow or a folder, then pick which one. The fields you can add depend on this source."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:291
+#: src/pages/report-builder/components/steps/SourceStep.tsx:381
 msgid "Choose whether to build your report from a Workflow process or a Folder."
 msgstr ""
 
@@ -3037,6 +3068,7 @@ msgstr ""
 msgid "Classification failed for this file."
 msgstr "Échec de la classification pour ce fichier."
 
+#: src/components/base/data-table/actions/TableSearch.tsx:256
 #: src/pages/folders/components/DocumentSigningPage.tsx:2570
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:854
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:985
@@ -3064,8 +3096,8 @@ msgstr "Effacer le mappage"
 #~ msgid "Clear queue"
 #~ msgstr "Vider la file d'attente"
 
-#: src/components/common/CustomFilter.tsx:1064
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:306
+#: src/components/base/data-table/actions/TableSearch.tsx:252
+#: src/components/common/CustomFilter.tsx:1072
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:184
 msgid "Clear search"
 msgstr ""
@@ -3077,6 +3109,11 @@ msgstr ""
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:243
 #~ msgid "Cleared 1 document from queue."
 #~ msgstr "1 document supprimé de la file d'attente."
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:417
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:433
+msgid "Click a column to add it"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2284
 #~ msgid "Click a segment to drill into aging details"
@@ -3216,7 +3253,7 @@ msgstr "Réduire"
 #~ msgid "Collapse All"
 #~ msgstr "Tout réduire"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3984
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3997
 msgid "Collapse row"
 msgstr ""
 
@@ -3226,6 +3263,7 @@ msgid "Column & Row Extraction"
 msgstr "Extraction de colonnes et lignes"
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:21
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:358
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:42
 msgid "Column Label"
 msgstr "Étiquette de la colonne"
@@ -3242,11 +3280,12 @@ msgstr ""
 msgid "Column Name"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3538
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3551
 msgid "Column options"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:47
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:365
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:90
 msgid "Column Type"
 msgstr "Type de colonne"
@@ -3255,6 +3294,11 @@ msgstr "Type de colonne"
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:48
 msgid "Column Width (px)"
 msgstr "Largeur de colonne (px)"
+
+#. placeholder {0}: rule.compareField
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:104
+msgid "Column: {0}"
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:709
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1359
@@ -3319,7 +3363,7 @@ msgstr "Terminez chaque étape, puis continuez"
 msgid "Complete editing session"
 msgstr "Séance d'édition complète"
 
-#: src/pages/forms/FormEntriesPage.tsx:2494
+#: src/pages/forms/FormEntriesPage.tsx:2501
 msgid "Complete required form information using the metadata-driven enterprise canvas below."
 msgstr "Remplissez les informations requises du formulaire à l’aide du canevas d’entreprise basé sur les métadonnées ci-dessous."
 
@@ -3330,6 +3374,7 @@ msgstr "Configuration complète pour démarrer votre automatisation des comptes 
 #: src/pages/forms/components/GenericFormImportModal.tsx:760
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1421
 #: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/utils/workflow.utils.ts:430
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Completed"
 msgstr "Terminé"
@@ -3367,10 +3412,7 @@ msgstr "Statut calculé"
 #~ msgid "Concentration of invoice liabilities"
 #~ msgstr "Concentration des engagements de facturation"
 
-#: src/pages/requests/utils/workflow.utils.ts:628
-#: src/pages/requests/utils/workflow.utils.ts:644
-#: src/pages/requests/utils/workflow.utils.ts:717
-#: src/pages/requests/utils/workflow.utils.ts:733
+#: src/pages/requests/utils/workflow.utils.ts:431
 msgid "Conditional flow"
 msgstr ""
 
@@ -3413,6 +3455,12 @@ msgstr "La configuration pour « {0} » est prête. Passez en revue chaque étap
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:143
 msgid "Configuration Summary"
 msgstr "Résumé de la configuration"
+
+#. placeholder {0}: setting.label
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:327
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:353
+msgid "Configure {0}"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:1056
 msgid "Configure access policies and privileges for folder \"{folderName}\""
@@ -3632,6 +3680,7 @@ msgstr "Contacter le fournisseur"
 msgid "Contact vendor for estimated delivery schedule on remaining backordered quantities."
 msgstr ""
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:35
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:84
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:98
 #: src/pages/settings/components/Folders/retentionMockData.ts:110
@@ -3779,11 +3828,11 @@ msgstr "Impossible de générer des champs. Essayez à nouveau de recommander le
 msgid "Could not generate folder configuration. Try again."
 msgstr "Impossible de générer la configuration du dossier. Essayer à nouveau."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3090
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3103
 msgid "Could not read that file."
 msgstr "Impossible de lire ce fichier."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2905
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2918
 msgid "Could not read the document: {failure}"
 msgstr ""
 
@@ -3807,12 +3856,12 @@ msgstr ""
 msgid "Couldn't export this staged file. Missing ID."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:324
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:464
 msgid "Couldn't load fields for this form. Try again."
 msgstr "Impossible de charger les champs de ce formulaire. Réessayez."
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:239
-#: src/pages/report-builder/components/steps/SourceStep.tsx:352
+#: src/pages/report-builder/components/steps/SourceStep.tsx:442
 msgid "Couldn't load folders. Try again."
 msgstr "Impossible de charger les dossiers. Réessayez."
 
@@ -3831,7 +3880,7 @@ msgid "Couldn't load users. Try again."
 msgstr "Impossible de charger les utilisateurs. Réessayez."
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:201
-#: src/pages/report-builder/components/steps/SourceStep.tsx:321
+#: src/pages/report-builder/components/steps/SourceStep.tsx:411
 msgid "Couldn't load workflows. Try again."
 msgstr "Impossible de charger les flux de travail. Réessayez."
 
@@ -3965,8 +4014,8 @@ msgid "Created by"
 msgstr "Créé par"
 
 #: src/pages/folders/components/FolderTable.tsx:520
-#: src/pages/forms/FormEntriesPage.tsx:2178
-#: src/pages/forms/FormEntriesPage.tsx:3150
+#: src/pages/forms/FormEntriesPage.tsx:2185
+#: src/pages/forms/FormEntriesPage.tsx:3157
 #: src/pages/forms/FormsPage.tsx:259
 #: src/pages/forms/FormsPage.tsx:651
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2359
@@ -3977,7 +4026,7 @@ msgstr "Créé par"
 msgid "Created By"
 msgstr "Créé par"
 
-#: src/pages/forms/FormEntriesPage.tsx:3158
+#: src/pages/forms/FormEntriesPage.tsx:3165
 #: src/pages/forms/FormsPage.tsx:662
 #: src/pages/settings/components/AuditMonitoring.tsx:361
 #: src/pages/workflows/components/Table.tsx:510
@@ -4305,11 +4354,12 @@ msgstr ""
 msgid "Decline"
 msgstr ""
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:61
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4136
 msgid "Default"
 msgstr "Défaut"
 
-#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:111
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:167
 msgid "Default color"
 msgstr "Couleur par défaut"
 
@@ -4379,7 +4429,7 @@ msgstr ""
 #: src/pages/folders/components/StagedFileDeleteButton.tsx:112
 #: src/pages/folders/components/Upload/Upload.tsx:5145
 #: src/pages/forms/FormsPage.tsx:337
-#: src/pages/reports/components/RowActionsMenu.tsx:40
+#: src/pages/reports/components/RowActionsMenu.tsx:44
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:508
@@ -4411,7 +4461,7 @@ msgstr "Supprimer la carte"
 #~ msgid "Delete column"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3583
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3596
 msgid "Delete Column"
 msgstr ""
 
@@ -4445,8 +4495,8 @@ msgstr "Supprimer le groupe"
 msgid "Delete Menu"
 msgstr "Supprimer le menu"
 
-#: src/pages/forms/FormEntriesPage.tsx:2238
-#: src/pages/forms/FormEntriesPage.tsx:3091
+#: src/pages/forms/FormEntriesPage.tsx:2245
+#: src/pages/forms/FormEntriesPage.tsx:3098
 msgid "Delete Permanently"
 msgstr "Supprimer définitivement"
 
@@ -4454,7 +4504,7 @@ msgstr "Supprimer définitivement"
 msgid "Delete Portal"
 msgstr "Supprimer le portail"
 
-#: src/pages/reports/components/ReportsListView.tsx:285
+#: src/pages/reports/components/ReportsListView.tsx:301
 msgid "Delete Report"
 msgstr "Supprimer le rapport"
 
@@ -4467,12 +4517,12 @@ msgstr "Supprimer le rôle"
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:498
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1531
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1533
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3790
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3974
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3803
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3987
 msgid "Delete row"
 msgstr "Supprimer la ligne"
 
-#: src/pages/forms/FormEntriesPage.tsx:1319
+#: src/pages/forms/FormEntriesPage.tsx:1326
 msgid "Delete Row"
 msgstr "Supprimer la ligne"
 
@@ -4481,7 +4531,7 @@ msgid "Delete Rule"
 msgstr "Supprimer la règle"
 
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:530
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3343
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3356
 msgid "Delete selected"
 msgstr ""
 
@@ -4627,7 +4677,7 @@ msgstr "Décrivez les responsabilités et la portée de ce rôle..."
 #~ msgid "Describe what insights or columns you want, and AI will configure a starting plan based on this {0}."
 #~ msgstr ""
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:460
+#: src/pages/report-builder/components/steps/SourceStep.tsx:522
 msgid "Describe what insights or columns you want, e.g. Show active requests and current approval stage..."
 msgstr ""
 
@@ -4639,7 +4689,7 @@ msgstr "Décrivez à quoi sert ce portail..."
 msgid "Describe what this retention policy manages and why."
 msgstr "Décrivez ce que gère cette politique de rétention et pourquoi."
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:433
+#: src/pages/report-builder/components/steps/SourceStep.tsx:509
 msgid "Describe what you want to report on for"
 msgstr ""
 
@@ -4728,7 +4778,7 @@ msgstr "Action de destination"
 msgid "Destination Action"
 msgstr "Action de destination"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:81
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:80
 msgid "Details"
 msgstr "Détails"
 
@@ -5035,7 +5085,7 @@ msgstr "Personnalisation terminée"
 #~ msgid "Done editing"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3486
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3499
 msgid "Double click to rename or drag to reorder"
 msgstr ""
 
@@ -5119,7 +5169,7 @@ msgstr "Brouillon"
 msgid "Draft Files"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2390
+#: src/pages/forms/FormEntriesPage.tsx:2397
 msgid "Draft forms do not have an entries page. Publish the form to view and collect entries."
 msgstr ""
 
@@ -5401,7 +5451,7 @@ msgstr ""
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:550
 #: src/pages/dashboard/DashboardPage.tsx:407
 #: src/pages/dashboard/DashboardPage.tsx:412
-#: src/pages/forms/FormEntriesPage.tsx:2215
+#: src/pages/forms/FormEntriesPage.tsx:2222
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
@@ -5482,11 +5532,11 @@ msgstr "Modifier la stratégie de sécurité des dossiers"
 #~ msgid "Edit Folder Setup"
 #~ msgstr "Modifier la configuration du dossier"
 
-#: src/pages/forms/FormEntriesPage.tsx:2403
+#: src/pages/forms/FormEntriesPage.tsx:2410
 msgid "Edit Form"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2489
+#: src/pages/forms/FormEntriesPage.tsx:2496
 msgid "Edit Form Entry"
 msgstr "Modifier l'entrée du formulaire"
 
@@ -5498,8 +5548,8 @@ msgstr "Modifier le groupe"
 #~ msgid "Edit Group Setup"
 #~ msgstr "Modifier la configuration du groupe"
 
-#: src/pages/forms/FormEntriesPage.tsx:913
-#: src/pages/forms/FormEntriesPage.tsx:1311
+#: src/pages/forms/FormEntriesPage.tsx:920
+#: src/pages/forms/FormEntriesPage.tsx:1318
 msgid "Edit Line Item"
 msgstr "Modifier l'élément de campagne"
 
@@ -5525,7 +5575,7 @@ msgstr "Modifier les métadonnées"
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Mode d'édition actif : cliquez sur le cercle de coche sur n'importe quelle section, vignette KPI, ligne d'informations IA ou fiche graphique pour désélectionner les éléments indésirables. Passez en mode Affichage pour prévisualiser votre mise en page personnalisée."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3551
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3564
 msgid "Edit Name"
 msgstr ""
 
@@ -5533,7 +5583,7 @@ msgstr ""
 msgid "Edit Portal"
 msgstr "Modifier le portail"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:242
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:260
 msgid "Edit Report"
 msgstr "Modifier le rapport"
 
@@ -5644,8 +5694,8 @@ msgstr "vide"
 msgid "Empty"
 msgstr "Vide"
 
-#: src/pages/forms/FormEntriesPage.tsx:2158
-#: src/pages/forms/FormEntriesPage.tsx:2168
+#: src/pages/forms/FormEntriesPage.tsx:2165
+#: src/pages/forms/FormEntriesPage.tsx:2175
 msgid "Empty form field"
 msgstr "Champ de formulaire vide"
 
@@ -5749,7 +5799,7 @@ msgstr "Entrez le nom du dossier…"
 msgid "Enter IMAP server details for your custom email provider."
 msgstr "Saisissez les détails du serveur IMAP pour votre fournisseur de messagerie personnalisé."
 
-#: src/pages/forms/FormEntriesPage.tsx:916
+#: src/pages/forms/FormEntriesPage.tsx:923
 msgid "Enter itemized quantity, pricing, and specs inline below."
 msgstr "Entrez la quantité détaillée, les prix et les spécifications en ligne ci-dessous."
 
@@ -5807,7 +5857,7 @@ msgid "Enter username"
 msgstr "Entrez le nom d'utilisateur"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:459
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:144
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:150
 msgid "Enter value"
 msgstr "Entrez une valeur"
 
@@ -5844,7 +5894,7 @@ msgstr "Chiffrement de niveau entreprise au repos"
 msgid "Entity supplying goods"
 msgstr "Entité fournissant des biens"
 
-#: src/pages/forms/FormEntriesPage.tsx:3199
+#: src/pages/forms/FormEntriesPage.tsx:3206
 msgid "Entries"
 msgstr "Entrées"
 
@@ -5852,6 +5902,7 @@ msgstr "Entrées"
 #~ msgid "Entry #"
 #~ msgstr "N° d'entrée"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:33
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:82
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:112
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:804
@@ -5988,7 +6039,7 @@ msgstr "Développer"
 msgid "Expand all steps"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3984
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3997
 msgid "Expand row"
 msgstr ""
 
@@ -6059,7 +6110,7 @@ msgid "Export staged files"
 msgstr ""
 
 #: src/pages/requests/components/InboxList.tsx:2083
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3265
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3278
 msgid "Export to Excel"
 msgstr "Exporter vers Excel"
 
@@ -6250,7 +6301,7 @@ msgstr "Échec de la suppression du dossier"
 msgid "Failed to delete form"
 msgstr "Échoué to delete form"
 
-#: src/pages/reports/components/ReportsListView.tsx:317
+#: src/pages/reports/components/ReportsListView.tsx:333
 msgid "Failed to delete report"
 msgstr "Échec de la suppression du rapport"
 
@@ -6276,6 +6327,10 @@ msgstr "Échec de la génération du schéma du tableau de bord"
 #: src/pages/forms/components/GenericFormImportModal.tsx:172
 msgid "Failed to generate template"
 msgstr "Échec de la génération du modèle"
+
+#: src/pages/report-builder/components/steps/SourceStep.tsx:321
+msgid "Failed to generate the report"
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:333
 msgid "Failed to import entries"
@@ -6331,11 +6386,12 @@ msgstr "Échec du chargement de l'historique."
 msgid "Failed to load menu"
 msgstr "Échec du chargement du menu"
 
-#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:52
+#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:54
+#: src/pages/reports/ReportsPage.tsx:37
 msgid "Failed to load report"
 msgstr "Échec du chargement du rapport"
 
-#: src/pages/reports/components/ReportsListView.tsx:270
+#: src/pages/reports/components/ReportsListView.tsx:286
 msgid "Failed to load reports."
 msgstr "Échec du chargement des rapports."
 
@@ -6384,7 +6440,7 @@ msgid "Failed to proceed request:"
 msgstr "Échec du traitement de la demande :"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2529
+#: src/pages/requests/components/request/Request.tsx:2534
 msgid "Failed to proceed request: {0}"
 msgstr "Échec du traitement de la demande : {0}"
 
@@ -6397,6 +6453,11 @@ msgstr "Échec du traitement du fichier"
 msgid "Failed to revoke"
 msgstr "Échec de la révocation"
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:184
+#: src/pages/report-builder/components/steps/SourceStep.tsx:276
+msgid "Failed to run the report"
+msgstr ""
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:1678
 msgid "Failed to save document edits"
 msgstr "Échec de l'enregistrement des modifications du document"
@@ -6405,12 +6466,12 @@ msgstr "Échec de l'enregistrement des modifications du document"
 msgid "Failed to save preferences: {message}"
 msgstr "Échec de l'enregistrement des préférences : {message}"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:188
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:196
 msgid "Failed to save report"
 msgstr "Échec de l'enregistrement du rapport"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2676
+#: src/pages/requests/components/request/Request.tsx:2681
 msgid "Failed to save request: {0}"
 msgstr "Échec de l'enregistrement de la demande : {0}"
 
@@ -6434,7 +6495,7 @@ msgstr ""
 msgid "Failed to share report"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:3026
+#: src/pages/requests/components/request/Request.tsx:3031
 msgid "Failed to share request"
 msgstr "Échec du partage de la demande"
 
@@ -6459,7 +6520,7 @@ msgid "Failed to start workflow"
 msgstr ""
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:2677
+#: src/pages/requests/components/request/Request.tsx:2682
 msgid "Failed to submit request: {0}"
 msgstr "Échec de l'envoi de la demande : {0}"
 
@@ -6514,7 +6575,7 @@ msgstr "Récupération de la dernière configuration du portail."
 msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (Comptabilité financière et gestion des articles)"
 
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:100
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:106
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5357
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:734
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:912
@@ -6537,7 +6598,6 @@ msgstr "Nom du champ"
 msgid "Field Name"
 msgstr "Nom du champ"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:432
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:306
 msgid "Field settings"
 msgstr "Paramètres du champ"
@@ -6717,7 +6777,7 @@ msgstr "FICHIERS DANS CE DOSSIER"
 msgid "Files uploaded successfully."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2897
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2910
 msgid "Fill the mandatory repository fields ({waitingNames}) in the file viewer to upload this file."
 msgstr ""
 
@@ -6730,7 +6790,7 @@ msgid "Filter the report data"
 msgstr ""
 
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:83
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:73
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:79
 msgid "Filters"
 msgstr "Filtres"
 
@@ -6799,7 +6859,7 @@ msgstr "Plat"
 msgid "Flexible Order"
 msgstr "Commande flexible"
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:73
+#: src/pages/report-builder/components/steps/SourceStep.tsx:104
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:776
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:942
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2327
@@ -7004,6 +7064,7 @@ msgstr "Mot de passe oublié ?"
 
 #: src/pages/portal/components/PortalHome.tsx:442
 #: src/pages/portal/components/PortalPicker.tsx:128
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:62
 msgid "Form"
 msgstr "Formulaire"
 
@@ -7035,7 +7096,7 @@ msgstr "Formulaire supprimé avec succès"
 msgid "Form Entries"
 msgstr "Entrées de formulaire"
 
-#: src/pages/forms/FormEntriesPage.tsx:2388
+#: src/pages/forms/FormEntriesPage.tsx:2395
 msgid "Form is in Draft"
 msgstr ""
 
@@ -7152,7 +7213,7 @@ msgstr ""
 #~ msgid "Generate plan"
 #~ msgstr "Générer le plan"
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:482
+#: src/pages/report-builder/components/steps/SourceStep.tsx:546
 msgid "Generate Report"
 msgstr ""
 
@@ -7176,6 +7237,10 @@ msgstr "Génération du schéma du tableau de bord..."
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2310
 msgid "Generating description…"
 msgstr "Générer une description…"
+
+#: src/pages/report-builder/components/steps/SourceStep.tsx:546
+msgid "Generating prompt..."
+msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2101
 msgid "Generating recommended fields for this folder…"
@@ -7313,13 +7378,17 @@ msgstr "Autorisations accordées"
 msgid "Granted Permissions ({0})"
 msgstr "Autorisations accordées ({0})"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:37
+msgid "Greater than"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:87
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:104
 #: src/pages/settings/components/Folders/retentionMockData.ts:111
 msgid "Greater Than"
 msgstr "Supérieur à"
 
-#: src/components/common/CustomFilter.tsx:1088
+#: src/components/common/CustomFilter.tsx:1096
 #: src/components/common/DynamicFilter.tsx:816
 msgid "Grid View"
 msgstr "Vue grille"
@@ -7487,7 +7556,7 @@ msgid "Hidden in View"
 msgstr "Caché dans la vue"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:943
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3995
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4008
 msgid "Hide details"
 msgstr ""
 
@@ -7554,6 +7623,13 @@ msgstr "Valeur élevée (≥ 10 000 $)"
 msgid "Highest Credit Consumption"
 msgstr "Consommation maximale de crédits"
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:289
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:368
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:374
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:317
+msgid "Highlighted"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5533
 msgid "Historical Match & Integrity Results"
 msgstr ""
@@ -7608,7 +7684,7 @@ msgstr "Comment se comporte cette politique"
 
 #. placeholder {0}: draft.domain
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:281
-#: src/pages/report-builder/components/steps/SourceStep.tsx:388
+#: src/pages/report-builder/components/steps/SourceStep.tsx:479
 msgid "How would you like to build your report for \"{0}\"?"
 msgstr ""
 
@@ -7660,15 +7736,15 @@ msgstr "Traitement immédiat des factures"
 #~ msgid "Import CSV/Excel"
 #~ msgstr "Importer CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3254
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3267
 msgid "Import CSV/Excel (adds to existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3253
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3266
 msgid "Import CSV/Excel (replaces existing rows)"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3373
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3386
 msgid "Import extracted items"
 msgstr "Importer les éléments extraits"
 
@@ -8148,6 +8224,10 @@ msgstr "Détail des factures"
 msgid "Invoicing terms and conditions"
 msgstr "Conditions de facturation"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:42
+msgid "Is empty"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:90
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:109
 msgid "Is Empty"
@@ -8160,6 +8240,10 @@ msgstr "est plus que"
 #: src/pages/settings/components/Folders/retentionMockData.ts:109
 msgid "Is Not"
 msgstr "N'est-ce pas"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:43
+msgid "Is not empty"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:91
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:111
@@ -8219,7 +8303,7 @@ msgid "ITEM DESCRIPTION"
 msgstr "DESCRIPTION ARTICLE"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
-#: src/pages/forms/FormEntriesPage.tsx:2135
+#: src/pages/forms/FormEntriesPage.tsx:2142
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
 msgid "items"
 msgstr "articles"
@@ -8327,7 +8411,6 @@ msgstr "Agrément L2 accordé"
 msgid "L3 Approval"
 msgstr "Approbation L3"
 
-#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:76
 #: src/pages/settings/components/Menus.tsx:630
 #: src/pages/settings/components/Menus.tsx:646
 #: src/pages/settings/components/Menus.tsx:678
@@ -8335,6 +8418,10 @@ msgstr "Approbation L3"
 #: src/pages/settings/components/Menus.tsx:830
 msgid "Label"
 msgstr "Libellé"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:125
+msgid "Label (optional)"
+msgstr ""
 
 #: src/pages/settings/components/Menus.tsx:782
 msgid "Label *"
@@ -8399,11 +8486,11 @@ msgstr "Nom"
 #~ msgid "Launch Workflow"
 #~ msgstr "Lancer le flux"
 
-#: src/pages/requests/components/request/Request.tsx:2131
+#: src/pages/requests/components/request/Request.tsx:2136
 msgid "Leave {site}? Changes you made may not be saved."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2130
+#: src/pages/requests/components/request/Request.tsx:2135
 msgid "Leave {site}? Request {requestNo} may not be saved."
 msgstr ""
 
@@ -8446,6 +8533,10 @@ msgstr "Vérification d'association juridique"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:324
 msgid "Less"
 msgstr "Moins"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:39
+msgid "Less than"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:88
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:106
@@ -8618,10 +8709,10 @@ msgstr "Tableau de bord en direct généré à partir de vos widgets sélectionn
 msgid "Live dashboard HTML was empty."
 msgstr "Le code HTML du tableau de bord en direct était vide."
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:384
-#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:292
-#~ msgid "Live preview"
-#~ msgstr "Aperçu en direct"
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:493
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:513
+msgid "Live preview"
+msgstr "Aperçu en direct"
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:541
 #~ msgid "Live Preview (3 sample rows):"
@@ -8662,15 +8753,15 @@ msgid "Loading field data…"
 msgstr "Chargement des données de terrain…"
 
 #: src/pages/folders/components/InlineMetadataEditPanel.tsx:55
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:322
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:104
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:456
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:110
 msgid "Loading fields..."
 msgstr "Chargement des champs..."
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:235
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:244
-#: src/pages/report-builder/components/steps/SourceStep.tsx:348
-#: src/pages/report-builder/components/steps/SourceStep.tsx:357
+#: src/pages/report-builder/components/steps/SourceStep.tsx:438
+#: src/pages/report-builder/components/steps/SourceStep.tsx:447
 msgid "Loading folders..."
 msgstr "Chargement des dossiers..."
 
@@ -8727,7 +8818,7 @@ msgid "Loading portal"
 msgstr "Portail de chargement"
 
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:284
-#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:71
+#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:86
 msgid "Loading preview..."
 msgstr "Chargement de l'aperçu..."
 
@@ -8753,8 +8844,8 @@ msgstr "Chargement des rôles..."
 #~ msgstr "Chargement du tableau de bord enregistré..."
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:475
-msgid "Loading schema fields..."
-msgstr ""
+#~ msgid "Loading schema fields..."
+#~ msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:255
 msgid "Loading share details..."
@@ -8797,8 +8888,8 @@ msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:197
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:206
-#: src/pages/report-builder/components/steps/SourceStep.tsx:317
-#: src/pages/report-builder/components/steps/SourceStep.tsx:326
+#: src/pages/report-builder/components/steps/SourceStep.tsx:407
+#: src/pages/report-builder/components/steps/SourceStep.tsx:416
 msgid "Loading workflows..."
 msgstr "Chargement des flux de travail..."
 
@@ -8807,7 +8898,7 @@ msgid "Loading your branded sign-in"
 msgstr "Chargement de votre connexion de marque"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:874
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2441
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2454
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:220
 msgid "Loading..."
 msgstr "Chargement..."
@@ -9231,6 +9322,10 @@ msgstr "Validation du sujet"
 msgid "Matter Validation Rules"
 msgstr ""
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:117
+msgid "Max"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:1105
 #~ msgid "Maximum file size is 5 MB."
 #~ msgstr "La taille maximale du fichier est de 5 Mo."
@@ -9393,6 +9488,10 @@ msgstr "Échec de la connexion Microsoft"
 msgid "Microsoft sign-in was cancelled."
 msgstr "La connexion Microsoft a été annulée."
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:106
+msgid "Min"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2926
 msgid "Minimize all steps"
 msgstr ""
@@ -9434,20 +9533,20 @@ msgstr "OTP mobile"
 msgid "Mobile Preview"
 msgstr "Aperçu mobile"
 
-#: src/pages/reports/components/ReportsListView.tsx:218
+#: src/pages/reports/components/ReportsListView.tsx:231
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:203
 msgid "Modified"
 msgstr "Modifié"
 
 #: src/pages/forms/FormsPage.tsx:279
-#: src/pages/reports/components/ReportsListView.tsx:147
+#: src/pages/reports/components/ReportsListView.tsx:154
 #: src/pages/workflows/components/Table.tsx:104
 msgid "Modified At"
 msgstr "Modifié à"
 
 #: src/pages/forms/FormsPage.tsx:272
 #: src/pages/forms/FormsPage.tsx:656
-#: src/pages/reports/components/ReportsListView.tsx:153
+#: src/pages/reports/components/ReportsListView.tsx:160
 #: src/pages/workflows/components/Table.tsx:97
 #: src/pages/workflows/components/Table.tsx:504
 msgid "Modified By"
@@ -9462,7 +9561,7 @@ msgstr "Date de modification"
 msgid "Modify document content"
 msgstr "Modifier le contenu du document"
 
-#: src/pages/forms/FormEntriesPage.tsx:2495
+#: src/pages/forms/FormEntriesPage.tsx:2502
 msgid "Modify existing form response answers and save changes."
 msgstr "Modifiez les réponses au formulaire existant et enregistrez les modifications."
 
@@ -9527,15 +9626,27 @@ msgstr "Plus que"
 msgid "More than one line price differs from the purchase order. Compare each line before you approve."
 msgstr ""
 
+#. placeholder {0}: setting.label
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:318
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:344
+msgid "Move {0} down"
+msgstr ""
+
+#. placeholder {0}: setting.label
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:309
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:335
+msgid "Move {0} up"
+msgstr ""
+
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:153
 msgid "Move down"
 msgstr "Déplacer vers le bas"
 
-#: src/pages/forms/FormEntriesPage.tsx:3042
+#: src/pages/forms/FormEntriesPage.tsx:3049
 msgid "Move Entry to Trash"
 msgstr "Déplacer l'entrée vers la corbeille"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3503
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3516
 msgid "Move left"
 msgstr ""
 
@@ -9543,7 +9654,7 @@ msgstr ""
 msgid "Move matched documents out of active storage into the archive."
 msgstr "Déplacez les documents correspondants du stockage actif vers l'archive."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3517
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3530
 msgid "Move right"
 msgstr ""
 
@@ -9552,8 +9663,8 @@ msgstr ""
 msgid "Move to matched items"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2221
-#: src/pages/forms/FormEntriesPage.tsx:3090
+#: src/pages/forms/FormEntriesPage.tsx:2228
+#: src/pages/forms/FormEntriesPage.tsx:3097
 msgid "Move to Trash"
 msgstr "Déplacer vers la corbeille"
 
@@ -9614,11 +9725,11 @@ msgstr "N/A (Aucune valeur requise)"
 #: src/pages/folders/components/DocumentsListView.tsx:538
 #: src/pages/folders/components/FolderTable.tsx:480
 #: src/pages/folders/components/FolderTable.tsx:1360
-#: src/pages/forms/FormEntriesPage.tsx:3141
+#: src/pages/forms/FormEntriesPage.tsx:3148
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
-#: src/pages/reports/components/ReportsListView.tsx:118
-#: src/pages/reports/components/ReportsListView.tsx:163
+#: src/pages/reports/components/ReportsListView.tsx:119
+#: src/pages/reports/components/ReportsListView.tsx:170
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:624
 #: src/pages/settings/components/ManageUser.tsx:1127
@@ -9706,7 +9817,7 @@ msgstr ""
 msgid "Name your retention policy"
 msgstr ""
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:81
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:79
 msgid "Name, description & sharing"
 msgstr ""
 
@@ -9718,7 +9829,7 @@ msgstr ""
 msgid "Narrow down rows"
 msgstr "Affiner les lignes"
 
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:74
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:80
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Affinez les lignes incluses dans ce rapport. Laissez vide pour inclure toutes les lignes."
 
@@ -9776,7 +9887,7 @@ msgstr ""
 msgid "New Form"
 msgstr "Nouveau formulaire"
 
-#: src/pages/forms/FormEntriesPage.tsx:2489
+#: src/pages/forms/FormEntriesPage.tsx:2496
 msgid "New Form Entry"
 msgstr "Nouvelle entrée de formulaire"
 
@@ -9794,8 +9905,8 @@ msgstr "Nouvelle configuration du menu"
 msgid "New Password"
 msgstr "Nouveau mot de passe"
 
-#: src/pages/reports/components/ReportsListView.tsx:350
-#: src/pages/reports/components/ReportsListView.tsx:351
+#: src/pages/reports/components/ReportsListView.tsx:366
+#: src/pages/reports/components/ReportsListView.tsx:367
 msgid "New Report"
 msgstr "Nouveau rapport"
 
@@ -9814,7 +9925,7 @@ msgstr "Nouvelle demande"
 #~ msgstr "Nouvelle configuration de rôle"
 
 #: src/pages/portal/components/PortalHome.tsx:246
-#: src/pages/portal/components/PortalHome.tsx:610
+#: src/pages/portal/components/PortalHome.tsx:607
 #: src/pages/portal/components/PortalPicker.tsx:54
 #: src/pages/portal/components/PortalWizard.tsx:971
 #: src/pages/portal/PortalPage.tsx:485
@@ -9880,7 +9991,7 @@ msgstr "Étape suivante"
 #~ msgid "Next-gen AI workspace, dynamic forms & automation."
 #~ msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:207
+#: src/pages/reports/components/ReportsListView.tsx:220
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5977
 msgid "No"
 msgstr "Non"
@@ -9942,14 +10053,25 @@ msgstr ""
 msgid "No columns detected"
 msgstr "Aucune colonne détectée"
 
-#: src/components/base/data-table/actions/TableSearch.tsx:299
+#: src/components/base/data-table/actions/TableSearch.tsx:324
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:137
 msgid "No columns found"
 msgstr "Aucune colonne trouvée"
 
+#. placeholder {0}: search.trim()
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:440
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:472
+msgid "No columns match \"{0}\"."
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:449
 msgid "No columns match search"
 msgstr "Aucune colonne ne correspond à la recherche"
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:236
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:273
+msgid "No columns selected yet."
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:3318
 msgid "No comments are available for this document. Add the first comment to start collaboration."
@@ -10089,12 +10211,11 @@ msgstr "Aucun e-mail renvoyé par Microsoft"
 msgid "No field data available for this document."
 msgstr "Aucune donnée de terrain disponible pour ce document."
 
-#: src/components/common/CustomFilter.tsx:564
+#: src/components/common/CustomFilter.tsx:570
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:409
 msgid "No fields found"
 msgstr "Aucun champ trouvé"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:358
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:232
 msgid "No fields selected yet."
 msgstr "Aucun champ sélectionné pour le moment."
@@ -10116,7 +10237,7 @@ msgstr ""
 msgid "No files match your search."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:87
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:93
 msgid "No filters added. This report will include all rows."
 msgstr "Aucun filtre ajouté. Ce rapport inclura toutes les lignes."
 
@@ -10173,7 +10294,7 @@ msgstr "Aucun groupe pour l'instant"
 msgid "No history found"
 msgstr "Aucun historique trouvé"
 
-#: src/pages/requests/components/request/Request.tsx:3002
+#: src/pages/requests/components/request/Request.tsx:3007
 msgid "No instance ID available to share"
 msgstr "Aucun ID d'instance disponible à partager"
 
@@ -10203,7 +10324,7 @@ msgstr ""
 msgid "No logs found"
 msgstr "Aucun journal trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3080
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3093
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Aucune colonne correspondante trouvée : les en-têtes CSV/Excel doivent correspondre aux noms de colonnes du tableau."
 
@@ -10239,7 +10360,7 @@ msgstr "Aucun résultat correspondant trouvé"
 msgid "No matching rows found."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:80
+#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:95
 msgid "No matching rows."
 msgstr "Aucune ligne correspondante."
 
@@ -10260,7 +10381,11 @@ msgstr "Aucun champ de métadonnées disponible"
 msgid "No methods"
 msgstr "Aucune méthode"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:326
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:439
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:471
+msgid "No more columns available."
+msgstr ""
+
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:200
 msgid "No more fields to add."
 msgstr "Plus aucun champ à ajouter."
@@ -10356,11 +10481,15 @@ msgstr "Aucune politique de rétention configurée pour le moment. Cliquez sur �
 msgid "No roles yet"
 msgstr "Aucun rôle pour l'instant"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4099
+#: src/pages/reports/components/OverviewTab.tsx:385
+msgid "No rows for this report."
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4114
 msgid "No rows yet."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:65
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:76
 msgid "No rules yet. Values without a matching rule use the default color below."
 msgstr "Aucune règle pour l'instant. Les valeurs sans règle correspondante utilisent la couleur par défaut ci-dessous."
 
@@ -10417,7 +10546,7 @@ msgstr "Aucune information sur les tendances des fournisseurs disponible."
 msgid "No suppliers found"
 msgstr "Aucun fournisseur trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3130
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3143
 msgid "No table columns configured."
 msgstr "Aucune colonne de tableau configurée."
 
@@ -10493,7 +10622,7 @@ msgstr "Aucun utilisateur pour l'instant"
 msgid "No valid files selected."
 msgstr "Aucun fichier valide sélectionné."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2908
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2921
 msgid "No values were found in the document for: {wantedNames}"
 msgstr ""
 
@@ -10533,6 +10662,14 @@ msgstr "Aucun"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:126
 msgid "Not configured"
 msgstr "Non configuré"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:36
+msgid "Not contains"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:34
+msgid "Not equals"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:83
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:97
@@ -10779,7 +10916,7 @@ msgstr "Ouverture de la connexion..."
 msgid "Opening sign request..."
 msgstr "Demande de panneau d'ouverture..."
 
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:118
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:124
 msgid "Operator"
 msgstr "Opérateur"
 
@@ -10955,7 +11092,7 @@ msgstr "En retard et le plus tôt possible – processus descendant"
 #: src/components/common/SharePopover.tsx:559
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
-#: src/pages/reports/components/ReportsListView.tsx:212
+#: src/pages/reports/components/ReportsListView.tsx:225
 #: src/pages/requests/components/request/components/Header.tsx:1880
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
@@ -11184,7 +11321,7 @@ msgstr "Validation parfaite du bon de commande."
 msgid "Permanent Delete"
 msgstr "Suppression définitive"
 
-#: src/pages/forms/FormEntriesPage.tsx:3043
+#: src/pages/forms/FormEntriesPage.tsx:3050
 msgid "Permanently Delete Entry"
 msgstr "Supprimer définitivement l'entrée"
 
@@ -11243,7 +11380,7 @@ msgstr ""
 msgid "Pick the personal or sensitive values to mask in document previews, such as account numbers or IDs. Users without permission see the masked value only."
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FieldsStep.tsx:20
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:21
 msgid "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
 msgstr "Choisissez les champs qui apparaissent dans ce rapport, puis configurez les libellés de colonnes, les calculs et le statut calculé."
 
@@ -11280,16 +11417,18 @@ msgstr "Lieu Signature"
 #~ msgid "Placeholder"
 #~ msgstr "Texte indicatif"
 
-#: src/pages/forms/FormEntriesPage.tsx:2154
+#: src/pages/forms/FormEntriesPage.tsx:2161
 msgid "Placeholder Column 1"
 msgstr "Colonne 1 d'espace réservé"
 
-#: src/pages/forms/FormEntriesPage.tsx:2164
+#: src/pages/forms/FormEntriesPage.tsx:2171
 msgid "Placeholder Column 2"
 msgstr "Colonne d'espace réservé 2"
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:49
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:57
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:367
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:375
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:92
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:100
 msgid "Plain Value"
@@ -11344,7 +11483,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Veuillez joindre un fichier pour continuer."
 
-#: src/pages/requests/components/request/Request.tsx:2388
+#: src/pages/requests/components/request/Request.tsx:2393
 msgid "Please attach at least one file before continuing."
 msgstr ""
 
@@ -11361,12 +11500,12 @@ msgid "Please click 'Verify' to validate this supplier and ensure vendor complia
 msgstr ""
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:2377
+#: src/pages/requests/components/request/Request.tsx:2382
 msgid "Please complete \"{0}\" before continuing."
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:1055
-#: src/pages/requests/components/request/Request.tsx:2415
+#: src/pages/requests/components/request/Request.tsx:2420
 msgid "Please complete all required fields before continuing."
 msgstr ""
 
@@ -11400,7 +11539,7 @@ msgstr ""
 msgid "Please complete these required fields: {rest}, and {last}."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2396
+#: src/pages/requests/components/request/Request.tsx:2401
 msgid "Please confirm your signature before continuing."
 msgstr ""
 
@@ -12100,9 +12239,15 @@ msgstr "Appuyez sur Entrée pour ajouter cet e-mail"
 #~ msgstr ""
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:702
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:513
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:147
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:783
 msgid "Preview"
 msgstr "Aperçu"
+
+#: src/pages/report-builder/components/steps/SourceStep.tsx:633
+msgid "Preview (first rows):"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/FlowProgress.tsx:20
 msgid "Preview & Confirm"
@@ -12112,14 +12257,13 @@ msgstr "Aperçu et confirmation"
 msgid "Preview and save the dashboard"
 msgstr ""
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:489
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:362
 msgid "Preview Data"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:546
-msgid "Preview Data (3 sample rows):"
-msgstr ""
+#~ msgid "Preview Data (3 sample rows):"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2526
 msgid "Preview Mode"
@@ -12208,7 +12352,7 @@ msgstr "Priorité"
 msgid "Private"
 msgstr "Privé"
 
-#: src/pages/reports/components/ReportsListView.tsx:258
+#: src/pages/reports/components/ReportsListView.tsx:274
 msgid "Private to me"
 msgstr "Privé pour moi"
 
@@ -12456,7 +12600,7 @@ msgstr "Aide rapide"
 msgid "Quick Hint"
 msgstr "Astuce rapide"
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:496
+#: src/pages/report-builder/components/steps/SourceStep.tsx:564
 msgid "Quick ideas:"
 msgstr ""
 
@@ -12492,7 +12636,7 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:3079
+#: src/pages/requests/components/request/Request.tsx:3084
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
 
@@ -12773,7 +12917,7 @@ msgstr "Numéro de document de référence"
 #: src/pages/dashboard/DashboardPage.tsx:402
 #: src/pages/folders/components/FolderFilterBar.tsx:759
 #: src/pages/folders/components/SignRequestAssignForm.tsx:473
-#: src/pages/forms/FormEntriesPage.tsx:3119
+#: src/pages/forms/FormEntriesPage.tsx:3126
 #: src/pages/forms/FormsPage.tsx:626
 #: src/pages/portal/components/PortalHome.tsx:500
 #: src/pages/portal/components/PortalHome.tsx:544
@@ -12865,13 +13009,16 @@ msgstr ""
 msgid "Remember your password?"
 msgstr "Vous vous souvenez de votre mot de passe ?"
 
-#: src/components/base/data-table/actions/TableSearch.tsx:220
+#: src/components/base/data-table/actions/TableSearch.tsx:228
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:870
 msgid "Remove"
 msgstr "Retirer"
 
 #. placeholder {0}: field.fieldName
 #. placeholder {0}: item.name
+#. placeholder {0}: setting.label
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:337
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:363
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1047
 #: src/pages/settings/components/SettingsSelectedChips.tsx:50
 msgid "Remove {0}"
@@ -12919,7 +13066,11 @@ msgstr "Supprimer des liens associés"
 msgid "Remove Item"
 msgstr "Supprimer l'élément"
 
-#: src/components/base/data-table/actions/TableSearch.tsx:216
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:150
+msgid "Remove rule"
+msgstr ""
+
+#: src/components/base/data-table/actions/TableSearch.tsx:224
 msgid "Remove search"
 msgstr ""
 
@@ -12954,7 +13105,7 @@ msgid "Reorder"
 msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:788
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3241
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3254
 msgid "Replace"
 msgstr "Remplacer"
 
@@ -12975,14 +13126,14 @@ msgstr "Remplacer le fichier"
 #~ msgid "Report Applied"
 #~ msgstr ""
 
-#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:71
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:242
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:250
+#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:73
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:260
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:268
 #: src/pages/settings/SettingsMain.tsx:328
 msgid "Report Builder"
 msgstr "Générateur de rapports"
 
-#: src/pages/reports/components/ReportsListView.tsx:323
+#: src/pages/reports/components/ReportsListView.tsx:339
 msgid "Report deleted successfully"
 msgstr "Rapport supprimé avec succès"
 
@@ -13002,7 +13153,7 @@ msgstr "Nom du rapport"
 msgid "Report not found."
 msgstr "Rapport introuvable."
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:180
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:188
 msgid "Report published"
 msgstr "Rapport publié"
 
@@ -13010,7 +13161,7 @@ msgstr "Rapport publié"
 #~ msgid "Report run started"
 #~ msgstr "Exécution du rapport démarrée"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:181
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:189
 msgid "Report saved as draft"
 msgstr "Rapport enregistré comme brouillon"
 
@@ -13024,9 +13175,9 @@ msgstr "Objet du rapport"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:37
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:87
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:246
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:264
 #: src/pages/reports/components/Table.tsx:52
-#: src/pages/reports/ReportsPage.tsx:13
+#: src/pages/reports/ReportsPage.tsx:15
 msgid "Reports"
 msgstr "Rapports"
 
@@ -13079,15 +13230,15 @@ msgstr "La demande {requestNo} a été déplacée avec succès."
 #~ msgid "Request {requestNo} moved successfully"
 #~ msgstr "La demande {requestNo} a été déplacée avec succès"
 
-#: src/pages/requests/components/request/Request.tsx:2588
+#: src/pages/requests/components/request/Request.tsx:2593
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr "L'action « {action} » pour la demande {resolvedRequestNo} a été effectuée avec succès"
 
-#: src/pages/requests/components/request/Request.tsx:2566
+#: src/pages/requests/components/request/Request.tsx:2571
 msgid "Request {resolvedRequestNo} is being processed."
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:2587
+#: src/pages/requests/components/request/Request.tsx:2592
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "La demande {resolvedRequestNo} a été soumise avec succès"
 
@@ -13111,7 +13262,7 @@ msgstr "Demander une démo"
 msgid "Request created. You can track it from My Submissions."
 msgstr "Demande créée. Vous pouvez le suivre depuis Mes soumissions."
 
-#: src/pages/requests/components/request/Request.tsx:2701
+#: src/pages/requests/components/request/Request.tsx:2706
 msgid "Request is being processed."
 msgstr ""
 
@@ -13132,12 +13283,12 @@ msgstr ""
 msgid "Request Owner"
 msgstr "Propriétaire de la demande"
 
-#: src/pages/requests/components/request/Request.tsx:2720
+#: src/pages/requests/components/request/Request.tsx:2725
 msgid "Request saved successfully"
 msgstr "Demande enregistrée avec succès"
 
 #: src/pages/requests/components/request/components/Header.tsx:665
-#: src/pages/requests/components/request/Request.tsx:3022
+#: src/pages/requests/components/request/Request.tsx:3027
 msgid "Request shared successfully"
 msgstr "Demande partagée avec succès"
 
@@ -13148,7 +13299,7 @@ msgid "Request Status"
 msgstr "Demande Status"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:432
-#: src/pages/requests/components/request/Request.tsx:2721
+#: src/pages/requests/components/request/Request.tsx:2726
 msgid "Request submitted successfully"
 msgstr "Demande soumise avec succès"
 
@@ -13192,8 +13343,8 @@ msgstr "Exiger une confirmation manuelle avant d'exécuter"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:267
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:121
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:87
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3598
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4017
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3611
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4032
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1115
 msgid "Required"
 msgstr "Obligatoire"
@@ -13279,7 +13430,7 @@ msgstr "Réinitialiser aux suggestions"
 msgid "Reset zoom"
 msgstr "Réinitialiser le zoom"
 
-#: src/pages/forms/FormEntriesPage.tsx:2232
+#: src/pages/forms/FormEntriesPage.tsx:2239
 msgid "Restore"
 msgstr "Restaurer"
 
@@ -13335,7 +13486,7 @@ msgstr "Réessayer"
 msgid "Retry Ingestion"
 msgstr "Réessayer l'ingestion"
 
-#: src/pages/forms/FormEntriesPage.tsx:2430
+#: src/pages/forms/FormEntriesPage.tsx:2437
 msgid "Retry Loading"
 msgstr "Réessayer le chargement"
 
@@ -13614,7 +13765,7 @@ msgstr ""
 msgid "row"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3878
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3891
 msgid "Row"
 msgstr ""
 
@@ -13638,7 +13789,7 @@ msgstr ""
 msgid "rows"
 msgstr "lignes"
 
-#: src/pages/reports/components/OverviewTab.tsx:336
+#: src/pages/reports/components/OverviewTab.tsx:450
 msgid "Rows"
 msgstr "Lignes"
 
@@ -13667,9 +13818,21 @@ msgstr "Action de règle"
 msgid "Rules"
 msgstr "Règles"
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:512
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
+#: src/pages/report-builder/components/steps/SourceStep.tsx:640
+#: src/pages/reports/components/OverviewTab.tsx:372
+msgid "Run again"
+msgstr ""
+
 #: src/pages/reports/components/RowActionsMenu.tsx:36
 #~ msgid "Run now"
 #~ msgstr "Exécuter maintenant"
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:496
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:517
+msgid "Running report..."
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:228
 msgid "Runs as part of this workflow."
@@ -13714,7 +13877,7 @@ msgstr "Mappage des champs de table SAP"
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/pages/forms/FormEntriesPage.tsx:1035
+#: src/pages/forms/FormEntriesPage.tsx:1042
 msgid "Save & Add Another"
 msgstr "Enregistrer et ajouter un autre"
 
@@ -13730,7 +13893,7 @@ msgstr ""
 #~ msgid "Save & Next"
 #~ msgstr "Enregistrer et suivant"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:271
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:290
 msgid "Save & Publish instead"
 msgstr "Enregistrer et publier à la place"
 
@@ -13738,7 +13901,7 @@ msgstr "Enregistrer et publier à la place"
 msgid "Save & Regenerate Fields"
 msgstr "Enregistrer et régénérer les champs"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:247
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:265
 msgid "Save as Draft"
 msgstr "Enregistrer comme brouillon"
 
@@ -13751,8 +13914,8 @@ msgid "Save Branding"
 msgstr "Enregistrer l'image de marque"
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
-#: src/pages/forms/FormEntriesPage.tsx:1049
-#: src/pages/forms/FormEntriesPage.tsx:2982
+#: src/pages/forms/FormEntriesPage.tsx:1056
+#: src/pages/forms/FormEntriesPage.tsx:2989
 msgid "Save Changes"
 msgstr "Enregistrer les modifications"
 
@@ -13765,7 +13928,7 @@ msgstr ""
 msgid "Save Dashboard"
 msgstr "Enregistrer le tableau de bord"
 
-#: src/pages/forms/FormEntriesPage.tsx:2982
+#: src/pages/forms/FormEntriesPage.tsx:2989
 msgid "Save Entry"
 msgstr "Enregistrer l'entrée"
 
@@ -13796,7 +13959,7 @@ msgstr "Enregistrer pour réutiliser"
 msgid "Save Group"
 msgstr "Enregistrer le groupe"
 
-#: src/pages/forms/FormEntriesPage.tsx:1049
+#: src/pages/forms/FormEntriesPage.tsx:1056
 msgid "Save Line Item"
 msgstr "Enregistrer l'élément de campagne"
 
@@ -13878,7 +14041,7 @@ msgid "Scan QR"
 msgstr "Scanner le QR"
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3216
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3229
 msgid "Scan QR / Barcode"
 msgstr "Scannez le QR / le code-barres"
 
@@ -13892,7 +14055,7 @@ msgstr "Facture manuscrite numérisée."
 
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:84
 #: src/pages/reports/components/ReportKpiCards.tsx:43
-#: src/pages/reports/components/RowActionsMenu.tsx:34
+#: src/pages/reports/components/RowActionsMenu.tsx:36
 msgid "Schedule"
 msgstr "Planification"
 
@@ -13908,7 +14071,7 @@ msgstr "Planifier le paiement"
 msgid "Schedule report delivery"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:198
+#: src/pages/reports/components/ReportsListView.tsx:211
 msgid "Scheduled"
 msgstr "Planifié"
 
@@ -13935,11 +14098,11 @@ msgstr "Score"
 msgid "SD (Sales & Order Processing)"
 msgstr "SD (Ventes et traitement des commandes)"
 
-#: src/components/base/data-table/actions/TableSearch.tsx:195
-#: src/components/base/data-table/actions/TableSearch.tsx:225
-#: src/components/base/data-table/actions/TableSearch.tsx:231
-#: src/components/base/data-table/actions/TableSearch.tsx:310
-#: src/components/common/CustomFilter.tsx:1015
+#: src/components/base/data-table/actions/TableSearch.tsx:203
+#: src/components/base/data-table/actions/TableSearch.tsx:233
+#: src/components/base/data-table/actions/TableSearch.tsx:239
+#: src/components/base/data-table/actions/TableSearch.tsx:335
+#: src/components/common/CustomFilter.tsx:1023
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:363
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:367
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:400
@@ -13952,11 +14115,11 @@ msgid "Search"
 msgstr "Rechercher"
 
 #. placeholder {0}: col.label
-#: src/pages/reports/components/OverviewTab.tsx:183
+#: src/pages/reports/components/OverviewTab.tsx:225
 msgid "Search {0}..."
 msgstr ""
 
-#: src/components/base/data-table/actions/TableSearch.tsx:195
+#: src/components/base/data-table/actions/TableSearch.tsx:203
 msgid "Search {selectedColumnLabel}"
 msgstr "Rechercher {selectedColumnLabel}"
 
@@ -14001,11 +14164,13 @@ msgstr "Recherche par nom de document, numéro de référence ou mots-clés..."
 msgid "Search by name or metadata..."
 msgstr "Rechercher par nom ou métadonnées..."
 
-#: src/components/base/data-table/actions/TableSearch.tsx:259
-#: src/components/base/data-table/actions/TableSearch.tsx:261
+#: src/components/base/data-table/actions/TableSearch.tsx:284
+#: src/components/base/data-table/actions/TableSearch.tsx:286
 msgid "Search column"
 msgstr ""
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:424
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:440
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:378
 msgid "Search columns..."
 msgstr "Rechercher des colonnes..."
@@ -14037,17 +14202,15 @@ msgstr "Description de la recherche..."
 msgid "Search email..."
 msgstr "Rechercher un e-mail..."
 
-#: src/pages/forms/FormEntriesPage.tsx:3102
+#: src/pages/forms/FormEntriesPage.tsx:3109
 msgid "Search entries..."
 msgstr "Rechercher des entrées..."
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:260
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:138
 msgid "Search fields"
 msgstr ""
 
-#: src/components/common/CustomFilter.tsx:514
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:285
+#: src/components/common/CustomFilter.tsx:518
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:163
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:783
 msgid "Search fields..."
@@ -14115,7 +14278,7 @@ msgstr "Gestionnaire de recherche..."
 msgid "Search media"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:3144
+#: src/pages/forms/FormEntriesPage.tsx:3151
 #: src/pages/forms/FormsPage.tsx:637
 #: src/pages/settings/components/GroupManagement.tsx:631
 #: src/pages/settings/components/ManageUser.tsx:1580
@@ -14141,7 +14304,7 @@ msgstr "Rechercher ou saisir un nom personnalisé"
 msgid "Search PO range..."
 msgstr "Rechercher une plage de bons de commande..."
 
-#: src/pages/reports/components/ReportsListView.tsx:340
+#: src/pages/reports/components/ReportsListView.tsx:356
 msgid "Search reports..."
 msgstr "Rechercher des rapports..."
 
@@ -14217,7 +14380,7 @@ msgid "Secondary"
 msgstr "Secondaire"
 
 #. placeholder {0}: pIdx + 1
-#: src/pages/forms/FormEntriesPage.tsx:2505
+#: src/pages/forms/FormEntriesPage.tsx:2512
 msgid "Section {0}"
 msgstr "Rubrique {0}"
 
@@ -14270,7 +14433,7 @@ msgstr "Consultez la section Pièces jointes pour les fichiers téléchargés."
 msgid "See this folder's documents, metadata and activity in one view."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3430
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3443
 #: src/pages/settings/components/ManageUser.tsx:1911
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -14347,7 +14510,7 @@ msgstr "Sélectionnez un signataire ci-dessous, puis cliquez sur le document pou
 #~ msgid "Select a source (or domain) in the Details step first."
 #~ msgstr "Sélectionnez d'abord une source (ou un domaine) à l'étape Détails."
 
-#: src/pages/report-builder/components/steps/FieldsStep.tsx:29
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:32
 msgid "Select a source in the Details step first."
 msgstr "Sélectionnez d'abord une source à l'étape Détails."
 
@@ -14403,7 +14566,7 @@ msgstr "Sélectionner tout"
 msgid "Select all files"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3405
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3418
 msgid "Select all rows"
 msgstr ""
 
@@ -14455,7 +14618,7 @@ msgstr "Sélectionnez les destinataires en copie"
 msgid "Select Data Basis"
 msgstr ""
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:289
+#: src/pages/report-builder/components/steps/SourceStep.tsx:379
 msgid "Select Data Source"
 msgstr ""
 
@@ -14489,7 +14652,7 @@ msgid "Select folder"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:231
-#: src/pages/report-builder/components/steps/SourceStep.tsx:344
+#: src/pages/report-builder/components/steps/SourceStep.tsx:434
 msgid "Select Folder"
 msgstr ""
 
@@ -14599,8 +14762,8 @@ msgstr ""
 msgid "Select role"
 msgstr "Sélectionnez un rôle"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3686
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3900
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3699
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3913
 msgid "Select row"
 msgstr "Sélectionner une ligne"
 
@@ -14608,7 +14771,7 @@ msgstr "Sélectionner une ligne"
 #~ msgid "Select Rule Action"
 #~ msgstr "Sélectionner l'action de règle"
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:298
+#: src/pages/report-builder/components/steps/SourceStep.tsx:388
 msgid "Select Source"
 msgstr ""
 
@@ -14711,7 +14874,7 @@ msgid "Select widgets in step 2, then click Apply & Preview to load live data."
 msgstr "Sélectionnez des widgets à l'étape 2, puis cliquez sur Appliquer et prévisualiser pour charger les données en direct."
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:193
-#: src/pages/report-builder/components/steps/SourceStep.tsx:313
+#: src/pages/report-builder/components/steps/SourceStep.tsx:403
 msgid "Select Workflow"
 msgstr ""
 
@@ -14727,11 +14890,15 @@ msgstr "Sélectionnez votre langue préférée"
 msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
 msgstr "{enabledKpiCount} KPI et {enabledChartCount} graphiques sélectionnés"
 
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:221
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:258
+msgid "Selected columns"
+msgstr ""
+
 #: src/pages/folders/components/EditMetadataView.tsx:405
 msgid "Selected Document"
 msgstr "Document sélectionné"
 
-#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:353
 #: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:227
 msgid "Selected fields"
 msgstr "Champs sélectionnés"
@@ -15030,12 +15197,12 @@ msgstr "Compatibilité des lecteurs partagés"
 msgid "Shared successfully"
 msgstr "Partagé avec succès"
 
-#: src/pages/reports/components/ReportsListView.tsx:259
+#: src/pages/reports/components/ReportsListView.tsx:275
 msgid "Shared with me"
 msgstr "Partagé avec moi"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:110
-#: src/pages/reports/components/ReportsListView.tsx:359
+#: src/pages/reports/components/ReportsListView.tsx:375
 msgid "Sharing"
 msgstr "Partage"
 
@@ -15085,7 +15252,7 @@ msgid "Show both folders and files"
 msgstr "Afficher les dossiers et les fichiers"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:943
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3995
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:4008
 msgid "Show details"
 msgstr ""
 
@@ -15170,6 +15337,11 @@ msgstr "Afficher les flux de travail dans Paramètres → Configuration"
 msgid "Showing"
 msgstr ""
 
+#. placeholder {0}: Math.min(previewRows.length, PREVIEW_ROWS)
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:498
+msgid "Showing {0} of {previewTotal} rows"
+msgstr ""
+
 #: src/components/base/pagination/PaginationSummary.tsx:31
 msgid "Showing {from} - {to} of {totalItems} {label}"
 msgstr "Affichage de {from} - __XPH1X__ de __XPH2X__ __XPH3X__"
@@ -15190,6 +15362,11 @@ msgstr "Affichage des 50 premières factures {0}."
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1018
 msgid "Showing records matching this metrics slice"
 msgstr "Afficher les enregistrements correspondant à cette tranche de métriques"
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:222
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:259
+msgid "Shown in this order in the report"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4312
 #~ msgid "Side-by-Side Field Matching"
@@ -15363,7 +15540,7 @@ msgstr ""
 msgid "Skip"
 msgstr "Sauter"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:248
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:266
 #: src/pages/settings/components/Folders/DmsSettings.tsx:492
 #: src/pages/settings/components/SettingsWizardLayout.tsx:245
 msgid "Skip for now"
@@ -15460,10 +15637,10 @@ msgstr "Ordre de tri"
 msgid "Sort Order *"
 msgstr "Ordre de tri *"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:79
-#: src/pages/reports/components/ReportsListView.tsx:131
-#: src/pages/reports/components/ReportsListView.tsx:176
-#: src/pages/reports/components/ReportsListView.tsx:364
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:76
+#: src/pages/reports/components/ReportsListView.tsx:138
+#: src/pages/reports/components/ReportsListView.tsx:189
+#: src/pages/reports/components/ReportsListView.tsx:380
 msgid "Source"
 msgstr "Source"
 
@@ -15491,8 +15668,8 @@ msgstr "Fichier source :"
 msgid "Source System"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:139
-#: src/pages/reports/components/ReportsListView.tsx:184
+#: src/pages/reports/components/ReportsListView.tsx:146
+#: src/pages/reports/components/ReportsListView.tsx:197
 msgid "Source Type"
 msgstr "Type de source"
 
@@ -15602,7 +15779,7 @@ msgstr "Tendance de crédit statique pour {selectedMonth}"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1137
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
-#: src/pages/reports/components/ReportsListView.tsx:192
+#: src/pages/reports/components/ReportsListView.tsx:205
 #: src/pages/requests/components/request/components/Header.tsx:879
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
@@ -15631,7 +15808,7 @@ msgstr "Statut"
 msgid "STATUS"
 msgstr "STATUT"
 
-#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:46
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:57
 msgid "Status rules"
 msgstr "Règles d'état"
 
@@ -15825,7 +16002,7 @@ msgstr "Allocation suggérée"
 msgid "Suggested by AI"
 msgstr "Suggéré par l'IA"
 
-#: src/pages/report-builder/components/steps/SourceStep.tsx:523
+#: src/pages/report-builder/components/steps/SourceStep.tsx:598
 msgid "Suggested Report"
 msgstr ""
 
@@ -16027,8 +16204,8 @@ msgstr ""
 msgid "Switch to JSON view"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3199
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3204
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3212
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3217
 msgid "Switch to list view"
 msgstr ""
 
@@ -16041,8 +16218,8 @@ msgstr ""
 #~ msgid "Switch to Original Data"
 #~ msgstr "Passer aux données d'origine"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3198
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3203
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3211
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3216
 msgid "Switch to table view"
 msgstr ""
 
@@ -16077,7 +16254,7 @@ msgstr "Synchronisez les données du formulaire principal avec les champs du dos
 msgid "Sync with existing OneDrive folders"
 msgstr "Synchroniser avec les dossiers OneDrive existants"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3181
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3194
 msgid "Syncing from master table..."
 msgstr ""
 
@@ -16124,7 +16301,7 @@ msgstr ""
 msgid "Table Data"
 msgstr ""
 
-#: src/components/common/CustomFilter.tsx:1102
+#: src/components/common/CustomFilter.tsx:1110
 #: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "Vue tableau"
@@ -16137,7 +16314,7 @@ msgstr "Faites passer votre espace de travail en production"
 msgid "Talk to Sales"
 msgstr "Contacter le service commercial"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3935
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3948
 msgid "Tap to add the details"
 msgstr ""
 
@@ -16214,7 +16391,7 @@ msgstr "Le locataire est manquant. Reconnectez-vous et réessayez."
 msgid "Test Connection"
 msgstr "Tester la connexion"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2780
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:2793
 msgid "Text could not be read from the document: no repository is available for this form."
 msgstr ""
 
@@ -16283,6 +16460,10 @@ msgstr ""
 msgid "The passwords don't match. Please try again."
 msgstr ""
 
+#: src/pages/report-builder/components/steps/SourceStep.tsx:536
+msgid "The report agent picks columns, filters and grouping for you."
+msgstr ""
+
 #: src/pages/folders/components/InlineMetadataEditPanel.tsx:80
 msgid "The repository did not return editable metadata fields."
 msgstr ""
@@ -16332,16 +16513,16 @@ msgid "These documents currently satisfy the rule and would move to"
 msgstr "Ces documents satisfont actuellement à la règle et seraient transférés vers"
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:482
-msgid "Thinking..."
-msgstr "Réflexion en cours..."
+#~ msgid "Thinking..."
+#~ msgstr "Réflexion en cours..."
 
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:384
 msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
 msgstr "Cette action n'a aucun impact destructeur — votre espace de travail continue exactement tel qu'il est aujourd'hui, simplement marqué comme production."
 
-#: src/pages/forms/FormEntriesPage.tsx:3060
+#: src/pages/forms/FormEntriesPage.tsx:3067
 #: src/pages/forms/FormsPage.tsx:561
-#: src/pages/reports/components/ReportsListView.tsx:291
+#: src/pages/reports/components/ReportsListView.tsx:307
 msgid "This action is permanent and cannot be undone."
 msgstr "Cette action est permanente et ne peut être annulée."
 
@@ -16465,7 +16646,7 @@ msgstr ""
 msgid "This related document cannot be removed."
 msgstr "Ce document associé ne peut pas être supprimé."
 
-#: src/pages/reports/components/OverviewTab.tsx:288
+#: src/pages/reports/components/OverviewTab.tsx:391
 msgid "This report has no fields configured yet."
 msgstr "Ce rapport n'a pas encore de champs configurés."
 
@@ -16590,7 +16771,7 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Pour commencer : quel nom pour ce dossier ? Utilisez un nom métier clair, choisissez un exemple ci-dessous, ou décrivez une idée complète de dossier pour générer une configuration complète."
 
-#: src/pages/forms/FormEntriesPage.tsx:3052
+#: src/pages/forms/FormEntriesPage.tsx:3059
 msgid "to Trash?"
 msgstr "à la poubelle ?"
 
@@ -16628,11 +16809,11 @@ msgstr "Principaux agents par utilisation de crédits · {periodSubtitle}"
 #~ msgid "Top-3 Concentration"
 #~ msgstr "Concentration Top-3"
 
-#: src/pages/forms/FormEntriesPage.tsx:1338
+#: src/pages/forms/FormEntriesPage.tsx:1345
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2742
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:1008
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3808
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3821
 msgid "Total"
 msgstr "Total"
 
@@ -16748,7 +16929,7 @@ msgid "Transactions"
 msgstr "Transactions"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
-#: src/pages/forms/FormEntriesPage.tsx:3015
+#: src/pages/forms/FormEntriesPage.tsx:3022
 msgid "Trash"
 msgstr "Corbeille"
 
@@ -16863,7 +17044,7 @@ msgid "Type:"
 msgstr "Taper:"
 
 #. placeholder {0}: col.type || 'SHORT_TEXT'
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3492
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3505
 msgid "Type: {0}"
 msgstr ""
 
@@ -17116,7 +17297,7 @@ msgstr "Type de fichier non pris en charge. Veuillez téléverser un fichier CSV
 msgid "Untitled"
 msgstr "Sans titre"
 
-#: src/pages/forms/FormEntriesPage.tsx:2045
+#: src/pages/forms/FormEntriesPage.tsx:2052
 msgid "Untitled Field"
 msgstr "Sans titre Field"
 
@@ -17135,7 +17316,8 @@ msgstr "Sans titre Formulaire"
 msgid "Untitled policy"
 msgstr "Politique sans titre"
 
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:148
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:145
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:174
 msgid "Untitled Report"
 msgstr "Rapport sans titre"
 
@@ -17191,6 +17373,11 @@ msgstr "Mettre à jour l'utilisateur"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1014
 msgid "Updates records in master database"
 msgstr "Met à jour les enregistrements dans la base de données principale"
+
+#: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:499
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:518
+msgid "Updates when you add or remove columns"
+msgstr ""
 
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:73
 msgid "Upgrade complete"
@@ -17651,13 +17838,14 @@ msgstr "VALIDATION"
 #~ msgstr "Journal de validation"
 
 #: src/pages/folders/components/DynamicTableColumnCell.tsx:104
-#: src/pages/report-builder/components/steps/FiltersStep.tsx:143
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:149
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:107
 msgid "Value"
 msgstr "Valeur"
 
 #: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:71
-msgid "Value equals..."
-msgstr "La valeur est égale à..."
+#~ msgid "Value equals..."
+#~ msgstr "La valeur est égale à..."
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:831
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:301
@@ -17854,7 +18042,7 @@ msgstr ""
 msgid "View every document version"
 msgstr ""
 
-#: src/pages/forms/FormEntriesPage.tsx:2124
+#: src/pages/forms/FormEntriesPage.tsx:2131
 msgid "View Line Items Table"
 msgstr "Afficher le tableau des éléments de ligne"
 
@@ -18093,7 +18281,7 @@ msgid "Which versioning strategy should apply when the same file is uploaded aga
 msgstr "Quelle stratégie de gestion des versions doit s'appliquer lorsque le même fichier est à nouveau téléchargé ?"
 
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:177
-#: src/pages/report-builder/components/steps/SourceStep.tsx:72
+#: src/pages/report-builder/components/steps/SourceStep.tsx:103
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:147
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:868
 #: src/pages/settings/components/PortalConfiguration.tsx:978
@@ -18195,13 +18383,13 @@ msgstr "Annuel"
 msgid "years"
 msgstr "années"
 
-#: src/pages/reports/components/ReportsListView.tsx:204
+#: src/pages/reports/components/ReportsListView.tsx:217
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5976
 msgid "Yes"
 msgstr "Oui"
 
 #: src/pages/forms/FormsPage.tsx:607
-#: src/pages/reports/components/ReportsListView.tsx:331
+#: src/pages/reports/components/ReportsListView.tsx:347
 msgid "Yes, Delete"
 msgstr "Oui, supprimer"
 
