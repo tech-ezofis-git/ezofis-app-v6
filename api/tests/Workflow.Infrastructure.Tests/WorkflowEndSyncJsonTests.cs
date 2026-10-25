@@ -77,4 +77,38 @@ public sealed class WorkflowEndSyncJsonTests
         Assert.True(config.Enabled);
         Assert.True(config.FieldMappings[0].IsMainField);
     }
+
+    [Fact]
+    public void TryRead_returns_false_when_that_activity_is_not_enabled()
+    {
+        var json = """
+            {"blocks":[
+              {"id":"step-1","type":"INTERNAL_ACTOR","settings":{
+                "endSync":{
+                  "enabled":true,
+                  "target":"MASTER_FORM",
+                  "masterFormId":"master-form",
+                  "fieldMappings":[
+                    {"workflowFieldId":"Code","masterFieldId":"ItemCode","IsMainField":true}
+                  ]
+                }
+              }},
+              {"id":"step-2","type":"INTERNAL_ACTOR","settings":{
+                "endSync":{
+                  "enabled":false,
+                  "target":"MASTER_FORM",
+                  "masterFormId":"master-form",
+                  "fieldMappings":[
+                    {"workflowFieldId":"Code","masterFieldId":"ItemCode","IsMainField":true}
+                  ]
+                }
+              }}
+            ]}
+            """;
+
+        Assert.True(WorkflowEndSyncJson.TryRead(json, "step-1", out var enabled));
+        Assert.True(enabled!.Enabled);
+        Assert.False(WorkflowEndSyncJson.TryRead(json, "step-2", out _));
+        Assert.False(WorkflowEndSyncJson.TryRead(json, "step-missing", out _));
+    }
 }

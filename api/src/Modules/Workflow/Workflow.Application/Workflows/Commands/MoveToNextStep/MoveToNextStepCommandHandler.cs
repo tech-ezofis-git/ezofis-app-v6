@@ -494,8 +494,9 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         if (!isCompleted && nextDefinitionStep != null)
             ftlJobId = await TryEnqueueFtlAgentAsync(instance, workflow, nextDefinitionStep, userId, formId, cancellationToken);
 
-        // Designer "endSync" on the step just completed, and on the END block when the
-        // workflow finishes (Data Integration is often saved on END).
+        // Designer Data Integration: run only for the activity node just completed,
+        // and only when that block's settings.endSync.enabled is true. If the toggle
+        // is on the END node, run it when the workflow actually finishes.
         if (!string.IsNullOrWhiteSpace(formId))
         {
             var completedActivityId = FirstNonBlank(

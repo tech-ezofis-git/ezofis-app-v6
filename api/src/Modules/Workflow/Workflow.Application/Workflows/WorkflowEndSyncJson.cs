@@ -46,9 +46,11 @@ public static class WorkflowEndSyncJson
                 if (!BlockMatches(block, blockId))
                     continue;
 
-                if (TryReadEndSync(block, out config) && config is not null)
+                // Only this activity node, and only when its designer toggle is on.
+                if (TryReadEndSync(block, out config) && config is not null && config.Enabled)
                     return true;
 
+                config = null;
                 return false;
             }
         }
