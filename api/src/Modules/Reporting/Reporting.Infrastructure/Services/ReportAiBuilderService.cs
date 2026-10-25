@@ -338,6 +338,7 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         var config = new ReportBuilderConfig
         {
             Name = string.IsNullOrWhiteSpace(record.Name) ? domain : record.Name,
+            Description = record.Description,
             Domain = domain,
             SourceType = isRepository ? "Repository" : "Workflow",
             SourceForm = domain,
@@ -397,7 +398,7 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
             {
                 isRepository
                     ? "Counted live folder rows from the selected repository."
-                    : "Counted live form rows from the selected workflow."
+                    : "Counted live form rows from the selected workflow. Request No, Stage, Status, Acted by, and Workflow are joined from the workflow instance and inbox."
             }
         };
         if (!ExportRequested(request))
