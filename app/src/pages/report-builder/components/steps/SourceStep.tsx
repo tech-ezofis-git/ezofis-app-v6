@@ -1,19 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
-import {
-  deleteSavedReport,
-  emailSavedReport,
-  exportSavedReport,
-  generateReportPrompt,
-  getSavedReport,
-  listSavedReports,
-  runSavedReport,
-  type ReportAiSpec,
-} from '@/api/v6/reportAiBuilder'
 import {
   createPublishedWorkflowBrowsePayload,
   mapPublishedBrowseResponseToOptions,
@@ -21,46 +11,27 @@ import {
 } from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import Button from '@/components/base/button/Button'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
+import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import useReportSourceFields from '../../hooks/useReportSourceFields'
+import {
+  createReportAgentSessionId,
+  generateReportAiPrompt,
+  runReportAiReport,
+} from '@/api/v6/reportAgent'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import type { PreviewColumn } from '../../utils/previewSampleData'
-import type { ReportSourceType } from '../../types'
-import { createDefaultFieldSetting } from '../../types'
+import type { ReportAgentConfig, ReportSourceType } from '../../types'
+import {
+  ALL_FOLDERS_SOURCE_ID,
+  ALL_WORKFLOWS_SOURCE_ID,
+  agentRunToReportRunResult,
+  agentScopeForSource,
+  buildAgentConfigFromDraft,
+  draftPatchFromPromptResult,
+  isAllScopeSource,
+} from '../../utils/agentReport'
 import FieldsPreviewTable from './FieldsPreviewTable'
-
-const EMPTY_AI_DRAFT = {
-  aiPrompt: '',
-  aiReportId: null as string | null,
-  aiReportPrompt: '',
-  aiReportSpec: null as ReportAiSpec | null,
-  aiReportType: '',
-  aiRun: null,
-  aiSessionId: '',
-  aiSuggestion: null,
-  aiTitle: '',
-  aiWarnings: [] as string[],
-  showAiBuilder: false,
-}
-
-const columnsFromSpec = (spec?: ReportAiSpec | null): PreviewColumn[] => {
-  const selected =
-    spec?.columns?.length
-      ? spec.columns
-      : [
-          ...(spec?.defaultColumns ?? []),
-          ...(spec?.userdefinedColumns ?? []),
-          ...(spec?.agentColumns ?? []),
-        ].filter((column) => column.selected !== false)
-  return selected.map((column) => ({
-    id: column.key,
-    label: column.label || column.key,
-    sampleType: 'text' as const,
-  }))
-}
 
 const PROMPT_EXAMPLES_WORKFLOW = [
   {
@@ -84,6 +55,20 @@ const PROMPT_EXAMPLES_FOLDER = [
   },
 ]
 
+// Descriptions the report agent has recipes for today (see agent API guide).
+const PROMPT_EXAMPLES_ALL_WORKFLOWS = [
+  { query: 'Aging', title: 'Aging' },
+  { query: 'SLA', title: 'SLA' },
+  { query: 'Total Inbox', title: 'Total inbox' },
+  { query: 'Total tickets processed', title: 'Tickets processed' },
+]
+
+const PROMPT_EXAMPLES_ALL_FOLDERS = [
+  { query: 'Total documents', title: 'Total documents' },
+  { query: 'Document aging', title: 'Document aging' },
+  { query: 'Document Retention Status', title: 'Retention status' },
+]
+
 interface Props {
   onPlanGenerated?: (generated: boolean) => void
   onProceedManual?: () => void
@@ -91,26 +76,25 @@ interface Props {
 
 const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const { t } = useLingui()
-  const queryClient = useQueryClient()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
 
   const [selectedSourceType, setSelectedSourceType] =
     useState<ReportSourceType>(draft.sourceType || 'Workflow')
   const [isThinking, setIsThinking] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  const [isExporting, setIsExporting] = useState(false)
-  const [showEmail, setShowEmail] = useState(false)
-  const [emailTo, setEmailTo] = useState('')
-  const [isEmailing, setIsEmailing] = useState(false)
+  const [generateError, setGenerateError] = useState('')
+  const [isPreviewing, setIsPreviewing] = useState(false)
+  const [previewError, setPreviewError] = useState('')
+  const [previewRows, setPreviewRows] = useState<
+    Record<string, string>[] | null
+  >(null)
+  const [agentWarnings, setAgentWarnings] = useState<string[]>([])
   const isEditing = Boolean(draft.editingReportId)
-  const savedReportsQueryKey = ['report-ai-builder', 'list'] as const
 
   // Persistent AI view states bound to draft store so they persist across navigation
   const showAiBuilder = Boolean(draft.showAiBuilder)
   const prompt = draft.aiPrompt ?? ''
+  const suggestion = draft.aiSuggestion ?? null
 
   const setShowAiBuilder = (val: boolean) => setDraft({ showAiBuilder: val })
   const setPrompt = (val: string) => setDraft({ aiPrompt: val })
@@ -133,13 +117,16 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     enabled: selectedSourceType === 'Workflow',
   })
   const workflowOptions: Option[] = useMemo(() => {
-    return mapPublishedBrowseResponseToOptions(workflowsQuery.data ?? null).map(
-      (w) => ({
-        id: String(w.id),
-        name: w.name || String(w.id),
-      }),
-    )
-  }, [workflowsQuery.data])
+    return [
+      { id: ALL_WORKFLOWS_SOURCE_ID, name: t`All workflows` },
+      ...mapPublishedBrowseResponseToOptions(workflowsQuery.data ?? null).map(
+        (w) => ({
+          id: String(w.id),
+          name: w.name || String(w.id),
+        }),
+      ),
+    ]
+  }, [workflowsQuery.data, t])
 
   // Fetch Folders
   const foldersQuery = useQuery({
@@ -147,25 +134,29 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     enabled: selectedSourceType === 'Folder',
   })
   const folderOptions: Option[] = useMemo(() => {
-    return (foldersQuery.data ?? []).map((f: any) => ({
-      id: String(f.id),
-      name: String(f.name),
-    }))
-  }, [foldersQuery.data])
+    return [
+      { id: ALL_FOLDERS_SOURCE_ID, name: t`All folders` },
+      ...(foldersQuery.data ?? []).map((f: any) => ({
+        id: String(f.id),
+        name: String(f.name),
+      })),
+    ]
+  }, [foldersQuery.data, t])
 
-  // Fetch schema fields for selected source
-  const { fields: sourceFields, isLoading: isFieldsLoading } =
-    useReportSourceFields(draft.sourceFormId, draft.sourceType, draft.sourceId)
+  const isAllScope = isAllScopeSource(draft.sourceId)
 
   const handleSelectSourceType = (type: ReportSourceType) => {
     setSelectedSourceType(type)
     setDraft({
-      ...EMPTY_AI_DRAFT,
+      aiPrompt: '',
+      agent: null,
+      aiSuggestion: null,
       customFields: [],
       domain: '',
       fields: [],
       fieldSettings: {},
       filters: [],
+      showAiBuilder: false,
       sourceFormId: '',
       sourceId: '',
       sourceType: type,
@@ -176,12 +167,15 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectWorkflow = async (option: Option | null) => {
     if (!option) {
       setDraft({
-        ...EMPTY_AI_DRAFT,
+        aiPrompt: '',
+        agent: null,
+        aiSuggestion: null,
         customFields: [],
         domain: '',
         fields: [],
         fieldSettings: {},
         filters: [],
+        showAiBuilder: false,
         sourceFormId: '',
         sourceId: '',
       })
@@ -193,28 +187,33 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const workflowName = String(option.name)
 
     let wFormId = ''
-    try {
-      const res = await workflowsApiV6.getWorkflowById(workflowId)
-      if (res.data) {
-        const wf = res.data
-        wFormId = String(
-          wf.formId ??
-            wf.wFormId ??
-            wf.settings?.general?.initiateUsing?.formId ??
-            '',
-        )
+    if (workflowId !== ALL_WORKFLOWS_SOURCE_ID) {
+      try {
+        const res = await workflowsApiV6.getWorkflowById(workflowId)
+        if (res.data) {
+          const wf = res.data
+          wFormId = String(
+            wf.formId ??
+              wf.wFormId ??
+              wf.settings?.general?.initiateUsing?.formId ??
+              '',
+          )
+        }
+      } catch (e) {
+        console.error('Failed to load workflow form id:', e)
       }
-    } catch (e) {
-      console.error('Failed to load workflow form id:', e)
     }
 
     setDraft({
-      ...EMPTY_AI_DRAFT,
+      aiPrompt: '',
+      agent: null,
+      aiSuggestion: null,
       customFields: [],
       domain: workflowName,
       fields: [],
       fieldSettings: {},
       filters: [],
+      showAiBuilder: false,
       sourceFormId: wFormId,
       sourceId: workflowId,
       sourceType: 'Workflow',
@@ -225,12 +224,15 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const handleSelectFolder = (option: Option | null) => {
     if (!option) {
       setDraft({
-        ...EMPTY_AI_DRAFT,
+        aiPrompt: '',
+        agent: null,
+        aiSuggestion: null,
         customFields: [],
         domain: '',
         fields: [],
         fieldSettings: {},
         filters: [],
+        showAiBuilder: false,
         sourceFormId: '',
         sourceId: '',
       })
@@ -242,12 +244,15 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const folderName = String(option.name)
 
     setDraft({
-      ...EMPTY_AI_DRAFT,
+      aiPrompt: '',
+      agent: null,
+      aiSuggestion: null,
       customFields: [],
       domain: folderName,
       fields: [],
       fieldSettings: {},
       filters: [],
+      showAiBuilder: false,
       sourceFormId: '',
       sourceId: folderId,
       sourceType: 'Folder',
@@ -256,271 +261,109 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   }
 
   const isSourceReady = Boolean(draft.sourceId && draft.domain)
-  const reportType =
-    draft.sourceType === 'Folder' ? 'specific_repository' : 'specific_workflow'
-  const specColumns = columnsFromSpec(draft.aiReportSpec)
-  const runColumns =
-    draft.aiRun?.columns?.map((column) => ({
-      id: column.key,
-      label: column.label || column.key,
-      sampleType: 'text' as const,
-    })) ?? specColumns
-  const runRows = (draft.aiRun?.rows ?? []).map((row) =>
-    Object.fromEntries(
-      Object.entries(row).map(([key, value]) => [key, String(value ?? '')]),
-    ),
-  )
+
+  const runPreview = async (agent: ReportAgentConfig) => {
+    setPreviewError('')
+    setPreviewRows(null)
+    setIsPreviewing(true)
+    const { data, error } = await runReportAiReport(agent.id, {
+      page: 1,
+      pageSize: 25,
+      reportPrompt: agent.reportPrompt,
+      reportSpec: agent.reportSpec,
+    })
+    setIsPreviewing(false)
+    if (error || !data) {
+      setPreviewError(error || t`Failed to run the report`)
+      return
+    }
+    setPreviewRows(
+      agentRunToReportRunResult(data, {
+        domain: draft.domain,
+        name: draft.name,
+        reportId: null,
+      }).rows,
+    )
+    setAgentWarnings((prev) => [
+      ...new Set([...prev, ...(data.warnings ?? [])]),
+    ])
+  }
 
   const runPrompt = async (value: string) => {
     const text = value.trim()
     if (!text || isThinking) return
     setPrompt(text)
     setIsThinking(true)
-    const sessionId =
-      draft.aiSessionId ||
-      `report-${crypto.randomUUID().replaceAll('-', '')}`
-    try {
-      const generated = await generateReportPrompt({
-        description: text,
-        id: draft.aiReportId,
-        name: text.length > 80 ? `${text.slice(0, 77)}...` : text,
-        reportType,
-        repositoryName:
-          reportType === 'specific_repository' ? draft.domain : null,
-        sessionId,
-        workflowName:
-          reportType === 'specific_workflow' ? draft.domain : null,
-      })
-      const spec = generated.reportSpec ?? null
-      const fieldIds = columnsFromSpec(spec).map((column) => column.id)
-      const fieldSettings = Object.fromEntries(
-        fieldIds.map((id) => {
-          const fromSpec = spec?.columns?.find((column) => column.key === id)
-          const field = sourceFields.find((item) => item.id === id)
-          return [
-            id,
-            createDefaultFieldSetting(fromSpec?.label || field?.label || id),
-          ]
-        }),
-      )
-      setDraft({
-        aiPrompt: text,
-        aiReportId: generated.id,
-        aiReportPrompt: generated.reportPrompt,
-        aiReportSpec: spec,
-        aiReportType: generated.reportType || reportType,
-        aiRun: null,
-        aiSessionId: generated.sessionId || sessionId,
-        aiSuggestion: {
-          fieldIds,
-          name: generated.title || text,
-          summary: generated.title || text,
-        },
-        aiTitle: generated.title || text,
-        aiWarnings: generated.warnings ?? [],
-        description: text,
-        fields: fieldIds,
-        fieldSettings,
-        name: generated.title || draft.domain,
-        showAiBuilder: true,
-      })
-      onPlanGenerated?.(true)
-      void queryClient.invalidateQueries({ queryKey: savedReportsQueryKey })
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error
-            ? error.message
-            : t`Failed to generate report prompt`,
-        variant: 'error',
-      })
-    } finally {
-      setIsThinking(false)
-    }
-  }
+    setGenerateError('')
+    setPreviewError('')
+    setPreviewRows(null)
+    setAgentWarnings([])
 
-  const runGeneratedReport = async () => {
-    if (!draft.aiReportId || isRunning) return
-    setIsRunning(true)
-    try {
-      const result = await runSavedReport(draft.aiReportId, {
-        page: 1,
-        pageSize: 25,
-        reportPrompt: draft.aiReportPrompt,
-        reportSpec: draft.aiReportSpec,
-      })
-      setDraft({ aiRun: result, aiWarnings: result.warnings ?? [] })
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error ? error.message : t`Failed to run report`,
-        variant: 'error',
-      })
-    } finally {
-      setIsRunning(false)
-    }
-  }
-
-  const savedReportsQuery = useQuery({
-    queryKey: savedReportsQueryKey,
-    queryFn: listSavedReports,
-    enabled: showAiBuilder && !isEditing,
-  })
-  const savedReports = useMemo(() => {
-    const rows = savedReportsQuery.data ?? []
-    const domain = draft.domain.trim().toLowerCase()
-    if (!domain) return rows
-    return rows.filter((row) => {
-      const scope =
-        row.workflowName?.trim().toLowerCase() ||
-        row.repositoryName?.trim().toLowerCase() ||
-        ''
-      return !scope || scope === domain
+    const scope = agentScopeForSource(
+      draft.sourceType,
+      draft.sourceId,
+      draft.domain,
+    )
+    // Keep one session across generate → run for the whole wizard session.
+    const sessionId = draft.agent?.sessionId || createReportAgentSessionId()
+    // Generate saves the report; regenerating sends its id so the saved
+    // report is overwritten instead of piling up copies in the library.
+    const { data, error } = await generateReportAiPrompt({
+      description: text,
+      id: draft.agent?.id || null,
+      repositoryName: scope.repositoryName,
+      reportType: scope.reportType,
+      sessionId,
+      workflowName: scope.workflowName,
     })
-  }, [draft.domain, savedReportsQuery.data])
+    setIsThinking(false)
 
-  const clearGeneratedReport = () => {
-    setDraft({
-      ...EMPTY_AI_DRAFT,
-      aiPrompt: prompt,
-      showAiBuilder: true,
-    })
-    onPlanGenerated?.(false)
-  }
-
-  const loadSavedAiReport = async (id: string) => {
-    try {
-      const saved = await getSavedReport(id)
-      const spec = saved.reportSpec ?? null
-      const fieldIds = columnsFromSpec(spec).map((column) => column.id)
-      const fieldSettings = Object.fromEntries(
-        fieldIds.map((fieldId) => {
-          const fromSpec = spec?.columns?.find((column) => column.key === fieldId)
-          return [
-            fieldId,
-            createDefaultFieldSetting(fromSpec?.label || fieldId),
-          ]
-        }),
-      )
-      setDraft({
-        aiReportId: saved.id,
-        aiReportPrompt: saved.reportPrompt,
-        aiReportSpec: spec,
-        aiReportType: saved.reportType || reportType,
-        aiRun: null,
-        aiSessionId: saved.sessionId || draft.aiSessionId,
-        aiSuggestion: {
-          fieldIds,
-          name: saved.title || saved.reportPrompt,
-          summary: saved.title || saved.reportPrompt,
-        },
-        aiTitle: saved.title,
-        aiWarnings: saved.warnings ?? [],
-        description: saved.reportPrompt,
-        fields: fieldIds,
-        fieldSettings,
-        name: saved.title || draft.domain,
-        showAiBuilder: true,
-      })
-      onPlanGenerated?.(true)
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error ? error.message : t`Failed to load saved report`,
-        variant: 'error',
-      })
-    }
-  }
-
-  const confirmDeleteSavedReport = async () => {
-    if (!pendingDeleteId || isDeleting) return
-    setIsDeleting(true)
-    try {
-      await deleteSavedReport(pendingDeleteId)
-      if (draft.aiReportId === pendingDeleteId) clearGeneratedReport()
-      void queryClient.invalidateQueries({ queryKey: savedReportsQueryKey })
-      showToast({ message: t`Report deleted`, variant: 'success' })
-      setPendingDeleteId(null)
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error ? error.message : t`Failed to delete report`,
-        variant: 'error',
-      })
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const downloadBlob = (blob: Blob, fileName: string) => {
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const exportGeneratedReport = async (format: 'CSV' | 'PDF' | 'Excel') => {
-    if (!draft.aiReportId || isExporting) return
-    setIsExporting(true)
-    try {
-      const file = await exportSavedReport(draft.aiReportId, format, {
-        reportPrompt: draft.aiReportPrompt,
-        reportSpec: draft.aiReportSpec,
-      })
-      downloadBlob(file.blob, file.fileName)
-      showToast({ message: t`Report downloaded`, variant: 'success' })
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error ? error.message : t`Failed to export report`,
-        variant: 'error',
-      })
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
-  const emailGeneratedReport = async () => {
-    if (!draft.aiReportId || isEmailing) return
-    const recipients = emailTo
-      .split(/[,\s;]+/)
-      .map((value) => value.trim())
-      .filter(Boolean)
-    if (recipients.length === 0) {
-      showToast({
-        message: t`Enter at least one email address`,
-        variant: 'error',
-      })
+    if (error || !data) {
+      setGenerateError(error || t`Failed to generate the report`)
+      onPlanGenerated?.(false)
       return
     }
-    setIsEmailing(true)
-    try {
-      await emailSavedReport(draft.aiReportId, {
-        format: 'PDF',
-        recipients,
-        reportPrompt: draft.aiReportPrompt,
-        reportSpec: draft.aiReportSpec,
-      })
-      showToast({ message: t`Report emailed`, variant: 'success' })
-      setShowEmail(false)
-      setEmailTo('')
-    } catch (error) {
-      showToast({
-        message:
-          error instanceof Error ? error.message : t`Failed to email report`,
-        variant: 'error',
-      })
-    } finally {
-      setIsEmailing(false)
-    }
+
+    const patch = draftPatchFromPromptResult(data, { ...scope, sessionId })
+    setDraft({
+      ...patch,
+      aiPrompt: text,
+      aiSuggestion: {
+        fieldIds: patch.fields,
+        name: patch.name,
+        summary: patch.description,
+      },
+      name: patch.name || draft.domain,
+      showAiBuilder: true,
+    })
+    setAgentWarnings(data.warnings ?? data.reportSpec.warnings ?? [])
+    onPlanGenerated?.(true)
+    void runPreview(buildAgentConfigFromDraft(patch.agent, patch))
   }
 
-  const promptExamples =
-    draft.sourceType === 'Folder'
+  const promptExamples = isAllScope
+    ? draft.sourceType === 'Folder'
+      ? PROMPT_EXAMPLES_ALL_FOLDERS
+      : PROMPT_EXAMPLES_ALL_WORKFLOWS
+    : draft.sourceType === 'Folder'
       ? PROMPT_EXAMPLES_FOLDER
       : PROMPT_EXAMPLES_WORKFLOW
+
+  // Preview rows aren't persisted with the draft; re-run when coming back here.
+  useEffect(() => {
+    if (suggestion && draft.agent && !isEditing)
+      void runPreview(buildAgentConfigFromDraft(draft.agent, draft))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const previewColumns: PreviewColumn[] = useMemo(() => {
+    if (!suggestion) return []
+    return draft.fields.map((id) => ({
+      id,
+      label: draft.fieldSettings[id]?.label || id,
+      sampleType: 'text',
+    }))
+  }, [suggestion, draft.fields, draft.fieldSettings])
 
   return (
     <div className='flex flex-col gap-6'>
@@ -609,8 +452,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
         )}
       </div>
 
-
-
       {/* Animated AI Section when Source is Ready (creation mode only) */}
       {!isEditing && (
         <AnimatePresence mode='wait'>
@@ -637,7 +478,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                   }
                   onClick={() => setShowAiBuilder(true)}
                 />
-                {onProceedManual && (
+                {onProceedManual && !isAllScope && (
                   <Button
                     color='gray'
                     icon='lucide:arrow-right'
@@ -663,7 +504,10 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
               {/* Header with Title and Switch Action */}
               <div className='flex items-center justify-between gap-3'>
                 <div className='flex items-center gap-3'>
-                  <AiBrandIcon className='size-7 shrink-0' variant='outline-purple' />
+                  <AiBrandIcon
+                    className='size-7 shrink-0'
+                    variant='outline-purple'
+                  />
                   <div>
                     <h3 className='text-16 font-semibold text-gray-13'>
                       {t`Build with AI`}
@@ -680,7 +524,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                   </div>
                 </div>
 
-                {onProceedManual && (
+                {onProceedManual && !isAllScope && (
                   <Button
                     color='gray'
                     icon='lucide:arrow-right'
@@ -710,15 +554,15 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
 
                 <div className='flex items-center justify-between rounded-b-xl border-t border-gray-3 bg-surface px-3.5 py-2.5'>
                   <span className='text-12 text-gray-9'>
-                    {isFieldsLoading
-                      ? t`Loading schema fields...`
-                      : t`${sourceFields.length} schema fields available`}
+                    {t`The report agent picks columns, filters and grouping for you.`}
                   </span>
 
                   <Button
                     color='primary'
                     disabled={!prompt.trim() || isThinking}
-                    label={isThinking ? t`Thinking...` : t`Generate Report`}
+                    label={
+                      isThinking ? t`Generating prompt...` : t`Generate Report`
+                    }
                     loading={isThinking}
                     size='sm'
                     variant='solid'
@@ -730,56 +574,35 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                 </div>
               </div>
 
+              {generateError && (
+                <p className='rounded-lg border border-red-6 bg-red-2 px-3 py-2 text-13 text-red-11'>
+                  {generateError}
+                </p>
+              )}
+
               {/* Minimal Quick Ideas Chips with hover animations */}
               <div className='flex flex-wrap items-center gap-2'>
                 <span className='text-12 font-medium text-gray-9'>{t`Quick ideas:`}</span>
                 {promptExamples.map((example) => (
                   <button
-                    className='inline-flex items-center gap-1.5 rounded-full border border-gray-3 bg-gray-1/50 px-3 py-1 text-12 text-gray-11 transition-all duration-200 hover:scale-[1.02] hover:border-primary-6 hover:bg-primary-1/30 hover:text-primary-11 active:scale-95'
+                    className='inline-flex items-center gap-1.5 rounded-full border border-gray-3 bg-gray-1/50 px-3 py-1 text-12 text-gray-11 transition-all duration-200 hover:scale-[1.02] hover:border-primary-6 hover:bg-primary-1/30 hover:text-primary-11 active:scale-95 disabled:pointer-events-none disabled:opacity-50'
+                    disabled={isThinking}
                     key={example.title}
                     type='button'
                     onClick={() => void runPrompt(example.query)}
                   >
-                    <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
+                    <AiBrandIcon
+                      className='size-3 shrink-0'
+                      variant='outline-purple'
+                    />
                     <span>{example.title}</span>
                   </button>
                 ))}
               </div>
 
-              {savedReports.length > 0 && (
-                <div className='flex flex-col gap-2'>
-                  <span className='text-12 font-medium text-gray-9'>
-                    {t`Saved AI reports`}
-                  </span>
-                  <div className='flex flex-col gap-1.5'>
-                    {savedReports.slice(0, 8).map((row) => (
-                      <div
-                        className='flex items-center justify-between gap-2 rounded-lg border border-gray-3 bg-gray-1/40 px-3 py-2'
-                        key={row.id}
-                      >
-                        <button
-                          className='min-w-0 flex-1 truncate text-left text-13 text-gray-12 hover:text-primary-11'
-                          type='button'
-                          onClick={() => void loadSavedAiReport(row.id)}
-                        >
-                          {row.name || t`Untitled report`}
-                        </button>
-                        <Button
-                          color='red'
-                          icon='lucide:trash-2'
-                          label={t`Delete`}
-                          size='xs'
-                          variant='ghost'
-                          onClick={() => setPendingDeleteId(row.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+              {/* Suggested report card with smooth entrance animation and live agent preview */}
               <AnimatePresence>
-                {draft.aiReportId && (
+                {suggestion && (
                   <motion.div
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     className='flex flex-col gap-4 rounded-xl border border-primary-5 bg-primary-1/40 p-4.5 duration-300'
@@ -787,141 +610,77 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                     initial={{ opacity: 0, scale: 0.98, y: 12 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <div className='flex items-center justify-between gap-3'>
-                      <div className='flex items-center gap-2'>
-                        <AiBrandIcon className='size-4' variant='outline-purple' />
-                        <p className='text-14 font-semibold text-gray-13'>
-                          {draft.aiTitle || t`Generated report`}
-                        </p>
-                      </div>
-                      <div className='flex items-center gap-2'>
-                        <Button
-                          color='red'
-                          icon='lucide:trash-2'
-                          label={t`Delete`}
-                          size='sm'
-                          variant='outline'
-                          onClick={() => setPendingDeleteId(draft.aiReportId!)}
-                        />
-                        <Button
-                          color='primary'
-                          disabled={isRunning || !draft.aiReportPrompt}
-                          label={isRunning ? t`Running...` : t`Run report`}
-                          loading={isRunning}
-                          size='sm'
-                          variant='solid'
-                          onClick={() => void runGeneratedReport()}
-                        />
-                      </div>
+                    <div className='flex items-center gap-2'>
+                      <AiBrandIcon
+                        className='size-4'
+                        variant='outline-purple'
+                      />
+                      <p className='text-14 font-semibold text-gray-13'>
+                        {suggestion.name || t`Suggested Report`}
+                      </p>
                     </div>
-
-                    {draft.aiWarnings && draft.aiWarnings.length > 0 && (
-                      <p className='text-12 text-orange-11'>
-                        {draft.aiWarnings[0]}
+                    {suggestion.summary && (
+                      <p className='text-13 text-gray-11'>
+                        {suggestion.summary}
                       </p>
                     )}
 
+                    {/* Selected column pills */}
                     <div className='flex flex-wrap gap-1.5'>
-                      {specColumns.map((column) => (
+                      {draft.fields.map((id) => (
                         <span
                           className='rounded-full border border-gray-3 bg-surface px-2.5 py-1 text-11 text-gray-11'
-                          key={column.id}
+                          key={id}
                         >
-                          {column.label}
+                          {draft.fieldSettings[id]?.label || id}
                         </span>
                       ))}
                     </div>
 
-                    <textarea
-                      className='min-h-[120px] w-full resize-y rounded-lg border border-gray-3 bg-surface p-3 font-mono text-12 text-gray-12 outline-none focus:border-primary-8'
-                      value={draft.aiReportPrompt ?? ''}
-                      onChange={(event) =>
-                        setDraft({ aiReportPrompt: event.target.value })
-                      }
-                    />
-
-                    <div className='flex flex-col gap-1.5'>
-                      <span className='text-12 font-medium text-gray-10'>
-                        {draft.aiRun
-                          ? t`Report data`
-                          : t`Generate, then run to load rows`}
-                      </span>
-                      <div className='overflow-hidden rounded-lg border border-gray-3 bg-surface'>
-                        <FieldsPreviewTable
-                          columns={runColumns}
-                          isLive
-                          isLoading={isRunning}
-                          rows={runRows}
-                        />
+                    {agentWarnings.length > 0 && (
+                      <div className='flex flex-col gap-1 rounded-lg border border-yellow-6 bg-yellow-2 px-3 py-2'>
+                        {agentWarnings.map((warning) => (
+                          <p className='text-12 text-yellow-11' key={warning}>
+                            {warning}
+                          </p>
+                        ))}
                       </div>
-                      {draft.aiReportId && (
-                        <div className='flex flex-wrap items-center gap-2 pt-1'>
+                    )}
+
+                    {/* Live preview from /report-agent/run */}
+                    <div className='flex flex-col gap-1.5'>
+                      <div className='flex items-center justify-between gap-2'>
+                        <span className='text-12 font-medium text-gray-10'>
+                          {t`Preview (first rows):`}
+                        </span>
+                        {draft.agent && (
                           <Button
                             color='gray'
-                            disabled={isExporting}
-                            icon='lucide:file-spreadsheet'
-                            label={t`CSV`}
-                            loading={isExporting}
+                            disabled={isPreviewing}
+                            icon='lucide:refresh-cw'
+                            label={t`Run again`}
                             size='xs'
-                            variant='outline'
-                            onClick={() => void exportGeneratedReport('CSV')}
+                            variant='ghost'
+                            onClick={() =>
+                              void runPreview(
+                                buildAgentConfigFromDraft(draft.agent!, draft),
+                              )
+                            }
                           />
-                          <Button
-                            color='gray'
-                            disabled={isExporting}
-                            icon='lucide:file-text'
-                            label={t`PDF`}
-                            loading={isExporting}
-                            size='xs'
-                            variant='outline'
-                            onClick={() => void exportGeneratedReport('PDF')}
+                        )}
+                      </div>
+                      {previewError ? (
+                        <p className='rounded-lg border border-red-6 bg-red-2 px-3 py-2 text-12 text-red-11'>
+                          {previewError}
+                        </p>
+                      ) : (
+                        <div className='overflow-hidden rounded-lg border border-gray-3 bg-surface'>
+                          <FieldsPreviewTable
+                            columns={previewColumns}
+                            isLoading={isPreviewing}
+                            rows={previewRows ?? []}
+                            isLive
                           />
-                          <Button
-                            color='gray'
-                            disabled={isExporting}
-                            icon='lucide:table'
-                            label={t`Excel`}
-                            loading={isExporting}
-                            size='xs'
-                            variant='outline'
-                            onClick={() => void exportGeneratedReport('Excel')}
-                          />
-                          <Button
-                            color='gray'
-                            icon='lucide:mail'
-                            label={t`Email`}
-                            size='xs'
-                            variant='outline'
-                            onClick={() => setShowEmail((open) => !open)}
-                          />
-                        </div>
-                      )}
-                      {showEmail && (
-                        <div className='flex flex-col gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
-                          <input
-                            className='h-8 w-full rounded-md border border-gray-4 bg-surface px-2.5 text-13 text-gray-13 outline-none focus:border-primary-8'
-                            placeholder={t`ops@company.com, finance@company.com`}
-                            value={emailTo}
-                            onChange={(event) => setEmailTo(event.target.value)}
-                          />
-                          <div className='flex justify-end gap-2'>
-                            <Button
-                              color='gray'
-                              label={t`Cancel`}
-                              size='xs'
-                              variant='ghost'
-                              onClick={() => setShowEmail(false)}
-                            />
-                            <Button
-                              color='primary'
-                              disabled={isEmailing}
-                              label={isEmailing ? t`Sending...` : t`Send PDF`}
-                              loading={isEmailing}
-                              size='xs'
-                              variant='solid'
-                              onClick={() => void emailGeneratedReport()}
-                            />
-                          </div>
                         </div>
                       )}
                     </div>
@@ -932,18 +691,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
           )}
         </AnimatePresence>
       )}
-
-      <ConfirmDialog
-        cancelLabel={t`Cancel`}
-        confirmLabel={t`Delete`}
-        description={t`This removes the saved AI report. You can generate it again later.`}
-        isConfirming={isDeleting}
-        opened={Boolean(pendingDeleteId)}
-        title={t`Delete report?`}
-        variant='danger'
-        onCancel={() => setPendingDeleteId(null)}
-        onConfirm={() => void confirmDeleteSavedReport()}
-      />
     </div>
   )
 }

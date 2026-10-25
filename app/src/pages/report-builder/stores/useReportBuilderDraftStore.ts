@@ -1,12 +1,9 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type {
-  ReportAiRunResponse,
-  ReportAiSpec,
-} from '@/api/v6/reportAiBuilder'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import type {
   Report,
+  ReportAgentConfig,
   ReportFieldSetting,
   ReportFilter,
   ReportSchedule,
@@ -23,16 +20,10 @@ export interface ReportDraftAiSuggestion {
 }
 
 export interface ReportDraft {
+  /** Report agent prompt/spec when the report was generated with AI. */
+  agent?: ReportAgentConfig | null
   aiPrompt?: string
-  aiReportId?: string | null
-  aiReportPrompt?: string
-  aiReportSpec?: ReportAiSpec | null
-  aiReportType?: string
-  aiRun?: ReportAiRunResponse | null
-  aiSessionId?: string
   aiSuggestion?: ReportDraftAiSuggestion | null
-  aiTitle?: string
-  aiWarnings?: string[]
   customFields: Question[]
   description: string
   domain: string
@@ -54,16 +45,9 @@ export interface ReportDraft {
 }
 
 export const EMPTY_DRAFT: ReportDraft = {
+  agent: null,
   aiPrompt: '',
-  aiReportId: null,
-  aiReportPrompt: '',
-  aiReportSpec: null,
-  aiReportType: '',
-  aiRun: null,
-  aiSessionId: '',
   aiSuggestion: null,
-  aiTitle: '',
-  aiWarnings: [],
   customFields: [],
   description: '',
   domain: '',
@@ -99,16 +83,9 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
       loadFromReport: (report) =>
         set({
           draft: {
+            agent: report.agentConfig ?? null,
             aiPrompt: '',
-            aiReportId: null,
-            aiReportPrompt: '',
-            aiReportSpec: null,
-            aiReportType: '',
-            aiRun: null,
-            aiSessionId: '',
             aiSuggestion: null,
-            aiTitle: '',
-            aiWarnings: [],
             customFields: report.customFields ?? [],
             description: report.description,
             domain: report.domain,
