@@ -781,6 +781,8 @@ _ALL_WORKFLOW_COLUMNS: tuple[tuple[str, str], ...] = (
     ("createdAtUtc", "date"),
     ("startedAtUtc", "date"),
     ("completedAtUtc", "date"),
+    ("requestNo", "text"),
+    ("stage", "text"),
     ("id", "uuid"),
     ("workflowId", "uuid"),
     ("itemId", "uuid"),

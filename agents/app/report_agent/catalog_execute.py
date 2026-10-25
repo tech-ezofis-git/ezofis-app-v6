@@ -72,7 +72,32 @@ def _keys(spec: ReportSpec) -> set[str]:
     return {c.key.lower() for c in spec.columns}
 
 
-_ROW_ID_KEYS = frozenset({"instanceid", "itemid", "id"})
+_ROW_ID_KEYS = frozenset({"instanceid", "itemid", "id", "requestno", "stage", "startedby"})
+_INSTANCE_DEFAULT_KEYS = frozenset(
+    {
+        "requestno",
+        "id",
+        "stage",
+        "status",
+        "startedby",
+        "workflowname",
+        "workflowid",
+        "instanceid",
+        "itemid",
+        "createdatutc",
+    }
+)
+_REPO_DEFAULT_KEYS = frozenset(
+    {"itemid", "filename", "repository_name", "createdby", "createdat", "status"}
+)
+_WF_STATUS_LABELS = {
+    0: "Not Started",
+    1: "In Progress",
+    2: "Completed",
+    3: "Cancelled",
+    4: "Rejected",
+    5: "On Hold",
+}
 
 
 def _pick(row: dict[str, Any], *names: str) -> Any:
@@ -110,6 +135,133 @@ def _has_row_ids(spec: ReportSpec) -> bool:
     return bool(_keys(spec) & _ROW_ID_KEYS)
 
 
+def _is_guid(value: Any) -> bool:
+    text = str(value or "").strip()
+    if len(text) != 36 or text.count("-") != 4:
+        return False
+    hex_body = text.replace("-", "")
+    return len(hex_body) == 32 and all(ch in "0123456789abcdefABCDEF" for ch in hex_body)
+
+
+def _status_label(value: Any) -> Any:
+    if value in (None, ""):
+        return ""
+    if isinstance(value, str) and not value.strip().isdigit():
+        return value
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return value
+    return _WF_STATUS_LABELS.get(number, str(value))
+
+
+def _current_stage(row: dict[str, Any]) -> str:
+    named = str(
+        _pick(row, "currentStepName", "currentStage", "current_stage", "stage", "activity") or ""
+    ).strip()
+    if named:
+        return named
+    current_id = str(_pick(row, "currentStepInstanceId", "current_step_instance_id") or "").strip()
+    steps = row.get("stepInstances") or row.get("step_instances") or row.get("steps") or []
+    if current_id and isinstance(steps, list):
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            if str(_pick(step, "id") or "").strip() == current_id:
+                return str(_pick(step, "stepName", "name", "activity", "stage") or "").strip()
+    if isinstance(steps, list):
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            status = step.get("status")
+            if status in (1, "1", "InProgress", "inprogress", "In Progress"):
+                return str(_pick(step, "stepName", "name", "activity", "stage") or "").strip()
+    return str(_pick(row, "stage", "currentStage", "activity", "stepName") or "").strip()
+
+
+def _request_no(row: dict[str, Any]) -> str:
+    for name in (
+        "requestNo",
+        "request_no",
+        "ReqNo",
+        "requestNumber",
+        "referenceNumber",
+        "reference_number",
+        "serialNumber",
+        "ticketNo",
+        "ticketNumber",
+        "name",
+        "title",
+    ):
+        value = _pick(row, name)
+        if value in (None, ""):
+            continue
+        if _is_guid(value):
+            continue
+        if isinstance(value, int) and value < 100000 and name in {"id", "name"}:
+            continue
+        return str(value)
+    return ""
+
+
+def wants_instance_execute(spec: ReportSpec, report_type: Optional[str] = None) -> bool:
+    """Specified workflow/repository listings of instance fields should use EZOFIS, not form-table SQL."""
+    rt = (report_type or spec.report_type or "").lower()
+    keys = _keys(spec)
+    if rt == "specific_workflow":
+        return bool(keys & _INSTANCE_DEFAULT_KEYS)
+    if rt == "specific_repository":
+        return bool(keys & _REPO_DEFAULT_KEYS)
+    return False
+
+
+def _match_named(items: list[dict[str, Any]], want: str) -> list[dict[str, Any]]:
+    needle = (want or "").strip().lower()
+    if not needle:
+        return list(items or [])
+    exact = [
+        item
+        for item in items or []
+        if str((item or {}).get("name") or "").strip().lower() == needle
+        or str((item or {}).get("id") or "").strip().lower() == needle
+    ]
+    if exact:
+        return exact
+    return [
+        item
+        for item in items or []
+        if needle in str((item or {}).get("name") or "").strip().lower()
+        or str((item or {}).get("name") or "").strip().lower() in needle
+    ]
+
+
+def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dict[str, Any]:
+    created = _parse_date(
+        _pick(row, "createdAtUtc", "created_at_utc", "startedAtUtc", "started_at_utc")
+    )
+    completed = _parse_date(_pick(row, "completedAtUtc", "completed_at_utc"))
+    instance_id = _pick(row, "instanceId", "instance_id", "id")
+    request_no = _request_no(row)
+    return {
+        "requestNo": request_no,
+        "id": request_no,
+        "workflowId": _pick(row, "workflowId", "workflow_id") or wf_id,
+        "itemId": _pick(
+            row, "itemId", "item_id", "repositoryItemId", "repository_item_id", "formEntryId"
+        ),
+        "instanceId": instance_id,
+        "workflowName": _pick(row, "workflowName", "workflow_name") or wf_name,
+        "status": _status_label(_pick(row, "status")),
+        "stage": _current_stage(row),
+        "startedBy": _pick(
+            row, "updatedBy", "updated_by", "actedBy", "acted_by", "startedBy", "started_by", "assignedTo"
+        ),
+        "createdAtUtc": created,
+        "completedAtUtc": completed,
+        "open": completed is None,
+    }
+
+
 def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     keys = [c.key for c in spec.columns]
     if not keys:
@@ -117,7 +269,13 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
     shaped: list[dict[str, Any]] = []
     for row in rows:
         lower = {str(key).lower(): value for key, value in (row or {}).items()}
-        shaped.append({key: _cell(lower.get(key.lower(), "")) for key in keys})
+        item: dict[str, Any] = {}
+        for key in keys:
+            value = lower.get(key.lower(), "")
+            if value in (None, "") and key.lower() in {"id", "requestno"}:
+                value = lower.get("requestno") or lower.get("id") or ""
+            item[key] = _cell(value)
+        shaped.append(item)
     return shaped
 
 
@@ -129,16 +287,37 @@ async def execute_catalog_spec(
     report_type: str,
     page: int = 1,
     page_size: int = 25,
+    workflow_name: Optional[str] = None,
+    repository_name: Optional[str] = None,
 ) -> Optional[tuple[list[ReportColumnOut], list[dict[str, Any]], int, list[str]]]:
     table = (spec.source_table or "").lower()
-    if report_type == "all_workflows" or table == "workflow_instances_all":
+    rt = (report_type or spec.report_type or "").lower()
+    if rt == "specific_workflow":
+        if not wants_instance_execute(spec, rt):
+            return None
+        rows = await _workflow_rows(ezofis, spec, tenant_id, workflow_name=workflow_name)
+        page_rows, total = _paginate(rows, page, page_size)
+        warnings = [f"Loaded live EZOFIS instances for '{workflow_name or spec.title}'."]
+        if total == 0:
+            warnings.append("EZOFIS returned no workflow instances for this workflow.")
+        return (_col_outs(spec), page_rows, total, warnings)
+    if rt == "all_workflows" or table == "workflow_instances_all":
         rows = await _workflow_rows(ezofis, spec, tenant_id)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS workflow instances across the tenant catalog."]
         if total == 0:
             warnings.append("EZOFIS returned no open workflow instances to count.")
         return (_col_outs(spec), page_rows, total, warnings)
-    if report_type == "all_repositories" or table == "items_all":
+    if rt == "specific_repository":
+        if not wants_instance_execute(spec, rt):
+            return None
+        rows = await _repository_rows(ezofis, spec, tenant_id, repository_name=repository_name)
+        page_rows, total = _paginate(rows, page, page_size)
+        warnings = [f"Loaded live EZOFIS items for '{repository_name or spec.title}'."]
+        if total == 0:
+            warnings.append("EZOFIS returned no repository items for this folder.")
+        return (_col_outs(spec), page_rows, total, warnings)
+    if rt == "all_repositories" or table == "items_all":
         rows = await _repository_rows(ezofis, spec, tenant_id)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS repository items across the tenant catalog."]
@@ -148,8 +327,14 @@ async def execute_catalog_spec(
     return None
 
 
-async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[dict[str, Any]]:
-    listed = await ezofis.list_workflows(tenant_id)
+async def _workflow_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    tenant_id: str,
+    *,
+    workflow_name: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    listed = _match_named(await ezofis.list_workflows(tenant_id), workflow_name or "")
 
     async def _one(item: dict[str, Any]) -> list[dict[str, Any]]:
         wf_id = str((item or {}).get("id") or "").strip()
@@ -157,30 +342,7 @@ async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[
         if not wf_id:
             return []
         instances = await ezofis.list_workflow_instances(tenant_id=tenant_id, workflow_id=wf_id)
-        out: list[dict[str, Any]] = []
-        for row in instances or []:
-            created = _parse_date(
-                _pick(row, "createdAtUtc", "created_at_utc", "startedAtUtc", "started_at_utc")
-            )
-            completed = _parse_date(_pick(row, "completedAtUtc", "completed_at_utc"))
-            instance_id = _pick(row, "instanceId", "instance_id", "id")
-            out.append(
-                {
-                    "id": _pick(row, "requestNo", "ReqNo", "name", "id") or instance_id,
-                    "workflowId": _pick(row, "workflowId", "workflow_id") or wf_id,
-                    "itemId": _pick(
-                        row, "itemId", "item_id", "repositoryItemId", "repository_item_id", "formEntryId"
-                    ),
-                    "instanceId": instance_id,
-                    "workflowName": _pick(row, "workflowName", "workflow_name") or wf_name,
-                    "status": _pick(row, "status"),
-                    "startedBy": _pick(row, "startedBy", "started_by", "actedBy"),
-                    "createdAtUtc": created,
-                    "completedAtUtc": completed,
-                    "open": completed is None,
-                }
-            )
-        return out
+        return [_normalize_instance(row, wf_id=wf_id, wf_name=wf_name) for row in instances or []]
 
     batches = await asyncio.gather(*[_one(item) for item in listed or []], return_exceptions=True)
     records: list[dict[str, Any]] = []
@@ -191,8 +353,14 @@ async def _workflow_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[
     return _shape_rows(spec, _aggregate_workflow(spec, records))
 
 
-async def _repository_rows(ezofis: Any, spec: ReportSpec, tenant_id: str) -> list[dict[str, Any]]:
-    listed = await ezofis.list_repositories(tenant_id)
+async def _repository_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    tenant_id: str,
+    *,
+    repository_name: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    listed = _match_named(await ezofis.list_repositories(tenant_id), repository_name or "")
 
     async def _one(item: dict[str, Any]) -> list[dict[str, Any]]:
         repo_id = str((item or {}).get("id") or "").strip()

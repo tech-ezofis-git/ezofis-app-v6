@@ -852,9 +852,16 @@ class ReportAgentService:
         report_type: Optional[str],
         t0: float,
     ) -> Optional[RunReportResponse]:
-        from app.report_agent.catalog_execute import execute_catalog_spec, is_virtual_catalog_table
+        from app.report_agent.catalog_execute import (
+            execute_catalog_spec,
+            is_virtual_catalog_table,
+            wants_instance_execute,
+        )
 
-        if not is_virtual_catalog_table(spec.source_table):
+        if not (
+            is_virtual_catalog_table(spec.source_table)
+            or wants_instance_execute(spec, report_type)
+        ):
             return None
         if self._ezofis is None:
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
@@ -879,6 +886,8 @@ class ReportAgentService:
                 report_type=report_type or spec.report_type or "",
                 page=request.page,
                 page_size=request.page_size,
+                workflow_name=request.workflow_name,
+                repository_name=request.repository_name,
             )
         except Exception as exc:
             logger.warning(
