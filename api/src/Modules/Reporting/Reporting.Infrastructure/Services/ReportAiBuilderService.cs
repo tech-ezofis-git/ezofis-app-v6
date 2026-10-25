@@ -7,13 +7,16 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
 {
     private readonly IReportAgentPythonClient _client;
     private readonly IReportAiDefinitionService _store;
+    private readonly IReportQueryService? _query;
 
     public ReportAiBuilderService(
         IReportAgentPythonClient client,
-        IReportAiDefinitionService store)
+        IReportAiDefinitionService store,
+        IReportQueryService? query = null)
     {
         _client = client;
         _store = store;
+        _query = query;
     }
 
     public async Task<ReportAiHttpResult> GenerateAndSaveAsync(
@@ -138,6 +141,9 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         }
 
         var spec = ReportAgentChatMapper.ParseObjectOrEmpty(record.ReportSpecJson);
+        if (_query is not null && ReportAgentChatMapper.IsSpecifiedScope(record.ReportType))
+            return await RunSpecifiedFormAsync(tenantId, reportId, record, spec, request, cancellationToken);
+
         ReportAgentProxyResult proxy;
         try
         {
@@ -263,6 +269,102 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         {
             return ReportAiHttpResult.Error(502, ex.Message);
         }
+    }
+
+    private async Task<ReportAiHttpResult> RunSpecifiedFormAsync(
+        Guid tenantId,
+        Guid reportId,
+        ReportAiDefinitionRecord record,
+        JsonElement spec,
+        ReportAiRunRequest request,
+        CancellationToken cancellationToken)
+    {
+        var columns = ReportAgentChatMapper.ReadSpecColumns(spec);
+        if (columns.Count == 0)
+        {
+            return ReportAiHttpResult.Error(
+                400,
+                "Saved spec has no columns to run. Call POST /api/report-ai-builder/prompt again.");
+        }
+
+        var isRepository = record.ReportType.Equals("specific_repository", StringComparison.OrdinalIgnoreCase);
+        var domain = (isRepository ? record.RepositoryName : record.WorkflowName)?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return ReportAiHttpResult.Error(
+                400,
+                isRepository
+                    ? "repositoryName is required for specific_repository."
+                    : "workflowName is required for specific_workflow.");
+        }
+
+        var page = request.Page < 1 ? 1 : request.Page;
+        var pageSize = request.PageSize is < 1 or > 500 ? 25 : request.PageSize;
+        var config = new ReportBuilderConfig
+        {
+            Name = string.IsNullOrWhiteSpace(record.Name) ? domain : record.Name,
+            Domain = domain,
+            SourceType = isRepository ? "Repository" : "Workflow",
+            SourceForm = domain,
+            Fields = columns.Select(c => c.Key).ToList(),
+            FieldSettings = columns.ToDictionary(
+                c => c.Key,
+                c => new ReportFieldSetting
+                {
+                    Label = c.Label,
+                    Formula = c.Formula,
+                    Expression = c.Formula,
+                    ColType = string.IsNullOrWhiteSpace(c.Formula) ? "value" : "calculated"
+                },
+                StringComparer.OrdinalIgnoreCase),
+            Filters = ReportAgentChatMapper.ReadSpecFilters(spec)
+        };
+
+        ReportRunResult run;
+        try
+        {
+            run = await _query!.ExecuteAsync(tenantId, config, cancellationToken);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return ReportAiHttpResult.Error(422, ex.Message);
+        }
+
+        var start = Math.Max(0, (page - 1) * pageSize);
+        var pageRows = run.Rows.Skip(start).Take(pageSize).Select(row =>
+        {
+            var mapped = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var column in columns)
+            {
+                if (row.TryGetValue(column.Key, out var byKey))
+                    mapped[column.Key] = byKey;
+                else if (row.TryGetValue(column.Label, out var byLabel))
+                    mapped[column.Key] = byLabel;
+                else
+                    mapped[column.Key] = null;
+            }
+
+            return mapped;
+        }).ToList();
+
+        await _store.IncrementRunsAsync(tenantId, reportId, cancellationToken);
+        return ReportAiHttpResult.Ok(new
+        {
+            id = record.Id,
+            title = string.IsNullOrWhiteSpace(record.Name) ? domain : record.Name,
+            reportType = record.ReportType,
+            columns = columns.Select(c => new { key = c.Key, label = c.Label }).ToList(),
+            rows = pageRows,
+            totalCount = run.RowCount,
+            page,
+            pageSize,
+            warnings = new[]
+            {
+                isRepository
+                    ? "Counted live folder rows from the selected repository."
+                    : "Counted live form rows from the selected workflow."
+            }
+        });
     }
 
     private static ReportAiHttpResult? MapProxy(ReportAgentProxyResult proxy)

@@ -91,6 +91,8 @@ public sealed class ReportAiListItemDto
     public DateTime? ModifiedAtUtc { get; set; }
 }
 
+public sealed record ReportAiSpecColumn(string Key, string Label, string? Formula);
+
 public sealed class ReportAiHttpResult
 {
     public int StatusCode { get; init; } = 200;
