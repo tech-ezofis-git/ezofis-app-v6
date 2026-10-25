@@ -701,6 +701,7 @@ public sealed class FormEntryService : IFormEntryService
         if (filters.Count == 0)
             return ids;
 
+        await EnsureTryJsonScalarFunctionAsync(connection, cancellationToken);
         var whereParts = new List<string> { "(is_deleted = false OR is_deleted IS NULL)" };
         AppendFilterPredicates(whereParts, filters);
 
@@ -809,10 +810,11 @@ public sealed class FormEntryService : IFormEntryService
         if (selectColumns.Count == 0)
             return rows;
 
+        await EnsureTryJsonScalarFunctionAsync(connection, cancellationToken);
         var escapedCol = EscapeColumn(resolvedColumn);
         var whereParts = new List<string>
         {
-            $"\"{escapedCol}\" = @Value",
+            ScalarEqualsSql($"\"{escapedCol}\"", "@Value"),
             "(is_deleted = false OR is_deleted IS NULL)"
         };
         AppendFilterPredicates(whereParts, filters);
@@ -902,9 +904,20 @@ public sealed class FormEntryService : IFormEntryService
         IReadOnlyList<(string Column, string Value)> filters)
     {
         for (var i = 0; i < filters.Count; i++)
-            whereParts.Add(
-                $"lower(btrim(COALESCE(\"{EscapeColumn(filters[i].Column)}\"::text, ''))) = lower(btrim(@Filter{i}))");
+            whereParts.Add(ScalarEqualsSql($"\"{EscapeColumn(filters[i].Column)}\"", $"@Filter{i}"));
     }
+
+    /// <summary>
+    /// Match a stored ezfb cell to a lookup/scalar: exact text, or the JSON
+    /// <c>name</c>/<c>value</c>/<c>label</c>/<c>id</c> inside a lookup object.
+    /// </summary>
+    internal static string ScalarEqualsSql(string quotedColumn, string paramName) =>
+        $"""
+        (
+          lower(btrim(COALESCE({quotedColumn}::text, ''))) = lower(btrim({paramName}))
+          OR lower(btrim(COALESCE(dbo.try_json_scalar({quotedColumn}::text), ''))) = lower(btrim({paramName}))
+        )
+        """;
 
     private static void AddFilterParameters(
         NpgsqlCommand cmd,
@@ -1273,6 +1286,34 @@ public sealed class FormEntryService : IFormEntryService
     /// JSON parse, so a reusable dbo.try_json_email() PL/pgSQL wrapper (same TryCast pattern as
     /// WorkflowTicketSearchService.cs's dbo.try_cast_timestamp/numeric) replaces the two-step check.
     /// </summary>
+    private static async Task EnsureTryJsonScalarFunctionAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            CREATE OR REPLACE FUNCTION dbo.try_json_scalar(p_text text) RETURNS text AS $body$
+            DECLARE
+                obj jsonb;
+                scalar text;
+            BEGIN
+                obj := p_text::jsonb;
+                IF jsonb_typeof(obj) <> 'object' THEN
+                    RETURN NULL;
+                END IF;
+                FOREACH scalar IN ARRAY ARRAY['name','value','label','id','email']
+                LOOP
+                    IF obj ? scalar AND NULLIF(btrim(obj ->> scalar), '') IS NOT NULL THEN
+                        RETURN obj ->> scalar;
+                    END IF;
+                END LOOP;
+                RETURN NULL;
+            EXCEPTION WHEN OTHERS THEN
+                RETURN NULL;
+            END;
+            $body$ LANGUAGE plpgsql IMMUTABLE;
+            """;
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private static async Task EnsureTryJsonEmailFunctionAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
     {
         const string sql = """
