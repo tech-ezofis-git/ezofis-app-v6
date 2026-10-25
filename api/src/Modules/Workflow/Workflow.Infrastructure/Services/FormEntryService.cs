@@ -897,12 +897,13 @@ public sealed class FormEntryService : IFormEntryService
         return null;
     }
 
-    private static void AppendFilterPredicates(
+    internal static void AppendFilterPredicates(
         List<string> whereParts,
         IReadOnlyList<(string Column, string Value)> filters)
     {
         for (var i = 0; i < filters.Count; i++)
-            whereParts.Add($"\"{EscapeColumn(filters[i].Column)}\" = @Filter{i}");
+            whereParts.Add(
+                $"lower(btrim(COALESCE(\"{EscapeColumn(filters[i].Column)}\"::text, ''))) = lower(btrim(@Filter{i}))");
     }
 
     private static void AddFilterParameters(

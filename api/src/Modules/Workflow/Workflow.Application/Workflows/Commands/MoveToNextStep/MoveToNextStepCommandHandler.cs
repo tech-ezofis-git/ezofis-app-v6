@@ -494,19 +494,45 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         if (!isCompleted && nextDefinitionStep != null)
             ftlJobId = await TryEnqueueFtlAgentAsync(instance, workflow, nextDefinitionStep, userId, formId, cancellationToken);
 
-        // Designer "endSync" (settings.endSync on the step just completed): copy mapped field
-        // values onto a master form, any workflow. Generic, additive, never fails the move.
-        if (!string.IsNullOrWhiteSpace(targetDefinitionStep.ActivityId) && !string.IsNullOrWhiteSpace(formId))
+        // Designer "endSync" on the step just completed, and on the END block when the
+        // workflow finishes (Data Integration is often saved on END).
+        if (!string.IsNullOrWhiteSpace(formId))
         {
-            await _endSync.TrySyncOnStepCompleteAsync(
+            var completedActivityId = FirstNonBlank(
+                targetDefinitionStep.ActivityId,
+                request.ActivityId);
+
+            await TryEndSyncAsync(
                 instance.WorkflowId,
                 instance.Id,
-                targetDefinitionStep.ActivityId!,
+                completedActivityId,
                 formId,
                 formEntryId,
-                submittedFormDataJson: null,
-                formDataFields: request.FormDataFields,
+                request.SubmittedFormDataJson,
+                request.FormDataFields,
                 cancellationToken);
+
+            if (isCompleted)
+            {
+                var endStep = orderedSteps.FirstOrDefault(step =>
+                    string.Equals(step.StageType, "END", StringComparison.OrdinalIgnoreCase));
+                var endActivityId = FirstNonBlank(endStep?.ActivityId, "END");
+                if (!string.Equals(
+                        endActivityId,
+                        completedActivityId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    await TryEndSyncAsync(
+                        instance.WorkflowId,
+                        instance.Id,
+                        endActivityId,
+                        formId,
+                        formEntryId,
+                        request.SubmittedFormDataJson,
+                        request.FormDataFields,
+                        cancellationToken);
+                }
+            }
         }
 
         // Quantics packaging: on completion, sync the ticket form to the master form
@@ -643,6 +669,17 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 nextTransactionId),
             cancellationToken);
 
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                return value.Trim();
+        }
+
+        return null;
+    }
+
     internal static WorkflowStep? ResolveStepByActivityId(IReadOnlyList<WorkflowStep> orderedSteps, string activityId)
     {
         var id = activityId.Trim();
@@ -757,6 +794,30 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             instance.WorkflowId,
             instance.Id,
             snapshot,
+            cancellationToken);
+    }
+
+    private Task TryEndSyncAsync(
+        Guid workflowId,
+        Guid instanceId,
+        string? activityId,
+        string? formId,
+        Guid? formEntryId,
+        string? submittedFormDataJson,
+        IReadOnlyDictionary<string, string>? formDataFields,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(formId))
+            return Task.CompletedTask;
+
+        return _endSync.TrySyncOnStepCompleteAsync(
+            workflowId,
+            instanceId,
+            activityId,
+            formId,
+            formEntryId,
+            submittedFormDataJson,
+            formDataFields,
             cancellationToken);
     }
 

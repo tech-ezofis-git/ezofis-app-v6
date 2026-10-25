@@ -43,9 +43,10 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         IReadOnlyDictionary<string, string>? formDataFields,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(workflowFormId)
-            || workflowFormEntryId is not { } formEntryId || formEntryId == Guid.Empty)
+        if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(workflowFormId))
             return;
+
+        var formEntryId = workflowFormEntryId is { } entry && entry != Guid.Empty ? entry : Guid.Empty;
 
         try
         {
@@ -76,7 +77,8 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 workflowFormId, formEntryId, submittedFormDataJson, formDataFields, cancellationToken);
 
             // Step 2: the workflow's current value for the condition field.
-            if (!values.TryGetValue(mainMapping.WorkflowFieldId, out var matchValue) || string.IsNullOrWhiteSpace(matchValue))
+            if (!TryGetMappedValue(values, mainMapping.WorkflowFieldId, out var matchValue)
+                || string.IsNullOrWhiteSpace(matchValue))
             {
                 _logger.LogInformation(
                     "End-sync: condition field {WorkflowFieldId} has no value on workflow {WorkflowId} instance {InstanceId}; skipped.",
@@ -86,14 +88,14 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 return;
             }
 
-            // Steps 3-4: match the master-form row by the condition master field, then update
-            // only the remaining (non-main) mapped fields on that row.
+            // Include the main field too. Matching uses MatchColumnId/MatchValue; the write
+            // still needs the key on insert, otherwise a new row is created without the id
+            // and the existing master row never changes.
             var fields = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
             foreach (var mapping in config.FieldMappings)
             {
-                if (mapping.IsMainField)
-                    continue;
-                if (!values.TryGetValue(mapping.WorkflowFieldId, out var value) || string.IsNullOrWhiteSpace(value))
+                if (!TryGetMappedValue(values, mapping.WorkflowFieldId, out var value)
+                    || string.IsNullOrWhiteSpace(value))
                     continue;
 
                 fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(value);
@@ -102,7 +104,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
             if (fields.Count == 0)
             {
                 _logger.LogInformation(
-                    "End-sync: no non-condition field values resolved for workflow {WorkflowId} instance {InstanceId}; skipped.",
+                    "End-sync: no mapped field values resolved for workflow {WorkflowId} instance {InstanceId}; skipped.",
                     workflowId,
                     instanceId);
                 return;
@@ -120,12 +122,15 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 cancellationToken);
 
             _logger.LogInformation(
-                "End-sync to master form {MasterFormId} for workflow {WorkflowId} instance {InstanceId}: {Status} {Message}",
+                "End-sync to master form {MasterFormId} for workflow {WorkflowId} instance {InstanceId}: {Status} {Message} (match {MatchKey}={MatchValue}, fields={FieldCount})",
                 config.MasterFormId,
                 workflowId,
                 instanceId,
                 result.Status,
-                result.Message);
+                result.Message,
+                mainMapping.MasterFieldId,
+                matchValue,
+                fields.Count);
         }
         catch (Exception ex)
         {
@@ -152,9 +157,13 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        var persistedJson = await _ezfbFormDataLoader.LoadFormDataJsonAsync(
-            workflowFormId, workflowFormEntryId, cancellationToken);
-        MergeJsonObject(values, persistedJson);
+        if (workflowFormEntryId != Guid.Empty)
+        {
+            var persistedJson = await _ezfbFormDataLoader.LoadFormDataJsonAsync(
+                workflowFormId, workflowFormEntryId, cancellationToken);
+            MergeJsonObject(values, persistedJson);
+        }
+
         MergeJsonObject(values, submittedFormDataJson);
 
         if (formDataFields != null)
@@ -168,6 +177,38 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
 
         return values;
     }
+
+    private static bool TryGetMappedValue(
+        IReadOnlyDictionary<string, string> values,
+        string fieldId,
+        out string value)
+    {
+        value = "";
+        if (string.IsNullOrWhiteSpace(fieldId))
+            return false;
+        if (values.TryGetValue(fieldId, out var found) && !string.IsNullOrWhiteSpace(found))
+        {
+            value = found;
+            return true;
+        }
+
+        var compact = Compact(fieldId);
+        foreach (var (key, mapped) in values)
+        {
+            if (string.IsNullOrWhiteSpace(mapped))
+                continue;
+            if (Compact(key) == compact)
+            {
+                value = mapped;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string Compact(string value) =>
+        new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
     private static void MergeJsonObject(Dictionary<string, string> values, string? json)
     {

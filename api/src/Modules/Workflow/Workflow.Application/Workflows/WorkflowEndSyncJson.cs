@@ -43,17 +43,13 @@ public static class WorkflowEndSyncJson
                 if (block.ValueKind != JsonValueKind.Object)
                     continue;
 
-                var id = ReadString(block, "id", "Id");
-                if (string.IsNullOrWhiteSpace(id) || !string.Equals(id, blockId, StringComparison.OrdinalIgnoreCase))
+                if (!BlockMatches(block, blockId))
                     continue;
 
-                if (!TryGetObject(block, out var settings, "Settings", "settings"))
-                    return false;
-                if (!TryGetObject(settings, out var endSync, "endSync", "EndSync"))
-                    return false;
+                if (TryReadEndSync(block, out config) && config is not null)
+                    return true;
 
-                config = ParseConfig(endSync);
-                return config != null;
+                return false;
             }
         }
         catch (JsonException)
@@ -91,6 +87,47 @@ public static class WorkflowEndSyncJson
         return new WorkflowEndSyncConfig(enabled, target, masterFormId, mappings);
     }
 
+    private static bool BlockMatches(JsonElement block, string blockId)
+    {
+        var id = ReadString(block, "id", "Id");
+        if (!string.IsNullOrWhiteSpace(id)
+            && string.Equals(id, blockId, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Last-step complete often has no designer id on the END WorkflowStep.
+        // Callers then pass "END" so we can still load Data Integration from that block.
+        if (string.Equals(blockId, "START", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(blockId, "END", StringComparison.OrdinalIgnoreCase))
+        {
+            var type = ReadString(block, "type", "Type");
+            if (string.Equals(type, blockId, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadEndSync(JsonElement block, out WorkflowEndSyncConfig? config)
+    {
+        config = null;
+        if (TryGetObject(block, out var settings, "Settings", "settings")
+            && TryGetObject(settings, out var fromSettings, "endSync", "EndSync"))
+        {
+            config = ParseConfig(fromSettings);
+            if (config is not null)
+                return true;
+        }
+
+        if (TryGetObject(block, out var data, "data", "Data")
+            && TryGetObject(data, out var fromData, "endSync", "EndSync"))
+        {
+            config = ParseConfig(fromData);
+            return config is not null;
+        }
+
+        return false;
+    }
+
     private static bool TryGetArray(JsonElement parent, out JsonElement child, params string[] names)
     {
         foreach (var name in names)
@@ -117,13 +154,20 @@ public static class WorkflowEndSyncJson
     {
         foreach (var name in names)
         {
-            if (!obj.TryGetProperty(name, out var el))
+            if (!TryGetPropertyIgnoreCase(obj, name, out var el))
                 continue;
             if (el.ValueKind == JsonValueKind.String)
             {
                 var s = el.GetString()?.Trim();
                 if (!string.IsNullOrWhiteSpace(s))
                     return s;
+            }
+
+            if (el.ValueKind is JsonValueKind.Number)
+            {
+                var raw = el.GetRawText();
+                if (!string.IsNullOrWhiteSpace(raw))
+                    return raw.Trim();
             }
         }
         return null;
@@ -133,11 +177,41 @@ public static class WorkflowEndSyncJson
     {
         foreach (var name in names)
         {
-            if (!obj.TryGetProperty(name, out var el))
+            if (!TryGetPropertyIgnoreCase(obj, name, out var el))
                 continue;
             if (el.ValueKind is JsonValueKind.True or JsonValueKind.False)
                 return el.GetBoolean();
+            if (el.ValueKind == JsonValueKind.String)
+            {
+                var text = el.GetString()?.Trim();
+                if (string.Equals(text, "true", StringComparison.OrdinalIgnoreCase)
+                    || text == "1")
+                    return true;
+                if (string.Equals(text, "false", StringComparison.OrdinalIgnoreCase)
+                    || text == "0")
+                    return false;
+            }
+
+            if (el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var n))
+                return n != 0;
         }
         return null;
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement obj, string name, out JsonElement value)
+    {
+        if (obj.TryGetProperty(name, out value))
+            return true;
+        foreach (var prop in obj.EnumerateObject())
+        {
+            if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = prop.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
     }
 }
