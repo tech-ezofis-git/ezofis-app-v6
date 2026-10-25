@@ -15,5 +15,6 @@ public interface IWorkflowEndSyncService
         Guid? workflowFormEntryId,
         string? submittedFormDataJson,
         IReadOnlyDictionary<string, string>? formDataFields,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? stepName = null);
 }

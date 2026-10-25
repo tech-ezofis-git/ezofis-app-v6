@@ -111,4 +111,49 @@ public sealed class WorkflowEndSyncJsonTests
         Assert.False(WorkflowEndSyncJson.TryRead(json, "step-2", out _));
         Assert.False(WorkflowEndSyncJson.TryRead(json, "step-missing", out _));
     }
+
+    [Fact]
+    public void TryRead_finds_enabled_node_by_step_label()
+    {
+        var json = """
+            {"blocks":[{"id":"abc123","type":"INTERNAL_ACTOR","settings":{
+              "label":"Approved",
+              "endSync":{
+                "enabled":true,
+                "target":"MASTER_FORM",
+                "masterFormId":"master-form",
+                "fieldMappings":[
+                  {"workflowFieldId":"Code","masterFieldId":"ItemCode","IsMainField":true}
+                ]
+              }
+            }}]}
+            """;
+
+        Assert.True(WorkflowEndSyncJson.TryRead(json, "abc123", out var byId, "Approved"));
+        Assert.Equal("master-form", byId!.MasterFormId);
+        Assert.True(WorkflowEndSyncJson.TryRead(json, "missing-id", out var byName, "Approved"));
+        Assert.Equal("master-form", byName!.MasterFormId);
+    }
+
+    [Fact]
+    public void TryRead_uses_data_endSync_when_settings_toggle_is_off()
+    {
+        var json = """
+            {"blocks":[{"id":"step-1","settings":{
+              "endSync":{"enabled":false,"target":"MASTER_FORM","masterFormId":"ignored"}
+            },"data":{
+              "endSync":{
+                "enabled":true,
+                "target":"MASTER_FORM",
+                "masterFormId":"master-form",
+                "fieldMappings":[
+                  {"workflowFieldId":"Code","masterFieldId":"ItemCode","IsMainField":true}
+                ]
+              }
+            }}]}
+            """;
+
+        Assert.True(WorkflowEndSyncJson.TryRead(json, "step-1", out var config));
+        Assert.Equal("master-form", config!.MasterFormId);
+    }
 }

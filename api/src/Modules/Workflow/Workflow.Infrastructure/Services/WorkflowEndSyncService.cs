@@ -41,7 +41,8 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         Guid? workflowFormEntryId,
         string? submittedFormDataJson,
         IReadOnlyDictionary<string, string>? formDataFields,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? stepName = null)
     {
         if (string.IsNullOrWhiteSpace(activityId) || string.IsNullOrWhiteSpace(workflowFormId))
             return;
@@ -51,7 +52,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
         try
         {
             var workflowJson = await _workflowJsonStorage.GetWorkflowJsonAsync(workflowId, cancellationToken);
-            if (!WorkflowEndSyncJson.TryRead(workflowJson, activityId, out var config) || config is null)
+            if (!WorkflowEndSyncJson.TryRead(workflowJson, activityId, out var config, stepName) || config is null)
             {
                 _logger.LogDebug(
                     "End-sync skipped: activity {ActivityId} on workflow {WorkflowId} has no enabled endSync in the designer JSON.",
