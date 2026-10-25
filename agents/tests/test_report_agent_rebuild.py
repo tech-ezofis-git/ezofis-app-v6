@@ -1977,10 +1977,67 @@ async def test_run_specific_workflow_hydrates_thin_list_dto_request_no_and_stage
     assert row.get("workflowName") == "Accounts Payable"
 
 
-@pytest.mark.asyncio
-async def test_run_drops_empty_form_req_no_copy_and_keeps_workflow_request_no():
+def test_keep_valued_columns_drops_empty_form_req_no_copy():
     from app.models.report_agent import ReportSpec, ReportSpecColumn
-    from app.report_agent.report_spec import report_spec_to_prompt
+    from app.report_agent.catalog_execute import _keep_valued_columns
+
+    spec = ReportSpec(
+        title="AP requests",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_No", label="Req No", kind="userdefined", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="Matched_Status", label="Stage", kind="userdefined", selected=True),
+        ],
+    )
+    spec, rows, columns = _keep_valued_columns(
+        spec,
+        [
+            {
+                "RequestNo": "REQ-136",
+                "Invoice_No": "",
+                "Stage": "Verifier",
+                "Matched_Status": "",
+            }
+        ],
+    )
+    keys = [c.key for c in columns]
+    assert "Invoice_No" not in keys
+    assert "Matched_Status" not in keys
+    assert any(k.lower() == "requestno" for k in keys)
+    assert any(k.lower() == "stage" for k in keys)
+    assert rows[0].get("RequestNo") == "REQ-136"
+    assert rows[0].get("Stage") == "Verifier"
+
+
+def test_mixed_form_report_does_not_use_instance_only_execute():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import has_form_columns, wants_instance_execute
+
+    spec = ReportSpec(
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_Amount", label="Invoice Amount", kind="userdefined", selected=True),
+            ReportSpecColumn(key="today_task", label="Pending Stage", kind="userdefined", selected=True),
+        ],
+        source_table="ezfb_787372d8_items",
+    )
+    assert has_form_columns(spec)
+    assert wants_instance_execute(spec, "specific_workflow") is False
+
+
+@pytest.mark.asyncio
+async def test_form_rows_receive_request_no_and_stage_from_instances():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import attach_listing_fields_to_form_rows
+
+    item_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
     class _CatalogEzofis:
         async def list_workflows(self, tenant_id):
@@ -1990,42 +2047,187 @@ async def test_run_drops_empty_form_req_no_copy_and_keeps_workflow_request_no():
             return [
                 {
                     "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "itemId": item_id,
                     "workflowName": "Accounts Payable",
                     "status": 1,
                     "requestNo": "REQ-136",
                     "currentStepInstanceId": "step-1",
                     "stepInstances": [{"id": "step-1", "stepName": "Verifier", "status": 1}],
+                    "updatedBy": "verifier-user",
                     "createdAtUtc": "2026-09-11T04:33:00Z",
                     "completedAtUtc": None,
                 }
             ]
 
     spec = ReportSpec(
-        title="AP requests",
-        objective="List AP requests",
+        title="Pending Approval",
         report_type="specific_workflow",
         columns=[
             ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
-            ReportSpecColumn(key="Invoice_No", label="Req No", kind="userdefined", selected=True),
             ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
-            ReportSpecColumn(key="Matched_Status", label="Stage", kind="userdefined", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_Amount", label="Invoice Amount", kind="userdefined", selected=True),
         ],
-        default_columns=[
-            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
-            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+    )
+    rows = await attach_listing_fields_to_form_rows(
+        _CatalogEzofis(),
+        spec,
+        [{"item_id": item_id, "Invoice_Amount": 45.5, "created_at": "2026-10-23T10:24:31.412Z"}],
+        tenant_id="tenant-1",
+        workflow_name="Accounts Payable",
+    )
+    assert rows[0].get("RequestNo") == "REQ-136"
+    assert rows[0].get("Stage") == "Verifier"
+    assert rows[0].get("status") == "In Progress"
+    assert rows[0].get("startedBy") == "verifier-user"
+    assert rows[0].get("workflowName") == "Accounts Payable"
+    assert rows[0].get("Invoice_Amount") == 45.5
+
+
+def test_ensure_identity_columns_adds_item_id():
+    from app.report_agent.definition_lock import ensure_identity_columns
+
+    schema = DatabaseSchema()
+    schema.tables = [("dbo", "ezfb_items")]
+    schema.columns_by_table = {
+        ("dbo", "ezfb_items"): [
+            ColumnMeta("dbo", "ezfb_items", "item_id", "uuid"),
+            ColumnMeta("dbo", "ezfb_items", "Invoice_Amount", "numeric"),
+            ColumnMeta("dbo", "ezfb_items", "today_task", "text"),
+        ]
+    }
+    schema.all_columns = [c for lst in schema.columns_by_table.values() for c in lst]
+    locked = ensure_identity_columns(
+        {
+            "sources": [{"alias": "t", "schemaName": "dbo", "table": "ezfb_items"}],
+            "columns": [
+                {
+                    "key": "Invoice_Amount",
+                    "label": "Invoice Amount",
+                    "source": "t.Invoice_Amount",
+                    "aggregate": "none",
+                }
+            ],
+            "groupBy": [],
+        },
+        schema,
+    )
+    keys = [c["key"] for c in locked["columns"]]
+    assert "item_id" in keys
+
+
+@pytest.mark.asyncio
+async def test_run_mixed_form_report_fills_request_no_from_instances(monkeypatch):
+    import json
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    item_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    definition = {
+        "title": "Pending Approval",
+        "reportType": "specific_workflow",
+        "sources": [{"alias": "t", "schemaName": "dbo", "table": "ezfb_items"}],
+        "joins": [],
+        "columns": [
+            {"key": "Invoice_Amount", "label": "Invoice Amount", "source": "t.Invoice_Amount", "aggregate": "none"},
+            {"key": "item_id", "label": "item_id", "source": "t.item_id", "aggregate": "none"},
         ],
-        userdefined_columns=[
-            ReportSpecColumn(key="Invoice_No", label="Req No", kind="userdefined", selected=True),
-            ReportSpecColumn(key="Matched_Status", label="Stage", kind="userdefined", selected=True),
-        ],
+        "filters": [],
+        "groupBy": [],
+        "orderBy": [],
+        "availableFilters": [],
+        "summary": {},
+        "warnings": ["Counted live form rows from the selected workflow."],
+    }
+
+    class _FormDb:
+        async def fetch(self, sql: str, *args: Any):
+            compact = " ".join(sql.split()).lower()
+            if "count(*)" in compact:
+                return [{"total": 1}]
+            if "from information_schema" in compact:
+                return []
+            return [
+                {
+                    "Invoice_Amount": 45.5,
+                    "item_id": item_id,
+                    "created_at": "2026-10-23T10:24:31.412Z",
+                }
+            ]
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "wf-ap", "name": "Accounts Payable"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "itemId": item_id,
+                    "workflowName": "Accounts Payable",
+                    "status": 1,
+                    "requestNo": "REQ-136",
+                    "currentStepInstanceId": "step-1",
+                    "stepInstances": [{"id": "step-1", "stepName": "Verifier", "status": 1}],
+                    "updatedBy": "verifier-user",
+                    "createdAtUtc": "2026-09-11T04:33:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+    schema = DatabaseSchema()
+    schema.tables = [("dbo", "ezfb_items")]
+    schema.columns_by_table = {
+        ("dbo", "ezfb_items"): [
+            ColumnMeta("dbo", "ezfb_items", "item_id", "uuid"),
+            ColumnMeta("dbo", "ezfb_items", "Invoice_Amount", "numeric"),
+            ColumnMeta("dbo", "ezfb_items", "created_at", "timestamp"),
+            ColumnMeta("dbo", "ezfb_items", "today_task", "text"),
+        ]
+    }
+    schema.all_columns = [c for lst in schema.columns_by_table.values() for c in lst]
+
+    listing = [
+        ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+        ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+        ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+        ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+        ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+    ]
+    form_cols = [
+        ReportSpecColumn(key="Invoice_Amount", label="Invoice Amount", kind="userdefined", selected=True),
+    ]
+    spec = ReportSpec(
+        title="AP invoice list",
+        objective="List Accounts Payable invoice amount with request number",
+        report_type="specific_workflow",
+        columns=listing + form_cols,
+        default_columns=listing,
+        userdefined_columns=form_cols,
         source_schema="dbo",
-        source_table="ezfb_787372d8_items",
+        source_table="ezfb_items",
     )
     service = ReportAgentService(
-        llm_adapter=_FakeLLMSimple("should-not-be-called"),
-        db_pool=_EzofisTenantDb(),
+        llm_adapter=_FakeLLMSimple(json.dumps(definition)),
+        db_pool=_FormDb(),
         ezofis_client=_CatalogEzofis(),
     )
+
+    async def fake_schema(_db):
+        return schema
+
+    async def fake_db(tenant_id, allow_fallback=False):
+        return _FormDb()
+
+    monkeypatch.setattr("app.report_agent.service.get_database_schema", fake_schema)
+    monkeypatch.setattr(service, "_resolve_db", fake_db)
+    monkeypatch.setattr(
+        "app.report_agent.service.report_system_prompt",
+        AsyncMock(return_value="system"),
+    )
+
     resp = await service.run_report(
         RunReportRequest(
             report_prompt=report_spec_to_prompt(spec),
@@ -2035,13 +2237,14 @@ async def test_run_drops_empty_form_req_no_copy_and_keeps_workflow_request_no():
             tenant_id="tenant-1",
         )
     )
-    keys = [c.key for c in resp.columns]
-    assert "Invoice_No" not in keys
-    assert "Matched_Status" not in keys
-    assert any(k.lower() == "requestno" for k in keys)
-    assert any(k.lower() == "stage" for k in keys)
-    assert resp.rows[0].get("RequestNo") == "REQ-136"
-    assert resp.rows[0].get("Stage") == "Verifier"
+    assert resp.rows
+    row = resp.rows[0]
+    assert row.get("Invoice_Amount") == 45.5
+    assert row.get("RequestNo") == "REQ-136"
+    assert row.get("Stage") == "Verifier"
+    assert row.get("status") == "In Progress"
+    assert row.get("startedBy") == "verifier-user"
+    assert row.get("workflowName") == "Accounts Payable"
 
 
 @pytest.mark.asyncio

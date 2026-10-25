@@ -468,6 +468,64 @@ def lock_report_definition(
     return locked
 
 
+_IDENTITY_LEAVES = ("item_id", "itemid", "workflow_instance_id", "instance_id")
+
+
+def _has_aggregates(locked: dict[str, Any]) -> bool:
+    for col in locked.get("columns") or []:
+        if not isinstance(col, dict):
+            continue
+        agg = str(col.get("aggregate") or "none").lower()
+        if agg not in ("none", "", "null"):
+            return True
+    return False
+
+
+def ensure_identity_columns(locked: dict[str, Any], schema: DatabaseSchema) -> dict[str, Any]:
+    """Keep item_id / instance_id in the SELECT so form rows can join workflow listing fields."""
+    if not locked or _has_aggregates(locked):
+        return locked
+    sources = [s for s in (locked.get("sources") or []) if isinstance(s, dict)]
+    if not sources:
+        return locked
+    index = _index_schema(schema)
+    src = sources[0]
+    entry = _resolve_table(str(src.get("schemaName") or "") or None, str(src.get("table") or ""), index)
+    if entry is None:
+        return locked
+    alias = str(src.get("alias") or entry.table)
+    columns = list(locked.get("columns") or [])
+    existing = {str(c.get("key") or "").lower() for c in columns if isinstance(c, dict)}
+    existing |= {str(c.get("source") or "").rsplit(".", 1)[-1].lower() for c in columns if isinstance(c, dict)}
+    added: list[dict[str, Any]] = []
+    for leaf in _IDENTITY_LEAVES:
+        real = entry.columns.get(leaf)
+        if not real or real.lower() in existing:
+            continue
+        added.append(
+            {
+                "key": real,
+                "label": real,
+                "source": f"{alias}.{real}",
+                "aggregate": "none",
+            }
+        )
+        existing.add(real.lower())
+    if not added:
+        return locked
+    out = dict(locked)
+    out["columns"] = columns + added
+    group_by = list(out.get("groupBy") or [])
+    if group_by:
+        present = {str(g).lower() for g in group_by}
+        for col in added:
+            source = str(col.get("source") or "")
+            if source.lower() not in present:
+                group_by.append(source)
+        out["groupBy"] = group_by
+    return out
+
+
 def _should_relocate(sources_out: list[dict[str, Any]], preferred: _TableIndex) -> bool:
     if not sources_out:
         return True
