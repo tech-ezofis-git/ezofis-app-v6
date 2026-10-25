@@ -60,10 +60,18 @@ _AGENT_KEY_HINTS = {
 }
 _NUMERIC_TYPES = ("int", "numeric", "decimal", "float", "double", "money", "real", "number")
 _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
-    (("id", "requestno", "reqno", "request_no", "req_no", "name"), "id", "Req No"),
-    (("stage", "currentstage", "activity", "activity_name", "step"), "stage", "Stage"),
+    (
+        ("requestno", "reqno", "request_no", "req_no", "referencenumber", "reference_number", "name"),
+        "requestNo",
+        "Req No",
+    ),
+    (("stage", "currentstage", "activity", "activity_name", "step", "stepname"), "stage", "Stage"),
     (("status",), "status", "Status"),
-    (("startedby", "actedby", "acted_by", "assignedto", "assigned_to"), "startedBy", "Acted by"),
+    (
+        ("startedby", "actedby", "acted_by", "updatedby", "updated_by", "assignedto", "assigned_to"),
+        "startedBy",
+        "Acted by",
+    ),
     (("workflowname", "workflow_name"), "workflowName", "Workflow"),
     (("createdatutc", "created_at_utc", "createdat", "created_at"), "createdAtUtc", "Created At"),
     (("workflowid", "workflow_id"), "workflowId", "Workflow Id"),
@@ -79,7 +87,7 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
-_IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id"})
+_IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id", "requestno"})
 
 
 def _parse_columns(raw_items: Any) -> list[ReportSpecColumn]:

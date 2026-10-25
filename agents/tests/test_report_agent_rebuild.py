@@ -263,7 +263,7 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     labels = {c.label for c in spec.default_columns}
     assert {"Req No", "Stage", "Status", "Acted by", "Workflow", "Created At", "Workflow Id", "Item Id", "Instance Id"} <= labels
     default_keys = {c.key for c in spec.default_columns}
-    assert {"id", "workflowId", "itemId", "instanceId"} <= default_keys
+    assert {"requestNo", "workflowId", "itemId", "instanceId"} <= default_keys
     assert any(c.key == "workflowName" and c.selected for c in spec.default_columns)
     assert any(c.key == "createdAtUtc" for c in spec.default_columns)
     assert spec.userdefined_columns == []
@@ -277,7 +277,7 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
         item["key"] if isinstance(item, dict) else str(item)
         for item in prompt["columns"]
     }
-    assert {"id", "workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
+    assert {"requestNo", "workflowId", "itemId", "instanceId", "Aging_Bucket", "workflowName", "Request_Count"} <= prompt_col_keys
     parsed = spec_from_prompt_json(json.dumps(prompt))
     assert parsed is not None
     assert parsed.user_prompt == "Aging across all workflows"
@@ -1769,6 +1769,86 @@ async def test_run_report_returns_instance_id_values():
     assert resp.rows
     assert resp.rows[0].get("instanceId") == "98c7b53b-dd08-4e04-8a59-0c43a315e2d6"
     assert resp.rows[0].get("workflowId") == "wf-1"
+
+
+@pytest.mark.asyncio
+async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "wf-ap", "name": "Accounts Payable"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "workflowId": "wf-ap",
+                    "workflowName": "Accounts Payable",
+                    "status": 1,
+                    "requestNo": "AP-6001",
+                    "currentStepInstanceId": "2b459b4d-6970-4747-a6a2-a288ce1ff958",
+                    "startedBy": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
+                    "updatedBy": "verifier-user",
+                    "createdAtUtc": "2026-09-11T04:33:00Z",
+                    "completedAtUtc": None,
+                    "stepInstances": [
+                        {"id": "aaa", "stepName": "Gmail", "status": 2},
+                        {
+                            "id": "2b459b4d-6970-4747-a6a2-a288ce1ff958",
+                            "stepName": "Verifier",
+                            "status": 1,
+                        },
+                    ],
+                }
+            ]
+
+    spec = ReportSpec(
+        title="AP requests",
+        objective="List AP requests",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="requestNo", label="Req No", kind="default", selected=True),
+            ReportSpecColumn(key="stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="requestNo", label="Req No", kind="default", selected=True),
+            ReportSpecColumn(key="stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+        ],
+        source_schema="dbo",
+        source_table="ezfb_787372d8_items",
+        schema_tables=["dbo.ezfb_787372d8_items"],
+    )
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="specific_workflow",
+            workflow_name="Accounts Payable",
+            tenant_id="tenant-1",
+        )
+    )
+    assert resp.rows
+    row = resp.rows[0]
+    assert row.get("requestNo") == "AP-6001"
+    assert row.get("requestNo") not in {0, 1, 2, "0", "1", "2"}
+    assert row.get("stage") == "Verifier"
+    assert row.get("status") == "In Progress"
+    assert row.get("startedBy") == "verifier-user"
+    assert row.get("workflowName") == "Accounts Payable"
 
 
 @pytest.mark.asyncio
