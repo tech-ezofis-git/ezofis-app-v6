@@ -261,9 +261,9 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     ]
     spec = attach_column_palettes(spec, tables=tables, schema_tables=["workflow.workflow_instances_all"])
     labels = {c.label for c in spec.default_columns}
-    assert {"Req No", "Stage", "Status", "Acted by", "Workflow", "Created At", "Workflow Id", "Item Id", "Instance Id"} <= labels
-    default_keys = {c.key for c in spec.default_columns}
-    assert {"requestNo", "workflowId", "itemId", "instanceId"} <= default_keys
+    assert {"Request No", "Stage", "Status", "Acted by", "Workflow", "Created At", "Workflow Id", "Item Id", "Instance Id"} <= labels
+    default_keys = {c.key.lower() for c in spec.default_columns}
+    assert {"requestno", "workflowid", "itemid", "instanceid"} <= default_keys
     assert any(c.key == "workflowName" and c.selected for c in spec.default_columns)
     assert any(c.key == "createdAtUtc" for c in spec.default_columns)
     assert spec.userdefined_columns == []
@@ -327,10 +327,10 @@ def test_userdefined_columns_come_from_form_table_only():
     assert "createdAtUtc" in default_keys
     assert {"workflowId", "itemId", "instanceId"} <= default_keys
     assert "Company_Name" not in default_keys
-    assert any(c.key == "requestNo" and c.selected for c in spec.default_columns)
-    assert any(c.key == "stage" and c.selected for c in spec.default_columns)
-    listing_keys = {c.key for c in spec.columns}
-    assert {"requestNo", "stage", "status", "startedBy", "workflowName"} <= listing_keys
+    assert any(c.key.lower() == "requestno" and c.selected for c in spec.default_columns)
+    assert any(c.key.lower() == "stage" and c.selected for c in spec.default_columns)
+    listing_keys = {c.key.lower() for c in spec.columns}
+    assert {"requestno", "stage", "status", "startedby", "workflowname"} <= listing_keys
 
 
 def test_repository_default_columns_include_item_id():
@@ -1849,8 +1849,10 @@ async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
     assert resp.rows
     row = resp.rows[0]
     assert row.get("requestNo") == "AP-6001"
+    assert row.get("RequestNo") == "AP-6001"
     assert row.get("requestNo") not in {0, 1, 2, "0", "1", "2"}
     assert row.get("stage") == "Verifier"
+    assert row.get("Stage") == "Verifier"
     assert row.get("status") == "In Progress"
     assert row.get("startedBy") == "verifier-user"
     assert row.get("workflowName") == "Accounts Payable"
@@ -1968,9 +1970,78 @@ async def test_run_specific_workflow_hydrates_thin_list_dto_request_no_and_stage
     assert resp.rows
     row = resp.rows[0]
     assert row.get("requestNo") == "AP-6001"
+    assert row.get("RequestNo") == "AP-6001"
     assert row.get("stage") == "Verifier"
+    assert row.get("Stage") == "Verifier"
     assert row.get("status") == "In Progress"
     assert row.get("workflowName") == "Accounts Payable"
+
+
+@pytest.mark.asyncio
+async def test_run_drops_empty_form_req_no_copy_and_keeps_workflow_request_no():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "wf-ap", "name": "Accounts Payable"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "workflowName": "Accounts Payable",
+                    "status": 1,
+                    "requestNo": "REQ-136",
+                    "currentStepInstanceId": "step-1",
+                    "stepInstances": [{"id": "step-1", "stepName": "Verifier", "status": 1}],
+                    "createdAtUtc": "2026-09-11T04:33:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+    spec = ReportSpec(
+        title="AP requests",
+        objective="List AP requests",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_No", label="Req No", kind="userdefined", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="Matched_Status", label="Stage", kind="userdefined", selected=True),
+        ],
+        default_columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+        ],
+        userdefined_columns=[
+            ReportSpecColumn(key="Invoice_No", label="Req No", kind="userdefined", selected=True),
+            ReportSpecColumn(key="Matched_Status", label="Stage", kind="userdefined", selected=True),
+        ],
+        source_schema="dbo",
+        source_table="ezfb_787372d8_items",
+    )
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_CatalogEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="specific_workflow",
+            workflow_name="Accounts Payable",
+            tenant_id="tenant-1",
+        )
+    )
+    keys = [c.key for c in resp.columns]
+    assert "Invoice_No" not in keys
+    assert "Matched_Status" not in keys
+    assert any(k.lower() == "requestno" for k in keys)
+    assert any(k.lower() == "stage" for k in keys)
+    assert resp.rows[0].get("RequestNo") == "REQ-136"
+    assert resp.rows[0].get("Stage") == "Verifier"
 
 
 @pytest.mark.asyncio
