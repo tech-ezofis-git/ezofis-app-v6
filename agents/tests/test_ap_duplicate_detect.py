@@ -48,8 +48,8 @@ def _ctx(
     )
 
 
-async def test_prior_extract_without_matched_is_ignored():
-    """Re-ingesting INV-2026-6001 after a Not Matched run must not hard-fail."""
+async def test_prior_not_matched_extract_is_duplicate():
+    """A second upload after Not Matched is Duplicate, not Not Matched again."""
     extracts = [
         {"item_key": "doc-old", "invoice": {"invoice_number": "INV-100", "vendor": "Acme"}},
     ]
@@ -59,8 +59,8 @@ async def test_prior_extract_without_matched_is_ignored():
     result = await duplicate_detect_run(
         _ctx(invoice_number="INV-100", vendor="Acme", extracts=extracts, finalizes=finalizes)
     )
-    assert result.data["is_duplicate_invoice"] is False
-    assert result.data["possible_duplicate_of"] is None
+    assert result.data["is_duplicate_invoice"] is True
+    assert result.data["duplicate_of"] == "INV-100"
 
 
 async def test_prior_matched_extract_is_hard_duplicate():

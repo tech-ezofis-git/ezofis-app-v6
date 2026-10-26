@@ -163,6 +163,16 @@ def recipe_highlight_for(col: ReportSpecColumn, *, selected_keys: Optional[set[s
                 {"op": "contains", "value": "match", "color": "green"},
             ],
         )
+    if compact == "matchedstatus" or "matched status" in label:
+        return _hl(
+            default="gray",
+            rules=[
+                {"op": "contains", "value": "mismatch", "color": "red"},
+                {"op": "contains", "value": "unmatched", "color": "red"},
+                {"op": "contains", "value": "partial", "color": "orange"},
+                {"op": "contains", "value": "match", "color": "green"},
+            ],
+        )
     if compact in {"status", "matchedstatus"}:
         return _hl(
             default="gray",
@@ -244,6 +254,144 @@ def apply_recipe_highlights(spec: ReportSpec) -> ReportSpec:
     if not changed:
         return spec
     return spec.model_copy(update={"columns": updated})
+
+
+_VALUE_COLOR_HINTS = (
+    ("approved", "green"),
+    ("completed", "green"),
+    ("complete", "green"),
+    ("matched", "green"),
+    ("within", "green"),
+    ("0-5", "green"),
+    ("rejected", "red"),
+    ("failed", "red"),
+    ("mismatch", "red"),
+    ("unmatched", "red"),
+    ("outside", "red"),
+    ("overdue", "red"),
+    ("cancelled", "red"),
+    ("canceled", "red"),
+    ("30+", "red"),
+    ("pending", "orange"),
+    ("hold", "orange"),
+    ("partial", "orange"),
+    ("16-30", "orange"),
+    ("6-15", "yellow"),
+    ("running", "blue"),
+    ("progress", "blue"),
+    ("open", "blue"),
+    ("verifier", "blue"),
+)
+_FALLBACK_COLORS = ("blue", "orange", "yellow", "purple", "teal", "indigo", "cyan", "pink")
+_STRUCTURAL_OPS = frozenset({"empty", "notempty", "notEmpty"})
+_MAX_BOUND_VALUES = 12
+
+
+def _cell_text(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    return str(value).strip()
+
+
+def _norm_text(value: Any) -> str:
+    return _cell_text(value).lower()
+
+
+def _distinct_column_values(rows: list[dict[str, Any]], key: str, *, limit: int = _MAX_BOUND_VALUES) -> list[str]:
+    counts: dict[str, int] = {}
+    seen: dict[str, str] = {}
+    low = (key or "").lower()
+    compact = "".join(ch for ch in low if ch.isalnum())
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        lower = {str(item).lower(): val for item, val in row.items()}
+        text = _cell_text(lower.get(low))
+        if not text and compact:
+            for item_key, val in lower.items():
+                if "".join(ch for ch in item_key if ch.isalnum()) == compact:
+                    text = _cell_text(val)
+                    if text:
+                        break
+        if not text:
+            continue
+        token = text.lower()
+        if token not in seen:
+            seen[token] = text
+            counts[token] = 0
+        counts[token] += 1
+    ordered = sorted(seen.values(), key=lambda item: (-counts[item.lower()], item))
+    return ordered[:limit]
+
+
+def _recipe_color_for(value: str, rules: list[ReportSpecHighlightRule]) -> Optional[str]:
+    text = _norm_text(value)
+    for rule in rules or []:
+        op = str(rule.op or "").lower()
+        needle = _norm_text(rule.value)
+        if not needle:
+            continue
+        if op == "eq" and needle == text:
+            return rule.color
+        if op in {"contains", "notcontains"} and needle in text:
+            return rule.color
+    return None
+
+
+def _keyword_color(value: str) -> Optional[str]:
+    text = _norm_text(value)
+    for needle, color in _VALUE_COLOR_HINTS:
+        if needle in text:
+            return color
+    return None
+
+
+def bind_highlights_to_rows(
+    columns: list[ReportColumnOut],
+    rows: list[dict[str, Any]],
+) -> list[ReportColumnOut]:
+    """Replace canned highlight.eq values with distinct values actually in the rows."""
+    out: list[ReportColumnOut] = []
+    for col in columns or []:
+        hl = col.highlight
+        if hl is None or not hl.rules:
+            out.append(col)
+            continue
+        structural = [
+            rule
+            for rule in hl.rules
+            if (rule.op or "").lower() in _STRUCTURAL_OPS or rule.compare_field
+        ]
+        values = _distinct_column_values(rows, col.key)
+        if not values:
+            if structural:
+                out.append(
+                    col.model_copy(
+                        update={"highlight": ReportSpecHighlight(default=hl.default, rules=structural)}
+                    )
+                )
+            else:
+                out.append(col.model_copy(update={"highlight": None}))
+            continue
+        rules = list(structural)
+        used: set[str] = set()
+        fallback_i = 0
+        for value in values:
+            token = _norm_text(value)
+            if not token or token in used:
+                continue
+            used.add(token)
+            color = _recipe_color_for(value, hl.rules) or _keyword_color(value)
+            if not color:
+                color = _FALLBACK_COLORS[fallback_i % len(_FALLBACK_COLORS)]
+                fallback_i += 1
+            rules.append(ReportSpecHighlightRule(op="eq", value=value, color=color))
+        out.append(
+            col.model_copy(
+                update={"highlight": ReportSpecHighlight(default=hl.default or "gray", rules=rules)}
+            )
+        )
+    return out
 
 
 def column_outs(spec: ReportSpec) -> list[ReportColumnOut]:

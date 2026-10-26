@@ -7,11 +7,12 @@ from app.ap_skills.types import ApContext, ApSkillResult, field_text, invoice_fr
 
 SKILL_ID = "duplicate_detect"
 
-# Only a prior *successful* match counts as a hard duplicate from local
-# AP skill history. Re-ingesting the same PDF (new item_key) after a
-# NOT_MATCHED / DUPLICATE / PARTIALLY_MATCHED run must not force Not Matched
-# forever — those are retries, not a second payment.
-_HARD_PRIOR_DECISIONS = frozenset({"MATCHED"})
+# A second upload of the same invoice number is a duplicate once any earlier
+# run finished, including Not Matched. The status becomes Duplicate. The
+# insight still says the invoice is not matched when the supplier or PO disagrees.
+_HARD_PRIOR_DECISIONS = frozenset(
+    {"MATCHED", "NOT_MATCHED", "PARTIALLY_MATCHED", "DUPLICATE"}
+)
 
 
 def _invoice_of(payload: dict) -> dict:
@@ -72,7 +73,7 @@ async def run(ctx: ApContext) -> ApSkillResult:
             possible_duplicate_of = prior_no
             possible_duplicate_score = combined
 
-    # Local AP extracts: hard duplicate only if that prior item was MATCHED.
+    # Local AP extracts: same invoice number on an earlier finished run.
     for prior in store_history:
         if not isinstance(prior, dict):
             continue
@@ -87,8 +88,6 @@ async def run(ctx: ApContext) -> ApSkillResult:
                 duplicate_of = prior_no
                 score = 1.0
                 break
-            # Same invoice on a prior non-MATCHED run = retry / re-ingest.
-            # Do not soft-flag either (that would cap MATCHED → PARTIAL).
             continue
         _consider_possible(prior_no or "", prior_vendor)
 

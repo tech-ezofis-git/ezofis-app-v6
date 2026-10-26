@@ -45,6 +45,17 @@ def test_ai_insight_matched_approve():
     assert "approve for posting" in insight.lower()
 
 
+def test_ai_insight_duplicate_and_not_matched():
+    insight = build_ai_insight(
+        decision="DUPLICATE",
+        po_match={"decision": "PARTIALLY_MATCHED", "reason": "Totals match.", "po": {"vendor": "Vertex Logistics"}},
+        vendor={"status": "MISMATCH"},
+    )
+    lowered = insight.lower()
+    assert "duplicate" in lowered
+    assert "not matched" in lowered
+
+
 def test_ai_insight_not_matched_hold():
     insight = build_ai_insight(decision="NOT_MATCHED", po_match={"reason": "PO not found."}, vendor={})
     assert "hold" in insight.lower() or "manual" in insight.lower()
