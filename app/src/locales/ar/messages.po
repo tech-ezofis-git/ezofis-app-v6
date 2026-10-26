@@ -78,12 +78,12 @@ msgstr "{0} - تفاصيل الاستخدام"
 
 #. placeholder {0}: count('Active')
 #. placeholder {1}: count('Scheduled')
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:379
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:480
 msgid "{0} active · {1} scheduled"
 msgstr ""
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:462
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:466
 msgid "{0} already has an active or scheduled delegation. New dates must not overlap it."
 msgstr ""
 
@@ -125,14 +125,14 @@ msgstr "{0} رصيد، الأعلى هذه الفترة"
 
 #. placeholder {0}: days.all
 #. placeholder {1}: days.working
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:276
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:401
 msgid "{0} days · {1} working"
 msgstr ""
 
 #. placeholder {0}: dayCount.all
 #. placeholder {1}: dayCount.working
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:539
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:872
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:543
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:876
 msgid "{0} days ({1} working)"
 msgstr ""
 
@@ -353,7 +353,7 @@ msgstr "{filesCount} مستندات في قائمة الانتظار"
 msgid "{filesPct}% file capacity"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3885
+#: src/pages/folders/components/DocumentDetailsView.tsx:3890
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "عارض {fileType}"
@@ -717,12 +717,12 @@ msgstr ""
 msgid "a trigger field"
 msgstr "حقل الزناد"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:62
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:867
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:63
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:871
 msgid "Absence Dates"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:207
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:297
 msgid "Absence Period"
 msgstr ""
 
@@ -816,14 +816,14 @@ msgstr "الإجراء مطلوب"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
 #: src/pages/forms/FormEntriesPage.tsx:2199
 #: src/pages/forms/FormsPage.tsx:293
-#: src/pages/reports/components/ReportsListView.tsx:241
+#: src/pages/reports/components/ReportsListView.tsx:249
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:401
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1003
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3653
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:74
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:905
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:75
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:909
 #: src/pages/settings/components/Menus.tsx:416
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -1053,7 +1053,7 @@ msgstr "أضف حقولاً لرؤية معاينة مباشرة لجدول ال
 #: src/pages/portal/components/PortalMobileHome.tsx:333
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
-#: src/pages/reports/components/OverviewTab.tsx:506
+#: src/pages/reports/components/OverviewTab.tsx:542
 msgid "Add filter"
 msgstr "إضافة عامل تصفية"
 
@@ -1173,7 +1173,7 @@ msgstr "إضافة مستخدم"
 msgid "Add users and a password for each. In document details, those users enter this password on the eye control to reveal the original file."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:711
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:715
 msgid "Add workflow"
 msgstr ""
 
@@ -1197,12 +1197,12 @@ msgstr "شروط إضافية"
 #~ msgid "Advanced settings"
 #~ msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:920
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:924
 msgid "After leave: delegate keeps in-progress requests"
 msgstr ""
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:919
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:923
 msgid "After leave: return unfinished requests to {0}"
 msgstr ""
 
@@ -1303,15 +1303,15 @@ msgid "AI generated"
 msgstr "تم إنشاؤه بالذكاء الاصطناعي"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1975
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5595
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5590
 msgid "AI Insight"
 msgstr "انسايت الذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6150
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6145
 msgid "AI Insight & Back Order Analysis"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4938
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4933
 msgid "AI Insight & Verification Summary"
 msgstr ""
 
@@ -1440,7 +1440,7 @@ msgstr "محاذاة رؤوس CSV/XLSX مع مخطط ربط قاعدة البي�
 #: src/pages/requests/components/InboxList.tsx:1473
 #: src/pages/requests/components/InboxList.tsx:1482
 #: src/pages/search/SearchPage.tsx:309
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:176
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:246
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:564
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:632
@@ -1521,7 +1521,7 @@ msgstr ""
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6111
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6106
 msgid "All purchase order quantities match this invoice. No outstanding back orders detected."
 msgstr ""
 
@@ -1533,8 +1533,8 @@ msgstr ""
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:589
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:892
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:593
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:896
 msgid "All stages"
 msgstr ""
 
@@ -1575,7 +1575,7 @@ msgstr "هل لديك حساب بالفعل؟"
 msgid "Already mapped"
 msgstr "تم تعيينها بالفعل"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:671
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:675
 msgid "Alternative Assignee"
 msgstr ""
 
@@ -1782,7 +1782,7 @@ msgstr "تسجيل دخول التطبيق"
 #~ msgstr ""
 
 #: src/pages/portal/components/PortalMobileHome.tsx:567
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1988
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1989
 msgid "Apply"
 msgstr ""
 
@@ -1859,7 +1859,7 @@ msgid "Archived"
 msgstr "مؤرشف"
 
 #: src/pages/forms/FormsPage.tsx:553
-#: src/pages/reports/components/ReportsListView.tsx:303
+#: src/pages/reports/components/ReportsListView.tsx:311
 msgid "Are you sure you want to delete"
 msgstr "هل أنت متأكد أنك تريد الحذف"
 
@@ -1916,7 +1916,7 @@ msgstr "هل أنت متأكد أنك تريد حذف هذا الدور؟ لا �
 msgid "Are you sure you want to delete this user? This action cannot be undone."
 msgstr "هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3853
+#: src/pages/folders/components/DocumentDetailsView.tsx:3858
 msgid "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 msgstr ""
 
@@ -1987,13 +1987,13 @@ msgstr "المستخدمون والمجموعات المعينة"
 msgid "Assigned Users & Groups ({0})"
 msgstr "المستخدمون والمجموعات المعينة ({0})"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:204
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:56
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:860
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:294
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:57
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:864
 msgid "Assignee"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5957
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5952
 msgid "Associated Entity"
 msgstr ""
 
@@ -2062,7 +2062,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/Header.tsx:932
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:55
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:80
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:184
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:466
@@ -2107,7 +2107,7 @@ msgstr "المصادقة مطلوبة. الرجاء تسجيل الدخول مر
 msgid "Authenticator App"
 msgstr "تطبيق المصادقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5121
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5116
 msgid "Authorized Amount"
 msgstr "المبلغ المصرح به"
 
@@ -2250,7 +2250,7 @@ msgstr "في انتظار التحقق"
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2516
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:69
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1166
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1292
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1293
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:726
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:986
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2444
@@ -2272,7 +2272,7 @@ msgstr "في انتظار التحقق"
 msgid "Back"
 msgstr "رجوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4742
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4737
 msgid "Back Order"
 msgstr "طلب متأخر"
 
@@ -2280,7 +2280,7 @@ msgstr "طلب متأخر"
 msgid "Back Order Detected"
 msgstr "تم اكتشاف الطلب الخلفي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6012
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6007
 msgid "Back Order Reconciliation"
 msgstr ""
 
@@ -2382,11 +2382,11 @@ msgstr ""
 msgid "Backorder detected on purchase order fulfillment"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:65
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:66
 msgid "Backup user per workflow"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6297
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6292
 msgid "Balance Qty"
 msgstr ""
 
@@ -2647,7 +2647,7 @@ msgstr "يمكنه العرض"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
 #: src/pages/folders/components/DocumentDetailsView.tsx:2397
 #: src/pages/folders/components/DocumentDetailsView.tsx:2756
-#: src/pages/folders/components/DocumentDetailsView.tsx:3851
+#: src/pages/folders/components/DocumentDetailsView.tsx:3856
 #: src/pages/folders/components/DocumentsListView.tsx:1158
 #: src/pages/folders/components/FolderTable.tsx:1640
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1037
@@ -2664,7 +2664,7 @@ msgstr "يمكنه العرض"
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
-#: src/pages/reports/components/ReportsListView.tsx:318
+#: src/pages/reports/components/ReportsListView.tsx:326
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
@@ -2675,7 +2675,7 @@ msgstr "يمكنه العرض"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:531
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:765
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:1025
-#: src/pages/requests/RequestsPage.tsx:1886
+#: src/pages/requests/RequestsPage.tsx:1895
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:799
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:847
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:959
@@ -2694,7 +2694,7 @@ msgstr ""
 msgid "Cancel reconnect"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2227
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2228
 msgid "Cancel Remaining"
 msgstr "إلغاء المتبقية"
 
@@ -2750,7 +2750,7 @@ msgstr "النقد المطلوب — الأيام السبعة القادمة"
 msgid "Cash This Week"
 msgstr "النقد هذا الأسبوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5205
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5200
 #: src/pages/settings/components/AuditMonitoring.tsx:195
 #: src/pages/settings/components/AuditMonitoring.tsx:343
 #: src/pages/settings/components/AuditMonitoring.tsx:344
@@ -2953,7 +2953,7 @@ msgstr "اختر سير عمل لعرض التقديمات الخاصة به."
 #~ msgid "Choose an AI design option or describe your dashboard needs"
 #~ msgstr "اختر أحد خيارات تصميم الذكاء الاصطناعي أو قم بوصف احتياجات لوحة المعلومات الخاصة بك"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:224
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:349
 #: src/pages/settings/SettingsMain.tsx:349
 msgid "Choose backup users so workflow requests keep moving while someone is on leave."
 msgstr ""
@@ -3303,7 +3303,7 @@ msgstr "إغلاق"
 msgid "Close AI Insights"
 msgstr "إغلاق رؤى الذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6126
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6121
 msgid "Close out remaining purchase order quantities and request a credit memo or amended PO."
 msgstr ""
 
@@ -3311,7 +3311,7 @@ msgstr ""
 msgid "Close panel"
 msgstr "إغلاق اللوحة"
 
-#: src/pages/requests/RequestsPage.tsx:1982
+#: src/pages/requests/RequestsPage.tsx:1991
 msgid "Close Tab"
 msgstr ""
 
@@ -3421,7 +3421,7 @@ msgstr "الأعمدة المستوردة:"
 #: src/pages/requests/components/request/components/Header.tsx:938
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:61
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:76
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:168
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:472
@@ -3464,7 +3464,7 @@ msgstr "أكمل الإعداد لبدء أتمتة حسابات المدفوع�
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:760
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1421
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/requests/utils/workflow.utils.ts:430
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Completed"
@@ -3488,7 +3488,7 @@ msgstr "اكتمل في 0.9 ث"
 msgid "Compliance & Risk Assessment"
 msgstr "تقييم الامتثال والمخاطر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5984
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5979
 msgid "Compliance Note"
 msgstr ""
 
@@ -3618,7 +3618,7 @@ msgstr "تأكيد والترقية إلى بيئة الإنتاج"
 msgid "Confirm and activate the policy"
 msgstr "تأكيد وتفعيل السياسة"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:77
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:78
 msgid "Confirm and save"
 msgstr ""
 
@@ -3646,7 +3646,7 @@ msgstr "اتصال {0}"
 msgid "Connect {providerLabel}"
 msgstr "اتصال {providerLabel}"
 
-#: src/pages/requests/RequestsPage.tsx:1896
+#: src/pages/requests/RequestsPage.tsx:1905
 msgid "Connect Email Watch"
 msgstr ""
 
@@ -3698,7 +3698,7 @@ msgid "Connect your QuickBooks account to sync PO and invoice data automatically
 msgstr "اربط حساب QuickBooks لمزامنة بيانات أوامر الشراء والفواتير تلقائياً."
 
 #: src/pages/requests/components/Header.tsx:147
-#: src/pages/requests/RequestsPage.tsx:1963
+#: src/pages/requests/RequestsPage.tsx:1972
 msgid "Connected"
 msgstr ""
 
@@ -3710,11 +3710,11 @@ msgstr "متصل • REST v11.13"
 msgid "Connected • SID: {sapSystemId}"
 msgstr "متصل • SID: {sapSystemId}"
 
-#: src/pages/requests/RequestsPage.tsx:1747
+#: src/pages/requests/RequestsPage.tsx:1756
 msgid "Connected successfully"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1955
+#: src/pages/requests/RequestsPage.tsx:1964
 msgid "Connected Successfully!"
 msgstr ""
 
@@ -3727,7 +3727,7 @@ msgid "Connecting to SAP Host ({sapHost})..."
 msgstr "جارٍ الاتصال بمضيف SAP ({sapHost})..."
 
 #: src/pages/requests/components/Header.tsx:150
-#: src/pages/requests/RequestsPage.tsx:1876
+#: src/pages/requests/RequestsPage.tsx:1885
 msgid "Connecting..."
 msgstr ""
 
@@ -3747,7 +3747,7 @@ msgstr "نجح الاتصال! تم التحقق من وجهة RFC لـ SAP ERP 
 msgid "Connector"
 msgstr "الموصل"
 
-#: src/pages/requests/RequestsPage.tsx:1968
+#: src/pages/requests/RequestsPage.tsx:1977
 msgid "Connector ID:"
 msgstr ""
 
@@ -3759,11 +3759,11 @@ msgstr ""
 #~ msgid "Console / Workflow API"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2219
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2220
 msgid "Contact Vendor"
 msgstr "اتصل بالمورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6123
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6118
 msgid "Contact vendor for estimated delivery schedule on remaining backordered quantities."
 msgstr ""
 
@@ -3841,6 +3841,10 @@ msgstr "التحكم مع الجداول الزمنية للجاهزية"
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "يتم إنشاء عناصر التحكم من تعريفات حقول المستودع فقط. تبقى القيم الفارغة أو المفقودة فارغة في وضع التعديل وتظهر كـ «-» في عرض الشبكة/القائمة."
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:176
+msgid "Copied as a draft — set new dates to activate"
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:229
 msgid "Copied from"
 msgstr ""
@@ -3882,7 +3886,7 @@ msgstr "انسخ عنوان URL هذا وافتحه في علامة تبويب �
 msgid "Copy URL"
 msgstr "انسخ عنوان URL"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6002
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5997
 msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 msgstr ""
 
@@ -3931,15 +3935,15 @@ msgstr ""
 #~ msgid "Couldn't delete selected staged files."
 #~ msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:356
+#: src/pages/folders/components/FolderExplorer.tsx:357
 msgid "Couldn't delete this document. Missing document or repository ID."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:237
+#: src/pages/folders/components/FolderExplorer.tsx:238
 msgid "Couldn't delete this staged file."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:320
+#: src/pages/folders/components/FolderExplorer.tsx:321
 msgid "Couldn't export this staged file. Missing ID."
 msgstr ""
 
@@ -4023,7 +4027,7 @@ msgstr "أنشئ بوابات بعلامتك التجارية مع طرق تسج
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "أنشئ بوابات بعلامتك التجارية، وقم بتكوين طرق تسجيل الدخول، واربط مهام سير العمل."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:363
 msgid "Create delegation"
 msgstr ""
 
@@ -4179,7 +4183,7 @@ msgstr "حرج"
 #~ msgid "Critical Exceptions"
 #~ msgstr "استثناءات حرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5538
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5533
 msgid "Cross-Check Status"
 msgstr "حالة الفحص المتقاطع"
 
@@ -4207,12 +4211,12 @@ msgstr "العملة"
 msgid "Currency Key"
 msgstr "مفتاح العملة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6178
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6173
 #: src/pages/sign-in/components/SignInForm.tsx:826
 msgid "Current"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:400
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:404
 msgid "Current Assignee"
 msgstr ""
 
@@ -4391,7 +4395,7 @@ msgstr "تاريخ التعديل"
 msgid "Date To"
 msgstr "التاريخ To"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:280
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:405
 msgid "Dates not set"
 msgstr ""
 
@@ -4407,7 +4411,7 @@ msgstr "اليوم {trialDay} من {trialLengthDays}"
 msgid "days"
 msgstr "أيام"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5822
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5817
 msgid "Days"
 msgstr ""
 
@@ -4415,7 +4419,7 @@ msgstr ""
 msgid "days remaining in evaluation"
 msgstr "أيام متبقية في فترة التقييم"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5921
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5916
 msgid "Deadlines & Penalty Insights"
 msgstr ""
 
@@ -4471,7 +4475,7 @@ msgstr "خيار التخزين الافتراضي المقدم مع حسابك 
 msgid "Default URL"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:409
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:413
 msgid "Defaults to you. Admins can set up delegation for any user."
 msgstr ""
 
@@ -4511,12 +4515,12 @@ msgstr ""
 msgid "Define the retention rule"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:205
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:295
 msgid "Delegated To"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:68
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:877
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:69
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:881
 msgid "Delegates"
 msgstr ""
 
@@ -4524,25 +4528,34 @@ msgstr ""
 msgid "Delegation"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:141
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:164
 msgid "Delegation created"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:374
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:381
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:198
+msgid "Delegation deleted"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:378
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:385
 msgid "Delegation Details"
+msgstr ""
+
+#. placeholder {0}: userName(ended.assigneeUserId)
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:187
+msgid "Delegation ended — open requests return to {0}"
 msgstr ""
 
 #: src/constants/pageGuides.ts:299
 msgid "Delegation starts at 00:00 on the start date and stops at 23:59 on the end date. You can end it early from the Delegations list."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:140
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:163
 msgid "Delegation updated"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:155
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:359
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:225
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:362
 msgid "Delegations"
 msgstr ""
 
@@ -4557,8 +4570,8 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:337
 #: src/pages/reports/components/RowActionsMenu.tsx:44
 #: src/pages/requests/components/Table.tsx:119
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:355
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:357
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:466
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:485
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:508
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:690
@@ -4597,6 +4610,10 @@ msgstr ""
 msgid "Delete column \"{col}\""
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:488
+msgid "Delete delegation"
+msgstr ""
+
 #: src/pages/folders/components/DocumentsListView.tsx:1163
 #: src/pages/folders/components/FolderTable.tsx:1645
 msgid "Delete Document"
@@ -4632,7 +4649,7 @@ msgstr "حذف نهائيا"
 msgid "Delete Portal"
 msgstr "حذف البوابة"
 
-#: src/pages/reports/components/ReportsListView.tsx:301
+#: src/pages/reports/components/ReportsListView.tsx:309
 msgid "Delete Report"
 msgstr "حذف التقرير"
 
@@ -4690,6 +4707,11 @@ msgstr ""
 
 #: src/pages/folders/components/Upload/Upload.tsx:5148
 msgid "Delete staged files"
+msgstr ""
+
+#. placeholder {0}: userName(deleting.assigneeUserId)
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:492
+msgid "Delete the delegation for {0}? Requests stop routing to the delegate."
 msgstr ""
 
 #: src/features/builder/components/FieldSidebar.tsx:272
@@ -4843,7 +4865,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1353
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:627
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5197
 #: src/pages/settings/components/credits/Credits.tsx:509
 #: src/pages/settings/components/credits/Credits.tsx:510
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2346
@@ -4910,7 +4932,7 @@ msgstr "التفاصيل"
 msgid "Detect type"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6016
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6011
 msgid "Detected"
 msgstr ""
 
@@ -4965,7 +4987,7 @@ msgstr ""
 msgid "Dismiss"
 msgstr "رفض"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1993
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1994
 msgid "Dismiss suggestion"
 msgstr ""
 
@@ -4993,7 +5015,7 @@ msgstr ""
 msgid "Document"
 msgstr "وثيقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5076
 msgid "Document & Procurement Ledger Mapping"
 msgstr ""
 
@@ -5025,7 +5047,7 @@ msgstr "مستند التاريخ"
 msgid "Document Date in Document"
 msgstr "تاريخ المستند في المستند"
 
-#: src/pages/folders/components/FolderExplorer.tsx:376
+#: src/pages/folders/components/FolderExplorer.tsx:377
 msgid "Document deleted successfully."
 msgstr ""
 
@@ -5218,7 +5240,7 @@ msgstr ""
 msgid "Double payments flagged by ledger algorithms"
 msgstr "مدفوعات مزدوجة رصدتها خوارزميات دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5614
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5609
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr ""
 
@@ -5415,7 +5437,7 @@ msgstr "الاستحقاق والشروط"
 #: src/pages/requests/components/InboxList.tsx:2119
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5899
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5894
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Due Date"
 msgstr "تاريخ الاستحقاق"
@@ -5444,13 +5466,14 @@ msgstr "مستحق اليوم"
 
 #: src/pages/requests/components/request/components/Header.tsx:1385
 #: src/pages/requests/utils/localizeRequestUi.ts:45
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:452
 msgid "Duplicate"
 msgstr "مكرر"
 
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:308
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:310
-msgid "Duplicate as draft"
-msgstr ""
+#~ msgid "Duplicate as draft"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/Header.tsx:890
 msgid "Duplicate Check"
@@ -5460,7 +5483,7 @@ msgstr ""
 msgid "Duplicate Detected"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4592
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4587
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
@@ -5468,7 +5491,7 @@ msgstr "اكتشاف التكرار"
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5513
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5508
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
@@ -5577,9 +5600,8 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:955
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:447
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:959
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2646
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2721
 #: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:124
@@ -5611,8 +5633,8 @@ msgstr "تعديل البطاقة"
 msgid "Edit column \"{col}\""
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:376
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:383
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:380
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:387
 msgid "Edit Delegation"
 msgstr ""
 
@@ -5781,7 +5803,7 @@ msgstr "البريد / اسم المستخدم"
 msgid "Email Address"
 msgstr "عنوان البريد الإلكتروني"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:766
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:770
 msgid "Email and in-app notice with the dates and workflows they are covering."
 msgstr ""
 
@@ -5851,12 +5873,11 @@ msgstr "تمكين لتعيين كلمة مرور جديدة لهذا المست
 msgid "Enabled"
 msgstr "ممكّن"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:234
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:236
 msgid "End date must be on or after the start date."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:332
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:334
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:458
 msgid "End delegation now"
 msgstr ""
 
@@ -6054,7 +6075,7 @@ msgstr "تخطيط موارد المؤسسات والمزامنة"
 msgid "ERP data will be used to validate incoming invoices to match with PO information and supplier data."
 msgstr "ستُستخدم بيانات ERP للتحقق من الفواتير الواردة ومطابقتها مع معلومات أمر الشراء وبيانات المورد."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5181
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5176
 msgid "ERP PO Line Items Mapped"
 msgstr ""
 
@@ -6062,11 +6083,11 @@ msgstr ""
 msgid "ERP Settings"
 msgstr "إعدادات تخطيط موارد المؤسسات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5844
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5839
 msgid "ERP System"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5555
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5550
 msgid "Error Severity"
 msgstr ""
 
@@ -6113,11 +6134,11 @@ msgstr ""
 
 #. placeholder {0}: formatShortDay(fromDate)
 #. placeholder {1}: formatShortDay(toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:756
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:760
 msgid "Every request that arrives between {0} and {1} goes straight to the delegate."
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5618
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5613
 msgid "Exact Invoice Number string similarity."
 msgstr ""
 
@@ -6143,7 +6164,7 @@ msgid "Exception uploading file: {detail}"
 msgstr "استثناء أثناء رفع الملف: {detail}"
 
 #: src/pages/requests/components/InboxList.tsx:2294
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:46
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Exceptions"
@@ -6163,8 +6184,8 @@ msgstr "الطلبات الحالية"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2507
 #: src/pages/folders/components/DocumentDetailsView.tsx:2528
-#: src/pages/folders/components/DocumentDetailsView.tsx:3852
-#: src/pages/folders/components/DocumentDetailsView.tsx:3855
+#: src/pages/folders/components/DocumentDetailsView.tsx:3857
+#: src/pages/folders/components/DocumentDetailsView.tsx:3860
 msgid "Exit Signing"
 msgstr ""
 
@@ -6296,7 +6317,7 @@ msgstr ""
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:1081
 #: src/pages/folders/components/Upload/Upload.tsx:4818
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:598
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4842
 #: src/pages/requests/components/RequestSummary.tsx:194
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:454
 msgid "Extracted Data"
@@ -6412,7 +6433,7 @@ msgstr "فشل تصنيف المستند"
 msgid "Failed to complete signing process"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1499
+#: src/pages/requests/RequestsPage.tsx:1508
 msgid "Failed to connect watch email."
 msgstr ""
 
@@ -6442,7 +6463,7 @@ msgstr "فشل حذف المجلد"
 msgid "Failed to delete form"
 msgstr "فشل to delete form"
 
-#: src/pages/reports/components/ReportsListView.tsx:333
+#: src/pages/reports/components/ReportsListView.tsx:341
 msgid "Failed to delete report"
 msgstr "فشل حذف التقرير"
 
@@ -6532,7 +6553,7 @@ msgstr "فشل تحميل القائمة"
 msgid "Failed to load report"
 msgstr "فشل تحميل التقرير"
 
-#: src/pages/reports/components/ReportsListView.tsx:286
+#: src/pages/reports/components/ReportsListView.tsx:294
 msgid "Failed to load reports."
 msgstr "فشل تحميل التقارير."
 
@@ -6560,7 +6581,7 @@ msgstr ""
 #~ msgid "Failed to move this request."
 #~ msgstr "فشل نقل هذا الطلب."
 
-#: src/pages/requests/RequestsPage.tsx:1486
+#: src/pages/requests/RequestsPage.tsx:1495
 msgid "Failed to obtain sign-in URL from server."
 msgstr ""
 
@@ -6717,7 +6738,7 @@ msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (المحاسبة المالية وإدارة المواد)"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:106
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5357
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5352
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:734
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:912
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1135
@@ -6725,7 +6746,7 @@ msgid "Field"
 msgstr "مجال"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:255
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5336
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5331
 msgid "Field Matching"
 msgstr "مطابقة الحقول"
 
@@ -6999,7 +7020,7 @@ msgstr "حقل الاسم الأول"
 msgid "Fixed Order"
 msgstr "أمر ثابت"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6120
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6115
 msgid "Flag or reject transaction. Short shipment deviates from the vendor purchase agreement without prior authorization."
 msgstr ""
 
@@ -7171,7 +7192,7 @@ msgstr "تم تحديث المجلد بنجاح."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:31
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:77
-#: src/pages/folders/components/FolderExplorer.tsx:635
+#: src/pages/folders/components/FolderExplorer.tsx:636
 #: src/pages/search/SearchPage.tsx:328
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:74
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
@@ -7292,7 +7313,7 @@ msgstr "وجدت في بيانات أمر الشراء الرئيسي الخاص
 msgid "From"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:501
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:505
 msgid "From Date"
 msgstr ""
 
@@ -7304,11 +7325,11 @@ msgstr ""
 msgid "FTP Agent"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6300
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6295
 msgid "Fulfillment"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6200
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6195
 msgid "Fulfillment & Ledger Summary"
 msgstr ""
 
@@ -7436,11 +7457,11 @@ msgstr ""
 msgid "GL & Category"
 msgstr "GL والفئة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4716
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4711
 msgid "GL Account Matching"
 msgstr "مطابقة حساب دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5713
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5708
 msgid "GL Account Matching Report"
 msgstr "تقرير مطابقة حساب دفتر الأستاذ"
 
@@ -7514,7 +7535,7 @@ msgstr "مساحة عمل جوجل"
 msgid "Google Workspace sign-in"
 msgstr "تسجيل الدخول إلى Google Workspace"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5619
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5614
 msgid "Grand Total and individual line-item value mapping."
 msgstr ""
 
@@ -7620,7 +7641,7 @@ msgstr "المجموعات"
 msgid "Guidelines validated"
 msgstr "تم التحقق من الإرشادات"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:357
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:359
 msgid "Hand over workflow requests to backup users for specific dates and workflows."
 msgstr ""
 
@@ -7637,7 +7658,7 @@ msgstr "فاتورة مكتوبة بخط اليد"
 msgid "Header Fields"
 msgstr "حقول الرأس"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5349
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5344
 msgid "Header Fields Checked"
 msgstr ""
 
@@ -7779,7 +7800,7 @@ msgstr "أعلى استهلاك للرصيد"
 msgid "Highlighted"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5533
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5528
 msgid "Historical Match & Integrity Results"
 msgstr ""
 
@@ -7792,7 +7813,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
 #: src/pages/requests/components/request/components/Header.tsx:940
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:474
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:510
 msgid "History"
@@ -7802,7 +7823,7 @@ msgstr "السجل"
 msgid "Hold"
 msgstr "معلّق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6117
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6112
 msgid "Hold balance or keep PO open. Track remaining units under backorder until the supplemental shipment and invoice arrive."
 msgstr ""
 
@@ -7950,7 +7971,7 @@ msgstr "غير نشط"
 
 #: src/pages/requests/components/request/components/Header.tsx:354
 #: src/pages/requests/components/request/Request.tsx:1938
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Inbox"
@@ -8152,7 +8173,7 @@ msgstr ""
 #~ msgid "Intelligent Upload"
 #~ msgstr "التحميل الذكي"
 
-#: src/pages/folders/components/FolderExplorer.tsx:644
+#: src/pages/folders/components/FolderExplorer.tsx:645
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:798
 msgid "Intelligent Upload & Classify"
 msgstr "التحميل والتصنيف الذكي"
@@ -8245,7 +8266,7 @@ msgstr "فاتورة #"
 #~ msgid "Invoice aging analysis"
 #~ msgstr "تحليل تقادم الفواتير"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6205
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6200
 #: src/pages/requests/utils/localizeRequestUi.ts:13
 msgid "Invoice Amount"
 msgstr "مبلغ الفاتورة"
@@ -8253,7 +8274,7 @@ msgstr "مبلغ الفاتورة"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2104
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5860
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5855
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Invoice Date"
 msgstr "تاريخ الفاتورة"
@@ -8283,7 +8304,7 @@ msgid "Invoice Extracted Line Item"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2971
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6738
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6733
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
@@ -8301,7 +8322,7 @@ msgid "Invoice Number"
 msgstr "رقم الفاتورة"
 
 #. placeholder {0}: agentData?.erpSystem || (agentData?.poMasterSourceType === 'quickbooks' ? 'QuickBooks' : 'SAP')
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5926
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5921
 msgid "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 msgstr ""
 
@@ -8309,7 +8330,7 @@ msgstr ""
 msgid "Invoice processing funnel"
 msgstr "قمع معالجة الفواتير"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5564
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5559
 msgid "Invoice Ref"
 msgstr ""
 
@@ -8330,12 +8351,12 @@ msgstr "ملخص الفاتورة"
 msgid "Invoice Tax Amount"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6306
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6301
 msgid "Invoice Total"
 msgstr ""
 
 #: src/pages/requests/components/request/components/Header.tsx:1476
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5353
 msgid "Invoice Value"
 msgstr "قيمة الفاتورة"
 
@@ -8343,7 +8364,7 @@ msgstr "قيمة الفاتورة"
 msgid "Invoice value reduced."
 msgstr "تم تقليل قيمة الفاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6294
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6289
 msgid "Invoiced Qty"
 msgstr ""
 
@@ -8352,7 +8373,7 @@ msgstr ""
 #~ msgstr "فواتير"
 
 #: src/pages/requests/components/request/Request.tsx:1937
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
 msgstr "الفواتير"
@@ -8373,7 +8394,7 @@ msgstr "تفاصيل الفواتير"
 msgid "Invoicing terms and conditions"
 msgstr "شروط وأحكام الفواتير"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:632
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:636
 msgid "Involved Workflow"
 msgstr ""
 
@@ -8443,11 +8464,11 @@ msgstr ""
 msgid "It will be removed from Draft Files. This can't be undone."
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6233
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6228
 msgid "item"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5437
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5432
 msgid "Item Description"
 msgstr ""
 
@@ -8457,7 +8478,7 @@ msgstr "وصف البند"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
 #: src/pages/forms/FormEntriesPage.tsx:2142
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6229
 msgid "items"
 msgstr "أغراض"
 
@@ -8509,7 +8530,7 @@ msgstr ""
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:812
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:816
 msgid "Keep with the delegate"
 msgstr ""
 
@@ -8664,7 +8685,7 @@ msgstr ""
 msgid "Leave {site}? Your new request may not be saved."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:59
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:60
 msgid "Leave start and end"
 msgstr ""
 
@@ -8692,7 +8713,7 @@ msgstr "مجلد العقود القانونية"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "القانوني لديه أطول دورة اعتماد في العرض الحالي، بمتوسط 8.0 أيام لكل فاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5937
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5932
 msgid "Legal Matter Association Check"
 msgstr "فحص ارتباط المسألة القانونية"
 
@@ -8754,11 +8775,11 @@ msgstr "السطر {0}: كمية الفاتورة {1} مقابل كمية أمر
 msgid "Line #{0}"
 msgstr "السطر #{0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6274
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6269
 msgid "Line Item"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6288
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6283
 msgid "Line Item Description"
 msgstr ""
 
@@ -8779,11 +8800,11 @@ msgstr "معلومات البند: لم يتم مطابقة ربط رقم أمر
 #~ msgstr "ربط بنود السطر"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:307
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5416
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5411
 msgid "Line Item Matching"
 msgstr "مطابقة بنود السطر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6429
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6424
 msgid "line item reconciled"
 msgstr ""
 
@@ -8795,25 +8816,25 @@ msgstr ""
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1519
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6275
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6270
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:459
 msgid "Line Items"
 msgstr "بنود السطر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5190
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5185
 msgid "Line Items Mapped"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6430
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6425
 msgid "line items reconciled"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5429
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5424
 msgid "Line Items Verified"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5441
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5436
 msgid "Line Score"
 msgstr ""
 
@@ -8821,7 +8842,7 @@ msgstr ""
 msgid "Line Variance"
 msgstr "تباين السطر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6213
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6208
 msgid "Lines Invoiced"
 msgstr ""
 
@@ -8892,7 +8913,7 @@ msgstr "جارٍ تحميل النشاط..."
 msgid "Loading attachments..."
 msgstr "جارٍ تحميل المرفقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6782
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6777
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
@@ -8905,7 +8926,7 @@ msgstr "جاري تحميل التعليقات..."
 msgid "Loading comments…"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6825
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6820
 msgid "Loading Comments..."
 msgstr "جاري تحميل التعليقات..."
 
@@ -8951,7 +8972,7 @@ msgstr "جارٍ تحميل المجموعات..."
 msgid "Loading history..."
 msgstr "جارٍ تحميل السجل..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6854
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6849
 msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
 
@@ -9236,7 +9257,7 @@ msgstr ""
 #~ msgid "Mandatory Fields Missing"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1651
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1652
 #: src/pages/requests/components/workflow-request/components/ExtractedFieldCell.tsx:95
 msgid "Manual"
 msgstr "يدوي"
@@ -9417,7 +9438,7 @@ msgid "Match ANY condition (OR logic)"
 msgstr "مطابقة أي شرط (أو المنطق)"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:94
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4961
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4956
 msgid "Match Score"
 msgstr "نتيجة المباراة"
 
@@ -9429,13 +9450,13 @@ msgstr "مباراة:"
 #: src/pages/requests/components/InboxList.tsx:2126
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:498
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4558
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4913
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4553
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4908
 #: src/pages/requests/utils/localizeRequestUi.ts:50
 msgid "Matched"
 msgstr "مطابق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5731
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5726
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
@@ -9465,23 +9486,23 @@ msgstr "جاري مطابقة تفاصيل أمر الشراء"
 #~ msgid "Matching supplier records..."
 #~ msgstr "مطابقة سجلات الموردين..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5203
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5198
 msgid "Material Group"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5201
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5196
 msgid "Material ID"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5962
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5957
 msgid "Matter Reference"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4822
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4817
 msgid "Matter Validation"
 msgstr "التحقق من المسألة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5998
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5993
 msgid "Matter Validation Rules"
 msgstr ""
 
@@ -9663,11 +9684,11 @@ msgstr ""
 msgid "Minimum 8 characters"
 msgstr "8 أحرف كحد أدنى"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5687
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5682
 msgid "Mismatches"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5692
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5687
 msgid "Mismatches Found"
 msgstr ""
 
@@ -9696,20 +9717,20 @@ msgstr "مكتب المدعي العام المحمول"
 msgid "Mobile Preview"
 msgstr "معاينة الجوال"
 
-#: src/pages/reports/components/ReportsListView.tsx:231
+#: src/pages/reports/components/ReportsListView.tsx:239
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:203
 msgid "Modified"
 msgstr "تم التعديل"
 
 #: src/pages/forms/FormsPage.tsx:279
-#: src/pages/reports/components/ReportsListView.tsx:154
+#: src/pages/reports/components/ReportsListView.tsx:162
 #: src/pages/workflows/components/Table.tsx:104
 msgid "Modified At"
 msgstr "تم التعديل في"
 
 #: src/pages/forms/FormsPage.tsx:272
 #: src/pages/forms/FormsPage.tsx:656
-#: src/pages/reports/components/ReportsListView.tsx:160
+#: src/pages/reports/components/ReportsListView.tsx:168
 #: src/pages/workflows/components/Table.tsx:97
 #: src/pages/workflows/components/Table.tsx:504
 msgid "Modified By"
@@ -9780,6 +9801,10 @@ msgstr "أكثر"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:313
 msgid "More (+{hiddenCount})"
 msgstr "المزيد (+{hiddenCount})"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:429
+msgid "More actions"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:497
 msgid "More than"
@@ -9880,7 +9905,7 @@ msgid "My Submissions"
 msgstr "إرسالاتي"
 
 #. placeholder {0}: user.displayName || user.email
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:325
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:327
 msgid "Myself — {0}"
 msgstr ""
 
@@ -9901,8 +9926,8 @@ msgstr "غير متوفر (لا توجد قيمة مطلوبة)"
 #: src/pages/forms/FormEntriesPage.tsx:3148
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
-#: src/pages/reports/components/ReportsListView.tsx:119
-#: src/pages/reports/components/ReportsListView.tsx:170
+#: src/pages/reports/components/ReportsListView.tsx:127
+#: src/pages/reports/components/ReportsListView.tsx:178
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:624
 #: src/pages/settings/components/ManageUser.tsx:1127
@@ -10019,7 +10044,7 @@ msgstr ""
 #~ msgid "Needs Engineering Review"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5971
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5966
 msgid "Needs Manual Entry"
 msgstr ""
 
@@ -10031,20 +10056,20 @@ msgstr "صافي 30 يوماً"
 msgid "Net Amount"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5208
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5203
 msgid "Net Value"
 msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
 #: src/pages/requests/components/request/components/Header.tsx:2021
-#: src/pages/requests/RequestsPage.tsx:1909
+#: src/pages/requests/RequestsPage.tsx:1918
 msgid "New"
 msgstr "جديد"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:158
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:377
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:384
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:228
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:381
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:388
 msgid "New Delegation"
 msgstr ""
 
@@ -10075,8 +10100,8 @@ msgstr "إعداد القائمة الجديدة"
 msgid "New Password"
 msgstr "كلمة مرور جديدة"
 
-#: src/pages/reports/components/ReportsListView.tsx:366
-#: src/pages/reports/components/ReportsListView.tsx:367
+#: src/pages/reports/components/ReportsListView.tsx:374
+#: src/pages/reports/components/ReportsListView.tsx:375
 msgid "New Report"
 msgstr "تقرير جديد"
 
@@ -10128,7 +10153,7 @@ msgstr "التالي"
 msgid "Next >>"
 msgstr "التالي >>"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:336
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:338
 msgid "Next 3 days"
 msgstr ""
 
@@ -10162,7 +10187,7 @@ msgstr ""
 msgid "Next step"
 msgstr "الخطوة التالية"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:343
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:345
 msgid "Next week (Mon–Fri)"
 msgstr ""
 
@@ -10170,8 +10195,8 @@ msgstr ""
 #~ msgid "Next-gen AI workspace, dynamic forms & automation."
 #~ msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:220
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5977
+#: src/pages/reports/components/ReportsListView.tsx:228
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5972
 msgid "No"
 msgstr "لا"
 
@@ -10313,11 +10338,11 @@ msgstr ""
 msgid "No decision details available for this request."
 msgstr "لا توجد تفاصيل قرار متاحة لهذا الطلب."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:218
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:343
 msgid "No delegations found"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:219
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:344
 msgid "No delegations yet"
 msgstr ""
 
@@ -10375,7 +10400,7 @@ msgstr "No Due التاريخ"
 msgid "No Duplicate"
 msgstr "لا تكرار"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4612
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4607
 #: src/pages/requests/utils/localizeRequestUi.ts:52
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
@@ -10495,7 +10520,7 @@ msgstr "لم يتم استخراج أي حقائق أساسية."
 msgid "No line items available for this quote."
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6317
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6312
 msgid "No line items found for this back order record"
 msgstr ""
 
@@ -10593,7 +10618,7 @@ msgstr "لم يتم منح أي أذونات"
 msgid "No permissions to configure"
 msgstr "لا أذونات للتكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4572
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4567
 #: src/pages/requests/utils/localizeRequestUi.ts:53
 msgid "No PO Found"
 msgstr "لم يتم العثور على أمر شراء"
@@ -10676,7 +10701,7 @@ msgstr "لا يوجد أدوار بعد"
 msgid "No rows added"
 msgstr ""
 
-#: src/pages/reports/components/OverviewTab.tsx:479
+#: src/pages/reports/components/OverviewTab.tsx:525
 msgid "No rows for this report."
 msgstr ""
 
@@ -10871,8 +10896,8 @@ msgstr "غير مرتبط"
 
 #: src/pages/requests/components/InboxList.tsx:1474
 #: src/pages/requests/components/request/components/sections/history/History.tsx:508
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4559
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4914
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4554
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
 #: src/pages/requests/utils/localizeRequestUi.ts:54
 msgid "Not Matched"
 msgstr "غير مطابق"
@@ -10895,7 +10920,7 @@ msgstr "غير مجدول"
 msgid "Not selected"
 msgstr "غير محدد"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:256
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:381
 msgid "Not set"
 msgstr ""
 
@@ -10903,7 +10928,7 @@ msgstr ""
 msgid "Not specified"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4626
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4621
 #: src/pages/requests/utils/localizeRequestUi.ts:55
 msgid "Not Verified"
 msgstr "غير مُتحقق"
@@ -10925,7 +10950,7 @@ msgstr "لا يتم حذف أي شيء"
 msgid "Notifications"
 msgstr "الإشعارات"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:915
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:919
 msgid "Notify alternative assignees"
 msgstr ""
 
@@ -11023,7 +11048,7 @@ msgstr "الإعداد الأولي"
 
 #. placeholder {0}: formatShortDay(away.fromDate)
 #. placeholder {1}: formatShortDay(away.toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:212
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:214
 msgid "On leave {0} – {1}"
 msgstr ""
 
@@ -11144,7 +11169,7 @@ msgstr ""
 msgid "Optional Field"
 msgstr "حقل اختياري"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:695
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:699
 msgid "Optional note"
 msgstr ""
 
@@ -11299,7 +11324,7 @@ msgstr "المتأخر والأقرب استحقاقًا أولاً — عالج
 #: src/components/common/SharePopover.tsx:559
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
-#: src/pages/reports/components/ReportsListView.tsx:225
+#: src/pages/reports/components/ReportsListView.tsx:233
 #: src/pages/requests/components/request/components/Header.tsx:1880
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
@@ -11319,7 +11344,7 @@ msgstr ""
 msgid "Paid"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5876
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5871
 msgid "Paid Date"
 msgstr ""
 
@@ -11414,7 +11439,7 @@ msgstr "تقويم المدفوعات"
 msgid "Payment Channel"
 msgstr "قناة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5920
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5915
 msgid "Payment Completion Insights"
 msgstr ""
 
@@ -11422,7 +11447,7 @@ msgstr ""
 #~ msgid "Payment Deadlines"
 #~ msgstr "مواعيد الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5779
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5774
 msgid "Payment Deadlines & Terms"
 msgstr ""
 
@@ -11438,24 +11463,24 @@ msgstr "تاريخ استحقاق الدفع"
 msgid "Payment Method"
 msgstr "طريقة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4766
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4761
 msgid "Payment Status"
 msgstr "حالة الدفع"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4792
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5784
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4787
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5779
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Payment Terms"
 msgstr "شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5773
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5768
 msgid "Payment Terms Analysis"
 msgstr "تحليل شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5927
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5922
 msgid "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
 msgstr ""
 
@@ -11479,7 +11504,7 @@ msgstr "فترة ذروة الاستخدام"
 msgid "Pen width"
 msgstr "سمك القلم"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6389
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6384
 msgid "pending"
 msgstr ""
 
@@ -11500,7 +11525,7 @@ msgstr "في انتظار التصنيف"
 msgid "Pending delivery items."
 msgstr "بنود التسليم المعلقة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6221
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6216
 msgid "Pending Items"
 msgstr ""
 
@@ -11508,7 +11533,7 @@ msgstr ""
 msgid "Pending Payments"
 msgstr "المدفوعات المعلقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6240
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6235
 msgid "Pending PO Balance"
 msgstr ""
 
@@ -11649,7 +11674,7 @@ msgstr "العمود النائب 2"
 msgid "Plain Value"
 msgstr "قيمة بسيطة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5204
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5199
 msgid "Plant"
 msgstr ""
 
@@ -11710,7 +11735,7 @@ msgstr ""
 #~ msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 #~ msgstr "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4646
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4641
 msgid "Please click 'Verify' to validate this supplier and ensure vendor compliance."
 msgstr ""
 
@@ -12178,14 +12203,14 @@ msgstr "رقم طلب الشراء"
 msgid "PO Amount"
 msgstr "مبلغ أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5117
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5112
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "PO Date"
 msgstr ""
 
 #. placeholder {0}: totalRemainingUnits === 1 ? '' : 's'
 #. placeholder {1}: pendingItemsCount === 1 ? '' : 's'
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6109
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6104
 msgid "PO fulfillment is partial: {totalRemainingUnits} unit{0} across {pendingItemsCount} line item{1} remain unfulfilled. This invoice accounts for {totalReceivedUnits} of {totalPoQty} ordered units."
 msgstr ""
 
@@ -12205,11 +12230,11 @@ msgstr "مصدر أمر الشراء أو جهة اتصال المشتريات"
 msgid "PO Line Item"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6689
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6684
 msgid "PO Line Items"
 msgstr "بنود أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6264
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6259
 msgid "PO Line Items & Backorder Reconciliation"
 msgstr ""
 
@@ -12217,7 +12242,7 @@ msgstr ""
 #~ msgid "PO Line Items vs Invoices"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1679
 msgid "PO Master"
 msgstr "بو ماستر"
 
@@ -12239,11 +12264,11 @@ msgstr "تم استلام ملف PO الرئيسي"
 msgid "PO Master Update"
 msgstr "تحديث PO الرئيسي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4555
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4550
 msgid "PO Matching"
 msgstr "مطابقة أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4904
 msgid "PO Matching Analysis"
 msgstr "تحليل مطابقة أمر الشراء"
 
@@ -12251,7 +12276,7 @@ msgstr "تحليل مطابقة أمر الشراء"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2024
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5086
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "PO Number"
 msgstr "رقم أمر الشراء"
@@ -12260,7 +12285,7 @@ msgstr "رقم أمر الشراء"
 #~ msgid "PO Number (Extracted)"
 #~ msgstr "رقم أمر الشراء (مستخرج)"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6291
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6286
 msgid "PO Qty"
 msgstr ""
 
@@ -12279,7 +12304,7 @@ msgstr "إعداد PO"
 
 #: src/pages/requests/components/request/components/Header.tsx:1495
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5359
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5354
 msgid "PO Value"
 msgstr "قيمة أمر الشراء"
 
@@ -12551,7 +12576,7 @@ msgstr "طباعة المستندات"
 msgid "Print file"
 msgstr "طباعة الملف"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6191
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6186
 msgid "Prior Ticket"
 msgstr ""
 
@@ -12571,7 +12596,7 @@ msgstr "الأولوية"
 msgid "Private"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:274
+#: src/pages/reports/components/ReportsListView.tsx:282
 msgid "Private to me"
 msgstr "خاص بي فقط"
 
@@ -12596,7 +12621,7 @@ msgid "Process Overview"
 msgstr "نظرة عامة على العملية"
 
 #: src/pages/requests/components/InboxList.tsx:2296
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:61
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Processed"
@@ -12755,7 +12780,7 @@ msgstr "محذوف"
 msgid "Qty"
 msgstr "الكمية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5206
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5201
 msgid "Qty / UOM"
 msgstr ""
 
@@ -12779,7 +12804,7 @@ msgstr ""
 msgid "Quantity"
 msgstr "كمية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5438
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5433
 msgid "Quantity (Inv / PO)"
 msgstr ""
 
@@ -13023,7 +13048,7 @@ msgstr "لوحة معلومات فورية"
 msgid "Reason for declining"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:694
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:698
 msgid "Reason for Selection"
 msgstr ""
 
@@ -13079,7 +13104,7 @@ msgstr "موصى به"
 msgid "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 msgstr "تم التوصية بـ {0} حقول لـ «{1}». عدّلها أدناه، ثم تابع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6158
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6153
 msgid "Recommended Action"
 msgstr ""
 
@@ -13107,7 +13132,7 @@ msgstr "التكرار"
 #~ msgid "Recv Qty"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3827
+#: src/pages/folders/components/DocumentDetailsView.tsx:3832
 msgid "Redacted"
 msgstr ""
 
@@ -13116,11 +13141,11 @@ msgstr ""
 msgid "Redaction level"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:909
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:913
 msgid "Redirect new requests during leave"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:755
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:759
 msgid "Redirect new requests to the alternative assignee"
 msgstr ""
 
@@ -13152,11 +13177,14 @@ msgstr "رقم المستند المرجعي"
 #: src/pages/portal/components/PortalHome.tsx:590
 #: src/pages/portal/components/PortalHome.tsx:595
 #: src/pages/portal/components/PortalMobileHome.tsx:248
+#: src/pages/reports/components/OverviewTab.tsx:547
+#: src/pages/reports/components/OverviewTab.tsx:552
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2150
 #: src/pages/settings/components/AuditMonitoring.tsx:186
 #: src/pages/settings/components/credits/Credits.tsx:925
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:267
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2316
 #: src/pages/settings/components/GroupManagement.tsx:612
 #: src/pages/settings/components/ManageUser.tsx:1565
@@ -13169,6 +13197,10 @@ msgstr "تحديث"
 #: src/pages/settings/components/credits/Credits.tsx:586
 msgid "Refresh credit usage"
 msgstr "تحديث استخدام الائتمان"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:269
+msgid "Refresh delegations"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:237
 msgid "Refresh Preview"
@@ -13202,11 +13234,11 @@ msgstr ""
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5699
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5694
 msgid "Registry Verification Log"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2203
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2204
 msgid "Reject Transaction"
 msgstr "رفض المعاملة"
 
@@ -13312,7 +13344,7 @@ msgstr "إزالة الموقّع"
 msgid "Remove tab"
 msgstr "إزالة علامة التبويب"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:615
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:619
 msgid "Remove workflow"
 msgstr ""
 
@@ -13367,7 +13399,7 @@ msgstr "استبدال الملف"
 msgid "Report Builder"
 msgstr "منشئ التقارير"
 
-#: src/pages/reports/components/ReportsListView.tsx:339
+#: src/pages/reports/components/ReportsListView.tsx:347
 msgid "Report deleted successfully"
 msgstr "تم حذف التقرير بنجاح"
 
@@ -13567,7 +13599,7 @@ msgid "Requests"
 msgstr "الطلبات"
 
 #. placeholder {0}: formatShortDay(fromDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:761
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:765
 msgid "Requests already in the assignee's inbox move to the delegate on {0}."
 msgstr ""
 
@@ -13716,8 +13748,9 @@ msgstr "مشغل الاحتفاظ"
 #: src/pages/portal/components/PortalMobileHome.tsx:371
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:452
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:559
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:435
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:738
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:330
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:439
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:742
 msgid "Retry"
 msgstr "إعادة المحاولة"
 
@@ -13730,7 +13763,7 @@ msgid "Retry Loading"
 msgstr "أعد محاولة التحميل"
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:807
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:811
 msgid "Return to {0}"
 msgstr ""
 
@@ -13738,7 +13771,7 @@ msgstr ""
 #~ msgid "Reveal original"
 #~ msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:80
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:81
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1292
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
 #: src/pages/settings/components/GroupManagement.tsx:88
@@ -13860,7 +13893,7 @@ msgstr "مراجعة ربط الأعمدة"
 msgid "Review fields before export..."
 msgstr "راجع الحقول قبل التصدير..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6128
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6123
 msgid "Review line item fulfillment against purchase order terms and vendor delivery schedule."
 msgstr ""
 
@@ -14038,7 +14071,7 @@ msgstr ""
 msgid "rows"
 msgstr "صفوف"
 
-#: src/pages/reports/components/OverviewTab.tsx:544
+#: src/pages/reports/components/OverviewTab.tsx:595
 msgid "Rows"
 msgstr "صفوف"
 
@@ -14070,7 +14103,7 @@ msgstr "قواعد"
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:512
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
-#: src/pages/reports/components/OverviewTab.tsx:466
+#: src/pages/reports/components/OverviewTab.tsx:512
 msgid "Run again"
 msgstr ""
 
@@ -14095,7 +14128,7 @@ msgstr ""
 msgid "Sample template downloaded successfully"
 msgstr "تم تنزيل نموذج النموذج بنجاح"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1679
 msgid "SAP"
 msgstr ""
 
@@ -14107,7 +14140,7 @@ msgstr "اتصال SAP ERP"
 msgid "SAP Field"
 msgstr "حقل SAP"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5796
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5791
 msgid "SAP Invoice Status"
 msgstr ""
 
@@ -14150,7 +14183,7 @@ msgstr ""
 msgid "Save & Regenerate Fields"
 msgstr "حفظ وتجديد الحقول"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:366
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:370
 msgid "Save as draft"
 msgstr ""
 
@@ -14166,7 +14199,7 @@ msgstr "حفظ الواجبات"
 msgid "Save Branding"
 msgstr "حفظ العلامة التجارية"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:363
 msgid "Save changes"
 msgstr ""
 
@@ -14266,7 +14299,7 @@ msgstr ""
 msgid "Saved ({0})"
 msgstr "تم الحفظ ({0})"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:138
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:161
 msgid "Saved as draft"
 msgstr ""
 
@@ -14332,7 +14365,7 @@ msgstr "جدولة الدفع"
 msgid "Schedule report delivery"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:211
+#: src/pages/reports/components/ReportsListView.tsx:219
 msgid "Scheduled"
 msgstr "مجدول"
 
@@ -14351,7 +14384,7 @@ msgid "Schema Validation"
 msgstr "التحقق من المخطط"
 
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:655
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5360
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5355
 msgid "Score"
 msgstr "نتيجة"
 
@@ -14377,7 +14410,7 @@ msgid "Search"
 msgstr "بحث"
 
 #. placeholder {0}: col.label
-#: src/pages/reports/components/OverviewTab.tsx:323
+#: src/pages/reports/components/OverviewTab.tsx:369
 msgid "Search {0}..."
 msgstr ""
 
@@ -14412,7 +14445,7 @@ msgstr "بحث واختيار المستخدمين..."
 msgid "Search and select workflows..."
 msgstr "بحث واختيار سير العمل..."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:191
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:262
 msgid "Search assignee, delegate…"
 msgstr ""
 
@@ -14450,7 +14483,7 @@ msgstr "البحث الذي تم إنشاؤه بواسطة..."
 msgid "Search currency..."
 msgstr "بحث currency..."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:189
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:260
 msgid "Search delegations"
 msgstr ""
 
@@ -14578,7 +14611,7 @@ msgstr "ابحث أو أدخل اسمًا مخصصًا"
 msgid "Search PO range..."
 msgstr "بحث PO range..."
 
-#: src/pages/reports/components/ReportsListView.tsx:356
+#: src/pages/reports/components/ReportsListView.tsx:364
 msgid "Search reports..."
 msgstr "البحث في التقارير..."
 
@@ -14679,7 +14712,7 @@ msgstr "القسم {0}"
 msgid "Security"
 msgstr "الأمان"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5610
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5605
 msgid "Security & Auditing Policy"
 msgstr "سياسة الأمان والتدقيق"
 
@@ -14742,7 +14775,7 @@ msgstr ""
 #~ msgid "Select a folder"
 #~ msgstr "حدد مجلداً"
 
-#: src/pages/folders/components/FolderExplorer.tsx:682
+#: src/pages/folders/components/FolderExplorer.tsx:683
 msgid "Select a folder before uploading."
 msgstr ""
 
@@ -14754,8 +14787,8 @@ msgstr ""
 #~ msgid "Select a quote with line items to preview"
 #~ msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:695
-#: src/pages/folders/components/FolderExplorer.tsx:709
+#: src/pages/folders/components/FolderExplorer.tsx:696
+#: src/pages/folders/components/FolderExplorer.tsx:710
 msgid "Select a repository before uploading."
 msgstr "حدد مستودعًا قبل التحميل."
 
@@ -14796,7 +14829,7 @@ msgstr "حدد مصدراً في خطوة التفاصيل أولاً."
 msgid "Select a specific workflow or folder above to proceed with report creation."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:513
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:517
 msgid "Select a start date."
 msgstr ""
 
@@ -14816,7 +14849,7 @@ msgstr "اختر مستخدماً وحدد موضعاً واحداً للتوق�
 msgid "Select a user for each password."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:403
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:407
 msgid "Select a user…"
 msgstr ""
 
@@ -14828,7 +14861,7 @@ msgstr ""
 #~ msgid "Select a workflow or folder above to proceed with report creation."
 #~ msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:650
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:654
 msgid "Select a workflow."
 msgstr ""
 
@@ -14861,11 +14894,11 @@ msgstr ""
 msgid "Select an action..."
 msgstr "حدد الإجراء..."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:689
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:693
 msgid "Select an alternative assignee."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:528
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:532
 msgid "Select an end date."
 msgstr ""
 
@@ -14912,8 +14945,8 @@ msgstr ""
 msgid "Select Data Source"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:564
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:673
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:568
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:677
 msgid "Select delegate…"
 msgstr ""
 
@@ -15084,7 +15117,7 @@ msgstr "حدد الوصول المستهدف"
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr "حدد مزود التخزين حيث يجب تخزين مستندات هذا المجلد."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:423
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:427
 msgid "Select the user who will be away."
 msgstr ""
 
@@ -15152,7 +15185,7 @@ msgstr ""
 #~ msgid "Select Workflow Template"
 #~ msgstr "حدد قالب سير العمل"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:635
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:639
 msgid "Select workflow…"
 msgstr ""
 
@@ -15205,7 +15238,7 @@ msgstr "التصنيف الدلالي"
 msgid "Send"
 msgstr "إرسال"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:765
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:769
 msgid "Send a notification to the alternative assignee"
 msgstr ""
 
@@ -15267,7 +15300,7 @@ msgstr "يرسل OTP إلى البريد الإلكتروني"
 msgid "Sensitive Values to Redact"
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Sent"
 msgstr "المرسل"
@@ -15474,12 +15507,12 @@ msgstr "توافق محرك الأقراص المشترك"
 msgid "Shared successfully"
 msgstr "تمت المشاركة بنجاح"
 
-#: src/pages/reports/components/ReportsListView.tsx:275
+#: src/pages/reports/components/ReportsListView.tsx:283
 msgid "Shared with me"
 msgstr "تمت مشاركتها معي"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:110
-#: src/pages/reports/components/ReportsListView.tsx:375
+#: src/pages/reports/components/ReportsListView.tsx:383
 msgid "Sharing"
 msgstr "المشاركة"
 
@@ -15503,7 +15536,7 @@ msgstr "الشحن إلى العنوان"
 msgid "Shipping destination address"
 msgstr "عنوان وجهة الشحن"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6367
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6362
 msgid "Short Ship"
 msgstr ""
 
@@ -15616,7 +15649,7 @@ msgstr ""
 
 #. placeholder {0}: visible.length
 #. placeholder {1}: delegations.length
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:377
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:478
 msgid "Showing {0} of {1}"
 msgstr ""
 
@@ -15764,7 +15797,7 @@ msgstr "تم إرسال طلب التوقيع. تظل الأماكن المخص�
 msgid "Sign Up"
 msgstr "إنشاء حساب"
 
-#: src/pages/requests/RequestsPage.tsx:1692
+#: src/pages/requests/RequestsPage.tsx:1701
 msgid "Sign-in or watch creation failed."
 msgstr ""
 
@@ -15923,9 +15956,9 @@ msgid "Sort Order *"
 msgstr "ترتيب الفرز *"
 
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:76
-#: src/pages/reports/components/ReportsListView.tsx:138
-#: src/pages/reports/components/ReportsListView.tsx:189
-#: src/pages/reports/components/ReportsListView.tsx:380
+#: src/pages/reports/components/ReportsListView.tsx:146
+#: src/pages/reports/components/ReportsListView.tsx:197
+#: src/pages/reports/components/ReportsListView.tsx:388
 msgid "Source"
 msgstr "المصدر"
 
@@ -15949,12 +15982,12 @@ msgstr "ملف المصدر:"
 #~ msgid "Source Form"
 #~ msgstr "نموذج المصدر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5094
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5089
 msgid "Source System"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:146
-#: src/pages/reports/components/ReportsListView.tsx:197
+#: src/pages/reports/components/ReportsListView.tsx:154
+#: src/pages/reports/components/ReportsListView.tsx:205
 msgid "Source Type"
 msgstr "نوع المصدر"
 
@@ -15962,19 +15995,19 @@ msgstr "نوع المصدر"
 #~ msgid "Source:"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1645
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1646
 msgid "Source: Manual Entry"
 msgstr "المصدر: الإدخال اليدوي"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3806
+#: src/pages/folders/components/DocumentDetailsView.tsx:3811
 msgid "Source: OCR Document"
 msgstr "المصدر: وثيقة التعرف الضوئي على الحروف"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1671
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1672
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "المصدر: أمر الشراء الرئيسي (ERP/بيانات Excel)"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1670
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1671
 msgid "Source: SAP (HANA Cloud)"
 msgstr ""
 
@@ -15994,13 +16027,13 @@ msgstr "المرحلة غير متوفرة"
 msgid "Staged"
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:256
+#: src/pages/folders/components/FolderExplorer.tsx:257
 #: src/pages/folders/components/Upload/Upload.tsx:2682
 #: src/pages/folders/components/Upload/Upload.tsx:3874
 msgid "Staged file deleted."
 msgstr ""
 
-#: src/pages/folders/components/FolderExplorer.tsx:338
+#: src/pages/folders/components/FolderExplorer.tsx:339
 msgid "Staged file exported successfully."
 msgstr ""
 
@@ -16019,7 +16052,7 @@ msgstr "الجدول الزمني القياسي لاتفاقية مستوى ا�
 msgid "Start"
 msgstr "بدء"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:230
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:232
 msgid "Start date cannot be in the past."
 msgstr ""
 
@@ -16068,11 +16101,11 @@ msgstr "اتجاه الائتمان الثابت لـ {selectedMonth}"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1137
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
-#: src/pages/reports/components/ReportsListView.tsx:205
+#: src/pages/reports/components/ReportsListView.tsx:213
 #: src/pages/requests/components/request/components/Header.tsx:879
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:208
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2337
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4163
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4168
@@ -16284,7 +16317,7 @@ msgstr ""
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "تم اقتراح {schemaKpiCount} من مؤشرات الأداء الرئيسية و{schemaChartCount} من الرسوم البيانية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5726
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5721
 msgid "Suggested Allocation"
 msgstr "التوزيع المقترح"
 
@@ -16345,7 +16378,7 @@ msgstr "عنوان المورد"
 msgid "Supplier Conflict"
 msgstr "تعارض المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5648
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5643
 msgid "Supplier Details"
 msgstr "تفاصيل المورد"
 
@@ -16361,7 +16394,7 @@ msgstr "متابعات الموردين"
 #~ msgid "Supplier geographic distribution"
 #~ msgstr "التوزيع الجغرافي للموردين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5113
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5108
 msgid "Supplier ID"
 msgstr ""
 
@@ -16387,11 +16420,11 @@ msgstr "عنوان إرسال الفواتير الفعلي للمورد"
 msgid "Supplier Risk Radar"
 msgstr "رادار مخاطر الموردين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5667
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5662
 msgid "Supplier Status"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5617
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5612
 msgid "Supplier tax identity and banking details."
 msgstr ""
 
@@ -16399,22 +16432,22 @@ msgstr ""
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4625
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4658
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4677
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4620
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4653
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4672
 msgid "Supplier Verification"
 msgstr "التحقق من المورد"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2873
 msgid "Supplier verification completed: {0}"
 msgstr "اكتمل التحقق من المورد: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5629
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5624
 msgid "Supplier Verification Registry"
 msgstr "سجل التحقق من المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4698
 msgid "Supplier verified"
 msgstr "تم التحقق من المورد"
 
@@ -16718,11 +16751,11 @@ msgstr ""
 msgid "The agent stopped. Review the request and try again."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:408
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:412
 msgid "The assignee cannot be changed on an existing delegation."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:813
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:817
 msgid "The delegate completes anything already in progress."
 msgstr ""
 
@@ -16813,7 +16846,7 @@ msgstr ""
 #. placeholder {0}: userName(effectiveAssigneeId)
 #. placeholder {1}: formatShortDay(overlapping.fromDate)
 #. placeholder {2}: formatDay(overlapping.toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:545
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:549
 msgid "These dates overlap an existing delegation for {0} ({1} – {2}). Adjust the dates or edit that delegation instead."
 msgstr ""
 
@@ -16831,7 +16864,7 @@ msgstr "هذا الإجراء ليس له أي تأثير إتلافي — ست�
 
 #: src/pages/forms/FormEntriesPage.tsx:3067
 #: src/pages/forms/FormsPage.tsx:561
-#: src/pages/reports/components/ReportsListView.tsx:307
+#: src/pages/reports/components/ReportsListView.tsx:315
 msgid "This action is permanent and cannot be undone."
 msgstr "هذا الإجراء دائم ولا يمكن التراجع عنه."
 
@@ -16856,8 +16889,8 @@ msgid "This email address has already been added."
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:128
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1861
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1951
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1952
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:501
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:559
@@ -16956,7 +16989,7 @@ msgstr ""
 msgid "This related document cannot be removed."
 msgstr "لا يمكن إزالة هذه الوثيقة ذات الصلة."
 
-#: src/pages/reports/components/OverviewTab.tsx:485
+#: src/pages/reports/components/OverviewTab.tsx:531
 msgid "This report has no fields configured yet."
 msgstr "لم يتم تكوين أي حقول لهذا التقرير بعد."
 
@@ -17086,7 +17119,7 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "للبدء: ما اسم هذا الممجلد؟ استخدم اسماً تجارياً واضحاً، أو اختر مثالاً أدناه، أو صف فكرة مجلد كاملة لإنشاء إعداد متكامل."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:519
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:523
 msgid "To Date"
 msgstr ""
 
@@ -17113,7 +17146,7 @@ msgstr "قائمة إجراءات اليوم"
 msgid "Toggle sidebar"
 msgstr "تبديل الشريط الجانبي"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:331
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:333
 msgid "Tomorrow"
 msgstr ""
 
@@ -17146,7 +17179,7 @@ msgstr "المجموع"
 msgid "Total Amount"
 msgstr "المبلغ الإجمالي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5440
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5435
 msgid "Total Amount (Inv / PO)"
 msgstr ""
 
@@ -17253,11 +17286,11 @@ msgid "Transactions"
 msgstr "المعاملات"
 
 #. placeholder {0}: formatShortDay(fromDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:912
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:916
 msgid "Transfer current requests on {0}"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:760
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:764
 msgid "Transfer current requests to the alternative assignee"
 msgstr ""
 
@@ -17299,7 +17332,7 @@ msgstr ""
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "حاول تغيير بحث الملف أو إعادة تعيين عوامل التصفية المحددة."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:223
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:348
 msgid "Try clearing the filters or search."
 msgstr ""
 
@@ -17573,7 +17606,7 @@ msgstr "تراجع"
 msgid "Undo (Ctrl+Z)"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:808
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:812
 msgid "Unfinished requests go back to the original assignee."
 msgstr ""
 
@@ -17585,20 +17618,20 @@ msgstr "معرف أمر الشراء الفريد"
 msgid "Unit"
 msgstr "وحدة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
 msgid "Unit Cost"
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:89
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6303
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6298
 msgid "Unit Price"
 msgstr "سعر الوحدة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5439
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5434
 msgid "Unit Price (Inv / PO)"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6235
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6230
 msgid "units"
 msgstr ""
 
@@ -17738,7 +17771,7 @@ msgid "Upgrading…"
 msgstr "جارٍ الترقية…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2026
-#: src/pages/folders/components/FolderExplorer.tsx:641
+#: src/pages/folders/components/FolderExplorer.tsx:642
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:861
 #: src/pages/folders/components/Upload/Upload.tsx:4171
@@ -17988,7 +18021,7 @@ msgstr "استخدم التخزين الآمن المدمج لمستندات ا�
 msgid "Use demo data"
 msgstr "استخدام بيانات تجريبية"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:557
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:561
 msgid "Use one delegate for all workflows"
 msgstr ""
 
@@ -18149,7 +18182,7 @@ msgstr "التحقق من صحة الحسابات لإتقان"
 msgid "Validate mappings and confirm to finalize import payload."
 msgstr "تحقق من الربط وأكد لإنهاء حمولة الاستيراد."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4634
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4629
 msgid "Validate supplier credentials and ensure vendor compliance"
 msgstr ""
 
@@ -18211,9 +18244,9 @@ msgstr "فحص البائع"
 msgid "Vendor identity mismatch."
 msgstr "عدم تطابق هوية البائع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5098
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5578
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5653
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5093
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5573
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5648
 #: src/pages/requests/utils/localizeRequestUi.ts:39
 msgid "Vendor Name"
 msgstr "اسم البائع"
@@ -18222,7 +18255,7 @@ msgstr "اسم البائع"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5698
 msgid "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
 msgstr ""
 
@@ -18230,11 +18263,11 @@ msgstr ""
 msgid "Verification Code"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2879
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2880
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "فشل التحقق. تم استرداد رصيد واحد."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5676
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5671
 msgid "Verification Rationale"
 msgstr ""
 
@@ -18242,7 +18275,7 @@ msgstr ""
 msgid "Verified"
 msgstr "مُتحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4641
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4636
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "تحقق"
@@ -18293,8 +18326,8 @@ msgstr ""
 msgid "Verify your security rules before applying settings."
 msgstr "تحقق من قواعد الأمان الخاصة بك قبل تطبيق الإعدادات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4656
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4668
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4651
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4663
 msgid "Verifying..."
 msgstr "جاري التحقق..."
 
@@ -18323,8 +18356,6 @@ msgstr "تم حفظ استراتيجية الإصدارات. هل تحتاج ت�
 #: src/pages/folders/components/FolderSharePopover.tsx:158
 #: src/pages/folders/components/FolderSharePopover.tsx:883
 #: src/pages/reports/components/ReportShareButton.tsx:23
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:76
 msgid "View"
 msgstr "عرض"
@@ -18367,6 +18398,10 @@ msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:106
 msgid "View All Versions"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:447
+msgid "View details"
 msgstr ""
 
 #: src/pages/folders/components/DocumentsListView.tsx:1110
@@ -18424,7 +18459,7 @@ msgstr "مقابل الفترة الماضية"
 msgid "Wait for AI classification to finish before indexing."
 msgstr "انتظر حتى ينتهي التصنيف بالذكاء الاصطناعي قبل الفهرسة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2211
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2212
 msgid "Wait for Balance"
 msgstr "انتظر الرصيد"
 
@@ -18504,11 +18539,15 @@ msgstr ""
 msgid "We couldn’t identify this request, so it couldn’t be moved."
 msgstr "لم نتمكن من التعرف على هذا الطلب، لذلك تعذر نقله."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:429
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:323
+msgid "We couldn't load delegations."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:433
 msgid "We couldn't load users."
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:732
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:736
 msgid "We couldn't load workflows."
 msgstr ""
 
@@ -18597,7 +18636,7 @@ msgstr "ما هو الشكل الذي يجب أن نخلقه؟"
 msgid "What Happens Next?"
 msgstr "ماذا يحدث بعد ذلك؟"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:71
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:72
 msgid "What happens to requests"
 msgstr ""
 
@@ -18622,7 +18661,7 @@ msgstr "ما هو سير العمل الذي يجب علينا إنشاؤه؟"
 msgid "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 msgstr "عند التمكين، تستخدم خلفيات الصفحات والبطاقات لونًا فاتحًا أو داكنًا من اللون الأساسي."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:800
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:804
 msgid "When the absence period ends"
 msgstr ""
 
@@ -18644,7 +18683,7 @@ msgstr "أي الموردين يحملون أكبر تعرض للمخاطر؟"
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "ما استراتيجية الإصدارات التي يجب تطبيقها عند رفع نفس الملف مرة أخرى؟"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:53
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:54
 msgid "Who will be away"
 msgstr ""
 
@@ -18658,11 +18697,11 @@ msgid "Workflow"
 msgstr "سير العمل"
 
 #. placeholder {0}: index + 1
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:611
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:615
 msgid "Workflow {0}"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:749
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:753
 msgid "Workflow and request delegation action"
 msgstr ""
 
@@ -18697,7 +18736,7 @@ msgstr "معرف سير العمل مفقود. لا يمكن بدء سير ال�
 msgid "Workflow Name"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:654
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:658
 msgid "Workflow Stage"
 msgstr ""
 
@@ -18719,7 +18758,7 @@ msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
 #: src/pages/portal/components/PortalHome.tsx:416
 #: src/pages/search/SearchPage.tsx:322
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:206
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:296
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
@@ -18765,13 +18804,13 @@ msgstr "سنوي"
 msgid "years"
 msgstr "سنين"
 
-#: src/pages/reports/components/ReportsListView.tsx:217
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5976
+#: src/pages/reports/components/ReportsListView.tsx:225
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5971
 msgid "Yes"
 msgstr "نعم"
 
 #: src/pages/forms/FormsPage.tsx:607
-#: src/pages/reports/components/ReportsListView.tsx:347
+#: src/pages/reports/components/ReportsListView.tsx:355
 msgid "Yes, Delete"
 msgstr "نعم, Delete"
 
@@ -18786,7 +18825,7 @@ msgstr "أمس"
 msgid "You"
 msgstr "أنت"
 
-#: src/pages/requests/RequestsPage.tsx:1975
+#: src/pages/requests/RequestsPage.tsx:1984
 msgid "You can close this tab or return to the main window."
 msgstr ""
 
@@ -18851,7 +18890,7 @@ msgstr "سيبدأ وكيل الذكاء الاصطناعي بمراقبة بر�
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr ""
 
-#: src/pages/requests/RequestsPage.tsx:1958
+#: src/pages/requests/RequestsPage.tsx:1967
 msgid "Your mailbox has been connected and the enquiry watch is active."
 msgstr ""
 
