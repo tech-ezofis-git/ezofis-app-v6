@@ -240,6 +240,7 @@ export default function ConnectionsRouting({
   const qualifyActionOptions = [
     { id: 1, name: 'QUALIFY' },
     { id: 2, name: 'DISQUALIFY' },
+    { id: 3, name: 'NEEDS REVIEW' },
   ]
 
   const conditionActionOptions = [
@@ -305,7 +306,16 @@ export default function ConnectionsRouting({
       let action = rawAction
 
       if (isQualifyAgent) {
-        action = rawAction === 'DISQUALIFY' ? 'DISQUALIFY' : 'QUALIFY'
+        const norm = String(rawAction)
+          .toUpperCase()
+          .replace(/[\s_-]+/g, ' ')
+          .trim()
+        action =
+          norm === 'DISQUALIFY'
+            ? 'DISQUALIFY'
+            : norm === 'NEEDS REVIEW' || norm === 'NEED REVIEW'
+              ? 'NEEDS REVIEW'
+              : 'QUALIFY'
       } else if (isConditionNode) {
         const norm = String(rawAction).toUpperCase().replace(/_/g, ' ')
         action = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'

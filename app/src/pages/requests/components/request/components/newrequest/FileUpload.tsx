@@ -780,6 +780,8 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     setUploadStatus('uploading')
 
     let lastStubItem: {
+      _localFileName: string
+      _localFileType: string
       _localFileUrl: string
       apAgentJobId: string | number | null
       createdAt: string
@@ -870,6 +872,8 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         }
 
         lastStubItem = {
+          _localFileName: file.name,
+          _localFileType: file.type,
           _localFileUrl: localUrl,
           apAgentJobId: apAgentJobId || null,
           createdAt: startTime,

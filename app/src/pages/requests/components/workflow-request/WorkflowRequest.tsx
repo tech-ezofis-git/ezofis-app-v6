@@ -304,6 +304,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     }
 
     const lastStubItem = {
+      _localFileName: file.name,
+      _localFileType: file.type,
       _localFileUrl: localUrl,
       createdAt: startTime,
       documentNumber: t`Processing Document...`,
