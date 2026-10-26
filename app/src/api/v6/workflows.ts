@@ -651,6 +651,30 @@ const getApAgentJobStatus = async (jobId: string) => {
   return response
 }
 
+/** Locates one workflow instance (request) by id, regardless of the user's lists. */
+const locateInstance = async (
+  workflowId: number | string,
+  instanceId: number | string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      skipCancellation: true,
+      url: `/Workflows/${workflowId}/instances/${instanceId}/locate`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error locating instance'
+  }
+  return response
+}
+
 const getInstanceHistory = async (
   workflowId: number | string,
   instanceId: number | string,
@@ -1048,6 +1072,7 @@ export const workflowsApiV6 = {
   getInstanceComments,
   getInstanceCount,
   getInstanceHistory,
+  locateInstance,
   getSentList,
   getWorkflowById,
   getWorkflows,

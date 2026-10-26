@@ -3,8 +3,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import type { Option } from '@/types/option'
-import formApi from '@/api/form/form'
-import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
   type V6FilterField,
@@ -33,6 +31,10 @@ import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
 import { useStableRequestKey } from './hooks/useStableRequestKey'
 import requestStore from './stores/useRequestStore'
+import {
+  findRequestRow,
+  loadOverviewWorkflow,
+} from './utils/requestOverviewLoader'
 import {
   extractBlocks,
   isAccountsPayableWorkflow,
@@ -729,16 +731,10 @@ const RequestsPage = () => {
         return
       }
       try {
-        const [workflowRes, countRes] = await Promise.all([
-          workflowsApiV6.getWorkflowById(workflowId),
+        const [loaded, countRes] = await Promise.all([
+          loadOverviewWorkflow(workflowId, workflowName),
           workflowsApiV6.getInstanceCount(workflowId),
         ])
-
-        if (workflowRes.error || !workflowRes.data) {
-          throw new Error(workflowRes.error || 'Failed to load workflow')
-        }
-
-        const wf = workflowRes.data
 
         if (countRes?.data) {
           applyInstanceCount(countRes.data)
@@ -750,68 +746,9 @@ const RequestsPage = () => {
           })
         }
 
-        const parseJsonSafe = (val: any) => {
-          if (!val) return null
-          if (typeof val === 'object') return val
-          if (typeof val === 'string') {
-            try {
-              return JSON.parse(val)
-            } catch {
-              return null
-            }
-          }
-          return null
-        }
-        const wfJson = parseJsonSafe(wf.workflowJson)
-        const flowJsonParsed = parseJsonSafe(wf.flowJson)
-
-        const wFormId =
-          wf.formId ??
-          wf.wFormId ??
-          wf.settings?.general?.initiateUsing?.formId ??
-          wfJson?.settings?.general?.initiateUsing?.formId ??
-          flowJsonParsed?.settings?.general?.initiateUsing?.formId ??
-          wf.form ??
-          ''
-
-        let formJson = wf.formJson
-        if (wFormId) {
-          try {
-            const formRes = await formApi.getFormDataById(String(wFormId))
-            if (formRes?.data) {
-              formJson =
-                formRes.data._json ?? formRes.data.formJson ?? formRes.data
-            }
-          } catch (e) {
-            console.warn('Failed to fetch form schema for workflow', e)
-          }
-        }
-
-        setRawWorflow({ ...wf, formJson, id: workflowId })
-        void fetchStageCounts(workflowId, wf)
-
-        let flowJson = ''
-        if (typeof wf.flowJson === 'string') {
-          flowJson = wf.flowJson
-        } else if (wf.flowJson) {
-          flowJson = JSON.stringify(wf.flowJson)
-        } else if (wf.workflowJson) {
-          // The real V6 workflow detail response only returns workflowJson
-          // (no separate flowJson string) — fall back to it so consumers
-          // of selectedWorkflow.flowJson (getActionsForActivity, etc.)
-          // still see the actual blocks/rules instead of an empty flow.
-          flowJson = JSON.stringify(wf.workflowJson)
-        }
-
-        setSelectedWorkflow({
-          flowJson,
-          formJson: formJson ?? '',
-          id: workflowId,
-          name:
-            wf.name ?? wf.settings?.general?.name ?? workflowName ?? 'Workflow',
-          wFormId: wFormId || '',
-          workflowJson: wf.workflowJson,
-        })
+        setRawWorflow(loaded.rawWorkflow)
+        void fetchStageCounts(workflowId, loaded.rawWorkflow)
+        setSelectedWorkflow(loaded.selectedWorkflow)
         setWorkflowLoadStatus('ready')
       } catch (err) {
         console.error('Failed to load selected workflow', err)
@@ -917,60 +854,10 @@ const RequestsPage = () => {
         { instId, txId, wfId },
       )
 
-      // 1. Primary: Fetch via V6 /Workflows/inbox, /sent, and /completed using instanceId
-      try {
-        const [inboxRes, sentRes, completedRes] = await Promise.all([
-          workflowsApiV6.getInboxList(wfId, 1, 10, instId, txId),
-          workflowsApiV6.getSentList(wfId, 1, 10, instId, txId),
-          workflowsApiV6.getCompletedList(wfId, 1, 10, instId, txId),
-        ])
-
-        console.log('📌 [RequestsPage Step 8.1: API Responses Received]', {
-          completedItemsCount: completedRes.data?.items?.length || 0,
-          inboxItemsCount: inboxRes.data?.items?.length || 0,
-          sentItemsCount: sentRes.data?.items?.length || 0,
-        })
-
-        const candidateItems = [
-          ...(inboxRes.data?.items || []),
-          ...(sentRes.data?.items || []),
-          ...(completedRes.data?.items || []),
-        ]
-
-        row = candidateItems.find(
-          (item: any) =>
-            String(item.workflowInstanceId || item.processId || item.id) ===
-              String(instId) ||
-            (txId && String(item.transactionId) === String(txId)),
-        )
-        if (row) {
-          console.log(
-            '📌 [RequestsPage Step 8.2: Found Ticket in V6 API Response]',
-            row,
-          )
-        }
-      } catch (e) {
-        console.warn('⚠️ V6 instance fetch error', e)
-      }
-
-      // 2. Secondary fallback: try getProcess rowInfo
-      if (!row) {
-        console.log(
-          '📌 [RequestsPage Step 8.3: Trying getProcess rowInfo fallback]',
-        )
-        try {
-          row = await requestApi.getProcess(
-            pendingDeepLink.workflowId,
-            pendingDeepLink.processId,
-            pendingDeepLink.transactionId ?? pendingDeepLink.processId,
-          )
-          console.log(
-            '📌 [RequestsPage Step 8.4: getProcess rowInfo returned]',
-            row,
-          )
-        } catch (e) {
-          console.warn('⚠️ getProcess request failed', e)
-        }
+      // 1-2. V6 inbox/sent/completed by instanceId, then getProcess rowInfo
+      row = await findRequestRow(wfId, instId, txId)
+      if (row) {
+        console.log('📌 [RequestsPage Step 8.2: Found Ticket]', row)
       }
 
       // 3. Fallback: search currently loaded inboxResult items

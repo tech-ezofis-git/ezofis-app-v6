@@ -1079,6 +1079,7 @@ msgstr "Tambah medan untuk melihat pratonton langsung jadual laporan."
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
 #: src/pages/reports/components/OverviewTab.tsx:542
+#: src/pages/reports/components/OverviewTab.tsx:506
 msgid "Add filter"
 msgstr "Tambah penapis"
 
@@ -1109,7 +1110,7 @@ msgstr "Tambah Item Baris"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1052
-#: src/pages/requests/components/request/components/Header.tsx:1991
+#: src/pages/requests/components/request/components/Header.tsx:1997
 msgid "Add message (optional)"
 msgstr "Tambah mesej (pilihan)"
 
@@ -1119,13 +1120,13 @@ msgstr "Tambah fail lagi"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:629
-#: src/pages/requests/components/request/components/Header.tsx:1636
+#: src/pages/requests/components/request/components/Header.tsx:1642
 msgid "Add more people..."
 msgstr "Tambah lagi orang..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:630
-#: src/pages/requests/components/request/components/Header.tsx:1637
+#: src/pages/requests/components/request/components/Header.tsx:1643
 msgid "Add names or emails"
 msgstr "Tambah nama atau e-mel"
 
@@ -1999,7 +2000,7 @@ msgstr "Tetapkan kumpulan akses pengguna"
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Tetapkan pengguna kepada peranan setelah pengguna tersedia dalam platform."
 
-#: src/pages/requests/components/request/components/Header.tsx:811
+#: src/pages/requests/components/request/components/Header.tsx:816
 msgid "Assigned User"
 msgstr ""
 
@@ -2080,11 +2081,12 @@ msgid "Attachment view"
 msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:432
+#: src/pages/portal/components/PortalShell.tsx:319
 #: src/pages/portal/components/PortalShell.tsx:318
 #: src/pages/portal/components/PortalWizard.tsx:1442
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
-#: src/pages/requests/components/request/components/Header.tsx:932
+#: src/pages/requests/components/request/components/Header.tsx:937
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:55
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
@@ -2267,6 +2269,8 @@ msgstr "Menunggu Pengesahan"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
+#: src/pages/portal/components/PortalShell.tsx:163
+#: src/pages/portal/components/PortalShell.tsx:206
 #: src/pages/portal/components/PortalShell.tsx:162
 #: src/pages/portal/components/PortalShell.tsx:205
 #: src/pages/portal/components/PortalWizard.tsx:1309
@@ -2390,20 +2394,20 @@ msgstr ""
 msgid "Back to workflows"
 msgstr "Kembali ke aliran kerja"
 
-#: src/pages/requests/components/request/components/Header.tsx:1401
+#: src/pages/requests/components/request/components/Header.tsx:1407
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Backorder"
 msgstr "Pesanan belakang"
 
-#: src/pages/requests/components/request/components/Header.tsx:902
+#: src/pages/requests/components/request/components/Header.tsx:907
 msgid "Backorder Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:906
+#: src/pages/requests/components/request/components/Header.tsx:911
 msgid "Backorder Detected"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1395
+#: src/pages/requests/components/request/components/Header.tsx:1401
 msgid "Backorder detected on purchase order fulfillment"
 msgstr ""
 
@@ -2507,6 +2511,8 @@ msgstr "Semak imbas"
 msgid "browse files"
 msgstr "menyemak imbas fail"
 
+#: src/pages/portal/components/PortalShell.tsx:287
+#: src/pages/requests/components/request/components/Header.tsx:1027
 #: src/pages/portal/components/PortalShell.tsx:286
 #: src/pages/requests/components/request/components/Header.tsx:1022
 msgid "Budget"
@@ -2690,6 +2696,7 @@ msgstr "Boleh Lihat"
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
 #: src/pages/reports/components/ReportsListView.tsx:326
+#: src/pages/reports/components/ReportsListView.tsx:318
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
@@ -3318,7 +3325,7 @@ msgstr "Nombor Pelanggan"
 #: src/pages/portal/components/PortalBottomSheet.tsx:62
 #: src/pages/portal/components/PortalBottomSheet.tsx:103
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1661
-#: src/pages/requests/components/request/components/Header.tsx:781
+#: src/pages/requests/components/request/components/Header.tsx:786
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
@@ -3327,8 +3334,8 @@ msgstr "Nombor Pelanggan"
 msgid "Close"
 msgstr "Tutup"
 
-#: src/pages/requests/components/request/components/Header.tsx:1117
-#: src/pages/requests/components/request/components/Header.tsx:1543
+#: src/pages/requests/components/request/components/Header.tsx:1122
+#: src/pages/requests/components/request/components/Header.tsx:1549
 msgid "Close AI Insights"
 msgstr "Tutup Cerapan AI"
 
@@ -3444,10 +3451,11 @@ msgstr "Lajur yang Dimakan:"
 #~ msgstr "Akan Datang"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
+#: src/pages/portal/components/PortalShell.tsx:325
 #: src/pages/portal/components/PortalShell.tsx:324
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
-#: src/pages/requests/components/request/components/Header.tsx:938
+#: src/pages/requests/components/request/components/Header.tsx:943
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:61
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
@@ -4277,7 +4285,7 @@ msgstr "Peranan Semasa"
 #: src/pages/folders/components/DocumentsListView.tsx:537
 #: src/pages/folders/components/FolderTable.tsx:1366
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1721
-#: src/pages/requests/components/request/components/Header.tsx:798
+#: src/pages/requests/components/request/components/Header.tsx:803
 msgid "Current Stage"
 msgstr "Peringkat Semasa"
 
@@ -4488,8 +4496,8 @@ msgstr ""
 msgid "Decide what happens when a file with the same name is uploaded again: replace the existing file, keep each version with a timestamp, or number versions automatically."
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1113
-#: src/pages/requests/components/request/components/Header.tsx:1539
+#: src/pages/requests/components/request/components/Header.tsx:1118
+#: src/pages/requests/components/request/components/Header.tsx:1545
 msgid "Decision Details"
 msgstr ""
 
@@ -5521,7 +5529,7 @@ msgstr "Perlu Bayar Hari Ini"
 #~ msgid "Dummy results"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1385
+#: src/pages/requests/components/request/components/Header.tsx:1391
 #: src/pages/requests/utils/localizeRequestUi.ts:45
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:452
 msgid "Duplicate"
@@ -5532,11 +5540,12 @@ msgstr "Pendua"
 #~ msgid "Duplicate as draft"
 #~ msgstr ""
 
+#: src/pages/requests/components/request/components/Header.tsx:895
 #: src/pages/requests/components/request/components/Header.tsx:890
 msgid "Duplicate Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:894
+#: src/pages/requests/components/request/components/Header.tsx:899
 msgid "Duplicate Detected"
 msgstr ""
 
@@ -7893,12 +7902,13 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "Keputusan Perlawanan Sejarah"
 
+#: src/pages/portal/components/PortalShell.tsx:333
 #: src/pages/portal/components/PortalShell.tsx:332
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
-#: src/pages/requests/components/request/components/Header.tsx:940
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
+#: src/pages/requests/components/request/components/Header.tsx:945
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:474
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:510
 msgid "History"
@@ -8319,7 +8329,7 @@ msgstr "Jemput Orang"
 #~ msgstr "Jemputan dihantar"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1888
+#: src/pages/requests/components/request/components/Header.tsx:1894
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Dijemput"
@@ -8440,8 +8450,8 @@ msgstr ""
 msgid "Invoice Total"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1476
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5353
+#: src/pages/requests/components/request/components/Header.tsx:1482
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
 msgid "Invoice Value"
 msgstr "Nilai Invois"
 
@@ -8714,7 +8724,7 @@ msgstr "Tindakan Terakhir Pada"
 msgid "Last Action By"
 msgstr "Tindakan Terakhir Oleh"
 
-#: src/pages/requests/components/request/components/Header.tsx:868
+#: src/pages/requests/components/request/components/Header.tsx:873
 msgid "Last Activity"
 msgstr ""
 
@@ -10151,6 +10161,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
+#: src/pages/requests/components/request/components/Header.tsx:2027
 #: src/pages/requests/components/request/components/Header.tsx:2021
 #: src/pages/requests/RequestsPage.tsx:1918
 msgid "New"
@@ -10272,8 +10283,8 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:981
-#: src/pages/requests/components/request/components/Header.tsx:1250
+#: src/pages/requests/components/request/components/Header.tsx:986
+#: src/pages/requests/components/request/components/Header.tsx:1255
 msgid "Next Request"
 msgstr "Permintaan Seterusnya"
 
@@ -10294,7 +10305,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/reports/components/ReportsListView.tsx:228
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5972
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5977
 msgid "No"
 msgstr "Tidak"
 
@@ -10431,8 +10442,8 @@ msgid "No data to preview"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:759
-#: src/pages/requests/components/request/components/Header.tsx:1127
-#: src/pages/requests/components/request/components/Header.tsx:1553
+#: src/pages/requests/components/request/components/Header.tsx:1132
+#: src/pages/requests/components/request/components/Header.tsx:1559
 msgid "No decision details available for this request."
 msgstr "Tiada butiran keputusan tersedia untuk permintaan ini."
 
@@ -10804,6 +10815,7 @@ msgid "No rows added"
 msgstr ""
 
 #: src/pages/reports/components/OverviewTab.tsx:525
+#: src/pages/reports/components/OverviewTab.tsx:479
 msgid "No rows for this report."
 msgstr ""
 
@@ -11032,6 +11044,7 @@ msgstr "Tidak dipilih"
 msgid "Not set"
 msgstr ""
 
+#: src/pages/requests/components/request/components/Header.tsx:809
 #: src/pages/requests/components/request/components/Header.tsx:804
 msgid "Not specified"
 msgstr ""
@@ -11067,7 +11080,7 @@ msgid "Notify document owner beforehand"
 msgstr "Beritahu pemilik dokumen terlebih dahulu"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:2018
+#: src/pages/requests/components/request/components/Header.tsx:2024
 msgid "Notify me when accessed"
 msgstr "Beritahu saya apabila diakses"
 
@@ -11437,7 +11450,7 @@ msgstr "Tertunggak dan perlu dibayar paling cepat dahulu — proses dari atas ke
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
 #: src/pages/reports/components/ReportsListView.tsx:233
-#: src/pages/requests/components/request/components/Header.tsx:1880
+#: src/pages/requests/components/request/components/Header.tsx:1886
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -12418,7 +12431,7 @@ msgstr "Rujukan PO"
 msgid "PO Setup"
 msgstr "Persediaan PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1501
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5354
 msgid "PO Value"
@@ -12541,7 +12554,7 @@ msgstr "Portal"
 #~ msgid "Posting..."
 #~ msgstr "Menghantar..."
 
-#: src/pages/requests/components/request/components/Header.tsx:1379
+#: src/pages/requests/components/request/components/Header.tsx:1385
 msgid "Potential duplicate invoice detected in ERP records"
 msgstr ""
 
@@ -12650,8 +12663,8 @@ msgstr ""
 msgid "Previous page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:958
-#: src/pages/requests/components/request/components/Header.tsx:1227
+#: src/pages/requests/components/request/components/Header.tsx:963
+#: src/pages/requests/components/request/components/Header.tsx:1232
 msgid "Previous Request"
 msgstr "Permintaan Sebelumnya"
 
@@ -12998,6 +13011,7 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
+#: src/pages/requests/components/request/Request.tsx:3063
 #: src/pages/requests/components/request/Request.tsx:3062
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
@@ -13029,7 +13043,7 @@ msgstr ""
 msgid "Quote refreshed with the new agent result."
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1053
+#: src/pages/requests/components/request/components/Header.tsx:1058
 msgid "Quote Total"
 msgstr ""
 
@@ -13043,7 +13057,7 @@ msgstr "Dibesarkan Pada"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1917
-#: src/pages/requests/components/request/components/Header.tsx:836
+#: src/pages/requests/components/request/components/Header.tsx:841
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Dibesarkan Oleh"
@@ -13052,7 +13066,7 @@ msgstr "Dibesarkan Oleh"
 #~ msgid "Raised Date"
 #~ msgstr "Tarikh Dibangkitkan"
 
-#: src/pages/requests/components/request/components/Header.tsx:850
+#: src/pages/requests/components/request/components/Header.tsx:855
 msgid "Raised On"
 msgstr ""
 
@@ -13515,6 +13529,7 @@ msgstr "Ganti Fail"
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:73
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:261
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:269
+#: src/pages/settings/SettingsMain.tsx:328
 #: src/pages/settings/SettingsMain.tsx:346
 msgid "Report Builder"
 msgstr "Pembina Laporan"
@@ -13628,8 +13643,8 @@ msgstr ""
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "Permintaan {resolvedRequestNo} berjaya diserahkan"
 
-#: src/pages/requests/components/request/components/Header.tsx:738
-#: src/pages/requests/components/request/components/Header.tsx:777
+#: src/pages/requests/components/request/components/Header.tsx:743
+#: src/pages/requests/components/request/components/Header.tsx:782
 msgid "Request & Stage Details"
 msgstr ""
 
@@ -13661,11 +13676,11 @@ msgstr "Permintaan dipindahkan"
 msgid "Request No"
 msgstr "Permintaan No"
 
-#: src/pages/requests/components/request/components/Header.tsx:826
+#: src/pages/requests/components/request/components/Header.tsx:831
 msgid "Request Number"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1812
+#: src/pages/requests/components/request/components/Header.tsx:1818
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
@@ -13673,6 +13688,7 @@ msgstr "Pemilik Permintaan"
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
+#: src/pages/requests/components/request/components/Header.tsx:670
 #: src/pages/requests/components/request/components/Header.tsx:665
 #: src/pages/requests/components/request/Request.tsx:3005
 msgid "Request shared successfully"
@@ -14196,6 +14212,7 @@ msgid "rows"
 msgstr "barisan"
 
 #: src/pages/reports/components/OverviewTab.tsx:595
+#: src/pages/reports/components/OverviewTab.tsx:544
 msgid "Rows"
 msgstr "Baris"
 
@@ -14228,6 +14245,7 @@ msgstr "Peraturan"
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
 #: src/pages/reports/components/OverviewTab.tsx:512
+#: src/pages/reports/components/OverviewTab.tsx:466
 msgid "Run again"
 msgstr ""
 
@@ -14277,7 +14295,7 @@ msgstr "Pemetaan Medan Jadual SAP"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2706
 #: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:2070
+#: src/pages/requests/components/request/components/Header.tsx:2076
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
 #: src/pages/settings/components/SettingsWizardLayout.tsx:91
 msgid "Save"
@@ -14539,6 +14557,7 @@ msgstr "Cari"
 
 #. placeholder {0}: col.label
 #: src/pages/reports/components/OverviewTab.tsx:369
+#: src/pages/reports/components/OverviewTab.tsx:323
 msgid "Search {0}..."
 msgstr ""
 
@@ -15435,7 +15454,7 @@ msgstr "Hantar untuk Tandatangan"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1046
-#: src/pages/requests/components/request/components/Header.tsx:1985
+#: src/pages/requests/components/request/components/Header.tsx:1991
 msgid "Send notification"
 msgstr "Hantar pemberitahuan"
 
@@ -15641,8 +15660,8 @@ msgstr "Keterukan"
 #: src/pages/folders/components/FolderTable.tsx:1529
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1580
-#: src/pages/requests/components/request/components/Header.tsx:2008
+#: src/pages/requests/components/request/components/Header.tsx:1586
+#: src/pages/requests/components/request/components/Header.tsx:2014
 msgid "Share"
 msgstr "Kongsi"
 
@@ -15658,7 +15677,7 @@ msgstr ""
 msgid "Share Report"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1605
+#: src/pages/requests/components/request/components/Header.tsx:1611
 msgid "Share Request"
 msgstr "Permintaan Kongsi"
 
@@ -15693,7 +15712,7 @@ msgstr "Perkongsian"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1070
-#: src/pages/requests/components/request/components/Header.tsx:2008
+#: src/pages/requests/components/request/components/Header.tsx:2014
 msgid "Sharing..."
 msgstr "Berkongsi..."
 
@@ -15945,6 +15964,8 @@ msgstr ""
 
 #: src/pages/portal/components/PortalMobileHome.tsx:707
 #: src/pages/portal/components/PortalShell.tsx:116
+#: src/pages/portal/components/PortalShell.tsx:129
+#: src/pages/portal/components/PortalShell.tsx:142
 #: src/pages/portal/components/PortalShell.tsx:128
 #: src/pages/portal/components/PortalShell.tsx:141
 msgid "Sign out"
@@ -16277,7 +16298,7 @@ msgstr "Aliran kredit statik untuk {selectedMonth}"
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:213
-#: src/pages/requests/components/request/components/Header.tsx:879
+#: src/pages/requests/components/request/components/Header.tsx:884
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:298
@@ -16447,6 +16468,7 @@ msgstr "Butiran Penyerahan"
 msgid "submissions"
 msgstr "penyerahan"
 
+#: src/pages/portal/components/PortalShell.tsx:189
 #: src/pages/portal/components/PortalShell.tsx:188
 #: src/pages/portal/components/PortalWizard.tsx:981
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
@@ -17165,6 +17187,7 @@ msgid "This related document cannot be removed."
 msgstr "Dokumen berkaitan ini tidak boleh dialih keluar."
 
 #: src/pages/reports/components/OverviewTab.tsx:531
+#: src/pages/reports/components/OverviewTab.tsx:485
 msgid "This report has no fields configured yet."
 msgstr "Laporan ini belum mempunyai medan yang dikonfigurasikan."
 
@@ -17762,7 +17785,7 @@ msgid "Unable to verify OTP"
 msgstr "Tidak dapat mengesahkan OTP"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:127
-#: src/pages/requests/components/request/components/Header.tsx:817
+#: src/pages/requests/components/request/components/Header.tsx:822
 msgid "Unassigned"
 msgstr "Tidak diperuntukkan"
 
@@ -18988,7 +19011,7 @@ msgid "years"
 msgstr "tahun"
 
 #: src/pages/reports/components/ReportsListView.tsx:225
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5971
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5976
 msgid "Yes"
 msgstr "Ya"
 
