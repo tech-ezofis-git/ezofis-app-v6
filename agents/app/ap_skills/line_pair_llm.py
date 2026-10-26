@@ -16,6 +16,7 @@ logger = logging.getLogger("orchestrator.ap.line_pair")
 _SYSTEM = """You pair invoice lines to purchase-order lines.
 A part code and a product name are the same item when they refer to one product.
 Several invoice lines are one kit when the PO line lists those pieces.
+When a description is blank, pair a line from its quantity, price, and amount.
 Return JSON only:
 {"pairs":[{"invoice_index":0,"po_index":0}],"kits":[{"po_index":0,"invoice_indexes":[0,1]}]}
 Use 0-based indexes. Put a kit only in kits, not also in pairs.
@@ -108,6 +109,8 @@ def _brief(index: int, line: dict[str, Any]) -> dict[str, Any]:
         "index": index,
         "description": line_description(line),
         "qty": field_number(line, "qty", "quantity", "Quantity"),
+        "price": field_number(line, "price", "rate", "unit_price", "Unit Cost"),
+        "amount": field_number(line, "amount", "line_amount", "Extended"),
     }
 
 

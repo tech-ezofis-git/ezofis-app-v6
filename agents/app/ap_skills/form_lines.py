@@ -5,6 +5,8 @@ import json
 import re
 from typing import Any, Optional
 
+from app.ap_skills.types import _is_measure_only
+
 _SEMANTIC = (
     ("description", ("description", "itemdescription", "materialdescription")),
     ("qty", ("quantity", "qty", "orderquantity", "qtyshipped")),
@@ -83,6 +85,19 @@ def decode_form_line_items(raw: Any, controls: Optional[list[dict[str, Any]]] = 
     return inferred or decoded
 
 
+def _is_product_text(value: str) -> bool:
+    """A product name, including a single word such as Headset.
+
+    Units (EA) and measure-only text (6 lb) are not names.
+    """
+    text = str(value or "").strip()
+    if not text or _is_measure_only(text) or re.search(r"\d", text):
+        return False
+    if re.fullmatch(r"[A-Za-z]{1,4}", text):
+        return False
+    return bool(re.search(r"[A-Za-z]", text))
+
+
 def _column_values(rows: list[dict[str, Any]], key: str) -> list[str]:
     return [str(row.get(key) or "").strip() for row in rows]
 
@@ -115,7 +130,7 @@ def _infer_unlabeled_lines(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         if all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) or re.fullmatch(r"\d{1,3}%", value) for value in values):
             continue
-        if all(re.search(r"[A-Za-z]", value) and " " in value for value in values):
+        if all(_is_product_text(value) for value in values):
             roles[key] = "description"
             continue
         if all(re.fullmatch(r"[A-Za-z]{2,4}", value) for value in values):
@@ -158,6 +173,16 @@ def _infer_unlabeled_lines(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 break
         if qty_key:
             break
+    if not qty_key and len(rest) == 2:
+        # Name plus two numbers and no extended amount. The smaller column is
+        # the quantity and the larger one is the unit price.
+        left, right = rest
+        left_values = _as_floats(_column_values(rows, left)) or []
+        right_values = _as_floats(_column_values(rows, right)) or []
+        if sum(left_values) <= sum(right_values):
+            qty_key, price_key = left, right
+        else:
+            qty_key, price_key = right, left
     if qty_key:
         roles[qty_key] = "qty"
     if price_key:
@@ -172,5 +197,10 @@ def _infer_unlabeled_lines(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         named = dict(row)
         for key, role in roles.items():
             named[role] = row.get(key)
+        if named.get("amount") in (None, "") and named.get("qty") not in (None, "") and named.get("price") not in (None, ""):
+            qty = _as_floats([str(named["qty"]).strip()])
+            price = _as_floats([str(named["price"]).strip()])
+            if qty and price:
+                named["amount"] = qty[0] * price[0]
         decoded.append(named)
     return decoded

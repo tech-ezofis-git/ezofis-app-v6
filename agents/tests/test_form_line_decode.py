@@ -50,6 +50,36 @@ def test_decode_form_line_items_without_control_names():
     assert lines[2]["qty"] == "3"
 
 
+def test_decode_single_word_product_names_without_control_names():
+    raw = (
+        '[{"line":"1","name":"Keyboard","uom":"EA","qty":"9","price":"145","amount":"1305"},'
+        '{"line":"2","name":"Mouse","uom":"EA","qty":"1","price":"240","amount":"240"},'
+        '{"line":"3","name":"Headset","uom":"EA","qty":"6","price":"96","amount":"576"},'
+        '{"line":"4","name":"Laptop","uom":"EA","qty":"2","price":"84","amount":"168"}]'
+    )
+    lines = decode_form_line_items(raw, [])
+    assert [row["description"] for row in lines] == ["Keyboard", "Mouse", "Headset", "Laptop"]
+    assert lines[2]["qty"] == "6"
+    assert lines[2]["price"] == "96"
+    assert lines[2]["amount"] == "576"
+
+
+def test_decode_qty_and_price_when_the_line_has_no_amount():
+    raw = (
+        '[{"desc":"Keyboard","q":"9","p":"145"},'
+        '{"desc":"Mouse","q":"1","p":"240"},'
+        '{"desc":"Headset","q":"6","p":"96"},'
+        '{"desc":"Laptop","q":"2","p":"84"}]'
+    )
+    lines = decode_form_line_items(raw, [])
+    assert [(row["description"], row["qty"], row["price"], row["amount"]) for row in lines] == [
+        ("Keyboard", "9", "145", 1305.0),
+        ("Mouse", "1", "240", 240.0),
+        ("Headset", "6", "96", 576.0),
+        ("Laptop", "2", "84", 168.0),
+    ]
+
+
 def test_decode_form_line_items_maps_control_ids():
     lines = decode_form_line_items(_PO_LINE_JSON, _CONTROLS)
     assert len(lines) == 2
