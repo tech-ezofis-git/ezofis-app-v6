@@ -1078,11 +1078,8 @@ msgstr "Add fields to see a live preview of the report table."
 #: src/pages/portal/components/PortalMobileHome.tsx:333
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:542
-=======
 #: src/pages/reports/components/OverviewTab.tsx:506
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Add filter"
 msgstr "Add filter"
 
@@ -1562,14 +1559,11 @@ msgstr "All purchase order quantities match this invoice. No outstanding back or
 msgid "All search results for “{searchLabel}”"
 msgstr "All search results for “{searchLabel}”"
 
-<<<<<<< HEAD
-=======
 #: src/pages/settings/components/delegation/DelegationWizard.tsx:589
 #: src/pages/settings/components/delegation/DelegationWizard.tsx:892
 msgid "All stages"
 msgstr "All stages"
 
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalHome.tsx:107
 msgid "All Status"
 msgstr "All Status"
@@ -2087,11 +2081,8 @@ msgid "Attachment view"
 msgstr "Attachment view"
 
 #: src/pages/portal/components/PortalDetail.tsx:432
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:319
-=======
 #: src/pages/portal/components/PortalShell.tsx:318
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:1442
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
@@ -2278,13 +2269,10 @@ msgstr "Awaiting Verification"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:163
 #: src/pages/portal/components/PortalShell.tsx:206
-=======
 #: src/pages/portal/components/PortalShell.tsx:162
 #: src/pages/portal/components/PortalShell.tsx:205
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:1309
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:212
@@ -2523,13 +2511,10 @@ msgstr "Browse"
 msgid "browse files"
 msgstr "browse files"
 
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:287
 #: src/pages/requests/components/request/components/Header.tsx:1027
-=======
 #: src/pages/portal/components/PortalShell.tsx:286
 #: src/pages/requests/components/request/components/Header.tsx:1022
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Budget"
 msgstr "Budget"
 
@@ -2710,11 +2695,8 @@ msgstr "Can View"
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
-<<<<<<< HEAD
 #: src/pages/reports/components/ReportsListView.tsx:326
-=======
 #: src/pages/reports/components/ReportsListView.tsx:318
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
@@ -3469,11 +3451,8 @@ msgstr ""
 #~ msgstr "Coming Soon"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:325
-=======
 #: src/pages/portal/components/PortalShell.tsx:324
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
 #: src/pages/requests/components/request/components/Header.tsx:943
@@ -5533,16 +5512,13 @@ msgstr "Due Today"
 msgid "Duplicate"
 msgstr "Duplicate"
 
-<<<<<<< HEAD
-#: src/pages/requests/components/request/components/Header.tsx:895
-=======
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:308
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:310
 msgid "Duplicate as draft"
 msgstr "Duplicate as draft"
 
+#: src/pages/requests/components/request/components/Header.tsx:895
 #: src/pages/requests/components/request/components/Header.tsx:890
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Duplicate Check"
 msgstr "Duplicate Check"
 
@@ -7905,11 +7881,8 @@ msgstr "Historical Match & Integrity Results"
 #~ msgid "Historical Match Results"
 #~ msgstr "Historical Match Results"
 
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:333
-=======
 #: src/pages/portal/components/PortalShell.tsx:332
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
@@ -10163,11 +10136,8 @@ msgstr "Net Value"
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
-<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:2027
-=======
 #: src/pages/requests/components/request/components/Header.tsx:2021
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/RequestsPage.tsx:1909
 msgid "New"
 msgstr ""
@@ -10819,11 +10789,8 @@ msgstr "No roles yet"
 msgid "No rows added"
 msgstr "No rows added"
 
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:525
-=======
 #: src/pages/reports/components/OverviewTab.tsx:479
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "No rows for this report."
 msgstr "No rows for this report."
 
@@ -11048,15 +11015,12 @@ msgstr "Not scheduled"
 msgid "Not selected"
 msgstr "Not selected"
 
-<<<<<<< HEAD
-#: src/pages/requests/components/request/components/Header.tsx:809
-=======
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:256
 msgid "Not set"
 msgstr "Not set"
 
+#: src/pages/requests/components/request/components/Header.tsx:809
 #: src/pages/requests/components/request/components/Header.tsx:804
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Not specified"
 msgstr "Not specified"
 
@@ -13018,11 +12982,8 @@ msgstr "Quote 1 → Quote 3"
 msgid "Quote changed after the PDF was generated"
 msgstr "Quote changed after the PDF was generated"
 
-<<<<<<< HEAD
 #: src/pages/requests/components/request/Request.tsx:3063
-=======
 #: src/pages/requests/components/request/Request.tsx:3062
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr "Quote data has changed. Regenerate the PDF before you continue."
 
@@ -13321,11 +13282,8 @@ msgstr "Reference Document Number"
 #: src/pages/portal/components/PortalHome.tsx:590
 #: src/pages/portal/components/PortalHome.tsx:595
 #: src/pages/portal/components/PortalMobileHome.tsx:248
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:547
 #: src/pages/reports/components/OverviewTab.tsx:552
-=======
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2150
@@ -13537,11 +13495,8 @@ msgstr "Replace File"
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:73
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:261
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:269
-<<<<<<< HEAD
 #: src/pages/settings/SettingsMain.tsx:328
-=======
 #: src/pages/settings/SettingsMain.tsx:346
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Report Builder"
 msgstr "Report Builder"
 
@@ -13699,11 +13654,8 @@ msgstr "Request Owner"
 msgid "Request saved successfully"
 msgstr "Request saved successfully"
 
-<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:670
-=======
 #: src/pages/requests/components/request/components/Header.tsx:665
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/Request.tsx:3005
 msgid "Request shared successfully"
 msgstr "Request shared successfully"
@@ -14224,11 +14176,8 @@ msgstr "row entered"
 msgid "rows"
 msgstr "rows"
 
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:595
-=======
 #: src/pages/reports/components/OverviewTab.tsx:544
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Rows"
 msgstr "Rows"
 
@@ -14260,11 +14209,8 @@ msgstr "Rules"
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:512
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:512
-=======
 #: src/pages/reports/components/OverviewTab.tsx:466
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Run again"
 msgstr "Run again"
 
@@ -14575,11 +14521,8 @@ msgid "Search"
 msgstr "Search"
 
 #. placeholder {0}: col.label
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:369
-=======
 #: src/pages/reports/components/OverviewTab.tsx:323
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Search {0}..."
 msgstr "Search {0}..."
 
@@ -15986,13 +15929,10 @@ msgstr "Sign Mode"
 
 #: src/pages/portal/components/PortalMobileHome.tsx:707
 #: src/pages/portal/components/PortalShell.tsx:116
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:129
 #: src/pages/portal/components/PortalShell.tsx:142
-=======
 #: src/pages/portal/components/PortalShell.tsx:128
 #: src/pages/portal/components/PortalShell.tsx:141
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Sign out"
 msgstr "Sign out"
 
@@ -16493,11 +16433,8 @@ msgstr "Submission Details"
 msgid "submissions"
 msgstr "submissions"
 
-<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:189
-=======
 #: src/pages/portal/components/PortalShell.tsx:188
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:981
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:170
@@ -17214,11 +17151,8 @@ msgstr "This quote has no line items to compare against Quote 1."
 msgid "This related document cannot be removed."
 msgstr "This related document cannot be removed."
 
-<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:531
-=======
 #: src/pages/reports/components/OverviewTab.tsx:485
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "This report has no fields configured yet."
 msgstr "This report has no fields configured yet."
 
@@ -18778,8 +18712,6 @@ msgstr "We couldn't get your email address from Google. Please try again."
 msgid "We couldn’t identify this request, so it couldn’t be moved."
 msgstr "We couldn’t identify this request, so it couldn’t be moved."
 
-<<<<<<< HEAD
-=======
 #: src/pages/settings/components/delegation/DelegationWizard.tsx:429
 msgid "We couldn't load users."
 msgstr "We couldn't load users."
@@ -18788,7 +18720,6 @@ msgstr "We couldn't load users."
 msgid "We couldn't load workflows."
 msgstr "We couldn't load workflows."
 
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalMobileHome.tsx:367
 msgid "We couldn't load your requests."
 msgstr "We couldn't load your requests."
@@ -18974,13 +18905,10 @@ msgstr "Workflow ID is missing. Cannot start workflow."
 msgid "Workflow Name"
 msgstr "Workflow Name"
 
-<<<<<<< HEAD
-=======
 #: src/pages/settings/components/delegation/DelegationWizard.tsx:654
 msgid "Workflow Stage"
 msgstr "Workflow Stage"
 
->>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/StageTrail.tsx:50
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:251
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:185
