@@ -10,13 +10,29 @@ import {
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
 
-export type TicketFormRow = { id: string; label: string; value: string }
+export type TicketFormRow = {
+  id: string
+  label: string
+  /** Table fields: rows keyed by column label (value is then ''). */
+  table?: Array<Record<string, string>>
+  value: string
+}
 
 type FormField = {
   id?: number | string
   jsonId?: number | string
   label?: string
   name?: string
+  parentId?: number | string
+  settings?: {
+    specific?: {
+      tableColumns?: Array<{
+        id?: number | string
+        label?: string
+        name?: string
+      }>
+    }
+  }
   type?: string
 }
 
@@ -79,6 +95,60 @@ const toText = (value: unknown): string => {
     return ''
   }
   return String(value).trim()
+}
+
+/**
+ * A table field's saved rows, keyed by its column labels (columns are the
+ * fields whose parentId is the table). Without column fields, the stored
+ * keys are used as they are.
+ */
+const toTableRows = (
+  raw: unknown,
+  fields: FormField[],
+  table: FormField,
+): Array<Record<string, string>> => {
+  const list = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as { data?: unknown })?.data)
+      ? (raw as { data: unknown[] }).data
+      : []
+  // Columns are configured on the table itself (settings.specific
+  // .tableColumns, as the table renderer reads them); older forms keep them
+  // as fields whose parentId is the table.
+  const configured = (table.settings?.specific?.tableColumns || []).filter(
+    (column) => column?.id !== undefined && column?.id !== null,
+  )
+  const columns: FormField[] = configured.length
+    ? configured.map((column) => ({
+        id: column.id,
+        label: column.name || column.label,
+      }))
+    : fields.filter(
+        (field) =>
+          field?.parentId !== undefined &&
+          field?.parentId !== null &&
+          String(field.parentId) === String(table.id) &&
+          !isIgnorableField(field),
+      )
+  return list.map((row) => {
+    const record =
+      row && typeof row === 'object' ? (row as Record<string, unknown>) : {}
+    if (!columns.length) {
+      return Object.fromEntries(
+        Object.entries(record).map(([key, value]) => [key, toText(value)]),
+      )
+    }
+    return Object.fromEntries(
+      columns.map((column) => [
+        String(column.label || column.name || column.id),
+        toText(
+          record[String(column.id)] ??
+            record[String(column.jsonId)] ??
+            record[String(column.label)],
+        ),
+      ]),
+    )
+  })
 }
 
 /**
@@ -156,16 +226,17 @@ export const useTicketFormRows = (
       })
       .map((field) => {
         const raw = values[String(field.id)] ?? values[String(field.jsonId)]
-        const value = isTableType(field.type)
-          ? Array.isArray(raw) && raw.length
-            ? `${raw.length} ${raw.length === 1 ? 'row' : 'rows'}`
-            : ''
-          : toText(raw)
-        return {
-          id: String(field.id),
-          label: String(field.label || field.name || field.id),
-          value,
+        const label = String(field.label || field.name || field.id)
+        if (isTableType(field.type)) {
+          return {
+            id: String(field.id),
+            label,
+            // Opened in the table popup; no single value to find in the PDF.
+            table: toTableRows(raw, fields, field),
+            value: '',
+          }
         }
+        return { id: String(field.id), label, value: toText(raw) }
       })
   }, [requestQuery.data?.formData, workflowQuery.data])
 

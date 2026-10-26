@@ -115,6 +115,7 @@ import {
   type DocumentSigningState,
   type SavedSignature,
 } from './DocumentSigningPage'
+import DynamicTableColumnCell from './DynamicTableColumnCell'
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
 import { InlineMetadataEditPanel } from './InlineMetadataEditPanel'
@@ -138,7 +139,14 @@ type CommentItem = {
 type DetailCard = {
   iconKey: string
   id: string
-  rows: Array<{ color?: string; id?: string; label: string; value: string }>
+  rows: Array<{
+    color?: string
+    id?: string
+    label: string
+    /** Table fields: rows shown in the table popup (as in the folder list). */
+    table?: Array<Record<string, string>>
+    value: string
+  }>
   title: string
 }
 type DetailField = { key?: string; label?: string; value?: any }
@@ -463,12 +471,9 @@ export function DocumentDetailsView({
   )
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [ticketData, setTicketData] = useState<any>(null)
-  // Right panel: document details, or the ticket's workflow form (read-only).
-  const [rightTab, setRightTab] = useState<'details' | 'form'>('details')
   const hasTicketForm = Boolean(
     ticketData?.workflowId && ticketData?.workflowInstanceId,
   )
-  const showTicketForm = hasTicketForm && rightTab === 'form'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'timeline' | 'comments' | 'relatedDocs'>(
@@ -1728,17 +1733,13 @@ export function DocumentDetailsView({
     return buildInfoCards(data, t)
   }, [data, t])
 
-  // "Form Details" tab: the ticket's workflow form as label / value rows,
-  // loaded when the tab is first opened. Shares the click-to-highlight in
-  // the preview with the Details cards (allCards).
-  const [ticketFormOpened, setTicketFormOpened] = useState(false)
-  useEffect(() => {
-    if (showTicketForm) setTicketFormOpened(true)
-  }, [showTicketForm])
+  // "Form Details": the ticket's workflow form as label / value rows, shown
+  // after the other detail cards. Shares the click-to-highlight in the
+  // preview with them (allCards).
   const ticketForm = useTicketFormRows(
     hasTicketForm ? String(ticketData.workflowId) : undefined,
     hasTicketForm ? String(ticketData.workflowInstanceId) : undefined,
-    hasTicketForm && ticketFormOpened,
+    hasTicketForm,
   )
   const formCard = useMemo<DetailCard>(
     () => ({
@@ -3676,75 +3677,7 @@ export function DocumentDetailsView({
                   }}
                 />
               ) : null}
-              {!isEditingMetadata && hasTicketForm ? (
-                <div
-                  className='flex items-center gap-5 border-b border-gray-3 px-1'
-                  role='tablist'
-                >
-                  {(
-                    [
-                      ['details', t`Details`, 'tabler:info-circle'],
-                      ['form', t`Form Details`, 'tabler:forms'],
-                    ] as const
-                  ).map(([value, label, icon]) => (
-                    <button
-                      aria-selected={rightTab === value}
-                      key={value}
-                      role='tab'
-                      type='button'
-                      className={cn(
-                        '-mb-px flex items-center gap-1.5 border-b-2 px-0.5 py-2.5 text-13 font-medium transition-colors',
-                        rightTab === value
-                          ? 'border-primary-9 text-primary-11'
-                          : 'border-transparent text-gray-10 hover:text-gray-12',
-                      )}
-                      onClick={() => setRightTab(value)}
-                    >
-                      <Icon className='size-4' name={icon} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {!isEditingMetadata &&
-              showTicketForm &&
-              (ticketForm.isLoading ||
-                ticketForm.isError ||
-                !ticketForm.rows.length) ? (
-                <Card className='overflow-hidden p-0' key='ticket-form-state'>
-                  {ticketForm.isLoading ? (
-                    <div aria-busy='true' className='divide-y divide-gray-3'>
-                      {[0, 1, 2, 3, 4, 5].map((index) => (
-                        <div
-                          className='flex items-center justify-between gap-3 px-3.5 py-3'
-                          key={index}
-                        >
-                          <Skeleton className='h-3.5 w-24' />
-                          <Skeleton className='h-3.5 w-32' />
-                        </div>
-                      ))}
-                    </div>
-                  ) : ticketForm.isError ? (
-                    <div className='flex flex-col items-center gap-3 px-6 py-8 text-center'>
-                      <p className='text-[13px] font-medium text-gray-12'>
-                        {t`We couldn't load the request form.`}
-                      </p>
-                      <Buttons
-                        icon='tabler:refresh'
-                        label={t`Retry`}
-                        size='sm'
-                        variant='outline'
-                        onClick={ticketForm.retry}
-                      />
-                    </div>
-                  ) : (
-                    <p className='px-6 py-8 text-center text-[13px] text-gray-10'>
-                      {t`This workflow has no form fields.`}
-                    </p>
-                  )}
-                </Card>
-              ) : null}
-              {!isEditingMetadata && ticketData && !showTicketForm ? (
+              {!isEditingMetadata && ticketData ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
@@ -3853,10 +3786,8 @@ export function DocumentDetailsView({
               ) : null}
               {(isEditingMetadata
                 ? []
-                : showTicketForm
-                  ? formCard.rows.length && !ticketForm.isLoading
-                    ? [formCard]
-                    : []
+                : formCard.rows.length
+                  ? [...infoCards, formCard]
                   : infoCards
               ).map((card) => (
                 <Card className='overflow-hidden p-0' key={card.id}>
@@ -3946,6 +3877,19 @@ export function DocumentDetailsView({
                               >
                                 {`*****${maskedTail}`}
                               </b>
+                            ) : row.table ? (
+                              <span className='flex justify-end'>
+                                {row.table.length ? (
+                                  <DynamicTableColumnCell
+                                    rawVal={row.table}
+                                    title={row.label}
+                                  />
+                                ) : (
+                                  <b className='text-[13px] font-semibold text-gray-13'>
+                                    -
+                                  </b>
+                                )}
+                              </span>
                             ) : row.label.toLowerCase() === 'status' ? (
                               <StatusPill status={plainVal} />
                             ) : (
@@ -3963,6 +3907,45 @@ export function DocumentDetailsView({
                   </div>
                 </Card>
               ))}
+              {!isEditingMetadata &&
+              hasTicketForm &&
+              (ticketForm.isLoading || ticketForm.isError) ? (
+                <Card className='overflow-hidden p-0' key='ticket-form-state'>
+                  <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
+                    <DynamicIcon
+                      className='h-4 w-4 text-blue-11'
+                      name='fileText'
+                    />
+                    {t`Form Details`}
+                  </h3>
+                  {ticketForm.isLoading ? (
+                    <div aria-busy='true' className='divide-y divide-gray-3'>
+                      {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <div
+                          className='flex items-center justify-between gap-3 px-3.5 py-3'
+                          key={index}
+                        >
+                          <Skeleton className='h-3.5 w-24' />
+                          <Skeleton className='h-3.5 w-32' />
+                        </div>
+                      ))}
+                    </div>
+                  ) : ticketForm.isError ? (
+                    <div className='flex flex-col items-center gap-3 px-6 py-8 text-center'>
+                      <p className='text-[13px] font-medium text-gray-12'>
+                        {t`We couldn't load the request form.`}
+                      </p>
+                      <Buttons
+                        icon='tabler:refresh'
+                        label={t`Retry`}
+                        size='sm'
+                        variant='outline'
+                        onClick={ticketForm.retry}
+                      />
+                    </div>
+                  ) : null}
+                </Card>
+              ) : null}
             </aside>
           ) : null}
         </div>

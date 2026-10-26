@@ -4419,6 +4419,29 @@ const Overview = (props: any) => {
     selectedItem?.name ||
     'document.pdf'
 
+  // One duplicate decision for the card, the detail view and the header: any
+  // of the duplicate flags or the duplicate check result counts.
+  const isDuplicateText = (value: unknown) =>
+    ['DETECTED', 'DUPLICATE', 'DUPLICATED'].includes(
+      String(value ?? '')
+        .trim()
+        .toUpperCase(),
+    )
+  const duplicateCheck =
+    resolvedAgentData?.duplicate_check ?? agentData?.duplicate_check
+  const isDuplicateInvoice =
+    Boolean(selectedItem?.isDuplicateInvoice) ||
+    Boolean(selectedItem?.is_duplicate_invoice) ||
+    Boolean(resolvedAgentData?.is_duplicate_invoice) ||
+    Boolean(resolvedAgentData?.isDuplicateInvoice) ||
+    Boolean(agentData?.is_duplicate_invoice) ||
+    Boolean(agentData?.isDuplicateInvoice) ||
+    isDuplicateText(duplicateCheck?.status) ||
+    isDuplicateText(resolvedAgentData?.invoice_errors?.severity)
+  const duplicateStatusLabel = isDuplicateInvoice
+    ? 'Duplicate'
+    : duplicateCheck?.status || 'No Duplicate'
+
   let previewContent = null
   if (previewUrl) {
     const isPdfPreview =
@@ -4652,24 +4675,14 @@ const Overview = (props: any) => {
                           title={t`Duplicate Detection`}
                           status={localizeRequestStatus(
                             i18n,
-                            resolvedAgentData?.duplicate_check?.status ||
-                              agentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity ===
-                              'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                            duplicateStatusLabel,
                           )}
-                          statusType={
-                            resolvedAgentData?.duplicate_check?.status ===
-                              'Duplicate' ||
-                            agentData?.duplicate_check?.status === 'Duplicate'
-                              ? 'warning'
-                              : 'success'
-                          }
+                          statusType={isDuplicateInvoice ? 'danger' : 'success'}
                           value={
-                            resolvedAgentData?.duplicate_check?.message ||
-                            agentData?.duplicate_check?.message ||
-                            t`No duplicates detected`
+                            duplicateCheck?.message ||
+                            (isDuplicateInvoice
+                              ? t`Duplicate invoice detected`
+                              : t`No duplicates detected`)
                           }
                           onClick={() => setActiveDetailView('duplicate_check')}
                         />
@@ -5573,18 +5586,9 @@ const Overview = (props: any) => {
                           title={t`Duplicate Payment Check`}
                           status={localizeRequestStatus(
                             i18n,
-                            resolvedAgentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity ===
-                              'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                            duplicateStatusLabel,
                           )}
-                          statusType={
-                            resolvedAgentData?.duplicate_check?.status ===
-                            'Duplicate'
-                              ? 'danger'
-                              : 'success'
-                          }
+                          statusType={isDuplicateInvoice ? 'danger' : 'success'}
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -5600,14 +5604,18 @@ const Overview = (props: any) => {
                                   <span
                                     className={cn(
                                       'font-semibold',
-                                      resolvedAgentData?.duplicate_check
-                                        ?.status === 'Duplicate'
+                                      isDuplicateInvoice
                                         ? 'text-[var(--red-9)]'
                                         : 'text-[var(--green-9)]',
                                     )}
                                   >
-                                    {resolvedAgentData?.duplicate_check
-                                      ?.status || 'Passed (No Duplicates)'}
+                                    {isDuplicateInvoice
+                                      ? duplicateCheck?.status &&
+                                        isDuplicateText(duplicateCheck.status)
+                                        ? duplicateCheck.status
+                                        : 'Duplicate Detected'
+                                      : duplicateCheck?.status ||
+                                        'Passed (No Duplicates)'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
@@ -5656,11 +5664,11 @@ const Overview = (props: any) => {
                                     </span>
                                   </div>
                                   <span className='leading-normal font-medium text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.duplicate_check
-                                      ?.message ||
-                                      resolvedAgentData?.duplicate_check
-                                        ?.ai_insight ||
-                                      'No duplicate records found in historical ERP database.'}
+                                    {duplicateCheck?.message ||
+                                      duplicateCheck?.ai_insight ||
+                                      (isDuplicateInvoice
+                                        ? 'A matching invoice already exists in the historical ERP records.'
+                                        : 'No duplicate records found in historical ERP database.')}
                                   </span>
                                 </div>
                               </div>
