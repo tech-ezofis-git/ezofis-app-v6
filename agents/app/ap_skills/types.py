@@ -1,6 +1,7 @@
 """AP skill types, ids, and shared helpers."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional, Protocol
 
@@ -190,33 +191,82 @@ def _is_measure_only(text: str) -> bool:
     return False
 
 
+_LINE_NAME_KEYS = (
+    "materialDescription",
+    "material_description",
+    "Material Description",
+    "productName",
+    "product_name",
+    "Product Name",
+    "itemName",
+    "item_name",
+    "Item Name",
+    "description",
+    "Description",
+    "name",
+    "item",
+)
+
+
+def _is_part_code(text: str) -> bool:
+    """A single token that mixes letters and digits, such as ``NET-RTR-220``."""
+    parts = normalize_name(text).split()
+    if len(parts) != 1:
+        return False
+    token = parts[0]
+    return any(ch.isalpha() for ch in token) and any(ch.isdigit() for ch in token)
+
+
+def line_name_candidates(line: dict[str, Any]) -> list[str]:
+    """Product name first, then a part code when both are stored on the line."""
+    names: list[str] = []
+    codes: list[str] = []
+    for key in _LINE_NAME_KEYS:
+        text = field_text(line, key)
+        if not text or _is_measure_only(text):
+            continue
+        bucket = codes if _is_part_code(text) else names
+        if text not in bucket and text not in names and text not in codes:
+            bucket.append(text)
+    return names + codes
+
+
+_KIT_PARENS = re.compile(r"\(([^)]+)\)")
+
+
+def kit_components(text: str) -> list[str]:
+    """Pieces named inside parentheses on one kit line.
+
+    ``Laptop Hardware Kit (Mouse, Charger, Keyboard, Docking Station)``
+    returns the four pieces. A part code in parentheses is not a kit.
+    """
+    found = _KIT_PARENS.search(text or "")
+    if not found or "," not in found.group(1):
+        return []
+    parts: list[str] = []
+    for raw in found.group(1).split(","):
+        piece = raw.strip(" .")
+        if not piece or _is_part_code(piece) or _is_measure_only(piece):
+            continue
+        parts.append(piece)
+    return parts if len(parts) >= 2 else []
+
+
+def component_in_description(component: str, description: str) -> bool:
+    left = normalize_name(component)
+    right = normalize_name(description)
+    return bool(left and right and (left in right or right in left))
+
+
 def line_description(line: dict[str, Any]) -> str:
     """Product name used to pair PO and invoice lines.
 
     The material description is the name shown on the line table. A part
-    code in ``description`` or ``item`` is used only when that name is absent.
-    A unit by itself, such as ``4 lb``, is skipped so the product name on
-    the same line is used instead.
+    code is used only when that name is absent. A unit by itself, such as
+    ``4 lb``, is skipped.
     """
-    for key in (
-        "materialDescription",
-        "material_description",
-        "Material Description",
-        "productName",
-        "product_name",
-        "Product Name",
-        "itemName",
-        "item_name",
-        "Item Name",
-        "description",
-        "Description",
-        "name",
-        "item",
-    ):
-        text = field_text(line, key)
-        if text and not _is_measure_only(text):
-            return text
-    return ""
+    candidates = line_name_candidates(line)
+    return candidates[0] if candidates else ""
 
 
 def field_text(data: dict[str, Any], *keys: str) -> str:

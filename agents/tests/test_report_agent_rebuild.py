@@ -2117,6 +2117,38 @@ async def test_form_rows_receive_request_no_and_stage_from_instances():
 
 
 @pytest.mark.asyncio
+async def test_finish_user_columns_never_returns_guid_in_name():
+    from app.report_agent.catalog_execute import finish_user_columns
+
+    user_id = "049b5a38-fb6c-4037-baca-5c732ee667d9"
+
+    class _Ez:
+        async def get_user(self, *, tenant_id, user_id):
+            return {"Id": user_id, "DisplayName": "Priya"}
+
+    rows = await finish_user_columns(
+        _Ez(),
+        [
+            {
+                "RequestNo": "EXP-REQ-30",
+                "startedBy": user_id,
+                "startedById": "",
+                "actedBy": user_id,
+                "actedById": "",
+                "Total_Receipts_Amount": "41.16",
+            }
+        ],
+        tenant_id="tenant-1",
+    )
+    row = rows[0]
+    assert row.get("startedBy") == "Priya"
+    assert row.get("actedBy") == "Priya"
+    assert row.get("startedById") == user_id
+    assert row.get("actedById") == user_id
+    assert not _is_guid_like(row.get("startedBy"))
+
+
+@pytest.mark.asyncio
 async def test_mixed_keep_valued_splits_guid_into_id_then_resolves_name():
     from app.models.report_agent import ReportSpec, ReportSpecColumn
     from app.report_agent.catalog_execute import (

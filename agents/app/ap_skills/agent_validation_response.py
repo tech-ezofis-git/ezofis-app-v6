@@ -7,7 +7,17 @@ from typing import Any, Callable, Optional
 from app.ap_pipeline.policy import review_label
 from app.ap_skills.agent_validation_text import enrichment_for_finalize, resolve_source_type
 from app.ap_skills.payment_terms import due_date_from_terms, normalize_payment_terms
-from app.ap_skills.types import field_number, field_text, line_description, match_lines_by_description, name_similarity
+from app.ap_skills.types import (
+    field_number,
+    field_text,
+    component_in_description,
+    kit_components,
+    line_description,
+    line_name_candidates,
+    match_lines_by_description,
+    name_similarity,
+    normalize_name,
+)
 
 
 def build_aiagent_response(
@@ -189,8 +199,11 @@ def _line_matching(
     paired = match_lines_by_description(
         inv_lines, po_lines, describe=_desc, score_fn=pair_score or text_score
     )
+    kit_po_for_invoice, fulfilled_kits = _pair_kit_components(inv_lines, po_lines, paired)
     out: list[dict[str, Any]] = []
     for inv_i, po_i in enumerate(paired):
+        if po_i is None and inv_i in kit_po_for_invoice:
+            po_i = kit_po_for_invoice[inv_i]
         inv = inv_lines[inv_i]
         po_line = po_lines[po_i] if po_i is not None else {}
         inv_desc = line_description(inv)
@@ -210,16 +223,21 @@ def _line_matching(
         inv_amt = field_number(inv, "amount", "line_amount", "Extended")
         po_amt = field_number(po_line, "amount", "line_amount", "Extended") if po_line else None
 
-        desc_score = (
-            _field_score(inv_desc, po_desc, kind="text", text_score=text_score) if po_line else 0.0
+        kit_fulfilled = po_i is not None and po_i in fulfilled_kits
+        desc_score = 100.0 if kit_fulfilled else (
+            _description_score(inv, po_line, text_score=text_score) if po_line else 0.0
         )
         qty_score = _field_score(
             inv_qty_disp if inv_qty_disp != "" else None,
             po_qty_disp if po_qty_disp != "" else None,
             kind="number",
         )
-        price_score = _field_score(inv_price, po_price, kind="number")
-        amt_score = _field_score(inv_amt, po_amt, kind="number")
+        if kit_fulfilled:
+            price_score = 100.0
+            amt_score = 100.0
+        else:
+            price_score = _field_score(inv_price, po_price, kind="number")
+            amt_score = _field_score(inv_amt, po_amt, kind="number")
         parts = [desc_score, qty_score, price_score, amt_score]
         line_score = round(sum(parts) / len(parts), 2) if po_line else 0.0
         out.append(
@@ -254,6 +272,54 @@ def _line_matching(
     return out
 
 
+def _pair_kit_components(
+    inv_lines: list[dict[str, Any]],
+    po_lines: list[dict[str, Any]],
+    paired: list[Optional[int]],
+) -> tuple[dict[int, int], set[int]]:
+    """Map each kit piece on the invoice to its kit PO line when every piece is present."""
+    used = {index for index in paired if index is not None}
+    inv_to_po: dict[int, int] = {}
+    fulfilled: set[int] = set()
+    for po_index, po_line in enumerate(po_lines):
+        if po_index in used:
+            continue
+        components = kit_components(line_description(po_line))
+        if len(components) < 2:
+            continue
+        chosen: list[int] = []
+        taken = set(used) | set(inv_to_po)
+        for component in components:
+            found = None
+            for inv_index, inv_line in enumerate(inv_lines):
+                if inv_index in taken or paired[inv_index] is not None:
+                    continue
+                if component_in_description(component, line_description(inv_line)):
+                    found = inv_index
+                    break
+            if found is None:
+                chosen = []
+                break
+            taken.add(found)
+            chosen.append(found)
+        if len(chosen) != len(components):
+            continue
+        po_qty = field_number(po_line, "qty", "quantity", "Quantity", "orderQuantity")
+        po_amt = field_number(po_line, "amount", "line_amount", "Extended")
+        qtys_match = po_qty is None or all(
+            (field_number(inv_lines[index], "qty", "quantity", "Quantity") or 0) + 1e-9 >= po_qty
+            for index in chosen
+        )
+        amount_sum = sum(field_number(inv_lines[index], "amount", "line_amount", "Extended") or 0 for index in chosen)
+        amounts_match = po_amt is None or po_amt == 0 or abs(amount_sum - po_amt) / abs(po_amt) <= 0.01
+        if not qtys_match or not amounts_match:
+            continue
+        for inv_index in chosen:
+            inv_to_po[inv_index] = po_index
+        fulfilled.add(po_index)
+    return inv_to_po, fulfilled
+
+
 def _invoice_lines(invoice: dict[str, Any]) -> list[dict[str, Any]]:
     for key in ("line_items", "Line Item", "lines", "Line Items"):
         raw = invoice.get(key)
@@ -286,6 +352,33 @@ def _first_present(row: dict[str, Any], *keys: str) -> Any:
             continue
         return value
     return None
+
+
+def _description_score(
+    inv_line: dict[str, Any],
+    po_line: dict[str, Any],
+    *,
+    text_score: Optional[Callable[[str, str], float]] = None,
+) -> float:
+    """100 when the product names match or one contains the other.
+
+    A part code is compared only when the line has no product name. The
+    code alone does not receive a full score against a different name.
+    """
+    lefts = line_name_candidates(inv_line)
+    rights = line_name_candidates(po_line)
+    if not lefts or not rights:
+        return 0.0
+    best = 0.0
+    for left in lefts:
+        for right in rights:
+            a = normalize_name(left)
+            b = normalize_name(right)
+            if a and b and (a == b or a in b or b in a):
+                return 100.0
+            sim = text_score(left, right) if text_score is not None else name_similarity(left, right)
+            best = max(best, float(sim))
+    return round(best * 100.0, 2)
 
 
 def _display_line_value(value: Any) -> Any:

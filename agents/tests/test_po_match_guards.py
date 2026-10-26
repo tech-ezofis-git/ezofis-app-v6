@@ -124,4 +124,4 @@ async def test_po_match_caps_matched_without_vendor():
     )
     result = await run_po_match(ctx)
     assert result.data["decision"] == "PARTIALLY_MATCHED"
-    assert "Capped" in (result.data.get("reason") or "")
+    assert "no vendor" in (result.data.get("reason") or "").lower()
