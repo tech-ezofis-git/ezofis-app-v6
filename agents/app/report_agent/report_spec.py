@@ -67,11 +67,14 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     ),
     (("stage", "currentstage", "activity", "activity_name", "step", "stepname"), "Stage", "Stage"),
     (("status",), "status", "Status"),
+    (("startedby", "started_by"), "startedBy", "Started by"),
+    (("startedbyid", "started_by_id"), "startedById", "Started by Id"),
     (
-        ("startedby", "actedby", "acted_by", "updatedby", "updated_by", "assignedto", "assigned_to"),
-        "startedBy",
+        ("actedby", "acted_by", "updatedby", "updated_by", "assignedto", "assigned_to"),
+        "actedBy",
         "Acted by",
     ),
+    (("actedbyid", "acted_by_id", "updatedbyid", "updated_by_id"), "actedById", "Acted by Id"),
     (("workflowname", "workflow_name"), "workflowName", "Workflow"),
     (("createdatutc", "created_at_utc", "createdat", "created_at"), "createdAtUtc", "Created At"),
     (("workflowid", "workflow_id"), "workflowId", "Workflow Id"),
@@ -83,11 +86,23 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("filename", "file_name"), "FileName", "File Name"),
     (("status",), "Status", "Status"),
     (("createdby", "created_by"), "CreatedBy", "Created By"),
+    (("createdbyid", "created_by_id"), "CreatedById", "Created By Id"),
     (("createdat", "created_at"), "CreatedAt", "Created At"),
     (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
-_LISTING_DEFAULTS = frozenset({"requestno", "stage", "status", "startedby", "workflowname"})
+_LISTING_DEFAULTS = frozenset(
+    {
+        "requestno",
+        "stage",
+        "status",
+        "startedby",
+        "startedbyid",
+        "actedby",
+        "actedbyid",
+        "workflowname",
+    }
+)
 _IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id", "requestno"})
 
 

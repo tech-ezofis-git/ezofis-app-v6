@@ -378,6 +378,42 @@ class EzofisClient:
             logger.warning("ezofis_get_instance_error", extra={"error_type": type(exc).__name__})
             return {}
 
+    async def list_users(self, tenant_id: str, limit: int = 200) -> list[dict[str, Any]]:
+        """GET /Users — tenant directory for display names."""
+        return await self._list_rows(
+            tenant_id=tenant_id,
+            paths=("/Users", "/users"),
+            limit=limit,
+            get_params={"ItemsPerPage": int(limit), "CurrentPage": 1},
+        )
+
+    async def get_user(self, *, tenant_id: str, user_id: str) -> dict[str, Any]:
+        """GET /Users/{id} — one user (displayName)."""
+        uid = str(user_id or "").strip()
+        if not uid:
+            return {}
+        if not self._live_enabled():
+            return {}
+        try:
+            headers = await self._auth_headers(tenant_id)
+            timeout = self._cfg().ezofis_timeout_seconds
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                for path in (f"/Users/{uid}", f"/users/{uid}"):
+                    response = await client.get(f"{self._base()}{path}", headers=headers)
+                    if response.status_code != 200:
+                        continue
+                    data = response.json() if response.content else {}
+                    if isinstance(data, dict):
+                        nested = data.get("data") or data.get("value") or data.get("item")
+                        if "id" not in data and "displayName" not in data and isinstance(nested, dict):
+                            data = nested
+                        if data.get("id") or data.get("displayName") or data.get("name"):
+                            return data
+            return {}
+        except Exception as exc:
+            logger.warning("ezofis_get_user_error", extra={"error_type": type(exc).__name__})
+            return {}
+
     async def list_repository_items(
         self, *, tenant_id: str, repository_id: str, limit: int = 200
     ) -> list[dict[str, Any]]:

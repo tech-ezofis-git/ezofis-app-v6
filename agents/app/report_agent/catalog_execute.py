@@ -74,7 +74,9 @@ def _keys(spec: ReportSpec) -> set[str]:
     return {c.key.lower() for c in spec.columns}
 
 
-_ROW_ID_KEYS = frozenset({"instanceid", "itemid", "id", "requestno", "stage", "startedby"})
+_ROW_ID_KEYS = frozenset(
+    {"instanceid", "itemid", "id", "requestno", "stage", "startedby", "actedby", "startedbyid", "actedbyid"}
+)
 _INSTANCE_DEFAULT_KEYS = frozenset(
     {
         "requestno",
@@ -82,6 +84,9 @@ _INSTANCE_DEFAULT_KEYS = frozenset(
         "stage",
         "status",
         "startedby",
+        "startedbyid",
+        "actedby",
+        "actedbyid",
         "workflowname",
         "workflowid",
         "instanceid",
@@ -100,7 +105,9 @@ _LISTING_COMPACT = frozenset(
         "stepname",
         "status",
         "startedby",
+        "startedbyid",
         "actedby",
+        "actedbyid",
         "updatedby",
         "assignedto",
         "workflowname",
@@ -110,14 +117,44 @@ _LISTING_COMPACT = frozenset(
         "itemid",
         "instanceid",
         "id",
+        "createdby",
+        "createdbyid",
     }
 )
 _LISTING_OUTPUT_KEYS = frozenset(
-    {"requestno", "stage", "status", "startedby", "workflowname"}
+    {
+        "requestno",
+        "stage",
+        "status",
+        "startedby",
+        "startedbyid",
+        "actedby",
+        "actedbyid",
+        "workflowname",
+    }
 )
 _REPO_DEFAULT_KEYS = frozenset(
-    {"itemid", "filename", "repository_name", "createdby", "createdat", "status"}
+    {
+        "itemid",
+        "filename",
+        "repository_name",
+        "createdby",
+        "createdbyid",
+        "createdat",
+        "status",
+    }
 )
+_USER_NAME_KEYS = (
+    "displayName",
+    "displayname",
+    "fullName",
+    "full_name",
+    "name",
+    "userName",
+    "username",
+    "email",
+)
+_HYDRATE_USER_CONCURRENCY = 8
 _WF_STATUS_LABELS = {
     0: "Not Started",
     1: "In Progress",
@@ -170,6 +207,64 @@ def _is_guid(value: Any) -> bool:
         return False
     hex_body = text.replace("-", "")
     return len(hex_body) == 32 and all(ch in "0123456789abcdefABCDEF" for ch in hex_body)
+
+
+def _looks_like_user_id(value: Any) -> bool:
+    if _is_guid(value):
+        return True
+    compact = _compact_id(value)
+    return len(compact) == 32 and all(ch in "0123456789abcdef" for ch in compact)
+
+
+def _split_user_ref(value: Any) -> tuple[str, str]:
+    """Return (guid, name). A GUID never belongs in the name column."""
+    text = str(value or "").strip()
+    if not text:
+        return "", ""
+    if _looks_like_user_id(text):
+        return str(value).strip(), ""
+    return "", text
+
+
+def _user_display_name(row: dict[str, Any]) -> str:
+    first = str(_pick(row, "firstName", "first_name") or "").strip()
+    last = str(_pick(row, "lastName", "last_name") or "").strip()
+    combined = f"{first} {last}".strip()
+    named = str(_pick(row, *_USER_NAME_KEYS) or "").strip()
+    if named and not _looks_like_user_id(named):
+        return named
+    if combined and not _looks_like_user_id(combined):
+        return combined
+    return ""
+
+
+def _current_actor(row: dict[str, Any]) -> str:
+    named = str(
+        _pick(row, "updatedByName", "actedByName", "assignedToName", "currentActorName") or ""
+    ).strip()
+    if named and not _looks_like_user_id(named):
+        return named
+    current_id = str(_pick(row, "currentStepInstanceId", "current_step_instance_id") or "").strip()
+    steps = row.get("stepInstances") or row.get("step_instances") or row.get("steps") or []
+    if current_id and isinstance(steps, list):
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            if str(_pick(step, "id") or "").strip() != current_id:
+                continue
+            actor = _pick(
+                step,
+                "assignedToUserId",
+                "assignedTo",
+                "actedBy",
+                "updatedBy",
+                "userId",
+            )
+            if actor not in (None, ""):
+                return str(actor).strip()
+    return str(
+        _pick(row, "updatedBy", "updated_by", "actedBy", "acted_by", "assignedTo", "assigned_to") or ""
+    ).strip()
 
 
 def _status_label(value: Any) -> Any:
@@ -326,6 +421,20 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
     instance_id = _pick(row, "instanceId", "instance_id", "id")
     request_no = _request_no(row)
     stage = _current_stage(row)
+    started_id, started_name = _split_user_ref(_pick(row, "startedBy", "started_by"))
+    started_name = str(_pick(row, "startedByName", "started_by_name") or started_name).strip()
+    if _looks_like_user_id(started_name):
+        started_name = ""
+    acted_raw = _current_actor(row) or _pick(row, "startedBy", "started_by")
+    acted_id, acted_name = _split_user_ref(acted_raw)
+    acted_name = str(
+        _pick(row, "actedByName", "updatedByName", "assignedToName") or acted_name
+    ).strip()
+    if _looks_like_user_id(acted_name):
+        acted_name = ""
+    if not acted_id and not acted_name:
+        acted_id = started_id
+        acted_name = started_name
     return {
         "RequestNo": request_no,
         "requestNo": request_no,
@@ -339,9 +448,10 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
         "status": _status_label(_pick(row, "status")),
         "Stage": stage,
         "stage": stage,
-        "startedBy": _pick(
-            row, "updatedBy", "updated_by", "actedBy", "acted_by", "startedBy", "started_by", "assignedTo"
-        ),
+        "startedBy": started_name,
+        "startedById": started_id,
+        "actedBy": acted_name,
+        "actedById": acted_id,
         "createdAtUtc": created,
         "completedAtUtc": completed,
         "open": completed is None,
@@ -361,12 +471,25 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
             if value in (None, "") and key.lower() in {"id", "requestno"}:
                 value = lower.get("requestno") or lower.get("id") or ""
             item[key] = _cell(value)
-            if key.lower() == "requestno":
+            compact = key.lower().replace("_", "")
+            if compact == "requestno":
                 item["RequestNo"] = item[key]
                 item["requestNo"] = item[key]
-            elif key.lower() == "stage":
+            elif compact == "stage":
                 item["Stage"] = item[key]
                 item["stage"] = item[key]
+            elif compact == "actedby":
+                item["actedBy"] = item[key]
+            elif compact == "actedbyid":
+                item["actedById"] = item[key]
+            elif compact == "startedby":
+                item["startedBy"] = item[key]
+            elif compact == "startedbyid":
+                item["startedById"] = item[key]
+            elif compact == "createdby":
+                item["CreatedBy"] = item[key]
+            elif compact == "createdbyid":
+                item["CreatedById"] = item[key]
         shaped.append(item)
     return shaped
 
@@ -728,20 +851,193 @@ async def execute_catalog_spec(
     if rt == "specific_repository":
         if not wants_instance_execute(spec, rt):
             return None
-        rows = await _repository_rows(ezofis, spec, tenant_id, repository_name=repository_name)
+        rows = await _repository_rows(
+            ezofis, spec, tenant_id, repository_name=repository_name, db=db
+        )
         page_rows, total = _paginate(rows, page, page_size)
         warnings = [f"Loaded live EZOFIS items for '{repository_name or spec.title}'."]
         if total == 0:
             warnings.append("EZOFIS returned no repository items for this folder.")
         return (_col_outs(spec), page_rows, total, warnings)
     if rt == "all_repositories" or table == "items_all":
-        rows = await _repository_rows(ezofis, spec, tenant_id)
+        rows = await _repository_rows(ezofis, spec, tenant_id, db=db)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS repository items across the tenant catalog."]
         if total == 0:
             warnings.append("EZOFIS returned no repository items to count.")
         return (_col_outs(spec), page_rows, total, warnings)
     return None
+
+
+def _collect_user_ids(rows: list[dict[str, Any]]) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    keys = (
+        "startedById",
+        "actedById",
+        "CreatedById",
+        "createdById",
+        "startedBy",
+        "actedBy",
+        "CreatedBy",
+        "createdBy",
+        "created_by",
+        "modified_by",
+        "updatedBy",
+    )
+    for row in rows:
+        for key in keys:
+            raw = _pick(row, key) if isinstance(row, dict) else ""
+            if not _looks_like_user_id(raw):
+                continue
+            compact = _compact_id(raw)
+            if compact in seen:
+                continue
+            seen.add(compact)
+            ids.append(str(raw).strip())
+    return ids
+
+
+def _index_user_row(row: dict[str, Any], names: dict[str, str]) -> None:
+    uid = str(_pick(row, "id", "userId", "user_id") or "").strip()
+    named = _user_display_name(row)
+    if not uid or not named:
+        return
+    names[_compact_id(uid)] = named
+    names[uid.lower()] = named
+
+
+async def _sql_user_names(db: Any, user_ids: list[str]) -> dict[str, str]:
+    names: dict[str, str] = {}
+    compact_ids = [_compact_id(item) for item in user_ids if _compact_id(item)]
+    if db is None or not compact_ids:
+        return names
+    located = await find_table(
+        db,
+        ("Users", "users", "AspNetUsers", "wuser", "WUser"),
+        prefer_schemas=("dbo", "public", "identity", "auth"),
+    )
+    if located is None:
+        return names
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "userid", "user_id")
+    name_col = _sql_col(
+        by_lower,
+        "display_name",
+        "displayname",
+        "full_name",
+        "fullname",
+        "name",
+        "user_name",
+        "username",
+        "email",
+    )
+    first_col = _sql_col(by_lower, "first_name", "firstname")
+    last_col = _sql_col(by_lower, "last_name", "lastname")
+    if not id_col or not (name_col or first_col):
+        return names
+    parts = [f"CAST({quote_ident(id_col)} AS text) AS user_id"]
+    if name_col:
+        parts.append(f"CAST({quote_ident(name_col)} AS text) AS display_name")
+    if first_col:
+        parts.append(f"CAST({quote_ident(first_col)} AS text) AS first_name")
+    if last_col:
+        parts.append(f"CAST({quote_ident(last_col)} AS text) AS last_name")
+    sql = (
+        f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+        f"WHERE lower(replace(CAST({quote_ident(id_col)} AS text), '-', '')) = ANY($1::text[])"
+    )
+    try:
+        rows = await db.fetch(sql, compact_ids)
+    except Exception:
+        return names
+    for row in rows or []:
+        _index_user_row(
+            {
+                "id": row_get(row, "user_id"),
+                "displayName": row_get(row, "display_name"),
+                "firstName": row_get(row, "first_name"),
+                "lastName": row_get(row, "last_name"),
+            },
+            names,
+        )
+    return names
+
+
+async def resolve_user_names(
+    ezofis: Any,
+    rows: list[dict[str, Any]],
+    *,
+    tenant_id: str,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    """Fill *By name columns from EZOFIS /Users (or tenant SQL); keep GUIDs on *ById."""
+    if not rows:
+        return rows
+    want = _collect_user_ids(rows)
+    names: dict[str, str] = {}
+    lister = getattr(ezofis, "list_users", None) if ezofis is not None else None
+    if callable(lister) and want:
+        try:
+            listed = await lister(tenant_id)
+            for item in listed or []:
+                if isinstance(item, dict):
+                    _index_user_row(item, names)
+        except Exception:
+            pass
+    missing = [uid for uid in want if _compact_id(uid) not in names]
+    getter = getattr(ezofis, "get_user", None) if ezofis is not None else None
+    if callable(getter) and missing:
+        sem = asyncio.Semaphore(_HYDRATE_USER_CONCURRENCY)
+
+        async def _one(uid: str) -> None:
+            async with sem:
+                try:
+                    detail = await getter(tenant_id=tenant_id, user_id=uid)
+                except TypeError:
+                    try:
+                        detail = await getter(tenant_id, uid)
+                    except Exception:
+                        return
+                except Exception:
+                    return
+            if isinstance(detail, dict):
+                _index_user_row(detail, names)
+
+        await asyncio.gather(*[_one(uid) for uid in missing])
+    missing = [uid for uid in want if _compact_id(uid) not in names]
+    if missing:
+        try:
+            names.update(await _sql_user_names(db, missing))
+        except Exception:
+            pass
+    if not names:
+        return rows
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        pairs = (
+            ("startedBy", "startedById"),
+            ("actedBy", "actedById"),
+            ("CreatedBy", "CreatedById"),
+            ("createdBy", "createdById"),
+        )
+        for name_key, id_key in pairs:
+            raw_id = item.get(id_key) or item.get(name_key)
+            uid, already = _split_user_ref(raw_id)
+            if uid and not item.get(id_key):
+                item[id_key] = uid
+            if already and not str(item.get(name_key) or "").strip():
+                item[name_key] = already
+            current_name = str(item.get(name_key) or "").strip()
+            if current_name and not _looks_like_user_id(current_name):
+                continue
+            lookup = names.get(_compact_id(item.get(id_key) or uid))
+            if lookup:
+                item[name_key] = lookup
+        out.append(item)
+    return out
 
 
 async def _load_workflow_instances(
@@ -783,6 +1079,7 @@ async def _load_workflow_instances(
         records.extend(rows)
         if wf_id:
             wf_ids.append(wf_id)
+    records = await resolve_user_names(ezofis, records, tenant_id=tenant_id, db=db)
     return records, wf_ids
 
 
@@ -846,6 +1143,9 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
         "stage": inst.get("stage") or inst.get("Stage"),
         "status": inst.get("status"),
         "startedBy": inst.get("startedBy"),
+        "startedById": inst.get("startedById"),
+        "actedBy": inst.get("actedBy"),
+        "actedById": inst.get("actedById"),
         "workflowName": inst.get("workflowName"),
         "workflowId": inst.get("workflowId"),
         "instanceId": inst.get("instanceId"),
@@ -924,6 +1224,7 @@ async def attach_listing_fields_to_form_rows(
         if inst is not None:
             _fill_listing_fields(item, inst, spec)
         out.append(item)
+    out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
 
 
@@ -933,6 +1234,7 @@ async def _repository_rows(
     tenant_id: str,
     *,
     repository_name: Optional[str] = None,
+    db: Any = None,
 ) -> list[dict[str, Any]]:
     listed = _match_named(await ezofis.list_repositories(tenant_id), repository_name or "")
 
@@ -944,13 +1246,18 @@ async def _repository_rows(
         docs = await ezofis.list_repository_items(tenant_id=tenant_id, repository_id=repo_id)
         out: list[dict[str, Any]] = []
         for row in docs or []:
+            created_id, created_name = _split_user_ref(_pick(row, "createdBy", "CreatedBy"))
+            created_name = str(_pick(row, "createdByName", "CreatedByName") or created_name).strip()
+            if _looks_like_user_id(created_name):
+                created_name = ""
             out.append(
                 {
                     "itemId": _pick(row, "itemId", "item_id", "id"),
                     "Repository_Name": repo_name,
                     "FileName": _pick(row, "fileName", "FileName"),
                     "FileVersion": _pick(row, "fileVersion", "FileVersion"),
-                    "CreatedBy": _pick(row, "createdBy", "CreatedBy"),
+                    "CreatedBy": created_name,
+                    "CreatedById": created_id,
                     "CreatedAt": _parse_date(
                         _pick(row, "createdAt", "CreatedAt", "documentDate", "createdAtUtc")
                     ),
@@ -965,6 +1272,7 @@ async def _repository_rows(
         if isinstance(batch, Exception):
             continue
         records.extend(batch)
+    records = await resolve_user_names(ezofis, records, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, _aggregate_repository(spec, records))
 
 
