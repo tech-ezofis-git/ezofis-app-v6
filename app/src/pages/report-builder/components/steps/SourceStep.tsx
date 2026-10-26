@@ -89,7 +89,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const [previewRows, setPreviewRows] = useState<
     Record<string, string>[] | null
   >(null)
-  const [agentWarnings, setAgentWarnings] = useState<string[]>([])
   const isEditing = Boolean(draft.editingReportId)
 
   // Persistent AI view states bound to draft store so they persist across navigation
@@ -283,9 +282,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
         reportId: null,
       }).rows,
     )
-    setAgentWarnings((prev) => [
-      ...new Set([...prev, ...(data.warnings ?? [])]),
-    ])
   }
 
   const runPrompt = async (value: string) => {
@@ -296,7 +292,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     setGenerateError('')
     setPreviewError('')
     setPreviewRows(null)
-    setAgentWarnings([])
 
     const scope = agentScopeForSource(
       draft.sourceType,
@@ -335,7 +330,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
       name: patch.name || draft.domain,
       showAiBuilder: true,
     })
-    setAgentWarnings(data.warnings ?? data.reportSpec.warnings ?? [])
     onPlanGenerated?.(true)
     void runPreview(buildAgentConfigFromDraft(patch.agent, patch))
   }
@@ -615,16 +609,6 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                         </span>
                       ))}
                     </div>
-
-                    {agentWarnings.length > 0 && (
-                      <div className='flex flex-col gap-1 rounded-lg border border-yellow-6 bg-yellow-2 px-3 py-2'>
-                        {agentWarnings.map((warning) => (
-                          <p className='text-12 text-yellow-11' key={warning}>
-                            {warning}
-                          </p>
-                        ))}
-                      </div>
-                    )}
 
                     {/* Live preview from /report-agent/run */}
                     <div className='flex flex-col gap-1.5'>

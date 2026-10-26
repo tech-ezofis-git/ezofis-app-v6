@@ -21,7 +21,7 @@ import type {
 } from '../types'
 import { DEFAULT_SCHEDULE } from '../types'
 import { reportSpecColumnToFieldSetting } from './fromReportSpec'
-import { findUserPrompt } from './hiddenColumns'
+import { findUserPrompt, isIdColumn } from './hiddenColumns'
 
 /** Sentinel source ids for the agent's tenant-wide scopes. */
 export const ALL_WORKFLOWS_SOURCE_ID = '__all_workflows__'
@@ -343,6 +343,12 @@ export const agentRunToReportRunResult = (
   }))
   const rows = result.rows.map((row) => {
     const mapped: Record<string, string> = {}
+    // Keep row-level ids the run returns without listing them as columns,
+    // so the report table can still link a row to its request.
+    Object.entries(row).forEach(([key, value]) => {
+      if (isIdColumn(key) && (value === null || typeof value !== 'object'))
+        mapped[key] = toCellText(value)
+    })
     columns.forEach((column) => {
       const text = toCellText(row[column.key] ?? row[column.label])
       mapped[column.key] = text
