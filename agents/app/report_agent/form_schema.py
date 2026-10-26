@@ -192,6 +192,6 @@ def extract_repository_fields(fields: Any) -> list[dict[str, str]]:
         else:
             data_type = "text"
         out.append({"key": key, "label": label, "type": data_type})
-    if "filename" not in seen:
+    if "filename" not in seen and "ifilename" not in seen:
         out.insert(0, {"key": "FileName", "label": "File Name", "type": "text"})
     return out

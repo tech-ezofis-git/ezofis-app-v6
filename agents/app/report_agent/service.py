@@ -64,6 +64,7 @@ from app.report_agent.report_spec import (
     spec_from_prompt_json,
     attach_column_palettes,
     apply_selected_columns,
+    finalize_repository_prompt,
     merge_identity_columns,
 )
 from app.report_agent.report_types import (
@@ -789,6 +790,7 @@ class ReportAgentService:
         ]
         spec = attach_column_palettes(spec, tables=tables, schema_tables=schema_tables)
         spec = apply_selected_columns(spec)
+        spec = finalize_repository_prompt(spec)
         spec = apply_recipe_highlights(spec)
         user_prompt = (request.description or "").strip() or spec.user_prompt
         if user_prompt and spec.user_prompt != user_prompt:
@@ -1330,7 +1332,9 @@ class ReportAgentService:
         # Prefer definition column order; fall back to query columns
         if not columns_out and report_data.columns:
             columns_out = [ReportColumnOut(key=c, label=c) for c in report_data.columns]
-        rows = report_data.rows
+        from app.report_agent.catalog_execute import fill_filename_aliases, _newest_first
+
+        rows = fill_filename_aliases(report_data.rows)
         if spec is not None:
             from app.report_agent.catalog_execute import (
                 attach_listing_fields_to_form_rows,
@@ -1375,6 +1379,10 @@ class ReportAgentService:
                 )
             except Exception:
                 pass
+            rows = fill_filename_aliases(rows)
+
+        if not (request.sort and request.sort.field):
+            rows = _newest_first(rows)
 
         columns_out = bind_highlights_to_rows(columns_out, rows)
         logger.info(

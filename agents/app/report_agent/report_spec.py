@@ -83,7 +83,11 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
 )
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("repository_name", "repositoryname", "repository"), "Repository_Name", "Repository"),
-    (("filename", "file_name", "originalfilename", "original_file_name"), "FileName", "File Name"),
+    (
+        ("ifilename", "filename", "file_name", "originalfilename", "original_file_name"),
+        "FileName",
+        "File Name",
+    ),
     (("status",), "Status", "Status"),
     (("createdby", "created_by"), "CreatedBy", "Created By"),
     (("createdbyid", "created_by_id"), "CreatedById", "Created By Id"),
@@ -105,8 +109,8 @@ _LISTING_DEFAULTS = frozenset(
 )
 _REPO_LISTING_DEFAULTS = frozenset(
     {
-        "repository_name",
         "filename",
+        "ifilename",
         "status",
         "createdby",
         "createdbyid",
@@ -330,6 +334,14 @@ def attach_column_palettes(
         listing_default = (
             (not is_repo and not has_metric and canonical.lower() in _LISTING_DEFAULTS)
             or (is_repo and canonical.lower() in _REPO_LISTING_DEFAULTS)
+            or (
+                report_type == "all_repositories"
+                and canonical.lower() == "repository_name"
+            )
+        )
+        force_off = (
+            report_type == "specific_repository"
+            and canonical.lower() == "repository_name"
         )
         defaults.append(
             ReportSpecColumn(
@@ -338,9 +350,14 @@ def attach_column_palettes(
                 formula=existing.formula if existing else None,
                 editable=True,
                 kind="default",
-                selected=existing is not None
-                or canonical.lower() in _ALWAYS_SELECTED_DEFAULTS
-                or listing_default,
+                selected=(
+                    not force_off
+                    and (
+                        existing is not None
+                        or canonical.lower() in _ALWAYS_SELECTED_DEFAULTS
+                        or listing_default
+                    )
+                ),
                 highlight=None,
             )
         )
@@ -466,6 +483,50 @@ def attach_column_palettes(
             "agent_columns": agents,
             "schema_tables": tables_out,
             "available_columns": live or spec.available_columns,
+        }
+    )
+
+
+def _compact_spec_key(value: str) -> str:
+    return "".join(ch for ch in (value or "").lower() if ch.isalnum())
+
+
+def finalize_repository_prompt(spec: ReportSpec) -> ReportSpec:
+    """Generate-prompt: drop Repository on a single folder; newest row first."""
+    report_type = (spec.report_type or "").lower()
+    if "repositor" not in report_type:
+        return spec
+    warnings = list(spec.warnings or [])
+    columns = list(spec.columns or [])
+    defaults = list(spec.default_columns or [])
+    if report_type == "specific_repository":
+        kept: list[ReportSpecColumn] = []
+        for col in columns:
+            compact = _compact_spec_key(col.key)
+            if compact in {"repositoryname", "repository"}:
+                warnings.append("Dropped unknown column source 'Repository_Name'.")
+                continue
+            kept.append(col)
+        columns = kept
+        defaults = [
+            col.model_copy(update={"selected": False})
+            if _compact_spec_key(col.key) in {"repositoryname", "repository"}
+            else col
+            for col in defaults
+        ]
+    sort = spec.sort
+    if sort is None or not str(getattr(sort, "field", "") or "").strip():
+        sort = ReportSpecSort(field="CreatedAt", direction="desc")
+    elif str(getattr(sort, "direction", "") or "").lower() != "desc" and _compact_spec_key(
+        str(sort.field)
+    ) in {"createdat", "createdatutc"}:
+        sort = ReportSpecSort(field=sort.field, direction="desc")
+    return spec.model_copy(
+        update={
+            "columns": columns,
+            "default_columns": defaults,
+            "warnings": warnings,
+            "sort": sort,
         }
     )
 

@@ -393,6 +393,110 @@ def test_repository_default_columns_include_item_id():
     assert {c.key for c in spec.columns} >= {"itemId", "Repository_Name", "Document_Count"}
 
 
+def test_specific_repository_prompt_requires_filename_not_repository_name():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.report_spec import attach_column_palettes, apply_selected_columns, finalize_repository_prompt
+
+    spec = ReportSpec(
+        title="Folder Summary",
+        report_type="specific_repository",
+        columns=[
+            ReportSpecColumn(key="Repository_Name", label="Repository"),
+            ReportSpecColumn(key="FileName", label="File Name"),
+            ReportSpecColumn(key="HST", label="HST"),
+        ],
+        available_columns=["IFileName", "Status", "created_by", "created_at"],
+        source_schema="repository",
+        source_table="items_7ea175eb",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="repository",
+            table="items_7ea175eb",
+            columns=[
+                SchemaColumnSlice(name="IFileName", type="text"),
+                SchemaColumnSlice(name="Status", type="text"),
+                SchemaColumnSlice(name="created_by", type="uuid"),
+                SchemaColumnSlice(name="created_at", type="date"),
+            ],
+        )
+    ]
+    spec = attach_column_palettes(spec, tables=tables, schema_tables=["repository.items_7ea175eb"])
+    spec = apply_selected_columns(spec)
+    spec = finalize_repository_prompt(spec)
+    selected = {c.key.lower() for c in spec.columns}
+    assert "filename" in selected
+    assert "repository_name" not in selected
+    assert spec.sort is not None
+    assert spec.sort.field == "CreatedAt"
+    assert spec.sort.direction == "desc"
+    assert any(c.key == "FileName" and c.selected for c in spec.default_columns)
+    assert not any(c.key == "Repository_Name" and c.selected for c in spec.default_columns)
+
+
+def test_lock_maps_filename_to_ifilename_and_skips_generate_warnings():
+    schema = DatabaseSchema()
+    schema.tables = [("repository", "items_7ea175eb")]
+    schema.columns_by_table = {
+        ("repository", "items_7ea175eb"): [
+            ColumnMeta("repository", "items_7ea175eb", "id", "uuid"),
+            ColumnMeta("repository", "items_7ea175eb", "IFileName", "text"),
+            ColumnMeta("repository", "items_7ea175eb", "created_by", "uuid"),
+            ColumnMeta("repository", "items_7ea175eb", "created_at", "timestamp"),
+            ColumnMeta("repository", "items_7ea175eb", "Status", "text"),
+        ]
+    }
+    schema.all_columns = [c for lst in schema.columns_by_table.values() for c in lst]
+    raw = {
+        "title": "Folder",
+        "reportType": "specific_repository",
+        "sources": [{"alias": "t", "schemaName": "repository", "table": "items_7ea175eb"}],
+        "joins": [],
+        "columns": [
+            {"key": "Repository_Name", "label": "Repository", "source": "Repository_Name", "aggregate": "none"},
+            {"key": "FileName", "label": "File Name", "source": "FileName", "aggregate": "none"},
+            {"key": "CreatedBy", "label": "Created By", "source": "CreatedBy", "aggregate": "none"},
+            {"key": "CreatedById", "label": "Created By Id", "source": "CreatedById", "aggregate": "none"},
+            {"key": "CreatedAt", "label": "Created At", "source": "CreatedAt", "aggregate": "none"},
+            {"key": "itemId", "label": "Item Id", "source": "itemId", "aggregate": "none"},
+        ],
+        "filters": [],
+        "groupBy": [],
+        "orderBy": [],
+        "availableFilters": [],
+        "summary": {},
+        "warnings": [
+            "Schema slice does not include repository/folder identifiers or a repositoryName/workflowName mapping column, so repositoryName='Expense Reimbursement' and workflowName='Accounts Payable' cannot be enforced in filters.",
+            "Dropped unknown column source 'Repository_Name'.",
+            "Dropped unknown column source 'FileName'.",
+        ],
+    }
+    locked = lock_report_definition(raw, schema, report_type="specific_repository")
+    sources = {c["key"]: c["source"] for c in locked["columns"]}
+    assert "Repository_Name" not in sources
+    assert sources["FileName"].endswith("IFileName")
+    assert sources["CreatedBy"].endswith("created_by")
+    assert sources["CreatedById"].endswith("created_by")
+    assert sources["CreatedAt"].endswith("created_at")
+    assert sources["itemId"].endswith("id")
+    assert locked["orderBy"]
+    assert locked["orderBy"][0]["direction"] == "desc"
+    assert not any("Dropped unknown column source" in str(w) for w in locked["warnings"])
+    assert not any("Schema slice does not include" in str(w) for w in locked["warnings"])
+
+
+def test_newest_first_orders_latest_row_first():
+    from app.report_agent.catalog_execute import _newest_first
+
+    rows = _newest_first(
+        [
+            {"FileName": "old.pdf", "CreatedAt": "2026-01-01T00:00:00Z"},
+            {"FileName": "new.pdf", "CreatedAt": "2026-10-22T09:42:00Z"},
+        ]
+    )
+    assert rows[0]["FileName"] == "new.pdf"
+
+
 def test_parse_definition_json_strips_fences():
     payload = parse_definition_json('```json\n{"title":"T","sources":[],"columns":[]}\n```')
     assert payload["title"] == "T"

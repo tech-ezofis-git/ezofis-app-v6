@@ -81,6 +81,72 @@ _EXPR_HINT = re.compile(
     r"[+\-*/()]|\b(case|when|sum|count|avg|min|max|coalesce|cast)\b",
     re.IGNORECASE,
 )
+_COLUMN_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
+    (
+        "ifilename",
+        "filename",
+        "file_name",
+        "originalfilename",
+        "original_file_name",
+        "ifile_name",
+        "document_name",
+    ),
+    ("created_by", "createdby", "createdbyid", "created_by_id"),
+    ("created_at", "createdat", "createdatutc", "created_at_utc"),
+    ("id", "itemid", "item_id"),
+    ("status",),
+)
+_GENERATE_WARNING_MARKERS = (
+    "schema slice does not include",
+    "requested financial totals",
+    "no explicit folder constraint",
+    "dropped unknown column source",
+)
+
+
+def _compact_ident(name: str) -> str:
+    return "".join(ch for ch in (name or "").lower() if ch.isalnum())
+
+
+def _is_generate_prompt_warning(text: str) -> bool:
+    low = (text or "").strip().lower()
+    return any(marker in low for marker in _GENERATE_WARNING_MARKERS)
+
+
+def _alias_candidates(col: str) -> list[str]:
+    compact = _compact_ident(col)
+    out: list[str] = [col]
+    seen = {compact}
+    for group in _COLUMN_ALIAS_GROUPS:
+        if compact not in {_compact_ident(item) for item in group}:
+            continue
+        for item in group:
+            key = _compact_ident(item)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(item)
+    return out
+
+
+def preferred_sql_source(key: str) -> str:
+    compact = _compact_ident(key)
+    for group in _COLUMN_ALIAS_GROUPS:
+        if compact in {_compact_ident(item) for item in group}:
+            return group[0]
+    return key
+
+
+def _match_live_column(entry: _TableIndex, col: str) -> Optional[str]:
+    for cand in _alias_candidates(col):
+        real = entry.columns.get(cand.lower())
+        if real:
+            return real
+    want = {_compact_ident(item) for item in _alias_candidates(col)}
+    for live_low, live_orig in entry.columns.items():
+        if _compact_ident(live_low) in want:
+            return live_orig
+    return None
 
 
 @dataclass
@@ -205,7 +271,11 @@ def lock_report_definition(
     """Validate and sanitize LLM definition against live schema."""
     warnings: list[str] = []
     if isinstance(raw.get("warnings"), list):
-        warnings.extend(str(w) for w in raw["warnings"] if w)
+        warnings.extend(
+            str(w)
+            for w in raw["warnings"]
+            if w and not _is_generate_prompt_warning(str(w))
+        )
 
     index = _index_schema(schema)
     preferred_entry = None
@@ -252,7 +322,7 @@ def lock_report_definition(
                 entry = _resolve_table(None, alias, index)
                 if not entry:
                     return None
-            real = entry.columns.get(col.lower())
+            real = _match_live_column(entry, col)
             if not real:
                 return None
             used_alias = orig_alias.get(alias.lower()) or alias
@@ -261,7 +331,7 @@ def lock_report_definition(
             entry = alias_to_table.get(str(src["alias"]).lower())
             if not entry:
                 continue
-            real = entry.columns.get(col.lower())
+            real = _match_live_column(entry, col)
             if real:
                 return f"{src['alias']}.{real}"
         return None
@@ -322,10 +392,18 @@ def lock_report_definition(
         if not key or not source:
             warnings.append(f"Dropped incomplete column {col}.")
             continue
+        if _compact_ident(key) in {"repositoryname", "repository"} or _compact_ident(source) in {
+            "repositoryname",
+            "repository",
+        }:
+            if not _canonical_field(source) and not _canonical_field(key):
+                continue
         if agg == "count" and source.lower() in ("*", "1"):
             columns_out.append({"key": key, "label": label, "source": "1", "aggregate": "count"})
             continue
         canon = _canonical_expr(source) if _looks_like_expr(source) else _canonical_field(source)
+        if not canon:
+            canon = _canonical_field(preferred_sql_source(source) if source else key)
         if not canon and agg != "count":
             warnings.append(f"Dropped unknown column source '{source}'.")
             continue
@@ -399,8 +477,17 @@ def lock_report_definition(
             order_by_out.append({"field": canon, "direction": direction})
         elif field.lower() in keys:
             order_by_out.append({"field": field, "direction": direction})
-        else:
+        elif _compact_ident(field) not in {"createdat", "createdatutc"}:
             warnings.append(f"Dropped unknown orderBy '{field}'.")
+    if not order_by_out:
+        latest = (
+            _canonical_field("created_at")
+            or _canonical_field("CreatedAt")
+            or _canonical_field("createdAtUtc")
+            or _canonical_field("created_at_utc")
+        )
+        if latest:
+            order_by_out.append({"field": latest, "direction": "desc"})
 
     available_filters: list[dict[str, Any]] = []
     for af in raw.get("availableFilters") or raw.get("available_filters") or []:
@@ -781,13 +868,19 @@ def merge_spec_into_definition(raw: dict[str, Any], spec: Any) -> dict[str, Any]
 
     if spec_columns:
         cols: list[dict[str, Any]] = []
+        report_type = str(getattr(spec, "report_type", "") or "").lower()
         for col in spec_columns:
             key = str(getattr(col, "key", "") or "").strip()
             if not key:
                 continue
+            if report_type == "specific_repository" and _compact_ident(key) in {
+                "repositoryname",
+                "repository",
+            }:
+                continue
             formula = getattr(col, "formula", None)
             label = str(getattr(col, "label", None) or key)
-            source = str(formula or key)
+            source = str(formula or preferred_sql_source(key))
             agg = "none"
             compact = source.lower().replace(" ", "")
             if compact.startswith("count("):
@@ -823,7 +916,7 @@ def merge_spec_into_definition(raw: dict[str, Any], spec: Any) -> dict[str, Any]
         out["orderBy"] = [
             {
                 "field": str(sort.field).strip(),
-                "direction": str(getattr(sort, "direction", None) or "asc"),
+                "direction": str(getattr(sort, "direction", None) or "desc"),
             }
         ]
     return out

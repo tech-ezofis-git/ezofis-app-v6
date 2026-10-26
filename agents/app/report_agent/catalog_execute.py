@@ -64,6 +64,49 @@ def _col_outs(spec: ReportSpec) -> list[ReportColumnOut]:
     return column_outs(spec)
 
 
+def fill_filename_aliases(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        current = str(row.get("FileName") or row.get("File Name") or "").strip()
+        if current:
+            row["FileName"] = current
+            row["File Name"] = current
+            continue
+        for key in ("IFileName", "ifilename", "ifileName", "file_name", "fileName"):
+            val = str(row.get(key) or "").strip()
+            if val:
+                row["FileName"] = val
+                row["File Name"] = val
+                break
+    return rows
+
+
+def _newest_first(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _stamp(row: dict[str, Any]) -> str:
+        if not isinstance(row, dict):
+            return ""
+        for key in (
+            "CreatedAt",
+            "createdAt",
+            "created_at",
+            "createdAtUtc",
+            "CreatedAtUtc",
+            "startedAtUtc",
+            "StartedAtUtc",
+        ):
+            val = row.get(key)
+            if isinstance(val, datetime):
+                return val.isoformat()
+            if isinstance(val, date):
+                return val.isoformat()
+            if val not in (None, ""):
+                return str(val)
+        return ""
+
+    return sorted(rows, key=_stamp, reverse=True)
+
+
 def _paginate(rows: list[dict[str, Any]], page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
     total = len(rows)
     start = max(0, (max(page, 1) - 1) * max(page_size, 1))
@@ -162,6 +205,7 @@ _REPO_DEFAULT_KEYS = frozenset(
     {
         "itemid",
         "filename",
+        "ifilename",
         "file_name",
         "repository_name",
         "repositoryname",
@@ -175,6 +219,7 @@ _REPO_DEFAULT_KEYS = frozenset(
 _REPO_OUTPUT_KEYS = frozenset(
     {
         "filename",
+        "ifilename",
         "file_name",
         "repository_name",
         "repositoryname",
@@ -186,7 +231,7 @@ _REPO_OUTPUT_KEYS = frozenset(
 )
 _KEY_ALIAS_GROUPS = (
     frozenset({"repository", "repositoryname", "repository_name"}),
-    frozenset({"filename", "file_name", "originalfilename"}),
+    frozenset({"ifilename", "filename", "file_name", "originalfilename"}),
     frozenset({"requestno", "reqno", "referencenumber"}),
     frozenset({"stage", "currentstage", "stepname"}),
     frozenset({"createdat", "createdatutc", "created_at"}),
@@ -438,6 +483,10 @@ def _sql_col(by_lower: dict[str, str], *names: str) -> str:
         found = by_lower.get(name.lower())
         if found:
             return found
+    want = {"".join(ch for ch in name.lower() if ch.isalnum()) for name in names}
+    for live_low, live_orig in by_lower.items():
+        if "".join(ch for ch in live_low if ch.isalnum()) in want:
+            return live_orig
     return ""
 
 
@@ -522,14 +571,15 @@ def _pick_file_name(row: dict[str, Any], *, depth: int = 0) -> str:
         return ""
     preferred = _pick(
         row,
+        "IFileName",
+        "ifilename",
+        "ifileName",
         "fileName",
         "FileName",
         "file_name",
         "originalFileName",
         "OriginalFileName",
         "original_file_name",
-        "ifileName",
-        "IFileName",
         "documentName",
         "DocumentName",
         "document_name",
@@ -1084,6 +1134,7 @@ async def execute_catalog_spec(
             ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
         )
         spec, rows, columns = _keep_valued_columns(spec, rows)
+        rows = _newest_first(rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = [f"Loaded live EZOFIS instances for '{workflow_name or spec.title}'."]
         if total == 0:
@@ -1092,6 +1143,7 @@ async def execute_catalog_spec(
     if rt == "all_workflows" or table == "workflow_instances_all":
         rows = await _workflow_rows(ezofis, spec, tenant_id, db=db)
         spec, rows, columns = _keep_valued_columns(spec, rows)
+        rows = _newest_first(rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS workflow instances across the tenant catalog."]
         if total == 0:
@@ -1103,6 +1155,7 @@ async def execute_catalog_spec(
         rows = await _repository_rows(
             ezofis, spec, tenant_id, repository_name=repository_name, db=db
         )
+        rows = _newest_first(rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = [f"Loaded live EZOFIS items for '{repository_name or spec.title}'."]
         if total == 0:
@@ -1110,6 +1163,7 @@ async def execute_catalog_spec(
         return (_col_outs(spec), page_rows, total, warnings)
     if rt == "all_repositories" or table == "items_all":
         rows = await _repository_rows(ezofis, spec, tenant_id, db=db)
+        rows = _newest_first(rows)
         page_rows, total = _paginate(rows, page, page_size)
         warnings = ["Counted live EZOFIS repository items across the tenant catalog."]
         if total == 0:
@@ -1591,11 +1645,11 @@ async def _sql_repository_records(
         return []
     file_col = _sql_col(
         by_lower,
-        "file_name",
+        "ifilename",
         "filename",
+        "file_name",
         "original_file_name",
         "originalfilename",
-        "ifilename",
         "document_name",
         "name",
         "title",
@@ -1618,6 +1672,8 @@ async def _sql_repository_records(
     sql = f"SELECT {', '.join(parts)} FROM {qualified(schema, table)}"
     if deleted_col:
         sql += f" WHERE COALESCE({quote_ident(deleted_col)}, false) IS NOT TRUE"
+    if created_at_col:
+        sql += f" ORDER BY {quote_ident(created_at_col)} DESC"
     try:
         rows = await db.fetch(sql)
     except Exception:
@@ -1626,7 +1682,12 @@ async def _sql_repository_records(
     repo_name = (repository_name or "").strip()
     for row in rows or []:
         created_id, created_name = _split_user_ref(row_get(row, "created_by"))
-        fname = str(row_get(row, "file_name") or "").strip()
+        fname = str(
+            row_get(row, "file_name")
+            or row_get(row, "ifilename")
+            or row_get(row, "IFileName")
+            or ""
+        ).strip()
         if fname and _looks_like_user_id(fname):
             fname = ""
         record = {
@@ -1667,11 +1728,11 @@ async def _sql_item_file_names(
     id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "itemid", "item_id")
     file_col = _sql_col(
         by_lower,
-        "file_name",
+        "ifilename",
         "filename",
+        "file_name",
         "original_file_name",
         "originalfilename",
-        "ifilename",
         "document_name",
         "name",
         "title",
