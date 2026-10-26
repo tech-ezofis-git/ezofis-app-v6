@@ -541,14 +541,20 @@ public sealed class EzofisAuthService : IEzofisAuthService
         var issuer = EzofisAuthConfiguration.ResolveIssuer(_configuration);
         var audience = EzofisAuthConfiguration.ResolveAudience(_configuration);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim("name", displayName),
-            new Claim("role", role),
-            new Claim("tid", tenantId.ToString())
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(JwtRegisteredClaimNames.Email, email),
+            new("name", displayName),
+            new("role", role),
+            new("tid", tenantId.ToString())
         };
+
+        // TenantAdmin is a superset of Admin: also carry the "Admin" role claim so every
+        // existing [Authorize(Policy = Admin)] / IsInRole("Admin") check keeps working for
+        // the tenant owner without having to special-case TenantAdmin at each call site.
+        if (string.Equals(role, SaaSApp.Users.Domain.Entities.User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase))
+            claims.Add(new Claim("role", SaaSApp.Users.Domain.Entities.User.RoleAdmin));
 
         var token = new JwtSecurityToken(
             issuer,

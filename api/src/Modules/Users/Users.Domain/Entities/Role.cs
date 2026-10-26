@@ -32,7 +32,8 @@ public sealed class Role : Entity<Guid>, ITenantEntity
     }
 
     public static bool IsReservedName(string name) =>
-        string.Equals(name, User.RoleAdmin, StringComparison.OrdinalIgnoreCase)
+        string.Equals(name, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(name, User.RoleAdmin, StringComparison.OrdinalIgnoreCase)
         || string.Equals(name, User.RoleTenantUser, StringComparison.OrdinalIgnoreCase)
         || string.Equals(name, User.RoleExternalUser, StringComparison.OrdinalIgnoreCase);
 

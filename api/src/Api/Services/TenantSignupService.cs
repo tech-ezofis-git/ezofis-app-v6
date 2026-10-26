@@ -177,13 +177,14 @@ public sealed class TenantSignupService : ITenantSignupService
             var adminEmail = request.Email?.Trim();
             if (!string.IsNullOrEmpty(adminEmail))
             {
+                // The signup user is always the tenant owner: RoleTenantAdmin, not plain Admin.
                 var adminUserId = await CreateTenantUserAsync(
                     tenantConnectionString,
                     tenantId,
                     adminEmail,
                     displayName,
                     request.Password,
-                    User.RoleAdmin,
+                    User.RoleTenantAdmin,
                     request.LoginType,
                     request.FirstName,
                     request.LastName,
@@ -191,7 +192,7 @@ public sealed class TenantSignupService : ITenantSignupService
                 await _userTenantRegistry.AddOrUpdateAsync(
                     adminEmail,
                     tenantId,
-                    User.RoleAdmin,
+                    User.RoleTenantAdmin,
                     adminUserId,
                     cancellationToken);
             }

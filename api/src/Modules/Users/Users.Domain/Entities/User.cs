@@ -7,6 +7,10 @@ namespace SaaSApp.Users.Domain.Entities;
 /// <summary>User entity for a tenant. Supports Ezofis, Google, Office365 auth strategies and 2FA.</summary>
 public sealed class User : Entity<Guid>, ITenantEntity
 {
+    /// <summary>Tenant owner: full access to everything in the tenant, including resources
+    /// created by other Admins. Resources this role creates are hidden from plain Admins
+    /// (see Repository visibility). The original signup user is always this role.</summary>
+    public const string RoleTenantAdmin = "TenantAdmin";
     public const string RoleAdmin = "Admin";
     public const string RoleTenantUser = "TenantUser";
     /// <summary>Share or sign recipient. File and repository only; not a tenant user.</summary>

@@ -17,7 +17,16 @@ public interface IStaticRepositoryProvisioner
 {
     Task<CreateRepositoryResult> CreateRepositoryAsync(CreateRepositoryRequest request, Guid tenantId, Guid? userId, CancellationToken cancellationToken = default);
     Task<RepositoryDetailDto?> GetRepositoryAsync(Guid repositoryId, Guid tenantId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<RepositorySummaryDto>> ListRepositoriesAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Lists repositories for the tenant. When <paramref name="requestingUserId"/> is given and
+    /// that user is not a TenantAdmin, repositories created by a TenantAdmin are excluded --
+    /// TenantAdmin-created repositories are visible only to other TenantAdmins. Omit (or pass a
+    /// user that can't be resolved) for internal/system callers that need the unfiltered list.
+    /// </summary>
+    Task<IReadOnlyList<RepositorySummaryDto>> ListRepositoriesAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default,
+        Guid? requestingUserId = null);
     Task<RepositoryDetailDto?> UpdateRepositoryAsync(Guid repositoryId, Guid tenantId, UpdateRepositoryRequest request, Guid? userId, CancellationToken cancellationToken = default);
     /// <summary>Creates missing per-repo tables (e.g. stage table for repos created before stage DDL existed).</summary>
     Task EnsureRepositoryTablesAsync(Guid repositoryId, Guid tenantId, CancellationToken cancellationToken = default);

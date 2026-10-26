@@ -184,9 +184,10 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         Guid tenantUserRoleId,
         CancellationToken cancellationToken)
     {
+        // TenantAdmin is a superset of Admin: gets the same builtin admin menus/permissions.
         var adminUserIds = await context.Users
             .AsNoTracking()
-            .Where(u => u.Role == User.RoleAdmin)
+            .Where(u => u.Role == User.RoleAdmin || u.Role == User.RoleTenantAdmin)
             .Select(u => u.Id)
             .ToListAsync(cancellationToken);
 
@@ -239,7 +240,9 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         CancellationToken cancellationToken)
     {
         var trimmed = roleName?.Trim();
-        var wantAdmin = string.Equals(trimmed, User.RoleAdmin, StringComparison.OrdinalIgnoreCase);
+        // TenantAdmin is a superset of Admin: gets the same builtin admin menus/permissions.
+        var wantAdmin = string.Equals(trimmed, User.RoleAdmin, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(trimmed, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase);
         var wantTenantUser = string.Equals(trimmed, User.RoleTenantUser, StringComparison.OrdinalIgnoreCase);
 
         var memberships = await context.UserRoles

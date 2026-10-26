@@ -130,7 +130,7 @@ public sealed class RepositoriesController : ControllerBase
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
         var tenantId = RequireTenantId();
-        var list = await _provisioner.ListRepositoriesAsync(tenantId, cancellationToken);
+        var list = await _provisioner.ListRepositoriesAsync(tenantId, cancellationToken, GetUserId());
         if (IsCurrentUserAdmin())
             return Ok(list);
 

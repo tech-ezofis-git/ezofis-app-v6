@@ -254,12 +254,30 @@ public sealed class StaticRepositoryProvisioner : IStaticRepositoryProvisioner
             PiiRedactionLevel: piiRedactionLevel);
     }
 
-    public async Task<IReadOnlyList<RepositorySummaryDto>> ListRepositoriesAsync(Guid tenantId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<RepositorySummaryDto>> ListRepositoriesAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default,
+        Guid? requestingUserId = null)
     {
         var connectionString = RequireConnectionString();
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
         await RepositoryPiiRedaction.EnsureColumnsAsync(connection, cancellationToken);
+
+        // TenantAdmin-created repositories are hidden from plain Admins/users -- only another
+        // TenantAdmin can see them. requestingUserId is null for internal/system callers, which
+        // always get the unfiltered list.
+        var excludeTenantAdminCreated = false;
+        if (requestingUserId is { } reqId && reqId != Guid.Empty)
+        {
+            await using var roleCmd = new NpgsqlCommand(
+                """SELECT "Role" FROM users."Users" WHERE "Id" = @UserId AND "TenantId" = @TenantId AND "IsDeleted" = false LIMIT 1;""",
+                connection);
+            roleCmd.Parameters.AddWithValue("@UserId", reqId);
+            roleCmd.Parameters.AddWithValue("@TenantId", tenantId);
+            var requestingRole = (await roleCmd.ExecuteScalarAsync(cancellationToken)) as string;
+            excludeTenantAdminCreated = !string.Equals(requestingRole, "TenantAdmin", StringComparison.OrdinalIgnoreCase);
+        }
 
         const string sql = """
             SELECT
@@ -286,6 +304,7 @@ public sealed class StaticRepositoryProvisioner : IStaticRepositoryProvisioner
             LEFT JOIN users."Users" cb ON cb."Id" = r."CreatedBy" AND cb."IsDeleted" = false
             LEFT JOIN users."Users" mb ON mb."Id" = r."ModifiedBy" AND mb."IsDeleted" = false
             WHERE r."TenantId" = @TenantId
+              AND (@ExcludeTenantAdminCreated = false OR cb."Role" IS DISTINCT FROM 'TenantAdmin')
             ORDER BY r."IsDeleted", r."Name";
             """;
 
@@ -312,6 +331,7 @@ public sealed class StaticRepositoryProvisioner : IStaticRepositoryProvisioner
         await using (var cmd = new NpgsqlCommand(sql, connection))
         {
             cmd.Parameters.AddWithValue("@TenantId", tenantId);
+            cmd.Parameters.AddWithValue("@ExcludeTenantAdminCreated", excludeTenantAdminCreated);
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
