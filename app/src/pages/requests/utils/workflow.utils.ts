@@ -364,12 +364,24 @@ export const extractWorkflowGraph = (
   }
 }
 
+/** One way forward from a stage: the action taken and the stage it leads to. */
+export type StageRoute = {
+  action: string
+  /** Button color set on the connection in the workflow builder. */
+  color?: string
+  /** Outcome of a condition block right after the action, e.g. "Amount check: Satisfied". */
+  condition?: string
+  next: { id: string; isEnd?: boolean; label: string }
+}
+
 export type WorkflowStageStep = {
   id: string
   label: string
   isCondition?: boolean
   isEnd?: boolean
   isSuccess?: boolean
+  /** Condition steps: every route forward from the stage before it. */
+  routes?: StageRoute[]
   status?: 'done' | 'current' | 'future'
 }
 
@@ -418,17 +430,104 @@ const allBranchesEnd = (
   return reachedEnd
 }
 
+const ruleAction = (rule: any) =>
+  String(rule.proceedAction || rule.action || '').trim()
+
+// "NOT SATISFIED" → "Not satisfied"
+const outcomeLabel = (value: string) => {
+  const text = value.replace(/_/g, ' ').trim().toLowerCase()
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+// The stage a connection leads to; END blocks read "Completed".
+const nextStage = (
+  id: string,
+  byId: Map<string, any>,
+): StageRoute['next'] | null => {
+  const block = byId.get(id)
+  if (!block) return null
+  return String(block.type || '').toUpperCase() === 'END'
+    ? { id, isEnd: true, label: t`Completed` }
+    : { id, label: stageLabel(block) }
+}
+
+/**
+ * Every way forward from a stage: one per outgoing connection (its action
+ * and button color) with the stage it leads to. A condition block right
+ * after the action is expanded into one route per outcome.
+ */
+export const getStageRoutes = (
+  fromId: string,
+  byId: Map<string, any>,
+  rules: any[],
+): StageRoute[] => {
+  const routes: StageRoute[] = []
+  const seen = new Set<string>()
+  const add = (route: Omit<StageRoute, 'next'>, toId: string) => {
+    const next = nextStage(toId, byId)
+    if (!next) return
+    const key = [route.action, route.condition || '', next.id].join('|')
+    if (seen.has(key)) return
+    seen.add(key)
+    routes.push({ ...route, next })
+  }
+
+  rules
+    .filter((rule: any) => ruleSource(rule) === fromId)
+    .forEach((rule: any) => {
+      const action = ruleAction(rule)
+      const color = String(rule.buttonColor || '').trim() || undefined
+      const targetId = ruleTarget(rule)
+      const target = byId.get(targetId)
+      const targetType = String(target?.type || '').toUpperCase()
+
+      if (target && isConditionType(targetType)) {
+        const outcomes = rules.filter(
+          (sub: any) => ruleSource(sub) === targetId,
+        )
+        if (outcomes.length) {
+          outcomes.forEach((sub: any) => {
+            const outcome = ruleAction(sub)
+            add(
+              {
+                action,
+                color,
+                condition: outcome
+                  ? `${stageLabel(target)}: ${outcomeLabel(outcome)}`
+                  : stageLabel(target),
+              },
+              ruleTarget(sub),
+            )
+          })
+          return
+        }
+      }
+
+      add({ action, color }, targetId)
+    })
+
+  return routes
+}
+
 // Placeholder for a branching next step; shown as "Completed" when every
-// branch after the condition is an END block.
+// branch after the condition is an END block. Otherwise it carries the
+// routes forward from `fromId` so the UI can name them.
 const conditionalStep = (
   id: string,
+  fromId: string,
   startIds: string[],
   byId: Map<string, any>,
   rules: any[],
 ): WorkflowStageStep =>
   allBranchesEnd(startIds, byId, rules)
     ? { id, isEnd: true, label: t`Completed`, status: 'future' }
-    : { id, isCondition: true, label: t`Conditional flow`, status: 'future' }
+    : {
+        id,
+        isCondition: true,
+        label: t`Conditional flow`,
+        routes: getStageRoutes(fromId, byId, rules),
+        status: 'future',
+      }
 
 export interface ComputeWorkflowStagesParams {
   workflow: any
@@ -676,7 +775,13 @@ export const computeWorkflowStages = ({
 
     if (distinctTargets.length >= 2 || outgoing.length >= 2) {
       result.push(
-        conditionalStep('__conditional_next__', distinctTargets, byId, rules),
+        conditionalStep(
+          '__conditional_next__',
+          curId,
+          distinctTargets,
+          byId,
+          rules,
+        ),
       )
     } else if (distinctTargets.length === 1) {
       const nextTargetId = distinctTargets[0]
@@ -685,13 +790,20 @@ export const computeWorkflowStages = ({
         const nextType = String(nextBlock.type || '').toUpperCase()
         if (isConditionType(nextType)) {
           result.push(
-            conditionalStep('__conditional_next__', [nextTargetId], byId, rules),
+            conditionalStep(
+              '__conditional_next__',
+              curId,
+              [nextTargetId],
+              byId,
+              rules,
+            ),
           )
         } else {
+          const isEnd = nextType === 'END'
           result.push({
             id: String(nextBlock.id),
-            label: stageLabel(nextBlock),
-            isEnd: nextType === 'END',
+            label: isEnd ? t`Completed` : stageLabel(nextBlock),
+            isEnd,
             status: 'future',
           })
         }
@@ -779,7 +891,13 @@ export const getStageTrail = (
     if (targets.length >= 2) {
       items.push({
         number: items.length + 1,
-        step: conditionalStep('__conditional_next_2__', targets, byId, rules),
+        step: conditionalStep(
+          '__conditional_next_2__',
+          last.step.id,
+          targets,
+          byId,
+          rules,
+        ),
       })
     } else if (targets.length === 1) {
       const block = byId.get(targets[0])
@@ -788,11 +906,17 @@ export const getStageTrail = (
         items.push({
           number: items.length + 1,
           step: isConditionType(type)
-            ? conditionalStep(String(block.id), targets, byId, rules)
+            ? conditionalStep(
+                String(block.id),
+                last.step.id,
+                targets,
+                byId,
+                rules,
+              )
             : {
                 id: String(block.id),
                 isEnd: type === 'END',
-                label: stageLabel(block),
+                label: type === 'END' ? t`Completed` : stageLabel(block),
                 status: 'future',
               },
         })
