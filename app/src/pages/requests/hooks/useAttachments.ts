@@ -51,6 +51,13 @@ export function useAttachments(
     return enabled !== false && !!workflowId && !!instanceId
   })
   const [error, setError] = useState<any>(null)
+  // False until the list has been fetched once for this request, so a screen
+  // can tell "not loaded yet" apart from "no attachments".
+  const [hasFetched, setHasFetched] = useState(false)
+
+  useEffect(() => {
+    setHasFetched(false)
+  }, [workflowId, instanceId])
 
   useEffect(() => {
     if (initialData) {
@@ -73,6 +80,7 @@ export function useAttachments(
     if (!workflowId || !instanceId) {
       setData(defaultData)
       setIsLoading(false)
+      setHasFetched(true)
       return
     }
     setIsLoading(true)
@@ -102,6 +110,7 @@ export function useAttachments(
       setData([])
     } finally {
       setIsLoading(false)
+      setHasFetched(true)
     }
   }, [workflowId, instanceId])
 
@@ -110,5 +119,5 @@ export function useAttachments(
     refetch()
   }, [enabled, refetch])
 
-  return { data, error, isLoading, refetch }
+  return { data, error, hasFetched, isLoading, refetch }
 }

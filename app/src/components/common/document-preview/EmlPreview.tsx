@@ -31,9 +31,26 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+// Parsed emails by file URL. The same uploaded email is shown on more than one
+// screen in a row (New Request, then the request page); the second one reuses
+// the first parse instead of downloading and parsing the file again.
+const PARSED_EMAIL_CACHE_SIZE = 6
+const parsedEmailCache = new Map<string, any>()
+const rememberParsedEmail = (url: string, data: any) => {
+  parsedEmailCache.delete(url)
+  parsedEmailCache.set(url, data)
+  while (parsedEmailCache.size > PARSED_EMAIL_CACHE_SIZE) {
+    const oldest = parsedEmailCache.keys().next().value
+    if (oldest === undefined) break
+    parsedEmailCache.delete(oldest)
+  }
+}
+
 export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
-  const [loading, setLoading] = useState(true)
-  const [emailData, setEmailData] = useState<any>(null)
+  const [loading, setLoading] = useState(() => !parsedEmailCache.has(fileUrl))
+  const [emailData, setEmailData] = useState<any>(
+    () => parsedEmailCache.get(fileUrl) ?? null,
+  )
   const [error, setError] = useState<string | null>(null)
   /** Attachment opened in place of the email body (null = show email). */
   const [openAttachment, setOpenAttachment] = useState<EmlAttachment | null>(
@@ -42,6 +59,14 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
 
   useEffect(() => {
     let active = true
+
+    const cached = parsedEmailCache.get(fileUrl)
+    if (cached) {
+      setEmailData(cached)
+      setError(null)
+      setLoading(false)
+      return
+    }
 
     const loadEml = async () => {
       try {
@@ -53,6 +78,7 @@ export default function EmlPreview({ fileName, fileUrl }: EmlPreviewProps) {
         const parser = new PostalMime()
         const parsedEmail = await parser.parse(arrayBuffer)
 
+        rememberParsedEmail(fileUrl, parsedEmail)
         if (active) {
           setEmailData(parsedEmail)
           setLoading(false)

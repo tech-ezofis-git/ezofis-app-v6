@@ -1181,8 +1181,11 @@ const Request = ({
   // agree on the same data.
   const genericInstanceId =
     selectedItem?.workflowInstanceId || selectedItem?.processId
-  const { data: genericAttachments, refetch: refetchGenericAttachments } =
-    useAttachments(
+  const {
+    data: genericAttachments,
+    hasFetched: genericAttachmentsFetched,
+    refetch: refetchGenericAttachments,
+  } = useAttachments(
       resolvedWorkflowId,
       genericInstanceId,
       isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
@@ -3192,6 +3195,11 @@ const Request = ({
             {isGenericWorkflow ? (
               <GenericRequestOverview
                 attachments={genericAttachments}
+                attachmentsLoading={
+                  isGenericWorkflow &&
+                  !!genericInstanceId &&
+                  !genericAttachmentsFetched
+                }
                 checklistChecked={checklistChecked}
                 comments={genericComments}
                 documentRequired={!!currentBlockSettings.documentRequired}

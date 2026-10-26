@@ -152,7 +152,15 @@ export function useAttachmentPreviewUrl(
   const itemId = kept ? kept.itemId : rawItemId
   const contentType = kept ? kept.contentType : rawContentType
   const legacyFileId = kept ? kept.legacyFileId : rawLegacyFileId
-  const fetchKey = `${localUrl}|${repoId}|${itemId}|${String(legacyFileId ?? '')}|${contentType}`
+  // The key names the file, not its description. Details such as the content
+  // type or a legacy id can arrive after the request opens (when the
+  // attachment list loads) and must not trigger a second download of the same
+  // file.
+  const fetchKey = localUrl
+    ? `local:${localUrl}`
+    : isUuid(repoId) && isUuid(itemId)
+      ? `${repoId}|${itemId}`
+      : `${repoId}|${itemId}|${String(legacyFileId ?? '')}`
   const canLoad = Boolean(
     localUrl ||
     (repoId && itemId && repoId !== 'undefined' && itemId !== 'undefined'),
@@ -237,7 +245,16 @@ export function useAttachmentPreviewUrl(
     // Reload only when the file identity changes. A new attachment object
     // on each parent render must not revoke the blob and flash the viewer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentType, fetchKey, itemId, legacyFileId, localFileName, localUrl, repoId])
+  }, [fetchKey])
+
+  // A file on this device is ready at once; there is nothing to download.
+  if (localUrl) {
+    return {
+      isLoading: false,
+      mimeType: contentType || guessMimeFromName(localFileName),
+      previewUrl: localUrl,
+    }
+  }
 
   const isCurrent = readyKey === fetchKey
   return {
