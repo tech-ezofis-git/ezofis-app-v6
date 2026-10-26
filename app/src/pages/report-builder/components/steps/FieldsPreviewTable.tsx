@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import StatusPill from '@/pages/reports/components/StatusPill'
+import { formatReportDate, isIsoDateString } from '@/utils/utcDate'
 import type { ReportFieldSetting } from '../../types'
 import type { PreviewColumn } from '../../utils/previewSampleData'
 import { sampleValue } from '../../utils/previewSampleData'
@@ -46,7 +47,9 @@ const FieldsPreviewTable = ({
   const renderLiveCell = (column: PreviewColumn, row: Record<string, string>) => {
     const status = resolveFieldStatus(fieldSettings?.[column.id], row)
     if (status) return <StatusPill color={status.color} label={status.label || '-'} />
-    return row[column.label] ?? row[column.id] ?? '-'
+    const value = row[column.label] ?? row[column.id]
+    if (value == null) return '-'
+    return isIsoDateString(value) ? formatReportDate(value) : value
   }
 
   if (columns.length === 0) {

@@ -46,3 +46,22 @@ export const formatUtcToLocalDateTime = (
   if (!date) return value ? String(value) : fallback
   return dayjs(date).format('DD-MMM-YYYY hh:mm A')
 }
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T[\d:.]+([zZ]|[+-]\d{2}:?\d{2})?)?$/
+
+/** True for ISO date / UTC timestamp strings, e.g. 2026-10-21T07:24:00. */
+export const isIsoDateString = (value: unknown) =>
+  typeof value === 'string' && ISO_DATE_PATTERN.test(value.trim())
+
+/**
+ * Report cell dates in local time, e.g. 21-10-2026 12:54 PM (date-only
+ * values as 21-10-2026). Non-dates are returned unchanged.
+ */
+export const formatReportDate = (value: string) => {
+  const date = parseUtcDate(value)
+  if (!date) return value
+  return dayjs(date).format(
+    DATE_ONLY_PATTERN.test(value.trim()) ? 'DD-MM-YYYY' : 'DD-MM-YYYY hh:mm A',
+  )
+}
