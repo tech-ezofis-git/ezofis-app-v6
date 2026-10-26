@@ -88,11 +88,11 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
         "FileName",
         "File Name",
     ),
-    (("status",), "Status", "Status"),
     (("createdby", "created_by"), "CreatedBy", "Created By"),
-    (("createdbyid", "created_by_id"), "CreatedById", "Created By Id"),
-    (("createdat", "created_at"), "CreatedAt", "Created At"),
-    (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
+    (("createdbyid", "created_by_id", "created_by", "createdby"), "CreatedById", "Created By Id"),
+    (("createdat", "created_at", "created_at_utc", "createdatutc"), "CreatedAt", "Created At"),
+    (("itemid", "item_id", "id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
+    (("status",), "Status", "Status"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
 _LISTING_DEFAULTS = frozenset(
@@ -112,7 +112,6 @@ _REPO_LISTING_DEFAULTS = frozenset(
         "filename",
         "file_name",
         "ifilename",
-        "status",
         "createdby",
         "createdbyid",
         "createdat",
@@ -179,6 +178,49 @@ def _is_default_key(key: str, report_type: Optional[str] = None) -> bool:
         if compact in {re.sub(r"[^a-z0-9]", "", n) for n in names}:
             return True
     return False
+
+
+def _live_repo_item_keys(
+    tables: Optional[list[SchemaTableSlice]],
+    available: Optional[list[str]],
+) -> set[str]:
+    """Compact column names from repository.items_* only — not ezfb form fields."""
+    keys: set[str] = set()
+    for table in tables or []:
+        name = (table.table or "").lower()
+        schema = (table.schema_name or "").lower()
+        if name.startswith("ezfb_"):
+            continue
+        if schema not in {"repository", "repo"} and not name.startswith("items_"):
+            continue
+        for col in table.columns or []:
+            compact = re.sub(r"[^a-z0-9]", "", (col.name or "").lower())
+            if compact:
+                keys.add(compact)
+    if keys:
+        return keys
+    for name in available or []:
+        compact = re.sub(r"[^a-z0-9]", "", (name or "").lower())
+        if compact:
+            keys.add(compact)
+    return keys
+
+
+def _default_in_live_schema(
+    aliases: tuple[str, ...],
+    canonical: str,
+    live: set[str],
+) -> bool:
+    extra = {
+        "itemid": ("id",),
+        "createdby": ("created_by",),
+        "createdbyid": ("created_by", "createdby"),
+        "filename": ("file_name", "ifilename"),
+        "createdat": ("created_at", "created_at_utc"),
+        "status": ("status",),
+    }.get(canonical.lower(), ())
+    names = aliases + (canonical,) + extra
+    return any(re.sub(r"[^a-z0-9]", "", (name or "").lower()) in live for name in names)
 
 
 def _is_form_or_repository_table(table: SchemaTableSlice) -> bool:
@@ -324,8 +366,18 @@ def attach_column_palettes(
 
     defaults: list[ReportSpecColumn] = []
     default_keys: set[str] = set()
+    live_repo_keys = _live_repo_item_keys(tables, live) if is_repo else set()
     for aliases, canonical, label in default_defs:
         key = canonical
+        if is_repo:
+            if canonical.lower() == "repository_name" and report_type != "all_repositories":
+                continue
+            if canonical.lower() == "itemid":
+                pass
+            elif canonical.lower() == "status" and "status" not in live_repo_keys:
+                continue
+            elif live_repo_keys and not _default_in_live_schema(aliases, canonical, live_repo_keys):
+                continue
         existing = selected_map.get(key.lower())
         if existing is None:
             for alias in aliases:

@@ -1335,17 +1335,17 @@ class ReportAgentService:
         from app.report_agent.catalog_execute import fill_filename_aliases, _newest_first
 
         rows = fill_filename_aliases(report_data.rows)
-        if spec is not None:
-            from app.report_agent.catalog_execute import (
-                attach_listing_fields_to_form_rows,
-                attach_repository_fields_to_form_rows,
-                finish_user_columns,
-                has_form_columns,
-                needs_listing_fields,
-                needs_repository_fields,
-                _keep_valued_columns,
-            )
+        from app.report_agent.catalog_execute import (
+            attach_listing_fields_to_form_rows,
+            attach_repository_fields_to_form_rows,
+            finish_user_columns,
+            has_form_columns,
+            needs_listing_fields,
+            needs_repository_fields,
+            _keep_valued_columns,
+        )
 
+        if spec is not None:
             if needs_listing_fields(spec) and has_form_columns(spec):
                 try:
                     rows = await attach_listing_fields_to_form_rows(
@@ -1373,13 +1373,13 @@ class ReportAgentService:
                     )
                 except Exception as exc:
                     warnings.append(f"Could not attach repository name / file name: {exc}")
-            try:
-                rows = await finish_user_columns(
-                    self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
-                )
-            except Exception:
-                pass
-            rows = fill_filename_aliases(rows)
+        try:
+            rows = await finish_user_columns(
+                self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
+            )
+        except Exception:
+            pass
+        rows = fill_filename_aliases(rows)
 
         if not (request.sort and request.sort.field):
             rows = _newest_first(rows)

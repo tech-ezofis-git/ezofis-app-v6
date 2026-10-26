@@ -93,6 +93,8 @@ _COLUMN_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
     ),
     ("created_by", "createdby", "createdbyid", "created_by_id"),
     ("created_at", "createdat", "createdatutc", "created_at_utc"),
+    ("started_by", "startedby", "startedbyid", "started_by_id"),
+    ("acted_by", "actedby", "actedbyid", "acted_by_id", "updated_by", "updatedby"),
     ("id", "itemid", "item_id"),
     ("status",),
 )

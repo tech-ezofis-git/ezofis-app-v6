@@ -800,7 +800,6 @@ _ALL_REPOSITORY_COLUMNS: tuple[tuple[str, str], ...] = (
     ("CreatedBy", "text"),
     ("CreatedById", "uuid"),
     ("CreatedAt", "date"),
-    ("Status", "text"),
     ("id", "uuid"),
     ("itemId", "uuid"),
 )

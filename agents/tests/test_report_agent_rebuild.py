@@ -405,7 +405,7 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
             ReportSpecColumn(key="FileName", label="File Name"),
             ReportSpecColumn(key="HST", label="HST"),
         ],
-        available_columns=["file_name", "Status", "created_by", "created_at"],
+        available_columns=["file_name", "created_by", "created_at", "id"],
         source_schema="repository",
         source_table="items_7ea175eb",
     )
@@ -415,9 +415,9 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
             table="items_7ea175eb",
             columns=[
                 SchemaColumnSlice(name="file_name", type="text"),
-                SchemaColumnSlice(name="Status", type="text"),
                 SchemaColumnSlice(name="created_by", type="uuid"),
                 SchemaColumnSlice(name="created_at", type="date"),
+                SchemaColumnSlice(name="id", type="uuid"),
             ],
         )
     ]
@@ -425,13 +425,54 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
     spec = apply_selected_columns(spec)
     spec = finalize_repository_prompt(spec)
     selected = {c.key.lower() for c in spec.columns}
+    default_keys = {c.key for c in spec.default_columns}
     assert "filename" in selected
     assert "repository_name" not in selected
+    assert "Status" not in default_keys
+    assert "status" not in {k.lower() for k in default_keys}
     assert spec.sort is not None
     assert spec.sort.field == "CreatedAt"
     assert spec.sort.direction == "desc"
     assert any(c.key == "FileName" and c.selected for c in spec.default_columns)
+    assert any(c.key == "CreatedBy" and c.selected for c in spec.default_columns)
+    assert any(c.key == "CreatedById" and c.selected for c in spec.default_columns)
     assert not any(c.key == "Repository_Name" and c.selected for c in spec.default_columns)
+
+
+def test_repository_defaults_only_from_live_schema():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
+    from app.report_agent.report_spec import attach_column_palettes
+
+    spec = ReportSpec(
+        title="Folder",
+        report_type="specific_repository",
+        columns=[ReportSpecColumn(key="HST", label="HST")],
+        available_columns=["file_name", "created_by", "created_at", "id", "HST"],
+        source_schema="repository",
+        source_table="items_7ea175eb",
+    )
+    tables = [
+        SchemaTableSlice(
+            schema_name="repository",
+            table="items_7ea175eb",
+            columns=[
+                SchemaColumnSlice(name="file_name", type="text"),
+                SchemaColumnSlice(name="created_by", type="uuid"),
+                SchemaColumnSlice(name="created_at", type="date"),
+                SchemaColumnSlice(name="id", type="uuid"),
+            ],
+        ),
+        SchemaTableSlice(
+            schema_name="dbo",
+            table="ezfb_7ea175eb_items",
+            columns=[SchemaColumnSlice(name="HST", type="text")],
+        ),
+    ]
+    spec = attach_column_palettes(spec, tables=tables)
+    default_keys = {c.key for c in spec.default_columns}
+    assert default_keys == {"FileName", "CreatedBy", "CreatedById", "CreatedAt", "itemId"}
+    assert "Status" not in default_keys
+    assert "Repository_Name" not in default_keys
 
 
 def test_lock_maps_filename_to_file_name_and_skips_generate_warnings():
@@ -1542,7 +1583,8 @@ async def test_generate_prompt_all_repositories_uses_tenant_catalog_not_ap_colum
     assert "Invoice_No" not in available
     assert "PO_Number" not in available
     assert "Invoice_No" not in keys
-    assert any(k in keys for k in ("Repository_Name", "FileName", "Status", "CreatedBy"))
+    assert any(k in keys for k in ("Repository_Name", "FileName", "CreatedBy"))
+    assert "Status" not in keys
     assert resp.report_spec.source_table == "items_all"
 
 
