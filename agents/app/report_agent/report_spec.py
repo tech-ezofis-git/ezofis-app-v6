@@ -103,6 +103,16 @@ _LISTING_DEFAULTS = frozenset(
         "workflowname",
     }
 )
+_REPO_LISTING_DEFAULTS = frozenset(
+    {
+        "repository_name",
+        "filename",
+        "status",
+        "createdby",
+        "createdbyid",
+        "createdat",
+    }
+)
 _IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id", "requestno"})
 
 
@@ -318,9 +328,8 @@ def attach_column_palettes(
                 if existing is not None:
                     break
         listing_default = (
-            not is_repo
-            and not has_metric
-            and canonical.lower() in _LISTING_DEFAULTS
+            (not is_repo and not has_metric and canonical.lower() in _LISTING_DEFAULTS)
+            or (is_repo and canonical.lower() in _REPO_LISTING_DEFAULTS)
         )
         defaults.append(
             ReportSpecColumn(

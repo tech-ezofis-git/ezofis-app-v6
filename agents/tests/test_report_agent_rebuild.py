@@ -378,6 +378,9 @@ def test_repository_default_columns_include_item_id():
     default_keys = {c.key for c in spec.default_columns}
     assert "itemId" in default_keys
     assert any(c.key == "itemId" and c.selected for c in spec.default_columns)
+    assert any(c.key == "FileName" and c.selected for c in spec.default_columns)
+    assert any(c.key == "Repository_Name" and c.selected for c in spec.default_columns)
+    assert any(c.key == "CreatedBy" and c.selected for c in spec.default_columns)
     assert "workflowId" not in default_keys
     assert "instanceId" not in default_keys
     prompt = json.loads(report_spec_to_prompt(spec))
@@ -2577,6 +2580,8 @@ async def test_run_report_fills_repository_name_and_filename_from_item_aliases()
     assert row.get("Repository_Name") == "Expense Reimbursement"
     assert row.get("file_name") == "taxi-receipt.pdf"
     assert row.get("FileName") == "taxi-receipt.pdf"
+    assert row.get("CreatedBy") == "Arasu"
+    assert not _looks_like_guid(row.get("CreatedBy"))
 
 
 @pytest.mark.asyncio
@@ -2623,6 +2628,92 @@ async def test_attach_repository_fields_fills_empty_sql_filename():
     assert rows
     assert rows[0].get("Repository_Name") == "Expense Reimbursement"
     assert rows[0].get("FileName") == "hotel-bill.pdf"
+    assert rows[0].get("CreatedBy") == "Priya"
+
+
+@pytest.mark.asyncio
+async def test_repository_rows_use_sql_when_ezofis_items_empty():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import execute_catalog_spec
+
+    class _EmptyItems:
+        async def list_repositories(self, tenant_id):
+            return [
+                {
+                    "id": "7ea175eb-1111-2222-3333-444455556666",
+                    "name": "Expense Reimbursement",
+                }
+            ]
+
+        async def list_repository_items(self, *, tenant_id, repository_id, limit=200):
+            return []
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "Raja"}
+
+        async def list_users(self, tenant_id, limit=200):
+            return [
+                {
+                    "id": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
+                    "displayName": "Raja",
+                }
+            ]
+
+    class _SqlDb:
+        async def fetch(self, sql, *args):
+            low = (sql or "").lower()
+            if "information_schema.tables" in low:
+                return [{"table_schema": "repository", "table_name": "items_7ea175eb"}]
+            if "information_schema.columns" in low:
+                return [
+                    {"column_name": "id", "data_type": "uuid", "udt_name": "uuid"},
+                    {"column_name": "file_name", "data_type": "text", "udt_name": "text"},
+                    {"column_name": "status", "data_type": "text", "udt_name": "text"},
+                    {"column_name": "created_by", "data_type": "uuid", "udt_name": "uuid"},
+                    {"column_name": "created_at", "data_type": "timestamp", "udt_name": "timestamp"},
+                ]
+            return [
+                {
+                    "item_id": "aa111111-1111-4111-8111-111111111111",
+                    "file_name": "uber-receipt.pdf",
+                    "status": "Running",
+                    "created_by": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
+                    "created_at": "2026-10-22T09:42:00Z",
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Folder",
+        report_type="specific_repository",
+        columns=[
+            ReportSpecColumn(key="Repository_Name", label="Repository", selected=True),
+            ReportSpecColumn(key="FileName", label="File Name", selected=True),
+            ReportSpecColumn(key="Status", label="Status", selected=True),
+            ReportSpecColumn(key="CreatedBy", label="Created By", selected=True),
+            ReportSpecColumn(key="CreatedById", label="Created By Id", selected=True),
+        ],
+    )
+    result = await execute_catalog_spec(
+        _EmptyItems(),
+        spec,
+        tenant_id="t",
+        report_type="specific_repository",
+        repository_name="Expense Reimbursement",
+        db=_SqlDb(),
+    )
+    assert result is not None
+    _columns, rows, total, _warnings = result
+    assert total == 1
+    assert rows[0].get("FileName") == "uber-receipt.pdf"
+    assert rows[0].get("Repository_Name") == "Expense Reimbursement"
+    assert rows[0].get("CreatedBy") == "Raja"
+    assert rows[0].get("CreatedById") == "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd"
+    assert not _looks_like_guid(rows[0].get("CreatedBy"))
+
+
+def _looks_like_guid(value: object) -> bool:
+    text = str(value or "")
+    return len(text) == 36 and text.count("-") == 4
 
 
 def test_bind_highlights_uses_row_values_not_canned_status():

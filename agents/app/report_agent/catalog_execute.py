@@ -608,6 +608,8 @@ def wants_instance_execute(spec: ReportSpec, report_type: Optional[str] = None) 
             return False
         return bool(keys & _INSTANCE_DEFAULT_KEYS)
     if rt == "specific_repository":
+        if has_form_columns(spec):
+            return False
         return bool(keys & _REPO_DEFAULT_KEYS)
     return False
 
@@ -728,6 +730,7 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
                     item["Repository"] = item[key]
                 elif compact in {"filename"}:
                     item["FileName"] = item[key]
+                    item["File Name"] = item[key]
         _split_user_fields_on_row(item)
         shaped.append(item)
     return shaped
@@ -769,6 +772,7 @@ def _keep_valued_columns(
                 item["Repository"] = item[key]
             elif compact in {"filename"}:
                 item["FileName"] = item[key]
+                item["File Name"] = item[key]
         _split_user_fields_on_row(item)
         new_rows.append(item)
     new_spec = spec.model_copy(update={"columns": keep})
@@ -1480,6 +1484,7 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
         "Repository_Name": repo_row.get("Repository_Name"),
         "Repository": repo_row.get("Repository_Name"),
         "FileName": repo_row.get("FileName"),
+        "File Name": repo_row.get("FileName"),
         "FileVersion": repo_row.get("FileVersion"),
         "CreatedBy": repo_row.get("CreatedBy"),
         "CreatedById": repo_row.get("CreatedById"),
@@ -1505,6 +1510,7 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
             row["Repository"] = row[key]
         elif compact in {"filename"}:
             row["FileName"] = row[key]
+            row["File Name"] = row[key]
 
 
 async def attach_listing_fields_to_form_rows(
@@ -1556,6 +1562,86 @@ async def attach_listing_fields_to_form_rows(
         out.append(item)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
+
+
+async def _sql_repository_records(
+    db: Any, *, repository_id: str, repository_name: str
+) -> list[dict[str, Any]]:
+    """Tenant items_* table when EZOFIS /repositories/{id}/items returns nothing."""
+    compact = _compact_id(repository_id)
+    if db is None or not compact:
+        return []
+    table_names: list[str] = []
+    if len(compact) >= 8:
+        table_names.extend((f"items_{compact[:8]}", f"Items_{compact[:8]}"))
+    table_names.append(f"items_{compact}")
+    located = None
+    try:
+        located = await find_table(
+            db, tuple(table_names), prefer_schemas=("repository", "dbo", "public")
+        )
+    except Exception:
+        located = None
+    if located is None:
+        return []
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "itemid", "item_id")
+    if not id_col:
+        return []
+    file_col = _sql_col(
+        by_lower,
+        "file_name",
+        "filename",
+        "original_file_name",
+        "originalfilename",
+        "ifilename",
+        "document_name",
+        "name",
+        "title",
+    )
+    status_col = _sql_col(by_lower, "status")
+    created_by_col = _sql_col(by_lower, "created_by", "createdby")
+    created_at_col = _sql_col(
+        by_lower, "created_at", "createdat", "created_at_utc", "createdatutc"
+    )
+    deleted_col = _sql_col(by_lower, "is_deleted", "isdeleted")
+    parts = [f"CAST({quote_ident(id_col)} AS text) AS item_id"]
+    if file_col:
+        parts.append(f"CAST({quote_ident(file_col)} AS text) AS file_name")
+    if status_col:
+        parts.append(f"CAST({quote_ident(status_col)} AS text) AS status")
+    if created_by_col:
+        parts.append(f"CAST({quote_ident(created_by_col)} AS text) AS created_by")
+    if created_at_col:
+        parts.append(f"CAST({quote_ident(created_at_col)} AS text) AS created_at")
+    sql = f"SELECT {', '.join(parts)} FROM {qualified(schema, table)}"
+    if deleted_col:
+        sql += f" WHERE COALESCE({quote_ident(deleted_col)}, false) IS NOT TRUE"
+    try:
+        rows = await db.fetch(sql)
+    except Exception:
+        return []
+    out: list[dict[str, Any]] = []
+    repo_name = (repository_name or "").strip()
+    for row in rows or []:
+        created_id, created_name = _split_user_ref(row_get(row, "created_by"))
+        fname = str(row_get(row, "file_name") or "").strip()
+        if fname and _looks_like_user_id(fname):
+            fname = ""
+        record = {
+            "itemId": row_get(row, "item_id"),
+            "Repository_Name": repo_name,
+            "Repository": repo_name,
+            "FileName": fname,
+            "File Name": fname,
+            "CreatedBy": created_name,
+            "CreatedById": created_id,
+            "CreatedAt": _parse_date(row_get(row, "created_at")),
+            "Status": row_get(row, "status"),
+        }
+        out.append(record)
+    return out
 
 
 async def _sql_item_file_names(
@@ -1627,6 +1713,10 @@ async def _repository_item_records(
         if not repo_id:
             return []
         docs = await ezofis.list_repository_items(tenant_id=tenant_id, repository_id=repo_id)
+        if not docs and db is not None:
+            return await _sql_repository_records(
+                db, repository_id=repo_id, repository_name=repo_name
+            )
         out: list[dict[str, Any]] = []
         missing: list[dict[str, Any]] = []
         for row in docs or []:
@@ -1636,11 +1726,13 @@ async def _repository_item_records(
             created_name = str(_pick(row, "createdByName", "CreatedByName") or created_name).strip()
             if _looks_like_user_id(created_name):
                 created_name = ""
+            fname = _pick_file_name(row)
             record = {
                 "itemId": _pick(row, "itemId", "item_id", "id", "Id"),
                 "Repository_Name": repo_name,
                 "Repository": repo_name,
-                "FileName": _pick_file_name(row),
+                "FileName": fname,
+                "File Name": fname,
                 "FileVersion": _pick(row, "fileVersion", "FileVersion", "version"),
                 "CreatedBy": created_name,
                 "CreatedById": created_id,
@@ -1664,6 +1756,7 @@ async def _repository_item_records(
                 fname = names.get(_compact_id(record.get("itemId")))
                 if fname:
                     record["FileName"] = fname
+                    record["File Name"] = fname
         return out
 
     batches = await asyncio.gather(*[_one(item) for item in listed or []], return_exceptions=True)
