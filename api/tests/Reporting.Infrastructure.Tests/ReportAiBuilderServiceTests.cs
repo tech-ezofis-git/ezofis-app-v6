@@ -196,7 +196,7 @@ public sealed class ReportAiBuilderServiceTests
     }
 
     [Fact]
-    public async Task RunSaved_specified_workflow_uses_form_query()
+    public async Task RunSaved_specified_workflow_uses_python_agent_user_names()
     {
         var store = new MemoryStore();
         var id = Guid.NewGuid();
@@ -210,33 +210,14 @@ public sealed class ReportAiBuilderServiceTests
             Name = "RFQ Estimation",
             ReportPrompt = """{"Objective":"RFQ"}""",
             ReportSpecJson = """
-                {"title":"RFQ","columns":[{"key":"Company_Name","label":"Company Name"}]}
+                {"title":"RFQ","columns":[
+                  {"key":"startedBy","label":"Started by"},
+                  {"key":"actedBy","label":"Acted by"}
+                ]}
                 """
         };
-        var client = new FakeClient
-        {
-            Run = AgentResult(200, """
-                {"reply":"Report ready.","report_result":{
-                  "warnings":["Dropped unknown source table 'ezfb_787372d8_items'."]
-                }}
-                """)
-        };
-        var query = new FakeQuery
-        {
-            Result = new ReportRunResult(
-                id,
-                "RFQ Estimation",
-                "RFQ Process",
-                [new ReportColumnDto("Company Name", "Company Name", "None", "value", 160, false)],
-                [
-                    new Dictionary<string, string?> { ["Company Name"] = "Acme" },
-                    new Dictionary<string, string?> { ["Company Name"] = "Globex" }
-                ],
-                null,
-                2,
-                Guid.NewGuid(),
-                "form-1")
-        };
+        var client = SpecifiedClient();
+        var query = SpecifiedQuery(id);
         var service = new ReportAiBuilderService(client, store, query);
 
         var result = await service.RunSavedAsync(
@@ -245,15 +226,14 @@ public sealed class ReportAiBuilderServiceTests
             new ReportAiRunRequest { Page = 1, PageSize = 1 });
 
         Assert.Equal(200, result.StatusCode);
-        Assert.Null(client.LastRun);
-        Assert.Equal("RFQ Process", query.LastConfig?.Domain);
-        Assert.Contains("Company_Name", query.LastConfig?.Fields ?? []);
-        Assert.Equal(1, store.Rows[id].Runs);
+        Assert.NotNull(client.LastRun);
+        Assert.Equal("specific_workflow", client.LastRun!.ReportType);
+        Assert.Equal("RFQ Process", client.LastRun.WorkflowName);
+        Assert.Null(query.LastConfig);
         var json = JsonSerializer.Serialize(result.Payload);
-        Assert.Contains("Acme", json);
-        Assert.DoesNotContain("Globex", json);
-        Assert.Contains("\"totalCount\":2", json);
-        Assert.Contains("Counted live form rows", json);
+        Assert.Contains("Arasu", json);
+        Assert.Contains("RAJA", json);
+        Assert.DoesNotContain("e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd", json);
     }
 
     [Fact]
@@ -328,7 +308,7 @@ public sealed class ReportAiBuilderServiceTests
         var store = SpecifiedStore(out var id);
         var query = SpecifiedQuery(id);
         var export = new FakeExport();
-        var service = new ReportAiBuilderService(new FakeClient(), store, query, export);
+        var service = new ReportAiBuilderService(SpecifiedClient(), store, query, export);
 
         var result = await service.RunSavedAsync(
             TenantId,
@@ -347,7 +327,7 @@ public sealed class ReportAiBuilderServiceTests
     {
         var store = SpecifiedStore(out var id);
         var service = new ReportAiBuilderService(
-            new FakeClient(), store, SpecifiedQuery(id), new FakeExport(), new FakeMail());
+            SpecifiedClient(), store, SpecifiedQuery(id), new FakeExport(), new FakeMail());
         var result = await service.RunSavedAsync(
             TenantId,
             id,
@@ -361,7 +341,7 @@ public sealed class ReportAiBuilderServiceTests
         var store = SpecifiedStore(out var id);
         var mail = new FakeMail();
         var service = new ReportAiBuilderService(
-            new FakeClient(), store, SpecifiedQuery(id), new FakeExport(), mail);
+            SpecifiedClient(), store, SpecifiedQuery(id), new FakeExport(), mail);
 
         var result = await service.RunSavedAsync(
             TenantId,
@@ -468,6 +448,29 @@ public sealed class ReportAiBuilderServiceTests
 
     private static ReportAgentProxyResult AgentResult(int status, string body) =>
         ReportAgentChatMapper.Parse(status, body);
+
+    private static FakeClient SpecifiedClient() =>
+        new()
+        {
+            Run = AgentResult(200, """
+                {"reply":"Report ready.","report_result":{
+                  "title":"RFQ Estimation",
+                  "columns":[
+                    {"key":"Company_Name","label":"Company Name"},
+                    {"key":"startedBy","label":"Started by"},
+                    {"key":"actedBy","label":"Acted by"}
+                  ],
+                  "rows":[
+                    {"Company_Name":"Acme","startedBy":"Arasu","actedBy":"RAJA"},
+                    {"Company_Name":"Globex","startedBy":"Arasu","actedBy":"RAJA"}
+                  ],
+                  "totalCount":2,
+                  "page":1,
+                  "pageSize":25,
+                  "warnings":[]
+                }}
+                """)
+        };
 
     private static MemoryStore SpecifiedStore(out Guid id)
     {
