@@ -559,8 +559,10 @@ const regenerateDocument = async (
   instanceId: number | string,
   payload: { activityId: string; formData?: string },
 ) => {
-  const response: { data: null | RegenerateDocumentResponse; error: string } =
-    { data: null, error: '' }
+  const response: { data: null | RegenerateDocumentResponse; error: string } = {
+    data: null,
+    error: '',
+  }
   try {
     const { data, status } = await axiosV6({
       data: JSON.stringify(payload),
@@ -1001,9 +1003,31 @@ export const getWorkflowsByActivity = async (
     console.error(e)
     const err = e as { message?: string; response?: { data?: string } }
     response.error =
-      err?.response?.data || err?.message || 'error fetching workflows by activity'
+      err?.response?.data ||
+      err?.message ||
+      'error fetching workflows by activity'
   }
   return response
+}
+
+export interface AllWorkflowsInboxGroup {
+  /** Of the fetched items only: everything not counted as new today. */
+  earlierCount: number
+  /** Up to itemsPerWorkflow rows, same shape as GET /Workflows/inbox items. */
+  items: any[]
+  /** Of the fetched items only: landed in this user's inbox today (UTC). */
+  newTodayCount: number
+  /** Exact open tickets for this user on this workflow (not capped). */
+  totalCount: number
+  workflowId: string
+  workflowName: string
+}
+
+export interface AllWorkflowsInboxResponse {
+  /** Sum of every group's totalCount. */
+  totalCount: number
+  /** Only workflows with open tickets, highest totalCount first. */
+  workflows: AllWorkflowsInboxGroup[]
 }
 
 export interface V6ActivityCountItem {
@@ -1015,6 +1039,38 @@ export interface V6WorkflowsByActivityCountsResponse {
   fullCount: number
   items: V6ActivityCountItem[]
   workflowId: string
+}
+
+/**
+ * GET /Workflows/inbox/all-workflows: the current user's open inbox for every
+ * workflow they can access, in one call, grouped by workflow.
+ */
+export const getAllWorkflowsInbox = async (
+  itemsPerWorkflow = 20,
+): Promise<AllWorkflowsInboxResponse> => {
+  const { data } = await axiosV6({
+    headers: getTenantHeaders(),
+    method: 'GET',
+    params: { itemsPerWorkflow },
+    skipCancellation: true,
+    url: `/Workflows/inbox/all-workflows`,
+  })
+  const workflows: AllWorkflowsInboxGroup[] = Array.isArray(data?.workflows)
+    ? data.workflows.map((group: Partial<AllWorkflowsInboxGroup>) => ({
+        earlierCount: Number(group.earlierCount) || 0,
+        items: Array.isArray(group.items) ? group.items : [],
+        newTodayCount: Number(group.newTodayCount) || 0,
+        totalCount: Number(group.totalCount) || 0,
+        workflowId: String(group.workflowId || ''),
+        workflowName: String(group.workflowName || ''),
+      }))
+    : []
+  return {
+    totalCount:
+      Number(data?.totalCount) ||
+      workflows.reduce((sum, group) => sum + group.totalCount, 0),
+    workflows,
+  }
 }
 
 export const getWorkflowsByActivityCounts = async (
@@ -1053,6 +1109,7 @@ export const workflowsApiV6 = {
   addInstanceComment,
   createWorkflow,
   deleteWorkflow,
+  locateInstance,
   moveNext,
   raiseTicket,
   regenerateAgent,
@@ -1072,7 +1129,6 @@ export const workflowsApiV6 = {
   getInstanceComments,
   getInstanceCount,
   getInstanceHistory,
-  locateInstance,
   getSentList,
   getWorkflowById,
   getWorkflows,

@@ -7,6 +7,7 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { isInboxRowOverdue } from '@/pages/requests/utils/inboxItemDisplay'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
@@ -334,6 +335,13 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
             isTerminal={isTerminal}
             previousLabel={previousLabel}
           />
+          {/* Due date before today (same rule as the Overdue filter). */}
+          {!isTerminal && isInboxRowOverdue(row) ? (
+            <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-red-3 bg-red-1 px-2 py-0.5 text-[11px] font-semibold text-red-11'>
+              <Icon className='size-3' name='tabler:alert-circle' />
+              Overdue
+            </span>
+          ) : null}
         </div>
 
         {previewChips.length > 0 && (
